@@ -10,6 +10,7 @@ import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 
 /*
  * query a logic table ,in fact, it is derived sub query
@@ -33,6 +34,24 @@ public class QueryNode extends PlanNode {
         this.keepFieldSchema = false;
     }
 
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        if (columnsSelected.size() > index) {
+            Item sourceColumns = columnsSelected.get(index);
+            for (int i = 0; i < this.getChild().columnsSelected.size(); i++) {
+                Item cSelected = this.getChild().columnsSelected.get(i);
+                if (cSelected.getAlias() != null && cSelected.getAlias().equals(sourceColumns.getItemName())) {
+                    return this.getChild().findFieldSourceFromIndex(i);
+                } else if (cSelected.getAlias() == null && cSelected.getItemName().equals(sourceColumns.getItemName())) {
+                    return this.getChild().findFieldSourceFromIndex(i);
+                }
+            }
+            return null;
+        }
+        return null;
+    }
+
+
     public void setChild(PlanNode child) {
         if (child == null) {
             return;
@@ -40,6 +59,7 @@ public class QueryNode extends PlanNode {
         children.clear();
         addChild(child);
     }
+
     @Override
     protected void setUpInnerFields() {
         innerFields.clear();
@@ -53,6 +73,7 @@ public class QueryNode extends PlanNode {
             }
         }
     }
+
     @Override
     public String getPureName() {
         return this.getChild().getAlias();

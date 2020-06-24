@@ -1,6 +1,6 @@
 package com.actiontech.dble.manager.dump.handler;
 
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.manager.dump.DumpException;
 import com.actiontech.dble.manager.dump.DumpFileContext;
 import com.actiontech.dble.meta.TableMeta;
@@ -39,7 +39,7 @@ class InsertHandler extends DefaultHandler {
         }
         context.setTable(table);
         if (table != null && table.equalsIgnoreCase(currentTable)) {
-            if (context.isSkipContext() || context.getTableType() == TableType.DEFAULT) {
+            if (context.isSkipContext() || !(context.getTableConfig() instanceof ShardingTableConfig)) {
                 return null;
             }
             return RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
@@ -47,7 +47,7 @@ class InsertHandler extends DefaultHandler {
             currentTable = table;
         }
 
-        if (context.isSkipContext() || context.getTableType() == TableType.DEFAULT) {
+        if (context.isSkipContext() || !(context.getTableConfig() instanceof ShardingTableConfig)) {
             return null;
         }
 
@@ -63,7 +63,7 @@ class InsertHandler extends DefaultHandler {
             insertHeader.append(insert.getColumns().toString());
         }
         insertHeader.append(" VALUES");
-        if (context.getTableType() == TableType.SHARDING) {
+        if (context.getTableConfig() instanceof ShardingTableConfig) {
             shardingValuesHandler.reset();
             valuesHandler = shardingValuesHandler;
         } else {
@@ -111,8 +111,8 @@ class InsertHandler extends DefaultHandler {
      * if sharding column index or increment column index is -1,
      * find from dble meta data or columns in insert statement
      *
-     * @param context
-     * @param columns
+     * @param context context
+     * @param columns columns
      * @throws DumpException
      * @throws SQLNonTransientException
      */
@@ -120,23 +120,22 @@ class InsertHandler extends DefaultHandler {
         int partitionColumnIndex = context.getPartitionColumnIndex();
         int incrementColumnIndex = context.getIncrementColumnIndex();
 
-        TableConfig tableConfig = context.getTableConfig();
+        ShardingTableConfig tableConfig = (ShardingTableConfig) (context.getTableConfig());
         // partition column check
-        if ((tableConfig.getPartitionColumn() != null && partitionColumnIndex != -1) ||
-                (tableConfig.isAutoIncrement() && incrementColumnIndex != -1)) {
+        if ((tableConfig.getShardingColumn() != null && partitionColumnIndex != -1) &&
+                (tableConfig.getIncrementColumn() != null && incrementColumnIndex != -1)) {
             return;
         }
 
-        boolean isAutoIncrement = tableConfig.isAutoIncrement();
-        if (isAutoIncrement || tableConfig.getPartitionColumn() != null) {
+        if (tableConfig.getIncrementColumn() != null || tableConfig.getShardingColumn() != null) {
             if (!CollectionUtil.isEmpty(columns)) {
                 for (int i = 0; i < columns.size(); i++) {
                     SQLExpr column = columns.get(i);
                     String columnName = StringUtil.removeBackQuote(column.toString());
-                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
+                    if (tableConfig.getIncrementColumn() != null && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }
-                    if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
+                    if (columnName.equalsIgnoreCase(tableConfig.getShardingColumn())) {
                         partitionColumnIndex = i;
                     }
                 }
@@ -149,10 +148,10 @@ class InsertHandler extends DefaultHandler {
                 for (int i = 0; i < tableMeta.getColumns().size(); i++) {
                     TableMeta.ColumnMeta column = tableMeta.getColumns().get(i);
                     String columnName = column.getName();
-                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
+                    if (tableConfig.getIncrementColumn() != null && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }
-                    if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
+                    if (columnName.equalsIgnoreCase(tableConfig.getShardingColumn())) {
                         partitionColumnIndex = i;
                     }
                 }
@@ -160,11 +159,11 @@ class InsertHandler extends DefaultHandler {
         }
 
         // partition column check
-        if (tableConfig.getPartitionColumn() != null && partitionColumnIndex == -1) {
+        if (tableConfig.getShardingColumn() != null && partitionColumnIndex == -1) {
             throw new DumpException("can't find partition column in insert.");
         }
         // increment column check
-        if (isAutoIncrement && incrementColumnIndex == -1) {
+        if (tableConfig.getIncrementColumn() != null && incrementColumnIndex == -1) {
             throw new DumpException("can't find increment column in insert.");
         }
         context.setIncrementColumnIndex(incrementColumnIndex);

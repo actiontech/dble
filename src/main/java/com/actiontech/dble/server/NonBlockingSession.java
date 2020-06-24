@@ -20,9 +20,9 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SaveP
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
@@ -43,7 +43,7 @@ import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.singleton.DDLTraceManager;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
@@ -449,10 +449,10 @@ public class NonBlockingSession implements Session {
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
 
-        if (PauseDatanodeManager.getInstance().getIsPausing().get() &&
-                !PauseDatanodeManager.getInstance().checkTarget(target) &&
-                PauseDatanodeManager.getInstance().checkRRS(rrs)) {
-            if (PauseDatanodeManager.getInstance().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
+        if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
+                !PauseShardingNodeManager.getInstance().checkTarget(target) &&
+                PauseShardingNodeManager.getInstance().checkRRS(rrs)) {
+            if (PauseShardingNodeManager.getInstance().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
                 return;
             }
         }
@@ -469,7 +469,7 @@ public class NonBlockingSession implements Session {
                 }
             } else {
                 source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                        "No dataNode found ,please check tables defined in schema:" + source.getSchema());
+                        "No shardingNode found ,please check tables defined in schema:" + source.getSchema());
             }
             return;
         }
@@ -586,10 +586,10 @@ public class NonBlockingSession implements Session {
         PlanUtil.checkTablesPrivilege(source, node, ast);
         node = MyOptimizer.optimize(node);
 
-        if (PauseDatanodeManager.getInstance().getIsPausing().get() &&
-                !PauseDatanodeManager.getInstance().checkTarget(target) &&
-                PauseDatanodeManager.getInstance().checkReferedTableNodes(node.getReferedTableNodes())) {
-            if (PauseDatanodeManager.getInstance().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
+        if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
+                !PauseShardingNodeManager.getInstance().checkTarget(target) &&
+                PauseShardingNodeManager.getInstance().checkReferedTableNodes(node.getReferedTableNodes())) {
+            if (PauseShardingNodeManager.getInstance().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
                 return;
             }
         }
@@ -685,7 +685,7 @@ public class NonBlockingSession implements Session {
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null ||
                 nodes[0].getName().equals("")) {
             source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                    "No dataNode found ,please check tables defined in schema:" + source.getSchema());
+                    "No shardingNode found ,please check tables defined in schema:" + source.getSchema());
             return;
         }
         LockTablesHandler handler = new LockTablesHandler(this, rrs);
@@ -758,22 +758,17 @@ public class NonBlockingSession implements Session {
     public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needClose) {
         if (rrn != null) {
             BackendConnection c = target.remove(rrn);
-            if (c != null) {
-                if (debug) {
-                    LOGGER.debug("release connection " + c);
+            if (c != null && !c.isClosed()) {
+                if (source.isFlowControlled()) {
+                    releaseConnectionFromFlowCntrolled(c);
                 }
-                if (!c.isClosed()) {
-                    if (source.isFlowControlled()) {
-                        releaseConnectionFromFlowCntrolled(c);
-                    }
-                    if (c.isAutocommit()) {
-                        c.release();
-                    } else if (needClose) {
-                        //c.rollback();
-                        c.close("the need to be closed");
-                    } else {
-                        c.release();
-                    }
+                if (c.isAutocommit()) {
+                    c.release();
+                } else if (needClose) {
+                    //c.rollback();
+                    c.close("the need to be closed");
+                } else {
+                    c.release();
                 }
             }
         }
@@ -786,13 +781,9 @@ public class NonBlockingSession implements Session {
             if (theCon == con) {
                 iterator.remove();
                 con.release();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("release connection " + con);
-                }
                 break;
             }
         }
-
     }
 
     public void waitFinishConnection(RouteResultsetNode rrn) {
@@ -862,14 +853,11 @@ public class NonBlockingSession implements Session {
         }
 
         for (Entry<RouteResultsetNode, BackendConnection> en : toKilled.entrySet()) {
-            KillConnectionHandler kill = new KillConnectionHandler(
-                    en.getValue(), this);
+            KillConnectionHandler kill = new KillConnectionHandler(en.getValue(), this);
             ServerConfig conf = DbleServer.getInstance().getConfig();
-            ShardingNode dn = conf.getShardingNodes().get(
-                    en.getKey().getName());
+            ShardingNode dn = conf.getShardingNodes().get(en.getKey().getName());
             try {
-                dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
-                        kill, en.getKey());
+                dn.getConnectionFromSameSource(en.getValue().getSchema(), en.getValue(), kill, en.getKey());
             } catch (Exception e) {
                 LOGGER.info("get killer connection failed for " + en.getKey(), e);
                 kill.connectionError(e, null);
@@ -915,7 +903,7 @@ public class NonBlockingSession implements Session {
                 ServerConfig conf = DbleServer.getInstance().getConfig();
                 ShardingNode dn = conf.getShardingNodes().get(node.getName());
                 try {
-                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
+                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());
                     newConn.setSession(this);
                     if (!newConn.setResponseHandler(queryHandler)) {
@@ -949,7 +937,7 @@ public class NonBlockingSession implements Session {
                 LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
                 return true;
             }
-
+            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
             return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
         } else {
             LOGGER.info("Hint ddl do not update the meta");

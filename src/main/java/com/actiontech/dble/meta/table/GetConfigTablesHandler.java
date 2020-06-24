@@ -59,8 +59,8 @@ public class GetConfigTablesHandler extends GetNodeTablesHandler {
                 continue;
             }
             metaHandler.handleTable(shardingNode, table, false, null);
-            String tableId = "DataNode[" + shardingNode + "]:Table[" + table + "]";
-            String warnMsg = "Can't get table " + table + "'s config from DataNode:" + shardingNode + "! Maybe the table is not initialized!";
+            String tableId = "sharding_node[" + shardingNode + "]:Table[" + table + "]";
+            String warnMsg = "Can't get table " + table + "'s config from shardingNode:" + shardingNode + "! Maybe the table is not initialized!";
             LOGGER.warn(warnMsg);
             AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
             ToResolveContainer.TABLE_LACK.add(tableId);

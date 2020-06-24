@@ -10,8 +10,8 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.AuthPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -32,7 +32,7 @@ public class ServerUserAuthenticator extends FrontendAuthenticator {
     }
 
     protected void setConnProperties(AuthPacket auth) {
-        Pair<String, String> user = new Pair<>(auth.getUser(), auth.getTenant());
+        UserName user = new UserName(auth.getUser(), auth.getTenant());
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
         ServerConnection sc = (ServerConnection) source;
         sc.setUserConfig((ServerUserConfig) userConfig);
@@ -49,7 +49,7 @@ public class ServerUserAuthenticator extends FrontendAuthenticator {
             sc.setSchema(auth.getDatabase());
             sc.initCharsetIndex(auth.getCharsetIndex());
             sc.setHandler(new ShardingUserCommandHandler(sc));
-            sc.setMultStatementAllow(auth.isMultStatementAllow());
+            sc.setMultiStatementAllow(auth.isMultStatementAllow());
             sc.setClientFlags(auth.getClientFlags());
             boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
             boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;

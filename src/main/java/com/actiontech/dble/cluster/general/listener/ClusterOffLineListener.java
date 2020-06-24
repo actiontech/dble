@@ -18,7 +18,7 @@ import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +84,7 @@ public class ClusterOffLineListener implements Runnable {
                 if (pauseInfo.getFrom().equals(serverId)) {
                     needRelease = true;
                 }
-            } else if (PauseDatanodeManager.getInstance().getIsPausing().get()) {
+            } else if (PauseShardingNodeManager.getInstance().getIsPausing().get()) {
                 needRelease = true;
             }
             if (needRelease) {
@@ -152,7 +152,7 @@ public class ClusterOffLineListener implements Runnable {
             } else {
                 LOGGER.info("rewrite server wait for online status inited");
             }
-            return true;
+            return init;
         } catch (Exception e) {
             LOGGER.warn("rewrite server online status failed: ", e);
             //alert

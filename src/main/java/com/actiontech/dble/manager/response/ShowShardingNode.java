@@ -7,12 +7,12 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -28,10 +28,13 @@ import com.actiontech.dble.util.TimeUtil;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 /**
- * ShowDataNode
+ * ShowShardingNode
  *
  * @author mycat
  * @author mycat
@@ -53,7 +56,7 @@ public final class ShowShardingNode {
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("DBGROUP", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("DB_GROUP", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SCHEMA_EXISTS", Fields.FIELD_TYPE_VAR_STRING);
@@ -107,7 +110,7 @@ public final class ShowShardingNode {
                 keys.addAll(sc.getAllShardingNodes());
             }
         }
-        Collections.sort(keys, new Comparator<String>() {
+        keys.sort(new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
                 Pair<String, Integer> p1 = PairUtil.splitIndex(o1, '[', ']');
@@ -138,7 +141,7 @@ public final class ShowShardingNode {
 
     private static RowDataPacket getRow(ShardingNode node, String charset) {
         PhysicalDbGroup pool = node.getDbGroup();
-        PhysicalDbInstance ds = pool.getWriteSource();
+        PhysicalDbInstance ds = pool.getWriteDbInstance();
         if (ds != null) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(node.getName(), charset));
@@ -146,13 +149,13 @@ public final class ShowShardingNode {
                     node.getDbGroup().getGroupName() + '/' + node.getDatabase(),
                     charset));
             row.add(StringUtil.encode(node.isSchemaExists() ? "true" : "false", charset));
-            int active = ds.getActiveCountForSchema(node.getDatabase());
-            int idle = ds.getIdleCountForSchema(node.getDatabase());
+            int active = ds.getActiveConnections(node.getDatabase());
+            int idle = ds.getIdleConnections(node.getDatabase());
             row.add(IntegerUtil.toBytes(active));
             row.add(IntegerUtil.toBytes(idle));
-            row.add(IntegerUtil.toBytes(ds.getSize()));
-            row.add(LongUtil.toBytes(ds.getExecuteCountForSchema(node.getDatabase())));
-            long recoveryTime = pool.getWriteSource().getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
+            row.add(IntegerUtil.toBytes(ds.getConfig().getMaxCon()));
+            row.add(LongUtil.toBytes(0));
+            long recoveryTime = ds.getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
             row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));
             return row;
         } else {

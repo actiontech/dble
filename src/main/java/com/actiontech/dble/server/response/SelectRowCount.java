@@ -2,7 +2,10 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
+import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.LongUtil;
 

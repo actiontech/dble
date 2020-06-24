@@ -11,6 +11,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 
 import java.util.*;
 
@@ -133,6 +134,11 @@ public class MergeNode extends PlanNode {
                 maxChildHeight = childHeight;
         }
         return maxChildHeight + 1;
+    }
+
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        return null;
     }
 
     public void setComeInFields(List<Item> comeInFields) {

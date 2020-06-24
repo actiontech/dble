@@ -5,34 +5,39 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
-import com.actiontech.dble.plan.common.ptr.StringPtr;
+import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/delete.html
  *
  * @author huqing.yan
  */
-public class DruidDeleteParser extends DefaultDruidParser {
+public class DruidDeleteParser extends DruidModifyParser {
+
+    protected static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `Complex Delete Syntax` is not supported!";
+
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
@@ -44,14 +49,34 @@ public class DruidDeleteParser extends DefaultDruidParser {
             tableSource = fromSource;
         }
         if (tableSource instanceof SQLJoinTableSource) {
-            StringPtr noShardingNode = new StringPtr(null);
-            Set<String> schemas = new HashSet<>();
-            if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, stmt, schemaName, schemas, noShardingNode)) {
-                String msg = "DELETE query with multiple tables is not supported, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
-                throw new SQLNonTransientException(msg);
-            } else {
-                return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+            if (visitor.getSubQueryList().size() > 0) {
+                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
             }
+
+            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList());
+
+            boolean isAllGlobal = true;
+            for (SchemaInfo schemaInfo : schemaInfos) {
+                BaseTableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+                if (tc == null || !(tc instanceof GlobalTableConfig)) {
+                    isAllGlobal = false;
+                    break;
+                }
+            }
+
+            Collection<String> routeShardingNodes;
+            if (isAllGlobal) {
+                routeShardingNodes = checkForMultiNodeGlobal(schemaInfos);
+            } else {
+                //try to route to single Node for each table
+                routeShardingNodes = checkForSingleNodeTable(rrs);
+            }
+
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+            rrs.setFinishedRoute(true);
+            return schema;
+
         } else {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
@@ -60,17 +85,13 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
+            BaseTableConfig tc = schema.getTables().get(schemaInfo.getTable());
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+
             if (visitor.getSubQueryList().size() > 0) {
-                StringPtr noShardingNode = new StringPtr(null);
-                Set<String> schemas = new HashSet<>();
-                if (!SchemaUtil.isNoSharding(sc, deleteTableSource, stmt, stmt, schemaInfo.getSchema(), schemas, noShardingNode)) {
-                    String msg = "DELETE query with sub-query  is not supported, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
-                    throw new SQLNonTransientException(msg);
-                } else {
-                    return routeToNoSharding(schema, rrs, schemas, noShardingNode);
-                }
+                routeForModifySubQueryList(rrs, tc, visitor, schema);
+                return schema;
             }
             String tableName = schemaInfo.getTable();
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
@@ -78,11 +99,10 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);
                 return schema;
             }
-            TableConfig tc = schema.getTables().get(tableName);
             checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
 
-            if (tc.isGlobalTable()) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), tc.isGlobalTable());
+            if (tc instanceof GlobalTableConfig) {
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
                 rrs.setFinishedRoute(true);
                 return schema;
             }
@@ -95,4 +115,13 @@ public class DruidDeleteParser extends DefaultDruidParser {
     }
 
 
+    @Override
+    SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
+        return null;
+    }
+
+    @Override
+    int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException {
+        return 0;
+    }
 }

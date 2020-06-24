@@ -22,7 +22,6 @@ import com.actiontech.dble.singleton.CacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * company where id=(select company_id from customer where id=3); the one which
- * return data (id) is the data node to store child table's records
+ * return data (id) is the shardingNode to store child table's records
  *
  * @author wuzhih, huqing.yan
  */
@@ -53,7 +52,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         this.session = session;
     }
 
-    public String execute(String schema, ArrayList<String> shardingNodes) throws ConnectionException {
+    public String execute(String schema, List<String> shardingNodes) throws ConnectionException {
         String key = schema + ":" + sql;
         CachePool cache = CacheService.getCachePoolByName("ER_SQL2PARENTID");
         if (cache != null) {
@@ -77,7 +76,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
             ShardingNode mysqlDN = DbleServer.getInstance().getConfig().getShardingNodes().get(dn);
             try {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("execute in data_node " + dn);
+                    LOGGER.debug("execute in shardingNode " + dn);
                 }
                 RouteResultsetNode node = new RouteResultsetNode(dn, ServerParse.SELECT, sql);
                 node.setRunOnSlave(false); // get child node from master
@@ -212,7 +211,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                 lock.unlock();
             }
         } else {
-            LOGGER.info("find multi data nodes for child table store, sql is:  " + sql);
+            LOGGER.info("find multi shardingNodes for child table store, sql is:  " + sql);
         }
         return false;
     }

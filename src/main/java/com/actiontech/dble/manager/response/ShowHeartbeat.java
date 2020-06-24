@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -73,7 +73,7 @@ public final class ShowHeartbeat {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("RS_MESSAGE ", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -112,9 +112,9 @@ public final class ShowHeartbeat {
         List<RowDataPacket> list = new LinkedList<>();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
-        Map<String, PhysicalDbGroup> dataHosts = conf.getDbGroups();
-        for (PhysicalDbGroup pool : dataHosts.values()) {
-            for (PhysicalDbInstance ds : pool.getAllDataSources()) {
+        Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
+        for (PhysicalDbGroup pool : dbGroups.values()) {
+            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
                 MySQLHeartbeat hb = ds.getHeartbeat();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(ds.getName().getBytes());

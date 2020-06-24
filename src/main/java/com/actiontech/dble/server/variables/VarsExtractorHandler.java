@@ -28,7 +28,7 @@ public class VarsExtractorHandler {
     private Condition done;
     private Map<String, PhysicalDbGroup> dbGroups;
     private volatile SystemVariables systemVariables = null;
-    private PhysicalDbInstance usedDataource = null;
+    private PhysicalDbInstance usedDbInstance = null;
 
     public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
         this.dbGroups = dbGroups;
@@ -39,22 +39,22 @@ public class VarsExtractorHandler {
 
     public SystemVariables execute() {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-        PhysicalDbInstance ds = getPhysicalDatasource();
-        this.usedDataource = ds;
+        PhysicalDbInstance ds = getPhysicalDbInstance();
+        this.usedDbInstance = ds;
         if (ds != null) {
             OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
-            LOGGER.warn("No Data host is alive, server can not get 'show variables' result");
+            LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
         }
         return systemVariables;
     }
 
-    private PhysicalDbInstance getPhysicalDatasource() {
+    private PhysicalDbInstance getPhysicalDbInstance() {
         PhysicalDbInstance ds = null;
         for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-            PhysicalDbInstance dsTest = dbGroup.getWriteSource();
+            PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
             if (dsTest.isTestConnSuccess()) {
                 ds = dsTest;
             }
@@ -64,7 +64,7 @@ public class VarsExtractorHandler {
         }
         if (ds == null) {
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getAllActiveDataSources()) {
+                for (PhysicalDbInstance dsTest : dbGroup.getAllActiveDbInstances()) {
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;
@@ -112,11 +112,11 @@ public class VarsExtractorHandler {
         }
     }
 
-    public PhysicalDbInstance getUsedDataource() {
-        return usedDataource;
+    public PhysicalDbInstance getUsedDbInstance() {
+        return usedDbInstance;
     }
 
-    public void setUsedDataource(PhysicalDbInstance usedDataource) {
-        this.usedDataource = usedDataource;
+    public void setUsedDbInstance(PhysicalDbInstance usedDbInstance) {
+        this.usedDbInstance = usedDbInstance;
     }
 }

@@ -7,19 +7,21 @@ package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
+import com.actiontech.dble.backend.pool.PoolConfig;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +38,10 @@ import java.nio.channels.SocketChannel;
 public abstract class FrontendConnection extends AbstractConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendConnection.class);
+    private static final long AUTH_TIMEOUT = 15 * 1000L;
 
     protected byte[] seed;
-    protected Pair<String, String> user;
+    protected UserName user;
     private long clientFlags;
     protected String schema;
 
@@ -47,6 +50,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected FrontendQueryHandler queryHandler;
     protected String executeSql;
+    protected final long idleTimeout = PoolConfig.DEFAULT_IDLE_TIMEOUT;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -115,7 +119,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.isAuthenticated = authenticated;
     }
 
-    public Pair<String, String> getUser() {
+    public UserName getUser() {
         return user;
     }
 
@@ -131,16 +135,8 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.executeSql = executeSql;
     }
 
-    public void setUser(Pair<String, String> user) {
+    public void setUser(UserName user) {
         this.user = user;
-    }
-
-    public String getUserInfo() {
-        String userInfo = user.getKey();
-        if (user.getValue() != null) {
-            userInfo += ":" + user.getValue();
-        }
-        return userInfo;
     }
 
 
@@ -151,6 +147,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     public String getSchema() {
         return schema;
     }
+
     public void initCharsetIndex(int ci) {
         String name = CharsetUtil.getCharset(ci);
         if (name != null) {
@@ -229,7 +226,16 @@ public abstract class FrontendConnection extends AbstractConnection {
     public abstract void startProcess();
 
     protected abstract void markFinished();
+
     protected abstract void setSchema(String schema);
+
+    public boolean isIdleTimeout() {
+        if (isAuthenticated) {
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
+        } else {
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
+        }
+    }
 
     @Override
     public void register() throws IOException {

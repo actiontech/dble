@@ -1,34 +1,36 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.ERTable;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -68,7 +70,7 @@ public final class RollbackConfig {
 
     private static boolean rollbackWithCluster(ManagerConnection c) {
         DistributeLock distributeLock;
-        if (ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().useZkMode()) {
             distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     SystemConfig.getInstance().getInstanceName());
         } else {
@@ -82,7 +84,7 @@ public final class RollbackConfig {
             }
             ClusterDelayProvider.delayAfterReloadLock();
             try {
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     rollbackWithZk(ZKUtils.getConnection(), c);
                 } else {
                     rollbackWithUcore(c);
@@ -247,40 +249,24 @@ public final class RollbackConfig {
             throw new Exception("Reload status error ,other client or cluster may in reload");
         }
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<String, PhysicalDbGroup> dataHosts = conf.getBackupDbGroups();
-        Map<Pair<String, String>, UserConfig> users = conf.getBackupUsers();
+        Map<String, PhysicalDbGroup> dbGroups = conf.getBackupDbGroups();
+        Map<UserName, UserConfig> users = conf.getBackupUsers();
         Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
         Map<String, ShardingNode> shardingNodes = conf.getBackupShardingNodes();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         boolean backIsFullyConfiged = conf.backIsFullyConfiged();
         if (conf.canRollbackAll()) {
-            boolean rollbackStatus = true;
-            String errorMsg = null;
             if (conf.isFullyConfigured()) {
-                for (PhysicalDbGroup dn : dataHosts.values()) {
+                for (PhysicalDbGroup dn : dbGroups.values()) {
                     dn.init();
-                    if (!dn.isInitSuccess()) {
-                        rollbackStatus = false;
-                        errorMsg = "dataHost[" + dn.getGroupName() + "] inited failure";
-                        break;
-                    }
-                }
-                // INIT FAILED
-                if (!rollbackStatus) {
-                    for (PhysicalDbGroup dn : dataHosts.values()) {
-                        dn.clearDataSources("rollbackup config");
-                        dn.stopHeartbeat();
-                    }
-                    throw new Exception(errorMsg);
                 }
             }
             final Map<String, PhysicalDbGroup> cNodes = conf.getDbGroups();
             // apply
-            boolean result = conf.rollback(users, schemas, shardingNodes, dataHosts, erRelations, backIsFullyConfiged);
+            boolean result = conf.rollback(users, schemas, shardingNodes, dbGroups, erRelations, backIsFullyConfiged);
             // stop old resource heartbeat
             for (PhysicalDbGroup dn : cNodes.values()) {
-                dn.clearDataSources("clear old config ");
-                dn.stopHeartbeat();
+                dn.stop("initial failed, rollback up config");
             }
             if (!backIsFullyConfiged) {
                 for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {

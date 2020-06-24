@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity;
 
-import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ShardingNode;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ShardingNode;
+import com.actiontech.dble.config.Versions;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

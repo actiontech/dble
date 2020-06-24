@@ -52,8 +52,8 @@ public class ConfigTableMetaHandler extends GetTableMetaHandler {
     void countdown(String shardingNode, Set<String> remainingTables) {
         if (remainingTables != null && remainingTables.size() > 0) {
             for (String table : remainingTables) {
-                String tableId = "DataNode[" + shardingNode + "]:Table[" + table + "]";
-                String warnMsg = "Can't get table " + table + "'s config from DataNode:" + shardingNode + "! Maybe the table is not initialized!";
+                String tableId = "sharding_node[" + shardingNode + "]:Table[" + table + "]";
+                String warnMsg = "Can't get table " + table + "'s config from shardingNode:" + shardingNode + "! Maybe the table is not initialized!";
                 logger.warn(warnMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_LACK.add(tableId);

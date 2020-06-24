@@ -10,11 +10,11 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.FrontendConnection;
@@ -39,7 +39,6 @@ import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
@@ -61,7 +60,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ServerConnection extends FrontendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
-    private static final long AUTH_TIMEOUT = 15 * 1000L;
+
     private volatile int txIsolation;
     private volatile boolean autocommit;
     private volatile boolean txStarted;
@@ -79,11 +78,10 @@ public class ServerConnection extends FrontendConnection {
     private FrontendPrepareHandler prepareHandler;
     private LoadDataInfileHandler loadDataInfileHandler;
     private boolean sessionReadOnly = false;
-    private volatile boolean multStatementAllow = false;
+    private volatile boolean multiStatementAllow = false;
     private ServerUserConfig userConfig;
 
-    public ServerConnection(NetworkChannel channel)
-            throws IOException {
+    public ServerConnection(NetworkChannel channel) throws IOException {
         super(channel);
 
         this.handler = new ServerUserAuthenticator(this);
@@ -119,16 +117,6 @@ public class ServerConnection extends FrontendConnection {
 
     public void setUserConfig(ServerUserConfig userConfig) {
         this.userConfig = userConfig;
-    }
-
-    @Override
-    public boolean isIdleTimeout() {
-        if (isAuthenticated) {
-            return super.isIdleTimeout();
-        } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
-                    lastReadTime) + AUTH_TIMEOUT;
-        }
     }
 
     public int getTxIsolation() {
@@ -216,14 +204,13 @@ public class ServerConnection extends FrontendConnection {
         this.loadDataInfileHandler = loadDataInfileHandler;
     }
 
-    public boolean isMultStatementAllow() {
-        return multStatementAllow;
+    public boolean isMultiStatementAllow() {
+        return multiStatementAllow;
     }
 
-    public void setMultStatementAllow(boolean multStatementAllow) {
-        this.multStatementAllow = multStatementAllow;
+    public void setMultiStatementAllow(boolean multiStatementAllow) {
+        this.multiStatementAllow = multiStatementAllow;
     }
-
 
     public void setPrepareHandler(FrontendPrepareHandler prepareHandler) {
         this.prepareHandler = prepareHandler;
@@ -253,7 +240,7 @@ public class ServerConnection extends FrontendConnection {
         AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
         authSwitchResponse.read(data);
         changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
-        String errMsg = AuthUtil.authority(this, new Pair<>(changeUserPacket.getUser(), changeUserPacket.getTenant()), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
+        String errMsg = AuthUtil.authority(this, new UserName(changeUserPacket.getUser(), changeUserPacket.getTenant()), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
         byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
         if (errMsg == null) {
             changeUserSuccess(changeUserPacket, packetId);
@@ -263,7 +250,7 @@ public class ServerConnection extends FrontendConnection {
     }
 
     private void changeUserSuccess(ChangeUserPacket newUser, byte packetId) {
-        Pair<String, String> user = new Pair<>(newUser.getUser(), newUser.getTenant());
+        UserName user = new UserName(newUser.getUser(), newUser.getTenant());
         this.setUser(user);
         this.setUserConfig((ServerUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user));
         this.setSchema(newUser.getDatabase());
@@ -273,7 +260,6 @@ public class ServerConnection extends FrontendConnection {
         ok.setPacketId(packetId);
         ok.write(this);
     }
-
 
     @Override
     protected void setRequestTime() {
@@ -411,8 +397,7 @@ public class ServerConnection extends FrontendConnection {
             if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);
             } else {
-                TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
-                if (tc == null) {
+                if (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()) == null) {
                     // check view
                     ShowCreateView.response(this, schemaInfo.getSchema(), schemaInfo.getTable());
                     return;
@@ -525,7 +510,6 @@ public class ServerConnection extends FrontendConnection {
     }
 
 
-
     public void stmtPrepare(byte[] data) {
         if (prepareHandler != null) {
             MySQLMessage mm = new MySQLMessage(data);
@@ -567,11 +551,11 @@ public class ServerConnection extends FrontendConnection {
             mm.position(5);
             int optCommand = mm.readUB2();
             if (optCommand == 0) {
-                this.multStatementAllow = true;
+                this.multiStatementAllow = true;
                 write(writeToBuffer(EOFPacket.EOF, allocate()));
                 return;
             } else if (optCommand == 1) {
-                this.multStatementAllow = false;
+                this.multiStatementAllow = false;
                 write(writeToBuffer(EOFPacket.EOF, allocate()));
                 return;
             }
@@ -845,6 +829,9 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public synchronized void close(String reason) {
+        if (isClosed) {
+            return;
+        }
         super.close(reason);
         if (session != null) {
             TsQueriesCounter.getInstance().addToHistory(session);

@@ -73,7 +73,7 @@ public class Schema implements Named {
                 name +
                 ", sqlMaxLimit=" +
                 sqlMaxLimit +
-                ", dataNode=" +
+                ", shardingNode=" +
                 shardingNode +
                 ", table=" +
                 table +

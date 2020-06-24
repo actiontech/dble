@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.meta.ReloadLogHelper;
@@ -66,7 +66,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
                 ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
-                ds.getConnection(schema, true, this, null, false);
+                ds.getConnection(schema, this, null, false);
             }
         } catch (Exception e) {
             logger.warn("can't get connection" + shardingNode, e);
@@ -166,7 +166,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNode=" +
+        return "SQLJob [shardingNode=" +
                 shardingNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";

@@ -36,7 +36,7 @@ public final class XAStateLog {
     private static final Repository FILE_REPOSITORY;
 
     static {
-        if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
             FILE_REPOSITORY = new KVStoreRepository();
         } else {
             FILE_REPOSITORY = new FileSystemRepository();
@@ -137,7 +137,7 @@ public final class XAStateLog {
                             logs.add(log);
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {

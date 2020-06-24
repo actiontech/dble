@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.loader.xml.XMLDbLoader;
 import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
-import com.actiontech.dble.config.model.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.optimizer.ERJoinChooser;
 import org.junit.Assert;
@@ -134,7 +134,7 @@ public class ConfigTest {
         PhysicalDbGroup pool = dbGroups.get("localhost2");
 
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<PhysicalDbInstance>();
-        okSources.addAll(pool.getAllActiveDataSources());
+        okSources.addAll(pool.getAllActiveDbInstances());
         PhysicalDbInstance source = pool.randomSelect(okSources, true);
 
         Assert.assertTrue(source != null);

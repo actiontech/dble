@@ -53,7 +53,7 @@ public final class Explain2Handler {
             String sql = "explain " + stmt.substring(stmt.indexOf("sql=") + 4, stmt.length()).trim();
 
             if (shardingNode.isEmpty() || sql.isEmpty()) {
-                showError(stmt, c, "dataNode or sql is empty");
+                showError(stmt, c, "shardingNode or sql is empty");
                 return;
             }
 

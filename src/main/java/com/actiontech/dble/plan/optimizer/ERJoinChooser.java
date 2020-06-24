@@ -6,14 +6,14 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.model.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;

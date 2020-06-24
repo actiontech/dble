@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.route;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.sql.ast.SQLStatement;
 

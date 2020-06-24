@@ -41,7 +41,7 @@ public final class DbGroupHAHandler {
         } else if (event.matches()) {
             DbGroupHaEvents.execute(c);
         } else {
-            c.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the dataHost command");
+            c.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the dbGroup command");
         }
 
     }

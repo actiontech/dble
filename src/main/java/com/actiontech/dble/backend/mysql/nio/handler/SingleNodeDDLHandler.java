@@ -3,6 +3,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
@@ -10,6 +11,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.DDLTraceManager;
+import com.actiontech.dble.util.StringUtil;
 
 /**
  * Created by szf on 2019/12/3.
@@ -66,8 +68,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
-            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, session.getSource());
-            //handleSpecial
+            // handleSpecial
             boolean metaInitial = session.handleSpecial(rrs, true, null);
             if (!metaInitial) {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with meta failure");
@@ -93,6 +94,26 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 session.multiStatementNextSql(multiStatementFlag);
             }
         }
+    }
+
+    private void executeMetaDataFailed(BackendConnection conn) {
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrNo(ErrorCode.ER_META_DATA);
+        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
+                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+
+        session.setBackendResponseEndTime((MySQLConnection) conn);
+        session.releaseConnectionIfSafe(conn, false);
+        session.setResponseTime(false);
+        session.multiStatementPacket(errPacket, packetId);
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
+        doSqlStat();
+        if (writeToClient.compareAndSet(false, true)) {
+            errPacket.write(session.getSource());
+        }
+        session.multiStatementNextSql(multiStatementFlag);
     }
 
     @Override

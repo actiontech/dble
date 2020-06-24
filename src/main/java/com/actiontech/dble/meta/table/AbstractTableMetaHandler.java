@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -57,7 +57,7 @@ public abstract class AbstractTableMetaHandler {
                 return;
             }
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
-            PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
+            PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
             String sql = SQL_PREFIX + "`" + tableName + "`";
             if (ds.isAlive()) {
                 OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(shardingNode, System.currentTimeMillis(), ds));
@@ -96,7 +96,7 @@ public abstract class AbstractTableMetaHandler {
             }
             if (!result.isSuccess()) {
                 //not thread safe
-                String warnMsg = "Can't get table " + tableName + "'s config from DataNode:" + shardingNode + "! Maybe the table is not initialized!";
+                String warnMsg = "Can't get table " + tableName + "'s config from shardingNode:" + shardingNode + "! Maybe the table is not initialized!";
                 logger.warn(warnMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_LACK.add(tableId);
@@ -168,7 +168,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private synchronized void consistentWarning() {
-            String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
+            String errorMsg = "Table [" + tableName + "] structure are not consistent in different shardingNode!";
             logger.warn(errorMsg);
             AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.add(schema + "." + tableName);
@@ -176,7 +176,7 @@ public abstract class AbstractTableMetaHandler {
             for (Map.Entry<String, List<String>> entry : shardingNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (String dn : entry.getValue()) {
-                    stringBuilder.append("DataNode:[").append(dn).append("]");
+                    stringBuilder.append("shardingNode:[").append(dn).append("]");
                 }
                 stringBuilder.append(":").append(entry);
                 logger.info(stringBuilder.toString());

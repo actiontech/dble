@@ -50,7 +50,7 @@ public final class ClusterHelper {
     }
 
     public static void setKV(String path, String value) throws Exception {
-        if (ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().useZkMode()) {
             ZKUtils.getConnection().create().forPath(path, value.getBytes(StandardCharsets.UTF_8));
         } else {
             ClusterGeneralConfig.getInstance().getClusterSender().setKV(path, value);
@@ -70,7 +70,7 @@ public final class ClusterHelper {
     }
 
     public static int getChildrenSize(String path) throws Exception {
-        if (ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().useZkMode()) {
             return ZKUtils.getConnection().getChildren().forPath(path).size();
         } else {
             return ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path).size();
@@ -288,7 +288,7 @@ public final class ClusterHelper {
                     }.getType());
             dbs.setDbGroup(dbGroupList);
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     syncHaStatusFromZk(gson, dbs, dbGroupList);
                 } else {
                     syncHaStatusFromCluster(gson, dbs, dbGroupList);

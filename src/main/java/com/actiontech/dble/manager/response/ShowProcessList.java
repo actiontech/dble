@@ -179,7 +179,7 @@ public final class ShowProcessList {
         // BconnID
         row.add(threadId == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(threadId));
         // User
-        row.add(StringUtil.encode(fc.getUserInfo(), charset));
+        row.add(StringUtil.encode(fc.getUser().toString(), charset));
         // Front_Host
         row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort(), charset));
         // db

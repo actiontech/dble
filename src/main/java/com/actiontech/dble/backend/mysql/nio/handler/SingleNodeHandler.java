@@ -14,11 +14,11 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
@@ -136,8 +136,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
+        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         backConnectionErr(errPacket, conn, true);
     }
@@ -164,7 +164,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        Pair<String, String> errUser = source.getUser();
+        UserName errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 
@@ -190,6 +190,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
+                if (rrs.isLoadData()) {
+                    session.getSource().getLoadDataInfileHandler().clear();
+                }
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
                     buffer = source.writeToBuffer(errPkg.toBytes(), buffer);
@@ -247,27 +250,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    protected void executeMetaDataFailed(BackendConnection conn) {
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
-                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime(false);
-        session.multiStatementPacket(errPacket, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        doSqlStat();
-        if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
-        }
-        session.multiStatementNextSql(multiStatementFlag);
-    }
-
-
     /**
      * select
      * <p>
@@ -300,7 +282,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void doSqlStat() {
+    protected void doSqlStat() {
         if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs.getStatement() != null) {
@@ -412,7 +394,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         connClosed = true;
         LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);

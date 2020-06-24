@@ -10,7 +10,7 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.TableMeta;
@@ -41,8 +41,8 @@ public final class CheckFullMetaData {
     check full @@metadata where reload_time >= '2018-01-05 11:01:04'
     check full @@metadata where reload_time <= '2018-01-05 11:01:04'
     check full @@metadata where reload_time is null
-    check full @@metadata where consistent_in_data_nodes=0
-    check full @@metadata where consistent_in_data_nodes = 1
+    check full @@metadata where consistent_in_sharding_nodes=0
+    check full @@metadata where consistent_in_sharding_nodes = 1
     check full @@metadata where consistent_in_memory=0
     check full @@metadata where consistent_in_memory = 1
     */
@@ -53,7 +53,7 @@ public final class CheckFullMetaData {
             "(('|\")((?!`)((?!(\\11)).))+(\\11)|[a-zA-Z_0-9\\-]+))?)" +
             "|(reload_time\\s*([><])?=\\s*(['\"])([0-9:\\-\\s]+)(['\"]))" +
             "|(reload_time\\s+is\\s+null)" +
-            "|((consistent_in_data_nodes|consistent_in_memory)\\s*=\\s*([01]))))?\\s*$", Pattern.CASE_INSENSITIVE);
+            "|((consistent_in_sharding_nodes|consistent_in_memory)\\s*=\\s*([01]))))?\\s*$", Pattern.CASE_INSENSITIVE);
     private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
@@ -76,7 +76,7 @@ public final class CheckFullMetaData {
         FIELDS[i] = PacketUtil.getField("table_structure", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("consistent_in_data_nodes", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("consistent_in_sharding_nodes", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("consistent_in_memory", Fields.FIELD_TYPE_LONG);
@@ -91,7 +91,7 @@ public final class CheckFullMetaData {
     public static void execute(ManagerConnection c, String stmt) {
         Matcher ma = PATTERN.matcher(stmt);
         if (!ma.matches()) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql does not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [>|<]= 'yyyy-MM-dd HH:mm:ss']] | [reload_time is null] | [consistent_in_data_nodes =0|1] | [consistent_in_memory =0|1]");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql does not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [>|<]= 'yyyy-MM-dd HH:mm:ss']] | [reload_time is null] | [consistent_in_sharding_nodes =0|1] | [consistent_in_memory =0|1]");
             return;
         }
         final ReentrantLock lock = ProxyMeta.getInstance().getTmManager().getMetaLock();
@@ -329,7 +329,7 @@ public final class CheckFullMetaData {
         List<RowDataPacket> list = new ArrayList<>();
         Set<String> checkFilter;
         boolean checkValue = filterValue.equals("1");
-        if (filterKey.equals("consistent_in_data_nodes")) {
+        if (filterKey.equals("consistent_in_sharding_nodes")) {
             checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS;
         } else {
             checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY;

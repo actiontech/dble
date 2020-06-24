@@ -8,8 +8,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.TableMeta;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractSchemaMetaHandler {
     protected final ReloadLogHelper logger;
-    //shard-DataNode-Set when the set to be count down into the empty,means that all the dataNode have finished
+    //shard-ShardingNode-Set when the set to be count down into the empty,means that all the shardingNode have finished
     private volatile Set<String> shardDNSet = new HashSet<>();
     //defaultDNflag  has no default Node/default Node has no table/ default Node table return finish ---- false
     // sharding has default Node & default Node has not return yet  ---- true
@@ -53,7 +53,7 @@ public abstract class AbstractSchemaMetaHandler {
 
     void countDownSingleTable() {
         if (defaultDNflag.compareAndSet(true, false)) {
-            logger.info("single dataNode countdown[" + schema + "]");
+            logger.info("single shardingNode countdown[" + schema + "]");
             countDown();
         }
     }
@@ -87,10 +87,10 @@ public abstract class AbstractSchemaMetaHandler {
 
         // tables in config
         Map<String, Set<String>> shardingNodeMap = new HashMap<>();
-        for (Map.Entry<String, TableConfig> entry : filterConfigTables().entrySet()) {
+        for (Map.Entry<String, BaseTableConfig> entry : filterConfigTables().entrySet()) {
             existTable = true;
             String tableName = entry.getKey();
-            TableConfig tbConfig = entry.getValue();
+            BaseTableConfig tbConfig = entry.getValue();
             for (String shardingNode : tbConfig.getShardingNodes()) {
                 Set<String> tables = shardingNodeMap.get(shardingNode);
                 if (tables == null) {
@@ -102,7 +102,7 @@ public abstract class AbstractSchemaMetaHandler {
             }
         }
 
-        logger.infoList("try to execute show create table in [" + schema + "] dataNodes:", shardDNSet);
+        logger.infoList("try to execute show create table in [" + schema + "] shardingNode:", shardDNSet);
         ConfigTableMetaHandler tableHandler = new ConfigTableMetaHandler(this, schema, selfNode, logger.isReload());
         tableHandler.execute(shardingNodeMap);
         if (!existTable) {
@@ -117,8 +117,8 @@ public abstract class AbstractSchemaMetaHandler {
         return showTablesHandler.getTables();
     }
 
-    private Map<String, TableConfig> filterConfigTables() {
-        Map<String, TableConfig> newReload = new HashMap<>();
+    private Map<String, BaseTableConfig> filterConfigTables() {
+        Map<String, BaseTableConfig> newReload = new HashMap<>();
         if (filterTables == null) {
             newReload = schemaConfig.getTables();
         } else {
@@ -158,7 +158,7 @@ public abstract class AbstractSchemaMetaHandler {
 
 
     void countDownShardTable(String shardingNode) {
-        logger.info("shard dataNode count down[" + schema + "][" + shardingNode + "] ");
+        logger.info("shardingNode count down[" + schema + "][" + shardingNode + "] ");
         if (countDownShardDN(shardingNode)) {
             long version = System.currentTimeMillis();
             for (Map.Entry<String, Map<String, List<String>>> tablesStruct : tablesStructMap.entrySet()) {
@@ -188,7 +188,7 @@ public abstract class AbstractSchemaMetaHandler {
                                 ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                     }
 
-                    String tableDetailId = "DataNode[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
+                    String tableDetailId = "sharding_node[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
                     if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId),
                                 ToResolveContainer.TABLE_LACK, tableId);
@@ -197,14 +197,14 @@ public abstract class AbstractSchemaMetaHandler {
                     handleSingleMetaData(tableMeta);
                 }
             }
-            logger.info("shard dataNode finish countdown to schema [" + schema + "]");
+            logger.info("shardingNode finish countdown to schema [" + schema + "]");
             countDown();
         }
 
     }
 
     private synchronized void consistentWarning(String tableName, Map<String, List<String>> tableStruct) {
-        String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
+        String errorMsg = "Table [" + tableName + "] structure are not consistent in different shardingNode!";
         logger.warn(errorMsg);
         AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
         ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.add(schema + "." + tableName);
@@ -212,7 +212,7 @@ public abstract class AbstractSchemaMetaHandler {
         for (Map.Entry<String, List<String>> entry : tableStruct.entrySet()) {
             StringBuilder stringBuilder = new StringBuilder("{");
             for (String dn : entry.getValue()) {
-                stringBuilder.append("DataNode:[").append(dn).append("]");
+                stringBuilder.append("shardingNode:[").append(dn).append("]");
             }
             stringBuilder.append("}_Struct:").append(entry.getKey());
             logger.info(stringBuilder.toString());

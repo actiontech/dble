@@ -12,7 +12,9 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.actiontech.dble.config.ErrorCode.ER_SP_DOES_NOT_EXIST;
 
@@ -186,7 +188,7 @@ public class SavePointHandler extends MultiNodeHandler {
     @Override
     public void connectionClose(final BackendConnection conn, final String reason) {
         LOGGER.warn("backend connection closed:" + reason + ", conn info:" + conn);
-        String errMsg = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        String errMsg = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(errMsg);
         RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();

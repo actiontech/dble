@@ -7,15 +7,19 @@ package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
+import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 import com.alibaba.druid.sql.ast.SQLHint;
 
 import java.sql.SQLNonTransientException;
@@ -71,7 +75,7 @@ public class TableNode extends PlanNode {
             throw new RuntimeException("schema " + this.schema + " doesn't exist!");
         }
         this.tableMeta = metaManager.getSyncTableMeta(this.schema, this.tableName);
-        TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
+        BaseTableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
         if (this.tableMeta == null) {
             String errorMsg = "table " + this.tableName + " doesn't exist!";
             if (tableConfig != null || schemaConfig.getShardingNode() != null) {
@@ -83,7 +87,7 @@ public class TableNode extends PlanNode {
         if (tableConfig == null) {
             this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getShardingNode())));
         } else {
-            if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE && !tableConfig.isNoSharding()) {
+            if (!(tableConfig instanceof GlobalTableConfig) && !(tableConfig instanceof SingleTableConfig)) {
                 this.unGlobalTableCount = 1;
             }
             this.setNoshardNode(new HashSet<>(tableConfig.getShardingNodes()));
@@ -125,6 +129,32 @@ public class TableNode extends PlanNode {
             }
         }
 
+    }
+
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        if (columnsSelected.get(index) instanceof ItemBasicConstant) {
+            return new RouteTableConfigInfo(schema, null, null, columnsSelected.get(index));
+        } else {
+            BaseTableConfig info = DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(tableName);
+            if (info instanceof ShardingTableConfig) {
+                ShardingTableConfig shardingTableConfig = (ShardingTableConfig) info;
+                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                    if (shardingTableConfig.getShardingColumn().equalsIgnoreCase(columnsSelected.get(index).getItemName())) {
+                        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
+                                getSchemas().get(schema).getTables().get(tableName), alias, null);
+                    }
+                } else {
+                    if (shardingTableConfig.getShardingColumn().equals(columnsSelected.get(index).getItemName())) {
+                        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
+                                getSchemas().get(schema).getTables().get(tableName), alias, null);
+                    }
+                }
+            } else {
+                return null;
+            }
+        }
+        return null;
     }
 
     @Override

@@ -89,7 +89,7 @@ public class TestSchemasTask extends Thread {
                     }
                     String nodeName = nodes.remove(schema);
                     if (nodeName != null) {
-                        String key = "DataHost[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
+                        String key = "dbGroup[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],shardingNode[" + nodeName + "],schema[" + schema + "]";
                         LOGGER.info("SelfCheck### test " + key + " database connection success ");
                     }
                 }

@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!DOCTYPE dble:db SYSTEM "db.dtd">
+<dble:db xmlns:dble="http://dble.cloud/" version="4.0">
+    <dbGroup name="dbGroup1" rwSplitMode="2" delayThreshold="100">
+        <heartbeat>show slave status</heartbeat>
+        <dbInstance name="instanceM1" url="172.18.0.2:3306" user="root" password="123456" maxCon="300" minCon="10"
+                    primary="true" readWeight="1" id="xx1">
+        </dbInstance>
+        <dbInstance name="instanceS1" url="172.18.0.3:3306" user="root" password="123456" maxCon="1000" minCon="10" readWeight="2">
+            <property name="testOnCreate">false</property>
+        </dbInstance>
+        <dbInstance name="instanceS2" url="172.18.0.4:3306" user="root" password="123456" maxCon="1000" minCon="10" readWeight="2">
+            <property name="testOnCreate">false</property>
+        </dbInstance>
+    </dbGroup>
+
+    <dbGroup name="dbGroup2" rwSplitMode="0" delayThreshold="100" disableHA="true">
+        <heartbeat errorRetryCount="1" timeout="10">show slave status</heartbeat>
+        <dbInstance name="instanceM2" url="172.18.0.5:3306" user="root" password="123456" maxCon="300" minCon="10"
+                    primary="true">
+        </dbInstance>
+        <dbInstance name="instanceS3" url="172.18.0.6:3306" user="root" password="123456" maxCon="1000" minCon="10" readWeight="2">
+            <property name="testOnCreate">false</property>
+        </dbInstance>
+        <dbInstance name="instanceS4" url="172.18.0.7:3306" user="root" password="123456" maxCon="1000" minCon="10" readWeight="2">
+            <property name="testOnCreate">false</property>
+        </dbInstance>
+    </dbGroup>
+</dble:db>

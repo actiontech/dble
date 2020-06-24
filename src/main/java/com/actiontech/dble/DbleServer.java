@@ -17,9 +17,9 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
@@ -292,20 +292,17 @@ public final class DbleServer {
         }
     }
 
-
     private void initDbGroup() {
         Map<String, PhysicalDbGroup> dbGroups = this.getConfig().getDbGroups();
-        LOGGER.info("Initialize dataHost ...");
+        LOGGER.info("Initialize dbGroup ...");
         for (PhysicalDbGroup node : dbGroups.values()) {
             node.init();
-            node.startHeartbeat();
         }
     }
 
     public void reloadSystemVariables(SystemVariables sys) {
         systemVariables = sys;
     }
-
 
     public NIOProcessor nextFrontProcessor() {
         int i = ++nextFrontProcessor;
@@ -386,7 +383,7 @@ public final class DbleServer {
 
     private void initOnlineStatus() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 ZkConfig.tryDeleteOldOnline();
                 // online
                 ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
@@ -395,6 +392,7 @@ public final class DbleServer {
             }
         }
     }
+
     private void pullVarAndMeta() throws IOException {
         ProxyMetaManager tmManager = new ProxyMetaManager();
         ProxyMeta.getInstance().setTmManager(tmManager);
@@ -404,7 +402,7 @@ public final class DbleServer {
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDbGroups());
             SystemVariables newSystemVariables = handler.execute();
             if (newSystemVariables == null) {
-                throw new IOException("Can't get variables from data node");
+                throw new IOException("Can't get variables from shardingNode");
             } else {
                 systemVariables = newSystemVariables;
             }
@@ -478,11 +476,11 @@ public final class DbleServer {
             }
             outLoop:
             for (SchemaConfig schema : DbleServer.getInstance().getConfig().getSchemas().values()) {
-                for (TableConfig table : schema.getTables().values()) {
+                for (BaseTableConfig table : schema.getTables().values()) {
                     for (String shardingNode : table.getShardingNodes()) {
                         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
-                        if (participantLogEntry.compareAddress(dn.getDbGroup().getWriteSource().getConfig().getIp(), dn.getDbGroup().getWriteSource().getConfig().getPort(), dn.getDatabase())) {
-                            xaCmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
+                        if (participantLogEntry.compareAddress(dn.getDbGroup().getWriteDbInstance().getConfig().getIp(), dn.getDbGroup().getWriteDbInstance().getConfig().getPort(), dn.getDatabase())) {
+                            xaCmd.append(coordinatorLogEntry.getId(), 0, coordinatorLogEntry.getId().length() - 1);
                             xaCmd.append(".");
                             xaCmd.append(dn.getDatabase());
                             if (participantLogEntry.getExpires() != 0) {
@@ -491,7 +489,7 @@ public final class DbleServer {
                             }
                             xaCmd.append("'");
                             XARecoverHandler handler = new XARecoverHandler(needCommit, participantLogEntry);
-                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDbGroup().getWriteSource());
+                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDbGroup().getWriteDbInstance());
                             if (!handler.isSuccess()) {
                                 throw new RuntimeException("Fail to recover xa when dble start, please check backend mysql.");
                             }
@@ -521,7 +519,7 @@ public final class DbleServer {
      * covert the collection to array
      **/
     private CoordinatorLogEntry[] getCoordinatorLogEntries() {
-        Repository fileRepository = ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
+        Repository fileRepository = ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode() ? new KVStoreRepository() : new FileSystemRepository();
         Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries(true);
         fileRepository.close();
         if (allCoordinatorLogEntries == null) {

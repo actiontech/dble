@@ -19,7 +19,7 @@ public final class ClusterPathUtil {
 
     public static final String SEPARATOR = "/";
 
-    public static final String BASE_PATH = ClusterConfig.getInstance().getRootPath() + SEPARATOR + ClusterConfig.getInstance().getClusterID() + SEPARATOR;
+    public static final String BASE_PATH = ClusterConfig.getInstance().getRootPath() + SEPARATOR + ClusterConfig.getInstance().getClusterId() + SEPARATOR;
 
 
     //depth:2,conf_base_path: base_path/conf/

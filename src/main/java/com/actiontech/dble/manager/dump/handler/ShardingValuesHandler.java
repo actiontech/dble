@@ -1,5 +1,6 @@
 package com.actiontech.dble.manager.dump.handler;
 
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.manager.dump.DumpFileContext;
 import com.actiontech.dble.plan.common.ptr.LongPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
@@ -54,7 +55,7 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
     }
 
     private Integer handleShardingColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
-        AbstractPartitionAlgorithm algorithm = context.getTableConfig().getRule().getRuleAlgorithm();
+        AbstractPartitionAlgorithm algorithm = ((ShardingTableConfig) context.getTableConfig()).getFunction();
         SQLExpr expr = values.get(context.getPartitionColumnIndex());
         String shardingValue = null;
         if (expr instanceof SQLIntegerExpr) {

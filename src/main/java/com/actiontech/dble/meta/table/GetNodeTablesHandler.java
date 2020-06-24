@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -50,7 +50,7 @@ public abstract class GetNodeTablesHandler {
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol, "Table_type"};
-        PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
+        PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), ds));
             SQLJob sqlJob = new SQLJob(sql, dn.getDatabase(), resultHandler, ds);
@@ -93,7 +93,7 @@ public abstract class GetNodeTablesHandler {
             }
             if (!result.isSuccess()) {
                 //not thread safe
-                String warnMsg = "Can't show tables from DataNode:" + shardingNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from shardingNode:" + shardingNode + "! Maybe the shardingNode is not initialized!";
                 LOGGER.warn(warnMsg);
                 if (ds != null) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());

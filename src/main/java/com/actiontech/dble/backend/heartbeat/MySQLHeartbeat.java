@@ -8,8 +8,8 @@ package com.actiontech.dble.backend.heartbeat;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
-import com.actiontech.dble.statistic.DataSourceSyncRecorder;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.statistic.DbInstanceSyncRecorder;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,8 +37,8 @@ public class MySQLHeartbeat {
     private final int errorRetryCount;
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
     private final HeartbeatRecorder recorder = new HeartbeatRecorder();
-    private final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
-    private final MySQLInstance source;
+    private final DbInstanceSyncRecorder asyncRecorder = new DbInstanceSyncRecorder();
+    private final PhysicalDbInstance source;
     protected volatile int status;
     private String heartbeatSQL;
     private long heartbeatTimeout; // during the time, heart failed will ignore
@@ -48,21 +49,26 @@ public class MySQLHeartbeat {
     private volatile Integer slaveBehindMaster;
     private MySQLDetector detector;
     private volatile String message;
+    private volatile ScheduledFuture scheduledFuture;
 
-    public MySQLHeartbeat(MySQLInstance source) {
-        this.source = source;
+    public MySQLHeartbeat(PhysicalDbInstance dbInstance) {
+        this.source = dbInstance;
         this.status = INIT_STATUS;
-        this.errorRetryCount = source.getDbGroupConfig().getErrorRetryCount();
-        this.heartbeatTimeout = source.getDbGroupConfig().getHeartbeatTimeout();
-        this.heartbeatSQL = source.getDbGroupConfig().getHearbeatSQL();
+        this.errorRetryCount = dbInstance.getDbGroupConfig().getErrorRetryCount();
+        this.heartbeatTimeout = dbInstance.getDbGroupConfig().getHeartbeatTimeout();
+        this.heartbeatSQL = dbInstance.getDbGroupConfig().getHeartbeatSQL();
     }
 
     public String getMessage() {
         return message;
     }
 
-    public MySQLInstance getSource() {
+    public PhysicalDbInstance getSource() {
         return source;
+    }
+
+    public void setScheduledFuture(ScheduledFuture scheduledFuture) {
+        this.scheduledFuture = scheduledFuture;
     }
 
     public String getLastActiveTime() {
@@ -78,8 +84,13 @@ public class MySQLHeartbeat {
         isStop = false;
     }
 
-    public void stop() {
+    public void stop(String reason) {
+        if (isStop) {
+            return;
+        }
+        LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getName(), reason);
         isStop = true;
+        scheduledFuture.cancel(false);
         this.status = INIT_STATUS;
         if (detector != null && !detector.isQuit()) {
             detector.quit();
@@ -105,16 +116,13 @@ public class MySQLHeartbeat {
                 }
             }
         }
-        if (isStop) {
-            stop();
-        }
     }
 
     public void setErrorResult(String errMsg) {
         this.isChecking.set(false);
         this.message = errMsg;
         setError();
-        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
     }
 
@@ -132,7 +140,7 @@ public class MySQLHeartbeat {
                 break;
         }
         if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
             AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
         }
     }
@@ -158,7 +166,7 @@ public class MySQLHeartbeat {
                 this.status = OK_STATUS;
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop) {
@@ -231,15 +239,13 @@ public class MySQLHeartbeat {
     }
 
     public boolean isHeartBeatOK() {
-        if (status == OK_STATUS) {
+        if (status == OK_STATUS || status == INIT_STATUS) {
             return true;
-        } else if (status == INIT_STATUS) { // init or timeout->ok
-            return false;
         } else if (status == ERROR_STATUS) {
             long timeDiff = System.currentTimeMillis() - this.startErrorTime.longValue();
             if (timeDiff >= heartbeatTimeout) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("error heartbaet continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
+                    LOGGER.debug("error heartbeat continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
                 }
                 return false;
             }
@@ -249,11 +255,11 @@ public class MySQLHeartbeat {
         }
     }
 
-    public String getHeartbeatSQL() {
+    String getHeartbeatSQL() {
         return heartbeatSQL;
     }
 
-    public DataSourceSyncRecorder getAsyncRecorder() {
+    public DbInstanceSyncRecorder getAsyncRecorder() {
         return this.asyncRecorder;
     }
 }

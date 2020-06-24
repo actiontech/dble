@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.route.impl;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteStrategy;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -44,6 +44,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
             if (sqlType == ServerParse.SHOW) {
                 rrs.setStatement(origSQL);
                 rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
+                sc.getSession2().endParse();
             } else {
                 rrs = routeNormalSqlWithAST(schema, origSQL, rrs, sc, isExplain);
             }

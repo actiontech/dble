@@ -8,13 +8,13 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +45,11 @@ public final class PauseEnd {
 
     public static void resume(ManagerConnection c) {
         LOGGER.info("resume start from command");
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             try {
                 KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseShardingNodePath());
                 if (value.getValue() == null || "".equals(value.getValue())) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
+                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                     return;
                 }
 
@@ -59,20 +59,20 @@ public final class PauseEnd {
                     return;
                 }
 
-                if (!PauseDatanodeManager.getInstance().tryResume()) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
+                if (!PauseShardingNodeManager.getInstance().tryResume()) {
+                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                     return;
                 }
 
-                PauseDatanodeManager.getInstance().resumeCluster();
+                PauseShardingNodeManager.getInstance().resumeCluster();
             } catch (Exception e) {
                 LOGGER.warn(e.getMessage());
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
                 return;
             }
         } else {
-            if (!PauseDatanodeManager.getInstance().tryResume()) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
+            if (!PauseShardingNodeManager.getInstance().tryResume()) {
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                 return;
             }
         }

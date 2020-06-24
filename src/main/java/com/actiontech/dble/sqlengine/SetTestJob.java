@@ -47,8 +47,8 @@ public class SetTestJob implements ResponseHandler, Runnable {
         try {
             Map<String, PhysicalDbGroup> dbGroups = DbleServer.getInstance().getConfig().getDbGroups();
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                if (dbGroup.getWriteSource().isAlive()) {
-                    dbGroup.getWriteSource().getConnection(databaseName, true, this, null, false);
+                if (dbGroup.getWriteDbInstance().isAlive()) {
+                    dbGroup.getWriteDbInstance().getConnection(databaseName, this, null, false);
                     sendTest = true;
                     break;
                 }
@@ -150,7 +150,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNodeOrDatabase=" +
+        return "SQLJob [Database=" +
                 databaseName + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

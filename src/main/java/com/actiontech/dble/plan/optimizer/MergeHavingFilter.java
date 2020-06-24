@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 
 import java.util.ArrayList;

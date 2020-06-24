@@ -172,7 +172,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
@@ -195,8 +195,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ErrorPacket errPacket = new ErrorPacket();
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
-        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
+        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         err = errPacket;
         session.resetMultiStatementStatus();
@@ -588,6 +588,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     void handleEndPacket(byte[] data, AutoTxOperation txOperation, boolean isSuccess) {
         ServerConnection source = session.getSource();
+        if (rrs.isLoadData()) {
+            source.getLoadDataInfileHandler().clear();
+        }
+
         if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             TransactionHandler handler = new AutoCommitHandler(session, data, rrs.getNodes(), errConnection);

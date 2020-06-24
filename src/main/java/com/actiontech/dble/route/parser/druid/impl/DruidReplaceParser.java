@@ -6,15 +6,17 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -26,6 +28,7 @@ import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -62,46 +65,35 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             return schema;
         }
         if (replace.getQuery() != null) {
-            //replace into ...select with sharding not supported
-            String msg = "`INSERT ... SELECT Syntax` is not supported!";
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
+            tryRouteInsertQuery(sc, rrs, stmt, visitor, schemaInfo);
+            return schema;
         }
 
         //check the config of target table
-        TableConfig tc = schema.getTables().get(tableName);
+        BaseTableConfig tc = schema.getTables().get(tableName);
         checkTableExists(tc, schema.getName(), tableName, CheckType.INSERT);
 
         //if the target table is global table than
-        if (tc.isGlobalTable()) {
+        if (tc instanceof GlobalTableConfig) {
             String sql = rrs.getStatement();
-            if (tc.isAutoIncrement()) {
-                sql = convertReplaceSQL(schemaInfo, replace, sql, tc);
-            } else {
-                sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
-            }
+            sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             rrs.setStatement(sql);
-            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), tc.isGlobalTable());
+            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
             rrs.setFinishedRoute(true);
             return schema;
-        }
-
-        if (tc.isAutoIncrement()) {
-            String sql = convertReplaceSQL(schemaInfo, replace, rrs.getStatement(), tc);
-            rrs.setStatement(sql);
-            SQLStatementParser parser = new MySqlStatementParser(sql);
-            stmt = parser.parseStatement();
-            replace = (SQLReplaceStatement) stmt;
-        }
-
-        // childTable can be route in this part
-        if (tc.getParentTC() != null) {
+        } else if (tc instanceof ChildTableConfig) { // insert childTable will finished router while parser
+            ChildTableConfig child = (ChildTableConfig) tc;
+            if (child.getIncrementColumn() != null) {
+                replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, child.getIncrementColumn());
+            }
             parserChildTable(schemaInfo, rrs, replace, sc, isExplain);
             return schema;
-        }
-
-        String partitionColumn = tc.getPartitionColumn();
-        if (partitionColumn != null) {
+        } else if (tc instanceof ShardingTableConfig) {
+            ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
+            if (tableConfig.getIncrementColumn() != null) {
+                replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, tableConfig.getIncrementColumn());
+            }
+            String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiReplace(replace)) {
                 parserBatchInsert(schemaInfo, rrs, partitionColumn, replace);
             } else {
@@ -115,6 +107,42 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return schema;
     }
 
+    private SQLReplaceStatement genNewSqlReplaceStatement(RouteResultset rrs, SQLReplaceStatement replace, SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
+        SQLStatement stmt;
+        String sql = changeReplaceSQLByIncrement(schemaInfo, replace, rrs.getStatement(), incrementColumn);
+        rrs.setStatement(sql);
+        SQLStatementParser parser = new MySqlStatementParser(sql);
+        stmt = parser.parseStatement();
+        replace = (SQLReplaceStatement) stmt;
+        return replace;
+    }
+
+    @Override
+    SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
+        SQLReplaceStatement replace = (SQLReplaceStatement) stmt;
+        replace.getQuery().accept(visitor);
+        return replace.getQuery().getSubQuery();
+    }
+
+    @Override
+    int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException {
+        return tryGetShardingColIndex(schemaInfo, (SQLReplaceStatement) stmt, partitionColumn);
+    }
+
+    /**
+     * find the index of the key in column list
+     *
+     * @param schemaInfo      SchemaInfo
+     * @param replaceStmt     SQLReplaceStatement
+     * @param partitionColumn partitionColumn
+     * @return the index of the partition column
+     * @throws SQLNonTransientException if not find
+     */
+    private int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
+        int shardingColIndex = getShardingColIndex(schemaInfo, replaceStmt.getColumns(), partitionColumn);
+        if (shardingColIndex != -1) return shardingColIndex;
+        throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + replaceStmt);
+    }
 
     /**
      * check if the nosharding tables are Involved
@@ -122,11 +150,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
-            // table with single shardingnode and has autoIncrement property
-            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
-            if (tbConfig != null && tbConfig.isAutoIncrement()) {
-                return false;
-            }
             StringPtr noShardingNodePr = new StringPtr(noShardingNode);
             Set<String> schemas = new HashSet<>();
             if (replace.getQuery() != null) {
@@ -144,13 +167,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc) throws SQLNonTransientException {
+    private String changeReplaceSQLByIncrement(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, String incrementColumn) throws SQLNonTransientException {
         TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
             return originSql;
-
-        boolean isAutoIncrement = tc.isAutoIncrement();
 
         String tableName = schemaInfo.getTable();
 
@@ -163,17 +184,15 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         int colSize;
         // replace with no column name ：replace into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
-            if (isAutoIncrement) {
-                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
-            }
+            autoIncrement = getIncrementKeyIndex(schemaInfo, incrementColumn);
             colSize = orgTbMeta.getColumns().size();
         } else { // replace sql with  column names
-            boolean hasIncrementInSql = concatColumns(tc, isAutoIncrement, sb, columns);
+            boolean hasIncrementInSql = containsIncrementColumns(incrementColumn, sb, columns);
             colSize = columns.size();
-            if (isAutoIncrement && !hasIncrementInSql) {
-                getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
+            if (!hasIncrementInSql) {
+                getIncrementKeyIndex(schemaInfo, incrementColumn);
                 autoIncrement = columns.size();
-                sb.append(",").append(tc.getIncrementColumn());
+                sb.append(",").append(incrementColumn);
                 colSize++;
             }
             sb.append(")");
@@ -197,11 +216,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
-    private boolean concatColumns(TableConfig tc, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
+    private boolean containsIncrementColumns(String incrementColumn, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
         sb.append("(");
         boolean hasIncrementInSql = false;
         for (int i = 0; i < columns.size(); i++) {
-            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getIncrementColumn())) {
+            if (columns.get(i).toString().equalsIgnoreCase(incrementColumn)) {
                 hasIncrementInSql = true;
             }
             if (i < columns.size() - 1)
@@ -258,7 +277,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, SQLReplaceStatement replace, final ServerConnection sc, boolean isExplain) throws SQLNonTransientException {
         final SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
-        final TableConfig tc = schema.getTables().get(tableName);
+        final ChildTableConfig tc = (ChildTableConfig) (schema.getTables().get(tableName));
         //check if the childtable replace with the multi
         if (isMultiReplace(replace)) {
             String msg = "ChildTable multi insert not provided";
@@ -291,7 +310,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      *
      * @param schemaInfo  SchemaInfo
      * @param replaceStmt MySqlInsertStatement
-     * @param joinColumn     joinColumn
+     * @param joinColumn  joinColumn
      * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException if not find
      */
@@ -299,21 +318,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return tryGetShardingColIndex(schemaInfo, replaceStmt, joinColumn);
     }
 
-
-    /**
-     * find the index of the key in column list
-     *
-     * @param schemaInfo      SchemaInfo
-     * @param replaceStmt     SQLReplaceStatement
-     * @param partitionColumn partitionColumn
-     * @return the index of the partition column
-     * @throws SQLNonTransientException if not find
-     */
-    private int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
-        int shardingColIndex = getShardingColIndex(schemaInfo, replaceStmt.getColumns(), partitionColumn);
-        if (shardingColIndex != -1) return shardingColIndex;
-        throw new SQLNonTransientException("bad insert sql, sharding column/joinColumn:" + partitionColumn + " not provided," + replaceStmt);
-    }
 
     /**
      * insert into .... select .... OR insert into table() values (),(),....
@@ -334,8 +338,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, replace, partitionColumn);
         List<SQLInsertStatement.ValuesClause> valueClauseList = replace.getValuesList();
         Map<Integer, List<SQLInsertStatement.ValuesClause>> nodeValuesMap = new HashMap<>();
-        TableConfig tableConfig = schema.getTables().get(tableName);
-        AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
+        ShardingTableConfig tableConfig = (ShardingTableConfig) (schema.getTables().get(tableName));
         for (SQLInsertStatement.ValuesClause valueClause : valueClauseList) {
             if (valueClause.getValues().size() != columnNum) {
                 String msg = "bad insert sql columnSize != valueSize:" + columnNum + " != " + valueClause.getValues().size() + "values:" + valueClause;
@@ -344,7 +347,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
             String shardingValue = shardingValueToSting(expr);
-            Integer nodeIndex = algorithm.calculate(shardingValue);
+            Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // no part find for this record
             if (nodeIndex == null) {
                 String msg = "can't find any valid shardingnode :" + tableName + " -> " + partitionColumn + " -> " + shardingValue;
@@ -378,18 +381,17 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @param rrs              RouteResultset
      * @param partitionColumn  partitionColumn
      * @param replaceStatement SQLReplaceStatement
-     * @throws SQLNonTransientException if not find a valid data node
+     * @throws SQLNonTransientException if not find a valid shardingNode
      */
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
                                     SQLReplaceStatement replaceStatement) throws SQLNonTransientException {
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, replaceStatement, partitionColumn);
         SQLExpr valueExpr = replaceStatement.getValuesList().get(0).getValues().get(shardingColIndex);
         String shardingValue = shardingValueToSting(valueExpr);
-        TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
-        AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
-        Integer nodeIndex = algorithm.calculate(shardingValue);
+        ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
+        Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
         if (nodeIndex == null) {
-            String msg = "can't find any valid data node :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
+            String msg = "can't find any valid shardingNode :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
@@ -400,4 +402,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
     }
+
+
 }

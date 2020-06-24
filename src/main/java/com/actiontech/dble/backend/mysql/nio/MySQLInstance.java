@@ -1,16 +1,15 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
-import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
-import com.actiontech.dble.config.model.DbInstanceConfig;
-import com.actiontech.dble.config.model.DbGroupConfig;
+import com.actiontech.dble.config.model.db.DbGroupConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.util.PasswordAuthPlugin;
 import org.slf4j.Logger;
@@ -26,61 +25,20 @@ import java.nio.charset.StandardCharsets;
 public class MySQLInstance extends PhysicalDbInstance {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLInstance.class);
-    private final MySQLConnectionFactory factory;
+
 
     public MySQLInstance(DbInstanceConfig config, DbGroupConfig hostConfig,
                          boolean isReadNode) {
         super(config, hostConfig, isReadNode);
-        this.factory = new MySQLConnectionFactory();
+        this.heartbeat = new MySQLHeartbeat(this);
     }
 
     public MySQLInstance(MySQLInstance org) {
         super(org);
-        this.factory = new MySQLConnectionFactory();
     }
 
     @Override
-    public void createNewConnection(ResponseHandler handler, String schema) throws IOException {
-        factory.make(this, handler, schema);
-    }
-
-    private long getClientFlags(boolean isConnectWithDB) {
-        int flag = 0;
-        flag |= Capabilities.CLIENT_LONG_PASSWORD;
-        flag |= Capabilities.CLIENT_FOUND_ROWS;
-        flag |= Capabilities.CLIENT_LONG_FLAG;
-        if (isConnectWithDB) {
-            flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
-        }
-        // flag |= Capabilities.CLIENT_NO_SCHEMA;
-        // flag |= Capabilities.CLIENT_COMPRESS;
-        flag |= Capabilities.CLIENT_ODBC;
-        // flag |= Capabilities.CLIENT_LOCAL_FILES;
-        flag |= Capabilities.CLIENT_IGNORE_SPACE;
-        flag |= Capabilities.CLIENT_PROTOCOL_41;
-        flag |= Capabilities.CLIENT_INTERACTIVE;
-        // flag |= Capabilities.CLIENT_SSL;
-        flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
-        flag |= Capabilities.CLIENT_TRANSACTIONS;
-        // flag |= Capabilities.CLIENT_RESERVED;
-        flag |= Capabilities.CLIENT_SECURE_CONNECTION;
-        // client extension
-        // flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
-        // flag |= Capabilities.CLIENT_MULTI_RESULTS;
-        return flag;
-    }
-
-
-    private long getClientFlagSha(boolean isConnectWithDB) {
-        int flag = 0;
-        flag |= getClientFlags(isConnectWithDB);
-        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
-        flag |= Capabilities.CLIENT_MULTIPLE_STATEMENTS;
-        return flag;
-    }
-
-    @Override
-    public boolean testConnection() throws IOException {
+    public boolean testConnection() {
 
         boolean isConnected = true;
         Socket socket = null;
@@ -233,11 +191,40 @@ public class MySQLInstance extends PhysicalDbInstance {
         return isConnected;
     }
 
-    @Override
-    public MySQLHeartbeat createHeartBeat() {
-        return new MySQLHeartbeat(this);
+    private long getClientFlags(boolean isConnectWithDB) {
+        int flag = 0;
+        flag |= Capabilities.CLIENT_LONG_PASSWORD;
+        flag |= Capabilities.CLIENT_FOUND_ROWS;
+        flag |= Capabilities.CLIENT_LONG_FLAG;
+        if (isConnectWithDB) {
+            flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        }
+        // flag |= Capabilities.CLIENT_NO_SCHEMA;
+        // flag |= Capabilities.CLIENT_COMPRESS;
+        flag |= Capabilities.CLIENT_ODBC;
+        // flag |= Capabilities.CLIENT_LOCAL_FILES;
+        flag |= Capabilities.CLIENT_IGNORE_SPACE;
+        flag |= Capabilities.CLIENT_PROTOCOL_41;
+        flag |= Capabilities.CLIENT_INTERACTIVE;
+        // flag |= Capabilities.CLIENT_SSL;
+        flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
+        flag |= Capabilities.CLIENT_TRANSACTIONS;
+        // flag |= Capabilities.CLIENT_RESERVED;
+        flag |= Capabilities.CLIENT_SECURE_CONNECTION;
+        // client extension
+        // flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
+        // flag |= Capabilities.CLIENT_MULTI_RESULTS;
+        return flag;
     }
 
+
+    private long getClientFlagSha(boolean isConnectWithDB) {
+        int flag = 0;
+        flag |= getClientFlags(isConnectWithDB);
+        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+        flag |= Capabilities.CLIENT_MULTIPLE_STATEMENTS;
+        return flag;
+    }
 
     public void startAuthPacket(OutputStream out, HandshakeV10Packet handshake, byte[] passwordSented, String authPluginName) {
         AuthPacket authPacket = new AuthPacket();

@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -43,7 +43,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     public void execute() {
         String mysqlShowTableCol = "Tables_in_" + phyShardingNode.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
-        PhysicalDbInstance tds = phyShardingNode.getDbGroup().getWriteSource();
+        PhysicalDbInstance tds = phyShardingNode.getDbGroup().getWriteDbInstance();
         PhysicalDbInstance ds = null;
         if (tds != null) {
             if (tds.isTestConnSuccess()) {
@@ -55,7 +55,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
             SpecialSqlJob sqlJob = new SpecialSqlJob(SQL, phyShardingNode.getDatabase(), resultHandler, ds, list);
             sqlJob.run();
         } else {
-            list.add(new ErrorInfo("Backend", "WARNING", "dataNode[" + phyShardingNode.getName() + "] has no available writeHost,The table in this dataNode has not checked"));
+            list.add(new ErrorInfo("Backend", "WARNING", "shardingNode[" + phyShardingNode.getName() + "] has no available primary dbinstance,The table in this shardingNode has not checked"));
             handleFinished();
         }
     }
@@ -81,7 +81,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
-                String warnMsg = "Can't show tables from DataNode:" + phyShardingNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from shardingNode:" + phyShardingNode + "! Maybe the shardingNode is not initialized!";
                 LOGGER.warn(warnMsg);
                 handleFinished();
                 return;

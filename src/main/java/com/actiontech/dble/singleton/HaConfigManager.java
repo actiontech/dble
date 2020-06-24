@@ -180,7 +180,7 @@ public final class HaConfigManager {
                 append(" stage = ").append(status.getStage().toString()).
                 append(" finish type = \"").append(errorMsg == null ? "success" : errorMsg).append("\"");
         if (result != null) {
-            resultString.append("\n result status of dataHost :").append(result);
+            resultString.append("\n result status of dbGroup :").append(result);
         }
         if (errorMsg == null) {
             HA_LOGGER.info(resultString.toString());

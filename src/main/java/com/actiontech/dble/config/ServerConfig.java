@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
@@ -12,13 +12,15 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.config.model.ERTable;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -46,8 +48,8 @@ public class ServerConfig {
     private static final int ROLLBACK = 2;
     private static final int RELOAD_ALL = 3;
 
-    private volatile Map<Pair<String, String>, UserConfig> users;
-    private volatile Map<Pair<String, String>, UserConfig> users2;
+    private volatile Map<UserName, UserConfig> users;
+    private volatile Map<UserName, UserConfig> users2;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, SchemaConfig> schemas2;
     private volatile Map<String, ShardingNode> shardingNodes;
@@ -126,12 +128,12 @@ public class ServerConfig {
         return fullyConfigured;
     }
 
-    public Map<Pair<String, String>, UserConfig> getUsers() {
+    public Map<UserName, UserConfig> getUsers() {
         waitIfChanging();
         return users;
     }
 
-    public Map<Pair<String, String>, UserConfig> getBackupUsers() {
+    public Map<UserName, UserConfig> getBackupUsers() {
         waitIfChanging();
         return users2;
     }
@@ -196,7 +198,7 @@ public class ServerConfig {
         return fullyConfigured2;
     }
 
-    public boolean reload(Map<Pair<String, String>, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
+    public boolean reload(Map<UserName, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                           Map<String, ShardingNode> newShardingNodes, Map<String, PhysicalDbGroup> newDbGroups,
                           Map<String, PhysicalDbGroup> changeOrAddDbGroups,
                           Map<String, PhysicalDbGroup> recycleDbGroups,
@@ -225,7 +227,7 @@ public class ServerConfig {
                     reloadSchema.add(oldSchema);
                 } else {
                     if (newSchemaConfig.getShardingNode() != null) { // reload config_all
-                        //check data node and dbGroup change
+                        //check shardingNode and dbGroup change
                         List<String> strShardingNodes = Collections.singletonList(newSchemaConfig.getShardingNode());
                         if (isShardingNodeChanged(strShardingNodes, newShardingNodes)) {
                             delSchema.add(oldSchema);
@@ -252,15 +254,18 @@ public class ServerConfig {
     }
 
     private void calcTableDiffForMetaData(Map<String, ShardingNode> newShardingNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
-        for (Map.Entry<String, TableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
+        for (Map.Entry<String, BaseTableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
             String oldTable = tableEntry.getKey();
-            TableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
+            BaseTableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
             if (newTableConfig == null) {
                 delTables.add(new Pair<>(oldSchema, oldTable));
             } else {
-                TableConfig oldTableConfig = tableEntry.getValue();
-                if (!newTableConfig.getShardingNodes().equals(oldTableConfig.getShardingNodes()) ||
-                        newTableConfig.getTableType() != oldTableConfig.getTableType()) {
+                BaseTableConfig oldTableConfig = tableEntry.getValue();
+                if (newTableConfig.getClass() != oldTableConfig.getClass()) {
+                    Pair<String, String> table = new Pair<>(oldSchema, oldTable);
+                    delTables.add(table);
+                    reloadTables.add(table);
+                } else if (!newTableConfig.getShardingNodes().equals(oldTableConfig.getShardingNodes())) {
                     Pair<String, String> table = new Pair<>(oldSchema, oldTable);
                     delTables.add(table);
                     reloadTables.add(table);
@@ -312,7 +317,7 @@ public class ServerConfig {
         return status == RELOAD_ALL && users2 != null && schemas2 != null && shardingNodes2 != null && dbGroups2 != null;
     }
 
-    public boolean rollback(Map<Pair<String, String>, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
+    public boolean rollback(Map<UserName, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
                             Map<String, ShardingNode> backupShardingNodes, Map<String, PhysicalDbGroup> backupDbGroups,
                             Map<ERTable, Set<ERTable>> backupErRelations, boolean backDbGroupWithoutWR) throws SQLNonTransientException {
 
@@ -323,7 +328,7 @@ public class ServerConfig {
         return result;
     }
 
-    private boolean apply(Map<Pair<String, String>, UserConfig> newUsers,
+    private boolean apply(Map<UserName, UserConfig> newUsers,
                           Map<String, SchemaConfig> newSchemas,
                           Map<String, ShardingNode> newShardingNodes,
                           Map<String, PhysicalDbGroup> newDbGroups,
@@ -353,14 +358,15 @@ public class ServerConfig {
             } catch (Exception e) {
                 throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
             }
-            // old data host
+            // old dbGroup
             // 1 stop heartbeat
             // 2 backup
             //--------------------------------------------
             if (recycleDbGroups != null) {
                 for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
                     if (oldDbGroup != null) {
-                        oldDbGroup.stopHeartbeat();
+                        ReloadLogHelper.info("reload config, recycle old group. old active backend conn will be close", LOGGER);
+                        oldDbGroup.stop("reload config, recycle old group", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                     }
                 }
             }
@@ -370,17 +376,6 @@ public class ServerConfig {
             this.schemas2 = this.schemas;
             this.erRelations2 = this.erRelations;
             this.fullyConfigured2 = this.fullyConfigured;
-            // new data host
-            // 1 start heartbeat
-            // 2 apply the configure
-            //---------------------------------------------------
-            if (changeOrAddDbGroups != null) {
-                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
-                    if (newDbGroup != null && isFullyConfigured) {
-                        newDbGroup.startHeartbeat();
-                    }
-                }
-            }
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;
@@ -471,9 +466,9 @@ public class ServerConfig {
         for (UserConfig uc : users.values()) {
             if (uc instanceof ShardingUserConfig) {
                 ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
+                shardingUser.changeMapToLowerCase();
                 if (shardingUser.getPrivilegesConfig() != null) {
                     shardingUser.getPrivilegesConfig().changeMapToLowerCase();
-                    shardingUser.changeMapToLowerCase();
                 }
             }
         }
@@ -526,12 +521,9 @@ public class ServerConfig {
                 if (uc instanceof ShardingUserConfig) {
                     ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
                     Set<String> authSchemas = shardingUser.getSchemas();
-                    if (authSchemas == null) {
-                        throw new ConfigException("SelfCheck### User[name:" + shardingUser.getName() + ",tenant:" + shardingUser.getTenant() + "] referred schemas is empty!");
-                    }
                     for (String schema : authSchemas) {
                         if (!schemas.containsKey(schema)) {
-                            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + ",tenant:" + shardingUser.getTenant() + "] is not exist!";
+                            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schema [" + schema + "] is not exist!";
                             throw new ConfigException(errMsg);
                         }
                     }

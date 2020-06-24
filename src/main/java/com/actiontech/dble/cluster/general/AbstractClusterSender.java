@@ -11,8 +11,8 @@ import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.singleton.ProxyMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

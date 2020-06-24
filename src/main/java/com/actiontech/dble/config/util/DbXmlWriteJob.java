@@ -7,6 +7,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.singleton.HaConfigManager;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by szf on 2019/10/23.
  */
 public class DbXmlWriteJob implements Runnable {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PhysicalDbGroup.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDbGroup.class);
     private final Set<PhysicalDbGroup> changeSet;
     private final DbGroups dbGroups;
     private volatile boolean finish = false;
@@ -59,7 +60,7 @@ public class DbXmlWriteJob implements Runnable {
 
 
     private void changeHostInfo(DBGroup dbGroupBean, PhysicalDbGroup dbGroup) {
-        Map<String, PhysicalDbInstance> physicalDbInstances = dbGroup.getAllDataSourceMap();
+        Map<String, PhysicalDbInstance> physicalDbInstances = dbGroup.getAllDbInstanceMap();
         for (DBInstance dbInstanceBean : dbGroupBean.getDbInstance()) {
             PhysicalDbInstance dbInstance = physicalDbInstances.get(dbInstanceBean.getName());
             if (dbInstance != null) {

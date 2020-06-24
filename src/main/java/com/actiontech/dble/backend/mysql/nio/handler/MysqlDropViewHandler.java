@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -17,7 +18,6 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
@@ -79,8 +79,8 @@ public class MysqlDropViewHandler implements ResponseHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
+        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         backConnectionErr(errPacket, conn, conn.syncAndExecute());
     }
@@ -130,7 +130,7 @@ public class MysqlDropViewHandler implements ResponseHandler {
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        Pair<String, String> errUser = source.getUser();
+        UserName errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 

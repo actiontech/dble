@@ -7,9 +7,9 @@ package com.actiontech.dble.cluster.general.kVtoXml;
 
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
-import com.actiontech.dble.cluster.general.response.*;
 import com.actiontech.dble.cluster.general.listener.ClusterOffLineListener;
 import com.actiontech.dble.cluster.general.listener.ClusterSingleKeyListener;
+import com.actiontech.dble.cluster.general.response.*;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.model.ClusterConfig;
 
@@ -81,7 +81,7 @@ public final class ClusterToXml {
 
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
                 Thread thread5 = new Thread(dbGroupHaListener);
-                thread5.setName("DATA_HOST_HA_LISTENER");
+                thread5.setName("DB_GROUP_HA_LISTENER");
                 thread5.start();
             }
 

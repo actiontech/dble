@@ -7,36 +7,21 @@ package com.actiontech.dble.config.model.user;
 
 import com.alibaba.druid.wall.WallProvider;
 
-public class ServerUserConfig extends UserConfig {
-    private String tenant;
-    private int maxCon;
-    private WallProvider blacklist;
+public abstract class ServerUserConfig extends UserConfig {
+    private final String tenant;
+    private final WallProvider blacklist;
 
-    public ServerUserConfig(String name, String password, String strWhiteIPs) {
-        super(name, password, strWhiteIPs);
+    ServerUserConfig(UserConfig user, String tenant, WallProvider blacklist) {
+        super(user);
+        this.tenant = tenant;
+        this.blacklist = blacklist;
     }
 
     public String getTenant() {
         return tenant;
     }
 
-    public void setTenant(String tenant) {
-        this.tenant = tenant;
-    }
-
-    public int getMaxCon() {
-        return maxCon;
-    }
-
-    public void setMaxCon(int maxCon) {
-        this.maxCon = maxCon;
-    }
-
     public WallProvider getBlacklist() {
         return blacklist;
-    }
-
-    public void setBlacklist(WallProvider blacklist) {
-        this.blacklist = blacklist;
     }
 }

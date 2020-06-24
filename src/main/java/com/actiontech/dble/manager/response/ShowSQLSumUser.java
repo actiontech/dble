@@ -7,12 +7,12 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.statistic.stat.UserSqlRWStat;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
@@ -105,7 +105,7 @@ public final class ShowSQLSumUser {
         byte packetId = EOF.getPacketId();
         int i = 0;
 
-        Map<Pair<String, String>, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             i++;
             RowDataPacket row = getRow(userStat, i, c.getCharset().getResults());
@@ -135,7 +135,7 @@ public final class ShowSQLSumUser {
             return row;
         }
 
-        Pair<String, String> user = userStat.getUser();
+        UserName user = userStat.getUser();
         UserSqlRWStat rwStat = userStat.getRWStat();
         long r = rwStat.getRCount();
         long w = rwStat.getWCount();

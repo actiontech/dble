@@ -16,7 +16,7 @@ import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
 
     @Override
     public void notifyProcess(KvBean configValue) throws Exception {
-        LOGGER.info("get key in PauseDataNodeResponse:" + configValue.getKey() + "   " + configValue.getValue());
+        LOGGER.info("get key in PauseShardingNodeResponse:" + configValue.getKey() + "   " + configValue.getValue());
         if (!DELETE.equals(configValue.getChangeType())) {
             if (configValue.getKey().equals(ClusterPathUtil.getPauseShardingNodePath()) || ClusterPathUtil.getPauseResumePath().equals(configValue.getKey())) {
                 final PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
@@ -61,9 +61,9 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
                             public void run() {
 
                                 try {
-                                    LOGGER.info("Strat pause dataNode " + shardingNodes);
+                                    LOGGER.info("Strat pause shardingNode " + shardingNodes);
                                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(shardingNodes.split(",")));
-                                    PauseDatanodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit());
+                                    PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit());
 
                                     while (!Thread.interrupted()) {
                                         lock.lock();
@@ -115,8 +115,8 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
                         } finally {
                             lock.unlock();
                         }
-                        LOGGER.info("resume dataNodes for get notice");
-                        PauseDatanodeManager.getInstance().resume();
+                        LOGGER.info("resume shardingNode for get notice");
+                        PauseShardingNodeManager.getInstance().resume();
                         ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceName()),
                                 SystemConfig.getInstance().getInstanceName());
 
@@ -139,6 +139,6 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
         } finally {
             lock.unlock();
         }
-        PauseDatanodeManager.getInstance().resume();
+        PauseShardingNodeManager.getInstance().resume();
     }
 }

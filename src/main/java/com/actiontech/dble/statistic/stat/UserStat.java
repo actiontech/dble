@@ -6,7 +6,7 @@
 package com.actiontech.dble.statistic.stat;
 
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.SQLRecord;
 import com.actiontech.dble.statistic.SQLRecorder;
@@ -22,7 +22,7 @@ public class UserStat {
 
     private volatile int sqlSlowTime = SystemConfig.getInstance().getSqlSlowTime();
 
-    private Pair<String, String> user;
+    private UserName user;
 
     /**
      * concurrentMax
@@ -60,7 +60,7 @@ public class UserStat {
      */
     private SqlResultSizeRecorder sqlResultSizeRecorder = null;
 
-    public UserStat(Pair<String, String> user) {
+    public UserStat(UserName user) {
         super();
 
         this.user = user;
@@ -74,7 +74,7 @@ public class UserStat {
         this.sqlResultSizeRecorder = new SqlResultSizeRecorder();
     }
 
-    public Pair<String, String> getUser() {
+    public UserName getUser() {
         return user;
     }
 

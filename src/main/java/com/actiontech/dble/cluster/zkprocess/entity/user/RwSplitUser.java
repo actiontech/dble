@@ -17,8 +17,6 @@ public class RwSplitUser extends User {
     @XmlAttribute
     protected String tenant;
     @XmlAttribute
-    protected Integer maxCon;
-    @XmlAttribute
     protected String blacklist;
 
     public String getDbGroup() {
@@ -37,13 +35,6 @@ public class RwSplitUser extends User {
         this.tenant = tenant;
     }
 
-    public Integer getMaxCon() {
-        return maxCon;
-    }
-
-    public void setMaxCon(Integer maxCon) {
-        this.maxCon = maxCon;
-    }
     public String getBlacklist() {
         return blacklist;
     }
@@ -58,7 +49,6 @@ public class RwSplitUser extends User {
         sb.append("rwSplitUser{").append(super.toString());
         sb.append(", dbGroup=").append(dbGroup);
         sb.append(", tenant=").append(tenant);
-        sb.append(", maxCon=").append(maxCon);
         sb.append(", blacklist=").append(blacklist);
 
         sb.append('}');

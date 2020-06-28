@@ -107,7 +107,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         logger.warn("can't get connection for sql :" + sql, e);
         doFinished(true);
     }

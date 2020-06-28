@@ -135,7 +135,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection con) {
+    public void connectionError(Throwable e, Object attachment) {
         // not called
     }
 }

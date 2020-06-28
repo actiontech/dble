@@ -73,14 +73,13 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     private void doExecute() {
         for (BaseSelectHandler exeHandler : exeHandlers) {
             session.setHandlerStart(exeHandler); //base start execute
-            MySQLConnection exeConn = null;
             try {
-                exeConn = exeHandler.initConnection();
+                MySQLConnection exeConn = exeHandler.initConnection();
                 exeConn.setComplexQuery(true);
                 queues.put(exeConn, new LinkedBlockingQueue<>(queueSize));
                 exeHandler.execute(exeConn);
             } catch (Exception e) {
-                exeHandler.connectionError(e, exeConn);
+                exeHandler.connectionError(e, exeHandler.getRrss());
                 return;
             }
         }

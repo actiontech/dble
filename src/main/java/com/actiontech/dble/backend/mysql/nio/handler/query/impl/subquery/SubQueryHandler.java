@@ -23,7 +23,9 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
     protected final ReentrantLock lock;
     protected CallBackHandler tempDoneCallBack;
     protected ErrorPacket errorPacket;
+
     public abstract void setForExplain();
+
     public SubQueryHandler(long id, NonBlockingSession session) {
         super(id, session);
         this.lock = new ReentrantLock();
@@ -47,8 +49,9 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
             lock.unlock();
         }
     }
+
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         lock.lock();
         try {
             String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
@@ -85,6 +88,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
             lock.unlock();
         }
     }
+
     protected void genErrorPackage(int errorNum, String msg) {
         if (errorPacket == null) {
             errorPacket = new ErrorPacket();
@@ -96,6 +100,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
     public void setTempDoneCallBack(CallBackHandler tempDoneCallBack) {
         this.tempDoneCallBack = tempDoneCallBack;
     }
+
     public ErrorPacket getErrorPacket() {
         return errorPacket;
     }

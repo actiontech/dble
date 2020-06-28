@@ -86,9 +86,9 @@ public abstract class PhysicalDbInstance {
 
         int size = config.getMinCon();
         String[] physicalSchemas = dbGroup.getSchemas();
-        int initSize = physicalSchemas.length + 1;
+        int initSize = physicalSchemas.length;
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema +1), so dble will create at least 1 conn for every schema and empty schema, " +
+            LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema), so dble will create at least 1 conn for every schema, " +
                     "minCon size before:{}, now:{}", name, size, initSize);
             config.setMinCon(initSize);
         }
@@ -116,11 +116,11 @@ public abstract class PhysicalDbInstance {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                BackendConnection con = null;
+                BackendConnection con;
                 try {
                     con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
                 } catch (IOException e) {
-                    handler.connectionError(e, con);
+                    handler.connectionError(e, attachment);
                     return;
                 }
                 con.setAttachment(attachment);

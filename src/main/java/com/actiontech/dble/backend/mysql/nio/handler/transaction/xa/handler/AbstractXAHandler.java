@@ -115,7 +115,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         logger.warn("connection Error in xa transaction, err:", e);
         boolean finished;
         lock.lock();
@@ -125,8 +125,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         } finally {
             lock.unlock();
         }
-
-        currentStage.onConnectError((MySQLConnection) conn);
         if (finished) {
             changeStageTo(next());
         }

@@ -154,6 +154,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     @Override
     public void onCreateSuccess(BackendConnection conn) {
+        conn.setDbInstance(instance);
         allConnections.add(conn);
         if (poolConfig.getTestOnCreate()) {
             ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, false, this);
@@ -169,6 +170,10 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     public void onCreateFail(BackendConnection conn, Throwable e) {
         LOGGER.warn("create connection fail " + e.getMessage());
         totalConnections.decrementAndGet();
+        // conn can be null if newChannel crashed (eg SocketException("too many open files"))
+        if (conn != null) {
+            conn.closeWithoutRsp("create fail");
+        }
     }
 
     @Override
@@ -257,13 +262,12 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         while (totalConnections.get() > 0) {
             for (BackendConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {
-                    if (closeFrontConn) {
-                        ((MySQLConnection) conn).close(closureReason, true);
-                    } else {
+                    if (!closeFrontConn) {
                         close(conn);
                         conn.setOldTimestamp(System.currentTimeMillis());
                         NIOProcessor.BACKENDS_OLD.add(conn);
                     }
+                    ((MySQLConnection) conn).close(closureReason, true);
                 } else {
                     conn.close(closureReason);
                 }

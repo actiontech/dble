@@ -270,8 +270,8 @@ public class PoolConfig {
     }
 
     public void setHeartbeatPeriodMillis(long heartbeatPeriodMillis) {
-        if (heartbeatPeriodMillis < 0) {
-            LOGGER.warn(String.format(WARNING_FORMAT, "bufferUsagePercent", heartbeatPeriodMillis, this.heartbeatPeriodMillis));
+        if (heartbeatPeriodMillis <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "heartbeatPeriodMillis", heartbeatPeriodMillis, this.heartbeatPeriodMillis));
         } else {
             this.heartbeatPeriodMillis = heartbeatPeriodMillis;
         }

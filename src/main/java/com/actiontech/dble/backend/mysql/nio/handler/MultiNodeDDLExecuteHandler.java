@@ -205,9 +205,9 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
-        super.connectionError(e, conn);
+    public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getSource(), (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
+        super.connectionError(e, attachment);
     }
 
     private void executeMetaDataFailed() {

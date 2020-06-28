@@ -38,11 +38,11 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
+    public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getSource(),
+                (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_ERROR);
         DDLTraceManager.getInstance().endDDL(session.getSource(), e.getMessage());
-        super.connectionError(e, conn);
+        super.connectionError(e, attachment);
     }
 
 

@@ -2,6 +2,7 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -37,7 +38,14 @@ public final class DDLTraceManager {
         DDLTraceInfo info = traceMap.get(sc);
         if (info != null) {
             info.updateConnectionStatus(mc, status);
-            LOGGER.info("[DDL][" + info.getId() + "] MySQLConnection status update : backendId = " + mc.getId() + " mysqlId = " + mc.getThreadId() + " " + status);
+            LOGGER.info("[DDL][{}] MySQLConnection status update : backendId = {} mysqlId = {} {}", info.getId(), mc.getId(), mc.getThreadId(), status);
+        }
+    }
+
+    public void updateRouteNodeStatus(ServerConnection sc, RouteResultsetNode routeNode, DDLTraceInfo.DDLConnectionStatus status) {
+        DDLTraceInfo info = traceMap.get(sc);
+        if (info != null) {
+            LOGGER.info("[DDL][{}] cant connect to {} status {}", info.getId(), routeNode.getName(), status);
         }
     }
 

@@ -132,14 +132,15 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
+    public void connectionError(Throwable e, Object attachment) {
+        RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-        backConnectionErr(errPacket, conn, true);
+        LOGGER.warn(errMsg);
+        backConnectionErr(errPacket, null, false);
     }
 
     @Override
@@ -172,20 +173,23 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        if (conn.isClosed()) {
-            if (conn.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                session.getTargetMap().remove(rNode);
-            }
-        } else if (syncFinished) {
-            session.releaseConnectionIfSafe(conn, false);
-        } else {
-            conn.closeWithoutRsp("unfinished sync");
-            if (conn.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                session.getTargetMap().remove(rNode);
+        if (conn != null) {
+            if (conn.isClosed()) {
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
+            } else if (syncFinished) {
+                session.releaseConnectionIfSafe(conn, false);
+            } else {
+                conn.closeWithoutRsp("unfinished sync");
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
             }
         }
+
         source.setTxInterrupt(errMsg);
         lock.lock();
         try {

@@ -11,7 +11,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.CacheConfiguration;
 
-public class EnchachePooFactory extends CachePoolFactory {
+public class EnchachePoolFactory extends CachePoolFactory {
 
     @Override
     public CachePool createCachePool(String poolName, int cacheSize,

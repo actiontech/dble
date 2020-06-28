@@ -69,13 +69,15 @@ public class MysqlCreateViewHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
+        RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-        backConnectionErr(errPacket, conn, conn.syncAndExecute());
+        LOGGER.warn(errMsg);
+        backConnectionErr(errPacket, null, false);
     }
 
     @Override
@@ -124,14 +126,15 @@ public class MysqlCreateViewHandler implements ResponseHandler {
         int errPort = source.getLocalPort();
 
         String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
-                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
-
-        if (syncFinished) {
-            session.releaseConnectionIfSafe(conn, false);
-        } else {
-            conn.closeWithoutRsp("unfinished sync");
-            session.getTargetMap().remove(conn.getAttachment());
+        if (conn != null) {
+            LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
+                    " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+            if (syncFinished) {
+                session.releaseConnectionIfSafe(conn, false);
+            } else {
+                conn.closeWithoutRsp("unfinished sync");
+                session.getTargetMap().remove(conn.getAttachment());
+            }
         }
         source.setTxInterrupt(errMsg);
         errPkg.write(source);

@@ -77,7 +77,7 @@ public class SpecialSqlJob extends SQLJob {
 
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("can't get connection for sql :" + sql, e);
         list.add(new ErrorInfo("Meta", "WARNING", "Can't get connection for Meta check in shardingNode[" + ds.getName() + "." + schema + "]"));
         doFinished(true);

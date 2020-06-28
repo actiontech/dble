@@ -53,7 +53,8 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
-    public void connectionError(Throwable e, BackendConnection conn) {
+    @Override
+    public void connectionError(Throwable e, Object attachment) {
         this.setFail("backend connect: " + e);
         LOGGER.info("backend connect", e);
         boolean finished;

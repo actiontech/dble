@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend;
 
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.net.ClosableConnection;
@@ -30,9 +31,13 @@ public interface BackendConnection extends ClosableConnection, PooledEntry {
 
     void ping();
 
+    void connect();
+
     boolean setResponseHandler(ResponseHandler commandHandler);
 
     void setSession(NonBlockingSession session);
+
+    void setDbInstance(PhysicalDbInstance instance);
 
     void commit();
 

@@ -92,7 +92,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     protected abstract void onTerminate() throws Exception;
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         // TODO Auto-generated method stub
 
     }

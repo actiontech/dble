@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.cache;
 
-import com.actiontech.dble.cache.impl.EnchachePooFactory;
+import com.actiontech.dble.cache.impl.EnchachePoolFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,7 +15,7 @@ public class DefaultLayedCachePoolTest {
 
     static {
 
-        layedCachePool = new DefaultLayedCachePool("defaultLayedPool", new EnchachePooFactory(), 1000, 1);
+        layedCachePool = new DefaultLayedCachePool("defaultLayedPool", new EnchachePoolFactory(), 1000, 1);
 
     }
 

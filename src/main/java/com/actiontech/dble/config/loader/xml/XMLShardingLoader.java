@@ -450,19 +450,18 @@ public class XMLShardingLoader {
     }
 
     /**
-     * shard table shardingnode(2) < function count(3) and check failed
+     * check shardingNode size and function partition size
      */
     private void checkRuleSuitTable(ShardingTableConfig tableConf, String functionName) {
         AbstractPartitionAlgorithm function = tableConf.getFunction();
         int suitValue = function.suitableFor(tableConf.getShardingNodes().size());
-        if (suitValue < 0) {
-            throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
-                    functionName + " ] partition size : " + tableConf.getShardingColumn() + " > table shardingNode size : " +
-                    tableConf.getShardingNodes().size() + ", please make sure table shardingnode size = function partition size");
-        } else if (suitValue > 0) {
-            problemReporter.warn("table conf : table [ " + tableConf.getName() + " ] rule function [ " + functionName + " ] " +
-                    "partition size : " + String.valueOf(tableConf.getFunction().getPartitionNum()) + " < table shardingNode size : " + String.valueOf(tableConf.getShardingNodes().size()));
+        if (suitValue == 0) {
+            return;
         }
+        String symbol = suitValue < 0 ? ">" : "<";
+        problemReporter.error("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
+                functionName + " ] partition size : " + tableConf.getFunction().getPartitionNum() + " " + symbol + " table shardingNode size : " +
+                tableConf.getShardingNodes().size() + ", please make sure table shardingNode size = function partition size");
         // else {
         // table shardingNode size == rule function partition size
         //}

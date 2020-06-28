@@ -6,7 +6,6 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.util.ResourceUtil;
@@ -39,14 +38,17 @@ public final class ClusterController {
     private ClusterController() {
     }
 
-    public static ClusterGeneralConfig init() {
-        //read from cluster.cnf to tall use zk or ucore
-        try {
-            ClusterGeneralConfig clusterGeneralConfig = ClusterGeneralConfig.initConfig();
-            ClusterGeneralConfig.initData();
-            return clusterGeneralConfig;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    public static void init() {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            //read from cluster.cnf to tall use zk or ucore
+            try {
+                ClusterGeneralConfig.initConfig();
+                ClusterGeneralConfig.initData();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            LOGGER.info("No Cluster Config .......start in single mode");
         }
     }
 
@@ -73,7 +75,7 @@ public final class ClusterController {
             }
             pros.load(configIS);
         } catch (IOException e) {
-            LOGGER.error("ClusterController LoadMyidPropersites error:", e);
+            LOGGER.error("ClusterController load " + CONFIG_FILE_NAME + " error:", e);
         }
         ClusterConfig clusterConfig = ClusterConfig.getInstance();
 
@@ -81,13 +83,17 @@ public final class ClusterController {
         if (pros.size() > 0) {
             String[] propItem = new String[pros.size()];
             pros.keySet().toArray(propItem);
-            throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
+            StartProblemReporter.getInstance().addError("These properties in cluster.cnf are not recognized: " + StringUtil.join(propItem, ","));
         }
         if (clusterConfig.isClusterEnable()) {
-            if (Strings.isNullOrEmpty(clusterConfig.getClusterIP()) ||
-                    Strings.isNullOrEmpty(clusterConfig.getClusterId()) ||
-                    Strings.isNullOrEmpty(clusterConfig.getRootPath())) {
-                throw new RuntimeException("Cluster Config is not completely set");
+            if (Strings.isNullOrEmpty(clusterConfig.getClusterIP())) {
+                StartProblemReporter.getInstance().addError("clusterIP need to set in cluster.cnf when clusterEnable is true");
+            }
+            if (Strings.isNullOrEmpty(clusterConfig.getClusterId())) {
+                StartProblemReporter.getInstance().addError("clusterId need to set in cluster.cnf when clusterEnable is true");
+            }
+            if (Strings.isNullOrEmpty(clusterConfig.getRootPath())) {
+                StartProblemReporter.getInstance().addError("rootPath need to set in cluster.cnf when clusterEnable is true");
             }
         }
     }

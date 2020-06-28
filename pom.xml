@@ -32,11 +32,6 @@
             <url>https://repo1.maven.org/maven2/</url>
         </repository>
         <repository>
-            <id>repo2</id>
-            <name>Human Readable Name for this Mirror.</name>
-            <url>https://repo2.maven.org/maven2/</url>
-        </repository>
-        <repository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
             <url>https://repo.jenkins-ci.org/releases/</url>

@@ -9,9 +9,18 @@ import com.actiontech.dble.config.ProblemReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class StartProblemReporter implements ProblemReporter {
     private static final Logger LOGGER = LoggerFactory.getLogger(StartProblemReporter.class);
     private static final StartProblemReporter INSTANCE = new StartProblemReporter();
+
+    public List<String> getErrorConfigs() {
+        return errorConfigs;
+    }
+
+    private List<String> errorConfigs = new ArrayList<>();
 
     public static StartProblemReporter getInstance() {
         return INSTANCE;
@@ -29,11 +38,15 @@ public final class StartProblemReporter implements ProblemReporter {
     @Override
     public void warn(String problem) {
         LOGGER.warn(problem);
-        throw new ConfigException(problem);
+        errorConfigs.add(problem);
     }
 
     @Override
     public void notice(String problem) {
         LOGGER.info(problem);
+    }
+
+    public void addError(String problem) {
+        warn(problem);
     }
 }

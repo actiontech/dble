@@ -57,16 +57,15 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
             conn.query(((SequenceVal) conn.getAttachment()).sql, true);
         } catch (Exception e) {
             LOGGER.warn("connection acquired error: " + e);
-            handleError(conn, e.getMessage());
+            handleError(conn.getAttachment(), e.getMessage());
             conn.close(e.getMessage());
         }
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("connect error: " + e);
-        handleError(conn, e.getMessage());
-        conn.closeWithoutRsp(e.getMessage());
+        handleError(attachment, e.getMessage());
     }
 
     @Override
@@ -76,7 +75,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         String errMsg = new String(err.getMessage());
 
         LOGGER.warn("errorResponse " + err.getErrNo() + " " + errMsg);
-        handleError(conn, errMsg);
+        handleError(conn.getAttachment(), errMsg);
 
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
@@ -121,8 +120,8 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         conn.release();
     }
 
-    private void handleError(BackendConnection c, String errMsg) {
-        SequenceVal seqVal = ((SequenceVal) c.getAttachment());
+    private void handleError(Object attachment, String errMsg) {
+        SequenceVal seqVal = ((SequenceVal) attachment);
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
         seqVal.dbretVal = null;
         seqVal.dbfinished = true;
@@ -131,7 +130,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.warn("connection " + conn + " closed, reason:" + reason);
-        handleError(conn, "connection " + conn + " closed, reason:" + reason);
+        handleError(conn.getAttachment(), "connection " + conn + " closed, reason:" + reason);
     }
 
     @Override

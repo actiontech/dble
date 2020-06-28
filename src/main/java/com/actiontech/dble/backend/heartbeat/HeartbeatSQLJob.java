@@ -78,7 +78,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("can't get connection for sql :" + sql, e);
         heartbeat.setErrorResult("connection Error");
         doFinished(true);

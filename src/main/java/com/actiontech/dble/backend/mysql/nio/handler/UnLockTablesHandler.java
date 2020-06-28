@@ -70,14 +70,9 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             try {
                 conn.execute(node, session.getSource(), autocommit);
             } catch (Exception e) {
-                connectionError(e, conn);
+                connectionError(e, node);
             }
         }
-    }
-
-    @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        super.connectionError(e, conn);
     }
 
     @Override

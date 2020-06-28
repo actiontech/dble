@@ -110,7 +110,7 @@ public class ShardingNode {
         }
     }
 
-    public BackendConnection getConnection(String schema, Boolean runOnSlave, Object attachment) throws Exception {
+    public BackendConnection getConnection(String schema, Boolean runOnSlave, Object attachment) throws IOException {
         if (runOnSlave == null) {
             PhysicalDbInstance readSource = dbGroup.getRWSplitNode();
             if (!readSource.isAlive()) {

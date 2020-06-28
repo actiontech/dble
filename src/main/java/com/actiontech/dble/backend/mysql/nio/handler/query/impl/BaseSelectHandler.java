@@ -32,9 +32,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     private final boolean autocommit;
     private volatile int fieldCounts = -1;
-
-
-    private RouteResultsetNode rrss;
+    private final RouteResultsetNode rrss;
 
 
     public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, NonBlockingSession session) {
@@ -140,7 +138,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
      * thread status is running.
      */
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         if (terminate.get())
             return;
         String errMsg;
@@ -149,8 +147,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else if (e instanceof NullPointerException) {
             errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
         } else {
-            LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
-            errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+            RouteResultsetNode node = (RouteResultsetNode) attachment;
+            errMsg = "can't connect to shardingNode[" + node.getName() + "],due to " + e.getMessage();
+            LOGGER.warn(errMsg);
         }
         session.onQueryError(errMsg.getBytes());
     }

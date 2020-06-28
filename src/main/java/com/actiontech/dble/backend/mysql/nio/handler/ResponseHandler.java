@@ -20,9 +20,9 @@ public interface ResponseHandler {
      * can't get an valid connection
      *
      * @param e
-     * @param conn
+     * @param attachment
      */
-    void connectionError(Throwable e, BackendConnection conn);
+    void connectionError(Throwable e, Object attachment);
 
     /**
      * execute after acquired an valid connection

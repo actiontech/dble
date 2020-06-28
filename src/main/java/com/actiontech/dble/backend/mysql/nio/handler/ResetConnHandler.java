@@ -17,8 +17,9 @@ import java.util.List;
 
 public class ResetConnHandler implements ResponseHandler {
     public static final Logger LOGGER = LoggerFactory.getLogger(ResetConnHandler.class);
+
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         String msg = e.getMessage() == null ? e.toString() : e.getMessage();
         LOGGER.info(msg);
     }
@@ -42,10 +43,12 @@ public class ResetConnHandler implements ResponseHandler {
     public void connectionAcquired(BackendConnection conn) {
         //not happen
     }
+
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.info(reason);
     }
+
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
         //not happen

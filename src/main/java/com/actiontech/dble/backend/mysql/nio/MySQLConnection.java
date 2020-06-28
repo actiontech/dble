@@ -17,6 +17,7 @@ import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.net.NIOConnector;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
@@ -37,6 +38,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -216,8 +219,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
 
     public void onConnectFailed(Throwable t) {
         if (handler instanceof MySQLConnectionHandler) {
-            MySQLConnectionHandler theHandler = (MySQLConnectionHandler) handler;
-            theHandler.connectionError(t);
+            LOGGER.warn("unexpected failure to connect in MySQLConnectionHandler");
         } else {
             ((MySQLConnectionAuthenticator) handler).connectionError(this, t);
         }
@@ -239,6 +241,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         return dbInstance;
     }
 
+    @Override
     public void setDbInstance(PhysicalDbInstance instance) {
         this.dbInstance = instance;
     }
@@ -743,6 +746,16 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         }
     }
 
+    @Override
+    public void connect() {
+        if (channel instanceof AsynchronousSocketChannel) {
+            ((AsynchronousSocketChannel) channel).connect(
+                    new InetSocketAddress(getHost(), getPort()), this,
+                    (CompletionHandler) DbleServer.getInstance().getConnector());
+        } else {
+            ((NIOConnector) DbleServer.getInstance().getConnector()).postConnect(this);
+        }
+    }
 
     /**
      * close connection without closeResponseHandler

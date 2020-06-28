@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -41,7 +41,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     private final String sql;
     private AtomicBoolean hadResult = new AtomicBoolean(false);
     private volatile String shardingNode;
-    private Map<String, BackendConnection> receiveMap = new ConcurrentHashMap<>();
+    private Map<String, RouteResultsetNode> receiveMap = new ConcurrentHashMap<>();
     private Map<String, String> nodesErrorReason = new ConcurrentHashMap<>();
     protected final ReentrantLock lock = new ReentrantLock();
     private Condition result = lock.newCondition();
@@ -158,9 +158,9 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "connectionError");
-        countResult((MySQLConnection) conn);
+    public void connectionError(Throwable e, Object attachment) {
+        nodesErrorReason.put(((RouteResultsetNode) attachment).getName(), "connectionError");
+        countResult((RouteResultsetNode) attachment);
         LOGGER.info("connectionError " + e);
     }
 
@@ -182,7 +182,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
             }
             conn.closeWithoutRsp("unfinished sync");
         }
-        countResult((MySQLConnection) conn);
+        countResult((RouteResultsetNode) conn.getAttachment());
     }
 
     @Override
@@ -192,7 +192,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         }
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
-            countResult((MySQLConnection) conn);
+            countResult((RouteResultsetNode) conn.getAttachment());
             releaseConnIfSafe(conn);
         }
     }
@@ -222,13 +222,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("rowEofResponse" + conn);
         }
-        countResult((MySQLConnection) conn);
+        countResult((RouteResultsetNode) conn.getAttachment());
         releaseConnIfSafe(conn);
     }
 
     private void executeException(BackendConnection c, Throwable e) {
         nodesErrorReason.put(((RouteResultsetNode) c.getAttachment()).getName(), e.getMessage());
-        countResult((MySQLConnection) c);
+        countResult((RouteResultsetNode) c.getAttachment());
         LOGGER.info("executeException   " + e);
         releaseConnIfSafe(c);
     }
@@ -237,7 +237,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.info("connection closed " + conn + " reason:" + reason);
         nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "connection closed ,mysql id:" + ((MySQLConnection) conn).getThreadId());
-        countResult((MySQLConnection) conn);
+        countResult((RouteResultsetNode) conn.getAttachment());
     }
 
     @Override
@@ -246,7 +246,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
 
-    private void countResult(MySQLConnection con) {
-        receiveMap.put(((RouteResultsetNode) con.getAttachment()).getName(), con);
+    private void countResult(RouteResultsetNode routeNode) {
+        receiveMap.put(routeNode.getName(), routeNode);
     }
 }

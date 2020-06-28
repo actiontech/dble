@@ -179,10 +179,10 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("backend connect", e);
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_ERROR);
+    public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getSource(),
+                (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_ERROR);
+
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);

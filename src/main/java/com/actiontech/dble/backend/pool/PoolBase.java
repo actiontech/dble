@@ -8,12 +8,9 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnectionAuthenticator;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnectionListener;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
-import com.actiontech.dble.net.NIOConnector;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousSocketChannel;
-import java.nio.channels.CompletionHandler;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
 
@@ -35,8 +32,7 @@ public class PoolBase {
      */
     public void newConnection(String schema, ResponseHandler handler) {
         try {
-            NetworkChannel channel = openSocketChannel();
-            MySQLConnection conn = new MySQLConnection(channel, config, instance.isReadInstance(), instance.isAutocommitSynced(), instance.isIsolationSynced());
+            MySQLConnection conn = new MySQLConnection(openSocketChannel(), config, instance.isReadInstance(), instance.isAutocommitSynced(), instance.isIsolationSynced());
             conn.setSocketParams(false);
             conn.setSchema(schema);
             conn.setHandler(new MySQLConnectionAuthenticator(conn, new MySQLConnectionListener() {
@@ -47,48 +43,31 @@ public class PoolBase {
 
                 @Override
                 public void onCreateFail(BackendConnection conn, Throwable e) {
-                    handler.connectionError(e, conn);
+                    handler.connectionError(e, null);
                 }
 
                 @Override
                 public void onHeartbeatSuccess(BackendConnection conn) {
                 }
-
             }));
 
-            if (channel instanceof AsynchronousSocketChannel) {
-                ((AsynchronousSocketChannel) channel).connect(
-                        new InetSocketAddress(config.getIp(), config.getPort()), conn,
-                        (CompletionHandler) DbleServer.getInstance().getConnector());
-            } else {
-                ((NIOConnector) DbleServer.getInstance().getConnector()).postConnect(conn);
-            }
+            conn.connect();
         } catch (IOException ioe) {
             handler.connectionError(ioe, null);
         }
     }
 
     BackendConnection newConnection(String schema, MySQLConnectionListener listener) {
+        MySQLConnection conn = null;
         try {
-            NetworkChannel channel = openSocketChannel();
-
-            MySQLConnection conn = new MySQLConnection(channel, config, instance.isReadInstance(), instance.isAutocommitSynced(), instance.isIsolationSynced());
+            conn = new MySQLConnection(openSocketChannel(), config, instance.isReadInstance(), instance.isAutocommitSynced(), instance.isIsolationSynced());
             conn.setSocketParams(false);
             conn.setSchema(schema);
             conn.setHandler(new MySQLConnectionAuthenticator(conn, listener));
-            conn.setDbInstance(instance);
-
-            if (channel instanceof AsynchronousSocketChannel) {
-                ((AsynchronousSocketChannel) channel).connect(
-                        new InetSocketAddress(config.getIp(), config.getPort()), conn,
-                        (CompletionHandler) DbleServer.getInstance().getConnector());
-            } else {
-                ((NIOConnector) DbleServer.getInstance().getConnector()).postConnect(conn);
-            }
+            conn.connect();
             return conn;
-
         } catch (IOException ioe) {
-            listener.onCreateFail(null, ioe);
+            listener.onCreateFail(conn, ioe);
             return null;
         }
     }

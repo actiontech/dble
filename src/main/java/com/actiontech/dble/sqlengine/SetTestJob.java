@@ -84,7 +84,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         if (hasReturn.compareAndSet(false, true)) {
             String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
             LOGGER.info(reason);

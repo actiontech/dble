@@ -190,20 +190,21 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
+    public void connectionError(Throwable e, Object attachment) {
+        RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+        LOGGER.warn(errMsg);
         err = errPacket;
         session.resetMultiStatementStatus();
         lock.lock();
         try {
             errorConnsCnt++;
-            executeError(conn);
+            executeError(null);
         } finally {
             lock.unlock();
         }
@@ -483,9 +484,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (errConnection == null) {
             errConnection = new ArrayList<>();
         }
-        errConnection.add(conn);
-        if (conn.isClosed() && (!session.getSource().isAutocommit() || session.getSource().isTxStart())) {
-            session.getSource().setTxInterrupt(error);
+        if (conn != null) {
+            errConnection.add(conn);
+            if (conn.isClosed() && (!session.getSource().isAutocommit() || session.getSource().isTxStart())) {
+                session.getSource().setTxInterrupt(error);
+            }
         }
 
         if (canResponse()) {

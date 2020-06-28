@@ -62,7 +62,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("can't get connection for sql :" + sql, e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);

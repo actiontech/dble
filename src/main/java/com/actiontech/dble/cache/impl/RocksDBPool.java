@@ -8,6 +8,7 @@ package com.actiontech.dble.cache.impl;
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.cache.CacheStatic;
 import org.nustaq.serialization.FSTConfiguration;
+import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +16,15 @@ import org.slf4j.LoggerFactory;
 public class RocksDBPool implements CachePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(RocksDBPool.class);
     private final RocksDB cache;
+    private final Options dbOptions;
     private final CacheStatic cacheStatistics = new CacheStatic();
     private final String name;
     private final long maxSize;
     private FSTConfiguration fst = FSTConfiguration.createDefaultConfiguration();
 
-    public RocksDBPool(RocksDB cache, String name, long maxSize) {
+    RocksDBPool(RocksDB cache, Options options, String name, long maxSize) {
         this.cache = cache;
+        this.dbOptions = options;
         this.name = name;
         this.maxSize = maxSize;
     }
@@ -69,7 +72,8 @@ public class RocksDBPool implements CachePool {
         LOGGER.info("clear cache " + name);
         //cache.delete(key);
         cacheStatistics.reset();
-        //cacheStati.setMemorySize(cache.g);
+        cache.close();
+        dbOptions.close();
     }
 
     @Override

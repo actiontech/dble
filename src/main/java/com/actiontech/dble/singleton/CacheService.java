@@ -9,7 +9,7 @@ import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.cache.CachePoolFactory;
 import com.actiontech.dble.cache.DefaultLayedCachePool;
 import com.actiontech.dble.cache.LayerCachePool;
-import com.actiontech.dble.cache.impl.EnchachePooFactory;
+import com.actiontech.dble.cache.impl.EnchachePoolFactory;
 import com.actiontech.dble.cache.impl.LevelDBCachePooFactory;
 import com.actiontech.dble.cache.impl.MapDBCachePooFactory;
 import com.actiontech.dble.cache.impl.RocksDBCachePoolFactory;
@@ -38,7 +38,11 @@ public final class CacheService {
     private final ConcurrentMap<String, CachePool> allPools = new ConcurrentHashMap<>();
 
     private CacheService() {
-
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                clearCache();
+            }
+        });
     }
 
     public static CacheService getInstance() {
@@ -137,7 +141,7 @@ public final class CacheService {
         String lowerClass = factryClassName.toLowerCase();
         switch (lowerClass) {
             case "ehcache":
-                poolFactories.put(factoryType, new EnchachePooFactory());
+                poolFactories.put(factoryType, new EnchachePoolFactory());
                 break;
             case "leveldb":
                 poolFactories.put(factoryType, new LevelDBCachePooFactory());
@@ -199,16 +203,13 @@ public final class CacheService {
             pool.clearCache();
         }
         allPools.clear();
-        try {
-            init(isLowerCaseTableNames);
-        } catch (Exception e) {
-            throw e;
-        }
+        init(isLowerCaseTableNames);
     }
 
     public static CachePool getSqlRouteCache() {
         return INSTANCE.getCachePool(SQL_ROUTE_CACHE);
     }
+
     public static CachePool getCachePoolByName(String poolName) {
         return INSTANCE.getCachePool(poolName);
     }

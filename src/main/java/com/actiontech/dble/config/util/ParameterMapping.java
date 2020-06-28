@@ -39,9 +39,9 @@ public final class ParameterMapping {
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
                 if (problemReporter != null) {
-                    problemReporter.warn("unknown property [ " + pd.getName() + " ], skip");
+                    problemReporter.warn("unknown property [ " + pd.getName() + " ]");
                 } else {
-                    LOGGER.warn("unknown property [ " + pd.getName() + " ], skip");
+                    LOGGER.warn("unknown property [ " + pd.getName() + " ]");
                 }
                 continue;
             }
@@ -56,9 +56,9 @@ public final class ParameterMapping {
                         value = convert(cls, valStr);
                     } catch (NumberFormatException nfe) {
                         if (problemReporter != null) {
-                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
+                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         } else {
-                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
+                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         }
                         parameter.remove(pd.getName());
                         continue;
@@ -76,7 +76,7 @@ public final class ParameterMapping {
     }
 
 
-    public static Properties mapping(Object object) throws IllegalAccessException,
+    public static Properties mapping(Object object, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
         Properties systemProperties = (Properties) (System.getProperties().clone());
         for (String key : SystemProperty.getInnerProperties()) {
@@ -92,9 +92,13 @@ public final class ParameterMapping {
             Object value = valStr;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
-                String msg = "unknown property [ " + pd.getName() + " ], skip";
-                LOGGER.warn(msg);
-                throw new ConfigException(msg);
+                String msg = "unknown property [ " + pd.getName() + " ]";
+                if (problemReporter != null) {
+                    problemReporter.warn(msg);
+                } else {
+                    LOGGER.warn(msg);
+                }
+                continue;
             }
 
             if (!StringUtil.isEmpty(valStr)) {
@@ -104,9 +108,14 @@ public final class ParameterMapping {
                 try {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
-                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip";
-                    LOGGER.warn(msg);
-                    throw new ConfigException(msg);
+                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() ;
+                    if (problemReporter != null) {
+                        problemReporter.warn(msg);
+                    } else {
+                        LOGGER.warn(msg);
+                    }
+                    systemProperties.remove(propertyName);
+                    continue;
                 }
             }
             if (value != null) {

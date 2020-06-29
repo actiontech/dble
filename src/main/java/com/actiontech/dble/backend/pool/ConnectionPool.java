@@ -262,12 +262,13 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         while (totalConnections.get() > 0) {
             for (BackendConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {
-                    if (!closeFrontConn) {
+                    if (closeFrontConn) {
+                        ((MySQLConnection) conn).close(closureReason, true);
+                    } else {
                         close(conn);
                         conn.setOldTimestamp(System.currentTimeMillis());
                         NIOProcessor.BACKENDS_OLD.add(conn);
                     }
-                    ((MySQLConnection) conn).close(closureReason, true);
                 } else {
                     conn.close(closureReason);
                 }

@@ -7,14 +7,14 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,13 +47,13 @@ public final class PauseEnd {
         LOGGER.info("resume start from command");
         if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             try {
-                KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseShardingNodePath());
-                if (value.getValue() == null || "".equals(value.getValue())) {
+                String value = ClusterHelper.getPathValue(ClusterPathUtil.getPauseShardingNodePath());
+                if (StringUtil.isEmpty(value)) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                     return;
                 }
 
-                PauseInfo pauseInfo = new PauseInfo(value.getValue());
+                PauseInfo pauseInfo = new PauseInfo(value);
                 if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
                     return;

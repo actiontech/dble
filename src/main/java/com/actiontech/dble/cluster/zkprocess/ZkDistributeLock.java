@@ -14,10 +14,12 @@ import java.nio.charset.StandardCharsets;
 
 public class ZkDistributeLock extends DistributeLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkDistributeLock.class);
+    private ZkSender sender;
 
-    public ZkDistributeLock(String path, String value) {
+    public ZkDistributeLock(String path, String value, ZkSender sender) {
         this.path = path;
         this.value = value;
+        this.sender = sender;
     }
 
     @Override
@@ -36,7 +38,7 @@ public class ZkDistributeLock extends DistributeLock {
     @Override
     public void release() {
         try {
-            ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(path);
+            sender.cleanKV(path);
         } catch (Exception e) {
             LOGGER.warn("release ZkDistributeLock failed ", e);
         }

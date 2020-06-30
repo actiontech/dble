@@ -10,13 +10,10 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
-import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.ConfigStatusListener;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -26,27 +23,18 @@ import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
 
 
@@ -61,33 +49,55 @@ public final class RollbackConfig {
 
     public static void execute(ManagerConnection c) {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (rollbackWithCluster(c)) return;
+            rollbackWithCluster(c);
         } else {
             rollbackWithoutCluster(c);
         }
         ReloadManager.reloadFinish();
     }
 
-    private static boolean rollbackWithCluster(ManagerConnection c) {
-        DistributeLock distributeLock;
-        if (ClusterConfig.getInstance().useZkMode()) {
-            distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+    private static void rollbackWithCluster(ManagerConnection c) {
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     SystemConfig.getInstance().getInstanceName());
-        } else {
-            distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceName());
-        }
         try {
             if (!distributeLock.acquire()) {
                 c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
-                return true;
+                return;
             }
             ClusterDelayProvider.delayAfterReloadLock();
             try {
-                if (ClusterConfig.getInstance().useZkMode()) {
-                    rollbackWithZk(ZKUtils.getConnection(), c);
-                } else {
-                    rollbackWithUcore(c);
+                //step 1 lock the local meta ,than all the query depends on meta will be hanging
+                final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+                lock.writeLock().lock();
+                try {
+                    // step 2 rollback self config
+                    if (!rollback(TRIGGER_TYPE_COMMAND)) {
+                        writeSpecialError(c, "Rollback interruputed by others,config should be reload");
+                        return;
+                    }
+
+                    ReloadManager.waitingOthers();
+                    ClusterDelayProvider.delayAfterMasterRollback();
+
+                    //step 3 tail the ucore & notify the other dble
+                    ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
+                    ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
+                    String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusOperatorPath());
+
+                    ClusterDelayProvider.delayBeforeDeleterollbackLock();
+
+                    if (errorMsg != null) {
+                        writeErrorResultForCluster(c, errorMsg);
+                    } else {
+                        writeOKResult(c);
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("reload config failure", e);
+                    writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+                } finally {
+                    //step 6 delete the reload flag
+                    ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath());
+                    lock.writeLock().unlock();
                 }
             } finally {
                 distributeLock.release();
@@ -96,7 +106,6 @@ public final class RollbackConfig {
             LOGGER.info("reload config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         }
-        return false;
     }
 
     private static void rollbackWithoutCluster(ManagerConnection c) {
@@ -117,97 +126,7 @@ public final class RollbackConfig {
 
 
     private static void rollbackWithUcore(ManagerConnection c) {
-        //step 1 lock the local meta ,than all the query depends on meta will be hanging
-        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.writeLock().lock();
-        try {
-            // step 2 rollback self config
-            if (!rollback(TRIGGER_TYPE_COMMAND)) {
-                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
-                return;
-            }
 
-            ReloadManager.waitingOthers();
-            ClusterDelayProvider.delayAfterMasterRollback();
-
-            //step 3 tail the ucore & notify the other dble
-            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
-            ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
-
-            //step 4 set self status success
-            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
-
-
-            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusPath() + SEPARATOR);
-
-            ClusterDelayProvider.delayBeforeDeleterollbackLock();
-            //step 6 delete the reload flag
-            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath());
-
-            if (errorMsg != null) {
-                writeErrorResultForCluster(c, errorMsg);
-            } else {
-                writeOKResult(c);
-            }
-        } catch (Exception e) {
-            LOGGER.warn("reload config failure", e);
-            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-
-    private static void rollbackWithZk(CuratorFramework zkConn, ManagerConnection c) {
-        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.writeLock().lock();
-        try {
-            if (!rollback(TRIGGER_TYPE_COMMAND)) {
-                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
-                return;
-            }
-
-            ReloadManager.waitingOthers();
-            ClusterDelayProvider.delayAfterMasterRollback();
-
-            XmltoZkMain.rollbackConf();
-            //tell zk this instance has prepared
-            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceName(),
-                    ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-            //check all session waiting status
-            List<String> preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
-            List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
-
-            while (preparedList.size() < onlineList.size()) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
-                onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
-                preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
-            }
-            ReloadLogHelper.info("rollback config: all instances finished ", LOGGER);
-            ClusterDelayProvider.delayBeforeDeleteReloadLock();
-            StringBuilder sbErrorInfo = new StringBuilder();
-            for (String child : preparedList) {
-                String childPath = ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child);
-                byte[] errorInfo = zkConn.getData().forPath(childPath);
-                if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
-                    sbErrorInfo.append(child).append(":");
-                    sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
-                    sbErrorInfo.append(";");
-                }
-                zkConn.delete().forPath(ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child));
-            }
-
-            if (sbErrorInfo.length() == 0) {
-                writeOKResult(c);
-            } else {
-                writeErrorResultForCluster(c, sbErrorInfo.toString());
-            }
-        } catch (Exception e) {
-            LOGGER.info("rollback config failure", e);
-            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-        } finally {
-            lock.writeLock().unlock();
-        }
     }
 
 

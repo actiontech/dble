@@ -8,14 +8,16 @@ package com.actiontech.dble.cluster.general.impl;
 import com.actiontech.dble.alarm.UcoreGrpc;
 import com.actiontech.dble.alarm.UcoreInterface;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.general.AbstractClusterSender;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
+import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.PropertiesUtil;
+import com.actiontech.dble.util.StringUtil;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -36,7 +38,7 @@ import static com.actiontech.dble.cluster.ClusterController.*;
 /**
  * Created by szf on 2018/1/26.
  */
-public final class UcoreSender extends AbstractClusterSender {
+public final class UcoreSender extends AbstractConsulSender {
 
 
     private volatile UcoreGrpc.UcoreBlockingStub stub = null;
@@ -71,6 +73,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
         startUpdateNodes();
+        ClusterToXml.loadKVtoFile(this);
     }
 
     @Override
@@ -89,7 +92,7 @@ public final class UcoreSender extends AbstractClusterSender {
                         while (!Thread.currentThread().isInterrupted()) {
                             try {
                                 LOGGER.debug("renew lock of session  start:" + sessionId + " " + path);
-                                if ("".equals(ClusterHelper.getKV(path).getValue())) {
+                                if (StringUtil.isEmpty(ClusterHelper.getPathValue(path))) {
                                     log("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ", null);
                                     // alert
                                     Thread.currentThread().interrupt();
@@ -301,7 +304,7 @@ public final class UcoreSender extends AbstractClusterSender {
                     }
                 }
             }
-            throw new RuntimeException("ALL the ucore connect failure");
+            throw new RuntimeException("cleanKV failure for" + path);
         }
     }
 

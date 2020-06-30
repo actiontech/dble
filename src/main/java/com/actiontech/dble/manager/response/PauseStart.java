@@ -73,8 +73,8 @@ public final class PauseStart {
         }
 
 
-        //clusterPauseNotic
-        if (!PauseShardingNodeManager.getInstance().clusterPauseNotic(shardingNode, connectionTimeOut, queueLimit)) {
+        //clusterPauseNotice
+        if (!PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }

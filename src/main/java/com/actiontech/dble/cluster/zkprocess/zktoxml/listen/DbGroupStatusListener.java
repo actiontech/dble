@@ -1,10 +1,6 @@
 package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.singleton.HaConfigManager;
+import com.actiontech.dble.cluster.ClusterLogic;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -23,12 +19,13 @@ public class DbGroupStatusListener implements PathChildrenCacheListener {
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-        ChildData childData = event.getData();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("event happen:" + event.toString());
+        }
         switch (event.getType()) {
             case CHILD_ADDED:
-                break;
             case CHILD_UPDATED:
-                updateStatus(childData);
+                updateStatus(event.getData());
                 break;
             case CHILD_REMOVED:
                 break;
@@ -39,17 +36,13 @@ public class DbGroupStatusListener implements PathChildrenCacheListener {
 
     private void updateStatus(ChildData childData) {
         try {
-            if (SystemConfig.getInstance().isUseOuterHa()) {
-                String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
-                String data = new String(childData.getData(), StandardCharsets.UTF_8);
-                int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
-                PhysicalDbGroup physicalDBPool = DbleServer.getInstance().getConfig().getDbGroups().get(nodeName);
-                physicalDBPool.changeIntoLatestStatus(data);
-                HaConfigManager.getInstance().haFinish(id, null, data);
-            }
+            String dbGroupName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
+            String value = new String(childData.getData(), StandardCharsets.UTF_8);
+            ClusterLogic.dbGroupChangeEvent(dbGroupName, value);
         } catch (Exception e) {
             LOGGER.warn("get Error when update Ha status", e);
         }
     }
+
 
 }

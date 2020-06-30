@@ -42,9 +42,9 @@ public class ClusterHelpTest {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
         Gson gson = gsonBuilder.create();
-        String jsonContent = ClusterHelper.parseShardingXmlFileToJson(xmlProcess, gson, READ_PATH);
-        Shardings newShardingBean = ClusterHelper.parseShardingJsonToBean(gson, jsonContent);
-        ClusterHelper.writeMapFileAddFunction(newShardingBean.getFunction());
+        String jsonContent = ClusterLogic.parseShardingXmlFileToJson(xmlProcess, gson, READ_PATH);
+        Shardings newShardingBean = ClusterLogic.parseShardingJsonToBean(gson, jsonContent);
+        ClusterLogic.writeMapFileAddFunction(newShardingBean.getFunction());
         String newXml = xmlProcess.baseParseToString(newShardingBean, "sharding");
         Assert.assertEquals(originXml.length(), newXml.length());
     }
@@ -57,8 +57,8 @@ public class ClusterHelpTest {
         xmlProcess.addParseClass(DbGroups.class);
         xmlProcess.initJaxbClass();
         Gson gson = new Gson();
-        String jsonContent = ClusterHelper.parseDbGroupXmlFileToJson(xmlProcess, gson, READ_PATH);
-        DbGroups newDbGroupsBean = ClusterHelper.parseDbGroupsJsonToBean(gson, jsonContent);
+        String jsonContent = ClusterLogic.parseDbGroupXmlFileToJson(xmlProcess, gson, READ_PATH);
+        DbGroups newDbGroupsBean = ClusterLogic.parseDbGroupsJsonToBean(gson, jsonContent);
         String newXml = xmlProcess.baseParseToString(newDbGroupsBean, "db");
         Assert.assertEquals(originXml.length(), newXml.length());
     }
@@ -74,8 +74,8 @@ public class ClusterHelpTest {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
         Gson gson = gsonBuilder.create();
-        String jsonContent = ClusterHelper.parseUserXmlFileToJson(xmlProcess, gson, READ_PATH);
-        Users newShardingBean = ClusterHelper.parseUserJsonToBean(gson, jsonContent);
+        String jsonContent = ClusterLogic.parseUserXmlFileToJson(xmlProcess, gson, READ_PATH);
+        Users newShardingBean = ClusterLogic.parseUserJsonToBean(gson, jsonContent);
         String newXml = xmlProcess.baseParseToString(newShardingBean, "user");
         Assert.assertEquals(originXml.length(), newXml.length());
     }

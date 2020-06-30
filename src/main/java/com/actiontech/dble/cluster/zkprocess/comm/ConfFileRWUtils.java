@@ -43,14 +43,6 @@ public final class ConfFileRWUtils {
         return mapFileStr.toString();
     }
 
-    public static String readFileWithOutError(String name) {
-        try {
-            return readFile(name);
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
     public static void writeFile(String name, String value) throws IOException {
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         checkNotNull(path, "write ecache file curr Path :" + path + " is null! It must be not null");

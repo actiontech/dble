@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
@@ -13,19 +13,10 @@ import com.actiontech.dble.cluster.zkprocess.entity.Users;
 import com.actiontech.dble.cluster.zkprocess.entity.user.User;
 import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
 
 public class XmlUserLoader implements ClusterXmlLoader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(XmlUserLoader.class);
-    private static final String USER_XML_PATH = "user.xml";
-    private static final String CONFIG_PATH = ClusterPathUtil.getUserConfPath();
     private final Gson gson;
     private XmlProcessBase xmlParseBase;
 
@@ -35,37 +26,16 @@ public class XmlUserLoader implements ClusterXmlLoader {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
         gson = gsonBuilder.create();
-        confListener.addChild(this, CONFIG_PATH);
+        confListener.addChild(this, ClusterPathUtil.getUserConfPath());
     }
 
     @Override
     public void notifyProcess(KvBean configValue) throws Exception {
-        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        KvBean lock = ClusterHelper.getKV(ClusterPathUtil.getConfChangeLockPath());
-        if (SystemConfig.getInstance().getInstanceName().equals(lock.getValue())) {
-            return;
-        }
-
-        //the config Value in ucore is an all in one json config of the user.xml
-        Users users = ClusterHelper.parseUserJsonToBean(gson, configValue.getValue());
-
-        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
-        path = new File(path).getPath() + File.separator + USER_XML_PATH;
-
-        LOGGER.info("notifyProcess ucore to object writePath :" + path);
-
-        xmlParseBase.baseParseAndWriteToXml(users, path, "user");
-
-        LOGGER.info("notifyProcess ucore to object zk user write :" + path + " is success");
-
+        ClusterLogic.syncUserXmlToLocal(configValue, xmlParseBase, gson);
     }
 
     @Override
     public void notifyCluster() throws Exception {
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + USER_XML_PATH;
-        String json = ClusterHelper.parseUserXmlFileToJson(xmlParseBase, gson, path);
-        ClusterHelper.setKV(CONFIG_PATH, json);
+        ClusterLogic.syncUserXmlToCluster(xmlParseBase, gson);
     }
-
-
 }

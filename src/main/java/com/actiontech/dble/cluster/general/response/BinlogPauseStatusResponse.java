@@ -6,13 +6,9 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.manager.response.ShowBinlogStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,51 +18,32 @@ import org.slf4j.LoggerFactory;
 public class BinlogPauseStatusResponse implements ClusterXmlLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusResponse.class);
 
-    private static final String CONFIG_PATH = ClusterPathUtil.getBinlogPauseStatus();
-
-
-    public BinlogPauseStatusResponse(ClusterClearKeyListener confListener) {
-        confListener.addChild(this, CONFIG_PATH);
-    }
-
 
     @Override
     public void notifyProcess(KvBean configValue) throws Exception {
-
-        //step 1 check if the block is from the server itself
-        BinlogPause pauseInfo = new BinlogPause(configValue.getValue());
-        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        if (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-            LOGGER.info("Self Notice,Do nothing return");
+        if (!DbleServer.getInstance().isStartup()) {
             return;
         }
-
-        //step 2 if the flag is on than try to lock all the commit
-        if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON && !KvBean.DELETE.equals(configValue.getChangeType())) {
-            DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
-            LOGGER.info("start pause for binlog status");
-            boolean isPaused = ShowBinlogStatus.waitAllSession();
-            if (!isPaused) {
-                ClusterHelper.cleanBackupLocked();
-                ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatusSelf(), "Error can't wait all session finished ");
-                return;
-            }
-            try {
-                ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatusSelf(), ClusterPathUtil.SUCCESS);
-            } catch (Exception e) {
-                ClusterHelper.cleanBackupLocked();
-                LOGGER.warn("create binlogPause instance failed", e);
-            }
-        } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
-            LOGGER.info("clean resource for binlog status finish");
-            //step 3 if the flag is off than try to unlock the commit
-            ClusterHelper.cleanBackupLocked();
+        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+        String path = configValue.getKey();
+        String[] paths = path.split(ClusterPathUtil.SEPARATOR);
+        if (paths.length != ClusterLogic.getPathHeight(ClusterPathUtil.getBinlogPause()) + 1) {
+            return;
         }
+        if ("".equals(configValue.getValue())) {
+            //the value of key is empty,just doing nothing
+            return;
+        }
+        if (KvBean.DELETE.equals(configValue.getChangeType())) {
+            // delete node
+            return;
+        }
+        String value = configValue.getValue();
+        ClusterLogic.executeBinlogPauseEvent(value);
     }
 
 
     @Override
     public void notifyCluster() throws Exception {
-        return;
     }
 }

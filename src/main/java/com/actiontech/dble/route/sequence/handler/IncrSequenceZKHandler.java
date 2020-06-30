@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.util.KVPathUtil;
@@ -49,7 +50,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     private Properties props;
 
     public void load(boolean isLowerCaseTableNames) {
-        props = PropertiesUtil.loadProps(FILE_NAME, isLowerCaseTableNames);
+        props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME, isLowerCaseTableNames);
         String zkAddress = ClusterConfig.getInstance().getClusterIP();
         if (zkAddress == null) {
             throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");

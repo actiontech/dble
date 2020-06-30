@@ -6,6 +6,7 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
@@ -106,7 +107,7 @@ public final class ConfFileHandler {
         InputStream dtdStream = new ByteArrayInputStream(new byte[0]);
         File confDir = new File(SystemConfig.getInstance().getHomePath(), "conf");
         switch (xmlFileName) {
-            case "sharding.xml":
+            case ConfigFileName.SHARDING_XML:
                 dtdStream = ResourceUtil.getResourceAsStream("/sharding.dtd");
                 if (dtdStream == null) {
                     dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
@@ -114,14 +115,14 @@ public final class ConfFileHandler {
                 }
 
                 break;
-            case "db.xml":
+            case ConfigFileName.DB_XML:
                 dtdStream = ResourceUtil.getResourceAsStream("/db.dtd");
                 if (dtdStream == null) {
                     dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
                             confDir, "db.dtd")));
                 }
                 break;
-            case "user.xml":
+            case ConfigFileName.USER_XML:
                 dtdStream = ResourceUtil.getResourceAsStream("/user.dtd");
                 if (dtdStream == null) {
                     dtdStream = new ByteArrayInputStream(readFileByBytes(new File(

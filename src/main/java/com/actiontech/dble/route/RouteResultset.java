@@ -5,7 +5,7 @@
  */
 package com.actiontech.dble.route;
 
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;

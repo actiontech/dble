@@ -115,6 +115,7 @@ public final class DryRun {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     serverConfig.reviseLowerCase();
                 } else {
+                    serverConfig.loadSequence();
                     serverConfig.selfChecking0();
                 }
                 //table exists check ,if the vars can not be touch ,the table check has no meaning
@@ -143,7 +144,7 @@ public final class DryRun {
     private static void ucoreConnectionTest(List<ErrorInfo> list) {
         try {
             String selfPath = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName());
-            ClusterHelper.getKV(selfPath);
+            ClusterHelper.getPathValue(selfPath);
         } catch (Exception e) {
             list.add(new ErrorInfo("Cluster", "ERROR", "Dble in cluster but all the ucore can't connect"));
         }

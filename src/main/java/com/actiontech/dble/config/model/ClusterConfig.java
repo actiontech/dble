@@ -154,6 +154,8 @@ public final class ClusterConfig {
                 startMilliseconds = DateUtil.parseDate(sequenceStartTime).getTime();
             } catch (ParseException e) {
                 problemReporter.warn("sequenceStartTime in cluster.cnf parse exception, you can use default value 2010-11-04 09:42:54");
+            } catch (IllegalArgumentException e) {
+                problemReporter.warn("sequenceStartTime in cluster.cnf invalid format, you can use default value 2010-11-04 09:42:54");
             }
             if (startMilliseconds > System.currentTimeMillis()) {
                 problemReporter.warn("sequenceStartTime in cluster.cnf mustn't be over than dble start time, you can use default value 2010-11-04 09:42:54");

@@ -206,9 +206,9 @@ public final class ShowHelp {
         HELPS.put("reload @@slow_query.flushsize", "Reset the flush size");
 
         //create database
-        HELPS.put("create database @@shardingNode ='dn......'", "create database for shardingNode set in sharding.xml");
+        HELPS.put("create database @@shardingNode ='dn......'", "create database for shardingNode in config");
         //drop database
-        HELPS.put("drop database @@shardingNode ='dn......'", "drop database for shardingNode set in sharding.xml");
+        HELPS.put("drop database @@shardingNode ='dn......'", "drop database for shardingNode set in config");
 
         //check @@metadata
         HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");

@@ -1,18 +1,13 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
-import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -26,59 +21,35 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
 
     @Override
     public void notifyProcess(KvBean configValue) throws Exception {
-        if (configValue.getKey().split("/").length == ClusterPathUtil.getHaStatusPath().split("/").length + 2) {
-            //child change the listener is not supported
-            return;
-        } else if (configValue.getChangeType().equals(KvBean.DELETE)) {
+        if (!DbleServer.getInstance().isStartup()) {
             return;
         }
-        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        if (configValue.getKey().contains(DB_GROUP_STATUS)) {
-            KvBean reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
-            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
-            while (reloadStatus != null) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
+        String path = configValue.getKey();
+        String value = configValue.getValue();
+        String[] paths = path.split(ClusterPathUtil.SEPARATOR);
+        if (paths.length != ClusterLogic.getPathHeight(ClusterPathUtil.getHaBasePath()) + 2) {
+            //child change the listener is not supported
+            return;
+        }
+        if (configValue.getChangeType().equals(KvBean.DELETE)) {
+            return;
+        }
+
+        String dbGroupName = paths[paths.length - 1];
+        LOGGER.info("notify " + path + " " + value + " " + configValue.getChangeType());
+        if (path.contains(DB_GROUP_STATUS)) {
+            while (ClusterHelper.getChildrenSize(ClusterPathUtil.getConfStatusPath()) != 0) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
             }
-            String[] path = configValue.getKey().split("/");
-            String dhName = path[path.length - 1];
-            PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
-            dbGroup.changeIntoLatestStatus(configValue.getValue());
-            HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
+            ClusterLogic.dbGroupChangeEvent(dbGroupName, value);
         } else {
-            //dbGroup_locks events,we only try to response to the DISABLE,ignore others
-            HaInfo info = new HaInfo(configValue.getValue());
-            if (info.getLockType() == HaInfo.HaType.DISABLE &&
-                    !info.getStartId().equals(SystemConfig.getInstance().getInstanceName()) &&
-                    info.getStatus() == HaInfo.HaStatus.SUCCESS) {
-                try {
-                    //start the log
-                    int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-                    //try to get the lastest status of the dbGroup
-                    KvBean latestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDbGroupName()));
-                    //find out the target dbGroup and change it into latest status
-                    PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
-                    dbGroup.changeIntoLatestStatus(latestStatus.getValue());
-                    //response the event ,only disable event has response
-                    ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
-                    //ha manager writeOut finish log
-                    HaConfigManager.getInstance().haFinish(id, null, latestStatus.getValue());
-                } catch (Exception e) {
-                    //response the event ,only disable event has response
-                    ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), e.getMessage());
-                }
-            }
+            ClusterLogic.dbGroupResponseEvent(value, dbGroupName);
         }
     }
 
+
     @Override
     public void notifyCluster() throws Exception {
-        HaConfigManager.getInstance().init();
-        if (ClusterConfig.getInstance().isNeedSyncHa()) {
-            Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
-            }
-        }
+        ClusterLogic.syncDbGroupStatusToCluster();
     }
 }

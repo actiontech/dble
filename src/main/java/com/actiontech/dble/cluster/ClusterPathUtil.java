@@ -6,7 +6,6 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 
 import static com.actiontech.dble.backend.mysql.view.Repository.SCHEMA_VIEW_SPLIT;
 
@@ -87,12 +86,6 @@ public final class ClusterPathUtil {
     public static String getHaLockPath(String dhName) {
         return LOCK_BASE_PATH + SEPARATOR + DB_GROUP_LOCKS + SEPARATOR + dhName;
     }
-
-    public static String getSelfResponsePath(String notifyPath) {
-        return notifyPath + SEPARATOR + SystemConfig.getInstance().getInstanceName();
-    }
-
-
     //depth:2,sequences path:base_path/sequences
     private static final String SEQUENCES = "sequences";
 
@@ -124,8 +117,8 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + CONF_STATUS;
     }
 
-    public static String getSelfConfStatusPath() {
-        return getConfStatusPath() + SEPARATOR + SystemConfig.getInstance().getInstanceName();
+    public static String getConfStatusOperatorPath() {
+        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + "operator";
     }
 
     //depth:2,child node of base_path
@@ -139,20 +132,20 @@ public final class ClusterPathUtil {
 
     //depth:2,binlog_pause path:base_path/binlog_pause
     private static final String BINLOG_PAUSE_PATH = BASE_PATH + "binlog_pause";
-    public static final String BINLOG_PAUSE_STATUS = "status";
+    private static final String BINLOG_PAUSE_STATUS = "status";
 
 
     public static String getBinlogPauseLockPath() {
         return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
     }
 
+    public static String getBinlogPause() {
+        return BINLOG_PAUSE_PATH;
+    }
     public static String getBinlogPauseStatus() {
         return BINLOG_PAUSE_PATH + SEPARATOR + BINLOG_PAUSE_STATUS;
     }
 
-    public static String getBinlogPauseStatusSelf() {
-        return getBinlogPauseStatus() + SEPARATOR + SystemConfig.getInstance().getInstanceName();
-    }
 
     //depth:2,child node of base_path
     public static String getDDLPath() {
@@ -162,15 +155,6 @@ public final class ClusterPathUtil {
     //depth:2,child node of base_path
     public static String getDDLPath(String fullName) {
         return getDDLPath() + SEPARATOR + fullName;
-    }
-
-    public static String getDDLInstanceSelfPath(String fullName) {
-        return getDDLInstancePath(fullName) + SEPARATOR + SystemConfig.getInstance().getInstanceName();
-    }
-
-
-    public static String getDDLInstancePath(String fullName) {
-        return getDDLPath(fullName) + SEPARATOR + "instance";
     }
 
     //depth:2,child node of base_path
@@ -204,9 +188,6 @@ public final class ClusterPathUtil {
         return BASE_PATH + "view";
     }
 
-    public static String getViewPath(String fullName) {
-        return ClusterPathUtil.getViewPath() + SEPARATOR + fullName;
-    }
     public static String getViewPath(String schemaName, String viewName) {
         return ClusterPathUtil.getViewPath() + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
     }

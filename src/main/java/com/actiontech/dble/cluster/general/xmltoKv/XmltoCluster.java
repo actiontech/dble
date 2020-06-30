@@ -6,6 +6,8 @@
 package com.actiontech.dble.cluster.general.xmltoKv;
 
 import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
@@ -23,13 +25,16 @@ public final class XmltoCluster {
     }
 
     public static void main(String[] args) throws Exception {
-        ClusterController.initFromShellUcore();
-        initFileToUcore();
+        ClusterController.loadClusterProperties();
+        ClusterGeneralConfig.initConfig();
+        AbstractConsulSender sender = ((AbstractConsulSender) (ClusterGeneralConfig.getInstance().getClusterSender()));
+        sender.initConInfo();
+        initFileToUcore(sender);
         System.out.println("XmltoZkMain Finished");
     }
 
-    public static void initFileToUcore() throws Exception {
-        ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener();
+    private static void initFileToUcore(AbstractConsulSender sender) throws Exception {
+        ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener(sender);
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
@@ -39,7 +44,7 @@ public final class XmltoCluster {
 
         new XmlUserLoader(xmlProcess, ucoreListen);
 
-        new PropertySequenceLoader(ucoreListen);
+        new SequencePropertiesLoader(ucoreListen);
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();

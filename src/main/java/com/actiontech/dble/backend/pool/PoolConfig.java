@@ -1,5 +1,6 @@
 package com.actiontech.dble.backend.pool;
 
+import com.actiontech.dble.config.ConfigFileName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,7 +9,7 @@ import static java.util.concurrent.TimeUnit.*;
 public class PoolConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PoolConfig.class);
-    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in db.xml is illegal, use the default value %d replaced";
+    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in " + ConfigFileName.DB_XML + " is illegal, use the default value %d replaced";
 
     private static final long CONNECTION_TIMEOUT = SECONDS.toMillis(30);
     private static final long CON_HEARTBEAT_TIMEOUT = MILLISECONDS.toMillis(20);

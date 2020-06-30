@@ -13,10 +13,8 @@ import java.util.Map;
 public interface Repository {
     String SCHEMA_VIEW_SPLIT = ":";
     String SERVER_ID = "serverId";
-    String CREATE_SQL = "createSql";
     String DELETE = "delete";
     String UPDATE = "update";
-    String LOCK = "lock";
 
     Map<String, Map<String, String>> getViewCreateSqlMap();
 

@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -34,7 +35,7 @@ import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL
 @SuppressWarnings("unchecked")
 public class XMLShardingLoader {
     private static final String DEFAULT_DTD = "/sharding.dtd";
-    private static final String DEFAULT_XML = "/sharding.xml";
+    private static final String DEFAULT_XML = "/" + ConfigFileName.SHARDING_XML;
 
     private final Map<String, ShardingNodeConfig> shardingNode;
     private final Map<String, SchemaConfig> schemas;
@@ -84,10 +85,10 @@ public class XMLShardingLoader {
             if (version != null && !Versions.CONFIG_VERSION.equals(version)) {
                 if (this.problemReporter != null) {
                     if (Versions.checkVersion(version)) {
-                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the sharding.xml version is " + version + ".There may be some incompatible config between two versions, please check it";
+                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.SHARDING_XML + " version is " + version + ".There may be some incompatible config between two versions, please check it";
                         this.problemReporter.notice(message);
                     } else {
-                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the sharding.xml version is " + version + ".There must be some incompatible config between two versions, please check it";
+                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.SHARDING_XML + " version is " + version + ".There must be some incompatible config between two versions, please check it";
                         this.problemReporter.notice(message);
                     }
                 }

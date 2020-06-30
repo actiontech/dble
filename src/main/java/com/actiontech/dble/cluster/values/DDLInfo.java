@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.cluster.zkprocess.zookeeper.process;
+package com.actiontech.dble.cluster.values;
 
 /**
  * Created by huqing.yan on 2017/6/7.
@@ -53,10 +53,6 @@ public class DDLInfo {
 
     public String getFrom() {
         return from;
-    }
-
-    public String getSchema() {
-        return schema;
     }
 
     public String getSql() {

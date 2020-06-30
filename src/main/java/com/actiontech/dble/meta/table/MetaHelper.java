@@ -38,7 +38,7 @@ final class MetaHelper {
         ViewMeta meta = null;
         try {
             meta = new ViewMeta(schema, "CREATE " + str, tmManager);
-            meta.init(false);
+            meta.init();
             meta.setTimestamp(timeStamp);
         } catch (Exception e) {
             LOGGER.warn("sql[" + sql + "] parser error:", e);

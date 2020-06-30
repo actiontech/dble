@@ -13,8 +13,6 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -35,7 +33,6 @@ import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.TimeUtil;
-import com.actiontech.dble.util.ZKUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +91,7 @@ public final class DbleServer {
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
     private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
-
+    private volatile boolean startup = false;
     private DbleServer() {
     }
 
@@ -104,6 +101,7 @@ public final class DbleServer {
         this.config = new ServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
+
         LOGGER.info("=========================================Init Outer Ha Config==================================");
         HaConfigManager.getInstance().init();
 
@@ -247,6 +245,7 @@ public final class DbleServer {
 
         CustomMySQLHa.getInstance().start();
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
+        startup = true;
     }
 
     private void initAioProcessor(int processorCount) throws IOException {
@@ -383,13 +382,7 @@ public final class DbleServer {
 
     private void initOnlineStatus() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().useZkMode()) {
-                ZkConfig.tryDeleteOldOnline();
-                // online
-                ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
-            } else {
-                OnlineStatus.getInstance().mainThreadInitClusterOnline();
-            }
+            OnlineStatus.getInstance().mainThreadInitClusterOnline();
         }
     }
 
@@ -660,6 +653,10 @@ public final class DbleServer {
 
     public ExecutorService getBackendBusinessExecutor() {
         return backendBusinessExecutor;
+    }
+
+    public boolean isStartup() {
+        return startup;
     }
 
 }

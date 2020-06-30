@@ -1,6 +1,6 @@
 package com.actiontech.dble.backend.datasource;
 
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.cluster.values.HaInfo;
 
 /**
  * Created by szf on 2019/11/1.

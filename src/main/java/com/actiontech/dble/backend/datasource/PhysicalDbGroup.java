@@ -14,7 +14,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DbInstanceStatus;
+import com.actiontech.dble.cluster.values.DbInstanceStatus;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;

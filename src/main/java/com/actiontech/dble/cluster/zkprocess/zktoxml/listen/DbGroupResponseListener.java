@@ -1,11 +1,10 @@
 package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.singleton.HaConfigManager;
+import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -15,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 
 /**
@@ -26,10 +27,12 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-        ChildData childData = event.getData();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("event happen:" + event.toString());
+        }
         switch (event.getType()) {
             case CHILD_ADDED:
-                updateStatus(childData);
+                updateStatus(event.getData());
                 break;
             case CHILD_UPDATED:
                 break;
@@ -42,37 +45,19 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
 
 
     private void updateStatus(ChildData childData) throws Exception {
-        if (SystemConfig.getInstance().isUseOuterHa()) {
-            String data = new String(childData.getData(), StandardCharsets.UTF_8);
-            LOGGER.info("Ha disable node " + childData.getPath() + " updated , and data is " + data);
-            try {
-                if (!"".equals(data)) {
-                    response(data, childData.getPath());
-                } else {
-                    CuratorFramework zkConn = ZKUtils.getConnection();
-                    String newData = new String(zkConn.getData().forPath(childData.getPath()), "UTF-8");
-                    response(newData, childData.getPath());
-                }
-            } catch (Exception e) {
-                LOGGER.warn("get error when try to response to the disable");
-                ZKUtils.createTempNode(childData.getPath(), SystemConfig.getInstance().getInstanceName(), e.getMessage().getBytes());
-            }
+        String value = new String(childData.getData(), StandardCharsets.UTF_8);
+        LOGGER.info("Ha disable node " + childData.getPath() + " updated , and data is " + value);
+        String[] paths = childData.getPath().split(ClusterPathUtil.SEPARATOR);
+        String dbGroupName = paths[paths.length - 1];
+        while (StringUtil.isEmpty(value)) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+            value = ClusterHelper.getPathValue(childData.getPath());
         }
-    }
-
-
-    private void response(String data, String path) throws Exception {
-        HaInfo info = new HaInfo(data);
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        if (!info.getStartId().equals(SystemConfig.getInstance().getInstanceName()) &&
-                info.getStatus() == HaInfo.HaStatus.SUCCESS) {
-            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-            PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
-            String jsonString = new String(zkConn.getData().forPath(ClusterPathUtil.getHaStatusPath(info.getDbGroupName())), "UTF-8");
-            dbGroup.changeIntoLatestStatus(jsonString);
-            //response to kv
-            ZKUtils.createTempNode(path, SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS.getBytes());
-            HaConfigManager.getInstance().haFinish(id, null, data);
+        try {
+            ClusterLogic.dbGroupResponseEvent(value, dbGroupName);
+        } catch (Exception e) {
+            LOGGER.warn("get error when try to response to the disable");
+            ZKUtils.createTempNode(childData.getPath(), SystemConfig.getInstance().getInstanceName(), e.getMessage().getBytes());
         }
     }
 

@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.cluster.general.listener;
 
-import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
@@ -32,6 +32,11 @@ public class ClusterClearKeyListener implements Runnable {
     private Map<String, String> cache = new HashMap<>();
 
     private long index = 0;
+    private AbstractConsulSender sender;
+
+    public ClusterClearKeyListener(AbstractConsulSender sender) {
+        this.sender = sender;
+    }
 
 
     @Override
@@ -42,7 +47,7 @@ public class ClusterClearKeyListener implements Runnable {
                 request.setIndex(index);
                 request.setDuration(60);
                 request.setPath(ClusterPathUtil.CONF_BASE_PATH);
-                SubscribeReturnBean output = ClusterHelper.subscribeKvPrefix(request);
+                SubscribeReturnBean output = sender.subscribeKvPrefix(request);
                 if (output.getIndex() != index) {
                     Map<String, KvBean> diffMap = getDiffMapWithOrder(output);
                     handle(diffMap);
@@ -108,7 +113,7 @@ public class ClusterClearKeyListener implements Runnable {
             request.setIndex(0);
             request.setDuration(60);
             request.setPath(ClusterPathUtil.BASE_PATH);
-            SubscribeReturnBean output = ClusterHelper.subscribeKvPrefix(request);
+            SubscribeReturnBean output = sender.subscribeKvPrefix(request);
             index = output.getIndex();
             Map<String, KvBean> diffMap = new HashMap<String, KvBean>();
             for (int i = 0; i < output.getKeysCount(); i++) {

@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.backend.pool.PoolConfig;
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
@@ -33,8 +34,7 @@ import java.util.regex.Pattern;
 @SuppressWarnings("unchecked")
 public class XMLDbLoader {
     private static final String DEFAULT_DTD = "/db.dtd";
-    private static final String DEFAULT_XML = "/db.xml";
-
+    private static final String DEFAULT_XML = "/" + ConfigFileName.DB_XML;
     private final Map<String, DbGroupConfig> dbGroupConfigs;
     private ProblemReporter problemReporter;
     private final Map<String, PhysicalDbGroup> dbGroups;
@@ -66,10 +66,11 @@ public class XMLDbLoader {
             if (version != null && !Versions.CONFIG_VERSION.equals(version)) {
                 if (this.problemReporter != null) {
                     if (Versions.checkVersion(version)) {
-                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the db.xml version is " + version + ".There may be some incompatible config between two versions, please check it";
+                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " +
+                                ConfigFileName.DB_XML + " version is " + version + ".There may be some incompatible config between two versions, please check it";
                         this.problemReporter.notice(message);
                     } else {
-                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the db.xml version is " + version + ".There must be some incompatible config between two versions, please check it";
+                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.DB_XML + " version is " + version + ".There must be some incompatible config between two versions, please check it";
                         this.problemReporter.notice(message);
                     }
                 }

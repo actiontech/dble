@@ -6,92 +6,50 @@
 package com.actiontech.dble.cluster.zkprocess.xmltozk;
 
 import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-
-import java.nio.charset.StandardCharsets;
 
 public final class XmltoZkMain {
     private XmltoZkMain() {
     }
 
     public static void main(String[] args) throws Exception {
-        ClusterController.initFromShellZK();
+        ClusterController.loadClusterProperties();
+        if (!ClusterController.CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
+            throw new RuntimeException("Cluster mode is not " + ClusterController.CONFIG_MODE_ZK);
+        }
         initFileToZK();
         System.out.println("XmltoZkMain Finished");
-    }
-
-    public static void rollbackConf() throws Exception {
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
-        zkConn.setData().forPath(ClusterPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
-    }
-
-    public static void writeConfFileToZK(final int allMode) throws Exception {
-        ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
-
-        CuratorFramework zkConn = ZKUtils.getConnection();
-
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-
-        // xmltozk for sharding
-        new ShardingXmlToZKLoader(zkListen, zkConn, xmlProcess);
-
-
-        // xmltozk for db
-        new DbXmlToZkLoader(zkListen, zkConn, xmlProcess);
-
-        // xmltozk for user
-        new UserXmlToZkLoader(zkListen, zkConn, xmlProcess);
-
-        if (ClusterConfig.getInstance().isNeedSyncHa()) {
-            new DbGroupStatusToZkLoader(zkListen, zkConn);
-        }
-
-        xmlProcess.initJaxbClass();
-
-        zkListen.initAllNode();
-        zkListen.clearInited();
-        //write flag
-        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
-                ConfStatus.Status.RELOAD_ALL, String.valueOf(allMode));
-        zkConn.setData().forPath(ClusterPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     public static void initFileToZK() throws Exception {
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
-        CuratorFramework zkConn = ZKUtils.getConnection();
-
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        new DbXmlToZkLoader(zkListen, zkConn, xmlProcess);
+        new DbXmlToZkLoader(zkListen, xmlProcess);
 
-        new ShardingXmlToZKLoader(zkListen, zkConn, xmlProcess);
+        new ShardingXmlToZKLoader(zkListen, xmlProcess);
 
-        new UserXmlToZkLoader(zkListen, zkConn, xmlProcess);
+        new UserXmlToZkLoader(zkListen, xmlProcess);
 
-        new SequenceTozkLoader(zkListen, zkConn);
+        new SequenceToZkLoader(zkListen);
 
-        new OthermsgTozkLoader(zkListen, zkConn);
+        new OtherMsgTozkLoader(zkListen);
 
-        new DbGroupStatusToZkLoader(zkListen, zkConn);
+        new DbGroupStatusToZkLoader(zkListen);
 
         xmlProcess.initJaxbClass();
 
         zkListen.initAllNode();
         zkListen.clearInited();
         String confInited = KVPathUtil.getConfInitedPath();
-        if (zkConn.checkExists().forPath(confInited) == null) {
-            zkConn.create().creatingParentContainersIfNeeded().forPath(confInited);
+        if (ZKUtils.getConnection().checkExists().forPath(confInited) == null) {
+            ZKUtils.getConnection().create().creatingParentContainersIfNeeded().forPath(confInited);
         }
     }
 }

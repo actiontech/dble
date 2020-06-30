@@ -1,4 +1,9 @@
-package com.actiontech.dble.cluster.zkprocess.zookeeper.process;
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.cluster.values;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.route.RouteResultsetNode;

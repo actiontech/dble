@@ -4,29 +4,15 @@
  */
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.net.NIOProcessor;
-import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.cluster.general.bean.KvBean.DELETE;
@@ -50,81 +36,19 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
     @Override
     public void notifyProcess(KvBean configValue) throws Exception {
         LOGGER.info("get key in PauseShardingNodeResponse:" + configValue.getKey() + "   " + configValue.getValue());
-        if (!DELETE.equals(configValue.getChangeType())) {
-            if (configValue.getKey().equals(ClusterPathUtil.getPauseShardingNodePath()) || ClusterPathUtil.getPauseResumePath().equals(configValue.getKey())) {
-                final PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
-                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-                    if (PauseInfo.PAUSE.equals(pauseInfo.getType())) {
-                        final String shardingNodes = pauseInfo.getShardingNodes();
-                        waitThread = new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-
-                                try {
-                                    LOGGER.info("Strat pause shardingNode " + shardingNodes);
-                                    Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(shardingNodes.split(",")));
-                                    PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit());
-
-                                    while (!Thread.interrupted()) {
-                                        lock.lock();
-                                        try {
-                                            boolean nextTurn = false;
-                                            for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
-                                                for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
-                                                    if (entry.getValue() instanceof ServerConnection) {
-                                                        ServerConnection sconnection = (ServerConnection) entry.getValue();
-                                                        for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : sconnection.getSession2().getTargetMap().entrySet()) {
-                                                            if (shardingNodeSet.contains(conEntry.getKey().getName())) {
-                                                                nextTurn = true;
-                                                                break;
-                                                            }
-                                                        }
-                                                        if (nextTurn) {
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                                if (nextTurn) {
-                                                    break;
-                                                }
-                                            }
-                                            if (!nextTurn) {
-                                                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceName()),
-                                                        SystemConfig.getInstance().getInstanceName());
-                                                break;
-                                            }
-                                        } finally {
-                                            lock.unlock();
-                                        }
-                                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100L));
-                                    }
-
-                                } catch (Exception e) {
-                                    LOGGER.warn(" the ucore pause error " + e.getMessage());
-                                }
-
-                            }
-                        });
-                        waitThread.start();
-                    } else {
-                        lock.lock();
-                        try {
-                            if (waitThread.isAlive()) {
-                                waitThread.interrupt();
-                            }
-                        } finally {
-                            lock.unlock();
-                        }
-                        LOGGER.info("resume shardingNode for get notice");
-                        PauseShardingNodeManager.getInstance().resume();
-                        ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceName()),
-                                SystemConfig.getInstance().getInstanceName());
-
-                    }
-                }
-            }
+        if (DELETE.equals(configValue.getChangeType())) {
+            return;
+        }
+        String key = configValue.getKey();
+        String value = configValue.getKey();
+        if (ClusterPathUtil.getPauseShardingNodePath().equals(key)) {
+            waitThread = ClusterLogic.pauseShardingNodeEvent(value, lock);
+        } else if (ClusterPathUtil.getPauseResumePath().equals(key)) {
+            ClusterLogic.resumeShardingNodeEvent(value, lock, waitThread);
         }
     }
+
+
 
     /**
      * notify the cluster that the pause is over

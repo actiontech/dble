@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.alarm;
 
-import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.ClusterAlertBean;
 import com.actiontech.dble.config.model.SystemConfig;
 
@@ -15,11 +15,13 @@ public final class UcoreAlert implements Alert {
     private final String serverId;
     private final String sourceComponentId;
     private final String alertComponentId;
+    private AbstractConsulSender sender;
 
-    public UcoreAlert() {
+    public UcoreAlert(AbstractConsulSender sender) {
         serverId = SystemConfig.getInstance().getServerId();
         sourceComponentId = SystemConfig.getInstance().getInstanceName();
         alertComponentId = SystemConfig.getInstance().getInstanceName();
+        this.sender = sender;
     }
 
     @Override
@@ -33,7 +35,7 @@ public final class UcoreAlert implements Alert {
                 setSourceComponentId(sourceComponentId).
                 setServerId(serverId).
                 setTimestampUnix(System.currentTimeMillis() * 1000000);
-        ClusterHelper.alert(alert);
+        sender.alert(alert);
     }
 
     @Override
@@ -43,7 +45,7 @@ public final class UcoreAlert implements Alert {
                 setSourceComponentId(sourceComponentId).
                 setServerId(serverId).
                 setResolveTimestampUnix(System.currentTimeMillis() * 1000000);
-        return ClusterHelper.alertResolve(alert);
+        return sender.alertResolve(alert);
     }
 
     @Override

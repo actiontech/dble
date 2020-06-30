@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLNonTransientException;
+import java.util.List;
 
 /**
  * <p>
@@ -42,6 +43,8 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     private final long incrementShift = timestampBits;
     private final long instanceIdShift = incrementShift + incrementBits;
     private volatile long instanceId;
+    //The number of retries after zk generated id & 511 collision
+    private final int retryCount = 5;
 
     private ThreadLocal<Long> threadInc = new ThreadLocal<>();
     private ThreadLocal<Long> threadLastTime = new ThreadLocal<>();
@@ -61,16 +64,44 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     public void load(boolean isLowerCaseTableNames) {
         if (ClusterConfig.getInstance().isSequenceInstanceByZk()) {
             initializeZK();
+            loadInstanceIdByZK();
         } else {
-            this.instanceId = SystemConfig.getInstance().getInstanceId();
-            this.ready = true;
+            loadInstanceIdByConfig();
         }
+        this.ready = true;
+        this.deadline = startTimeMilliseconds + (1L << 39);
+    }
+
+    private void loadInstanceIdByConfig() {
+        this.instanceId = SystemConfig.getInstance().getInstanceId();
         long maxInstanceId = ~(-1L << instanceIdBits);
         if (instanceId > maxInstanceId || instanceId < 0) {
             throw new IllegalArgumentException(String.format("instanceId can't be greater than %d or less than 0", maxInstanceId));
         }
+    }
 
-        this.deadline = startTimeMilliseconds + (1L << 39);
+    private void loadInstanceIdByZK() {
+        int execCount = 1;
+        while (true) {
+            if (execCount > this.retryCount) {
+                throw new RuntimeException("instanceId allocate error when using zk, reason: no available instanceId found");
+            }
+            try {
+                List<String> nodeList = client.getChildren().forPath(INSTANCE_PATH);
+                String slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
+                        forPath(INSTANCE_PATH.concat("/node"), "ready".getBytes());
+                String tempInstanceId = slavePath.substring(slavePath.length() - 10);
+                this.instanceId = Long.parseLong(tempInstanceId) & ((1 << instanceIdBits) - 1);
+                //check if id collides
+                if (checkInstanceIdCollision(nodeList)) {
+                    execCount++;
+                } else {
+                    return;
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("instanceId allocate error when using zk, reason:" + e.getMessage());
+            }
+        }
     }
 
     public void initializeZK() {
@@ -90,16 +121,16 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         } catch (Exception e) {
             throw new RuntimeException("create instance path " + INSTANCE_PATH + "error", e);
         }
+    }
 
-        try {
-            String slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
-                    forPath(INSTANCE_PATH.concat("/node"), "ready".getBytes());
-            String tempInstanceId = slavePath.substring(slavePath.length() - 10, slavePath.length());
-            instanceId = Long.parseLong(tempInstanceId) & ((1 << instanceIdBits) - 1);
-            ready = true;
-        } catch (Exception e) {
-            throw new RuntimeException("instanceId allocate error when using zk, reason:" + e.getMessage());
-        }
+    /**
+     * check if id collides
+     *
+     * @param nodeList
+     * @return
+     */
+    private boolean checkInstanceIdCollision(List<String> nodeList) {
+        return nodeList.stream().anyMatch(e -> (Long.parseLong(e.substring(e.length() - 10)) & ((1 << instanceIdBits) - 1)) == this.instanceId);
     }
 
     @Override

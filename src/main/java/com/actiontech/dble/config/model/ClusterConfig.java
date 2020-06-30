@@ -153,12 +153,12 @@ public final class ClusterConfig {
             try {
                 startMilliseconds = DateUtil.parseDate(sequenceStartTime).getTime();
             } catch (ParseException e) {
-                problemReporter.error("sequenceStartTime in cluster.cnf parse exception, you can use default value 2010-11-04 09:42:54");
+                problemReporter.warn("sequenceStartTime in cluster.cnf parse exception, you can use default value 2010-11-04 09:42:54");
             } catch (IllegalArgumentException e) {
-                problemReporter.error("sequenceStartTime in cluster.cnf invalid format, you can use default value 2010-11-04 09:42:54");
+                problemReporter.warn("sequenceStartTime in cluster.cnf invalid format, you can use default value 2010-11-04 09:42:54");
             }
             if (startMilliseconds > System.currentTimeMillis()) {
-                problemReporter.error("sequenceStartTime in cluster.cnf mustn't be over than dble start time, you can use default value 2010-11-04 09:42:54");
+                problemReporter.warn("sequenceStartTime in cluster.cnf mustn't be over than dble start time, you can use default value 2010-11-04 09:42:54");
             }
             this.startTimeMilliseconds = startMilliseconds;
         }

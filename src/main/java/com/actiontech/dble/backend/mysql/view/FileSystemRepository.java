@@ -75,7 +75,7 @@ public class FileSystemRepository implements Repository {
      * save the view info into local
      * so the view can be use without ucore
      */
-    public void saveUcoreMap() {
+    public void saveMapToFile() {
         try {
             this.writeToFile(mapToJsonString(viewCreateSqlMap));
         } catch (Exception e) {

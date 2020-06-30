@@ -5,14 +5,15 @@
 
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
+import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.InstanceOnline;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -29,7 +30,7 @@ public final class OnlineStatus {
     private static final String SERVER_PORT = "SERVER_PORT";
     private static final String HOST_ADDR = "HOST_ADDR";
     private static final String START_TIME = "START_TIME";
-    private volatile ClusterGeneralDistributeLock onlineLock = null;
+    private volatile DistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
     private volatile boolean mainThreadTryed = false;
     private final int serverPort;
@@ -54,7 +55,7 @@ public final class OnlineStatus {
      * @return
      * @throws IOException
      */
-    public synchronized boolean mainThreadInitClusterOnline() throws IOException {
+    public synchronized boolean mainThreadInitClusterOnline() throws Exception {
         mainThreadTryed = true;
         return clusterOnlineInit();
     }
@@ -65,7 +66,7 @@ public final class OnlineStatus {
      *
      * @throws IOException
      */
-    public void nodeListenerInitClusterOnline() throws IOException {
+    public void nodeListenerInitClusterOnline() throws Exception {
         if (mainThreadTryed) {
             clusterOnlineInit();
         }
@@ -78,15 +79,15 @@ public final class OnlineStatus {
      * @return
      * @throws IOException
      */
-    public synchronized boolean clusterOnlineInit() throws IOException {
+    public synchronized boolean clusterOnlineInit() throws Exception {
         if (onlineInited) {
             //when the first init finished  the online check & rebuild would handle by ClusterOffLineListener
             return false;
         }
         //check if the online mark is on than delete the mark and renew it
-        String oldValue = ClusterHelper.getKV(ClusterPathUtil.getOnlinePath(
-                SystemConfig.getInstance().getInstanceName())).getValue();
-        if (!"".equals(oldValue)) {
+        String oldValue = ClusterHelper.getPathValue(ClusterPathUtil.getOnlinePath(
+                SystemConfig.getInstance().getInstanceName()));
+        if (!StringUtil.isEmpty((oldValue))) {
             if (InstanceOnline.getInstance().canRemovePath(oldValue)) {
                 ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
                         SystemConfig.getInstance().getInstanceName()));
@@ -97,7 +98,7 @@ public final class OnlineStatus {
         if (onlineLock != null) {
             onlineLock.release();
         }
-        onlineLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getOnlinePath(
+        onlineLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getOnlinePath(
                 SystemConfig.getInstance().getInstanceName()),
                 toString(), 6);
         int time = 0;
@@ -125,7 +126,7 @@ public final class OnlineStatus {
             if (onlineLock != null) {
                 onlineLock.release();
             }
-            onlineLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getOnlinePath(
+            onlineLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getOnlinePath(
                     SystemConfig.getInstance().getInstanceName()),
                     toString(), 6);
             int time = 0;
@@ -138,7 +139,7 @@ public final class OnlineStatus {
                 // rebuild is triggered by online missing ,no wait for too long
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
             }
-            Repository newViewRepository = new CKVStoreRepository();
+            Repository newViewRepository = new KVStoreRepository();
             ProxyMeta.getInstance().getTmManager().setRepository(newViewRepository);
             Map<String, Map<String, String>> viewCreateSqlMap = newViewRepository.getViewCreateSqlMap();
             ProxyMeta.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
@@ -147,12 +148,15 @@ public final class OnlineStatus {
         return false;
     }
 
-
     public void shutdownClear() {
         if (onlineLock != null) {
             onlineLock.release();
-            ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
-                    SystemConfig.getInstance().getInstanceName()));
+            try {
+                ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
+                        SystemConfig.getInstance().getInstanceName()));
+            } catch (Exception e) {
+                LOGGER.info("shut down online status clear failed", e);
+            }
             LOGGER.info("shut down online status clear");
         }
     }

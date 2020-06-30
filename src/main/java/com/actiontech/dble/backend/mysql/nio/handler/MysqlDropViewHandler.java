@@ -37,7 +37,7 @@ public class MysqlDropViewHandler implements ResponseHandler {
     private RouteResultset rrs;
     private volatile byte packetId;
     private AtomicInteger viewNum;
-    private ViewMeta vm;
+    private ViewMeta vm; //if only for replace from a no sharding view to a sharding view
 
     public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNum) {
         this.session = session;
@@ -103,7 +103,7 @@ public class MysqlDropViewHandler implements ResponseHandler {
         }
 
         if (viewNum.decrementAndGet() == 0) {
-            if (vm != null) {
+            if (vm != null) { // replace a new sharding view
                 try {
                     vm.addMeta(true);
                 } catch (SQLNonTransientException e) {

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster.general;
 
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.DistributeLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,37 +13,40 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by szf on 2018/1/31.
  */
-public class ClusterGeneralDistributeLock extends DistributeLock {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClusterGeneralDistributeLock.class);
+public class ConsulDistributeLock extends DistributeLock {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsulDistributeLock.class);
     private final int maxErrorCnt;
     private int errorCount = 0;
     private String session;
+    private AbstractConsulSender sender;
 
     //private Thread renewThread;
 
-    public ClusterGeneralDistributeLock(String path, String value) {
+    public ConsulDistributeLock(String path, String value, AbstractConsulSender sender) {
         this.path = path;
         this.value = value;
         this.maxErrorCnt = 3;
+        this.sender = sender;
     }
 
-    public ClusterGeneralDistributeLock(String path, String value, int maxErrorCnt) {
+    public ConsulDistributeLock(String path, String value, int maxErrorCnt, AbstractConsulSender sender) {
         this.path = path;
         this.value = value;
         this.maxErrorCnt = maxErrorCnt;
+        this.sender = sender;
     }
 
     @Override
     public void release() {
         if (session != null) {
-            ClusterGeneralConfig.getInstance().getClusterSender().unlockKey(path, session);
+            sender.unlockKey(path, session);
         }
     }
 
     @Override
     public boolean acquire() {
         try {
-            String sessionId = ClusterGeneralConfig.getInstance().getClusterSender().lock(path, value);
+            String sessionId = sender.lock(path, value);
             if ("".equals(sessionId)) {
                 errorCount++;
                 if (errorCount == maxErrorCnt) {
@@ -57,7 +59,7 @@ public class ClusterGeneralDistributeLock extends DistributeLock {
         } catch (Exception e) {
             LOGGER.warn(" get lock from ucore error", e);
             errorCount++;
-            if (errorCount == maxErrorCnt) {
+            if (errorCount >= maxErrorCnt) {
                 throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");
             }
             return false;

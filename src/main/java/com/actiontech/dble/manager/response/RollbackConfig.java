@@ -95,9 +95,8 @@ public final class RollbackConfig {
         } finally {
             //step 6 delete the reload flag
             lock.writeLock().unlock();
-
-            distributeLock.release();
             ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath());
+            distributeLock.release();
         }
     }
 

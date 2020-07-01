@@ -205,7 +205,7 @@ public final class PauseShardingNodeManager {
                 ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(),
                         SystemConfig.getInstance().getInstanceName());
             } catch (Exception e) {
-                LOGGER.info("ucore connecction error", e);
+                LOGGER.info("cluster connecction error", e);
                 return false;
             }
         }

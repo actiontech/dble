@@ -13,7 +13,9 @@ import static com.actiontech.dble.backend.mysql.view.Repository.SCHEMA_VIEW_SPLI
  * Created by szf on 2018/1/26.
  */
 public final class ClusterPathUtil {
+    private ClusterPathUtil() {
 
+    }
     public static final String LOCAL_WRITE_PATH = "./";
 
     public static final String SEPARATOR = "/";
@@ -24,50 +26,37 @@ public final class ClusterPathUtil {
     //depth:2,conf_base_path: base_path/conf/
     public static final String CONF_BASE_PATH = BASE_PATH + "conf" + SEPARATOR;
 
-    public static final String SCHEMA = "schema";
-    public static final String DB_GROUP = "dbGroup";
-    public static final String SHARDING_NODE = "shardingNode";
-    public static final String BLACKLIST = "blacklist";
+    //xml properties
+    static final String SCHEMA = "schema";
+    static final String DB_GROUP = "dbGroup";
+    static final String SHARDING_NODE = "shardingNode";
+    static final String BLACKLIST = "blacklist";
+    static final String VERSION = "version";
+    static final String FUNCTION = "function";
+    static final String USER = "user";
 
 
     public static final String SUCCESS = "success";
-
-    //depth:3,child node of conf_base_path
-    private static final String CONF_STATUS = "status";
-    private static final String SHARDING = "sharding";
+    public static final String DB_GROUP_STATUS = "dbGroup_status";
 
     //depth:3,child node of conf_base_path
     public static String getConfShardingPath() {
-        return CONF_BASE_PATH + SHARDING;
+        return CONF_BASE_PATH + "sharding";
     }
 
     public static String getUserConfPath() {
-        return CONF_BASE_PATH + USER;
+        return CONF_BASE_PATH + "user";
     }
+
     public static String getDbConfPath() {
         return CONF_BASE_PATH + "db";
     }
 
-    public static final String VERSION = "version";
-
-    //depth:4,child node of conf_base_path/rules/
-    public static final String FUNCTION = "function";
 
 
-    public static final String USER = "user";
-
-
-    private static final String DB_GROUPS = "dbGroups";
-    public static final String DB_GROUP_STATUS = "dbGroup_status";
-    private static final String DB_GROUP_RESPONSE = "dbGroup_response";
-    private static final String DB_GROUP_LOCKS = "dbGroup_locks";
-
-    private ClusterPathUtil() {
-
-    }
 
     public static String getHaBasePath() {
-        return BASE_PATH + DB_GROUPS + SEPARATOR;
+        return BASE_PATH + "dbGroups" + SEPARATOR;
     }
 
     public static String getHaStatusPath() {
@@ -78,13 +67,13 @@ public final class ClusterPathUtil {
         return getHaStatusPath() + SEPARATOR + dbGroupName;
     }
     public static String getHaResponsePath() {
-        return getHaBasePath() + DB_GROUP_RESPONSE;
+        return getHaBasePath() + "dbGroup_response";
     }
     public static String getHaResponsePath(String dhName) {
         return getHaResponsePath() + SEPARATOR + dhName;
     }
     public static String getHaLockPath(String dhName) {
-        return LOCK_BASE_PATH + SEPARATOR + DB_GROUP_LOCKS + SEPARATOR + dhName;
+        return LOCK_BASE_PATH + SEPARATOR + "dbGroup_locks" + SEPARATOR + dhName;
     }
     //depth:2,sequences path:base_path/sequences
     private static final String SEQUENCES = "sequences";
@@ -93,10 +82,9 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + SEQUENCES;
     }
     //depth:3,sequences path:base_path/sequences/common
-    public static final String SEQUENCE_COMMON = "common";
 
     public static String getSequencesCommonPath() {
-        return getSequencesPath() + SEPARATOR + SEQUENCE_COMMON;
+        return getSequencesPath() + SEPARATOR + "common";
     }
 
     //depth:2,lock_base_path: base_path/lock/
@@ -114,11 +102,11 @@ public final class ClusterPathUtil {
     }
 
     public static String getConfStatusPath() {
-        return CONF_BASE_PATH + CONF_STATUS;
+        return CONF_BASE_PATH + "status";
     }
 
     public static String getConfStatusOperatorPath() {
-        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + "operator";
+        return getConfStatusPath() + SEPARATOR + "operator";
     }
 
     //depth:2,child node of base_path
@@ -170,17 +158,9 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + "migration" + SEPARATOR + "pause";
     }
 
-    public static String getPauseResultNodePath(String id) {
-        return CONF_BASE_PATH + "migration" + SEPARATOR + "pause" + SEPARATOR + id;
-    }
-
 
     public static String getPauseResumePath() {
         return CONF_BASE_PATH + "migration" + SEPARATOR + "resume";
-    }
-
-    public static String getPauseResumePath(String id) {
-        return CONF_BASE_PATH + "migration" + SEPARATOR + "resume" + SEPARATOR + id;
     }
 
 

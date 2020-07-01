@@ -344,7 +344,7 @@ public final class ClusterLogic {
                                 }
                             }
                             if (!nextTurn) {
-                                ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceName()), SystemConfig.getInstance().getInstanceName());
+                                ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), SystemConfig.getInstance().getInstanceName());
                                 break;
                             }
                         } finally {
@@ -379,7 +379,7 @@ public final class ClusterLogic {
         }
         LOGGER.info("resume shardingNode for get notice");
         PauseShardingNodeManager.getInstance().resume();
-        ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceName()), SystemConfig.getInstance().getInstanceName());
+        ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(), SystemConfig.getInstance().getInstanceName());
     }
 
     public static void checkPauseStatusRelease(String crashNode) {

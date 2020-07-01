@@ -58,53 +58,46 @@ public final class RollbackConfig {
 
     private static void rollbackWithCluster(ManagerConnection c) {
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceName());
+                SystemConfig.getInstance().getInstanceName());
+        if (!distributeLock.acquire()) {
+            c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+            return;
+        }
+        ClusterDelayProvider.delayAfterReloadLock();
+        //step 1 lock the local meta ,than all the query depends on meta will be hanging
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
         try {
-            if (!distributeLock.acquire()) {
-                c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+            // step 2 rollback self config
+            if (!rollback(TRIGGER_TYPE_COMMAND)) {
+                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
                 return;
             }
-            ClusterDelayProvider.delayAfterReloadLock();
-            try {
-                //step 1 lock the local meta ,than all the query depends on meta will be hanging
-                final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-                lock.writeLock().lock();
-                try {
-                    // step 2 rollback self config
-                    if (!rollback(TRIGGER_TYPE_COMMAND)) {
-                        writeSpecialError(c, "Rollback interruputed by others,config should be reload");
-                        return;
-                    }
 
-                    ReloadManager.waitingOthers();
-                    ClusterDelayProvider.delayAfterMasterRollback();
+            ReloadManager.waitingOthers();
+            ClusterDelayProvider.delayAfterMasterRollback();
 
-                    //step 3 tail the ucore & notify the other dble
-                    ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
-                    ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
-                    String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusOperatorPath());
+            //step 3 tail the ucore & notify the other dble
+            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
+            ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
+            String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusOperatorPath());
 
-                    ClusterDelayProvider.delayBeforeDeleterollbackLock();
+            ClusterDelayProvider.delayBeforeDeleterollbackLock();
 
-                    if (errorMsg != null) {
-                        writeErrorResultForCluster(c, errorMsg);
-                    } else {
-                        writeOKResult(c);
-                    }
-                } catch (Exception e) {
-                    LOGGER.warn("reload config failure", e);
-                    writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-                } finally {
-                    //step 6 delete the reload flag
-                    ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath());
-                    lock.writeLock().unlock();
-                }
-            } finally {
-                distributeLock.release();
+            if (errorMsg != null) {
+                writeErrorResultForCluster(c, errorMsg);
+            } else {
+                writeOKResult(c);
             }
         } catch (Exception e) {
-            LOGGER.info("reload config failure", e);
+            LOGGER.warn("reload config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            //step 6 delete the reload flag
+            lock.writeLock().unlock();
+
+            distributeLock.release();
+            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath());
         }
     }
 

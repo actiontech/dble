@@ -106,9 +106,9 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     @Override
     public void execute(byte[] data) {
-        long psId = ByteUtil.readUB4(data, 5);
+        long statementId = ByteUtil.readUB4(data, 5); //skip to read
         PreparedStatement pStmt;
-        if ((pStmt = pStmtForId.get(psId)) == null) {
+        if ((pStmt = pStmtForId.get(statementId)) == null) {
             source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
             ExecutePacket packet = new ExecutePacket(pStmt);

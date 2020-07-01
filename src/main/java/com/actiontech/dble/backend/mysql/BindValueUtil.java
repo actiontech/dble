@@ -9,9 +9,6 @@ import com.actiontech.dble.config.Fields;
 
 import java.io.UnsupportedEncodingException;
 
-/**
- * @author mycat
- */
 public final class BindValueUtil {
 
     private BindValueUtil() {
@@ -19,9 +16,7 @@ public final class BindValueUtil {
 
     public static void read(MySQLMessage mm, BindValue bv, String charset) throws UnsupportedEncodingException {
         switch (bv.getType() & 0xff) {
-            case Fields.FIELD_TYPE_BIT:
-                bv.setValue(mm.readBytesWithLength());
-                break;
+            // see code of mysql sql\sql_prepare.cc#setup_one_conversion_function
             case Fields.FIELD_TYPE_TINY:
                 bv.setByteBinding(mm.read());
                 break;
@@ -40,19 +35,6 @@ public final class BindValueUtil {
             case Fields.FIELD_TYPE_DOUBLE:
                 bv.setDoubleBinding(mm.readDouble());
                 break;
-            case Fields.FIELD_TYPE_TIME:
-                bv.setValue(mm.readTime());
-                break;
-            case Fields.FIELD_TYPE_DATE:
-            case Fields.FIELD_TYPE_DATETIME:
-            case Fields.FIELD_TYPE_TIMESTAMP:
-                bv.setValue(mm.readDate());
-                break;
-            case Fields.FIELD_TYPE_VAR_STRING:
-            case Fields.FIELD_TYPE_STRING:
-            case Fields.FIELD_TYPE_VARCHAR:
-                bv.setValue(mm.readStringWithLength(charset));
-                break;
             case Fields.FIELD_TYPE_DECIMAL:
             case Fields.FIELD_TYPE_NEW_DECIMAL:
                 bv.setValue(mm.readBigDecimal());
@@ -60,11 +42,19 @@ public final class BindValueUtil {
                     bv.setNull(true);
                 }
                 break;
-            case Fields.FIELD_TYPE_BLOB:
-                bv.setLongData(true);
+            case Fields.FIELD_TYPE_TIME: // the format changed on version 5.6.4. is OK
+                bv.setValue(mm.readTime());
                 break;
-            default:
-                throw new IllegalArgumentException("bindValue error,unsupported type:" + bv.getType());
+            case Fields.FIELD_TYPE_DATE: // the format changed from some version
+            case Fields.FIELD_TYPE_DATETIME:
+            case Fields.FIELD_TYPE_TIMESTAMP:
+                bv.setValue(mm.readDate());
+                break;
+            case Fields.FIELD_TYPE_BIT:
+                bv.setValue(mm.readBytesWithLength());
+                break;
+            default: //charset use client charset, may need change
+                bv.setValue(mm.readStringWithLength(charset));
         }
         bv.setSet(true);
     }

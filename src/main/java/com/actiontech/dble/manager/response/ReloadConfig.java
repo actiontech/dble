@@ -126,8 +126,8 @@ public final class ReloadConfig {
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         } finally {
             lock.writeLock().unlock();
-            distributeLock.release();
             ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
+            distributeLock.release();
         }
     }
 

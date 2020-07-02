@@ -68,8 +68,5 @@ public abstract class XAStage implements TransactionStage {
     // connect close
     public abstract void onConnectionClose(MySQLConnection conn);
 
-    // connect error
-    public abstract void onConnectError(MySQLConnection conn);
-
     public abstract String getStage();
 }

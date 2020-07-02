@@ -512,6 +512,8 @@ public class NonBlockingSession implements Session {
             }
 
             setTraceSimpleHandler((ResponseHandler) executableHandler);
+            setPreExecuteEnd(false);
+            readyToDeliver();
             executableHandler.execute();
             discard = true;
         } catch (Exception e) {

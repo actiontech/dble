@@ -133,7 +133,7 @@ public abstract class AbstractConsulSender implements ClusterSender {
 
     @Override
     public void forceResumePause() throws Exception {
-        ClusterXmlLoader loader = ClusterToXml.getListener().getResponse(ClusterPathUtil.getPauseShardingNodePath());
+        ClusterXmlLoader loader = ClusterToXml.getListener().getResponse(ClusterPathUtil.getPauseResultNodePath());
         loader.notifyCluster();
     }
 

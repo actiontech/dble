@@ -45,9 +45,9 @@ public final class PauseEnd {
 
     public static void resume(ManagerConnection c) {
         LOGGER.info("resume start from command");
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
             try {
-                String value = ClusterHelper.getPathValue(ClusterPathUtil.getPauseShardingNodePath());
+                String value = ClusterHelper.getPathValue(ClusterPathUtil.getPauseResultNodePath());
                 if (StringUtil.isEmpty(value)) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                     return;
@@ -66,8 +66,8 @@ public final class PauseEnd {
 
                 PauseShardingNodeManager.getInstance().resumeCluster();
             } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+                LOGGER.warn("resume failed", e);
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
                 return;
             }
         } else {

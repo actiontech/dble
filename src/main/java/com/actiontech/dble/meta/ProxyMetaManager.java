@@ -361,9 +361,7 @@ public class ProxyMetaManager {
 
     private void initViewMeta() {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().useZkMode()) {
-                loadViewFromKV();
-            }
+            loadViewFromKV();
         } else {
             loadViewFromFile();
         }

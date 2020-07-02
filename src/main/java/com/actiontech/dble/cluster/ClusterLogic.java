@@ -801,7 +801,7 @@ public final class ClusterLogic {
             for (KvBean kvBean : responseList) {
                 String responseNode = lastItemOfArray(kvBean.getKey().split(ClusterPathUtil.SEPARATOR));
                 if (lastItemOfArray(entry.getKey().split(ClusterPathUtil.SEPARATOR)).equals(responseNode)) {
-                    if (checkString != null) {
+                    if (!StringUtil.isEmpty(checkString)) {
                         if (!checkString.equals(kvBean.getValue())) {
                             if (errorMsg != null) {
                                 errorMsg.append(responseNode).append(":").append(kvBean.getValue()).append(";");

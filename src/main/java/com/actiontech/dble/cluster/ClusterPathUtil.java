@@ -154,6 +154,10 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + "migration";
     }
 
+    public static String getPauseShardingNodeLockPath() {
+        return LOCK_BASE_PATH + SEPARATOR + "pause_node.lock";
+    }
+
     public static String getPauseResultNodePath() {
         return CONF_BASE_PATH + "migration" + SEPARATOR + "pause";
     }

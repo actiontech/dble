@@ -32,7 +32,7 @@ public class PauseShardingNodeListener implements PathChildrenCacheListener {
             case CHILD_ADDED:
                 ChildData childData = event.getData();
                 LOGGER.info("childEvent " + childData.getPath() + " " + event.getType());
-                executePauseOrResum(childData);
+                executePauseOrResume(childData);
                 break;
             case CHILD_UPDATED:
                 break;
@@ -43,10 +43,10 @@ public class PauseShardingNodeListener implements PathChildrenCacheListener {
         }
     }
 
-    private void executePauseOrResum(ChildData childData) throws Exception {
+    private void executePauseOrResume(ChildData childData) throws Exception {
         String key = childData.getPath();
         String value = new String(childData.getData(), StandardCharsets.UTF_8);
-        if (ClusterPathUtil.getPauseShardingNodePath().equals(key)) {
+        if (ClusterPathUtil.getPauseResultNodePath().equals(key)) {
             waitThread = ClusterLogic.pauseShardingNodeEvent(value, lock);
         } else if (ClusterPathUtil.getPauseResumePath().equals(key)) {
             ClusterLogic.resumeShardingNodeEvent(value, lock, waitThread);

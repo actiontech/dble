@@ -52,19 +52,6 @@ public final class ClusterController {
         }
     }
 
-    public static void initFromShellUcore() throws InvocationTargetException, IllegalAccessException {
-        loadClusterProperties();
-        ClusterGeneralConfig.initConfig();
-        ClusterGeneralConfig.getInstance().getClusterSender().initConInfo();
-    }
-
-    public static void initFromShellZK() throws InvocationTargetException, IllegalAccessException {
-        loadClusterProperties();
-        if (!CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
-            throw new RuntimeException("Cluster mode is not " + CONFIG_MODE_ZK);
-        }
-    }
-
 
     public static void loadClusterProperties() throws InvocationTargetException, IllegalAccessException {
         Properties pros = new Properties();

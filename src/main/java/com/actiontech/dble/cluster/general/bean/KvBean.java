@@ -23,6 +23,10 @@ public class KvBean {
     public KvBean() {
     }
 
+    public KvBean(String key, String value) {
+        this.key = key;
+        this.value = value;
+    }
     public KvBean(String key, String value, long index) {
         this.key = key;
         this.value = value;

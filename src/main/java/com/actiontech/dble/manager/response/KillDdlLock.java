@@ -14,7 +14,6 @@ import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.ZKUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,16 +42,7 @@ public final class KillDdlLock {
         // release distributed lock
         if (ClusterConfig.getInstance().isClusterEnable()) {
             String fullName = StringUtil.getUFullName(schema, table);
-            String tableDDLPath = ClusterPathUtil.getDDLPath(fullName);
-            if (ClusterConfig.getInstance().useZkMode()) {
-                try {
-                    ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(tableDDLPath);
-                } catch (Exception e) {
-                    LOGGER.warn("delete zk path failed:" + tableDDLPath);
-                }
-            } else {
-                ClusterHelper.cleanPath(tableDDLPath);
-            }
+            ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(fullName));
             DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(fullName));
         }
         boolean isRemoved = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);

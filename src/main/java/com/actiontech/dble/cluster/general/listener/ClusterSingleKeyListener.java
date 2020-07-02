@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.cluster.general.listener;
 
-import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
@@ -28,9 +28,16 @@ public class ClusterSingleKeyListener implements Runnable {
     private long index = 0;
     ClusterXmlLoader child;
     String path;
+    private AbstractConsulSender sender;
 
     private Map<String, String> cache = new HashMap<>();
 
+
+    public ClusterSingleKeyListener(String path, ClusterXmlLoader child, AbstractConsulSender sender) {
+        this.child = child;
+        this.path = path;
+        this.sender = sender;
+    }
 
     @Override
     public void run() {
@@ -40,7 +47,7 @@ public class ClusterSingleKeyListener implements Runnable {
                 request.setIndex(index);
                 request.setDuration(60);
                 request.setPath(path);
-                SubscribeReturnBean output = ClusterHelper.subscribeKvPrefix(request);
+                SubscribeReturnBean output = sender.subscribeKvPrefix(request);
                 if (output.getIndex() != index) {
                     Map<String, KvBean> diffMap = getDiffMap(output);
                     handle(diffMap);
@@ -51,12 +58,6 @@ public class ClusterSingleKeyListener implements Runnable {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }
         }
-    }
-
-
-    public ClusterSingleKeyListener(String path, ClusterXmlLoader child) {
-        this.child = child;
-        this.path = path;
     }
 
     public void handle(Map<String, KvBean> diffMap) {

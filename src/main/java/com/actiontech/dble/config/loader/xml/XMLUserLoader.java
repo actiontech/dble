@@ -4,6 +4,7 @@
  */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.user.*;
@@ -29,7 +30,7 @@ import java.util.*;
 public class XMLUserLoader {
     private final Map<UserName, UserConfig> users;
     private static final String DEFAULT_DTD = "/user.dtd";
-    private static final String DEFAULT_XML = "/user.xml";
+    private static final String DEFAULT_XML = "/" + ConfigFileName.USER_XML;
     private ProblemReporter problemReporter;
 
     public XMLUserLoader(String xmlFile, ProblemReporter problemReporter) {
@@ -238,10 +239,10 @@ public class XMLUserLoader {
         if (version != null && !Versions.CONFIG_VERSION.equals(version)) {
             if (this.problemReporter != null) {
                 if (Versions.checkVersion(version)) {
-                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the user.xml version is " + version + ".There may be some incompatible config between two versions, please check it";
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.USER_XML + " version is " + version + ".There may be some incompatible config between two versions, please check it";
                     this.problemReporter.notice(message);
                 } else {
-                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the user.xml version is " + version + ".There must be some incompatible config between two versions, please check it";
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.USER_XML + " version is " + version + ".There must be some incompatible config between two versions, please check it";
                     this.problemReporter.notice(message);
                 }
             }

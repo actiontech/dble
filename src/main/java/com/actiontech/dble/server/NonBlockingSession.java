@@ -20,7 +20,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SaveP
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -588,7 +588,7 @@ public class NonBlockingSession implements Session {
 
         if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
                 !PauseShardingNodeManager.getInstance().checkTarget(target) &&
-                PauseShardingNodeManager.getInstance().checkReferedTableNodes(node.getReferedTableNodes())) {
+                PauseShardingNodeManager.getInstance().checkReferredTableNodes(node.getReferedTableNodes())) {
             if (PauseShardingNodeManager.getInstance().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
                 return;
             }
@@ -938,7 +938,7 @@ public class NonBlockingSession implements Session {
                 return true;
             }
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
-            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
+            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, rrs.getDdlType());
         } else {
             LOGGER.info("Hint ddl do not update the meta");
             return true;

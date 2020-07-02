@@ -11,14 +11,10 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
-import com.actiontech.dble.cluster.general.xmltoKv.XmltoCluster;
-import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
-import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.ConfigStatusListener;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -41,25 +37,18 @@ import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
-import com.actiontech.dble.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
 
-/**
- * @author mycat
- * @author zhuam
- */
 public final class ReloadConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
 
@@ -81,58 +70,75 @@ public final class ReloadConfig {
 
     private static void execute(ManagerConnection c, final int loadAllMode) {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (reloadWithCluster(c, loadAllMode)) return;
+            reloadWithCluster(c, loadAllMode);
         } else {
-            if (reloadWithoutCluster(c, loadAllMode)) return;
+            reloadWithoutCluster(c, loadAllMode);
         }
-
         ReloadManager.reloadFinish();
     }
 
-    private static boolean reloadWithCluster(ManagerConnection c, int loadAllMode) {
-        DistributeLock distributeLock;
-        if (ClusterConfig.getInstance().useZkMode()) {
-            distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
-        } else {
-            distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceName());
+    private static void reloadWithCluster(ManagerConnection c, int loadAllMode) {
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+        if (!distributeLock.acquire()) {
+            c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
+            return;
         }
+        LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
+        ClusterDelayProvider.delayAfterReloadLock();
+        if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+            writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
+            return;
+        }
+        //step 1 lock the local meta ,than all the query depends on meta will be hanging
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
         try {
-            if (!distributeLock.acquire()) {
-                c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
-                return true;
+            //step 2 reload the local config file
+            if (!reloadAll(loadAllMode)) {
+                writeSpecialError(c, "Reload interruputed by others,config should be reload");
+                return;
             }
-            LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
-            ClusterDelayProvider.delayAfterReloadLock();
-            try {
-                if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
-                    writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
-                    return true;
-                }
-                if (ClusterConfig.getInstance().useZkMode()) {
-                    reloadWithZookeeper(loadAllMode, ZKUtils.getConnection(), c);
-                } else {
-                    reloadWithUcore(loadAllMode, c);
-                }
-            } finally {
-                distributeLock.release();
-                LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from ucore");
+            ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
+            ClusterDelayProvider.delayAfterMasterLoad();
+
+            //step 3 if the reload with no error ,than write the config file into cluster center remote
+            ClusterHelper.writeConfToCluster();
+            ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
+
+            //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
+            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
+                    ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
+            ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
+            ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
+            //step 5 start a loop to check if all the dble in cluster is reload finished
+            ReloadManager.waitingOthers();
+            final String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusOperatorPath());
+            ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
+            ClusterDelayProvider.delayBeforeDeleteReloadLock();
+
+            if (errorMsg != null) {
+                writeErrorResultForCluster(c, errorMsg);
+                return;
             }
+            writeOKResult(c);
         } catch (Exception e) {
-            LOGGER.info("reload config failure using ucore", e);
+            LOGGER.warn("reload config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            lock.writeLock().unlock();
+            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
+            distributeLock.release();
         }
-        return false;
     }
 
-    private static boolean reloadWithoutCluster(ManagerConnection c, int loadAllMode) {
+    private static void reloadWithoutCluster(ManagerConnection c, final int loadAllMode) {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.writeLock().lock();
         try {
             try {
                 if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
                     writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
-                    return true;
+                    return;
                 }
                 if (reloadAll(loadAllMode)) {
                     writeOKResult(c);
@@ -146,109 +152,9 @@ public final class ReloadConfig {
         } finally {
             lock.writeLock().unlock();
         }
-        return false;
+        return;
     }
 
-    private static void reloadWithUcore(final int loadAllMode, ManagerConnection c) {
-        //step 1 lock the local meta ,than all the query depends on meta will be hanging
-        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.writeLock().lock();
-        try {
-            //step 2 reload the local config file
-            if (!reloadAll(loadAllMode)) {
-                writeSpecialError(c, "Reload interruputed by others,config should be reload");
-                return;
-            }
-            ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
-            ClusterDelayProvider.delayAfterMasterLoad();
-
-            ReloadManager.waitingOthers();
-            //step 3 if the reload with no error ,than write the config file into ucore remote
-            XmltoCluster.initFileToUcore();
-            ReloadLogHelper.info("reload config: sent config file to ucore", LOGGER);
-            //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
-            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
-                    ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
-            ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
-            ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
-            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
-            ReloadLogHelper.info("reload config: sent finished status to ucore, waiting other instances", LOGGER);
-            //step 5 start a loop to check if all the dble in cluster is reload finished
-
-            final String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusPath() + SEPARATOR);
-            ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
-            ClusterDelayProvider.delayBeforeDeleteReloadLock();
-            //step 6 delete the reload flag
-            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath() + SEPARATOR);
-
-            if (errorMsg != null) {
-                writeErrorResultForCluster(c, errorMsg);
-                return;
-            }
-            writeOKResult(c);
-        } catch (Exception e) {
-            LOGGER.warn("reload config failure", e);
-            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-
-    private static void reloadWithZookeeper(final int loadAllMode, CuratorFramework zkConn, ManagerConnection c) {
-        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.writeLock().lock();
-        try {
-            if (!reloadAll(loadAllMode)) {
-                writeSpecialError(c, "Reload interruputed by others,config should be reload");
-                return;
-            }
-            ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
-            ClusterDelayProvider.delayAfterMasterLoad();
-
-            XmltoZkMain.writeConfFileToZK(loadAllMode);
-            ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
-            //tell zk this instance has prepared
-            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceName(),
-                    ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-            ReloadLogHelper.info("reload config: sent finished status to zk, waiting other instances", LOGGER);
-            //check all session waiting status
-            List<String> preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
-            List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
-
-            ReloadManager.waitingOthers();
-            while (preparedList.size() < onlineList.size()) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
-                onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
-                preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
-            }
-
-            ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
-            ClusterDelayProvider.delayBeforeDeleteReloadLock();
-            StringBuilder sbErrorInfo = new StringBuilder();
-            for (String child : preparedList) {
-                String childPath = ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child);
-                byte[] errorInfo = zkConn.getData().forPath(childPath);
-                if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
-                    sbErrorInfo.append(child).append(":");
-                    sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
-                    sbErrorInfo.append(";");
-                }
-                zkConn.delete().forPath(ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child));
-            }
-
-            if (sbErrorInfo.length() == 0) {
-                writeOKResult(c);
-            } else {
-                writeErrorResultForCluster(c, sbErrorInfo.toString());
-            }
-        } catch (Exception e) {
-            ReloadLogHelper.warn("reload config failure", e, LOGGER);
-            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
 
     private static void writeOKResult(ManagerConnection c) {
         if (LOGGER.isInfoEnabled()) {
@@ -342,10 +248,15 @@ public final class ReloadConfig {
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
         ServerConfig serverConfig = new ServerConfig(loader);
 
-        if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
-            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-            serverConfig.reviseLowerCase();
-            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+        if (loader.isFullyConfigured()) {
+            if (newSystemVariables.isLowerCaseTableNames()) {
+                ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
+                serverConfig.reviseLowerCase();
+                ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+            } else {
+                serverConfig.loadSequence();
+                serverConfig.selfChecking0();
+            }
         }
         checkTestConnIfNeed(loadAllMode, loader);
 
@@ -414,11 +325,15 @@ public final class ReloadConfig {
 
         SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
-
-        if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
-            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-            serverConfig.reviseLowerCase();
-            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+        if (loader.isFullyConfigured()) {
+            if (newSystemVariables.isLowerCaseTableNames()) {
+                ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
+                serverConfig.reviseLowerCase();
+                ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+            } else {
+                serverConfig.loadSequence();
+                serverConfig.selfChecking0();
+            }
         }
         checkTestConnIfNeed(loadAllMode, loader);
 

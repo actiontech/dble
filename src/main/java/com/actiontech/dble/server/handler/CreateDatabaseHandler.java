@@ -35,7 +35,7 @@ public final class CreateDatabaseHandler {
                 ok.setAffectedRows(1);
                 ok.write(c);
             } else {
-                throw new Exception("Can't create database '" + schema + "' that doesn't exists in sharding.xml");
+                throw new Exception("Can't create database '" + schema + "' that doesn't exists in config");
             }
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());

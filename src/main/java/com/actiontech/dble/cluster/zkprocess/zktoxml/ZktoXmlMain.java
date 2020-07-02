@@ -6,20 +6,20 @@
 package com.actiontech.dble.cluster.zkprocess.zktoxml;
 
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.*;
-import com.actiontech.dble.server.OfflineStatusListener;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -30,45 +30,53 @@ import java.util.concurrent.locks.LockSupport;
  * Created:2016/9/20
  */
 public final class ZktoXmlMain {
+    public static PauseShardingNodeListener getPauseShardingNodeListener() {
+        return pauseShardingNodeListener;
+    }
+
+    private static PauseShardingNodeListener pauseShardingNodeListener;
+    private static OfflineStatusListener offlineStatusListener;
     private ZktoXmlMain() {
     }
 
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ZktoXmlMain.class);
 
-    public static void loadZktoFile() throws Exception {
-        // get zk conn
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        //if first start,init zk
-        initZKIfNot(zkConn);
-        // load zk listen
-        ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
-        initLocalConfFromZK(zkListen, zkConn);
-        // load watch
-        loadZkWatch(zkListen.getWatchPath(), zkConn, zkListen);
+    public static void loadZkToFile() throws Exception {
 
+        //if first start,init zk
+        initZKIfNot();
+        // load zk listen
+
+        initListenerFromZK();
     }
 
-    private static void initLocalConfFromZK(ZookeeperProcessListen zkListen, CuratorFramework zkConn) throws Exception {
-
-        ConfigStatusListener confListener = new ConfigStatusListener(zkListen, zkConn);
+    private static void initListenerFromZK() throws Exception {
+        LOGGER.info("initListenerFromZK start");
+        ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
+        Set<NotifyService> childService = new HashSet<>();
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
         // load sharding
-        new ShardingZkToXmlLoader(zkListen, zkConn, xmlProcess, confListener);
-
+        childService.add(new ShardingZkToXmlListener(zkListen, xmlProcess));
 
         // load db
-        new DbGroupsZKToXmlLoader(zkListen, zkConn, xmlProcess, confListener);
+        childService.add(new DbGroupsZKToXmlListener(zkListen, xmlProcess));
 
         // load user
-        new UserZkToXmlLoader(zkListen, zkConn, xmlProcess, confListener);
+        childService.add(new UserZkToXmlListener(zkListen, xmlProcess));
         // load sequence
-        new SequenceTopropertiesLoader(zkListen, zkConn);
+        childService.add(new SequenceToPropertiesListener(zkListen));
 
-        ZKUtils.addChildPathCache(ClusterPathUtil.getOnlinePath(), new OfflineStatusListener());
+        ZKUtils.addChildPathCache(ClusterPathUtil.getConfStatusPath(), new ConfigStatusListener(childService));
 
-        new BinlogPauseStatusListener(zkListen, zkConn);
+        offlineStatusListener = new OfflineStatusListener();
+        ZKUtils.addChildPathCache(ClusterPathUtil.getOnlinePath(), offlineStatusListener);
+
+        ZKUtils.addChildPathCache(ClusterPathUtil.getBinlogPause(), new BinlogPauseStatusListener());
+
+        pauseShardingNodeListener = new PauseShardingNodeListener();
+        ZKUtils.addChildPathCache(ClusterPathUtil.getPauseShardingNodePath(), pauseShardingNodeListener);
+
 
         // init xml
         xmlProcess.initJaxbClass();
@@ -78,63 +86,49 @@ public final class ZktoXmlMain {
         zkListen.clearInited();
     }
 
-    private static void initZKIfNot(CuratorFramework zkConn) throws Exception {
+    private static void initZKIfNot() throws Exception {
+        // get zk conn
+        CuratorFramework zkConn = ZKUtils.getConnection();
         String confInited = KVPathUtil.getConfInitedPath();
         //init conf if not
         if (zkConn.checkExists().forPath(confInited) == null) {
             InterProcessMutex confLock = new InterProcessMutex(zkConn, KVPathUtil.getConfInitLockPath());
             //someone acquired the lock
             if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
+                LOGGER.info("acquire lock failed");
                 //loop wait for initialized
                 while (true) {
                     if (!confLock.acquire(100, TimeUnit.MILLISECONDS)) {
+                        LOGGER.info("acquire lock failed");
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                     } else {
+                        LOGGER.info("acquire lock success");
                         try {
                             if (zkConn.checkExists().forPath(confInited) == null) {
+                                LOGGER.info("initFileToZK start");
                                 XmltoZkMain.initFileToZK();
+                                LOGGER.info("initFileToZK end");
                             }
                             break;
                         } finally {
+                            LOGGER.info("initZKIfNot finish");
                             confLock.release();
                         }
                     }
                 }
             } else {
                 try {
+                    LOGGER.info("initFileToZK start");
                     XmltoZkMain.initFileToZK();
                 } finally {
+                    LOGGER.info("initFileToZK end");
                     confLock.release();
                 }
             }
         }
     }
 
-    private static void loadZkWatch(Set<String> setPaths, final CuratorFramework zkConn,
-                                    final ZookeeperProcessListen zkListen) throws Exception {
-        if (null != setPaths && !setPaths.isEmpty()) {
-            for (String path : setPaths) {
-                final NodeCache node = new NodeCache(zkConn, path);
-                node.start(true);
-                runWatch(node, zkListen);
-                LOGGER.info("ZktoxmlMain loadZkWatch path:" + path + " regist success");
-            }
-        }
-    }
-
-    private static void runWatch(final NodeCache cache, final ZookeeperProcessListen zkListen)
-            throws Exception {
-        cache.getListenable().addListener(new NodeCacheListener() {
-
-            @Override
-            public void nodeChanged() {
-                LOGGER.info("ZktoxmlMain runWatch  process path  event start ");
-                String notPath = cache.getCurrentData().getPath();
-                LOGGER.info("NodeCache changed, path is: " + notPath);
-                // notify
-                zkListen.notify(notPath);
-                LOGGER.info("ZktoxmlMain runWatch  process path  event over");
-            }
-        });
+    public static Map<String, String> getOnlineMap() {
+        return offlineStatusListener.copyOnlineMap();
     }
 }

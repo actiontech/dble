@@ -5,11 +5,9 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.cluster.general.AbstractClusterSender;
 import com.actiontech.dble.cluster.general.impl.UcoreSender;
 import com.actiontech.dble.cluster.general.impl.ushard.UshardSender;
-import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
-import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.cluster.zkprocess.ZkSender;
 import com.actiontech.dble.config.model.ClusterConfig;
 
 import java.io.IOException;
@@ -22,14 +20,13 @@ import static com.actiontech.dble.cluster.ClusterController.*;
 public final class ClusterGeneralConfig {
 
     private static final ClusterGeneralConfig INSTANCE = new ClusterGeneralConfig();
-    private AbstractClusterSender clusterSender = null;
+    private ClusterSender clusterSender = null;
     private String clusterType = null;
 
     private ClusterGeneralConfig() {
-
     }
 
-    static void initConfig() {
+    public static void initConfig() {
         switch (ClusterConfig.getInstance().getClusterMode()) {
             case CONFIG_MODE_USHARD:
                 INSTANCE.clusterSender = new UshardSender();
@@ -40,6 +37,7 @@ public final class ClusterGeneralConfig {
                 INSTANCE.clusterType = CONFIG_MODE_UCORE;
                 break;
             case CONFIG_MODE_ZK:
+                INSTANCE.clusterSender = new ZkSender();
                 INSTANCE.clusterType = CONFIG_MODE_ZK;
                 break;
             default:
@@ -48,10 +46,10 @@ public final class ClusterGeneralConfig {
                     INSTANCE.clusterType = CONFIG_MODE_CUSTOMIZATION;
                     Class<?> clz = Class.forName(clazz);
                     //all function must be extend from AbstractPartitionAlgorithm
-                    if (!AbstractClusterSender.class.isAssignableFrom(clz)) {
+                    if (!ClusterSender.class.isAssignableFrom(clz)) {
                         throw new IllegalArgumentException("No ClusterSender AS " + clazz);
                     }
-                    INSTANCE.clusterSender = (AbstractClusterSender) clz.newInstance();
+                    INSTANCE.clusterSender = (ClusterSender) clz.newInstance();
                 } catch (Exception e) {
                     throw new RuntimeException("Get error when try to create " + clazz);
                 }
@@ -60,16 +58,11 @@ public final class ClusterGeneralConfig {
 
 
     static void initData() throws IOException {
-        if (CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
-            ZkConfig.initZk();
-        } else {
-            INSTANCE.clusterSender.initCluster();
-            ClusterToXml.loadKVtoFile();
-        }
+        INSTANCE.clusterSender.initCluster();
     }
 
 
-    public AbstractClusterSender getClusterSender() {
+    public ClusterSender getClusterSender() {
         return clusterSender;
     }
 

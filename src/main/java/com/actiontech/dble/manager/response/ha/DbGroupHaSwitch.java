@@ -10,17 +10,13 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.HaConfigManager;
-import com.actiontech.dble.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,14 +54,8 @@ public final class DbGroupHaSwitch {
                 return;
             }
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (ClusterConfig.getInstance().useZkMode()) {
-                    if (!switchWithZK(id, dh, masterName, mc)) {
-                        return;
-                    }
-                } else {
-                    if (!switchWithCluster(id, dh, masterName, mc)) {
-                        return;
-                    }
+                if (!switchWithCluster(id, dh, masterName, mc)) {
+                    return;
                 }
             } else {
                 try {
@@ -91,20 +81,18 @@ public final class DbGroupHaSwitch {
 
     private static boolean switchWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
-        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.SWITCH,
                         HaInfo.HaStatus.INIT
                 ).toString()
         );
-        boolean locked = false;
+        if (!distributeLock.acquire()) {
+            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
+            return false;
+        }
         try {
-            if (!distributeLock.acquire()) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
-                return false;
-            }
-            locked = true;
             String result = dh.switchMaster(subHostName, false);
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
@@ -113,36 +101,8 @@ public final class DbGroupHaSwitch {
             HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         } finally {
-            if (locked) {
-                distributeLock.release();
-            }
+            distributeLock.release();
         }
         return true;
-    }
-
-
-    private static boolean switchWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        DistributeLock distributeLock = new ZkDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()), String.valueOf(System.currentTimeMillis()));
-
-        if (!distributeLock.acquire()) {
-            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dbGroup status");
-            return false;
-        }
-        try {
-            String result = dh.switchMaster(subHostName, false);
-            DbGroupHaDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
-            HaConfigManager.getInstance().haFinish(id, null, result);
-
-            return true;
-        } catch (Exception e) {
-            LOGGER.info("reload config using ZK failure", e);
-            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
-            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-            return false;
-        } finally {
-            distributeLock.release();
-            LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from zk");
-        }
     }
 }

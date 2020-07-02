@@ -8,8 +8,9 @@ import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DbInstanceStatus;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.cluster.values.DbInstanceStatus;
+import com.actiontech.dble.cluster.values.HaInfo;
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.util.DbXmlWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;
@@ -36,7 +37,6 @@ public final class HaConfigManager {
     private static final Logger HA_LOGGER = LoggerFactory.getLogger(HA_LOG);
     private static final HaConfigManager INSTANCE = new HaConfigManager();
     private XmlProcessBase xmlProcess = new XmlProcessBase();
-    private static final String WRITE_PATH = "db.xml";
     private DbGroups dbGroups;
     private AtomicInteger indexCreater = new AtomicInteger();
     private final AtomicBoolean isWriting = new AtomicBoolean(false);
@@ -57,7 +57,7 @@ public final class HaConfigManager {
 
     public void init() throws Exception {
         try {
-            INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(WRITE_PATH);
+            INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML);
         } catch (Exception e) {
             HA_LOGGER.warn("DbParseXmlImpl parseXmlToBean JAXBException", e);
             throw e;
@@ -77,7 +77,7 @@ public final class HaConfigManager {
         try {
             if (reloadIndex.get() == reloadId) {
                 String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
-                path = new File(path).getPath() + File.separator + WRITE_PATH;
+                path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;
                 this.xmlProcess.safeParseWriteToXml(dbs, path, "db");
             } else {
                 HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());

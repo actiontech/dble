@@ -1,8 +1,8 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;

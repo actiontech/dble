@@ -7,10 +7,10 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
-import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo.PAUSE;
+import static com.actiontech.dble.cluster.values.PauseInfo.PAUSE;
 
 public final class PauseShardingNodeManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PauseShardingNodeManager.class);
@@ -45,7 +45,7 @@ public final class PauseShardingNodeManager {
     private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
-    private ClusterGeneralDistributeLock uDistributeLock = null;
+    private DistributeLock distributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 
@@ -179,7 +179,7 @@ public final class PauseShardingNodeManager {
         return false;
     }
 
-    public boolean checkReferedTableNodes(List<TableNode> list) {
+    public boolean checkReferredTableNodes(List<TableNode> list) {
         for (TableNode tableNode : list) {
             Set<String> tableSet = this.pauseMap.get(tableNode.getSchema());
             if (tableSet == null) {
@@ -193,19 +193,19 @@ public final class PauseShardingNodeManager {
     }
 
 
-    public boolean clusterPauseNotic(String shardingNode, int timeOut, int queueLimit) {
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
+    public boolean clusterPauseNotice(String shardingNode, int timeOut, int queueLimit) {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
             try {
-                uDistributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
+                distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
                         new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
-                if (!uDistributeLock.acquire()) {
+                if (!distributeLock.acquire()) {
                     return false;
                 }
 
-                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceName()),
+                ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(),
                         SystemConfig.getInstance().getInstanceName());
             } catch (Exception e) {
-                LOGGER.info("ucore connecction error", e);
+                LOGGER.info("cluster connecction error", e);
                 return false;
             }
         }
@@ -214,11 +214,11 @@ public final class PauseShardingNodeManager {
 
 
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
-            Map<String, String> expectedMap = ClusterToXml.getOnlineMap();
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
             StringBuffer sb = new StringBuffer();
             for (; ; ) {
-                if (ClusterHelper.checkResponseForOneTime(null, ClusterPathUtil.getPauseResultNodePath(), expectedMap, sb)) {
+                if (ClusterLogic.checkResponseForOneTime(null, ClusterPathUtil.getPauseResultNodePath(), expectedMap, sb)) {
                     if (sb.length() == 0) {
                         return true;
                     } else {
@@ -240,26 +240,18 @@ public final class PauseShardingNodeManager {
 
 
     public void resumeCluster() throws Exception {
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
 
-            //send self reponse
-            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceName()),
-                    SystemConfig.getInstance().getInstanceName());
-
             LOGGER.info("try to resume cluster and waiting for others to response");
-            ClusterHelper.waitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
+            ClusterLogic.writeAndWaitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
 
 
-            PauseShardingNodeManager.getInstance().getuDistributeLock().release();
+            distributeLock.release();
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseShardingNodePath());
         }
 
-    }
-
-    private ClusterGeneralDistributeLock getuDistributeLock() {
-        return uDistributeLock;
     }
 
     public Set<String> getShardingNodes() {

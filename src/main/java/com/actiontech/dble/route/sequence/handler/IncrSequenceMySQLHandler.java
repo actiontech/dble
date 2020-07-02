@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -17,8 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IncrSequenceMySQLHandler implements SequenceHandler {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceMySQLHandler.class);
-
-    private static final String SEQUENCE_DB_PROPS = "sequence_db_conf.properties";
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
@@ -26,7 +25,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
 
     public void load(boolean isLowerCaseTableNames) {
         // load sequence properties
-        Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS, isLowerCaseTableNames);
+        Properties props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_DB_FILE_NAME, isLowerCaseTableNames);
         removeDesertedSequenceVals(props);
         putNewSequenceVals(props);
     }

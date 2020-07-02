@@ -10,19 +10,13 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.HaConfigManager;
-import com.actiontech.dble.util.ZKUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -34,10 +28,7 @@ import java.util.regex.Matcher;
 public final class DbGroupHaEnable {
 
     private DbGroupHaEnable() {
-
     }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaEnable.class);
 
     public static void execute(Matcher enable, ManagerConnection mc) {
         String dbGroupName = enable.group(1);
@@ -61,14 +52,8 @@ public final class DbGroupHaEnable {
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (ClusterConfig.getInstance().useZkMode()) {
-                    if (!enableWithZK(id, dbGroup, dbInstanceName, mc)) {
-                        return;
-                    }
-                } else {
-                    if (!enableWithCluster(id, dbGroup, dbInstanceName, mc)) {
-                        return;
-                    }
+                if (!enableWithCluster(id, dbGroup, dbInstanceName, mc)) {
+                    return;
                 }
             } else {
                 try {
@@ -92,46 +77,21 @@ public final class DbGroupHaEnable {
         }
     }
 
-
-    private static boolean enableWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        DistributeLock distributeLock = new ZkDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()), String.valueOf(System.currentTimeMillis()));
-
-        if (!distributeLock.acquire()) {
-            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dbGroup status");
-            return false;
-        }
-        try {
-            String result = dh.enableHosts(subHostName, false);
-            DbGroupHaDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
-            HaConfigManager.getInstance().haFinish(id, null, result);
-            return true;
-        } catch (Exception e) {
-            LOGGER.info("reload config using ZK failure", e);
-            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
-            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-            return false;
-        } finally {
-            distributeLock.release();
-            LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from zk");
-        }
-    }
-
-
     private static boolean enableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
-        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.ENABLE,
                         HaInfo.HaStatus.INIT
                 ).toString()
         );
+
+        if (!distributeLock.acquire()) {
+            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
+            return false;
+        }
         try {
-            if (!distributeLock.acquire()) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
-                return false;
-            }
             String result = dh.enableHosts(subHostName, false);
             //only update for the status
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);

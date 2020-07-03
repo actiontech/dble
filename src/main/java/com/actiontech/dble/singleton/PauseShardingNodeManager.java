@@ -196,14 +196,14 @@ public final class PauseShardingNodeManager {
     public boolean clusterPauseNotice(String shardingNode, int timeOut, int queueLimit) {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             try {
-                distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
-                        new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
+                distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
+                        SystemConfig.getInstance().getInstanceName());
                 if (!distributeLock.acquire()) {
                     return false;
                 }
 
-                ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(),
-                        SystemConfig.getInstance().getInstanceName());
+                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(),
+                        new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
             } catch (Exception e) {
                 LOGGER.info("cluster connecction error", e);
                 return false;
@@ -245,11 +245,12 @@ public final class PauseShardingNodeManager {
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
 
             LOGGER.info("try to resume cluster and waiting for others to response");
-            ClusterLogic.writeAndWaitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
+            ClusterLogic.writeAndWaitingForAllTheNode("", ClusterPathUtil.getPauseResumePath());
 
 
             distributeLock.release();
-            ClusterHelper.cleanPath(ClusterPathUtil.getPauseShardingNodePath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
         }
 
     }

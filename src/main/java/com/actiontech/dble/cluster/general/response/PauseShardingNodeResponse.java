@@ -22,14 +22,13 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PauseShardingNodeResponse.class);
 
-    private static final String CONFIG_PATH = ClusterPathUtil.getPauseShardingNodePath();
 
     private Thread waitThread;
 
     private final Lock lock = new ReentrantLock();
 
     public PauseShardingNodeResponse(ClusterClearKeyListener confListener) {
-        confListener.addChild(this, CONFIG_PATH);
+        confListener.addChild(this, ClusterPathUtil.getPauseResultNodePath());
         confListener.addChild(this, ClusterPathUtil.getPauseResumePath());
     }
 
@@ -41,7 +40,7 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
         }
         String key = configValue.getKey();
         String value = configValue.getKey();
-        if (ClusterPathUtil.getPauseShardingNodePath().equals(key)) {
+        if (ClusterPathUtil.getPauseResultNodePath().equals(key)) {
             waitThread = ClusterLogic.pauseShardingNodeEvent(value, lock);
         } else if (ClusterPathUtil.getPauseResumePath().equals(key)) {
             ClusterLogic.resumeShardingNodeEvent(value, lock, waitThread);

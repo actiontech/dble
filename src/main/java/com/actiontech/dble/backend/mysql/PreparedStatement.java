@@ -87,4 +87,10 @@ public class PreparedStatement {
             longDataMap.get(paramId).write(data);
         }
     }
+
+
+    public Map<Long, ByteArrayOutputStream> getLongDataMap() {
+        return longDataMap;
+    }
+
 }

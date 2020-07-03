@@ -74,12 +74,6 @@ public class XACommitStage extends XAStage {
     }
 
     @Override
-    public void onConnectError(MySQLConnection conn) {
-        conn.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
-    }
-
-    @Override
     public String getStage() {
         return COMMIT_STAGE;
     }

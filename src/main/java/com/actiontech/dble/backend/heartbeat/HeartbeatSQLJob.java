@@ -128,11 +128,15 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try immedia");
         if (heartbeat.isChecking()) {
-            doFinished(false);
+            doFinished(true);
+        } else if (heartbeat.isHeartbeatRetry()) {
+            LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try immediately");
+            heartbeat.getSource().createConnectionSkipPool(null, this);
+        } else {
+            LOGGER.warn("heartbeat conn is closed, due to " + reason);
+            heartbeat.setErrorResult("heartbeat conn is closed, due to " + reason);
         }
-        heartbeat.getSource().createConnectionSkipPool(null, this);
     }
 
     @Override

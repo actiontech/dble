@@ -21,10 +21,10 @@ public class DbGroupConfig {
     private String heartbeatSQL;
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
-    private int delayThreshold = -1;
+    private int delayThreshold;
 
     private int heartbeatTimeout = 0;
-    private int errorRetryCount = 0;
+    private int errorRetryCount = 1;
 
     public DbGroupConfig(String name,
                          DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, int delayThreshold) {
@@ -100,6 +100,9 @@ public class DbGroupConfig {
     }
 
     public void setErrorRetryCount(int errorRetryCount) {
+        if (errorRetryCount < 0) {
+            throw new ConfigException("dbGroup " + name + " errorRetryCount should be greater than 0!");
+        }
         this.errorRetryCount = errorRetryCount;
     }
 }

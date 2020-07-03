@@ -74,7 +74,7 @@ public class ExecutePacket extends MySQLPacket {
         this.values = new BindValue[preStmt.getParametersNumber()];
     }
 
-    public void read(byte[] data, String charset) throws UnsupportedEncodingException {
+    public void read(byte[] data, CharsetNames charset) throws UnsupportedEncodingException {
         MySQLMessage mm = new MySQLMessage(data);
         packetLength = mm.readUB3();
         packetId = mm.read();

@@ -7,7 +7,6 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.ByteUtil;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -113,7 +112,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         } else {
             ExecutePacket packet = new ExecutePacket(pStmt);
             try {
-                packet.read(data, CharsetUtil.getJavaCharset(source.getCharset().getClient()));
+                packet.read(data, source.getCharset());
             } catch (UnsupportedEncodingException e) {
                 source.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, e.getMessage());
                 return;

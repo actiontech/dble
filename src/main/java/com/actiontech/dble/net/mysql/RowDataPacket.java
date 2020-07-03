@@ -10,8 +10,9 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.AbstractService;
+
 import com.actiontech.dble.singleton.BufferPoolManager;
 
 import java.nio.ByteBuffer;
@@ -88,46 +89,47 @@ public class RowDataPacket extends MySQLPacket {
     }
 
     @Override
-    public ByteBuffer write(ByteBuffer bb, FrontendConnection c,
+    public ByteBuffer write(ByteBuffer bb, AbstractService service,
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
         if (isBigPackage) {
-            c.writePart(bb);
-            BufferPool bufferPool = c.getProcessor().getBufferPool();
-            ByteBuffer tmpBuffer = bufferPool.allocate(totalSize);
+            service.writeDirectly(bb);
+            ByteBuffer tmpBuffer = service.allocate(totalSize);
             BufferUtil.writeUB3(tmpBuffer, calcPacketSize());
             tmpBuffer.put(packetId--);
             writeBody(tmpBuffer);
             byte[] array = tmpBuffer.array();
-            bufferPool.recycle(tmpBuffer);
-            ByteBuffer newBuffer = bufferPool.allocate(array.length);
-            return c.writeBigPackageToBuffer(array, newBuffer, packetId);
+            service.recycleBuffer(tmpBuffer);
+            ByteBuffer newBuffer = service.allocate();
+            return service.writeBigPackageToBuffer(array, newBuffer);
         } else {
-            bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
+            bb = service.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, calcPacketSize());
             bb.put(packetId);
             for (int i = 0; i < fieldCount; i++) {
                 byte[] fv = fieldValues.get(i);
                 if (fv == null) {
-                    bb = c.checkWriteBuffer(bb, 1, writeSocketIfFull);
+                    bb = service.checkWriteBuffer(bb, 1, writeSocketIfFull);
                     bb.put(RowDataPacket.NULL_MARK);
                 } else if (fv.length == 0) {
-                    bb = c.checkWriteBuffer(bb, 1, writeSocketIfFull);
+                    bb = service.checkWriteBuffer(bb, 1, writeSocketIfFull);
                     bb.put(RowDataPacket.EMPTY_MARK);
                 } else {
-                    bb = c.checkWriteBuffer(bb, BufferUtil.getLength(fv),
+                    bb = service.checkWriteBuffer(bb, BufferUtil.getLength(fv),
                             writeSocketIfFull);
                     BufferUtil.writeLength(bb, fv.length);
-                    bb = c.writeToBuffer(fv, bb);
+                    bb = service.writeToBuffer(fv, bb);
                 }
-            }
-            if (c instanceof ServerConnection) {
-                ((ServerConnection) c).getSession2().getPacketId().set(packetId);
             }
             return bb;
         }
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection connection) {
+
     }
 
     private void writeBody(ByteBuffer buffer) {

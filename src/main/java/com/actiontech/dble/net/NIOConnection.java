@@ -24,7 +24,7 @@ public interface NIOConnection extends ClosableConnection {
     void handle(byte[] data);
 
     /**
-     * write from buffer
+     * writeDirectly from buffer
      */
     void write(ByteBuffer buffer);
 

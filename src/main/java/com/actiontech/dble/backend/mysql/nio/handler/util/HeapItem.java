@@ -5,13 +5,14 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 public class HeapItem {
     private byte[] row;
     private RowDataPacket rowPacket;
-    private MySQLConnection hashIndex;
+    private MySQLResponseService hashIndex;
     private boolean isNull = false;
 
     public static HeapItem nullItem() {
@@ -24,13 +25,13 @@ public class HeapItem {
         return row == null && isNull;
     }
 
-    public HeapItem(byte[] row, RowDataPacket rdp, MySQLConnection index) {
+    public HeapItem(byte[] row, RowDataPacket rdp, MySQLResponseService index) {
         this.row = row;
         this.rowPacket = rdp;
         this.hashIndex = index;
     }
 
-    public MySQLConnection getIndex() {
+    public MySQLResponseService getIndex() {
         return hashIndex;
     }
 

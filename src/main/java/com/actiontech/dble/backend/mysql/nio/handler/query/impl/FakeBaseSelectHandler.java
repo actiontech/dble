@@ -1,9 +1,10 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -61,7 +62,7 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
         if (selectList.size() > 1) {
             RowDataPacket row = new RowDataPacket(fieldCount);
             for (Item i : selectList) {
-                List<RowDataPacket> rows = ((ItemFuncInner) i).getRows(session.getSource());
+                List<RowDataPacket> rows = ((ItemFuncInner) i).getRows(session.getShardingService());
                 if (rows.size() > 1) {
                     return null;
                 } else {
@@ -73,7 +74,7 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
             return result;
         } else {
             Item i = selectList.get(0);
-            List<RowDataPacket> rows = ((ItemFuncInner) i).getRows(session.getSource());
+            List<RowDataPacket> rows = ((ItemFuncInner) i).getRows(session.getShardingService());
             return rows;
         }
     }
@@ -88,17 +89,17 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
 
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
 
     }
 

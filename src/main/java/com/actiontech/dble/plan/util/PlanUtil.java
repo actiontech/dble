@@ -27,7 +27,8 @@ import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.util.*;
@@ -578,9 +579,9 @@ public final class PlanUtil {
     }
 
 
-    public static void checkTablesPrivilege(ServerConnection source, PlanNode node, SQLSelectStatement stmt) {
+    public static void checkTablesPrivilege(ShardingService service, PlanNode node, SQLSelectStatement stmt) {
         for (TableNode tn : node.getReferedTableNodes()) {
-            if (!ShardingPrivileges.checkPrivilege(source.getUserConfig(), tn.getSchema(), tn.getTableName(), ShardingPrivileges.CheckType.SELECT)) {
+            if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), tn.getSchema(), tn.getTableName(), ShardingPrivileges.CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
             }

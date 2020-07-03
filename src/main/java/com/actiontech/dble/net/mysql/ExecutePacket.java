@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.BindValueUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
+import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -59,7 +60,6 @@ import java.io.UnsupportedEncodingException;
  *
  *  values:                    for all non-NULL values, each parameters appends its value
  *                             as described in Row Data Packet: Binary (column values)
- * @see http://dev.mysql.com/doc/internals/en/execute-packet.html
  * </pre>
  *
  * @author mycat
@@ -123,6 +123,11 @@ public class ExecutePacket extends MySQLPacket {
             }
             values[i] = bv;
         }
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection connection) {
+
     }
 
     @Override

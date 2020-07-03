@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.net.handler;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,19 +17,19 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BackEndDataCleaner implements BackEndCleaner {
     public static final Logger LOGGER = LoggerFactory.getLogger(BackEndDataCleaner.class);
-    private final MySQLConnection backendConnection;
+    private final MySQLResponseService service;
     private ReentrantLock lock = new ReentrantLock();
     private Condition condRelease = this.lock.newCondition();
 
-    public BackEndDataCleaner(MySQLConnection backendConnection) {
-        this.backendConnection = backendConnection;
-        backendConnection.setRecycler(this);
+    public BackEndDataCleaner(MySQLResponseService service) {
+        this.service = service;
+        service.setRecycler(this);
     }
 
     public void waitUntilDataFinish() {
         lock.lock();
         try {
-            while (backendConnection.isRowDataFlowing() && !backendConnection.isClosed()) {
+            while (service.isRowDataFlowing() && !service.getConnection().isClosed()) {
                 LOGGER.info("await for the row data get to a end");
                 condRelease.await();
             }

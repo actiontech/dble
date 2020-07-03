@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.xa;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,13 +74,13 @@ public final class XAStateLog {
         return true;
     }
 
-    public static void saveXARecoveryLog(String xaTxId, MySQLConnection mysqlCon) {
-        updateXARecoveryLog(xaTxId, mysqlCon, mysqlCon.getXaStatus());
+    public static void saveXARecoveryLog(String xaTxId, MySQLResponseService service) {
+        updateXARecoveryLog(xaTxId, service, service.getXaStatus());
     }
 
-    private static void updateXARecoveryLog(String xaTxId, MySQLConnection mysqlCon, TxState txState) {
-        long expires = ((RouteResultsetNode) mysqlCon.getAttachment()).getMultiplexNum().longValue();
-        updateXARecoveryLog(xaTxId, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), expires, txState);
+    private static void updateXARecoveryLog(String xaTxId, MySQLResponseService service, TxState txState) {
+        long expires = ((RouteResultsetNode) service.getAttachment()).getMultiplexNum().longValue();
+        updateXARecoveryLog(xaTxId, service.getConnection().getHost(), service.getConnection().getPort(), service.getConnection().getSchema(), expires, txState);
     }
 
     public static void updateXARecoveryLog(String xaTxId, String host, int port, String schema, long expires, TxState txState) {
@@ -174,7 +175,7 @@ public final class XAStateLog {
             try {
                 waitSet.remove(Thread.currentThread().getId());
                 batchNum.decrementAndGet();
-                // the follower's status has copied and ready to write
+                // the follower's status has copied and ready to writeDirectly
                 waitWriting.await();
                 boolean result = mapResult.get(Thread.currentThread().getId());
                 mapResult.remove(Thread.currentThread().getId());
@@ -192,11 +193,11 @@ public final class XAStateLog {
         IN_MEMORY_REPOSITORY.put(xaTxId, coordinatorLogEntry);
     }
 
-    public static void initRecoveryLog(String xaTxId, int position, MySQLConnection conn) {
+    public static void initRecoveryLog(String xaTxId, int position, MySQLResponseService service) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
-        long expires = ((RouteResultsetNode) conn.getAttachment()).getMultiplexNum().longValue();
-        coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTxId, conn.getHost(), conn.getPort(), expires,
-                conn.getSchema(), conn.getXaStatus());
+        long expires = ((RouteResultsetNode) service.getAttachment()).getMultiplexNum().longValue();
+        coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTxId, service.getConnection().getHost(), service.getConnection().getPort(), expires,
+                service.getSchema(), service.getXaStatus());
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
     }
 

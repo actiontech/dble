@@ -7,9 +7,10 @@ package com.actiontech.dble.log.slow;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,9 +111,9 @@ public class SlowQueryLogProcessor extends Thread {
         };
     }
 
-    public void putSlowQueryLog(ServerConnection c, TraceResult log) {
+    public void putSlowQueryLog(ShardingService service, TraceResult log) {
         if (log.isCompleted() && log.getOverAllMilliSecond() > SlowQueryLog.getInstance().getSlowTime()) {
-            SlowQueryLogEntry logEntry = new SlowQueryLogEntry(c.getExecuteSql(), log, c.getUser(), c.getHost(), c.getId());
+            SlowQueryLogEntry logEntry = new SlowQueryLogEntry(service.getExecuteSql(), log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
             queue.add(logEntry);
         }
     }

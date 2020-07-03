@@ -5,8 +5,6 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
@@ -17,10 +15,13 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeSelectHandler.class);
     private final int queueSize;
-    private Map<BackendConnection, BlockingQueue<HeapItem>> queues;
+    private Map<MySQLResponseService, BlockingQueue<HeapItem>> queues;
     private RowDataComparator rowComparator;
     private OutputHandler outputHandler;
     private volatile boolean noNeedRows = false;
@@ -49,10 +50,12 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void okResponse(byte[] data, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void okResponse(byte[] data, AbstractService service) {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
+        TraceManager.finishSpan(service, traceObject);
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
+            LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + service);
         }
         if (executeResponse) {
             String reason = "unexpected okResponse";
@@ -62,21 +65,21 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
-        queues.put(conn, new LinkedBlockingQueue<>(queueSize));
+                                 boolean isLeft, AbstractService service) {
+        queues.put((MySQLResponseService) service, new LinkedBlockingQueue<>(queueSize));
         lock.lock();
         try {
             if (isFail()) {
-                if (decrementToZero(conn)) {
+                if (decrementToZero((MySQLResponseService) service)) {
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
+                    handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
                 }
             } else {
                 if (!fieldsReturned) {
                     fieldsReturned = true;
-                    mergeFieldEof(fields, conn);
+                    mergeFieldEof(fields, (MySQLResponseService) service);
                 }
-                if (decrementToZero(conn)) {
+                if (decrementToZero((MySQLResponseService) service)) {
                     startOwnThread();
                 }
             }
@@ -89,8 +92,10 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
-        BlockingQueue<HeapItem> queue = queues.get(conn);
+    public void rowEofResponse(final byte[] eof, boolean isLeft, AbstractService service) {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-rowEof-response");
+        TraceManager.finishSpan(service, traceObject);
+        BlockingQueue<HeapItem> queue = queues.get(service);
         if (queue == null)
             return;
         try {
@@ -101,16 +106,16 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
         if (errorResponse.get() || noNeedRows) {
             return true;
         }
-        BlockingQueue<HeapItem> queue = queues.get(conn);
+        BlockingQueue<HeapItem> queue = queues.get(service);
         if (queue == null)
             return true;
         RowDataPacket rp = new RowDataPacket(fieldCount);
         rp.read(row);
-        HeapItem item = new HeapItem(row, rp, (MySQLConnection) conn);
+        HeapItem item = new HeapItem(row, rp, (MySQLResponseService) service);
         try {
             queue.put(item);
         } catch (InterruptedException e) {
@@ -119,7 +124,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         return false;
     }
 
-    private void mergeFieldEof(List<byte[]> fields, BackendConnection conn) throws IOException {
+    private void mergeFieldEof(List<byte[]> fields, MySQLResponseService service) throws IOException {
         fieldCount = fields.size();
         List<FieldPacket> fieldPackets = new ArrayList<>();
         for (byte[] field : fields) {
@@ -142,7 +147,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             orderBys.add(new Order(itemField));
         }
         rowComparator = new RowDataComparator(HandlerTool.createFields(fieldPackets), orderBys);
-        outputHandler.fieldEofResponse(null, null, fieldPackets, null, false, conn);
+        outputHandler.fieldEofResponse(null, null, fieldPackets, null, false, service);
     }
 
     private void startOwnThread() {
@@ -164,7 +169,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 return rowComparator.compare(row1, row2);
             });
             // init heap
-            for (Map.Entry<BackendConnection, BlockingQueue<HeapItem>> entry : queues.entrySet()) {
+            for (Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry : queues.entrySet()) {
                 HeapItem firstItem = entry.getValue().take();
                 heap.add(firstItem);
             }
@@ -202,9 +207,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                     outputHandler.rowResponse(top.getRowData(), top.getRowPacket(), false, top.getIndex());
                 }
             }
-            Iterator<Map.Entry<BackendConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+            Iterator<Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
             while (iterator.hasNext()) {
-                Map.Entry<BackendConnection, BlockingQueue<HeapItem>> entry = iterator.next();
+                Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry = iterator.next();
                 entry.getValue().clear();
                 session.releaseConnectionIfSafe(entry.getKey(), false);
                 iterator.remove();

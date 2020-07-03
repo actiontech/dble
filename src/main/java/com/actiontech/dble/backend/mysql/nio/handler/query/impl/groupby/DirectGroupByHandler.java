@@ -5,9 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby;
 
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.directgroupby.DGRowPacket;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.directgroupby.GroupByBucket;
@@ -19,12 +17,14 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -87,7 +87,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -104,33 +104,33 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         prepareSumAggregators(sums, true);
         setupSumFunctions(sums);
         /* group fieldpackets are front of the origin */
-        sendGroupFieldPackets((MySQLConnection) conn);
+        sendGroupFieldPackets((MySQLResponseService) service);
         // row in localresult is DGRowPacket which is added aggregate functions result from origin rowdatapacket
         localResultFps = this.fieldPackets;
         List<ItemSum> localResultReferredSums = referredSumFunctions;
         RowDataComparator comparator = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
         );
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), comparator, localResultFps,
-                localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+                localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults())).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
             RowDataComparator tmpComparator = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type());
             GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpComparator,
-                    localResultFps, localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
+                    localResultFps, localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()));
             bucket.setMemSizeController(session.getOtherBufferMC());
             buckets.add(bucket);
             bucket.start();
         }
         if (this.groupStart.compareAndSet(false, true)) {
-            startOwnThread(conn);
+            startOwnThread(service);
         }
     }
 
     /**
      * aggregate functions result and origin rowdatapacket
      */
-    private List<FieldPacket> sendGroupFieldPackets(MySQLConnection conn) {
+    private List<FieldPacket> sendGroupFieldPackets(MySQLResponseService service) {
         List<FieldPacket> newFps = new ArrayList<>();
         for (ItemSum sum1 : sums) {
             Item sum = sum1;
@@ -139,13 +139,13 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             newFps.add(tmp);
         }
         newFps.addAll(this.fieldPackets);
-        nextHandler.fieldEofResponse(null, null, newFps, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, newFps, null, this.isLeft, service);
         return newFps;
     }
 
     @Override
     protected void ownThreadJob(Object... objects) {
-        MySQLConnection conn = (MySQLConnection) objects[0];
+        MySQLResponseService sqlResponseService = (MySQLResponseService) objects[0];
         recordElapsedTime("local group by thread is start:");
         try {
             int eofCount = 0;
@@ -165,12 +165,12 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             recordElapsedTime("local group by thread is done for read:");
             if (!hasFirstRow.get()) {
                 if (HandlerTool.needSendNoRow(this.groupBys))
-                    sendNoRowGroupRowPacket(conn);
+                    sendNoRowGroupRowPacket(sqlResponseService);
             } else {
-                sendGroupRowPacket(conn);
+                sendGroupRowPacket(sqlResponseService);
             }
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(null, this.isLeft, conn);
+            nextHandler.rowEofResponse(null, this.isLeft, sqlResponseService);
         } catch (Exception e) {
             String msg = "group by thread is error," + e.getLocalizedMessage();
             LOGGER.info(msg, e);
@@ -185,7 +185,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         LOGGER.debug("rowResponse");
         if (terminate.get())
             return true;
@@ -200,7 +200,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;
@@ -213,7 +213,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         }
     }
 
-    private void sendGroupRowPacket(MySQLConnection conn) {
+    private void sendGroupRowPacket(MySQLResponseService service) {
         groupLocalResult.done();
         RowDataPacket row = null;
         List<Field> localFields = HandlerTool.createFields(localResultFps);
@@ -224,12 +224,12 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         }
         prepareSumAggregators(sendSums, true);
         while ((row = groupLocalResult.next()) != null) {
-            if (sendGroupRowPacket(conn, row, sendSums))
+            if (sendGroupRowPacket(service, row, sendSums))
                 break;
         }
     }
 
-    private boolean sendGroupRowPacket(MySQLConnection conn, RowDataPacket row, List<ItemSum> sendSums) {
+    private boolean sendGroupRowPacket(MySQLResponseService service, RowDataPacket row, List<ItemSum> sendSums) {
         initSumFunctions(sendSums, row);
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + sendSums.size());
         /**
@@ -245,13 +245,13 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         for (int i = 0; i < row.getFieldCount(); i++) {
             newRp.add(row.getValue(i));
         }
-        return nextHandler.rowResponse(null, newRp, this.isLeft, conn);
+        return nextHandler.rowResponse(null, newRp, this.isLeft, service);
     }
 
     /**
      * send data to next even no data here.eg:select count(*) from t2,if t2 is empty,send 0
      */
-    private void sendNoRowGroupRowPacket(MySQLConnection conn) {
+    private void sendNoRowGroupRowPacket(MySQLResponseService service) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
         for (ItemSum sum : this.sums) {
             sum.noRowsInResult();
@@ -261,7 +261,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         for (int i = 0; i < this.fieldPackets.size(); i++) {
             newRp.add(null);
         }
-        nextHandler.rowResponse(null, newRp, this.isLeft, conn);
+        nextHandler.rowResponse(null, newRp, this.isLeft, service);
     }
 
     /**

@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.server;
 
-import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
 
 /**
@@ -16,7 +16,7 @@ public interface Session {
     /**
      * get frontend conn
      */
-    FrontendConnection getSource();
+    FrontendConnection getFrontConnection();
 
     /**
      * get size of target conn

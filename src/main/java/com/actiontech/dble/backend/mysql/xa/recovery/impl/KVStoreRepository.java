@@ -104,7 +104,7 @@ public class KVStoreRepository implements Repository {
             zkConn.setData().forPath(logPath, data);
             return true;
         } catch (Exception e) {
-            LOGGER.warn("Failed to write checkpoint", e);
+            LOGGER.warn("Failed to writeDirectly checkpoint", e);
             return false;
         }
     }

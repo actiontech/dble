@@ -71,7 +71,7 @@ public final class HaConfigManager {
     }
 
     public void write(DbGroups dbs, int reloadId) throws IOException {
-        HA_LOGGER.info("try to write DbGroups into local file " + reloadId);
+        HA_LOGGER.info("try to writeDirectly DbGroups into local file " + reloadId);
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
@@ -80,7 +80,7 @@ public final class HaConfigManager {
                 path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;
                 this.xmlProcess.safeParseWriteToXml(dbs, path, "db");
             } else {
-                HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());
+                HA_LOGGER.info("reloadId changes when try to writeDirectly the local file,just skip " + reloadIndex.get());
             }
         } finally {
             lock.readLock().unlock();
@@ -99,7 +99,7 @@ public final class HaConfigManager {
         if (isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
-                HA_LOGGER.info("get into write process");
+                HA_LOGGER.info("get into writeDirectly process");
                 waitingSet.add(dbGroup);
                 dbXmlWriteJob = new DbXmlWriteJob(waitingSet, dbGroups, reloadIndex.get());
                 thisTimeJob = dbXmlWriteJob;

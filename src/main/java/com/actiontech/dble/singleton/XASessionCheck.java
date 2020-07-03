@@ -27,13 +27,13 @@ public final class XASessionCheck {
     }
 
     public void addCommitSession(NonBlockingSession s) {
-        this.commitSession.put(s.getSource().getId(), s);
-        this.committingSession.put(s.getSource().getId(), s);
+        this.commitSession.put(s.getFrontConnection().getId(), s);
+        this.committingSession.put(s.getFrontConnection().getId(), s);
     }
 
     public void addRollbackSession(NonBlockingSession s) {
-        this.rollbackSession.put(s.getSource().getId(), s);
-        this.rollbackingSession.put(s.getSource().getId(), s);
+        this.rollbackSession.put(s.getFrontConnection().getId(), s);
+        this.rollbackingSession.put(s.getFrontConnection().getId(), s);
     }
 
     public void checkSessions() {
@@ -46,7 +46,7 @@ public final class XASessionCheck {
         for (NonBlockingSession session : commitSession.values()) {
             xaStage = session.getTransactionManager().getXAStage();
             if (XAStage.COMMIT_FAIL_STAGE.equals(xaStage)) {
-                this.commitSession.remove(session.getSource().getId());
+                this.commitSession.remove(session.getFrontConnection().getId());
                 session.commit();
             }
         }
@@ -54,7 +54,7 @@ public final class XASessionCheck {
 
     private void checkRollbackSession() {
         for (NonBlockingSession session : rollbackSession.values()) {
-            this.rollbackSession.remove(session.getSource().getId());
+            this.rollbackSession.remove(session.getFrontConnection().getId());
             session.rollback();
         }
     }

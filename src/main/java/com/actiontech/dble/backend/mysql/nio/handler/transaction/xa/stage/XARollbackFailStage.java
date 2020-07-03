@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.singleton.XASessionCheck;
 import org.slf4j.Logger;
@@ -30,12 +31,12 @@ public class XARollbackFailStage extends XARollbackStage {
     }
 
     @Override
-    public TransactionStage next(boolean isFail, String errMsg, byte[] errPacket) {
+    public TransactionStage next(boolean isFail, String errMsg, MySQLPacket errPacket) {
         String xaId = session.getSessionXaID();
         if (!isFail || xaOldThreadIds.isEmpty()) {
             XAStateLog.saveXARecoveryLog(xaId, TxState.TX_ROLLBACKED_STATE);
             // remove session in background
-            XASessionCheck.getInstance().getRollbackingSession().remove(session.getSource().getId());
+            XASessionCheck.getInstance().getRollbackingSession().remove(session.getFrontConnection().getId());
             // resolve alert
             AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", xaId));
             feedback(false);
@@ -56,7 +57,7 @@ public class XARollbackFailStage extends XARollbackStage {
                 closeReason.append(", the ERROR is ");
                 closeReason.append(errMsg);
             }
-            session.getSource().close(closeReason.toString());
+            session.getFrontConnection().close(closeReason.toString());
         }
 
         // kill xa or retry to commit xa in background

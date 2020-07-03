@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
+import com.actiontech.dble.net.mysql.MySQLPacket;
+
 public interface TransactionHandler {
     void commit();
 
@@ -12,5 +14,5 @@ public interface TransactionHandler {
 
     void rollback();
 
-    void turnOnAutoCommit(byte[] previousSendData);
+    void turnOnAutoCommit(MySQLPacket previousSendData);
 }

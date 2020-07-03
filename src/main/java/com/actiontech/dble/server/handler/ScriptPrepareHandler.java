@@ -6,11 +6,12 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ScriptPrepareParse;
 import com.actiontech.dble.server.response.SptDrop;
 import com.actiontech.dble.server.response.SptExecute;
 import com.actiontech.dble.server.response.SptPrepare;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,20 +20,20 @@ public final class ScriptPrepareHandler {
     private ScriptPrepareHandler() {
     }
 
-    public static void handle(String stmt, ServerConnection c) {
-        switch (ScriptPrepareParse.parse(stmt, 0, c)) {
+    public static void handle(String stmt, ShardingService service) {
+        switch (ScriptPrepareParse.parse(stmt, 0, service)) {
             case ScriptPrepareParse.PREPARE:
-                SptPrepare.response(c);
+                SptPrepare.response(service);
                 break;
             case ScriptPrepareParse.EXECUTE:
-                SptExecute.response(c);
+                SptExecute.response(service);
                 break;
             case ScriptPrepareParse.DROP:
-                SptDrop.response(c);
+                SptDrop.response(service);
                 break;
             default:
                 LOGGER.info("You have an error in your SQL syntax:" + stmt);
-                c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "You have an error in your SQL syntax:" + stmt);
+                service.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "You have an error in your SQL syntax:" + stmt);
                 break;
         }
     }

@@ -4,7 +4,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
-import com.actiontech.dble.manager.response.CheckGlobalConsistency;
+import com.actiontech.dble.services.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.singleton.ProxyMeta;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -85,7 +85,7 @@ public class GlobalCheckJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         tc = (GlobalTableConfig) context.getJobDetail().getJobDataMap().get("TableConfig");
         schema = (String) context.getJobDetail().getJobDataMap().get("schema");
-        handler = null;
+        //handler = null;
         this.checkGlobalTable();
     }
 }

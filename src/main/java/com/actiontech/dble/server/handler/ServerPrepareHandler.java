@@ -7,7 +7,6 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.ByteUtil;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -106,14 +105,14 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     @Override
     public void execute(byte[] data) {
-        long psId = ByteUtil.readUB4(data, 5);
+        long statementId = ByteUtil.readUB4(data, 5); //skip to read
         PreparedStatement pStmt;
-        if ((pStmt = pStmtForId.get(psId)) == null) {
+        if ((pStmt = pStmtForId.get(statementId)) == null) {
             source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
             ExecutePacket packet = new ExecutePacket(pStmt);
             try {
-                packet.read(data, CharsetUtil.getJavaCharset(source.getCharset().getClient()));
+                packet.read(data, source.getCharset());
             } catch (UnsupportedEncodingException e) {
                 source.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, e.getMessage());
                 return;

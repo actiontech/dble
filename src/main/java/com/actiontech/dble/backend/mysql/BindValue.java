@@ -11,7 +11,6 @@ package com.actiontech.dble.backend.mysql;
 public class BindValue {
 
     private boolean isNull; /* NULL indicator */
-    private boolean isLongData; /* long data indicator */
     private boolean isSet; /* has this parameter been set */
 
     private long length; /* Default length of data */
@@ -28,7 +27,6 @@ public class BindValue {
 
     public void reset() {
         this.isNull = false;
-        this.isLongData = false;
         this.isSet = false;
 
         this.length = 0;
@@ -50,14 +48,6 @@ public class BindValue {
 
     public void setNull(boolean aNull) {
         isNull = aNull;
-    }
-
-    public boolean isLongData() {
-        return isLongData;
-    }
-
-    public void setLongData(boolean longData) {
-        isLongData = longData;
     }
 
     public boolean isSet() {

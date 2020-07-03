@@ -127,7 +127,7 @@ public class XMLDbLoader {
 
             Element heartbeat = (Element) element.getElementsByTagName("heartbeat").item(0);
             final String heartbeatSQL = heartbeat.getTextContent();
-            final String strHBErrorRetryCount = ConfigUtil.checkAndGetAttribute(heartbeat, "errorRetryCount", "0", problemReporter);
+            final String strHBErrorRetryCount = ConfigUtil.checkAndGetAttribute(heartbeat, "errorRetryCount", "1", problemReporter);
             final String strHBTimeout = ConfigUtil.checkAndGetAttribute(heartbeat, "timeout", "0", problemReporter);
 
             NodeList dbInstances = element.getElementsByTagName("dbInstance");

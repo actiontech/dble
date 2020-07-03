@@ -17,8 +17,9 @@ import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLDropViewStatement;
@@ -38,42 +39,42 @@ public final class ViewHandler {
     private ViewHandler() {
     }
 
-    public static void handle(int type, String sql, ServerConnection c) {
-        String schema = c.getSchema();
+    public static void handle(int type, String sql, ShardingService service) {
+        String schema = service.getSchema();
         if (StringUtil.isEmpty(schema)) {
-            c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+            service.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
             return;
         }
 
         try {
-            handleView(type, schema, sql, c);
+            handleView(type, schema, sql, service);
         } catch (SQLException e) {
-            c.writeErrMessage(e.getErrorCode(), (e.getMessage() == null ? e.toString() : e.getMessage()));
+            service.writeErrMessage(e.getErrorCode(), (e.getMessage() == null ? e.toString() : e.getMessage()));
         } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, (e.getMessage() == null ? e.toString() : e.getMessage()));
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, (e.getMessage() == null ? e.toString() : e.getMessage()));
         }
     }
 
-    public static void handleView(int sqlType, String schema, String sql, ServerConnection c) throws Exception {
+    public static void handleView(int sqlType, String schema, String sql, ShardingService service) throws Exception {
         switch (sqlType) {
             case ServerParse.CREATE_VIEW:
-                createView(schema, sql, sqlType, c);
+                createView(schema, sql, sqlType, service);
                 break;
             case ServerParse.ALTER_VIEW:
-                replaceView(schema, sql, sqlType, c);
+                replaceView(schema, sql, sqlType, service);
                 break;
             case ServerParse.REPLACE_VIEW:
-                replaceView(schema, sql, sqlType, c);
+                replaceView(schema, sql, sqlType, service);
                 break;
             case ServerParse.DROP_VIEW:
-                deleteView(schema, sql, c);
+                deleteView(schema, sql, service);
                 break;
             default:
                 break;
         }
     }
 
-    private static void createView(String schema, String sql, int sqlType, ServerConnection c) throws Exception {
+    private static void createView(String schema, String sql, int sqlType, ShardingService service) throws Exception {
         //create a new object of the view
         ViewMeta vm = new ViewMeta(schema, sql, ProxyMeta.getInstance().getTmManager());
         vm.init();
@@ -82,15 +83,15 @@ public final class ViewHandler {
             RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, vm.getSchema()), sqlType);
             rrs.setSchema(vm.getSchema());
             RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getShardingNode());
-            MysqlCreateViewHandler handler = new MysqlCreateViewHandler(c.getSession2(), rrs, vm);
+            MysqlCreateViewHandler handler = new MysqlCreateViewHandler(service.getSession2(), rrs, vm);
             handler.execute();
             return;
         }
         vm.addMeta(true);
-        writeOkPackage(c);
+        writeOkPackage(service);
     }
 
-    private static void replaceView(String schema, String sql, int sqlType, ServerConnection c) throws Exception {
+    private static void replaceView(String schema, String sql, int sqlType, ShardingService service) throws Exception {
         //create a new object of the view
         ViewMeta vm = new ViewMeta(schema, sql, ProxyMeta.getInstance().getTmManager());
         vm.init();
@@ -100,7 +101,7 @@ public final class ViewHandler {
             RouteResultset rrs = new RouteResultset("drop view `" + vm.getViewName() + "`", sqlType);
             rrs.setSchema(vm.getSchema());
             RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getShardingNode());
-            MysqlDropViewHandler handler = new MysqlDropViewHandler(c.getSession2(), rrs, 1);
+            MysqlDropViewHandler handler = new MysqlDropViewHandler(service.getSession2(), rrs, 1);
             handler.setVm(vm);
             handler.execute();
             return;
@@ -110,15 +111,15 @@ public final class ViewHandler {
             RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, vm.getSchema()), sqlType);
             rrs.setSchema(vm.getSchema());
             RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getShardingNode());
-            MysqlCreateViewHandler handler = new MysqlCreateViewHandler(c.getSession2(), rrs, vm);
+            MysqlCreateViewHandler handler = new MysqlCreateViewHandler(service.getSession2(), rrs, vm);
             handler.execute();
             return;
         }
         vm.addMeta(true);
-        writeOkPackage(c);
+        writeOkPackage(service);
     }
 
-    private static void deleteView(String currentSchema, String sql, ServerConnection c) throws Exception {
+    private static void deleteView(String currentSchema, String sql, ShardingService service) throws Exception {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLDropViewStatement viewStatement = (SQLDropViewStatement) parser.parseStatement(true);
         if (viewStatement.getTableSources() == null || viewStatement.getTableSources().size() == 0) {
@@ -162,23 +163,21 @@ public final class ViewHandler {
             dropStmt.deleteCharAt(dropStmt.length() - 1);
             RouteResultset rrs = new RouteResultset(dropStmt.toString(), ServerParse.DROP_VIEW);
             RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getShardingNode());
-            MysqlDropViewHandler handler = new MysqlDropViewHandler(c.getSession2(), rrs, deleteMysqlViews.size());
+            MysqlDropViewHandler handler = new MysqlDropViewHandler(service.getSession2(), rrs, deleteMysqlViews.size());
             handler.execute();
             return;
         }
 
-        writeOkPackage(c);
+        writeOkPackage(service);
     }
 
-    private static void writeOkPackage(ServerConnection c) {
+    private static void writeOkPackage(ShardingService service) {
         // if the create success with no error send back OK
-        byte packetId = (byte) c.getSession2().getPacketId().get();
+        byte packetId = (byte) service.getSession2().getPacketId().get();
         OkPacket ok = new OkPacket();
         ok.setPacketId(++packetId);
-        c.getSession2().multiStatementPacket(ok, packetId);
-        ok.write(c);
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        service.getSession2().multiStatementPacket(ok, packetId);
+        ok.write(service.getConnection());
     }
 
 }

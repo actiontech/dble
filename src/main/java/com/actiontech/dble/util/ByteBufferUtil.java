@@ -144,7 +144,7 @@ public final class ByteBufferUtil {
     }
 
     /**
-     * You should almost never use this.  Instead, use the write* methods to avoid copies.
+     * You should almost never use this.  Instead, use the writeDirectly* methods to avoid copies.
      */
     public static byte[] getArray(ByteBuffer buffer) {
         int length = buffer.remaining();

@@ -1,13 +1,12 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
-import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserName;
-import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
@@ -90,11 +89,11 @@ public final class Scheduler {
                         long sqlTimeout = SystemConfig.getInstance().getSqlExecuteTimeout() * 1000L;
                         //close connection if now -lastTime>sqlExecuteTimeout
                         long currentTime = TimeUtil.currentTimeMillis();
-                        Iterator<BackendConnection> iterator = NIOProcessor.BACKENDS_OLD.iterator();
+                        Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
                         while (iterator.hasNext()) {
-                            BackendConnection con = iterator.next();
+                            PooledConnection con = iterator.next();
                             long lastTime = con.getLastTime();
-                            if (con.isClosed() || con.getState() != PooledEntry.STATE_IN_USE || currentTime - lastTime > sqlTimeout) {
+                            if (con.isClosed() || con.getState() != PooledConnection.STATE_IN_USE || currentTime - lastTime > sqlTimeout) {
                                 con.close("clear old backend connection ...");
                                 iterator.remove();
                             }

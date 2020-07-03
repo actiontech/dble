@@ -7,7 +7,7 @@ package com.actiontech.dble.util;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

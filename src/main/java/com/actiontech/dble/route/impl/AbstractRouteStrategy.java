@@ -9,8 +9,9 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteStrategy;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
-                                ServerConnection sc, boolean isExplain) throws SQLException {
+                                ShardingService service, boolean isExplain) throws SQLException {
 
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
@@ -39,14 +40,14 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
         }
 
         if (schema == null) {
-            rrs = routeNormalSqlWithAST(null, origSQL, rrs, sc, isExplain);
+            rrs = routeNormalSqlWithAST(null, origSQL, rrs, service, isExplain);
         } else {
             if (sqlType == ServerParse.SHOW) {
                 rrs.setStatement(origSQL);
                 rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
-                sc.getSession2().endParse();
+                service.getSession2().endParse();
             } else {
-                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, sc, isExplain);
+                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, service, isExplain);
             }
         }
 
@@ -58,7 +59,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
      * routeNormalSqlWithAST
      */
     public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
-                                                         ServerConnection sc, boolean isExplain) throws SQLException;
+                                                         ShardingService service, boolean isExplain) throws SQLException;
 
 
 }

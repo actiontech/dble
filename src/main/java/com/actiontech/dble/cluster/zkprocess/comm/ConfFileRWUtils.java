@@ -45,7 +45,7 @@ public final class ConfFileRWUtils {
 
     public static void writeFile(String name, String value) throws IOException {
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
-        checkNotNull(path, "write ecache file curr Path :" + path + " is null! It must be not null");
+        checkNotNull(path, "writeDirectly ecache file curr Path :" + path + " is null! It must be not null");
         path = new File(path).getPath() + File.separator + name;
 
         ByteArrayInputStream input = null;

@@ -5,16 +5,16 @@
  */
 package com.actiontech.dble.backend.mysql.nio;
 
-import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.net.service.AbstractService;
 
 /**
  * @author collapsar
  */
 public interface MySQLConnectionListener {
 
-    void onCreateSuccess(BackendConnection conn);
+    void onCreateSuccess(AbstractService service);
 
-    void onCreateFail(BackendConnection conn, Throwable e);
+    void onCreateFail(AbstractService service, Throwable e);
 
-    void onHeartbeatSuccess(BackendConnection conn);
+    void onHeartbeatSuccess(AbstractService service);
 }

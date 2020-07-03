@@ -63,7 +63,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 mapTableToSimple = pdVisitor.getMapTableToSimple();
             }
             SchemaConfig schemaConfig;
-            String schemaName = this.session.getSource().getSchema();
+            String schemaName = this.session.getShardingService().getSchema();
             if (schemaName != null) {
                 schemaConfig = schemaConfigMap.get(schemaName);
             } else {

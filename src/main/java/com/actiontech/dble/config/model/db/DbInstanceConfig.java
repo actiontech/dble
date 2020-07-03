@@ -5,8 +5,6 @@
  */
 package com.actiontech.dble.config.model.db;
 
-import com.actiontech.dble.backend.pool.PoolConfig;
-
 public class DbInstanceConfig {
 
     private final String instanceName;

@@ -65,7 +65,7 @@ public class FileSystemRepository implements Repository {
             initChannelIfNecessary();
             write(coordinatorLogEntry, true);
         } catch (IOException e) {
-            AlertUtil.alertSelf(AlarmCode.XA_WRITE_IO_FAIL, Alert.AlertLevel.WARN, "Failed to write logfile", null);
+            AlertUtil.alertSelf(AlarmCode.XA_WRITE_IO_FAIL, Alert.AlertLevel.WARN, "Failed to writeDirectly logfile", null);
             LOGGER.warn(e.getMessage(), e);
         }
     }
@@ -212,8 +212,8 @@ public class FileSystemRepository implements Repository {
             }
             return true;
         } catch (Exception e) {
-            LOGGER.warn("Failed to write checkpoint", e);
-            AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to write checkpoint:" + e.getMessage(), null);
+            LOGGER.warn("Failed to writeDirectly checkpoint", e);
+            AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to writeDirectly checkpoint:" + e.getMessage(), null);
             ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL.add(XA_ALERT_FLAG);
             return false;
         }

@@ -1,6 +1,8 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.cluster.values.ConfStatus;
+import com.actiontech.dble.singleton.TraceManager;
+import io.opentracing.Span;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -8,9 +8,10 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -33,7 +34,7 @@ public final class ShowColumns {
             "|(\\s+(where)\\s+((. *)*)\\s*))?\\s*$";
     public static final Pattern PATTERN = Pattern.compile(COLUMNS_PAT, Pattern.CASE_INSENSITIVE);
 
-    public static void response(ServerConnection c, String stmt) {
+    public static void response(ShardingService shardingService, String stmt) {
         try {
             Pattern pattern = ShowColumns.PATTERN;
             Matcher ma = pattern.matcher(stmt);
@@ -50,9 +51,9 @@ public final class ShowColumns {
             MySqlShowColumnsStatement showColumnsStatement = (MySqlShowColumnsStatement) statement;
             String table = StringUtil.removeBackQuote(showColumnsStatement.getTable().getSimpleName());
             SQLName database = showColumnsStatement.getDatabase();
-            String schema = database == null ? c.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());
+            String schema = database == null ? shardingService.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());
             if (schema == null) {
-                c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+                shardingService.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
                 return;
             }
             String sql = stmt;
@@ -65,9 +66,9 @@ public final class ShowColumns {
                 table = table.toLowerCase();
             }
             SchemaInfo schemaInfo = new SchemaInfo(schema, table);
-            c.routeSystemInfoAndExecuteSQL(sql, schemaInfo, ServerParse.SHOW);
+            shardingService.routeSystemInfoAndExecuteSQL(sql, schemaInfo, ServerParse.SHOW);
         } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+            shardingService.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
         }
     }
 }

@@ -8,8 +8,8 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -27,7 +27,7 @@ public final class MysqlSystemSchemaHandler {
     public static final String COLUMNS_TABLE = "COLUMNS";
     public static final String INFORMATION_SCHEMA = "INFORMATION_SCHEMA";
 
-    public static void handle(ServerConnection sc, SchemaUtil.SchemaInfo schemaInfo, SQLSelectQuery sqlSelectQuery) {
+    public static void handle(ShardingService service, SchemaUtil.SchemaInfo schemaInfo, SQLSelectQuery sqlSelectQuery) {
         MySqlSelectQueryBlock mySqlSelectQueryBlock = null;
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             mySqlSelectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
@@ -37,7 +37,7 @@ public final class MysqlSystemSchemaHandler {
         }
 
         if (mySqlSelectQueryBlock == null) {
-            sc.write(sc.writeToBuffer(OkPacket.OK, sc.allocate()));
+            service.writeDirectly(service.writeToBuffer(OkPacket.OK, service.allocate()));
             return;
         }
 
@@ -45,17 +45,17 @@ public final class MysqlSystemSchemaHandler {
         if (schemaInfo != null && INFORMATION_SCHEMA.equals(schemaInfo.getSchema().toUpperCase())) {
             switch (schemaInfo.getTable().toUpperCase()) {
                 case SCHEMATA_TABLE:
-                    MysqlInformationSchemaHandler.handle(sc, fields);
+                    MysqlInformationSchemaHandler.handle(service, fields);
                     return;
                 case COLUMNS_TABLE:
-                    new SelectInformationSchemaColumnsHandler().handle(sc, fields, mySqlSelectQueryBlock);
+                    new SelectInformationSchemaColumnsHandler().handle(service, fields, mySqlSelectQueryBlock);
                     return;
                 default:
                     break;
             }
         }
 
-        doWrite(fields.length, fields, null, sc);
+        doWrite(fields.length, fields, null, service);
     }
 
     private static FieldPacket[] generateFieldPacket(List<SQLSelectItem> selectList) {
@@ -76,43 +76,41 @@ public final class MysqlSystemSchemaHandler {
     /**
      * @param fieldCount
      * @param fields
-     * @param c
+     * @param service
      */
-    public static void doWrite(int fieldCount, FieldPacket[] fields, RowDataPacket[] rows, ServerConnection c) {
+    public static void doWrite(int fieldCount, FieldPacket[] fields, RowDataPacket[] rows, ShardingService service) {
 
-        ByteBuffer buffer = c.allocate();
+        ByteBuffer buffer = service.allocate();
 
-        // write header
+        // writeDirectly header
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
-        byte packetId = header.getPacketId();
-        buffer = header.write(buffer, c, true);
+        header.setPacketId(service.nextPacketId());
+        buffer = header.write(buffer, service, true);
 
-        // write fields
+        // writeDirectly fields
         for (FieldPacket field : fields) {
-            field.setPacketId(++packetId);
-            buffer = field.write(buffer, c, true);
+            field.setPacketId(service.nextPacketId());
+            buffer = field.write(buffer, service, true);
         }
 
-        // write eof
+        // writeDirectly eof
         EOFPacket eof = new EOFPacket();
-        eof.setPacketId(++packetId);
-        buffer = eof.write(buffer, c, true);
+        eof.setPacketId(service.nextPacketId());
+        buffer = eof.write(buffer, service, true);
 
-        // write rows
+        // writeDirectly rows
         if (rows != null) {
             for (RowDataPacket row : rows) {
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, c, true);
+                row.setPacketId(service.nextPacketId());
+                buffer = row.write(buffer, service, true);
             }
         }
 
-        // write last eof
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.setPacketId(++packetId);
-        buffer = lastEof.write(buffer, c, true);
+        // writeDirectly last eof
+        EOFRowPacket lastEof = new EOFRowPacket();
+        lastEof.setPacketId(service.nextPacketId());
 
-        // post write
-        c.write(buffer);
+        lastEof.write(buffer, service);
     }
 }
 

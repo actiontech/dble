@@ -15,8 +15,8 @@ import com.actiontech.dble.net.mysql.ExecutePacket;
 import com.actiontech.dble.net.mysql.LongDataPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.ResetPacket;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.response.PreparedStmtResponse;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.google.common.escape.Escaper;
 import com.google.common.escape.Escapers;
@@ -45,12 +45,12 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         varcharEscape = escapeBuilder.build();
     }
 
-    private ServerConnection source;
+    private ShardingService service;
     private volatile long pStmtId;
     private Map<Long, PreparedStatement> pStmtForId;
 
-    public ServerPrepareHandler(ServerConnection source) {
-        this.source = source;
+    public ServerPrepareHandler(ShardingService service) {
+        this.service = service;
         this.pStmtId = 0L;
         this.pStmtForId = new HashMap<>();
     }
@@ -64,7 +64,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         int paramCount = getParamCount(sql);
         PreparedStatement pStmt = new PreparedStatement(++pStmtId, sql, columnCount, paramCount);
         pStmtForId.put(pStmt.getId(), pStmt);
-        PreparedStmtResponse.response(pStmt, source);
+        PreparedStmtResponse.response(pStmt, service);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             try {
                 pStmt.appendLongData(paramId, packet.getLongData());
             } catch (IOException e) {
-                source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, e.getMessage());
+                service.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, e.getMessage());
             }
         }
     }
@@ -97,9 +97,9 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 LOGGER.debug("reset prepare sql : " + pStmtForId.get(psId));
             }
             pStmt.resetLongData();
-            source.write(OkPacket.OK);
+            service.writeDirectly(OkPacket.OK);
         } else {
-            source.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId));
+            service.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId));
         }
     }
 
@@ -108,24 +108,24 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         long statementId = ByteUtil.readUB4(data, 5); //skip to read
         PreparedStatement pStmt;
         if ((pStmt = pStmtForId.get(statementId)) == null) {
-            source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
+            service.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
             ExecutePacket packet = new ExecutePacket(pStmt);
             try {
-                packet.read(data, source.getCharset());
+                packet.read(data, service.getCharset());
             } catch (UnsupportedEncodingException e) {
-                source.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, e.getMessage());
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, e.getMessage());
                 return;
             }
             BindValue[] bindValues = packet.getValues();
             // reset the Parameter
             String sql = prepareStmtBindValue(pStmt, bindValues);
-            source.getSession2().setPrepared(true);
+            service.getSession2().setPrepared(true);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute prepare sql: " + sql);
             }
             pStmt.resetLongData();
-            source.query(sql);
+            service.query(sql);
         }
     }
 

@@ -6,15 +6,16 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,11 +84,11 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
         logger.info("connectionAcquired on connection " + conn);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
         try {
-            conn.query(sql, true);
+            conn.getBackendService().query(sql, true);
             connection = conn;
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
@@ -113,54 +114,54 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + conn;
+                " from of sql :" + sql + " at con:" + service;
 
         logger.info(errMsg);
-        if (conn.syncAndExecute()) {
-            conn.release();
+        if (((MySQLResponseService) service).syncAndExecute()) {
+            ((MySQLResponseService) service).release();
         } else {
-            conn.closeWithoutRsp("unfinished sync");
+            ((MySQLResponseService) service).getConnection().businessClose("unfinished sync");
         }
         doFinished(true);
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        if (conn.syncAndExecute()) {
-            conn.release();
+    public void okResponse(byte[] ok, AbstractService service) {
+        if (((MySQLResponseService) service).syncAndExecute()) {
+            ((MySQLResponseService) service).release();
             doFinished(false);
         }
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         jobHandler.onHeader(fields);
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         EOFPacket packet = new EOFPacket();
         packet.read(eof);
         if ((packet.getStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) <= 0) {
-            conn.release();
+            ((MySQLResponseService) service).getConnection().release();
             doFinished(false);
         }
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         doFinished(true);
     }
 

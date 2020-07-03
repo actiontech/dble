@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.join;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -19,10 +19,12 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
 import org.slf4j.Logger;
@@ -85,7 +87,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, final AbstractService service) {
         session.setHandlerStart(this);
         if (this.pool == null)
             this.pool = BufferPoolManager.getBufferPool();
@@ -99,21 +101,21 @@ public class JoinHandler extends OwnThreadDMLHandler {
             rightFieldPackets = fieldPackets;
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
-        if (conn != null) {
-            this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
+        if (service != null) {
+            this.charset = CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults());
         }
         if (!fieldSent.compareAndSet(false, true)) {
             List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
             newFieldPacket.addAll(rightFieldPackets);
-            nextHandler.fieldEofResponse(null, null, newFieldPacket, null, this.isLeft, conn);
-            otherJoinOnItem = makeOtherJoinOnItem(newFieldPacket, conn);
+            nextHandler.fieldEofResponse(null, null, newFieldPacket, null, this.isLeft, service);
+            otherJoinOnItem = makeOtherJoinOnItem(newFieldPacket, service);
             // logger.debug("all ready");
-            startOwnThread(conn);
+            startOwnThread(service);
         }
     }
 
-    private Item makeOtherJoinOnItem(List<FieldPacket> rowPackets, BackendConnection conn) {
+    private Item makeOtherJoinOnItem(List<FieldPacket> rowPackets, AbstractService service) {
         this.joinRowFields = HandlerTool.createFields(rowPackets);
         if (otherJoinOn == null)
             return null;
@@ -122,7 +124,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService conn) {
         LOGGER.debug("rowresponse");
         if (terminate.get()) {
             return true;
@@ -151,7 +153,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get()) {
             return;
@@ -172,10 +174,10 @@ public class JoinHandler extends OwnThreadDMLHandler {
 
     @Override
     protected void ownThreadJob(Object... objects) {
-        MySQLConnection conn = (MySQLConnection) objects[0];
+        MySQLResponseService service = (MySQLResponseService) objects[0];
         LocalResult leftLocal = null, rightLocal = null;
         try {
-            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getSource().getCharset().getCollation());
+            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getShardingService().getCharset().getCollation());
             Comparator<RowDataPacket> joinComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
                     leftOrders, rightOrders, this.isAllPushDown(), this.type(), caseInsensitive);
 
@@ -192,7 +194,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 }
                 if (rightRow.getFieldCount() == 0) {
                     if (isLeftJoin) {
-                        if (connectLeftAndNull(leftLocal, conn))
+                        if (connectLeftAndNull(leftLocal, service))
                             break;
                         leftLocal = takeFirst(leftQueue);
                         continue;
@@ -203,7 +205,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 int rs = joinComparator.compare(leftRow, rightRow);
                 if (rs < 0) {
                     if (isLeftJoin) {
-                        if (connectLeftAndNull(leftLocal, conn))
+                        if (connectLeftAndNull(leftLocal, service))
                             break;
                         leftLocal = takeFirst(leftQueue);
                         continue;
@@ -215,7 +217,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     rightLocal.close();
                     rightLocal = takeFirst(rightQueue);
                 } else {
-                    if (connectLeftAndRight(leftLocal, rightLocal, conn))
+                    if (connectLeftAndRight(leftLocal, rightLocal, service))
                         break;
                     leftLocal = takeFirst(leftQueue);
                     rightLocal = takeFirst(rightQueue);
@@ -232,7 +234,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 }
             }
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(null, isLeft, conn);
+            nextHandler.rowEofResponse(null, isLeft, service);
         } catch (Exception e) {
             String msg = "join thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);
@@ -267,7 +269,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
      * @return if is interrupted by next handler ,return true,else false
      * @throws Exception
      */
-    private boolean connectLeftAndRight(LocalResult leftRows, LocalResult rightRows, MySQLConnection conn)
+    private boolean connectLeftAndRight(LocalResult leftRows, LocalResult rightRows, MySQLResponseService service)
             throws Exception {
         RowDataPacket leftRow = null;
         RowDataPacket rightRow = null;
@@ -289,7 +291,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                             continue;
                     }
                     matchCount++;
-                    if (nextHandler.rowResponse(null, rowPacket, isLeft, conn))
+                    if (nextHandler.rowResponse(null, rowPacket, isLeft, service))
                         return true;
                 }
                 // @bug 1097
@@ -303,7 +305,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     for (int i = 0; i < rightFieldPackets.size(); i++) {
                         rowPacket.add(null);
                     }
-                    if (nextHandler.rowResponse(null, rowPacket, isLeft, conn))
+                    if (nextHandler.rowResponse(null, rowPacket, isLeft, service))
                         return true;
                 }
                 rightRows.reset();
@@ -315,7 +317,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         }
     }
 
-    private boolean connectLeftAndNull(LocalResult leftRows, MySQLConnection conn) throws Exception {
+    private boolean connectLeftAndNull(LocalResult leftRows, MySQLResponseService service) throws Exception {
         RowDataPacket leftRow = null;
         try {
             while ((leftRow = leftRows.next()) != null) {
@@ -326,7 +328,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 for (int i = 0; i < rightFieldPackets.size(); i++) {
                     rowPacket.add(null);
                 }
-                if (nextHandler.rowResponse(null, rowPacket, isLeft, conn))
+                if (nextHandler.rowResponse(null, rowPacket, isLeft, service))
                     return true;
             }
             return false;

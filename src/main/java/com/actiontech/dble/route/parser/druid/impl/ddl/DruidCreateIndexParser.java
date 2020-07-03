@@ -10,9 +10,10 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLCreateIndexStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -24,13 +25,13 @@ import java.sql.SQLNonTransientException;
 public class DruidCreateIndexParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         rrs.setOnline(true);
         SQLCreateIndexStatement createStmt = (SQLCreateIndexStatement) stmt;
         SQLTableSource tableSource = createStmt.getTable();
         if (tableSource instanceof SQLExprTableSource) {
             String schemaName = schema == null ? null : schema.getName();
-            SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
+            SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, (SQLExprTableSource) tableSource);
             String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
             rrs.setStatement(statement);
             String noShardingNode = RouterUtil.isNoShardingDDL(schemaInfo.getSchemaConfig(), schemaInfo.getTable());

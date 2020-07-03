@@ -5,9 +5,10 @@
  */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 
 import java.util.List;
 
@@ -27,38 +28,38 @@ public interface ResponseHandler {
     /**
      * execute after acquired an valid connection
      */
-    void connectionAcquired(BackendConnection conn);
+    void connectionAcquired(BackendConnection connection);
 
     /**
      * execute after get an error response
      */
-    void errorResponse(byte[] err, BackendConnection conn);
+    void errorResponse(byte[] err, AbstractService service);
 
     /**
      * execute after get an OK response
      */
-    void okResponse(byte[] ok, BackendConnection conn);
+    void okResponse(byte[] ok, AbstractService service);
 
     /**
      * execute after get an fieldEof response
      */
 
     void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                          boolean isLeft, BackendConnection conn);
+                          boolean isLeft, AbstractService service);
 
     /**
      * execute after get an row response
      */
-    boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn);
+    boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service);
 
     /**
      * execute after get an rowEof response
      */
-    void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
+    void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service);
 
     /**
      * on connection close event
      */
-    void connectionClose(BackendConnection conn, String reason);
+    void connectionClose(AbstractService service, String reason);
 
 }

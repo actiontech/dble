@@ -11,7 +11,7 @@ import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.util.PasswordAuthPlugin;
+import com.actiontech.dble.services.mysqlauthenticate.PasswordAuthPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +166,7 @@ public class MySQLInstance extends PhysicalDbInstance {
                             break;
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("testConnection failed");
+                    LOGGER.warn("testConnection failed", e);
                     isConnected = false;
                 }
             } else {
@@ -237,7 +237,7 @@ public class MySQLInstance extends PhysicalDbInstance {
             authPacket.setPassword(passwordSented);
             authPacket.setDatabase(null);
             authPacket.setAuthPlugin(authPluginName);
-            authPacket.writeWithKey(out);
+            authPacket.bufferWrite(out);
             out.flush();
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());

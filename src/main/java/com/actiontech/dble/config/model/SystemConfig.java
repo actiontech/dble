@@ -34,7 +34,7 @@ public final class SystemConfig {
      * For Other MySQL branch ,like MariaDB 10.1.x,
      * but its protocol is compatible with MySQL. So the versions array only contain official version here
      */
-    public static final String[] MYSQL_VERSIONS = {"5.5", "5.6", "5.7"};
+    public static final String[] MYSQL_VERSIONS = {"5.5", "5.6", "5.7", "8.0"};
     // base config
     private String homePath = null;
     private String serverId = NetUtil.getHostIp();
@@ -156,6 +156,7 @@ public final class SystemConfig {
     private int flowControlStartThreshold = 4096;
     private int flowControlStopThreshold = 256;
     private boolean useOuterHa = true;
+    private String traceEndPoint = null;
     private String fakeMySQLVersion = null;
 
     public int getTransactionRotateSize() {
@@ -1148,6 +1149,15 @@ public final class SystemConfig {
         this.fakeMySQLVersion = mysqlVersion;
     }
 
+    public String getTraceEndPoint() {
+        return traceEndPoint;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTraceEndPoint(String traceEndPoint) {
+        this.traceEndPoint = traceEndPoint;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1228,6 +1238,7 @@ public final class SystemConfig {
                 ", flowControlStopThreshold=" + flowControlStopThreshold +
                 ", useOuterHa=" + useOuterHa +
                 ", fakeMySQLVersion=" + fakeMySQLVersion +
+                ", traceEndPoint=" + traceEndPoint +
                 "]";
     }
 }

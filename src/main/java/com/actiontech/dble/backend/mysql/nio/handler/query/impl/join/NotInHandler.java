@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.join;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
@@ -18,8 +18,10 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
 import org.slf4j.Logger;
@@ -63,7 +65,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, final AbstractService service) {
         session.setHandlerStart(this);
         if (this.pool == null)
             this.pool = BufferPoolManager.getBufferPool();
@@ -78,15 +80,15 @@ public class NotInHandler extends OwnThreadDMLHandler {
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
         if (!fieldSent.compareAndSet(false, true)) {
-            this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
-            nextHandler.fieldEofResponse(null, null, leftFieldPackets, null, this.isLeft, conn);
+            this.charset = CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults());
+            nextHandler.fieldEofResponse(null, null, leftFieldPackets, null, this.isLeft, service);
             // logger.debug("all ready");
-            startOwnThread(conn);
+            startOwnThread(service);
         }
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         LOGGER.debug("rowresponse");
         if (terminate.get()) {
             return true;
@@ -105,7 +107,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.info("roweof");
         if (terminate.get()) {
             return;
@@ -126,10 +128,10 @@ public class NotInHandler extends OwnThreadDMLHandler {
 
     @Override
     protected void ownThreadJob(Object... objects) {
-        MySQLConnection conn = (MySQLConnection) objects[0];
+        MySQLResponseService service = (MySQLResponseService) objects[0];
         LocalResult leftLocal = null, rightLocal = null;
         try {
-            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getSource().getCharset().getCollation());
+            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getShardingService().getCharset().getCollation());
             Comparator<RowDataPacket> notInComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
                     leftOrders, rightOrders, this.isAllPushDown(), this.type(), caseInsensitive);
 
@@ -142,14 +144,14 @@ public class NotInHandler extends OwnThreadDMLHandler {
                     break;
                 }
                 if (rightRow.getFieldCount() == 0) {
-                    sendLeft(leftLocal, conn);
+                    sendLeft(leftLocal, service);
                     leftLocal.close();
                     leftLocal = takeFirst(leftQueue);
                     continue;
                 }
                 int rs = notInComparator.compare(leftRow, rightRow);
                 if (rs < 0) {
-                    sendLeft(leftLocal, conn);
+                    sendLeft(leftLocal, service);
                     leftLocal.close();
                     leftLocal = takeFirst(leftQueue);
                     continue;
@@ -165,7 +167,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                 }
             }
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(null, isLeft, conn);
+            nextHandler.rowEofResponse(null, isLeft, service);
             HandlerTool.terminateHandlerTree(this);
         } catch (Exception e) {
             String msg = "notIn thread error, " + e.getLocalizedMessage();
@@ -191,10 +193,10 @@ public class NotInHandler extends OwnThreadDMLHandler {
         }
     }
 
-    private void sendLeft(LocalResult leftRows, MySQLConnection conn) throws Exception {
+    private void sendLeft(LocalResult leftRows, AbstractService service) throws Exception {
         RowDataPacket leftRow = null;
         while ((leftRow = leftRows.next()) != null) {
-            nextHandler.rowResponse(null, leftRow, isLeft, conn);
+            nextHandler.rowResponse(null, leftRow, isLeft, service);
         }
     }
 

@@ -15,10 +15,7 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
 import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
@@ -27,9 +24,9 @@ import com.actiontech.dble.plan.util.ReferenceHandlerInfo;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
@@ -64,38 +61,38 @@ public final class ExplainHandler {
         FIELDS[2] = PacketUtil.getField("SQL/REF", Fields.FIELD_TYPE_VAR_STRING);
     }
 
-    public static void handle(String stmt, ServerConnection c, int offset) {
+    public static void handle(String stmt, ShardingService service, int offset) {
         stmt = stmt.substring(offset).trim();
 
         //try to parse the sql again ,stop the inner command
         if (checkInnerCommand(stmt)) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Inner command not route to MySQL:" + stmt);
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Inner command not route to MySQL:" + stmt);
             return;
         }
 
-        RouteResultset rrs = getRouteResultset(c, stmt);
+        RouteResultset rrs = getRouteResultset(service, stmt);
         if (rrs == null) {
             return;
         }
 
-        writeOutHeadAndEof(c, rrs);
+        writeOutHeadAndEof(service, rrs);
     }
 
-    private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ServerConnection c) {
+    private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ShardingService service) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, c.getUsrVariables());
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
         node.setUpFields();
-        PlanUtil.checkTablesPrivilege(c, node, ast);
+        PlanUtil.checkTablesPrivilege(service, node, ast);
         node = MyOptimizer.optimize(node);
 
         if (!PlanUtil.containsSubQuery(node) && !visitor.isContainSchema()) {
             node.setAst(ast);
         }
-        HandlerBuilder builder = new HandlerBuilder(node, c.getSession2());
-        return builder.getBuilder(c.getSession2(), node, true);
+        HandlerBuilder builder = new HandlerBuilder(node, service.getSession2());
+        return builder.getBuilder(service.getSession2(), node, true);
     }
 
     private static boolean checkInnerCommand(String stmt) {
@@ -137,54 +134,54 @@ public final class ExplainHandler {
         return row;
     }
 
-    private static RouteResultset getRouteResultset(ServerConnection c,
+    private static RouteResultset getRouteResultset(ShardingService service,
                                                     String stmt) {
-        String db = c.getSchema();
+        String db = service.getSchema();
         int sqlType = ServerParse.parse(stmt) & 0xff;
         SchemaConfig schema = null;
         if (db != null) {
             schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
             if (schema == null) {
-                c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
+                service.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
                 return null;
             }
         }
         try {
-            if (ServerParse.INSERT == sqlType && isInsertSeq(c, stmt, schema)) {
-                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
+            if (ServerParse.INSERT == sqlType && isInsertSeq(service, stmt, schema)) {
+                service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
                 return null;
             }
-            return RouteService.getInstance().route(schema, sqlType, stmt, c, true);
+            return RouteService.getInstance().route(schema, sqlType, stmt, service, true);
         } catch (Exception e) {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqlException = (SQLException) e;
                 StringBuilder s = new StringBuilder();
-                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + sqlException);
+                LOGGER.info(s.append(service).append(stmt).toString() + " error:" + sqlException);
                 String msg = sqlException.getMessage();
-                c.writeErrMessage(sqlException.getErrorCode(), msg == null ? sqlException.getClass().getSimpleName() : msg);
+                service.writeErrMessage(sqlException.getErrorCode(), msg == null ? sqlException.getClass().getSimpleName() : msg);
                 return null;
             } else if (e instanceof SQLSyntaxErrorException) {
                 StringBuilder s = new StringBuilder();
-                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
+                LOGGER.info(s.append(service).append(stmt).toString() + " error:" + e);
                 String msg = "druid parse sql error:" + e.getMessage();
-                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg);
+                service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(c).append(stmt).toString() + " error:", e);
+                LOGGER.warn(s.append(service).append(stmt).toString() + " error:", e);
                 String msg = e.getMessage();
-                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+                service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;
             }
         }
     }
 
-    private static boolean isInsertSeq(ServerConnection c, String stmt, SchemaConfig schema) throws SQLException {
+    private static boolean isInsertSeq(ShardingService service, String stmt, SchemaConfig schema) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         MySqlInsertStatement statement = (MySqlInsertStatement) parser.parseStatement();
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = statement.getTableSource();
-        SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), schemaName, tableSource);
+        SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, tableSource);
         String tableName = schemaInfo.getTable();
         schema = schemaInfo.getSchemaConfig();
         BaseTableConfig tableConfig = schema.getTables().get(tableName);
@@ -199,49 +196,46 @@ public final class ExplainHandler {
         return false;
     }
 
-    public static void writeOutHeadAndEof(ServerConnection c, RouteResultset rrs) {
-        ByteBuffer buffer = c.allocate();
-        // write header
+    public static void writeOutHeadAndEof(ShardingService service, RouteResultset rrs) {
+        ByteBuffer buffer = service.allocate();
+        // writeDirectly header
         ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
         byte packetId = header.getPacketId();
-        buffer = header.write(buffer, c, true);
+        buffer = header.write(buffer, service, true);
 
-        // write fields
+        // writeDirectly fields
         for (FieldPacket field : FIELDS) {
             field.setPacketId(++packetId);
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
 
-        // write eof
+        // writeDirectly eof
         EOFPacket eof = new EOFPacket();
         eof.setPacketId(++packetId);
-        buffer = eof.write(buffer, c, true);
+        buffer = eof.write(buffer, service, true);
 
         if (!rrs.isNeedOptimizer()) {
-            // write rows
+            // writeDirectly rows
             for (RouteResultsetNode node : rrs.getNodes()) {
-                RowDataPacket row = getRow(node, c.getCharset().getResults());
+                RowDataPacket row = getRow(node, service.getCharset().getResults());
                 row.setPacketId(++packetId);
-                buffer = row.write(buffer, c, true);
+                buffer = row.write(buffer, service, true);
             }
         } else {
-            BaseHandlerBuilder builder = buildNodes(rrs, c);
+            BaseHandlerBuilder builder = buildNodes(rrs, service);
             List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
             for (ReferenceHandlerInfo result : results) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(result.getName(), c.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getType(), c.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getRefOrSQL(), c.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
                 row.setPacketId(++packetId);
-                buffer = row.write(buffer, c, true);
+                buffer = row.write(buffer, service, true);
             }
         }
-        // write last eof
-        EOFPacket lastEof = new EOFPacket();
+        // writeDirectly last eof
+        EOFRowPacket lastEof = new EOFRowPacket();
         lastEof.setPacketId(++packetId);
-        buffer = lastEof.write(buffer, c, true);
-
-        // post write
-        c.write(buffer);
+        lastEof.write(buffer, service);
     }
 }

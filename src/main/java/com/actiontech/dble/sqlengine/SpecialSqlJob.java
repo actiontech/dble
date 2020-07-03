@@ -6,12 +6,12 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorInfo;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,32 +85,32 @@ public class SpecialSqlJob extends SQLJob {
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
         try {
-            conn.query(sql, true);
+            conn.getBackendService().query(sql, true);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
         }
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + conn;
+                " from of sql :" + sql + " at con:" + service;
 
         list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get error"));
 
         LOGGER.info(errMsg);
         doFinished(true);
-        conn.close("dry run error backend");
+        service.getConnection().close("dry run error backend");
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         if (doFinished(true)) {
             list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get connection closed"));
         }
@@ -118,9 +118,9 @@ public class SpecialSqlJob extends SQLJob {
 
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         doFinished(false);
-        conn.close("dry run used connection");
+        service.getConnection().close("dry run used connection");
     }
 
 }

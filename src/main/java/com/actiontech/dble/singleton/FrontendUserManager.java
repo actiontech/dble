@@ -54,13 +54,17 @@ public final class FrontendUserManager {
     }
 
     public void initForLatest(Map<UserName, UserConfig> userConfigMap, int serverLimit) {
-        serverMaxConnection = serverLimit;
-        for (UserName user : userConfigMap.keySet()) {
-            if (!userConnectionMap.containsKey(user)) {
-                userConnectionMap.put(user, 0);
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("init-for-user-manager");
+        try {
+            serverMaxConnection = serverLimit;
+            for (UserName user : userConfigMap.keySet()) {
+                if (!userConnectionMap.containsKey(user)) {
+                    userConnectionMap.put(user, 0);
+                }
             }
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
-
     }
 
 

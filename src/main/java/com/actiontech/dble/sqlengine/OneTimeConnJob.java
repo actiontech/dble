@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.sqlengine;
 
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,11 +46,12 @@ public class OneTimeConnJob extends SQLJob {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
         try {
-            conn.query(sql);
-        } catch (Exception e) { // (UnsupportedEncodingException e) {
+            conn.getBackendService().query(sql);
+        } catch (Exception e) {
+            e.printStackTrace();
             doFinished(true);
         }
     }
@@ -65,28 +67,28 @@ public class OneTimeConnJob extends SQLJob {
 
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        conn.closeWithoutRsp("conn used for once");
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+        service.getConnection().businessClose("conn used for once");
         doFinished(false);
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + conn;
+                " from of sql :" + sql + " at con:" + service;
 
         LOGGER.info(errMsg);
         doFinished(true);
-        conn.closeWithoutRsp("close conn for reason:" + errMsg);
+        service.getConnection().businessClose("close conn for reason:" + errMsg);
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        if (conn.syncAndExecute()) {
-            conn.closeWithoutRsp("conn used for once");
+    public void okResponse(byte[] ok, AbstractService service) {
+        if (((MySQLResponseService) service).syncAndExecute()) {
+            service.getConnection().businessClose("conn used for once");
             doFinished(false);
         }
     }

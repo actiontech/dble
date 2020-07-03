@@ -195,7 +195,7 @@ public class FileSystemRepository implements Repository {
     }
 
     /**
-     * just truncate the file and write new info into
+     * just truncate the file and writeDirectly new info into
      *
      * @param jsonString
      * @throws Exception

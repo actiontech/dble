@@ -8,12 +8,9 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 import java.nio.ByteBuffer;
 
@@ -29,56 +26,44 @@ public final class SelectVersionComment {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    public static void response(FrontendConnection c) {
+    public static void response(AbstractService service) {
 
-        byte packetId = setCurrentPacket(c);
-        HEADER.setPacketId(++packetId);
+        HEADER.setPacketId(service.nextPacketId());
         FIELDS[0] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[0].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
+        FIELDS[0].setPacketId(service.nextPacketId());
+        EOF.setPacketId(service.nextPacketId());
 
-        ByteBuffer buffer = c.allocate();
+        ByteBuffer buffer = service.allocate();
 
-        // write header
-        buffer = HEADER.write(buffer, c, true);
+        // writeDirectly header
+        buffer = HEADER.write(buffer, service, true);
 
-        // write fields
+        // writeDirectly fields
         for (FieldPacket field : FIELDS) {
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
 
-        // write eof
-        buffer = EOF.write(buffer, c, true);
+        // writeDirectly eof
+        buffer = EOF.write(buffer, service, true);
 
-        // write rows
+        // writeDirectly rows
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(Versions.VERSION_COMMENT);
-        row.setPacketId(++packetId);
-        buffer = row.write(buffer, c, true);
+        row.setPacketId(service.nextPacketId());
+        buffer = row.write(buffer, service, true);
 
-        // write last eof
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.setPacketId(++packetId);
-        boolean multiStatementFlag = false;
-        if (c instanceof ServerConnection) {
-            multiStatementFlag = ((ServerConnection) c).getSession2().getIsMultiStatement().get();
-            ((ServerConnection) c).getSession2().multiStatementPacket(lastEof, packetId);
-        }
-        buffer = lastEof.write(buffer, c, true);
+        // writeDirectly last eof
+        EOFRowPacket lastEof = new EOFRowPacket();
+        lastEof.setPacketId(service.nextPacketId());
 
-        // post write
-        c.write(buffer);
-        if (c instanceof ServerConnection) {
-            ((ServerConnection) c).getSession2().multiStatementNextSql(multiStatementFlag);
-        }
-
+        lastEof.write(buffer, service);
     }
 
 
-    public static byte setCurrentPacket(FrontendConnection c) {
-        if (c instanceof ServerConnection) {
-            return (byte) ((ServerConnection) c).getSession2().getPacketId().get();
+    public static byte setCurrentPacket(AbstractService service) {
+        if (service instanceof ShardingService) {
+            return (byte) ((ShardingService) service).getSession2().getPacketId().get();
         }
         return 0;
     }

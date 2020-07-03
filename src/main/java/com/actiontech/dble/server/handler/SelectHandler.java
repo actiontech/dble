@@ -6,10 +6,10 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseSelect;
 import com.actiontech.dble.server.response.*;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 
 /**
@@ -19,32 +19,32 @@ public final class SelectHandler {
     private SelectHandler() {
     }
 
-    public static void handle(String stmt, ServerConnection c, int offs) {
+    public static void handle(String stmt, ShardingService service, int offs) {
         int offset = offs;
         switch (ServerParseSelect.parse(stmt, offs)) {
             case ServerParseSelect.VERSION_COMMENT:
-                SelectVersionComment.response(c);
+                SelectVersionComment.response(service);
                 break;
             case ServerParseSelect.DATABASE:
-                SelectDatabase.response(c);
+                SelectDatabase.response(service);
                 break;
             case ServerParseSelect.USER:
-                SelectUser.response(c);
+                SelectUser.response(service);
                 break;
             case ServerParseSelect.CURRENT_USER:
-                SelectCurrentUser.response(c);
+                SelectCurrentUser.response(service);
                 break;
             case ServerParseSelect.VERSION:
-                SelectVersion.response(c);
+                SelectVersion.response(service);
                 break;
             case ServerParseSelect.SESSION_INCREMENT:
-                SessionIncrement.response(c);
+                SessionIncrement.response(service);
                 break;
             case ServerParseSelect.SESSION_TX_ISOLATION:
-                SessionIsolation.response(c, stmt.substring(offset).trim());
+                SessionIsolation.response(service, stmt.substring(offset).trim());
                 break;
             case ServerParseSelect.SESSION_TRANSACTION_ISOLATION:
-                SessionIsolation.response(c, stmt.substring(offset).trim());
+                SessionIsolation.response(service, stmt.substring(offset).trim());
                 break;
             case ServerParseSelect.LAST_INSERT_ID:
                 // offset = ParseUtil.move(stmt, 0, "select".length());
@@ -66,7 +66,7 @@ public final class SelectHandler {
                 }
                 offset = ServerParseSelect.indexAfterLastInsertIdFunc(stmt, offset);
                 offset = ServerParseSelect.skipAs(stmt, offset);
-                SelectLastInsertId.response(c, stmt, offset);
+                SelectLastInsertId.response(service, stmt, offset);
                 break;
             case ServerParseSelect.IDENTITY:
                 // offset = ParseUtil.move(stmt, 0, "select".length());
@@ -90,25 +90,25 @@ public final class SelectHandler {
                 offset = ServerParseSelect.indexAfterIdentity(stmt, offset);
                 String orgName = stmt.substring(indexOfAtAt, offset);
                 offset = ServerParseSelect.skipAs(stmt, offset);
-                SelectIdentity.response(c, stmt, offset, orgName);
+                SelectIdentity.response(service, stmt, offset, orgName);
                 break;
             case ServerParseSelect.SELECT_VAR_ALL:
-                SelectVariables.execute(c, stmt);
+                SelectVariables.execute(service, stmt);
                 break;
             case ServerParseSelect.SESSION_TX_READ_ONLY:
-                SelectTxReadOnly.response(c, stmt.substring(offset).trim());
+                SelectTxReadOnly.response(service, stmt.substring(offset).trim());
                 break;
             case ServerParseSelect.SESSION_TRANSACTION_READ_ONLY:
-                SelectTxReadOnly.response(c, stmt.substring(offset).trim());
+                SelectTxReadOnly.response(service, stmt.substring(offset).trim());
                 break;
             case ServerParseSelect.TRACE:
-                SelectTrace.response(c);
+                SelectTrace.response(service);
                 break;
             case ServerParseSelect.ROW_COUNT:
-                SelectRowCount.response(c);
+                SelectRowCount.response(service);
                 break;
             default:
-                c.execute(stmt, ServerParse.SELECT);
+                service.execute(stmt, ServerParse.SELECT);
         }
     }
 

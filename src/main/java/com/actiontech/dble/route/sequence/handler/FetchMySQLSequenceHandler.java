@@ -6,16 +6,18 @@
 package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
                 LOGGER.debug("execute in shardingNode " + seqVal.shardingNode +
                         " for fetch sequence sql " + seqVal.sql);
             }
-            // change Select mode to Update mode. Make sure the query send to the write host
+            // change Select mode to Update mode. Make sure the query send to the writeDirectly host
             mysqlDN.getConnection(mysqlDN.getDatabase(), true, true,
                     new RouteResultsetNode(seqVal.shardingNode, ServerParse.UPDATE,
                             seqVal.sql), this, seqVal);
@@ -51,13 +53,13 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
         try {
-            conn.query(((SequenceVal) conn.getAttachment()).sql, true);
+            conn.getBackendService().query(((SequenceVal) conn.getBackendService().getAttachment()).sql, true);
         } catch (Exception e) {
             LOGGER.warn("connection acquired error: " + e);
-            handleError(conn.getAttachment(), e.getMessage());
+            handleError(conn.getBackendService().getAttachment(), e.getMessage());
             conn.close(e.getMessage());
         }
     }
@@ -69,39 +71,39 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] data, BackendConnection conn) {
+    public void errorResponse(byte[] data, AbstractService service) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         String errMsg = new String(err.getMessage());
 
         LOGGER.warn("errorResponse " + err.getErrNo() + " " + errMsg);
-        handleError(conn.getAttachment(), errMsg);
+        handleError(((MySQLResponseService) service).getAttachment(), errMsg);
 
-        boolean executeResponse = conn.syncAndExecute();
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
-            conn.release();
+            ((MySQLResponseService) service).release();
         } else {
-            conn.closeWithoutRsp("unfinished sync");
+            ((MySQLResponseService) service).getConnection().businessClose("unfinished sync");
         }
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void okResponse(byte[] ok, AbstractService service) {
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
-            ((SequenceVal) conn.getAttachment()).dbfinished = true;
-            conn.release();
+            ((SequenceVal) ((MySQLResponseService) service).getAttachment()).dbfinished = true;
+            ((MySQLResponseService) service).release();
         }
 
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         RowDataPacket rowDataPkg = new RowDataPacket(1);
         rowDataPkg.read(row);
         byte[] columnData = rowDataPkg.fieldValues.get(0);
         String columnVal = new String(columnData);
-        SequenceVal seqVal = (SequenceVal) conn.getAttachment();
+        SequenceVal seqVal = (SequenceVal) ((MySQLResponseService) service).getAttachment();
         if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
             seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
             String errMsg = "sequence sql returned err value, sequence:" +
@@ -115,9 +117,9 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        ((SequenceVal) conn.getAttachment()).dbfinished = true;
-        conn.release();
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+        ((SequenceVal) ((MySQLResponseService) service).getAttachment()).dbfinished = true;
+        ((MySQLResponseService) service).release();
     }
 
     private void handleError(Object attachment, String errMsg) {
@@ -128,14 +130,14 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn("connection " + conn + " closed, reason:" + reason);
-        handleError(conn.getAttachment(), "connection " + conn + " closed, reason:" + reason);
+    public void connectionClose(AbstractService service, String reason) {
+        LOGGER.warn("connection " + service + " closed, reason:" + reason);
+        handleError(((MySQLResponseService) service).getAttachment(), "connection " + service + " closed, reason:" + reason);
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
 
     }
 

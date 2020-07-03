@@ -5,8 +5,9 @@
 
 package com.actiontech.dble.cluster.values;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.util.Date;
 import java.util.Map;
@@ -30,8 +31,8 @@ public class DDLTraceInfo {
     private final int id;
     private final String sql;
     private final long startTimestamp;
-    private final Map<MySQLConnection, DDLConnectionStatus> testConnections = new ConcurrentHashMap();
-    private final Map<MySQLConnection, DDLConnectionStatus> executeConnections = new ConcurrentHashMap();
+    private final Map<MySQLResponseService, DDLConnectionStatus> testConnections = new ConcurrentHashMap();
+    private final Map<MySQLResponseService, DDLConnectionStatus> executeConnections = new ConcurrentHashMap();
     private volatile DDLStage stage;
 
     public DDLTraceInfo(long serverId, String sql, int id) {
@@ -61,18 +62,18 @@ public class DDLTraceInfo {
         sb.append(" stage = ").append(stage);
         if (testConnections.size() > 0) {
             sb.append("\n[DDL][").append(id).append("] test connections :");
-            for (Map.Entry<MySQLConnection, DDLConnectionStatus> entry : testConnections.entrySet()) {
+            for (Map.Entry<MySQLResponseService, DDLConnectionStatus> entry : testConnections.entrySet()) {
                 sb.append("\n[DDL][").append(id).append("] connection:");
-                sb.append(entry.getKey().getId()).append(" status: ").append(entry.getValue());
+                sb.append(entry.getKey().getConnection().getId()).append(" status: ").append(entry.getValue());
                 sb.append(" shardingNode: ").append(((RouteResultsetNode) entry.getKey().getAttachment()).getName());
 
             }
         }
         if (executeConnections.size() > 0) {
             sb.append("\n[DDL][").append(id).append("] execute connections :");
-            for (Map.Entry<MySQLConnection, DDLConnectionStatus> entry : executeConnections.entrySet()) {
+            for (Map.Entry<MySQLResponseService, DDLConnectionStatus> entry : executeConnections.entrySet()) {
                 sb.append("\n[DDL][").append(id).append("] connection:");
-                sb.append(entry.getKey().getId()).append(" status: ").append(entry.getValue());
+                sb.append(entry.getKey().getConnection().getId()).append(" status: ").append(entry.getValue());
             }
         }
         return sb.toString();
@@ -90,21 +91,21 @@ public class DDLTraceInfo {
         return id;
     }
 
-    public void updateConnectionStatus(MySQLConnection c, DDLConnectionStatus status) {
+    public void updateConnectionStatus(MySQLResponseService responseService, DDLConnectionStatus status) {
         switch (status) {
             case CONN_TEST_START:
             case CONN_TEST_SUCCESS:
             case CONN_TEST_RESULT_ERROR:
             case TEST_CONN_ERROR:
             case TEST_CONN_CLOSE:
-                testConnections.put(c, status);
+                testConnections.put(responseService, status);
                 break;
             case CONN_EXECUTE_START:
             case CONN_EXECUTE_SUCCESS:
             case CONN_EXECUTE_ERROR:
             case EXECUTE_CONN_ERROR:
             case EXECUTE_CONN_CLOSE:
-                executeConnections.put(c, status);
+                executeConnections.put(responseService, status);
                 break;
             default:
                 //do nothing

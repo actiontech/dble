@@ -7,8 +7,10 @@ package com.actiontech.dble.util;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import sun.util.calendar.CalendarUtils;
 
 import java.text.ParseException;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -125,6 +127,33 @@ public final class DateUtil {
     public static int getMicroSecond(Date date) {
         DateTime dt = new DateTime(date);
         return dt.getMillisOfSecond();
+    }
+
+    /**
+     * Get the number of days between two times
+     *
+     * @param cal1
+     * @param cal2
+     * @return
+     */
+    public static int diffDays(Calendar cal1, Calendar cal2) {
+        int day1 = cal1.get(Calendar.DAY_OF_YEAR);
+        int day2 = cal2.get(Calendar.DAY_OF_YEAR);
+        int year1 = cal1.get(Calendar.YEAR);
+        int year2 = cal2.get(Calendar.YEAR);
+        if (year1 != year2) {
+            int timeDistance = 0;
+            for (int i = year1; i < year2; i++) {
+                if (CalendarUtils.isGregorianLeapYear(i)) {
+                    timeDistance += 366;
+                } else {
+                    timeDistance += 365;
+                }
+            }
+            return timeDistance + (day1 - day2);
+        } else {
+            return day1 - day2;
+        }
     }
 
 }

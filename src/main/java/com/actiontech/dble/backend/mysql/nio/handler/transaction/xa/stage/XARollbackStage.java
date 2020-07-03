@@ -132,17 +132,6 @@ public class XARollbackStage extends XAStage {
     }
 
     @Override
-    public void onConnectError(MySQLConnection conn) {
-        if (lastStageIsXAEnd) {
-            conn.closeWithoutRsp("conn connect error");
-            conn.setXaStatus(TxState.TX_ROLLBACKED_STATE);
-        } else {
-            conn.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
-        }
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
-    }
-
-    @Override
     public String getStage() {
         return ROLLBACK_STAGE;
     }

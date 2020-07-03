@@ -182,9 +182,13 @@ public class MySQLHeartbeat {
         }
         this.status = ERROR_STATUS;
         startErrorTime.compareAndSet(-1, System.currentTimeMillis());
-        if (++errorCount <= errorRetryCount) {
+        if (isHeartbeatRetry()) {
             heartbeatRetry(); // error count not enough, heart beat again
         }
+    }
+
+    boolean isHeartbeatRetry() {
+        return errorRetryCount > 0 && ++errorCount <= errorRetryCount;
     }
 
     private void heartbeatRetry() {

@@ -81,13 +81,6 @@ public class XAEndStage extends XAStage {
     }
 
     @Override
-    public void onConnectError(MySQLConnection conn) {
-        conn.closeWithoutRsp("conn connect error");
-        conn.setXaStatus(TxState.TX_CONN_QUIT);
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
-    }
-
-    @Override
     public String getStage() {
         return END_STAGE;
     }

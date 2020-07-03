@@ -136,24 +136,35 @@ public final class DateUtil {
      * @param cal2
      * @return
      */
-    public static int diffDays(Calendar cal1, Calendar cal2) {
+    public static long diffDays(Calendar cal1, Calendar cal2) {
+        boolean negativeFlag = false;
+        if (cal1.after(cal2)) {
+            Calendar oldCal1 = cal1;
+            cal1 = cal2;
+            cal2 = oldCal1;
+            negativeFlag = true;
+        }
         int day1 = cal1.get(Calendar.DAY_OF_YEAR);
         int day2 = cal2.get(Calendar.DAY_OF_YEAR);
         int year1 = cal1.get(Calendar.YEAR);
         int year2 = cal2.get(Calendar.YEAR);
+        int diffDays;
         if (year1 != year2) {
             int timeDistance = 0;
             for (int i = year1; i < year2; i++) {
-                if (CalendarUtils.isGregorianLeapYear(i)) {
+                if (i == year1) {
+                    timeDistance += (CalendarUtils.isGregorianLeapYear(year1) ? 366 : 365) - day1;
+                } else if (CalendarUtils.isGregorianLeapYear(i)) {
                     timeDistance += 366;
                 } else {
                     timeDistance += 365;
                 }
             }
-            return timeDistance + (day1 - day2);
+            diffDays = timeDistance + day2;
         } else {
-            return day1 - day2;
+            diffDays = day2 - day1;
         }
+        return negativeFlag ? diffDays : -diffDays;
     }
 
 }

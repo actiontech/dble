@@ -36,7 +36,7 @@ public class MySQLTime implements Serializable {
 
     public java.util.Calendar toCalendar() {
         java.util.Calendar cal = java.util.Calendar.getInstance();
-        cal.set((int) year, (int) month, (int) day, (int) hour, (int) minute, (int) second);
+        cal.set((int) year, (int) month - 1, (int) day, (int) hour, (int) minute, (int) second);
         cal.set(java.util.Calendar.MILLISECOND, (int) secondPart / 1000);
         return cal;
     }

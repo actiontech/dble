@@ -46,7 +46,7 @@ public abstract class AbstractConsulSender implements ClusterSender {
      * return sessionId of the lock,if the return String is not null or "" means lock success
      * the lock value is also import ,the lock also need to be regarded as a KV
      * <p>
-     * NOTICE: the lock should only influences it self,the child path should be available to other DbleServer to write
+     * NOTICE: the lock should only influences it self,the child path should be available to other DbleServer to writeDirectly
      *
      * @param path
      * @param value
@@ -94,7 +94,7 @@ public abstract class AbstractConsulSender implements ClusterSender {
         }
         setKV(selfPath, value);
 
-        LOGGER.info("write self node for path:" + selfPath);
+        LOGGER.info("writeDirectly self node for path:" + selfPath);
     }
 
 

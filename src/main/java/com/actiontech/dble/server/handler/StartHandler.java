@@ -6,9 +6,10 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseStart;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 /**
  * @author mycat
@@ -17,16 +18,16 @@ public final class StartHandler {
     private StartHandler() {
     }
 
-    public static void handle(String stmt, ServerConnection c, int offset) {
+    public static void handle(String stmt, ShardingService service, int offset) {
         switch (ServerParseStart.parse(stmt, offset)) {
             case ServerParseStart.TRANSACTION:
-                BeginHandler.handle(stmt, c);
+                BeginHandler.handle(stmt, service);
                 break;
             case ServerParseStart.READCHARCS:
-                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
                 break;
             default:
-                c.execute(stmt, ServerParse.START);
+                service.execute(stmt, ServerParse.START);
         }
     }
 

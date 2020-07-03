@@ -2,7 +2,8 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 import java.util.List;
 
@@ -13,6 +14,6 @@ public interface InnerFuncResponse {
 
     List<FieldPacket> getField();
 
-    List<RowDataPacket> getRows(ServerConnection c);
+    List<RowDataPacket> getRows(ShardingService service);
 
 }

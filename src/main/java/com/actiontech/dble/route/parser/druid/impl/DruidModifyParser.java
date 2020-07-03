@@ -16,8 +16,9 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
@@ -234,13 +235,13 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + the sharding-column data must come from a same-rule-sharding table
      * + the select can be ER route to all the dataNodes
      */
-    Collection<String> checkForShardingTable(ServerSchemaStatVisitor visitor, SQLSelect select, ServerConnection sc, RouteResultset rrs,
+    Collection<String> checkForShardingTable(ServerSchemaStatVisitor visitor, SQLSelect select, ShardingService service, RouteResultset rrs,
                                              ShardingTableConfig tc, SchemaUtil.SchemaInfo schemaInfo, SQLStatement stmt, SchemaConfig schema) throws SQLException {
         //the insert table is a sharding table
         String tableName = schemaInfo.getTable();
         String schemaName = schema == null ? null : schema.getName();
 
-        MySQLPlanNodeVisitor pvisitor = new MySQLPlanNodeVisitor(sc.getSchema(), sc.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, sc.getUsrVariables());
+        MySQLPlanNodeVisitor pvisitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables());
         pvisitor.visit(select);
         PlanNode node = pvisitor.getTableNode();
         node.setSql(rrs.getStatement());
@@ -535,11 +536,11 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         rrs.setStatement(sql);
     }
 
-    List<SchemaUtil.SchemaInfo> checkPrivilegeForModifyTable(ServerConnection sc, String schemaName, SQLStatement stmt, List<SQLExprTableSource> tableList, ShardingPrivileges.CheckType type) throws SQLException {
+    List<SchemaUtil.SchemaInfo> checkPrivilegeForModifyTable(ShardingService service, String schemaName, SQLStatement stmt, List<SQLExprTableSource> tableList) throws SQLException {
         List<SchemaUtil.SchemaInfo> schemaInfos = new ArrayList<>();
         for (SQLExprTableSource x : tableList) {
-            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, x);
-            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), type)) {
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, x);
+            if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
@@ -549,7 +550,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
 
-    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema, ServerConnection sc) throws SQLException {
+    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema, ShardingService service) throws SQLException {
         changeSql(rrs);
 
         Collection<String> routeShardingNodes;
@@ -562,8 +563,8 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(subVisitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
 
                 for (String selectTable : subVisitor.getSelectTableList()) {
-                    SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
-                    if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
+                    SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(service.getUser(), schema, selectTable);
+                    if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
                         String msg = "The statement DML privilege check is not passed, sql:" + rrs.getSrcStatement().replaceAll("[\\t\\n\\r]", " ");
                         throw new SQLNonTransientException(msg);
                     }

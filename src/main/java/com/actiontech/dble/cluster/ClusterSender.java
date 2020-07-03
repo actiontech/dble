@@ -76,7 +76,7 @@ public interface ClusterSender {
     void createSelfTempNode(String path, String value) throws Exception;
 
     /**
-     * write xml and sequence to cluster and change status
+     * writeDirectly xml and sequence to cluster and change status
      * @throws Exception  io or net error
      */
     void writeConfToCluster() throws Exception;

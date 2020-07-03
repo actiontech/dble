@@ -5,8 +5,9 @@
 */
 package com.actiontech.dble.net.mysql;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.nio.ByteBuffer;
 
@@ -180,18 +181,27 @@ public abstract class MySQLPacket {
     protected byte packetId;
 
     /**
-     * write to buffer ,if writeSocketIfFull write the buffer data to FrontendConnection
+     * writeDirectly to buffer ,if writeSocketIfFull writeDirectly the buffer data to FrontendConnection
      */
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
+    public ByteBuffer write(ByteBuffer buffer, AbstractService service, boolean writeSocketIfFull) {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * write to backend connection
+     * writeDirectly to backend connection
      */
-    public void write(MySQLConnection c) {
-        throw new UnsupportedOperationException();
+    public void write(MySQLResponseService service) {
+        this.write(service.getConnection());
     }
+
+    /**
+     * writeDirectly to a net connection
+     */
+    public final void write(AbstractConnection connection) {
+        connection.getService().write(this);
+    }
+
+    public abstract void bufferWrite(AbstractConnection connection);
 
     /**
      * calcPacketSize,not contains header size
@@ -202,6 +212,7 @@ public abstract class MySQLPacket {
      * getPacketInfo
      */
     protected abstract String getPacketInfo();
+
 
     @Override
     public String toString() {
@@ -219,5 +230,16 @@ public abstract class MySQLPacket {
 
     public void setPacketId(int packetID) {
         this.packetId = (byte) packetID;
+    }
+
+    public boolean isEndOfQuery() {
+        return false;
+    }
+
+    public boolean isEndOfSession() {
+        return false;
+    }
+
+    public void markMoreResultsExists() {
     }
 }

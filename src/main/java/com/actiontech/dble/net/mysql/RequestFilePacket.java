@@ -6,7 +6,8 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
-import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.AbstractService;
 
 import java.nio.ByteBuffer;
 
@@ -20,21 +21,22 @@ public class RequestFilePacket extends MySQLPacket {
 
 
     @Override
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
+    public ByteBuffer write(ByteBuffer buffer, AbstractService service, boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size, writeSocketIfFull);
+        buffer = service.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size, writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put(command);
         if (fileName != null) {
-
             buffer.put(fileName);
-
         }
-
-        c.write(buffer);
-
+        service.writeDirectly(buffer);
         return buffer;
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection connection) {
+
     }
 
     @Override

@@ -64,7 +64,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 mapTableToSimple = pdVisitor.getMapTableToSimple();
             }
             SchemaConfig schemaConfig;
-            String schemaName = this.session.getSource().getSchema();
+            String schemaName = this.session.getShardingService().getSchema();
             if (schemaName != null) {
                 schemaConfig = schemaConfigMap.get(schemaName);
             } else {
@@ -186,7 +186,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         List<Item> argList = new ArrayList<>();
         argList.add(keyInBig);
         argList.add(new ItemString(NEED_REPLACE));
-        ItemFuncIn filter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
+        ItemFuncIn filter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
         strategyFilters.add(filter);
     }
 
@@ -209,7 +209,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);
                     argList.addAll(partList);
-                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
+                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
                     strategyFilters.add(inFilter);
                     partList = null;
                     partSize = 0;
@@ -220,7 +220,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             List<Item> argList = new ArrayList<>();
             argList.add(keyInBig);
             argList.addAll(partList);
-            ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
+            ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
             strategyFilters.add(inFilter);
         }
         // if no data

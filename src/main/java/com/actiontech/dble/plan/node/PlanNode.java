@@ -18,6 +18,7 @@ import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
+import com.actiontech.dble.singleton.TraceManager;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
@@ -205,13 +206,18 @@ public abstract class PlanNode {
     public abstract RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception;
 
     public void setUpFields() {
-        sumFuncs.clear();
-        setUpInnerFields();
-        setUpSelects();
-        setUpWhere();
-        setUpGroupBy();
-        setUpHaving();
-        setUpOrderBy();
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("set-up-field-for-sql");
+        try {
+            sumFuncs.clear();
+            setUpInnerFields();
+            setUpSelects();
+            setUpWhere();
+            setUpGroupBy();
+            setUpHaving();
+            setUpOrderBy();
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
     }
 
     // column refered start

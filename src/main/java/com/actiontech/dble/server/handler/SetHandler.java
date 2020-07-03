@@ -13,7 +13,7 @@ import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
 import com.actiontech.dble.util.StringUtil;
@@ -66,27 +66,25 @@ public final class SetHandler {
         TRACE
     }
 
-    public static void handle(String stmt, ServerConnection c, int offset) {
+    public static void handle(String stmt, ShardingService shardingService, int offset) {
         if (!ParseUtil.isSpace(stmt.charAt(offset))) {
-            c.writeErrMessage(ErrorCode.ERR_WRONG_USED, stmt + " is not supported");
+            shardingService.writeErrMessage(ErrorCode.ERR_WRONG_USED, stmt + " is not supported");
         }
         try {
             String smt = convertCharsetKeyWord(stmt);
             List<Pair<KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
             List<Pair<KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
             StringBuilder contextSetSQL = new StringBuilder();
-            if (handleSetStatement(smt, c, contextTask, innerSetTask, contextSetSQL) && contextTask.size() > 0) {
-                setStmtCallback(contextSetSQL.toString(), c, contextTask, innerSetTask);
+            if (handleSetStatement(smt, shardingService, contextTask, innerSetTask, contextSetSQL) && contextTask.size() > 0) {
+                setStmtCallback(contextSetSQL.toString(), shardingService, contextTask, innerSetTask);
             } else if (innerSetTask.size() > 0) {
-                c.setInnerSetTask(innerSetTask);
-                if (!c.executeInnerSetTask()) {
-                    boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-                    c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-                    c.getSession2().multiStatementNextSql(multiStatementFlag);
+                shardingService.setInnerSetTask(innerSetTask);
+                if (!shardingService.executeInnerSetTask()) {
+                    shardingService.write(shardingService.getSession2().getOKPacket());
                 }
             }
         } catch (SQLSyntaxErrorException e) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+            shardingService.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
         }
     }
 
@@ -103,103 +101,99 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSetStatement(String stmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask,
+    private static boolean handleSetStatement(String stmt, ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask,
                                               List<Pair<KeyType, Pair<String, String>>> innerSetTask, StringBuilder contextSetSQL) throws SQLSyntaxErrorException {
         SQLStatement statement = parseSQL(stmt);
         if (statement instanceof SQLSetStatement) {
             List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
             if (assignItems.size() == 1) {
                 contextSetSQL.append(statement.toString());
-                return handleSingleVariable(stmt, assignItems.get(0), c, contextTask);
+                return handleSingleVariable(stmt, assignItems.get(0), service, contextTask);
             } else {
-                boolean result = handleSetMultiStatement(assignItems, c, contextTask, innerSetTask);
+                boolean result = handleSetMultiStatement(assignItems, service, contextTask, innerSetTask);
                 contextSetSQL.append(statement.toString());
                 return result;
             }
         } else if (statement instanceof MySqlSetTransactionStatement) {
-            return handleTransaction(c, (MySqlSetTransactionStatement) statement);
+            return handleTransaction(service, (MySqlSetTransactionStatement) statement);
         } else {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, stmt + " is not recognized and ignored");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, stmt + " is not recognized and ignored");
             return false;
         }
     }
 
-    private static boolean handleSetNamesInMultiStmt(ServerConnection c, String stmt, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+    private static boolean handleSetNamesInMultiStmt(ShardingService service, String stmt, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
         NamesInfo charsetInfo = checkSetNames(stmt, charset, collate);
         if (charsetInfo != null) {
             if (charsetInfo.charset == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
                 return false;
             } else if (charsetInfo.collation == null) {
-                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + collate + "' is not valid for CHARACTER SET '" + charset + "'");
+                service.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + collate + "' is not valid for CHARACTER SET '" + charset + "'");
                 return false;
             } else if (!charsetInfo.isSupport) {
-                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
+                service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
                 return false;
             } else {
                 contextTask.add(new Pair<>(KeyType.NAMES, new Pair<>(charsetInfo.charset, charsetInfo.collation)));
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the SQL: " + stmt);
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the SQL: " + stmt);
             return false;
         }
     }
 
-    private static boolean handleSingleSetNames(String stmt, ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleSingleSetNames(String stmt, ShardingService shardingService, SQLExpr valueExpr) {
         String[] charsetAndCollate = parseNamesValue(valueExpr);
         NamesInfo charsetInfo = checkSetNames(stmt, charsetAndCollate[0], charsetAndCollate[1]);
         if (charsetInfo != null) {
             if (charsetInfo.charset == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "'");
+                shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "'");
                 return false;
             } else if (charsetInfo.collation == null) {
-                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + charsetAndCollate[1] + "' is not valid for CHARACTER SET '" + charsetAndCollate[0] + "'");
+                shardingService.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + charsetAndCollate[1] + "' is not valid for CHARACTER SET '" + charsetAndCollate[0] + "'");
                 return false;
             } else if (!charsetInfo.isSupport) {
-                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
+                shardingService.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
                 return false;
             } else {
-                c.setNames(charsetInfo.charset, charsetInfo.collation);
-                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-                c.getSession2().multiStatementNextSql(multiStatementFlag);
+                shardingService.setNames(charsetInfo.charset, charsetInfo.collation);
+                shardingService.write(shardingService.getSession2().getOKPacket());
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the SQL: " + stmt);
+            shardingService.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the SQL: " + stmt);
             return false;
         }
     }
 
-    private static boolean handleSingleSetCharset(String stmt, ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleSingleSetCharset(String stmt, ShardingService shardingService, SQLExpr valueExpr) {
         String charsetValue = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetValue == null || charsetValue.equalsIgnoreCase("null")) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set null");
+            shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set null");
             return false;
         }
         String charset = getCharset(charsetValue);
         if (charset != null) {
             if (!CharsetUtil.checkCharsetClient(charset)) {
-                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charset + "'");
+                shardingService.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charset + "'");
                 return false;
             } else {
-                c.setCharacterSet(charset);
-                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-                c.getSession2().multiStatementNextSql(multiStatementFlag);
+                shardingService.setCharacterSet(charset);
+                shardingService.write(shardingService.getSession2().getOKPacket());
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "'");
+            shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "'");
             return false;
         }
     }
 
-    private static boolean handleSetMultiStatement(List<SQLAssignItem> assignItems, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask) {
+    private static boolean handleSetMultiStatement(List<SQLAssignItem> assignItems, ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask) {
         Set<SQLAssignItem> objSet = new HashSet<>();
         for (SQLAssignItem assignItem : assignItems) {
-            if (!handleVariableInMultiStmt(assignItem, c, contextTask, innerSetTask, objSet)) {
+            if (!handleVariableInMultiStmt(assignItem, service, contextTask, innerSetTask, objSet)) {
                 return false;
             }
         }
@@ -210,40 +204,40 @@ public final class SetHandler {
     }
 
     //execute multiStmt and callback to reset conn
-    private static void setStmtCallback(String multiStmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask) {
-        c.setContextTask(contextTask);
-        c.setInnerSetTask(innerSetTask);
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SetCallBack(c));
-        SetTestJob sqlJob = new SetTestJob(multiStmt, null, resultHandler, c);
+    private static void setStmtCallback(String multiStmt, ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask) {
+        service.setContextTask(contextTask);
+        service.setInnerSetTask(innerSetTask);
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SetCallBack(service));
+        SetTestJob sqlJob = new SetTestJob(multiStmt, null, resultHandler, service);
         sqlJob.run();
     }
 
-    private static boolean handleVariableInMultiStmt(SQLAssignItem assignItem, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask, Set<SQLAssignItem> objSet) {
-        String key = handleSetKey(assignItem, c);
+    private static boolean handleVariableInMultiStmt(SQLAssignItem assignItem, ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask, Set<SQLAssignItem> objSet) {
+        String key = handleSetKey(assignItem, service);
         if (key == null) {
             return false;
         }
         SQLExpr valueExpr = assignItem.getValue();
         KeyType keyType = parseKeyType(key, true, KeyType.SYSTEM_VARIABLES);
         if (!checkValue(valueExpr, keyType)) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + assignItem.getValue() + "'");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + assignItem.getValue() + "'");
             return false;
         }
         switch (keyType) {
             case XA:
-                if (!SetInnerHandler.preHandleSingleXA(c, valueExpr, innerSetTask)) {
+                if (!SetInnerHandler.preHandleSingleXA(service, valueExpr, innerSetTask)) {
                     return false;
                 }
                 objSet.add(assignItem);
                 break;
             case TRACE:
-                if (!SetInnerHandler.preHandleSingleTrace(c, valueExpr, innerSetTask)) {
+                if (!SetInnerHandler.preHandleSingleTrace(service, valueExpr, innerSetTask)) {
                     return false;
                 }
                 objSet.add(assignItem);
                 break;
             case AUTOCOMMIT:
-                if (!SetInnerHandler.preHandleAutocommit(c, valueExpr, innerSetTask)) {
+                if (!SetInnerHandler.preHandleAutocommit(service, valueExpr, innerSetTask)) {
                     return false;
                 }
                 objSet.add(assignItem);
@@ -251,39 +245,39 @@ public final class SetHandler {
             case NAMES: {
                 String charset = SetInnerHandler.parseStringValue(valueExpr);
                 //TODO:druid lost collation info
-                if (!handleSetNamesInMultiStmt(c, "SET NAMES " + charset, charset, null, contextTask))
+                if (!handleSetNamesInMultiStmt(service, "SET NAMES " + charset, charset, null, contextTask))
                     return false;
                 break;
             }
             case CHARSET: {
                 String charset = SetInnerHandler.parseStringValue(valueExpr);
-                if (!handleCharsetInMultiStmt(c, charset, contextTask)) return false;
+                if (!handleCharsetInMultiStmt(service, charset, contextTask)) return false;
                 break;
             }
             case CHARACTER_SET_CLIENT:
-                if (!handleCharsetClientInMultiStmt(c, contextTask, valueExpr)) return false;
+                if (!handleCharsetClientInMultiStmt(service, contextTask, valueExpr)) return false;
                 break;
             case CHARACTER_SET_CONNECTION:
-                if (!handleCharsetConnInMultiStmt(c, contextTask, valueExpr)) return false;
+                if (!handleCharsetConnInMultiStmt(service, contextTask, valueExpr)) return false;
                 break;
             case CHARACTER_SET_RESULTS:
-                if (!handleCharsetResultsInMultiStmt(c, contextTask, valueExpr)) return false;
+                if (!handleCharsetResultsInMultiStmt(service, contextTask, valueExpr)) return false;
                 break;
             case COLLATION_CONNECTION:
-                if (!handleCollationConnInMultiStmt(c, contextTask, valueExpr)) return false;
+                if (!handleCollationConnInMultiStmt(service, contextTask, valueExpr)) return false;
                 break;
             case TX_READ_ONLY:
-                if (!handleReadOnlyInMultiStmt(c, contextTask, valueExpr)) return false;
+                if (!handleReadOnlyInMultiStmt(service, contextTask, valueExpr)) return false;
                 break;
             case TX_ISOLATION:
-                if (!handleTxIsolationInMultiStmt(c, contextTask, valueExpr)) return false;
+                if (!handleTxIsolationInMultiStmt(service, contextTask, valueExpr)) return false;
                 break;
             case SYSTEM_VARIABLES:
                 if (key.startsWith("@@")) {
                     key = key.substring(2);
                 }
                 if (DbleServer.getInstance().getSystemVariables().getDefaultValue(key) == null) {
-                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
+                    service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                 }
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
                 break;
@@ -291,43 +285,43 @@ public final class SetHandler {
                 contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key.toUpperCase(), parseVariablesValue(valueExpr))));
                 break;
             default:
-                c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, key + " is not supported");
+                service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, key + " is not supported");
                 return false;
         }
         return true;
     }
 
-    private static boolean handleCharsetInMultiStmt(ServerConnection c, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+    private static boolean handleCharsetInMultiStmt(ShardingService service, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
         String charsetInfo = getCharset(charset);
         if (charsetInfo != null) {
             if (!CharsetUtil.checkCharsetClient(charsetInfo)) {
-                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo + "'");
+                service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo + "'");
                 return false;
             } else {
                 contextTask.add(new Pair<>(KeyType.CHARSET, new Pair<String, String>(charsetInfo, null)));
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charset + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charset + "'");
             return false;
         }
     }
 
-    private static boolean handleTxIsolationInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
+    private static boolean handleTxIsolationInMultiStmt(ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String value = SetInnerHandler.parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
             return false;
         }
         contextTask.add(new Pair<>(KeyType.TX_ISOLATION, new Pair<String, String>(String.valueOf(txIsolation), null)));
         return true;
     }
 
-    private static boolean handleReadOnlyInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
+    private static boolean handleReadOnlyInMultiStmt(ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         Boolean switchStatus = SetInnerHandler.isSwitchOn(valueExpr);
         if (switchStatus == null) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'tx_read_only|transaction_read_only'");
+            service.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'tx_read_only|transaction_read_only'");
             return false;
         } else if (switchStatus) {
             contextTask.add(new Pair<>(KeyType.TX_READ_ONLY, new Pair<String, String>("true", null)));
@@ -337,32 +331,32 @@ public final class SetHandler {
         return true;
     }
 
-    private static boolean handleCollationConnInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
+    private static boolean handleCollationConnInMultiStmt(ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String collation = SetInnerHandler.parseStringValue(valueExpr);
         if (checkCollation(collation)) {
             contextTask.add(new Pair<>(KeyType.COLLATION_CONNECTION, new Pair<String, String>(collation, null)));
             return true;
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_COLLATION, "Unknown collation '" + collation + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_COLLATION, "Unknown collation '" + collation + "'");
             return false;
         }
     }
 
-    private static boolean handleCharsetResultsInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
+    private static boolean handleCharsetResultsInMultiStmt(ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String charsetResult = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             contextTask.add(new Pair<>(KeyType.CHARACTER_SET_RESULTS, new Pair<String, String>(charsetResult, null)));
             return true;
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetResult + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetResult + "'");
             return false;
         }
     }
 
-    private static boolean handleCharsetConnInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
+    private static boolean handleCharsetConnInMultiStmt(ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String charsetConnection = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetConnection.equals("null")) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_connection' can't be set to the value of 'NULL'");
+            service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_connection' can't be set to the value of 'NULL'");
             return false;
         }
         String collationName = CharsetUtil.getDefaultCollation(charsetConnection);
@@ -370,76 +364,76 @@ public final class SetHandler {
             contextTask.add(new Pair<>(KeyType.CHARACTER_SET_CONNECTION, new Pair<String, String>(collationName, null)));
             return true;
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetConnection + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetConnection + "'");
             return false;
         }
     }
 
-    private static boolean handleCharsetClientInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
+    private static boolean handleCharsetClientInMultiStmt(ShardingService service, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String charsetClient = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetClient.equalsIgnoreCase("null")) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
+            service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
         } else if (checkCharset(charsetClient)) {
             if (!CharsetUtil.checkCharsetClient(charsetClient)) {
-                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
+                service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
                 return false;
             } else {
                 contextTask.add(new Pair<>(KeyType.CHARACTER_SET_CLIENT, new Pair<String, String>(charsetClient, null)));
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetClient + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetClient + "'");
             return false;
         }
     }
 
-    private static boolean handleSingleVariable(String stmt, SQLAssignItem assignItem, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String key = handleSetKey(assignItem, c);
+    private static boolean handleSingleVariable(String stmt, SQLAssignItem assignItem, ShardingService shardingService, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        String key = handleSetKey(assignItem, shardingService);
         if (key == null) return false;
         SQLExpr valueExpr = assignItem.getValue();
         KeyType keyType = parseKeyType(key, true, KeyType.SYSTEM_VARIABLES);
         if (!checkValue(valueExpr, keyType)) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + SQLUtils.toMySqlString(assignItem.getValue()) + "'");
+            shardingService.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + SQLUtils.toMySqlString(assignItem.getValue()) + "'");
             return false;
         }
         switch (keyType) {
             case NAMES:
-                return handleSingleSetNames(stmt, c, valueExpr);
+                return handleSingleSetNames(stmt, shardingService, valueExpr);
             case CHARSET:
-                return handleSingleSetCharset(stmt, c, valueExpr);
+                return handleSingleSetCharset(stmt, shardingService, valueExpr);
             case XA:
-                return SetInnerHandler.handleSingleXA(c, valueExpr);
+                return SetInnerHandler.handleSingleXA(shardingService, valueExpr);
             case TRACE:
-                return SetInnerHandler.handleSingleTrace(c, valueExpr);
+                return SetInnerHandler.handleSingleTrace(shardingService, valueExpr);
             case AUTOCOMMIT:
-                return SetInnerHandler.handleSingleAutocommit(stmt, c, valueExpr);
+                return SetInnerHandler.handleSingleAutocommit(stmt, shardingService, valueExpr);
             case CHARACTER_SET_CLIENT:
-                return handleSingleCharsetClient(c, valueExpr);
+                return handleSingleCharsetClient(shardingService, valueExpr);
             case CHARACTER_SET_CONNECTION:
-                return handleSingleCharsetConnection(c, valueExpr);
+                return handleSingleCharsetConnection(shardingService, valueExpr);
             case CHARACTER_SET_RESULTS:
-                return handleSingleCharsetResults(c, valueExpr);
+                return handleSingleCharsetResults(shardingService, valueExpr);
             case COLLATION_CONNECTION:
-                return handleCollationConnection(c, valueExpr);
+                return handleCollationConnection(shardingService, valueExpr);
             case TX_READ_ONLY:
                 if (!stmt.toLowerCase().contains("session")) {
-                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+                    shardingService.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
                     return false;
                 }
-                return handleTxReadOnly(c, valueExpr);
+                return handleTxReadOnly(shardingService, valueExpr);
             case TX_ISOLATION:
                 if (!stmt.toLowerCase().contains("session")) {
-                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+                    shardingService.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
                     return false;
                 }
-                return handleTxIsolation(c, valueExpr);
+                return handleTxIsolation(shardingService, valueExpr);
             case SYSTEM_VARIABLES:
                 if (key.startsWith("@@")) {
                     key = key.substring(2);
                 }
                 if (DbleServer.getInstance().getSystemVariables().getDefaultValue(key) == null) {
-                    c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
+                    shardingService.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "system variable " + key + " is not supported");
                     return false;
                 }
                 contextTask.add(new Pair<>(KeyType.SYSTEM_VARIABLES, new Pair<>(key, parseVariablesValue(valueExpr))));
@@ -448,41 +442,35 @@ public final class SetHandler {
                 contextTask.add(new Pair<>(KeyType.USER_VARIABLES, new Pair<>(key.toUpperCase(), parseVariablesValue(valueExpr))));
                 return true;
             default:
-                c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, stmt + " is not supported");
+                shardingService.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, stmt + " is not supported");
                 return false;
         }
     }
 
-    private static boolean handleTxReadOnly(ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleTxReadOnly(ShardingService shardingService, SQLExpr valueExpr) {
         Boolean switchStatus = SetInnerHandler.isSwitchOn(valueExpr);
         if (switchStatus == null) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'tx_read_only|transaction_read_only'");
+            shardingService.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'tx_read_only|transaction_read_only'");
             return false;
         } else if (switchStatus) {
-            c.setSessionReadOnly(true);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            shardingService.setSessionReadOnly(true);
+            shardingService.write(shardingService.getSession2().getOKPacket());
         } else {
-            c.setSessionReadOnly(false);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            shardingService.setSessionReadOnly(false);
+            shardingService.write(shardingService.getSession2().getOKPacket());
         }
         return true;
     }
 
-    private static boolean handleTxIsolation(ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleTxIsolation(ShardingService service, SQLExpr valueExpr) {
         String value = SetInnerHandler.parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
             return false;
         }
-        c.setTxIsolation(txIsolation);
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        service.setTxIsolation(txIsolation);
+        service.write(service.getSession2().getOKPacket());
         return true;
     }
 
@@ -501,72 +489,64 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleCollationConnection(ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleCollationConnection(ShardingService service, SQLExpr valueExpr) {
         String collation = SetInnerHandler.parseStringValue(valueExpr);
         if (checkCollation(collation)) {
-            c.setCollationConnection(collation);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            service.setCollationConnection(collation);
+            service.write(service.getSession2().getOKPacket());
             return true;
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_COLLATION, "Unknown collation '" + collation + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_COLLATION, "Unknown collation '" + collation + "'");
             return false;
         }
     }
 
-    private static boolean handleSingleCharsetResults(ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleSingleCharsetResults(ShardingService shardingService, SQLExpr valueExpr) {
         String charsetResult = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
-            c.setCharacterResults(charsetResult);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            shardingService.setCharacterResults(charsetResult);
+            shardingService.write(shardingService.getSession2().getOKPacket());
             return true;
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetResult + "'");
+            shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetResult + "'");
             return false;
         }
     }
 
-    private static boolean handleSingleCharsetConnection(ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleSingleCharsetConnection(ShardingService shardingService, SQLExpr valueExpr) {
         String charsetConnection = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetConnection.equals("null")) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_connection' can't be set to the value of 'NULL'");
+            shardingService.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_connection' can't be set to the value of 'NULL'");
             return false;
         }
         String collationName = CharsetUtil.getDefaultCollation(charsetConnection);
         if (collationName != null) {
-            c.setCharacterConnection(collationName);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            shardingService.setCharacterConnection(collationName);
+            shardingService.write(shardingService.getSession2().getOKPacket());
             return true;
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetConnection + "'");
+            shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetConnection + "'");
             return false;
         }
     }
 
-    private static boolean handleSingleCharsetClient(ServerConnection c, SQLExpr valueExpr) {
+    private static boolean handleSingleCharsetClient(ShardingService service, SQLExpr valueExpr) {
         String charsetClient = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetClient.equalsIgnoreCase("null")) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
+            service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
         }
         if (checkCharset(charsetClient)) {
             if (!CharsetUtil.checkCharsetClient(charsetClient)) {
-                c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
+                service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
                 return false;
             } else {
-                c.setCharacterClient(charsetClient);
-                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-                c.getSession2().multiStatementNextSql(multiStatementFlag);
+                service.setCharacterClient(charsetClient);
+                service.write(service.getSession2().getOKPacket());
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetClient + "'");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetClient + "'");
             return false;
         }
     }
@@ -595,23 +575,23 @@ public final class SetHandler {
         return stmt;
     }
 
-    private static String handleSetKey(SQLAssignItem assignItem, ServerConnection c) {
+    private static String handleSetKey(SQLAssignItem assignItem, ShardingService service) {
         if (assignItem.getTarget() instanceof SQLPropertyExpr) {
             SQLPropertyExpr target = (SQLPropertyExpr) assignItem.getTarget();
             if (!(target.getOwner() instanceof SQLVariantRefExpr)) {
-                c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + target + "'");
+                service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + target + "'");
                 return null;
             }
             SQLVariantRefExpr owner = (SQLVariantRefExpr) target.getOwner();
             if (owner.isGlobal()) {
-                c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting GLOBAL value is not supported");
+                service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting GLOBAL value is not supported");
                 return null;
             }
             return target.getName();
         } else if (assignItem.getTarget() instanceof SQLVariantRefExpr) {
             SQLVariantRefExpr target = (SQLVariantRefExpr) assignItem.getTarget();
             if (target.isGlobal()) {
-                c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting GLOBAL value is not supported");
+                service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting GLOBAL value is not supported");
                 return null;
             }
             return target.getName();
@@ -619,7 +599,7 @@ public final class SetHandler {
             SQLIdentifierExpr target = (SQLIdentifierExpr) assignItem.getTarget();
             return target.getLowerName();
         } else {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + assignItem.getTarget() + "'");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting target is not supported for '" + assignItem.getTarget() + "'");
             return null;
         }
     }
@@ -710,23 +690,21 @@ public final class SetHandler {
     }
 
 
-    private static boolean handleTransaction(ServerConnection c, MySqlSetTransactionStatement setStatement) {
+    private static boolean handleTransaction(ShardingService service, MySqlSetTransactionStatement setStatement) {
         //always single
         if (setStatement.getGlobal() == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting transaction without any SESSION or GLOBAL keyword is not supported now");
             return false;
         } else if (setStatement.getGlobal()) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting GLOBAL value is not supported");
+            service.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "setting GLOBAL value is not supported");
             return false;
         } else if (setStatement.getAccessModel() != null) {
             if (setStatement.getAccessModel().equals("ONLY")) {
-                c.setSessionReadOnly(true);
+                service.setSessionReadOnly(true);
             } else {
-                c.setSessionReadOnly(false);
+                service.setSessionReadOnly(false);
             }
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            service.write(service.getSession2().getOKPacket());
             return true;
         } else {
             int txIsolation = Isolations.REPEATABLE_READ;
@@ -747,10 +725,8 @@ public final class SetHandler {
                     // can't be happened
                     break;
             }
-            c.setTxIsolation(txIsolation);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            service.setTxIsolation(txIsolation);
+            service.write(service.getSession2().getOKPacket());
             return true;
         }
     }

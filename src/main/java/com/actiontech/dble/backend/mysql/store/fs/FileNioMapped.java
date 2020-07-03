@@ -61,7 +61,7 @@ class FileNioMapped extends FileBase {
         if (mapped == null) {
             return;
         }
-        // first write all data
+        // first writeDirectly all data
         // mapped.force();
 
         // need to dispose old direct buffer, see bug

@@ -6,16 +6,16 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.SessionStage;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Map;
@@ -32,9 +32,9 @@ public final class KillHandler {
         KILL_QUERY, KILL_CONNECTION
     }
 
-    public static void handle(Type type, String id, ServerConnection c) {
+    public static void handle(Type type, String id, ShardingService service) {
         if (StringUtil.isEmpty(id)) {
-            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "NULL connection id");
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "NULL connection id");
             return;
         }
         // parse id
@@ -42,53 +42,49 @@ public final class KillHandler {
         try {
             idLong = Long.parseLong(id);
         } catch (NumberFormatException e) {
-            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Invalid connection id:" + id);
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Invalid connection id:" + id);
             return;
         }
 
         if (type == Type.KILL_CONNECTION) {
-            killConnection(idLong, c);
+            killConnection(idLong, service);
         } else {
-            killQuery(idLong, c);
+            killQuery(idLong, service);
         }
     }
 
     /**
      * kill query
      *
-     * @param id connection id
-     * @param c  serverConnection
+     * @param id      connection id
+     * @param service serverConnection
      */
-    private static void killQuery(long id, ServerConnection c) {
+    private static void killQuery(long id, ShardingService service) {
         FrontendConnection killConn;
-        if (id == c.getId()) {
-            c.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "Query was interrupted.");
+        if (id == service.getConnection().getId()) {
+            service.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "Query was interrupted.");
             return;
         }
 
         killConn = findFrontConn(id);
         if (killConn == null) {
-            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             return;
-        } else if (!killConn.getUser().equals(c.getUser())) {
-            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
+        } else if (!killConn.isManager() && !((ShardingService) killConn.getService()).getUser().equals(service.getUser())) {
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
             return;
         }
 
-        NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
+        NonBlockingSession killSession = ((ShardingService) killConn.getService()).getSession2();
         if (killSession.getTransactionManager().getXAStage() != null ||
                 killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            getOkPacket(c).write(c);
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+            getOkPacket(service).write(service.getConnection());
             return;
         }
 
         killSession.setKilled(true);
         // return ok to front connection that sends kill query
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        getOkPacket(c).write(c);
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        getOkPacket(service).write(service.getConnection());
 
         while (true) {
             if (!killSession.isKilled()) {
@@ -103,12 +99,10 @@ public final class KillHandler {
         if (killSession.isKilled() && killSession.isDiscard()) {
             // discard backend conn in session target map
             Map<RouteResultsetNode, BackendConnection> target = killSession.getTargetMap();
-            MySQLConnection conn;
             for (BackendConnection backendConnection : target.values()) {
-                conn = (MySQLConnection) backendConnection;
-                if (conn.isExecuting()) {
-                    conn.execCmd("kill query " + conn.getThreadId());
-                    conn.close("Query was interrupted.");
+                if (backendConnection.getBackendService().isExecuting()) {
+                    backendConnection.getBackendService().execCmd("kill query " + backendConnection.getThreadId());
+                    backendConnection.close("Query was interrupted.");
                 }
             }
         }
@@ -117,37 +111,36 @@ public final class KillHandler {
     /**
      * kill connection
      *
-     * @param id connection id
-     * @param c  serverConnection
+     * @param id      connection id
+     * @param service serverConnection
      */
-    private static void killConnection(long id, ServerConnection c) {
+    private static void killConnection(long id, ShardingService service) {
         // kill myself
-        if (id == c.getId()) {
-            OkPacket packet = getOkPacket(c);
+        if (id == service.getConnection().getId()) {
+            OkPacket packet = getOkPacket(service);
             packet.setPacketId(0);
-            packet.write(c);
+            packet.write(service.getConnection());
             return;
         }
 
-        FrontendConnection fc = findFrontConn(id);
+        //todo kill should be rewrite
+        /*FrontendConnection fc = findFrontConn(id);
         if (fc == null) {
-            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             return;
-        } else if (!fc.getUser().equals(c.getUser())) {
-            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
+        } else if (!fc.getUser().equals(service.getUser())) {
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
             return;
         }
-        fc.killAndClose("killed");
+        fc.killAndClose("killed");*/
 
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        getOkPacket(c).write(c);
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        getOkPacket(service).write(service.getConnection());
     }
 
     private static FrontendConnection findFrontConn(long connId) {
         FrontendConnection fc = null;
-        NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
-        for (NIOProcessor p : processors) {
+        IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
+        for (IOProcessor p : processors) {
             if ((fc = p.getFrontends().get(connId)) != null) {
                 break;
             }
@@ -155,13 +148,13 @@ public final class KillHandler {
         return fc;
     }
 
-    private static OkPacket getOkPacket(ServerConnection c) {
-        byte packetId = (byte) c.getSession2().getPacketId().get();
+    private static OkPacket getOkPacket(ShardingService service) {
+        byte packetId = (byte) service.getSession2().getPacketId().get();
         OkPacket packet = new OkPacket();
         packet.setPacketId(++packetId);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
-        c.getSession2().multiStatementPacket(packet, packetId);
+        service.getSession2().multiStatementPacket(packet, packetId);
         return packet;
     }
 

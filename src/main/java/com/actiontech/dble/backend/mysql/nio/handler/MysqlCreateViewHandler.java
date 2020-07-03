@@ -6,20 +6,23 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ViewMeta;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,19 +54,19 @@ public class MysqlCreateViewHandler implements ResponseHandler {
         } else {
             // create new connection
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
-            dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
+            dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
         }
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
-        conn.setResponseHandler(this);
-        conn.setSession(session);
-        conn.execute(node, session.getSource(), session.getSource().isAutocommit());
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setSession(session);
+        conn.getBackendService().execute(node, session.getShardingService(), session.getShardingService().isAutocommit());
     }
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+        final RouteResultsetNode node = (RouteResultsetNode) conn.getBackendService().getAttachment();
         session.bindConnection(node, conn);
         innerExecute(conn, node);
     }
@@ -75,22 +78,23 @@ public class MysqlCreateViewHandler implements ResponseHandler {
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
         String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
         LOGGER.warn(errMsg);
         backConnectionErr(errPacket, null, false);
     }
 
     @Override
-    public void errorResponse(byte[] data, BackendConnection conn) {
+    public void errorResponse(byte[] data, AbstractService service) {
         ErrorPacket errPkg = new ErrorPacket();
         errPkg.read(data);
         errPkg.setPacketId(++packetId);
-        backConnectionErr(errPkg, conn, conn.syncAndExecute());
+        backConnectionErr(errPkg, (MySQLResponseService) service, ((MySQLResponseService) service).syncAndExecute());
     }
 
     @Override
-    public void okResponse(byte[] data, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void okResponse(byte[] data, AbstractService service) {
+        MySQLResponseService responseService = (MySQLResponseService) service;
+        boolean executeResponse = responseService.syncAndExecute();
         if (!executeResponse) {
             return;
         }
@@ -100,8 +104,8 @@ public class MysqlCreateViewHandler implements ResponseHandler {
         } catch (Exception e) {
             ErrorPacket errPkg = new ErrorPacket();
             errPkg.setPacketId(++packetId);
-            errPkg.setMessage(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
-            backConnectionErr(errPkg, conn, conn.syncAndExecute());
+            errPkg.setMessage(StringUtil.encode(e.getMessage(), session.getShardingService().getCharset().getResults()));
+            backConnectionErr(errPkg, responseService, responseService.syncAndExecute());
             return;
         }
 
@@ -109,55 +113,53 @@ public class MysqlCreateViewHandler implements ResponseHandler {
         OkPacket ok = new OkPacket();
         ok.read(data);
         ok.setPacketId(++packetId); // OK_PACKET
-        ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
+        ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
+        session.setBackendResponseEndTime(responseService);
+        session.releaseConnectionIfSafe(responseService, false);
         session.setResponseTime(true);
         session.multiStatementPacket(ok, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
         ok.write(session.getSource());
-        session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
-        ServerConnection source = session.getSource();
-        UserName errUser = source.getUser();
-        String errHost = source.getHost();
-        int errPort = source.getLocalPort();
+    private void backConnectionErr(ErrorPacket errPkg, MySQLResponseService service, boolean syncFinished) {
+        ShardingService shardingService = session.getShardingService();
+        UserName errUser = shardingService.getUser();
+        String errHost = shardingService.getConnection().getHost();
+        int errPort = shardingService.getConnection().getLocalPort();
 
         String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        if (conn != null) {
-            LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
+        if (service != null) {
+            LOGGER.info("execute sql err :" + errMsg + " con:" + service +
                     " frontend host:" + errHost + "/" + errPort + "/" + errUser);
             if (syncFinished) {
-                session.releaseConnectionIfSafe(conn, false);
+                session.releaseConnectionIfSafe(service, false);
             } else {
-                conn.closeWithoutRsp("unfinished sync");
-                session.getTargetMap().remove(conn.getAttachment());
+                service.getConnection().businessClose("unfinished sync");
+                session.getTargetMap().remove(service.getAttachment());
             }
         }
-        source.setTxInterrupt(errMsg);
-        errPkg.write(source);
+        shardingService.setTxInterrupt(errMsg);
+        errPkg.write(shardingService.getConnection());
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
         //not happen
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         //not happen
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         //not happen
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         //not happen
     }
 

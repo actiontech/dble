@@ -7,7 +7,8 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.StreamUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
+import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -31,7 +32,7 @@ public class Reply323Packet extends MySQLPacket {
     }
 
     @Override
-    public void write(MySQLConnection c) {
+    public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);

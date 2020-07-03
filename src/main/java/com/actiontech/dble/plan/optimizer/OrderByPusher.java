@@ -13,7 +13,9 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.singleton.TraceManager;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -30,9 +32,15 @@ public final class OrderByPusher {
     }
 
     public static PlanNode optimize(PlanNode qtn) {
-        qtn = preOrderByPusher(qtn);
-        qtn = pushOrderBy(qtn);
-        return qtn;
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-order-by");
+        try {
+            qtn = preOrderByPusher(qtn);
+            qtn = pushOrderBy(qtn);
+            return qtn;
+        } finally {
+            TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
+            TraceManager.finishSpan(traceObject);
+        }
     }
 
     private static PlanNode preOrderByPusher(PlanNode qtn) {

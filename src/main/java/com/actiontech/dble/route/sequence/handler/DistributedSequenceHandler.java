@@ -28,7 +28,7 @@ import java.util.List;
  * ID :long 63 bits
  * |threadId(9)|instanceId(9)|increment(6)|current time millis(39 digits ,used for 17 years)|
  * <p/>
- *
+ * <p>
  * |threadId|instanceId|increment|current time millis|
  */
 public class DistributedSequenceHandler implements Closeable, SequenceHandler {

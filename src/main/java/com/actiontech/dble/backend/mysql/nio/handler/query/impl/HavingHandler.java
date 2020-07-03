@@ -5,11 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.net.Session;
@@ -44,7 +45,7 @@ public class HavingHandler extends BaseDMLHandler {
     }
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -54,10 +55,10 @@ public class HavingHandler extends BaseDMLHandler {
          * having will not be pushed down because of aggregate function
          */
         this.havingItem = HandlerTool.createItem(this.having, this.sourceFields, 0, false, this.type());
-        nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, service);
     }
 
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return true;
         lock.lock();
@@ -65,7 +66,7 @@ public class HavingHandler extends BaseDMLHandler {
             HandlerTool.initFields(this.sourceFields, rowPacket.fieldValues);
             /* filter by having statement */
             if (havingItem.valBool()) {
-                nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
+                nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
             } else {
                 // nothing
             }
@@ -76,12 +77,12 @@ public class HavingHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(data, isLeft, conn);
+        nextHandler.rowEofResponse(data, isLeft, service);
     }
 
     @Override

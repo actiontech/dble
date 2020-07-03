@@ -1,8 +1,9 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.List;
@@ -10,10 +11,10 @@ import java.util.List;
 public class CommitStage implements TransactionStage {
 
     private final NonBlockingSession session;
-    private final List<MySQLConnection> conns;
+    private final List<BackendConnection> conns;
     private ImplicitCommitHandler handler;
 
-    public CommitStage(NonBlockingSession session, List<MySQLConnection> conns, ImplicitCommitHandler handler) {
+    public CommitStage(NonBlockingSession session, List<BackendConnection> conns, ImplicitCommitHandler handler) {
         this.session = session;
         this.conns = conns;
         this.handler = handler;
@@ -21,14 +22,14 @@ public class CommitStage implements TransactionStage {
 
     @Override
     public void onEnterStage() {
-        for (MySQLConnection con : conns) {
-            con.commit();
+        for (BackendConnection con : conns) {
+            con.getBackendService().commit();
         }
         session.setDiscard(true);
     }
 
     @Override
-    public TransactionStage next(boolean isFail, String errMsg, byte[] sendData) {
+    public TransactionStage next(boolean isFail, String errMsg, MySQLPacket sendData) {
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
@@ -38,21 +39,14 @@ public class CommitStage implements TransactionStage {
         if (isFail) {
             session.setFinishedCommitTime();
             session.setResponseTime(false);
-            session.getSource().write(sendData);
+            sendData.write(session.getSource());
         } else if (handler != null) {
             // continue to execute sql
             handler.next();
         } else {
-            if (sendData != null) {
-                session.getPacketId().set(sendData[3]);
-            } else {
-                sendData = session.getOkByteArray();
-            }
             session.setFinishedCommitTime();
             session.setResponseTime(true);
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
-            session.getSource().write(sendData);
-            session.multiStatementNextSql(multiStatementFlag);
+            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
         }
         session.clearSavepoint();
         return null;

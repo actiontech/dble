@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
@@ -54,7 +55,7 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
             session.setHandlerStart(this);
@@ -68,7 +69,7 @@ public class UnionHandler extends BaseDMLHandler {
             if (nodeCountField.decrementAndGet() == 0) {
                 // set correct name to field packets
                 checkFieldPackets();
-                nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
+                nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, service);
                 conFieldSend.signalAll();
             } else {
                 while (nodeCountField.get() != 0 && !terminate.get()) {
@@ -133,19 +134,19 @@ public class UnionHandler extends BaseDMLHandler {
     /**
      * need wait for all field merged
      */
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return true;
-        nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
+        nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
         return false;
     }
 
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return;
         if (nodeCount.decrementAndGet() == 0) {
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(data, this.isLeft, conn);
+            nextHandler.rowEofResponse(data, this.isLeft, service);
         }
     }
 

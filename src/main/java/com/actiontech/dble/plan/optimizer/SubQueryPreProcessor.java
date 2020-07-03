@@ -26,6 +26,8 @@ import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
+import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -39,9 +41,15 @@ public final class SubQueryPreProcessor {
     private static final String AUTOALIAS = "autoalias_";
 
     public static PlanNode optimize(PlanNode qtn) {
-        MergeHavingFilter.optimize(qtn);
-        qtn = findComparisonsSubQueryToJoinNode(qtn, new BoolPtr(false));
-        return qtn;
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-subquery");
+        try {
+            MergeHavingFilter.optimize(qtn);
+            qtn = findComparisonsSubQueryToJoinNode(qtn, new BoolPtr(false));
+            return qtn;
+        } finally {
+            TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
+            TraceManager.finishSpan(traceObject);
+        }
     }
 
     /**

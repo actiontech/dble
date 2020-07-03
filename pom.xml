@@ -291,6 +291,12 @@
             <version>1.2</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.jaegertracing</groupId>
+            <artifactId>jaeger-client</artifactId>
+            <version>1.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

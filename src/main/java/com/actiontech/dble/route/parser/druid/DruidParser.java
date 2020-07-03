@@ -7,7 +7,8 @@ package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.sql.SQLException;
@@ -24,9 +25,8 @@ public interface DruidParser {
      *
      * @param schema
      * @param stmt
-     * @param sc
      */
-    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException;
+    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ShardingService service) throws SQLException;
 
 
     /**
@@ -34,15 +34,13 @@ public interface DruidParser {
      *
      * @param schema
      * @param stmt
-     * @param sc
      */
-    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException;
+    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ShardingService service, boolean isExplain) throws SQLException;
 
     /**
      * @param stmt
-     * @param sc
      */
-    SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException;
+    SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException;
 
     /**
      * changeSql: add limit

@@ -14,7 +14,8 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Map;
@@ -34,13 +35,13 @@ public final class MysqlInformationSchemaHandler {
     }
 
     /**
-     * @param c
+     * @param service
      * @param fields
      */
-    public static void handle(ServerConnection c, FieldPacket[] fields) {
+    public static void handle(ShardingService service, FieldPacket[] fields) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         Map<UserName, UserConfig> users = conf.getUsers();
-        UserConfig user = users == null ? null : users.get(c.getUser());
+        UserConfig user = users == null ? null : users.get(service.getUser());
         RowDataPacket[] rows = null;
         if (user != null) {
             ShardingUserConfig shardingUser = (ShardingUserConfig) user;
@@ -58,16 +59,16 @@ public final class MysqlInformationSchemaHandler {
                 String charset = SystemConfig.getInstance().getCharset();
                 RowDataPacket row = new RowDataPacket(fields.length);
                 for (int j = 0; j < fields.length; j++) {
-                    String columnName = StringUtil.decode(fields[j].getName(), c.getCharset().getResults());
+                    String columnName = StringUtil.decode(fields[j].getName(), service.getCharset().getResults());
                     switch (columnName.toUpperCase()) {
                         case "SCHEMA_NAME":
-                            row.add(StringUtil.encode(name, c.getCharset().getResults()));
+                            row.add(StringUtil.encode(name, service.getCharset().getResults()));
                             break;
                         case "DEFAULT_CHARACTER_SET_NAME":
-                            row.add(StringUtil.encode(charset, c.getCharset().getResults()));
+                            row.add(StringUtil.encode(charset, service.getCharset().getResults()));
                             break;
                         case "DEFAULT_COLLATION_NAME":
-                            row.add(StringUtil.encode(CharsetUtil.getDefaultCollation(charset), c.getCharset().getResults()));
+                            row.add(StringUtil.encode(CharsetUtil.getDefaultCollation(charset), service.getCharset().getResults()));
                             break;
                         default:
                             break;
@@ -77,6 +78,6 @@ public final class MysqlInformationSchemaHandler {
             }
         }
 
-        MysqlSystemSchemaHandler.doWrite(fields.length, fields, rows, c);
+        MysqlSystemSchemaHandler.doWrite(fields.length, fields, rows, service);
     }
 }

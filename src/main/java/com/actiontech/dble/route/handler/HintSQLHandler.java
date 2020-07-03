@@ -10,8 +10,9 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.RouteStrategy;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
@@ -29,12 +30,12 @@ public class HintSQLHandler implements HintHandler {
     }
 
     @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
+    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ShardingService service,
                                 String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
         RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
-                hintSQLValue, sc);
+                hintSQLValue, service);
 
         if (rrs.isNeedOptimizer()) {
             throw new SQLSyntaxErrorException("Complex SQL not supported in hint");

@@ -1,14 +1,12 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint;
 
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,15 +77,15 @@ public class SavePointHandler extends MultiNodeHandler {
         this.performSp = newSp;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
-            conn.setResponseHandler(this);
-            ((MySQLConnection) conn).execCmd("savepoint " + spName);
+            conn.getBackendService().setResponseHandler(this);
+            conn.getBackendService().execCmd("savepoint " + spName);
         }
     }
 
     private void rollbackTo(String spName) {
         SavePoint sp = findSavePoint(spName);
         if (sp == null || sp.getPrev() == null) {
-            session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " in dble does not exist");
+            session.getShardingService().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " in dble does not exist");
             return;
         }
 
@@ -109,13 +107,13 @@ public class SavePointHandler extends MultiNodeHandler {
         this.performSp = sp;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
-            conn.setResponseHandler(this);
+            conn.getBackendService().setResponseHandler(this);
             if (!lastNodes.contains(rrn)) {
                 // rollback connection
-                ((MySQLConnection) conn).execCmd("rollback");
+                conn.getBackendService().execCmd("rollback");
             } else {
                 // rollback to
-                ((MySQLConnection) conn).execCmd("rollback to " + spName);
+                conn.getBackendService().execCmd("rollback to " + spName);
             }
         }
     }
@@ -123,7 +121,7 @@ public class SavePointHandler extends MultiNodeHandler {
     private void release(String spName) {
         SavePoint sp = findSavePoint(spName);
         if (sp == null || sp.getPrev() == null) {
-            session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " in dble does not exist");
+            session.getShardingService().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " in dble does not exist");
             return;
         }
         sp = sp.getPrev();
@@ -169,34 +167,34 @@ public class SavePointHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        if (decrementToZero(conn)) {
+    public void okResponse(byte[] ok, AbstractService service) {
+        if (decrementToZero((MySQLResponseService) service)) {
             cleanAndFeedback();
         }
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
         LOGGER.warn("get error package, content is:" + errMsg);
         this.setFail(errMsg);
-        if (decrementToZero(conn)) {
+        if (decrementToZero((MySQLResponseService) service)) {
             cleanAndFeedback();
         }
     }
 
     @Override
-    public void connectionClose(final BackendConnection conn, final String reason) {
-        LOGGER.warn("backend connection closed:" + reason + ", conn info:" + conn);
-        String errMsg = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
-                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+    public void connectionClose(final AbstractService service, final String reason) {
+        LOGGER.warn("backend connection closed:" + reason + ", conn info:" + service);
+        String errMsg = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getSchema() + "],threadID[" +
+                ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(errMsg);
-        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+        RouteResultsetNode rNode = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
         session.getTargetMap().remove(rNode);
-        conn.setResponseHandler(null);
-        if (decrementToZero(conn)) {
+        ((MySQLResponseService) service).setResponseHandler(null);
+        if (decrementToZero((MySQLResponseService) service)) {
             cleanAndFeedback();
         }
     }
@@ -218,7 +216,6 @@ public class SavePointHandler extends MultiNodeHandler {
     }
 
     private void cleanAndFeedback() {
-        byte[] send = sendData;
         // clear all resources
         if (session.closed()) {
             return;
@@ -237,9 +234,8 @@ public class SavePointHandler extends MultiNodeHandler {
                     LOGGER.warn("unknown savepoint perform type!");
                     break;
             }
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
-            session.getSource().write(send);
-            session.multiStatementNextSql(multiStatementFlag);
+            OkPacket ok = new OkPacket().read(sendData);
+            ok.write(session.getSource());
         }
     }
 
@@ -253,18 +249,18 @@ public class SavePointHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
         LOGGER.warn("unexpected filed eof response in savepoint");
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         LOGGER.warn("unexpected row response in savepoint");
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         LOGGER.warn("unexpected row eof response in savepoint");
     }
 

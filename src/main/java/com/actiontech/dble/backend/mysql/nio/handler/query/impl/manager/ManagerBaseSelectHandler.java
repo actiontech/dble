@@ -6,22 +6,23 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.manager;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.manager.information.ManagerBaseTable;
-import com.actiontech.dble.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.ManagerTableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.information.ManagerBaseTable;
+import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
                     nextHandler.rowEofResponse(null, false, null);
                 } catch (Exception e) {
                     logger.warn("execute error", e);
-                    session.getSource().writeErrMessage((byte) 1, ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
+                    ((ManagerService) session.getSource().getService()).writeErrMessage((byte) 1, ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
                 }
             }
         });
@@ -149,7 +150,7 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
 
     private List<RowDataPacket> makeRowData() {
         ManagerBaseTable table = ManagerSchemaInfo.getInstance().getTables().get(tableNode.getTableName());
-        return table.getRow(realSelects, session.getSource().getCharset().getResults());
+        return table.getRow(realSelects, session.getSource().getCharsetName().getResults());
 
     }
 
@@ -159,17 +160,17 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
 
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
 
     }
 

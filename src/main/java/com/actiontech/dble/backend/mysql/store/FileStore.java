@@ -184,7 +184,7 @@ public class FileStore {
      *
      * @param b   the source buffer
      * @param off the offset
-     * @param len the number of bytes to write
+     * @param len the number of bytes to writeDirectly
      */
     protected void writeDirect(byte[] b, int off, int len) {
         write(b, off, len);
@@ -195,7 +195,7 @@ public class FileStore {
      *
      * @param b   the source buffer
      * @param off the offset
-     * @param len the number of bytes to write
+     * @param len the number of bytes to writeDirectly
      */
     public void write(byte[] b, int off, int len) {
         write(ByteBuffer.wrap(b, off, len));
@@ -279,7 +279,7 @@ public class FileStore {
 
     /**
      * Call fsync. Depending on the operating system and hardware, this may or
-     * may not in fact write the changes.
+     * may not in fact writeDirectly the changes.
      */
     public void sync() {
         try {

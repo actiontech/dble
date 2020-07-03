@@ -1,11 +1,12 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.AbstractXAHandler;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 public abstract class XAStage implements TransactionStage {
 
@@ -24,13 +25,13 @@ public abstract class XAStage implements TransactionStage {
         this.xaHandler = handler;
     }
 
-    public abstract void onEnterStage(MySQLConnection conn);
+    public abstract void onEnterStage(MySQLResponseService conn);
 
     @Override
     public void onEnterStage() {
         xaHandler.setUnResponseRrns();
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
-            onEnterStage((MySQLConnection) session.getTarget(rrn));
+            onEnterStage(session.getTarget(rrn).getBackendService());
         }
     }
 
@@ -50,23 +51,26 @@ public abstract class XAStage implements TransactionStage {
             }
         }
         session.setResponseTime(isSuccess);
-        byte[] sendData = xaHandler.getPacketIfSuccess();
+        MySQLPacket sendData = xaHandler.getPacketIfSuccess();
         if (sendData != null) {
-            session.getSource().write(sendData);
+            sendData.write(session.getSource());
         } else {
-            session.getSource().write(session.getOkByteArray());
+            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
         }
         xaHandler.clearResources();
     }
 
     // return ok
-    public abstract void onConnectionOk(MySQLConnection conn);
+    public abstract void onConnectionOk(MySQLResponseService service);
 
     // connect error
-    public abstract void onConnectionError(MySQLConnection conn, int errNo);
+    public abstract void onConnectionError(MySQLResponseService service, int errNo);
 
     // connect close
-    public abstract void onConnectionClose(MySQLConnection conn);
+    public abstract void onConnectionClose(MySQLResponseService service);
+
+    // connect error
+    public abstract void onConnectError(MySQLResponseService service);
 
     public abstract String getStage();
 }

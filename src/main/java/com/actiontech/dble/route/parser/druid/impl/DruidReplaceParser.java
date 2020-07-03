@@ -20,9 +20,10 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
@@ -44,16 +45,16 @@ import java.util.*;
 public class DruidReplaceParser extends DruidInsertReplaceParser {
 
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
         //data & object prepare
         SQLReplaceStatement replace = (SQLReplaceStatement) stmt;
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = replace.getTableSource();
-        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
+        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, tableSource);
 
         //privilege check
-        if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.INSERT)) {
+        if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.INSERT)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
             throw new SQLNonTransientException(msg);
         }
@@ -61,11 +62,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         //No sharding table check
         schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
-        if (parserNoSharding(sc, schemaName, schemaInfo, rrs, replace)) {
+        if (parserNoSharding(service, schemaName, schemaInfo, rrs, replace)) {
             return schema;
         }
         if (replace.getQuery() != null) {
-            tryRouteInsertQuery(sc, rrs, stmt, visitor, schemaInfo);
+            tryRouteInsertQuery(service, rrs, stmt, visitor, schemaInfo);
             return schema;
         }
 
@@ -86,7 +87,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             if (child.getIncrementColumn() != null) {
                 replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, child.getIncrementColumn());
             }
-            parserChildTable(schemaInfo, rrs, replace, sc, isExplain);
+            parserChildTable(schemaInfo, rrs, replace, service, isExplain);
             return schema;
         } else if (tc instanceof ShardingTableConfig) {
             ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
@@ -95,9 +96,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             }
             String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiReplace(replace)) {
-                parserBatchInsert(schemaInfo, rrs, partitionColumn, replace, sc.getCharset().getClient());
+                parserBatchInsert(schemaInfo, rrs, partitionColumn, replace, service.getCharset().getClient());
             } else {
-                parserSingleInsert(schemaInfo, rrs, partitionColumn, replace, sc.getCharset().getClient());
+                parserSingleInsert(schemaInfo, rrs, partitionColumn, replace, service.getCharset().getClient());
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
@@ -147,7 +148,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * check if the nosharding tables are Involved
      */
-    private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
+    private boolean parserNoSharding(ShardingService service, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
             StringPtr noShardingNodePr = new StringPtr(noShardingNode);
@@ -156,7 +157,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 //replace into ...select  if the both table is nosharding table
                 SQLSelect select = replace.getQuery().getSubQuery();
                 SQLSelectStatement selectStmt = new SQLSelectStatement(select);
-                if (!SchemaUtil.isNoSharding(sc, select.getQuery(), replace, selectStmt, contextSchema, schemas, noShardingNodePr)) {
+                if (!SchemaUtil.isNoSharding(service, select.getQuery(), replace, selectStmt, contextSchema, schemas, noShardingNodePr)) {
                     return false;
                 }
             }
@@ -274,7 +275,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, SQLReplaceStatement replace, final ServerConnection sc, boolean isExplain) throws SQLNonTransientException {
+    private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, SQLReplaceStatement replace, final ShardingService service, boolean isExplain) throws SQLNonTransientException {
         final SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
         final ChildTableConfig tc = (ChildTableConfig) (schema.getTables().get(tableName));
@@ -297,7 +298,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
-            fetchChildTableToRoute(tc, joinColumnVal, sc, schema, sql, rrs, isExplain);
+            fetchChildTableToRoute(tc, joinColumnVal, service, schema, sql, rrs, isExplain);
         }
     }
 

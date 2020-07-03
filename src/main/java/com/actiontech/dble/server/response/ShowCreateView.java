@@ -10,12 +10,9 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -58,7 +55,7 @@ public final class ShowCreateView {
     private ShowCreateView() {
     }
 
-    public static void response(ServerConnection c, String stmt) {
+    public static void response(ShardingService service, String stmt) {
         try {
             MySqlShowCreateViewStatement statement = (MySqlShowCreateViewStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
             String schema = null;
@@ -70,24 +67,24 @@ public final class ShowCreateView {
                 schema = sqlPropertyExpr.getOwner().toString();
                 view = sqlPropertyExpr.getName();
             } else if (statement.getName() instanceof SQLIdentifierExpr) {
-                schema = c.getSchema();
+                schema = service.getSchema();
                 view = statement.getName().toString();
             }
-            sendOutTheViewInfo(c, schema, view);
+            sendOutTheViewInfo(service, schema, view);
         } catch (SQLException e) {
-            c.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
         }
     }
 
-    public static void response(ServerConnection c, String schema, String viewName) {
+    public static void response(ShardingService service, String schema, String viewName) {
         try {
-            sendOutTheViewInfo(c, schema, viewName);
+            sendOutTheViewInfo(service, schema, viewName);
         } catch (SQLException e) {
-            c.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
         }
     }
 
-    public static void sendOutTheViewInfo(ServerConnection c, String schema, String viewName) throws SQLException {
+    public static void sendOutTheViewInfo(ShardingService service, String schema, String viewName) throws SQLException {
         //check if the view or sharding doesn't exist
         if (schema == null || "".equals(schema)) {
             throw new SQLException("No database selected", "3D000", ErrorCode.ER_NO_DB_ERROR);
@@ -104,26 +101,24 @@ public final class ShowCreateView {
             throw new SQLException("Table '" + schema + "." + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
 
-        ByteBuffer buffer = c.allocate();
-        // write header
-        buffer = HEADER.write(buffer, c, true);
-        // write fields
+        ByteBuffer buffer = service.allocate();
+        // writeDirectly header
+        buffer = HEADER.write(buffer, service, true);
+        // writeDirectly fields
         for (FieldPacket field : FIELDS) {
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
-        // write eof
-        buffer = EOF.write(buffer, c, true);
-        // write rows
+        // writeDirectly eof
+        buffer = EOF.write(buffer, service, true);
+        // writeDirectly rows
         byte packetId = EOF.getPacketId();
-        RowDataPacket row = getRow(view, c.getCharset().getResults(), c.getCharset().getCollation());
+        RowDataPacket row = getRow(view, service.getCharset().getResults(), service.getCharset().getCollation());
         row.setPacketId(++packetId);
-        buffer = row.write(buffer, c, true);
-        // write last eof
-        EOFPacket lastEof = new EOFPacket();
+        buffer = row.write(buffer, service, true);
+        // writeDirectly last eof
+        EOFRowPacket lastEof = new EOFRowPacket();
         lastEof.setPacketId(++packetId);
-        buffer = lastEof.write(buffer, c, true);
-        // write buffer
-        c.write(buffer);
+        lastEof.write(buffer, service);
     }
 
     public static RowDataPacket getRow(ViewMeta view, String charset, String collationConnection) {

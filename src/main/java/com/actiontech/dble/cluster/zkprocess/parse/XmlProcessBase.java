@@ -188,7 +188,7 @@ public class XmlProcessBase {
 
             marshaller.marshal(obj, out);
 
-            //write out xml.dble.safe file finish
+            //writeDirectly out xml.dble.safe file finish
             // rename it into sharding.xml
             File fromFile = new File(inputPath + ".dble.safe");
             File toFile = new File(inputPath);

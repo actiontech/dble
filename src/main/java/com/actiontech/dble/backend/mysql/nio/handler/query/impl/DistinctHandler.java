@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -15,10 +15,12 @@ import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +56,7 @@ public class DistinctHandler extends BaseDMLHandler {
      * treat all the data from parent as Field Type
      */
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -74,13 +76,14 @@ public class DistinctHandler extends BaseDMLHandler {
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distinctCols);
         RowDataComparator comparator = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
-        String charSet = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
+        String charSet = service != null ? CharsetUtil.getJavaCharset(((MySQLResponseService) service).getCharset().getResults()) :
+                CharsetUtil.getJavaCharset(session.getSource().getService().getConnection().getCharsetName().getResults());
         localResult = new DistinctSortedLocalResult(pool, sourceFields.size(), comparator, charSet).
                 setMemSizeController(session.getOtherBufferMC());
-        nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, service);
     }
 
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return true;
         localResult.add(rowPacket);
@@ -88,20 +91,20 @@ public class DistinctHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;
-        sendDistinctRowPacket(conn);
+        sendDistinctRowPacket(service);
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(null, isLeft, conn);
+        nextHandler.rowEofResponse(null, isLeft, service);
     }
 
-    private void sendDistinctRowPacket(BackendConnection conn) {
+    private void sendDistinctRowPacket(AbstractService service) {
         localResult.done();
         RowDataPacket row = null;
         while ((row = localResult.next()) != null) {
-            nextHandler.rowResponse(null, row, this.isLeft, conn);
+            nextHandler.rowResponse(null, row, this.isLeft, service);
         }
     }
 

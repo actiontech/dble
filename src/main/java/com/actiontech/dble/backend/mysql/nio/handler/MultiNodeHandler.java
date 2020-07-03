@@ -5,11 +5,12 @@
  */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,6 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
     protected AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
-    protected volatile byte packetId;
     protected Set<RouteResultsetNode> unResponseRrns = new HashSet<>();
     protected int errorConnsCnt = 0;
     protected boolean firstResponsed = false;
@@ -82,12 +82,12 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
-    protected boolean[] decrementToZeroAndCheckNode(BackendConnection conn) {
+    protected boolean[] decrementToZeroAndCheckNode(MySQLResponseService service) {
         boolean zeroReached = false;
         boolean justRemoved;
         lock.lock();
         try {
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();
             justRemoved = unResponseRrns.remove(rNode);
             if (justRemoved) {
                 zeroReached = canResponse();
@@ -98,11 +98,11 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         return new boolean[]{zeroReached, justRemoved};
     }
 
-    protected boolean decrementToZero(BackendConnection conn) {
+    protected boolean decrementToZero(MySQLResponseService service) {
         boolean zeroReached;
         lock.lock();
         try {
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();
             unResponseRrns.remove(rNode);
             zeroReached = canResponse();
         } finally {
@@ -117,19 +117,18 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         unResponseRrns.clear();
         isFailed.set(false);
         error = null;
-        packetId = (byte) session.getPacketId().get();
     }
 
     protected ErrorPacket createErrPkg(String errMsg) {
         ErrorPacket err = new ErrorPacket();
         lock.lock();
         try {
-            err.setPacketId(++packetId);
+            err.setPacketId(session.getShardingService().nextPacketId());
         } finally {
             lock.unlock();
         }
         err.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
-        err.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+        err.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
         return err;
     }
 
@@ -158,23 +157,23 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     }
 
     private void clearSessionResources() {
-        if (session.getSource().isAutocommit()) {
+        if (session.getShardingService().isAutocommit()) {
             session.closeAndClearResources(error);
         } else {
-            session.getSource().setTxInterrupt(this.error);
+            session.getShardingService().setTxInterrupt(this.error);
             this.clearResources();
         }
     }
 
-    public void connectionClose(BackendConnection conn, String reason) {
-        this.setFail("closed connection:" + reason + " con:" + conn);
+    public void connectionClose(AbstractService service, String reason) {
+        this.setFail("closed connection:" + reason + " con:" + service.toString());
         if (error == null) {
             error = "back connection closed ";
         }
-        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+        RouteResultsetNode rNode = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
         session.getTargetMap().remove(rNode);
-        conn.setResponseHandler(null);
-        tryErrorFinished(decrementToZero(conn));
+        ((MySQLResponseService) service).setResponseHandler(null);
+        tryErrorFinished(decrementToZero((MySQLResponseService) service));
     }
 
     public void clearResources() {

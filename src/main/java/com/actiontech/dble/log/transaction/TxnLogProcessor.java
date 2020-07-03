@@ -7,7 +7,8 @@ package com.actiontech.dble.log.transaction;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,19 +75,19 @@ public class TxnLogProcessor extends Thread {
         store.write(buffer);
     }
 
-    public void putTxnLog(ServerConnection c, String sql) {
+    public void putTxnLog(ShardingService service, String sql) {
         TxnBinaryLog log = new TxnBinaryLog();
-        log.setUser(c.getUser());
-        log.setHost(c.getHost());
-        log.setSchema(c.getSchema());
+        log.setUser(service.getUser());
+        log.setHost(service.getConnection().getHost());
+        log.setSchema(service.getSchema());
         Date date = new Date();
         date.setTime(System.currentTimeMillis());
         log.setExecuteTime(dateFormat.format(date));
-        log.setConnId(c.getId());
-        if (c.isTxStart() || !c.isAutocommit()) {
-            log.setXid(c.getXid());
+        log.setConnId(service.getConnection().getId());
+        if (service.isTxStart() || !service.isAutocommit()) {
+            log.setXid(service.getXid());
         } else {
-            log.setXid(c.getAndIncrementXid());
+            log.setXid(service.getAndIncrementXid());
         }
         log.setQuery(sql);
         try {

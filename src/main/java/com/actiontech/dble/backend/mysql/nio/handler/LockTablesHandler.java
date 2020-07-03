@@ -6,16 +6,18 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +40,7 @@ public class LockTablesHandler extends MultiNodeHandler {
         super(session);
         this.rrs = rrs;
         unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
-        this.autocommit = session.getSource().isAutocommit();
+        this.autocommit = session.getShardingService().isAutocommit();
     }
 
     public void execute() throws Exception {
@@ -50,7 +52,7 @@ public class LockTablesHandler extends MultiNodeHandler {
             } else {
                 // create new connection
                 ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
-                dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), autocommit, node, this, node);
+                dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), autocommit, node, this, node);
             }
         }
     }
@@ -59,26 +61,27 @@ public class LockTablesHandler extends MultiNodeHandler {
         if (clearIfSessionClosed(session)) {
             return;
         }
-        conn.setResponseHandler(this);
-        conn.setSession(session);
-        conn.execute(node, session.getSource(), autocommit);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setSession(session);
+        conn.getBackendService().execute(node, session.getShardingService(), autocommit);
     }
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+        final RouteResultsetNode node = (RouteResultsetNode) conn.getBackendService().getAttachment();
         session.bindConnection(node, conn);
         innerExecute(conn, node);
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void errorResponse(byte[] err, AbstractService service) {
+        MySQLResponseService responseService = (MySQLResponseService) service;
+        boolean executeResponse = responseService.syncAndExecute();
         if (executeResponse) {
-            session.releaseConnectionIfSafe(conn, false);
+            session.releaseConnectionIfSafe(responseService, false);
         } else {
-            conn.closeWithoutRsp("unfinished sync");
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            responseService.getConnection().businessClose("unfinished sync");
+            RouteResultsetNode rNode = (RouteResultsetNode) responseService.getAttachment();
             session.getTargetMap().remove(rNode);
         }
         ErrorPacket errPacket = new ErrorPacket();
@@ -87,21 +90,21 @@ public class LockTablesHandler extends MultiNodeHandler {
         if (!isFail()) {
             setFail(errMsg);
         }
-        LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
-        this.tryErrorFinished(this.decrementToZero(conn));
+        LOGGER.info("error response from " + responseService + " err " + errMsg + " code:" + errPacket.getErrNo());
+        this.tryErrorFinished(this.decrementToZero(responseService));
     }
 
     @Override
-    public void okResponse(byte[] data, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void okResponse(byte[] data, AbstractService service) {
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             if (clearIfSessionClosed(session)) {
                 return;
             }
-            boolean isEndPack = decrementToZero(conn);
-            final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            boolean isEndPack = decrementToZero((MySQLResponseService) service);
+            final RouteResultsetNode node = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             if (node.getSqlType() == ServerParse.UNLOCK) {
-                session.releaseConnection(conn);
+                session.releaseConnection((BackendConnection) service.getConnection());
             }
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {
@@ -112,39 +115,37 @@ public class LockTablesHandler extends MultiNodeHandler {
                 ok.read(data);
                 lock.lock();
                 try {
-                    ok.setPacketId(++packetId);
-                    ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
+                    ok.setPacketId(session.getShardingService().nextPacketId());
+                    ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
                 } finally {
                     lock.unlock();
                 }
-                session.multiStatementPacket(ok, packetId);
-                boolean multiStatementFlag = session.getIsMultiStatement().get();
+                session.multiStatementPacket(ok);
                 ok.write(session.getSource());
-                session.multiStatementNextSql(multiStatementFlag);
             }
         }
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         LOGGER.info("unexpected packet for " +
-                conn + " bound by " + session.getSource() +
+                service + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         LOGGER.info("unexpected packet for " +
-                conn + " bound by " + session.getSource() +
+                service + " bound by " + session.getSource() +
                 ": row data packet");
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         LOGGER.info("unexpected packet for " +
-                conn + " bound by " + session.getSource() +
+                service + " bound by " + session.getSource() +
                 ": row's eof");
     }
 

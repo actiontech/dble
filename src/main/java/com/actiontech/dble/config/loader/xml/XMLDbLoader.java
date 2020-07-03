@@ -8,16 +8,15 @@ package com.actiontech.dble.config.loader.xml;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
-import com.actiontech.dble.backend.pool.PoolConfig;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
-import com.actiontech.dble.manager.handler.DbGroupHAHandler;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -35,10 +34,11 @@ import java.util.regex.Pattern;
 public class XMLDbLoader {
     private static final String DEFAULT_DTD = "/db.dtd";
     private static final String DEFAULT_XML = "/" + ConfigFileName.DB_XML;
+    public static final String DB_NAME_FORMAT = "a-zA-Z_0-9\\-\\.";
     private final Map<String, DbGroupConfig> dbGroupConfigs;
     private ProblemReporter problemReporter;
     private final Map<String, PhysicalDbGroup> dbGroups;
-    private static final Pattern PATTERN_DB = Pattern.compile("([" + DbGroupHAHandler.DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
 
     public XMLDbLoader(String dbFile, ProblemReporter problemReporter) {
         this.dbGroupConfigs = new HashMap<>();
@@ -108,7 +108,7 @@ public class XMLDbLoader {
             String name = element.getAttribute("name");
             Matcher nameMatcher = PATTERN_DB.matcher(name);
             if (!nameMatcher.matches()) {
-                throw new ConfigException("dbGroup name " + name + " show be use " + DbGroupHAHandler.DB_NAME_FORMAT + "!");
+                throw new ConfigException("dbGroup name " + name + " show be use " + DB_NAME_FORMAT + "!");
             }
             if (dbGroupConfigs.containsKey(name)) {
                 throw new ConfigException("dbGroup name " + name + " duplicated!");
@@ -175,7 +175,7 @@ public class XMLDbLoader {
         String password = node.getAttribute("password");
         Matcher nameMatcher = PATTERN_DB.matcher(name);
         if (!nameMatcher.matches()) {
-            throw new ConfigException("dbInstance name " + name + " show be use " + DbGroupHAHandler.DB_NAME_FORMAT + "!");
+            throw new ConfigException("dbInstance name " + name + " show be use " + DB_NAME_FORMAT + "!");
         }
         if (StringUtil.isEmpty(name) || StringUtil.isEmpty(nodeUrl) || StringUtil.isEmpty(user)) {
             throw new ConfigException(
@@ -243,7 +243,7 @@ public class XMLDbLoader {
     }
 
     private PhysicalDbGroup getPhysicalDBPoolSingleWH(DbGroupConfig conf) {
-        //create PhysicalDbInstance for write host
+        //create PhysicalDbInstance for writeDirectly host
         PhysicalDbInstance writeSource = createDbInstance(conf, conf.getWriteInstanceConfig(), false);
         PhysicalDbInstance[] readSources = new PhysicalDbInstance[conf.getReadInstanceConfigs().length];
         int i = 0;

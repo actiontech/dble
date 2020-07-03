@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.net.service.AbstractService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +35,11 @@ public class LimitHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("row eof");
         if (!terminate.get()) {
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(data, this.isLeft, conn);
+            nextHandler.rowEofResponse(data, this.isLeft, service);
         }
     }
 
@@ -50,13 +50,13 @@ public class LimitHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
-        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get()) {
             return true;
         }
@@ -64,7 +64,7 @@ public class LimitHandler extends BaseDMLHandler {
         if (curIndexTmp < limitIndex) {
             return false;
         } else if (curIndexTmp < limitIndex + limitCount) {
-            nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
+            nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
         } else {
             return true;
         }

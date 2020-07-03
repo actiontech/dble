@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.BindValueUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 
+import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 
 /**
@@ -65,12 +66,6 @@ import java.io.UnsupportedEncodingException;
  */
 public class ExecutePacket extends MySQLPacket {
 
-    private byte code;
-    private long statementId;
-    private byte flags;
-    private long iterationCount;
-    private byte[] nullBitMap;
-    private byte newParameterBoundFlag;
     private BindValue[] values;
     private PreparedStatement preStmt;
 
@@ -79,14 +74,14 @@ public class ExecutePacket extends MySQLPacket {
         this.values = new BindValue[preStmt.getParametersNumber()];
     }
 
-    public void read(byte[] data, String charset) throws UnsupportedEncodingException {
+    public void read(byte[] data, CharsetNames charset) throws UnsupportedEncodingException {
         MySQLMessage mm = new MySQLMessage(data);
         packetLength = mm.readUB3();
         packetId = mm.read();
-        code = mm.read();
-        statementId = mm.readUB4();
-        flags = mm.read();
-        iterationCount = mm.readUB4();
+        mm.read(); //[17] COM_STMT_EXECUTE
+        mm.readUB4(); //stmt-id
+        mm.read(); // flags
+        mm.readUB4(); //iteration-count
 
         int parameterCount = values.length;
         if (parameterCount <= 0) {
@@ -94,13 +89,13 @@ public class ExecutePacket extends MySQLPacket {
         }
 
         // read nullBitMap
-        nullBitMap = new byte[(parameterCount + 7) / 8];
+        byte[] nullBitMap = new byte[(parameterCount + 7) / 8];
         for (int i = 0; i < nullBitMap.length; i++) {
             nullBitMap[i] = mm.read();
         }
 
         // when newParameterBoundFlag==1,update Parameter type
-        newParameterBoundFlag = mm.read();
+        byte newParameterBoundFlag = mm.read();
         if (newParameterBoundFlag == (byte) 1) {
             for (int i = 0; i < parameterCount; i++) {
                 preStmt.getParametersType()[i] = mm.readUB2();
@@ -108,16 +103,22 @@ public class ExecutePacket extends MySQLPacket {
         }
 
         // set Parameter Type and read value
-        byte[] bitMap = this.nullBitMap;
         for (int i = 0; i < parameterCount; i++) {
             BindValue bv = new BindValue();
             bv.setType(preStmt.getParametersType()[i]);
-            if ((bitMap[i / 8] & (1 << (i & 7))) != 0) {
+            if ((nullBitMap[i / 8] & (1 << (i & 7))) != 0) {
                 bv.setNull(true);
             } else {
-                BindValueUtil.read(mm, bv, charset);
-                if (bv.isLongData()) {
-                    bv.setValue(preStmt.getLongData(i));
+                if (preStmt.getLongDataMap().size() > 0) {
+                    ByteArrayOutputStream longData = preStmt.getLongData(i);
+                    if (longData != null) {
+                        // in fact need check type >= MYSQL_TYPE_TINY_BLOB) && type <= MYSQL_TYPE_STRING)
+                        bv.setValue(preStmt.getLongData(i));
+                    } else {
+                        BindValueUtil.read(mm, bv, charset);
+                    }
+                } else {
+                    BindValueUtil.read(mm, bv, charset);
                 }
             }
             values[i] = bv;
@@ -135,68 +136,10 @@ public class ExecutePacket extends MySQLPacket {
         return "MySQL Execute Packet";
     }
 
-    public byte getCode() {
-        return code;
-    }
 
-    public void setCode(byte code) {
-        this.code = code;
-    }
-
-    public long getStatementId() {
-        return statementId;
-    }
-
-    public void setStatementId(long statementId) {
-        this.statementId = statementId;
-    }
-
-    public byte getFlags() {
-        return flags;
-    }
-
-    public void setFlags(byte flags) {
-        this.flags = flags;
-    }
-
-    public long getIterationCount() {
-        return iterationCount;
-    }
-
-    public void setIterationCount(long iterationCount) {
-        this.iterationCount = iterationCount;
-    }
-
-    public byte[] getNullBitMap() {
-        return nullBitMap;
-    }
-
-    public void setNullBitMap(byte[] nullBitMap) {
-        this.nullBitMap = nullBitMap;
-    }
-
-    public byte getNewParameterBoundFlag() {
-        return newParameterBoundFlag;
-    }
-
-    public void setNewParameterBoundFlag(byte newParameterBoundFlag) {
-        this.newParameterBoundFlag = newParameterBoundFlag;
-    }
 
     public BindValue[] getValues() {
         return values;
-    }
-
-    public void setValues(BindValue[] values) {
-        this.values = values;
-    }
-
-    public PreparedStatement getPreStmt() {
-        return preStmt;
-    }
-
-    public void setPreStmt(PreparedStatement preStmt) {
-        this.preStmt = preStmt;
     }
 
 }

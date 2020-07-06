@@ -73,7 +73,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             SQLObject ob = subQuery.getParent();
             for (; ; ob = ob.getParent()) {
                 if (ob != null) {
-                    if (ob instanceof SQLQueryExpr || ob instanceof SQLBinaryOpExpr) {
+                    if (ob instanceof SQLQueryExpr || ob instanceof SQLBinaryOpExpr || ob instanceof SQLInSubQueryExpr) {
                         continue;
                     } else if (ob instanceof MySqlUpdateStatement) {
                         firstClassSubQueryList.add(subQuery);

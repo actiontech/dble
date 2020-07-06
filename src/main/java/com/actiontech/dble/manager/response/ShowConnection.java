@@ -196,7 +196,7 @@ public final class ShowConnection {
         c.write(buffer);
     }
 
-    static void getWhereCondition(SQLExpr whereExpr, Map<String, String> whereInfo) {
+    public static void getWhereCondition(SQLExpr whereExpr, Map<String, String> whereInfo) {
         if (whereExpr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
             if (tmp.getLeft() instanceof SQLBinaryOpExpr) {

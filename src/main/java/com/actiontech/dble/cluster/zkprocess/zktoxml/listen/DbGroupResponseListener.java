@@ -53,6 +53,7 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
             value = ClusterHelper.getPathValue(childData.getPath());
         }
+
         try {
             ClusterLogic.dbGroupResponseEvent(value, dbGroupName);
         } catch (Exception e) {

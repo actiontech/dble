@@ -1,15 +1,11 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.DB_GROUP_STATUS;
 
@@ -38,9 +34,6 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
         String dbGroupName = paths[paths.length - 1];
         LOGGER.info("notify " + path + " " + value + " " + configValue.getChangeType());
         if (path.contains(DB_GROUP_STATUS)) {
-            while (ClusterHelper.getChildrenSize(ClusterPathUtil.getConfStatusPath()) != 0) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
-            }
             ClusterLogic.dbGroupChangeEvent(dbGroupName, value);
         } else {
             ClusterLogic.dbGroupResponseEvent(value, dbGroupName);

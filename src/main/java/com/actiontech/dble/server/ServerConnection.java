@@ -25,6 +25,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.server.handler.FieldListHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.SetInnerHandler;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -77,6 +78,7 @@ public class ServerConnection extends FrontendConnection {
 
     private FrontendPrepareHandler prepareHandler;
     private LoadDataInfileHandler loadDataInfileHandler;
+    private FieldListHandler fieldListHandler;
     private boolean sessionReadOnly = false;
     private volatile boolean multiStatementAllow = false;
     private ServerUserConfig userConfig;
@@ -215,6 +217,11 @@ public class ServerConnection extends FrontendConnection {
     public void setPrepareHandler(FrontendPrepareHandler prepareHandler) {
         this.prepareHandler = prepareHandler;
     }
+
+    public void setFieldListHandler(FieldListHandler fieldListHandler) {
+        this.fieldListHandler = fieldListHandler;
+    }
+
 
     public void setSessionReadOnly(boolean sessionReadOnly) {
         this.sessionReadOnly = sessionReadOnly;
@@ -650,6 +657,18 @@ public class ServerConnection extends FrontendConnection {
         writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
     }
 
+    public void fieldList(byte[] data) {
+        String sql = null;
+        try {
+            MySQLMessage mm = new MySQLMessage(data);
+            mm.position(5);
+            sql = mm.readString(charsetName.getClient());
+        } catch (UnsupportedEncodingException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
+            return;
+        }
+        fieldListHandler.handle(sql, this);
+    }
 
     private void executeException(Exception e, String sql) {
         if (e instanceof SQLException) {

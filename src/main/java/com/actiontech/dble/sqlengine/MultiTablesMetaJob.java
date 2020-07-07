@@ -83,9 +83,9 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        logger.info("connectionAcquired on connection " + conn);
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
+        logger.info("connectionAcquired on connection " + conn);
         try {
             conn.query(sql, true);
             connection = conn;

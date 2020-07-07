@@ -17,6 +17,7 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 
 import static com.actiontech.dble.route.parser.ManagerParseShow.PATTERN_FOR_TABLE_INFO;
@@ -39,13 +40,21 @@ public final class KillDdlLock {
         }
         String schema = StringUtil.removeAllApostrophe(matcher.group(1));
         String table = StringUtil.removeAllApostrophe(matcher.group(5));
-        // release distributed lock
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            String fullName = StringUtil.getUFullName(schema, table);
-            ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(fullName));
-            DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(fullName));
+
+        boolean isRemoved;
+        final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
+        metaLock.lock();
+        try {
+            isRemoved = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            // release distributed lock
+            if (ClusterConfig.getInstance().isClusterEnable()) {
+                String fullName = StringUtil.getUFullName(schema, table);
+                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(fullName));
+                DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(fullName));
+            }
+        } finally {
+            metaLock.unlock();
         }
-        boolean isRemoved = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
         OkPacket packet = new OkPacket();
         packet.setPacketId(1);
         packet.setAffectedRows(0);

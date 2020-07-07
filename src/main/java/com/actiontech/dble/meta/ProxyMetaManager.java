@@ -103,13 +103,13 @@ public class ProxyMetaManager {
     }
 
     public String metaCountCheck() {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         metaLock.lock();
         try {
             if (metaCount.get() != 0) {
                 result.append("There is other session is doing DDL\n");
                 for (String x : lockTables.values()) {
-                    result.append(x + "\n");
+                    result.append(x).append("\n");
                 }
                 result.setLength(result.length() - 1);
             }
@@ -136,6 +136,16 @@ public class ProxyMetaManager {
                 version.incrementAndGet();
                 lockTables.put(lockKey, sql);
             }
+        } finally {
+            metaLock.unlock();
+        }
+    }
+
+    private boolean isOnMetaLock(String schema, String tbName) throws SQLNonTransientException {
+        metaLock.lock();
+        try {
+            String lockKey = genLockKey(schema, tbName);
+            return lockTables.containsKey(lockKey);
         } finally {
             metaLock.unlock();
         }
@@ -548,16 +558,29 @@ public class ProxyMetaManager {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             String tableFullName = StringUtil.getUFullName(schema, table);
             String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
+            metaLock.lock();
+            boolean isLock = true;
             try {
-                ClusterDelayProvider.delayBeforeDdlNotice();
-                DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
-                ClusterHelper.setKV(tableDDLPath, ddlInfo.toString());
-                ClusterDelayProvider.delayAfterDdlNotice();
-                String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, tableDDLPath);
-                if (errorMsg != null) {
-                    throw new RuntimeException(errorMsg);
+                if (isOnMetaLock(schema, table)) {
+                    ClusterDelayProvider.delayBeforeDdlNotice();
+                    DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
+                    ClusterHelper.setKV(tableDDLPath, ddlInfo.toString());
+                    ClusterDelayProvider.delayAfterDdlNotice();
+                    ClusterHelper.createSelfTempNode(tableDDLPath, ClusterPathUtil.SUCCESS);
+                    metaLock.unlock();
+                    isLock = false;
+                    String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.SUCCESS, tableDDLPath);
+                    if (errorMsg != null) {
+                        throw new RuntimeException(errorMsg);
+                    }
+                } else {
+                    metaLock.unlock();
+                    isLock = false;
                 }
             } finally {
+                if (isLock) {
+                    metaLock.unlock();
+                }
                 ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
                 ClusterHelper.cleanPath(tableDDLPath);
                 //release the lock

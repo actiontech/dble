@@ -112,7 +112,8 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
             //step 5 start a loop to check if all the dble in cluster is reload finished
             ReloadManager.waitingOthers();
-            final String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusOperatorPath());
+            ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
+            final String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
             ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
 

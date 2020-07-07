@@ -112,7 +112,8 @@ public final class DbGroupHaDisable {
             //change log stage into wait others
             HaConfigManager.getInstance().haWaitingOthers(id);
             //waiting for other dble to response
-            String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getHaResponsePath(dh.getGroupName()));
+            ClusterHelper.createSelfTempNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), ClusterPathUtil.SUCCESS);
+            String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), ClusterPathUtil.SUCCESS);
             //set  log stage to finish
             HaConfigManager.getInstance().haFinish(id, errorMsg, result);
             if (errorMsg != null) {

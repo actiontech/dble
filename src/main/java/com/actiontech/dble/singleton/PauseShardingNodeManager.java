@@ -245,7 +245,9 @@ public final class PauseShardingNodeManager {
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
 
             LOGGER.info("try to resume cluster and waiting for others to response");
-            ClusterLogic.writeAndWaitingForAllTheNode("", ClusterPathUtil.getPauseResumePath());
+
+            ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(), "");
+            ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getPauseResumePath(), "");
 
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());

@@ -9,7 +9,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import sun.util.calendar.CalendarUtils;
 
-import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -33,9 +32,8 @@ public final class DateUtil {
      *
      * @param dateStr
      * @return
-     * @throws ParseException
      */
-    public static Date parseDate(String dateStr) throws ParseException {
+    public static Date parseDate(String dateStr) {
         return parseDate(dateStr, DEFAULT_DATE_PATTERN);
     }
 
@@ -45,9 +43,8 @@ public final class DateUtil {
      * @param dateStr
      * @param datePattern
      * @return
-     * @throws ParseException
      */
-    public static Date parseDate(String dateStr, String datePattern) throws ParseException {
+    public static Date parseDate(String dateStr, String datePattern) {
         DateTime dt = DateTimeFormat.forPattern(datePattern).parseDateTime(dateStr);
         return dt.toDate();
     }

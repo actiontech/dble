@@ -413,8 +413,13 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 BaseTableConfig tConfig = tSchema.getTables().get(tName);
                 if (tConfig.getShardingNodes().size() == 1) {
                     dataNode = tConfig.getShardingNodes().get(0);
+                    globalNodeSet.add(dataNode);
                 }
             }
+        }
+
+        if (globalNodeSet.size() > 1) {
+            throw new SQLNonTransientException(getErrorMsg());
         }
 
         for (Pair<String, String> table : tablesSet) {

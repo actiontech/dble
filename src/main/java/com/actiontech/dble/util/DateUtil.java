@@ -33,9 +33,8 @@ public final class DateUtil {
      *
      * @param dateStr
      * @return
-     * @throws ParseException
      */
-    public static Date parseDate(String dateStr) throws ParseException {
+    public static Date parseDate(String dateStr) {
         return parseDate(dateStr, DEFAULT_DATE_PATTERN);
     }
 
@@ -45,9 +44,8 @@ public final class DateUtil {
      * @param dateStr
      * @param datePattern
      * @return
-     * @throws ParseException
      */
-    public static Date parseDate(String dateStr, String datePattern) throws ParseException {
+    public static Date parseDate(String dateStr, String datePattern) {
         DateTime dt = DateTimeFormat.forPattern(datePattern).parseDateTime(dateStr);
         return dt.toDate();
     }

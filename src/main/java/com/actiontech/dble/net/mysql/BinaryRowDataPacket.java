@@ -177,8 +177,6 @@ public class BinaryRowDataPacket extends MySQLPacket {
                 } catch (org.joda.time.IllegalFieldValueException e1) {
                     // when time is 0000-00-00 00:00:00 , return 1970-01-01 08:00:00.0
                     this.fieldValues.add(ByteUtil.getBytes(new Date(0L), false));
-                } catch (ParseException e) {
-                    LOGGER.info("error", e);
                 }
                 break;
             case Fields.FIELD_TYPE_DATETIME:
@@ -196,9 +194,6 @@ public class BinaryRowDataPacket extends MySQLPacket {
                 } catch (org.joda.time.IllegalFieldValueException e1) {
                     // when time is 0000-00-00 00:00:00 , return 1970-01-01 08:00:00.0
                     this.fieldValues.add(ByteUtil.getBytes(new Date(0L), false));
-
-                } catch (ParseException e) {
-                    LOGGER.info("error", e);
                 }
                 break;
             case Fields.FIELD_TYPE_TIME:
@@ -212,13 +207,9 @@ public class BinaryRowDataPacket extends MySQLPacket {
                         timeVar = DateUtil.parseDate(timeStr, DateUtil.DEFAULT_TIME_PATTERN);
                         this.fieldValues.add(ByteUtil.getBytes(timeVar, true));
                     }
-
                 } catch (org.joda.time.IllegalFieldValueException e1) {
                     //when time is 0000-00-00 00:00:00,return 1970-01-01 08:00:00.0
                     this.fieldValues.add(ByteUtil.getBytes(new Date(0L), true));
-
-                } catch (ParseException e) {
-                    LOGGER.info("error", e);
                 }
                 break;
             default:

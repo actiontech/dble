@@ -56,6 +56,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             boolean isAllGlobal = true;
             for (SchemaInfo schemaInfo : schemaInfos) {
                 BaseTableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 if (tc == null || !(tc instanceof GlobalTableConfig)) {
                     isAllGlobal = false;
                     break;

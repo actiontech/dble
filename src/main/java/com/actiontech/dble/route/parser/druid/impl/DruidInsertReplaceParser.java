@@ -40,6 +40,7 @@ import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
 abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
+    static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `INSERT ... SELECT Syntax` is not supported!";
 
     /**
      * The insert/replace .... select route function interface
@@ -196,5 +197,10 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
                 }
             }
         });
+    }
+
+    @Override
+    String getErrorMsg() {
+        return MODIFY_SQL_NOT_SUPPORT_MESSAGE;
     }
 }

@@ -296,6 +296,11 @@ public class DruidUpdateParser extends DruidModifyParser {
     }
 
     @Override
+    String getErrorMsg() {
+        return MODIFY_SQL_NOT_SUPPORT_MESSAGE;
+    }
+
+    @Override
     SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
         stmt.accept(visitor);
         return (SQLSelect) stmt;

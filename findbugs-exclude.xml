@@ -133,7 +133,6 @@
         <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
     </Match>
     <Match>
-        <Bug category="Multithreaded correctness"/>
         <Class name="com.actiontech.dble.meta.ProxyMetaManager"/>
         <Method name="notifyResponseClusterDDL"/>
         <Bug pattern="UL_UNRELEASED_LOCK_EXCEPTION_PATH"/>

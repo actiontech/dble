@@ -9,7 +9,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import sun.util.calendar.CalendarUtils;
 
-import java.text.ParseException;
 import java.util.Calendar;
 import java.util.Date;
 

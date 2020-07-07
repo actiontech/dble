@@ -835,8 +835,7 @@ public final class ClusterLogic {
         }
     }
 
-    public static String writeAndWaitingForAllTheNode(String checkString, String path) throws Exception {
-        ClusterHelper.createSelfTempNode(path, checkString);
+    public static String waitingForAllTheNode(String path, String checkString) throws Exception {
         Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
         StringBuffer errorMsg = new StringBuffer();
         for (; ; ) {

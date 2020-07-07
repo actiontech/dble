@@ -96,7 +96,9 @@ public class KVStoreRepository implements Repository {
             ClusterDelayProvider.delayAfterViewSetKey();
             ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
             ClusterDelayProvider.delayAfterViewNotic();
-            String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, viewChangePath);
+
+            ClusterHelper.createSelfTempNode(viewChangePath, ClusterPathUtil.SUCCESS);
+            String errorMsg = ClusterLogic.waitingForAllTheNode(viewChangePath, ClusterPathUtil.SUCCESS);
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);
@@ -137,7 +139,8 @@ public class KVStoreRepository implements Repository {
             ClusterDelayProvider.delayAfterViewSetKey();
             ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
             ClusterDelayProvider.delayAfterViewNotic();
-            String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, viewChangePath);
+            ClusterHelper.createSelfTempNode(viewChangePath, ClusterPathUtil.SUCCESS);
+            String errorMsg = ClusterLogic.waitingForAllTheNode(viewChangePath, ClusterPathUtil.SUCCESS);
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);

@@ -80,7 +80,8 @@ public final class RollbackConfig {
             //step 3 tail the ucore & notify the other dble
             ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
             ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
-            String errorMsg = ClusterLogic.writeAndWaitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusOperatorPath());
+            ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
+            String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
 
             ClusterDelayProvider.delayBeforeDeleterollbackLock();
 

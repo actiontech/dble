@@ -69,6 +69,15 @@ public class SelectInformationSchemaColumnsHandler {
     }
 
     public void handle(ServerConnection c, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                sqlhandle(c, mySqlSelectQueryBlock);
+            }
+        });
+    }
+
+    public void sqlhandle(ServerConnection c, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
         SQLExpr whereExpr = mySqlSelectQueryBlock.getWhere();
 
         Map<String, String> whereInfo = new HashMap<>();
@@ -241,10 +250,6 @@ public class SelectInformationSchemaColumnsHandler {
 
     public List<Map<String, String>> getResult() {
         return this.result;
-    }
-
-    public boolean isSuccess() {
-        return success;
     }
 
     class SelectInformationSchemaColumnsListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {

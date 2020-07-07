@@ -124,4 +124,9 @@ public class DruidDeleteParser extends DruidModifyParser {
     int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException {
         return 0;
     }
+
+    @Override
+    String getErrorMsg() {
+        return MODIFY_SQL_NOT_SUPPORT_MESSAGE;
+    }
 }

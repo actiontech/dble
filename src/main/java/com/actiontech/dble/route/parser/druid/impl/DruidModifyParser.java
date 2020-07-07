@@ -37,14 +37,11 @@ import java.util.*;
  */
 abstract class DruidModifyParser extends DefaultDruidParser {
 
-    static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `INSERT ... SELECT Syntax` is not supported!";
-
 
     abstract SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor);
 
     /**
      * get sharding-column insert/replace index from sql object
-     *
      */
     abstract int tryGetShardingColIndex(SchemaUtil.SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException;
 
@@ -66,7 +63,6 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + child table -- has ER relation connection to a exists sharding table
      * + global table -- dataNodes cover
      * + single node table -- dataNodes cover
-     *
      */
     private void checkForEachTableInSQL(Map<String, List<String>> notShardingTableMap, ArrayList<String> partNodeList, Pair<String, String> tn,
                                         RouteTableConfigInfo dataSourceTc, Set<TableStat.Relationship> relationships, Map<String, String> tableAliasMap) throws SQLException {
@@ -81,7 +77,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 if (checkConfig instanceof ShardingTableConfig && isSameSharding((ShardingTableConfig) tConfig, (ShardingTableConfig) checkConfig)) {
                     checkForShardingRelationship(relationships, tableAliasMap, dataSourceTc.getAlias() == null ? checkConfig.getName() : dataSourceTc.getAlias(), ((ShardingTableConfig) checkConfig).getShardingColumn(), (ShardingTableConfig) tConfig);
                 } else {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof GlobalTableConfig) {
                 checkForGlobalRelationship(notShardingTableMap, (GlobalTableConfig) tConfig, partNodeList);
@@ -100,7 +96,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     private void checkForGlobalRelationship(Map<String, List<String>> notShardingTableMap, GlobalTableConfig tConfig, ArrayList<String> partNodeList) throws SQLException {
         notShardingTableMap.put(tConfig.getName(), tConfig.getShardingNodes());
         if (!tConfig.getShardingNodes().containsAll(partNodeList)) {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
     }
 
@@ -109,7 +105,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         list.add(dataNode);
         notShardingTableMap.put(tableName, list);
         if (partNodeList.size() > 1 || !partNodeList.contains(dataNode)) {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
     }
 
@@ -123,7 +119,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         }
 
         if (!findRelationship(relationships, sourceColumn, rsColumnList)) {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
     }
 
@@ -172,17 +168,16 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 }
             }
             if (!hasFindRelation) {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
         } else {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
     }
 
     /**
      * check the condition in signle Route Unit
      * check the each table has the relation to connection to data-from table
-     *
      */
     private void checkForShardingSingleRouteUnit(Map<String, List<String>> notShardingTableMap, RouteCalculateUnit routeUnit, RouteTableConfigInfo dataSourceTc,
                                                  ServerSchemaStatVisitor visitor, Map<String, String> tableAliasMap, Set<String> allNodeSet, SchemaConfig schema,
@@ -198,12 +193,12 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     if (tn.equals(key)) {
                         continue;
                     } else if (CollectionUtil.containDuplicate(visitor.getSelectTableList(), dataSourceTc.getTableConfig().getName())) {
-                        throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                        throw new SQLNonTransientException(getErrorMsg());
                     }
                     checkForEachTableInSQL(notShardingTableMap, partNodeList, tn, dataSourceTc, visitor.getRelationships(), tableAliasMap);
                 }
             } else {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
         }
     }
@@ -211,7 +206,6 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     /**
      * check if the insert into a sharding-table and put a constant value in sharding-column
      * the scene change to route to single node
-     *
      */
     private Collection<String> checkShardingKeyConstant(RouteTableConfigInfo dataSourceTc, RouteResultset rrs, ServerSchemaStatVisitor visitor,
                                                         String tableName, ShardingTableConfig tc, SchemaConfig schema) throws SQLException {
@@ -220,12 +214,12 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, singleRouteUnit, tc.getName(), rrs, true);
         if (rrsTmp != null && rrsTmp.getNodes() != null) {
             if (rrsTmp.getNodes().length > 1) {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
             checkForSingleNodeTable(visitor, rrsTmp.getNodes()[0].getName(), rrs);
             return ImmutableList.of(rrsTmp.getNodes()[0].getName());
         } else {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
     }
 
@@ -234,10 +228,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * The following conditions must be met
      * + the sharding-column data must come from a same-rule-sharding table
      * + the select can be ER route to all the dataNodes
-     *
      */
     Collection<String> checkForShardingTable(ServerSchemaStatVisitor visitor, SQLSelect select, ServerConnection sc, RouteResultset rrs,
-                                                       ShardingTableConfig tc, SchemaUtil.SchemaInfo schemaInfo, SQLStatement stmt, SchemaConfig schema) throws SQLException {
+                                             ShardingTableConfig tc, SchemaUtil.SchemaInfo schemaInfo, SQLStatement stmt, SchemaConfig schema) throws SQLException {
         //the insert table is a sharding table
         String tableName = schemaInfo.getTable();
         String schemaName = schema == null ? null : schema.getName();
@@ -253,7 +246,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         try {
             RouteTableConfigInfo dataSourceTc = node.findFieldSourceFromIndex(index);
             if (dataSourceTc == null) {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             } else if (dataSourceTc.getTableConfig() == null) {
                 return checkShardingKeyConstant(dataSourceTc, rrs, visitor, tableName, tc, schema);
             } else if (dataSourceTc.getTableConfig() instanceof ShardingTableConfig && isSameSharding(tc, (ShardingTableConfig) (dataSourceTc.getTableConfig()))) {
@@ -269,7 +262,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
 
                 for (Map.Entry<String, List<String>> entry : notShardingTableMap.entrySet()) {
                     if (!entry.getValue().containsAll(allNodeSet)) {
-                        throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                        throw new SQLNonTransientException(getErrorMsg());
                     }
                 }
                 return allNodeSet;
@@ -277,7 +270,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 throw new Exception("not support");
             }
         } catch (Exception e) {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
     }
 
@@ -287,7 +280,6 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * the conditions below must be met
      * + all the table must be mulit-node global(different node has the same data)
      * + all the dataNodes has all the table involved
-     *
      */
     Collection<String> checkForMultiNodeGlobal(ServerSchemaStatVisitor visitor, GlobalTableConfig tc, SchemaConfig schema) throws SQLNonTransientException {
         //multi-Node global table
@@ -296,10 +288,10 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             BaseTableConfig stc = schema.getTables().get(sTable);
             if (stc != null && stc instanceof GlobalTableConfig) {
                 if (!stc.getShardingNodes().containsAll(mustContainList)) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
         }
         //route to all the dataNode the tc contain
@@ -317,7 +309,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 mustContainList.addAll(tc.getShardingNodes());
             } else if (tc.getShardingNodes().size() != mustContainList.size() ||
                     !mustContainList.containsAll(tc.getShardingNodes())) {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
         }
         //route to all the dataNode the tc contain
@@ -331,7 +323,6 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * the check list below is:
      * + sharding table has condition to route to the dataNode
      * + nosharding/global table exists in that dataNode
-     *
      */
     void checkForSingleNodeTable(ServerSchemaStatVisitor visitor, String dataNode, RouteResultset rrs) throws SQLNonTransientException {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
@@ -351,10 +342,10 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                             Set<String> tmpResultNodes = new HashSet<>();
                             tmpResultNodes.add(dataNode);
                             if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, tmpResultNodes, tablesSet, entry, table, tConfig)) {
-                                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                                throw new SQLNonTransientException(getErrorMsg());
                             }
                         } else {
-                            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                            throw new SQLNonTransientException(getErrorMsg());
                         }
                     }
 
@@ -369,18 +360,18 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
                 if (!tSchema.getShardingNode().equals(dataNode)) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if ((tConfig instanceof SingleTableConfig)) {
                 if (!tConfig.getShardingNodes().get(0).equals(dataNode)) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof GlobalTableConfig) {
                 if (!tConfig.getShardingNodes().contains(dataNode)) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
         }
     }
@@ -401,7 +392,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     BaseTableConfig tConfig = tSchema.getTables().get(tName);
                     if (tConfig != null && tConfig instanceof ShardingTableConfig) {
                         if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, globalNodeSet, tablesSet, entry, table, tConfig)) {
-                            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                            throw new SQLNonTransientException(getErrorMsg());
                         }
                     }
 
@@ -433,16 +424,16 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
                 if (!tSchema.getShardingNode().equals(dataNode)) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof SingleTableConfig) {
                 if (!tConfig.getShardingNodes().get(0).equals(dataNode)) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                    throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof GlobalTableConfig) {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             } else {
-                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+                throw new SQLNonTransientException(getErrorMsg());
             }
         }
         return globalNodeSet;
@@ -535,7 +526,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         } else if (tc instanceof GlobalTableConfig) {
             routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
         } else {
-            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+            throw new SQLNonTransientException(getErrorMsg());
         }
 
         RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
@@ -556,4 +547,6 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         }
         return true;
     }
+
+    abstract String getErrorMsg();
 }

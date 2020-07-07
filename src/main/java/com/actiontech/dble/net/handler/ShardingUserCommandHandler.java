@@ -116,6 +116,7 @@ public class ShardingUserCommandHandler extends FrontendCommandHandler {
                 sc.resetConnection();
                 break;
             case MySQLPacket.COM_FIELD_LIST:
+                commands.doOther();
                 sc.fieldList(data);
                 break;
             default:

@@ -52,6 +52,7 @@ public final class FieldListHandler {
         FieldPacket[] fields = new FieldPacket[columns.size()];
 
         for (int i = 0; i < columns.size(); i++) {
+            // for compatibility with OGG, column type only contains string or long; so, in other cases may not correct
             fields[i] = PacketUtil.getField(columns.get(i).getName(), columns.get(i).getDataType().contains("char") ? Fields.FIELD_TYPE_VAR_STRING : Fields.FIELD_TYPE_LONG);
         }
         doWrite(c, fields);

@@ -110,8 +110,8 @@ public final class CheckFullMetaData {
                     if (ma.group(9) != null) {
                         String table = StringUtil.removeAllApostrophe(ma.group(10));
                         if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
-                                ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema) == null &&
-                                ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
+                                (ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema) == null ||
+                                ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null)) {
                             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] doesn't exist");
                             return;
                         }

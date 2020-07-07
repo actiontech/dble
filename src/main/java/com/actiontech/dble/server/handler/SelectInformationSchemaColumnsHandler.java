@@ -1,61 +1,101 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.manager.response.ShowConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.sqlengine.*;
-import com.actiontech.dble.util.IntegerUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public final class SelectInformationSchemaColumnsHandler {
+public class SelectInformationSchemaColumnsHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelectInformationSchemaColumnsHandler.class);
 
-    private static final String TABLE_SCHEMA = "TABLE_SCHEMA";
-    private static final String TABLE_NAME = "TABLE_NAME";
+    private static final String[] INFORMATION_SCHEMACOLUMNS_COLS = new String[]{
+            "TABLE_CATALOG",
+            "TABLE_SCHEMA",
+            "TABLE_NAME",
+            "COLUMN_NAME",
+            "ORDINAL_POSITION",
+            "COLUMN_DEFAULT",
+            "IS_NULLABLE",
+            "DATA_TYPE",
+            "CHARACTER_MAXIMUM_LENGTH",
+            "CHARACTER_OCTET_LENGTH",
+            "NUMERIC_PRECISION",
+            "NUMERIC_SCALE",
+            "DATETIME_PRECISION",
+            "CHARACTER_SET_NAME",
+            "COLLATION_NAME",
+            "COLUMN_TYPE",
+            "COLUMN_KEY",
+            "EXTRA",
+            "PRIVILEGES",
+            "COLUMN_COMMENT",
+            "GENERATION_EXPRESSION"};
 
-    private SelectInformationSchemaColumnsHandler() {
+    private List<Map<String, String>> result;
+    private Lock lock;
+    private Condition done;
+    private boolean finished = false;
+    private boolean success = false;
+
+    public SelectInformationSchemaColumnsHandler() {
+        this.lock = new ReentrantLock();
+        this.done = lock.newCondition();
     }
 
-    public static void handle(ServerConnection c, FieldPacket[] fields, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void handle(ServerConnection c, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
         SQLExpr whereExpr = mySqlSelectQueryBlock.getWhere();
 
-        Map<String, String> whereInfo = new ConcurrentHashMap<>();
+        Map<String, String> whereInfo = new HashMap<>();
         ShowConnection.getWhereCondition(whereExpr, whereInfo);
 
         String cSchema = null;
         String table = null;
-        SchemaConfig schemaConfig = null;
 
-        if ((cSchema = containsKeyIngoreCase(whereInfo, TABLE_SCHEMA)) == null || (schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(cSchema)) == null) {
+        // the where condition should be contain table_schema, table_name equivalence judgment
+        if ((cSchema = containsKeyIngoreCase(whereInfo, INFORMATION_SCHEMACOLUMNS_COLS[1])) == null || (table = containsKeyIngoreCase(whereInfo, INFORMATION_SCHEMACOLUMNS_COLS[2])) == null) {
+            c.writeErrMessage("42000", "In this sql where condition must contain table_schema, table_name equivalence judgment, such as 'where table_schema='schema' and table_name='table''", ErrorCode.ER_UNKNOWN_ERROR);
+            return;
+        }
+
+        SchemaConfig schemaConfig = null;
+        if ((schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(cSchema)) == null) {
             c.writeErrMessage("42000", "Unknown database '" + cSchema + "'", ErrorCode.ER_BAD_DB_ERROR);
             return;
         }
 
-        ShardingUserConfig user = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(c.getUser()));
-        if (user == null || !user.getSchemas().contains(cSchema)) {
+        ShardingUserConfig userConfig = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(c.getUser()));
+        if (userConfig == null || !userConfig.getSchemas().contains(cSchema)) {
             c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
 
-        if ((table = containsKeyIngoreCase(whereInfo, TABLE_NAME)) == null || !schemaConfig.getTables().containsKey(table)) {
+        if (!schemaConfig.getTables().containsKey(table)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
             return;
         }
@@ -64,62 +104,96 @@ public final class SelectInformationSchemaColumnsHandler {
         if (tableConfig == null) {
             c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
             return;
-        } else if (tableConfig instanceof SingleTableConfig) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " is Single table");
-            return;
         }
-
 
         String shardingNode = tableConfig.getShardingNodes().get(0);
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
         String shardingDataBase = dn.getDatabase();
 
-        // sql
-        updateWhereCondition(whereExpr, TABLE_SCHEMA, shardingDataBase);
-        String sql = "SELECT character_octet_length FROM INFORMATION_SCHEMA.COLUMNS WHERE " + whereExpr.toString();
+        List<SQLSelectItem> selectItems = mySqlSelectQueryBlock.getSelectList();
 
+        int fieldCount = selectItems.size();
+        String[] selectCols = null;
+        String[] selectColsAsAlias = null;
 
-        // == OneRaw
-        ReentrantLock lock = new ReentrantLock();
-        Condition cond = lock.newCondition();
-        List<Integer> results = new ArrayList<>();
-        AtomicBoolean succeed = new AtomicBoolean(true);
-
-        OneRawSQLQueryResultHandler resultHandler2 = new OneRawSQLQueryResultHandler(new String[]{"character_octet_length"}, new SelectInformationSchemaColumnsListener(lock, cond, results, succeed));
-        SQLJob sqlJob = new SQLJob(sql, shardingNode, resultHandler2, true);
-        sqlJob.run();
-
-        lock.lock();
-        try {
-            while (results.size() == 0) {
-                cond.await();
+        FieldPacket[] fields = null;
+        if (fieldCount == 1 && selectItems.get(0).toString().equals("*")) {
+            fieldCount = INFORMATION_SCHEMACOLUMNS_COLS.length;
+            fields = new FieldPacket[fieldCount];
+            selectCols = INFORMATION_SCHEMACOLUMNS_COLS;
+            selectColsAsAlias = INFORMATION_SCHEMACOLUMNS_COLS;
+            for (int i = 0; i < fieldCount; i++) {
+                fields[i] = PacketUtil.getField(INFORMATION_SCHEMACOLUMNS_COLS[i], Fields.FIELD_TYPE_VAR_STRING);
             }
-        } catch (InterruptedException e) {
-            c.writeErrMessage(ErrorCode.ER_YES, "occur InterruptedException, so try again later ");
-            return;
-        } finally {
-            lock.unlock();
+        } else {
+            fields = new FieldPacket[fieldCount];
+            // columns
+            selectCols = new String[fieldCount];
+            // column as alia
+            selectColsAsAlias = new String[fieldCount];
+
+            SQLSelectItem selectItem = null;
+            String columnName = null;
+            for (int i = 0; i < fieldCount; i++) {
+                selectItem = selectItems.get(i);
+                if (selectItem.getAlias() != null) {
+                    columnName = StringUtil.removeBackQuote(selectItems.get(i).getAlias());
+                    selectColsAsAlias[i] = StringUtil.removeBackQuote(selectItem.toString()) + " as " + columnName;
+                    selectCols[i] = StringUtil.removeBackQuote(selectItems.get(i).getAlias());
+                } else {
+                    columnName = StringUtil.removeBackQuote(selectItem.toString());
+                    selectColsAsAlias[i] = columnName;
+                    selectCols[i] = columnName;
+                }
+                fields[i] = PacketUtil.getField(columnName, Fields.FIELD_TYPE_VAR_STRING);
+            }
         }
 
-        if (!succeed.get()) {
+        replaceSchema(whereExpr, shardingDataBase);
+
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT ").
+                append(StringUtils.join(selectColsAsAlias, ", ") + " ").
+                append("FROM INFORMATION_SCHEMA.COLUMNS WHERE ").
+                append(whereExpr.toString());
+
+        PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
+        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(selectCols, new SelectInformationSchemaColumnsListener(shardingNode));
+        if (ds.isAlive()) {
+            SQLJob sqlJob = new SQLJob(sql.toString(), null, resultHandler, ds);
+            sqlJob.run();
+        } else {
+            SQLJob sqlJob = new SQLJob(sql.toString(), shardingNode, resultHandler, false);
+            sqlJob.run();
+        }
+
+        waitDone();
+
+        if (!success) {
             c.writeErrMessage(ErrorCode.ER_YES, "occur Exception, so see dble.log to check reason");
             return;
         }
 
         RowDataPacket[] rows = null;
-        if (results != null) {
-            rows = new RowDataPacket[1];
+        if (result != null) {
+            rows = new RowDataPacket[result.size()];
             int index = 0;
-            for (Integer value : results) {
-                RowDataPacket row = new RowDataPacket(fields.length);
-                row.add(IntegerUtil.toBytes(value));
+            for (Map<String, String> data : result) {
+                RowDataPacket row = new RowDataPacket(fieldCount);
+                for (String col : selectCols) {
+                    row.add(null == data.get(col) ? null : StringUtil.encode(data.get(col), c.getCharset().getResults()));
+                }
                 rows[index++] = row;
             }
         }
-        MysqlSystemSchemaHandler.doWrite(fields.length, fields, rows, c);
+        MysqlSystemSchemaHandler.doWrite(fieldCount, fields, rows, c);
     }
 
-    public static String containsKeyIngoreCase(Map<String, String> map, String key) {
+    public void replaceSchema(SQLExpr whereExpr, String realSchema) {
+        updateWhereCondition(whereExpr, INFORMATION_SCHEMACOLUMNS_COLS[1], realSchema);
+    }
+
+    public String containsKeyIngoreCase(Map<String, String> map, String key) {
         for (Map.Entry<String, String> entry : map.entrySet()) {
             if (entry.getKey().equalsIgnoreCase(key)) {
                 return entry.getValue();
@@ -128,7 +202,7 @@ public final class SelectInformationSchemaColumnsHandler {
         return null;
     }
 
-    public static void updateWhereCondition(SQLExpr whereExpr, String whereKey, String whereValue) {
+    public void updateWhereCondition(SQLExpr whereExpr, String whereKey, String whereValue) {
         if (whereExpr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
             if (tmp.getLeft() instanceof SQLBinaryOpExpr) {
@@ -142,33 +216,53 @@ public final class SelectInformationSchemaColumnsHandler {
         }
     }
 
-    static class SelectInformationSchemaColumnsListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
-        private ReentrantLock lock;
-        private Condition cond;
-        private List<Integer> results;
-        private AtomicBoolean succeed;
+    private void waitDone() {
+        lock.lock();
+        try {
+            while (!finished) {
+                done.await();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.info("wait 'select informationschema.columns' grapping done " + e);
+        } finally {
+            lock.unlock();
+        }
+    }
 
-        SelectInformationSchemaColumnsListener(ReentrantLock lock, Condition cond, List<Integer> results, AtomicBoolean succeed) {
-            this.lock = lock;
-            this.cond = cond;
-            this.results = results;
-            this.succeed = succeed;
+    void signalDone() {
+        lock.lock();
+        try {
+            finished = true;
+            done.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public List<Map<String, String>> getResult() {
+        return this.result;
+    }
+
+    public boolean isSuccess() {
+        return success;
+    }
+
+    class SelectInformationSchemaColumnsListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
+        private String shardingNode;
+
+        SelectInformationSchemaColumnsListener(String shardingNode) {
+            this.shardingNode = shardingNode;
         }
 
         @Override
-        public void onResult(SQLQueryResult<Map<String, String>> result) {
-            if (!result.isSuccess()) {
-                succeed.set(false);
+        public void onResult(SQLQueryResult<List<Map<String, String>>> res) {
+            if (!res.isSuccess()) {
+                LOGGER.warn("execute 'select information_schema.columns' error in " + shardingNode);
             } else {
-                String value = result.getResult().get("character_octet_length");
-                results.add(Integer.valueOf(value));
+                success = true;
+                result = res.getResult();
             }
-            lock.lock();
-            try {
-                cond.signal();
-            } finally {
-                lock.unlock();
-            }
+            signalDone();
         }
     }
 }

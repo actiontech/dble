@@ -78,7 +78,6 @@ public class ServerConnection extends FrontendConnection {
 
     private FrontendPrepareHandler prepareHandler;
     private LoadDataInfileHandler loadDataInfileHandler;
-    private FieldListHandler fieldListHandler;
     private boolean sessionReadOnly = false;
     private volatile boolean multiStatementAllow = false;
     private ServerUserConfig userConfig;
@@ -217,11 +216,6 @@ public class ServerConnection extends FrontendConnection {
     public void setPrepareHandler(FrontendPrepareHandler prepareHandler) {
         this.prepareHandler = prepareHandler;
     }
-
-    public void setFieldListHandler(FieldListHandler fieldListHandler) {
-        this.fieldListHandler = fieldListHandler;
-    }
-
 
     public void setSessionReadOnly(boolean sessionReadOnly) {
         this.sessionReadOnly = sessionReadOnly;
@@ -667,7 +661,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-        fieldListHandler.handle(sql, this);
+        FieldListHandler.handle(sql, this);
     }
 
     private void executeException(Exception e, String sql) {

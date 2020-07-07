@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.BindValue;
@@ -218,10 +218,13 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 case Fields.FIELD_TYPE_LONG_BLOB:
                     if (bindValue.getValue() instanceof ByteArrayOutputStream) {
                         byte[] bytes = ((ByteArrayOutputStream) bindValue.getValue()).toByteArray();
-                        sb.append("X'" + HexFormatUtil.bytesToHexString(bytes) + "'");
+                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
+                    } else if (bindValue.getValue() instanceof byte[]) {
+                        byte[] bytes = (byte[]) bindValue.getValue();
+                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
                     } else {
-                        LOGGER.info("bind value is not a instance of ByteArrayOutputStream, maybe someone change the implement of long data storage!");
-                        sb.append("'" + bindValue.getValue() + "'");
+                        LOGGER.warn("bind value is not a instance of ByteArrayOutputStream,its type is " + bindValue.getValue().getClass());
+                        sb.append("'").append(bindValue.getValue().toString()).append("'");
                     }
                     break;
                 case Fields.FIELD_TYPE_TIME:

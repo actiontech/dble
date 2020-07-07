@@ -21,6 +21,7 @@ public class ShardingUserCommandHandler extends FrontendCommandHandler {
 
     private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
     private AtomicBoolean isAuthSwitch = new AtomicBoolean(false);
+
     ShardingUserCommandHandler(ServerConnection source) {
         super(source);
     }
@@ -54,6 +55,7 @@ public class ShardingUserCommandHandler extends FrontendCommandHandler {
 
         DbleServer.getInstance().getFrontHandlerQueue().offer(this);
     }
+
     protected void handleData(byte[] data) {
         ServerConnection sc = (ServerConnection) source;
         sc.startProcess();
@@ -102,16 +104,20 @@ public class ShardingUserCommandHandler extends FrontendCommandHandler {
                 break;
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
-                sc.setOption(data) ;
+                sc.setOption(data);
                 break;
             case MySQLPacket.COM_CHANGE_USER:
                 commands.doOther();
                 changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
-                sc.changeUser(data, changeUserPacket, isAuthSwitch) ;
+                sc.changeUser(data, changeUserPacket, isAuthSwitch);
                 break;
             case MySQLPacket.COM_RESET_CONNECTION:
                 commands.doOther();
-                sc.resetConnection() ;
+                sc.resetConnection();
+                break;
+            case MySQLPacket.COM_FIELD_LIST:
+                commands.doOther();
+                sc.fieldList(data);
                 break;
             default:
                 commands.doOther();

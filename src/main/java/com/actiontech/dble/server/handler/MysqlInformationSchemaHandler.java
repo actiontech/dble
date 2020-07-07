@@ -58,7 +58,8 @@ public final class MysqlInformationSchemaHandler {
                 String charset = SystemConfig.getInstance().getCharset();
                 RowDataPacket row = new RowDataPacket(fields.length);
                 for (int j = 0; j < fields.length; j++) {
-                    switch (StringUtil.decode(fields[j].getName(), c.getCharset().getResults())) {
+                    String columnName = StringUtil.decode(fields[j].getName(), c.getCharset().getResults());
+                    switch (columnName.toUpperCase()) {
                         case "SCHEMA_NAME":
                             row.add(StringUtil.encode(name, c.getCharset().getResults()));
                             break;

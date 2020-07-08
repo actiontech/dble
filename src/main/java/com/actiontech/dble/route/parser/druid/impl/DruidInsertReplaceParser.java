@@ -24,9 +24,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.google.common.collect.ImmutableList;
 
@@ -100,6 +98,9 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         } else if (valueExpr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             shardingValue = charExpr.getText();
+        } else if (valueExpr instanceof SQLHexExpr) {
+            SQLHexExpr hexExpr = (SQLHexExpr) valueExpr;
+            shardingValue = hexExpr.getHex();
         }
 
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {

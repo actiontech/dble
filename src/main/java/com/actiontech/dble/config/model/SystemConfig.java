@@ -177,7 +177,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setTransactionLogBaseDir(String transactionLogBaseDir) {
-        this.transactionLogBaseDir = transactionLogBaseDir;
+        this.transactionLogBaseDir = this.getHomePath() + File.separatorChar + transactionLogBaseDir + File.separatorChar;
     }
 
     public String getTransactionLogBaseName() {
@@ -204,7 +204,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setXaRecoveryLogBaseDir(String xaRecoveryLogBaseDir) {
-        this.xaRecoveryLogBaseDir = xaRecoveryLogBaseDir;
+        this.xaRecoveryLogBaseDir = this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar;
     }
 
     public String getXaRecoveryLogBaseName() {
@@ -862,7 +862,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setViewPersistenceConfBaseDir(String viewPersistenceConfBaseDir) {
-        this.viewPersistenceConfBaseDir = viewPersistenceConfBaseDir;
+        this.viewPersistenceConfBaseDir = this.getHomePath() + File.separatorChar + viewPersistenceConfBaseDir + File.separatorChar;
     }
 
     public String getViewPersistenceConfBaseName() {
@@ -986,7 +986,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSlowLogBaseDir(String slowLogBaseDir) {
-        this.slowLogBaseDir = slowLogBaseDir;
+        this.slowLogBaseDir = this.getHomePath() + File.separatorChar + slowLogBaseDir + File.separatorChar;
     }
 
     public String getSlowLogBaseName() {

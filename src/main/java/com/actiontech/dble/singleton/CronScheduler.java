@@ -86,7 +86,7 @@ public final class CronScheduler {
     }
 
     private void globalTableConsistencyCheck(GlobalTableConfig tc) throws Exception {
-        String clazz = tc.getGlobalCheckClass();
+        String clazz = tc.getCheckClass();
         final Class<?> clz;
 
         switch (clazz) {

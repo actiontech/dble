@@ -413,11 +413,13 @@ public abstract class PhysicalDbInstance {
         }
 
         PhysicalDbInstance dbInstance = (PhysicalDbInstance) other;
-        DbInstanceConfig dbInstanceConfig = dbInstance.getConfig();
-        return dbInstanceConfig.getUser().equals(this.getConfig().getUser()) && dbInstanceConfig.getUrl().equals(this.getConfig().getUrl()) &&
-                dbInstanceConfig.getPassword().equals(this.getConfig().getPassword()) && dbInstanceConfig.getInstanceName().equals(this.getConfig().getInstanceName()) &&
-                dbInstance.isDisabled() == this.isDisabled() && dbInstanceConfig.getReadWeight() == this.getConfig().getReadWeight() &&
-                dbInstanceConfig.getPoolConfig().equals(this.getConfig().getPoolConfig());
+        DbInstanceConfig otherConfig = dbInstance.getConfig();
+        DbInstanceConfig thisConfig = this.getConfig();
+        return otherConfig.getUser().equals(thisConfig.getUser()) && otherConfig.getUrl().equals(thisConfig.getUrl()) &&
+                otherConfig.getMaxCon() == thisConfig.getMaxCon() && otherConfig.getMinCon() == thisConfig.getMinCon() &&
+                otherConfig.getPassword().equals(thisConfig.getPassword()) && otherConfig.getInstanceName().equals(thisConfig.getInstanceName()) &&
+                dbInstance.isDisabled() == this.isDisabled() && otherConfig.getReadWeight() == thisConfig.getReadWeight() &&
+                otherConfig.getPoolConfig().equals(thisConfig.getPoolConfig());
     }
 
     @Override

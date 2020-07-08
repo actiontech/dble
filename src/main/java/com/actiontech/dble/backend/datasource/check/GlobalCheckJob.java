@@ -51,7 +51,7 @@ public class GlobalCheckJob implements Job {
                 return;
             }
             AbstractConsistencyChecker checker;
-            switch (tc.getGlobalCheckClass()) {
+            switch (tc.getCheckClass()) {
                 case GLOBAL_TABLE_CHECK_DEFAULT:
                     checker = new CheckSumChecker();
                     break;
@@ -59,7 +59,7 @@ public class GlobalCheckJob implements Job {
                     checker = new CountChecker();
                     break;
                 default:
-                    final Class<?> clz = Class.forName(tc.getGlobalCheckClass());
+                    final Class<?> clz = Class.forName(tc.getCheckClass());
                     checker = (AbstractConsistencyChecker) clz.newInstance();
             }
             checker.setSchema(schema);

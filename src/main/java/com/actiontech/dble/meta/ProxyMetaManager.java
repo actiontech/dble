@@ -569,7 +569,7 @@ public class ProxyMetaManager {
                     ClusterHelper.createSelfTempNode(tableDDLPath, ClusterPathUtil.SUCCESS);
                     metaLock.unlock();
                     isLock = false;
-                    String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.SUCCESS, tableDDLPath);
+                    String errorMsg = ClusterLogic.waitingForAllTheNode(tableDDLPath, ClusterPathUtil.SUCCESS);
                     if (errorMsg != null) {
                         throw new RuntimeException(errorMsg);
                     }

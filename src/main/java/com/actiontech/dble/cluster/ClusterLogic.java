@@ -784,7 +784,7 @@ public final class ClusterLogic {
         try {
             responseList = getKVBeanOfChildPath(path);
         } catch (Exception e) {
-            LOGGER.warn("syncHaStatusFromCluster error :", e);
+            LOGGER.warn("checkResponseForOneTime error :", e);
             errorMsg.append(e.getMessage());
             return true;
         }

@@ -60,8 +60,6 @@ public class DruidUpdateParser extends DruidModifyParser {
                 if (tc == null || !(tc instanceof GlobalTableConfig)) {
                     isAllGlobal = false;
                     break;
-                } else if (tc.getShardingNodes().size() > 1) {
-                    throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
                 }
             }
 
@@ -160,9 +158,9 @@ public class DruidUpdateParser extends DruidModifyParser {
      * o the other operator, like between,not, Just Failed.
      *
      * @param whereClauseExpr whereClauseExpr
-     * @param column column
-     * @param value value
-     * @param hasOR the parent of whereClauseExpr hasOR/XOR
+     * @param column          column
+     * @param value           value
+     * @param hasOR           the parent of whereClauseExpr hasOR/XOR
      * @return true Passed, false Failed
      */
     private boolean shardColCanBeUpdated(SQLExpr whereClauseExpr, String column, SQLExpr value, boolean hasOR)

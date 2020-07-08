@@ -411,7 +411,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 String tName = table.getValue();
                 SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
                 BaseTableConfig tConfig = tSchema.getTables().get(tName);
-                if (tConfig.getShardingNodes().size() == 1) {
+                if (tConfig != null && tConfig.getShardingNodes().size() == 1) {
                     dataNode = tConfig.getShardingNodes().get(0);
                     globalNodeSet.add(dataNode);
                 }

@@ -55,7 +55,7 @@ public class ZkSender implements ClusterSender {
             if (e instanceof KeeperException.NoNodeException) {
                 return null;
             } else {
-                throw new RuntimeException("connect zk failure");
+                throw new RuntimeException("connect zk failure", e);
             }
         }
     }
@@ -79,7 +79,7 @@ public class ZkSender implements ClusterSender {
             }
             return allList;
         } catch (Exception e) {
-            throw new RuntimeException("connect zk failure");
+            throw new RuntimeException("connect zk failure", e);
         }
     }
 

@@ -334,8 +334,8 @@ public class XMLShardingLoader {
             boolean globalCheck = false;
             String checkClass = GLOBAL_TABLE_CHECK_DEFAULT;
             String corn = GLOBAL_TABLE_CHECK_DEFAULT_CRON;
-            if (tableElement.hasAttribute("globalCheckClass")) {
-                checkClass = tableElement.getAttribute("globalCheckClass");
+            if (tableElement.hasAttribute("checkClass")) {
+                checkClass = tableElement.getAttribute("checkClass");
                 corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
                 globalCheck = true;
             }

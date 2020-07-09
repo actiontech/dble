@@ -6,9 +6,11 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterLogic;
@@ -326,6 +328,20 @@ public final class ReloadConfig {
 
         SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
+        // recycle old active conn
+        if ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0) {
+            for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
+                for (BackendConnection con : processor.getBackends().values()) {
+                    if (con instanceof MySQLConnection) {
+                        MySQLConnection mysqlCon = (MySQLConnection) con;
+                        if (mysqlCon.getOldTimestamp() != 0) {
+                            mysqlCon.close("old active backend conn will be forced closed by closing front conn", true);
+                        }
+                    }
+                }
+            }
+        }
+
         if (loader.isFullyConfigured()) {
             if (newSystemVariables.isLowerCaseTableNames()) {
                 ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);

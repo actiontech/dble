@@ -18,6 +18,7 @@ import com.actiontech.dble.util.SystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.beans.IntrospectionException;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,6 +32,7 @@ public final class SystemConfigLoader {
     private static final String BOOT_STRAP_FILE_NAME = "/bootstrap.cnf";
     public static final String BOOT_STRAP_DYNAMIC_FILE_NAME = "/bootstrap.dynamic.cnf";
     public static final String LOCAL_WRITE_PATH = "./";
+    private static final String HOMEPATH_NAME = "homePath";
 
     private SystemConfigLoader() {
     }
@@ -102,7 +104,7 @@ public final class SystemConfigLoader {
         return pros;
     }
 
-    public static void initSystemConfig() throws IOException, InvocationTargetException, IllegalAccessException {
+    public static void initSystemConfig() throws IOException, InvocationTargetException, IllegalAccessException, IntrospectionException {
         SystemConfig systemConfig = SystemConfig.getInstance();
 
         //-D properties
@@ -128,6 +130,8 @@ public final class SystemConfigLoader {
         for (Map.Entry<Object, Object> item : systemDynamic.entrySet()) {
             system.put(item.getKey(), item.getValue());
         }
+
+        ParameterMapping.mappingSingleMethod(systemConfig, system, StartProblemReporter.getInstance(), HOMEPATH_NAME);
         ParameterMapping.mapping(systemConfig, system, StartProblemReporter.getInstance());
         if (system.size() > 0) {
             Set<String> propItem = new HashSet<>();

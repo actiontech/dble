@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.config.ProblemReporter;
@@ -35,46 +35,9 @@ public final class ParameterMapping {
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
             Object obj = parameter.get(pd.getName());
-            Object value = obj;
-            Class<?> cls = pd.getPropertyType();
-            if (cls == null) {
-                if (problemReporter != null) {
-                    problemReporter.warn("unknown property [ " + pd.getName() + " ]");
-                } else {
-                    LOGGER.warn("unknown property [ " + pd.getName() + " ]");
-                }
-                continue;
-            }
-
-            if (obj instanceof String) {
-                String valStr = (String) obj;
-                if (!StringUtil.isEmpty(valStr)) {
-                    valStr = ConfigUtil.filter(valStr);
-                }
-                if (isPrimitiveType(cls)) {
-                    try {
-                        value = convert(cls, valStr);
-                    } catch (NumberFormatException nfe) {
-                        if (problemReporter != null) {
-                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
-                        } else {
-                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
-                        }
-                        parameter.remove(pd.getName());
-                        continue;
-                    }
-                }
-            }
-            if (value != null) {
-                Method method = pd.getWriteMethod();
-                if (method != null) {
-                    method.invoke(object, value);
-                    parameter.remove(pd.getName());
-                }
-            }
+            realMapping(object, pd, parameter, problemReporter, obj);
         }
     }
-
 
     public static Properties mapping(Object object, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
@@ -108,7 +71,7 @@ public final class ParameterMapping {
                 try {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
-                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() ;
+                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString();
                     if (problemReporter != null) {
                         problemReporter.warn(msg);
                     } else {
@@ -127,6 +90,54 @@ public final class ParameterMapping {
             systemProperties.remove(propertyName);
         }
         return systemProperties;
+    }
+
+    public static void realMapping(Object object, PropertyDescriptor pd, Properties parameter, ProblemReporter problemReporter, Object obj) throws IllegalAccessException, InvocationTargetException {
+        Object value = obj;
+        Class<?> cls = pd.getPropertyType();
+        if (cls == null) {
+            if (problemReporter != null) {
+                problemReporter.warn("unknown property [ " + pd.getName() + " ]");
+            } else {
+                LOGGER.warn("unknown property [ " + pd.getName() + " ]");
+            }
+            return;
+        }
+
+        if (obj instanceof String) {
+            String valStr = (String) obj;
+            if (!StringUtil.isEmpty(valStr)) {
+                valStr = ConfigUtil.filter(valStr);
+            }
+            if (isPrimitiveType(cls)) {
+                try {
+                    value = convert(cls, valStr);
+                } catch (NumberFormatException nfe) {
+                    if (problemReporter != null) {
+                        problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                    } else {
+                        LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                    }
+                    parameter.remove(pd.getName());
+                    return;
+                }
+            }
+        }
+        if (value != null) {
+            Method method = pd.getWriteMethod();
+            if (method != null) {
+                method.invoke(object, value);
+                parameter.remove(pd.getName());
+            }
+        }
+    }
+
+    public static void mappingSingleMethod(Object object, Properties parameter, ProblemReporter problemReporter, String attribute) throws IntrospectionException, IllegalAccessException, InvocationTargetException {
+        Object obj = null;
+        if ((obj = parameter.get(attribute)) != null) {
+            PropertyDescriptor pd = new PropertyDescriptor(attribute, object.getClass());
+            realMapping(object, pd, parameter, problemReporter, obj);
+        }
     }
 
     /**

@@ -223,7 +223,7 @@ public class PoolConfig {
      *                                     Evictor to shut down.
      */
     public final void setEvictorShutdownTimeoutMillis(final long evictorShutdownTimeoutMillis) {
-        if (connectionTimeout <= 0) {
+        if (evictorShutdownTimeoutMillis <= 0) {
             LOGGER.warn(String.format(WARNING_FORMAT, "evictorShutdownTimeoutMillis", evictorShutdownTimeoutMillis, this.evictorShutdownTimeoutMillis));
         } else {
             this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;

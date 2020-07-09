@@ -19,6 +19,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
+import com.actiontech.dble.util.TimeUtil;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -129,7 +130,7 @@ public final class ShowHeartbeat {
                     row.add(hb.getRecorder().get().getBytes());
                     String lat = hb.getLastActiveTime();
                     row.add(lat == null ? null : lat.getBytes());
-                    row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
+                    row.add(hb.isStop() || TimeUtil.currentTimeMillis() < ds.getHeartbeatRecoveryTime() ? "true".getBytes() : "false".getBytes());
                     row.add(hb.getMessage() == null ? null : hb.getMessage().getBytes());
                 } else {
                     row.add(null);

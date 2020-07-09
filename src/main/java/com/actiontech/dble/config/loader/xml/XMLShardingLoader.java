@@ -86,10 +86,10 @@ public class XMLShardingLoader {
                 if (this.problemReporter != null) {
                     if (Versions.checkVersion(version)) {
                         String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.SHARDING_XML + " version is " + version + ".There may be some incompatible config between two versions, please check it";
-                        this.problemReporter.notice(message);
+                        this.problemReporter.warn(message);
                     } else {
                         String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.SHARDING_XML + " version is " + version + ".There must be some incompatible config between two versions, please check it";
-                        this.problemReporter.notice(message);
+                        this.problemReporter.warn(message);
                     }
                 }
             }

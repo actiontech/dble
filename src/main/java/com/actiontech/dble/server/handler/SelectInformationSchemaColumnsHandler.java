@@ -68,16 +68,16 @@ public class SelectInformationSchemaColumnsHandler {
         this.done = lock.newCondition();
     }
 
-    public void handle(ServerConnection c, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void handle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                sqlhandle(c, mySqlSelectQueryBlock);
+                sqlhandle(c, fields0, mySqlSelectQueryBlock);
             }
         });
     }
 
-    public void sqlhandle(ServerConnection c, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void sqlhandle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
         SQLExpr whereExpr = mySqlSelectQueryBlock.getWhere();
 
         Map<String, String> whereInfo = new HashMap<>();
@@ -88,7 +88,7 @@ public class SelectInformationSchemaColumnsHandler {
 
         // the where condition should be contain table_schema, table_name equivalence judgment
         if ((cSchema = containsKeyIngoreCase(whereInfo, INFORMATION_SCHEMACOLUMNS_COLS[1])) == null || (table = containsKeyIngoreCase(whereInfo, INFORMATION_SCHEMACOLUMNS_COLS[2])) == null) {
-            c.writeErrMessage("42000", "In this sql where condition must contain table_schema, table_name equivalence judgment, such as 'where table_schema='schema' and table_name='table''", ErrorCode.ER_UNKNOWN_ERROR);
+            MysqlSystemSchemaHandler.doWrite(fields0.length, fields0, null, c);
             return;
         }
 

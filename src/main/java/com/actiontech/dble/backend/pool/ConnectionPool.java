@@ -127,7 +127,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     private void fillPool() {
         final int idleCount = getCount(STATE_NOT_IN_USE, STATE_HEARTBEAT);
         final int connectionsToAdd = Math.min(config.getMaxCon() - totalConnections.get(), config.getMinCon() - idleCount) -
-                (totalConnections.get() - idleCount);
+                (totalConnections.get() - allConnections.size());
         if (LOGGER.isDebugEnabled() && connectionsToAdd > 0) {
             LOGGER.debug("need add {}", connectionsToAdd);
         }
@@ -184,16 +184,14 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     public int getCount(final int... states) {
         int count = 0;
+        int curState;
         for (final BackendConnection conn : allConnections) {
-            boolean allRight = true;
+            curState = conn.getState();
             for (int state : states) {
-                if (conn.getState() != state) {
-                    allRight = false;
+                if (curState == state) {
+                    count++;
                     break;
                 }
-            }
-            if (allRight) {
-                count++;
             }
         }
         return count;

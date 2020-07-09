@@ -15,6 +15,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -47,7 +48,7 @@ public final class MysqlSystemSchemaHandler {
                     MysqlInformationSchemaHandler.handle(sc, fields);
                     return;
                 case COLUMNS_TABLE:
-                    new SelectInformationSchemaColumnsHandler().handle(sc, mySqlSelectQueryBlock);
+                    new SelectInformationSchemaColumnsHandler().handle(sc, fields, mySqlSelectQueryBlock);
                     return;
                 default:
                     break;

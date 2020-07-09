@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.ByteUtil;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -221,7 +222,11 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                         sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
                     } else if (bindValue.getValue() instanceof byte[]) {
                         byte[] bytes = (byte[]) bindValue.getValue();
-                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
+                        try {
+                            sb.append("'" + new String(bytes, CharsetUtil.getJavaCharset(source.getCharset().getClient())) + "'");
+                        } catch (UnsupportedEncodingException e) {
+                            LOGGER.info("parse string exception!", e);
+                        }
                     } else {
                         LOGGER.warn("bind value is not a instance of ByteArrayOutputStream,its type is " + bindValue.getValue().getClass());
                         sb.append("'").append(bindValue.getValue().toString()).append("'");

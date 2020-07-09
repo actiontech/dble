@@ -6,6 +6,7 @@ import com.actiontech.dble.plan.common.ptr.LongPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 
@@ -64,6 +65,9 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
         } else if (expr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) expr;
             shardingValue = charExpr.getText();
+        } else if (expr instanceof SQLHexExpr) {
+            SQLHexExpr hexExpr = (SQLHexExpr) expr;
+            shardingValue = hexExpr.getHex();
         }
 
         if (shardingValue == null && !(expr instanceof SQLNullExpr)) {

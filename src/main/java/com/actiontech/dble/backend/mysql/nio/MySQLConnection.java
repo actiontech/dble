@@ -646,7 +646,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     }
 
     public void close(String reason, boolean closeFrontConn) {
-        if (closeFrontConn) {
+        if (closeFrontConn && session != null) {
             session.getSource().close(reason);
         } else {
             close("normal");

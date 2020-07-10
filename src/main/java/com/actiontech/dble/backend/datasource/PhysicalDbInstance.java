@@ -354,17 +354,17 @@ public abstract class PhysicalDbInstance {
     }
 
     public void closeAllConnection(String reason) {
-        this.needSkipEvit = false;
-        this.connectionPool.closeAllConnections(reason);
         this.needSkipEvit = true;
+        this.connectionPool.closeAllConnections(reason);
+        this.needSkipEvit = false;
     }
 
     public boolean isAlive() {
         return !disabled.get() && !isFakeNode() && heartbeat.isHeartBeatOK();
     }
 
-    public boolean isNeedSkipEvit() {
-        return !disabled.get() && !isFakeNode() && heartbeat.isHeartBeatOK() && needSkipEvit;
+    public boolean skipEvit() {
+        return !isAlive() && needSkipEvit;
     }
 
     public boolean isDisabled() {

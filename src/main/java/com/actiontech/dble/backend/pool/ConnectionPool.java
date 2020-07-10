@@ -34,7 +34,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     private final WeakReference<ClassLoader> factoryClassLoader;
     private volatile ConnectionPool.Evictor evictor = null;
 
-    private final AtomicBoolean isClosed = new AtomicBoolean();
+    private final AtomicBoolean isClosed = new AtomicBoolean(true);
     private final PoolConfig poolConfig;
 
     public ConnectionPool(final DbInstanceConfig config, final PhysicalDbInstance instance) {
@@ -374,7 +374,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         @Override
         public void run() {
 
-            if (!instance.isNeedSkipEvit()) {
+            if (instance.skipEvit()) {
                 return;
             }
 

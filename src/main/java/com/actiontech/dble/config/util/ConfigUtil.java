@@ -16,7 +16,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.*;
 
 import javax.xml.XMLConstants;
@@ -45,10 +48,10 @@ public final class ConfigUtil {
         StringBuilder s = new StringBuilder();
         int cur = 0;
         int textLen = text.length();
-        int propStart = -1;
-        int propStop = -1;
-        String propName = null;
-        String propValue = null;
+        int propStart;
+        int propStop;
+        String propName;
+        String propValue;
         for (; cur < textLen; cur = propStop + 1) {
             propStart = text.indexOf("${", cur);
             if (propStart < 0) {
@@ -101,33 +104,8 @@ public final class ConfigUtil {
         return builder.parse(xml);
     }
 
-    public static Map<String, Object> loadAttributes(Element e) {
-        Map<String, Object> map = new HashMap<>();
-        NamedNodeMap nm = e.getAttributes();
-        for (int j = 0; j < nm.getLength(); j++) {
-            Node n = nm.item(j);
-            if (n instanceof Attr) {
-                Attr attr = (Attr) n;
-                map.put(attr.getName(), attr.getNodeValue());
-            }
-        }
-        return map;
-    }
-
-    public static Element loadElement(Element parent, String tagName) {
-        NodeList nodeList = parent.getElementsByTagName(tagName);
-        if (nodeList.getLength() > 1) {
-            throw new ConfigException(tagName + " elements length  over one!");
-        }
-        if (nodeList.getLength() == 1) {
-            return (Element) nodeList.item(0);
-        } else {
-            return null;
-        }
-    }
-
     /**
-     * @param parent
+     * @param parent parent
      * @return key-value property
      */
     public static Properties loadElements(Element parent) {
@@ -179,11 +157,6 @@ public final class ConfigUtil {
     /**
      * check element illegal value and return val
      *
-     * @param element
-     * @param attrName
-     * @param defaultValue
-     * @param reporter
-     * @return
      */
     public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
         if (element.hasAttribute(attrName)) {

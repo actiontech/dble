@@ -53,6 +53,7 @@ public abstract class PhysicalDbInstance {
     private ConnectionPool connectionPool;
     protected MySQLHeartbeat heartbeat;
     private volatile long heartbeatRecoveryTime;
+    private volatile boolean needSkipEvit = false;
 
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
@@ -347,16 +348,23 @@ public abstract class PhysicalDbInstance {
     }
 
     public void stop(String reason, boolean closeFront) {
+        LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
         heartbeat.stop(reason);
         connectionPool.stop(reason, closeFront);
     }
 
     public void closeAllConnection(String reason) {
+        this.needSkipEvit = false;
         this.connectionPool.closeAllConnections(reason);
+        this.needSkipEvit = true;
     }
 
     public boolean isAlive() {
         return !disabled.get() && !isFakeNode() && heartbeat.isHeartBeatOK();
+    }
+
+    public boolean isNeedSkipEvit() {
+        return !disabled.get() && !isFakeNode() && heartbeat.isHeartBeatOK() && needSkipEvit;
     }
 
     public boolean isDisabled() {

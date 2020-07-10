@@ -199,19 +199,17 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     public int getCount(String schema, final int... states) {
         int count = 0;
+        int curState;
         for (final BackendConnection conn : allConnections) {
             if (!schema.equals(conn.getSchema())) {
                 continue;
             }
-            boolean allRight = true;
+            curState = conn.getState();
             for (int state : states) {
-                if (conn.getState() != state) {
-                    allRight = false;
+                if (curState == state) {
+                    count++;
                     break;
                 }
-            }
-            if (allRight) {
-                count++;
             }
         }
         return count;
@@ -256,7 +254,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     /**
      * Closes the keyed object pool. Once the pool is closed
      */
-    public void closeAllConnections(final String closureReason, final boolean closeFrontConn) {
+    private void closeAllConnections(final String closureReason, final boolean closeFrontConn) {
         while (totalConnections.get() > 0) {
             for (BackendConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {
@@ -282,12 +280,10 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     }
 
     public void stop(final String closureReason, boolean closeFront) {
-        if (isClosed.getAndSet(true)) {
-            return;
+        if (isClosed.compareAndSet(false, true)) {
+            stopEvictor();
+            closeAllConnections(closureReason, closeFront);
         }
-
-        stopEvictor();
-        closeAllConnections(closureReason, closeFront);
     }
 
     private void evict() {
@@ -331,11 +327,13 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
      * See POOL-195.</p>
      */
     public void startEvictor() {
-        if (evictor != null) {
-            EvictionTimer.cancel(evictor, poolConfig.getEvictorShutdownTimeoutMillis(), TimeUnit.MILLISECONDS);
+        if (isClosed.compareAndSet(true, false)) {
+            if (evictor != null) {
+                EvictionTimer.cancel(evictor, poolConfig.getEvictorShutdownTimeoutMillis(), TimeUnit.MILLISECONDS);
+            }
+            evictor = new Evictor();
+            EvictionTimer.schedule(evictor, 0, poolConfig.getTimeBetweenEvictionRunsMillis());
         }
-        evictor = new Evictor();
-        EvictionTimer.schedule(evictor, 0, poolConfig.getTimeBetweenEvictionRunsMillis());
     }
 
     /**
@@ -376,7 +374,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         @Override
         public void run() {
 
-            if (!instance.isAlive()) {
+            if (!instance.isNeedSkipEvit()) {
                 return;
             }
 

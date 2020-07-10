@@ -104,9 +104,8 @@ public class ViewMeta {
             tmManager.addMetaLock(schema, viewName, createSql);
             if (isNeedPersistence) {
                 ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
-            } else {
-                tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
             }
+            tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
         } finally {
             tmManager.removeMetaLock(schema, viewName);
         }

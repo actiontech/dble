@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -21,10 +22,12 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
@@ -92,7 +95,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
+    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -100,6 +103,9 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         } else if (valueExpr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             shardingValue = charExpr.getText();
+        } else if (valueExpr instanceof SQLHexExpr) {
+            SQLHexExpr hexExpr = (SQLHexExpr) valueExpr;
+            shardingValue = HexFormatUtil.fromHex(hexExpr.getHex(), CharsetUtil.getJavaCharset(clientCharset));
         }
 
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {

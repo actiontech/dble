@@ -64,7 +64,7 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
         } else if (expr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) expr;
             shardingValue = charExpr.getText();
-        }
+        } // no need to consider SQLHexExpr
 
         if (shardingValue == null && !(expr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + values.toString());

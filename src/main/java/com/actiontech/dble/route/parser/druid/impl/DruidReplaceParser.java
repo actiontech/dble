@@ -95,9 +95,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             }
             String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiReplace(replace)) {
-                parserBatchInsert(schemaInfo, rrs, partitionColumn, replace);
+                parserBatchInsert(schemaInfo, rrs, partitionColumn, replace, sc.getCharset().getClient());
             } else {
-                parserSingleInsert(schemaInfo, rrs, partitionColumn, replace);
+                parserSingleInsert(schemaInfo, rrs, partitionColumn, replace, sc.getCharset().getClient());
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
@@ -329,7 +329,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @throws SQLNonTransientException if the column size of values is not correct
      */
     private void parserBatchInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
-                                   SQLReplaceStatement replace) throws SQLNonTransientException {
+                                   SQLReplaceStatement replace, String clientCharset) throws SQLNonTransientException {
         // insert into table() values (),(),....
         SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
@@ -346,7 +346,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToSting(expr);
+            String shardingValue = shardingValueToSting(expr, clientCharset);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // no part find for this record
             if (nodeIndex == null) {
@@ -384,10 +384,10 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @throws SQLNonTransientException if not find a valid shardingNode
      */
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
-                                    SQLReplaceStatement replaceStatement) throws SQLNonTransientException {
+                                    SQLReplaceStatement replaceStatement, String clientCharset) throws SQLNonTransientException {
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, replaceStatement, partitionColumn);
         SQLExpr valueExpr = replaceStatement.getValuesList().get(0).getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToSting(valueExpr);
+        String shardingValue = shardingValueToSting(valueExpr, clientCharset);
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
         if (nodeIndex == null) {

@@ -95,9 +95,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             }
             String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiInsert(insert)) {
-                parserBatchInsert(schemaInfo, rrs, partitionColumn, insert);
+                parserBatchInsert(schemaInfo, rrs, partitionColumn, insert, sc.getCharset().getClient());
             } else {
-                parserSingleInsert(schemaInfo, rrs, partitionColumn, insert);
+                parserSingleInsert(schemaInfo, rrs, partitionColumn, insert, sc.getCharset().getClient());
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
@@ -209,11 +209,11 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
      * @throws SQLNonTransientException if not find an valid shardingNode
      */
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
-                                    MySqlInsertStatement insertStmt) throws SQLNonTransientException {
+                                    MySqlInsertStatement insertStmt, String clientCharset) throws SQLNonTransientException {
 
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToSting(valueExpr);
+        String shardingValue = shardingValueToSting(valueExpr, clientCharset);
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
@@ -256,7 +256,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
      * @throws SQLNonTransientException if the column size of values is not correct
      */
     private void parserBatchInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
-                                   MySqlInsertStatement insertStmt) throws SQLNonTransientException {
+                                   MySqlInsertStatement insertStmt, String clientCharset) throws SQLNonTransientException {
         // insert into table() values (),(),....
         SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
@@ -273,7 +273,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToSting(expr);
+            String shardingValue = shardingValueToSting(expr, clientCharset);
             checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // null means can't find any valid index

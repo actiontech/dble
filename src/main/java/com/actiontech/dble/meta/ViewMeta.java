@@ -60,6 +60,9 @@ public class ViewMeta {
         PlanNode selNode = msv.getTableNode();
 
         boolean noShardingView = true;
+        if (selNode.getReferedTableNodes().size() == 0) {
+            noShardingView = false;
+        }
         for (TableNode tableNode : selNode.getReferedTableNodes()) {
             if (DbleServer.getInstance().getConfig().getSchemas().get(tableNode.getSchema()).isNoSharding()) {
                 if (!schema.equals(tableNode.getSchema())) {

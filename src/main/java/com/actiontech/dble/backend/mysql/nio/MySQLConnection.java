@@ -433,7 +433,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         }
 
         int xaSyn = 0;
-        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
+        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
             xaSyn = 1;
         }

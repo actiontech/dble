@@ -80,15 +80,15 @@ public final class SystemConfig {
 
     //transaction log
     private int recordTxn = 0;
-    private String transactionLogBaseDir = this.getHomePath() + File.separatorChar + "txlogs" + File.separatorChar;
+    private String transactionLogBaseDir = "txlogs";
     private String transactionLogBaseName = "server-tx";
     private int transactionRotateSize = 16; // M
 
     //XA transaction
     private long xaSessionCheckPeriod = 1000L;
     private long xaLogCleanPeriod = 1000L;
-    private String xaRecoveryLogBaseDir = this.getHomePath() + File.separatorChar + "tmlogs" + File.separatorChar;
-    private String xaRecoveryLogBaseName = "tmlog";
+    private String xaRecoveryLogBaseDir = "xalogs";
+    private String xaRecoveryLogBaseName = "xalog";
     private int xaRetryCount = 0;
 
     //use JoinStrategy
@@ -132,7 +132,7 @@ public final class SystemConfig {
     private int backSocketNoDelay = 1; // 1=true
 
     //view
-    private String viewPersistenceConfBaseDir = this.getHomePath() + File.separatorChar + "viewConf" + File.separatorChar;
+    private String viewPersistenceConfBaseDir = "viewConf";
     private String viewPersistenceConfBaseName = "viewJson";
 
     // for join tmp results
@@ -141,7 +141,7 @@ public final class SystemConfig {
     private int joinQueueSize = 1024;
     //slow log
     private int enableSlowLog = 0;
-    private String slowLogBaseDir = this.getHomePath() + File.separatorChar + "slowlogs" + File.separatorChar;
+    private String slowLogBaseDir = "slowlogs";
     private String slowLogBaseName = "slow-query";
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
@@ -172,7 +172,7 @@ public final class SystemConfig {
     }
 
     public String getTransactionLogBaseDir() {
-        return transactionLogBaseDir;
+        return this.getHomePath() + File.separatorChar + transactionLogBaseDir + File.separatorChar;
     }
 
     @SuppressWarnings("unused")
@@ -199,7 +199,7 @@ public final class SystemConfig {
     }
 
     public String getXaRecoveryLogBaseDir() {
-        return xaRecoveryLogBaseDir;
+        return this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar;
     }
 
     @SuppressWarnings("unused")
@@ -857,7 +857,7 @@ public final class SystemConfig {
 
 
     public String getViewPersistenceConfBaseDir() {
-        return viewPersistenceConfBaseDir;
+        return this.getHomePath() + File.separatorChar + viewPersistenceConfBaseDir + File.separatorChar;
     }
 
     @SuppressWarnings("unused")
@@ -981,7 +981,7 @@ public final class SystemConfig {
     }
 
     public String getSlowLogBaseDir() {
-        return slowLogBaseDir;
+        return this.getHomePath() + File.separatorChar + slowLogBaseDir + File.separatorChar;
     }
 
     @SuppressWarnings("unused")

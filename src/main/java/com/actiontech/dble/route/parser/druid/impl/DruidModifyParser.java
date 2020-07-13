@@ -379,7 +379,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
 
     Collection<String> checkForSingleNodeTable(RouteResultset rrs) throws SQLNonTransientException {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
-        Set<String> globalNodeSet = new HashSet<>();
+        Set<String> involvedNodeSet = new HashSet<>();
         //loop for the tables & conditions
         for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
             Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
@@ -391,7 +391,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
                     BaseTableConfig tConfig = tSchema.getTables().get(tName);
                     if (tConfig != null && tConfig instanceof ShardingTableConfig) {
-                        if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, globalNodeSet, tablesSet, entry, table, tConfig)) {
+                        if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, involvedNodeSet, tablesSet, entry, table, tConfig)) {
                             throw new SQLNonTransientException(getErrorMsg());
                         }
                     }
@@ -400,25 +400,28 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             }
         }
 
-        String dataNode = null;
-        for (String x : globalNodeSet) {
-            dataNode = x;
+        String currentNode = null;
+        for (String x : involvedNodeSet) {
+            currentNode = x;
         }
 
-        if (dataNode == null) {
+        if (currentNode == null) {
             for (Pair<String, String> table : tablesSet) {
                 String sName = table.getKey();
                 String tName = table.getValue();
                 SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
                 BaseTableConfig tConfig = tSchema.getTables().get(tName);
                 if (tConfig != null && tConfig.getShardingNodes().size() == 1) {
-                    dataNode = tConfig.getShardingNodes().get(0);
-                    globalNodeSet.add(dataNode);
+                    currentNode = tConfig.getShardingNodes().get(0);
+                    involvedNodeSet.add(currentNode);
+                } else if (tConfig == null) {
+                    currentNode = tSchema.getShardingNode();
+                    involvedNodeSet.add(currentNode);
                 }
             }
         }
 
-        if (globalNodeSet.size() > 1) {
+        if (involvedNodeSet.size() > 1) {
             throw new SQLNonTransientException(getErrorMsg());
         }
 
@@ -428,11 +431,11 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
-                if (!tSchema.getShardingNode().equals(dataNode)) {
+                if (!tSchema.getShardingNode().equals(currentNode)) {
                     throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof SingleTableConfig) {
-                if (!tConfig.getShardingNodes().get(0).equals(dataNode)) {
+                if (!tConfig.getShardingNodes().get(0).equals(currentNode)) {
                     throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof GlobalTableConfig) {
@@ -441,7 +444,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 throw new SQLNonTransientException(getErrorMsg());
             }
         }
-        return globalNodeSet;
+        return involvedNodeSet;
     }
 
     static RouteResultset routeByERParentColumn(RouteResultset rrs, ChildTableConfig tc, String joinColumnVal, SchemaUtil.SchemaInfo schemaInfo)

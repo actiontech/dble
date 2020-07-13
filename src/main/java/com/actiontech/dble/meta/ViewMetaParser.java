@@ -46,7 +46,6 @@ public class ViewMetaParser {
                 throw new SQLException("Unknown database '" + schema + "'", "42000", ErrorCode.ER_BAD_DB_ERROR);
             }
 
-            viewMeta.setSchema(schema);
             viewName = viewNameInfo[1];
         }
         viewName = StringUtil.removeBackQuote(viewName);

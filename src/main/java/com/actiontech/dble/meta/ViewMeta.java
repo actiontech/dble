@@ -59,13 +59,10 @@ public class ViewMeta {
         msv.visit(selectStatement.getSelect().getQuery());
         PlanNode selNode = msv.getTableNode();
 
-        String noShardingSchema = null;
         boolean noShardingView = true;
         for (TableNode tableNode : selNode.getReferedTableNodes()) {
             if (DbleServer.getInstance().getConfig().getSchemas().get(tableNode.getSchema()).isNoSharding()) {
-                if (noShardingSchema == null) {
-                    noShardingSchema = tableNode.getSchema();
-                } else if (!noShardingSchema.equals(tableNode.getSchema())) {
+                if (!schema.equals(tableNode.getSchema())) {
                     noShardingView = false;
                     break;
                 }
@@ -75,8 +72,7 @@ public class ViewMeta {
             }
         }
 
-        if (noShardingView && noShardingSchema != null) {
-            this.schema = noShardingSchema;
+        if (noShardingView) {
             if (viewColumnMeta == null) {
                 selNode.setUpFields();
                 List<Item> selectItems = selNode.getColumnsSelected();
@@ -270,10 +266,6 @@ public class ViewMeta {
 
     public String getSchema() {
         return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
     }
 
 }

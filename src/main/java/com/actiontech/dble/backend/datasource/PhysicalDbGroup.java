@@ -13,8 +13,8 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
+import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
@@ -131,6 +131,17 @@ public class PhysicalDbGroup {
 
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
             entry.getValue().init();
+        }
+    }
+
+    public void start(String reason) {
+        if (rwSplitMode == 0) {
+            writeDbInstance.start(reason);
+            return;
+        }
+
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.start(reason);
         }
     }
 

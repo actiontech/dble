@@ -117,14 +117,8 @@ public final class RollbackConfig {
         }
     }
 
-
-    private static void rollbackWithUcore(ManagerConnection c) {
-
-    }
-
-
     private static void writeOKResult(ManagerConnection c) {
-        LOGGER.info(String.valueOf(c) + "Rollback config success by manager");
+        LOGGER.info(c + "Rollback config success by manager");
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(1);
@@ -135,7 +129,7 @@ public final class RollbackConfig {
 
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {
         String sb = "Rollback config failure.The reason is that " + errorMsg;
-        LOGGER.info(sb + "." + String.valueOf(c));
+        LOGGER.info(sb + "." + c);
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
@@ -170,7 +164,7 @@ public final class RollbackConfig {
         if (conf.canRollbackAll()) {
             if (conf.isFullyConfigured()) {
                 for (PhysicalDbGroup dn : dbGroups.values()) {
-                    dn.init();
+                    dn.start("rollback, restart");
                 }
             }
             final Map<String, PhysicalDbGroup> cNodes = conf.getDbGroups();

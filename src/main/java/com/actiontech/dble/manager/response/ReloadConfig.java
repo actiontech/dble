@@ -297,6 +297,8 @@ public final class ReloadConfig {
                 }
                 FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
+                // recycle old active conn
+                recycleOldBackendConnections((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0);
                 if (!loader.isFullyConfigured()) {
                     recycleServerConnections();
                 }
@@ -329,18 +331,7 @@ public final class ReloadConfig {
         SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
         // recycle old active conn
-        if ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0) {
-            for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
-                for (BackendConnection con : processor.getBackends().values()) {
-                    if (con instanceof MySQLConnection) {
-                        MySQLConnection mysqlCon = (MySQLConnection) con;
-                        if (mysqlCon.getOldTimestamp() != 0) {
-                            mysqlCon.close("old active backend conn will be forced closed by closing front conn", true);
-                        }
-                    }
-                }
-            }
-        }
+        recycleOldBackendConnections((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0);
 
         if (loader.isFullyConfigured()) {
             if (newSystemVariables.isLowerCaseTableNames()) {
@@ -428,6 +419,21 @@ public final class ReloadConfig {
         }
     }
 
+    private static void recycleOldBackendConnections(boolean closeFrontCon) {
+        if (closeFrontCon) {
+            for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
+                for (BackendConnection con : processor.getBackends().values()) {
+                    if (con instanceof MySQLConnection) {
+                        MySQLConnection mysqlCon = (MySQLConnection) con;
+                        if (mysqlCon.getOldTimestamp() != 0) {
+                            mysqlCon.close("old active backend conn will be forced closed by closing front conn", true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private static void distinguishDbGroup(Map<String, PhysicalDbGroup> newDbGroups, Map<String, PhysicalDbGroup> oldDbGroups,
                                            Map<String, PhysicalDbGroup> addOrChangeDbGroups, Map<String, PhysicalDbGroup> noChangeDbGroups,
                                            Map<String, PhysicalDbGroup> recycleHosts) {
@@ -475,7 +481,6 @@ public final class ReloadConfig {
                 break;
         }
     }
-
 
     private static String initDbGroupByMap(Map<String, PhysicalDbGroup> newDbGroups, Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured) {
         String reasonMsg = null;

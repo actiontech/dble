@@ -5,9 +5,11 @@
 
 package com.actiontech.dble.config.model.user;
 
+import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -66,5 +68,8 @@ public class UserConfig {
 
     public int getMaxCon() {
         return maxCon;
+    }
+
+    public void isValidSchemaInfo(UserName user, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
     }
 }

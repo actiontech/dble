@@ -12,14 +12,14 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class WhereHandler extends BaseDMLHandler {
 
-    public WhereHandler(long id, NonBlockingSession session, Item where) {
+    public WhereHandler(long id, Session session, Item where) {
         super(id, session);
         assert (where != null);
         this.where = where;

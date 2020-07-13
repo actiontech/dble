@@ -34,7 +34,7 @@ public class ShowTablesStmtInfo {
     private String like;
     private String where;
 
-    ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
+    public ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
         Matcher ma = PATTERN.matcher(sql);
         ma.matches(); //always RETURN TRUE
         isFull = ma.group(3) != null;

@@ -154,7 +154,7 @@ public abstract class Item {
     protected boolean withUnValAble;
     protected boolean fixed;
     protected ItemResult cmpContext;
-    /* the default charsetindex is my_charset_bin */
+    /* the default charset index is my_charset_bin */
     protected int charsetIndex = 63;
     private HashSet<PlanNode> referTables;
 

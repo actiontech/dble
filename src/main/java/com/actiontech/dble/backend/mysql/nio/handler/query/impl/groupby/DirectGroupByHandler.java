@@ -24,7 +24,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -69,7 +69,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
      * @param groupBys
      * @param referredSumFunctions
      */
-    public DirectGroupByHandler(long id, NonBlockingSession session, List<Order> groupBys,
+    public DirectGroupByHandler(long id, Session session, List<Order> groupBys,
                                 List<ItemSum> referredSumFunctions) {
         super(id, session);
         this.groupBys = groupBys;
@@ -110,14 +110,15 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         List<ItemSum> localResultReferredSums = referredSumFunctions;
         RowDataComparator comparator = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
         );
+        String charSet = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), comparator, localResultFps,
-                localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+                localResultReferredSums, this.isAllPushDown(), charSet).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
             RowDataComparator tmpComparator = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type());
             GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpComparator,
-                    localResultFps, localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
+                    localResultFps, localResultReferredSums, this.isAllPushDown(), charSet);
             bucket.setMemSizeController(session.getOtherBufferMC());
             buckets.add(bucket);
             bucket.start();

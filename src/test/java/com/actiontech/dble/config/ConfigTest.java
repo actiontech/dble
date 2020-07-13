@@ -107,7 +107,7 @@ public class ConfigTest {
         Class<ERJoinChooser> classERJoin = ERJoinChooser.class;
         try {
             Constructor<ERJoinChooser> construtor = classERJoin.getConstructor(new Class[]{JoinNode.class, Map.class});
-            Object instance = construtor.newInstance(new Object[]{new JoinNode(), this.erRealtions});
+            Object instance = construtor.newInstance(new Object[]{new JoinNode(63), this.erRealtions});
             Method isERRelstionMethod = classERJoin.getDeclaredMethod("isErRelation", new Class[]{ERTable.class, ERTable.class});
             isERRelstionMethod.setAccessible(true);
             Object result = isERRelstionMethod.invoke(instance, new Object[]{er0, er1});

@@ -8,7 +8,7 @@ package com.actiontech.dble.server.util;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
-import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -76,19 +76,8 @@ public final class SchemaUtil {
         if (tableAndSchema.length == 2) {
             schemaInfo.schema = StringUtil.removeBackQuote(tableAndSchema[0]);
             schemaInfo.table = StringUtil.removeBackQuote(tableAndSchema[1]);
-            SchemaConfig config = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
-            if (config == null) {
-                String msg = "Table " + StringUtil.getFullName(schemaInfo.schema, schemaInfo.table) + " doesn't exist";
-                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-            }
-            schemaInfo.schemaConfig = config;
-            if (user != null) {
-                ShardingUserConfig userConfig = (ShardingUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user);
-                if (!userConfig.getSchemas().contains(schemaInfo.schema)) {
-                    String msg = " Access denied for user '" + user + "' to database '" + schemaInfo.schema + "'";
-                    throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
-                }
-            }
+            UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+            userConfig.isValidSchemaInfo(user, schemaInfo);
         } else {
             schemaInfo.schema = schemaConfig.getName();
             schemaInfo.table = StringUtil.removeBackQuote(tableAndSchema[0]);
@@ -110,11 +99,10 @@ public final class SchemaUtil {
             schemaInfo.table = StringUtil.removeBackQuote(identifierExpr.getName());
             if (identifierExpr.getName().equalsIgnoreCase("dual") && tableAlias == null) {
                 schemaInfo.dual = true;
-                return schemaInfo;
             }
         }
         schemaInfo.tableAlias = tableAlias == null ? schemaInfo.table : StringUtil.removeBackQuote(tableAlias);
-        if (schemaInfo.schema == null) {
+        if (schemaInfo.schema == null && !schemaInfo.dual) {
             String msg = "No database selected";
             throw new SQLException(msg, "3D000", ErrorCode.ER_NO_DB_ERROR);
         }
@@ -122,21 +110,9 @@ public final class SchemaUtil {
             schemaInfo.table = schemaInfo.table.toLowerCase();
             schemaInfo.schema = schemaInfo.schema.toLowerCase();
         }
-        if (!MYSQL_SYS_SCHEMA.contains(schemaInfo.schema.toUpperCase())) {
-            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
-            if (schemaConfig == null) {
-                String msg = "Table " + StringUtil.getFullName(schemaInfo.schema, schemaInfo.table) + " doesn't exist";
-                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-            }
-            if (user != null) {
-                ShardingUserConfig userConfig = (ShardingUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user);
-                if (!userConfig.getSchemas().contains(schemaInfo.schema)) {
-                    String msg = " Access denied for user '" + user + "' to database '" + schemaInfo.schema + "'";
-                    throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
-                }
-            }
-            schemaInfo.schemaConfig = schemaConfig;
-        }
+
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+        userConfig.isValidSchemaInfo(user, schemaInfo);
         return schemaInfo;
     }
 
@@ -280,6 +256,18 @@ public final class SchemaUtil {
 
         public String getSchema() {
             return schema;
+        }
+
+        public void setTable(String table) {
+            this.table = table;
+        }
+
+        public void setSchema(String schema) {
+            this.schema = schema;
+        }
+
+        public void setSchemaConfig(SchemaConfig schemaConfig) {
+            this.schemaConfig = schemaConfig;
         }
 
         public SchemaConfig getSchemaConfig() {

@@ -201,7 +201,7 @@ public class ItemCreate {
         nativFuncs.put("MINUTE", new ItemFuncMinute(null));
         nativFuncs.put("MONTHNAME", new ItemFuncMonthname(null));
         nativFuncs.put("MONTH", new ItemFuncMonth(null));
-        nativFuncs.put("NULLIF", new ItemFuncNullif(null, null));
+        nativFuncs.put("NULLIF", new ItemFuncNullif(null, null, 63));
         nativFuncs.put("NOW", new ItemFuncNowLocal(null));
         //nativFuncs.put("OCT", new ItemFuncLog2(null));
         nativFuncs.put("PERIOD_ADD", new ItemFuncPeriodAdd(null));
@@ -228,7 +228,7 @@ public class ItemCreate {
         nativFuncs.put("SOUNDEX", new ItemFuncSoundex(null));
         nativFuncs.put("SPACE", new ItemFuncSpace(null));
         nativFuncs.put("SQRT", new ItemFuncSqrt(null));
-        nativFuncs.put("STRCMP", new ItemFuncStrcmp(null, null));
+        nativFuncs.put("STRCMP", new ItemFuncStrcmp(null, null, 63));
         nativFuncs.put("STR_TO_DATE", new ItemFuncStrToDate(null));
         nativFuncs.put("SUBSTR", new ItemFuncSubstr(null));
         nativFuncs.put("SUBSTRING", new ItemFuncSubstr(null));

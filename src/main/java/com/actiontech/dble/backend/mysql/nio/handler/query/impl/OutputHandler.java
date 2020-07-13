@@ -10,9 +10,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
@@ -35,13 +36,16 @@ public class OutputHandler extends BaseDMLHandler {
     private boolean isBinary;
     private long netOutBytes;
     private long selectRows;
-    public OutputHandler(long id, NonBlockingSession session) {
+    private final NonBlockingSession serverSession;
+
+    public OutputHandler(long id, Session session) {
         super(id, session);
-        session.setOutputHandler(this);
+        serverSession = (NonBlockingSession) session;
+        serverSession.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.packetId = (byte) session.getPacketId().get();
-        this.isBinary = session.isPrepared();
-        this.buffer = session.getSource().allocate();
+        this.packetId = (byte) serverSession.getPacketId().get();
+        this.isBinary = serverSession.isPrepared();
+        this.buffer = serverSession.getSource().allocate();
     }
 
     @Override
@@ -54,12 +58,12 @@ public class OutputHandler extends BaseDMLHandler {
         this.netOutBytes += ok.length;
         OkPacket okPacket = new OkPacket();
         okPacket.read(ok);
-        ServerConnection source = session.getSource();
+        FrontendConnection source = serverSession.getSource();
         lock.lock();
         try {
             ok[3] = ++packetId;
-            session.multiStatementPacket(okPacket, packetId);
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            serverSession.multiStatementPacket(okPacket, packetId);
+            boolean multiStatementFlag = serverSession.getIsMultiStatement().get();
             if ((okPacket.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
                 buffer = source.writeToBuffer(ok, buffer);
             } else {
@@ -67,7 +71,7 @@ public class OutputHandler extends BaseDMLHandler {
                 buffer = source.writeToBuffer(ok, buffer);
                 source.write(buffer);
             }
-            session.multiStatementNextSql(multiStatementFlag);
+            serverSession.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
         }
@@ -80,9 +84,9 @@ public class OutputHandler extends BaseDMLHandler {
         logger.info(conn.toString() + "|errorResponse()|" + new String(errPacket.getMessage()));
         lock.lock();
         try {
-            buffer = session.getSource().writeToBuffer(err, buffer);
-            session.resetMultiStatementStatus();
-            session.getSource().write(buffer);
+            buffer = serverSession.getSource().writeToBuffer(err, buffer);
+            serverSession.resetMultiStatementStatus();
+            serverSession.getSource().write(buffer);
         } finally {
             lock.unlock();
         }
@@ -91,7 +95,7 @@ public class OutputHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
-        session.setHandlerStart(this);
+        serverSession.setHandlerStart(this);
         if (terminate.get()) {
             return;
         }
@@ -106,7 +110,7 @@ public class OutputHandler extends BaseDMLHandler {
             hp.setFieldCount(fieldPackets.size());
             hp.setPacketId(++packetId);
             this.netOutBytes += hp.calcPacketSize();
-            ServerConnection source = session.getSource();
+            FrontendConnection source = serverSession.getSource();
             buffer = hp.write(buffer, source, true);
             for (FieldPacket fp : fieldPackets) {
                 fp.setPacketId(++packetId);
@@ -139,24 +143,24 @@ public class OutputHandler extends BaseDMLHandler {
                 binRowPacket.read(this.fieldPackets, rowPacket);
                 binRowPacket.setPacketId(++packetId);
                 this.netOutBytes += binRowPacket.calcPacketSize();
-                buffer = binRowPacket.write(buffer, session.getSource(), true);
-                this.packetId = (byte) session.getPacketId().get();
+                buffer = binRowPacket.write(buffer, serverSession.getSource(), true);
+                this.packetId = (byte) serverSession.getPacketId().get();
             } else {
                 if (rowPacket != null) {
                     rowPacket.setPacketId(++packetId);
                     this.netOutBytes += rowPacket.calcPacketSize();
-                    buffer = rowPacket.write(buffer, session.getSource(), true);
-                    this.packetId = (byte) session.getPacketId().get();
+                    buffer = rowPacket.write(buffer, serverSession.getSource(), true);
+                    this.packetId = (byte) serverSession.getPacketId().get();
                 } else {
                     row = rowNull;
                     this.netOutBytes += row.length;
                     boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
                     if (isBigPackage) {
-                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
-                        this.packetId = (byte) session.getPacketId().get();
+                        buffer = serverSession.getSource().writeBigPackageToBuffer(row, buffer, packetId);
+                        this.packetId = (byte) serverSession.getPacketId().get();
                     } else {
                         row[3] = ++packetId;
-                        buffer = session.getSource().writeToBuffer(row, buffer);
+                        buffer = serverSession.getSource().writeToBuffer(row, buffer);
                     }
                 }
             }
@@ -172,7 +176,7 @@ public class OutputHandler extends BaseDMLHandler {
             return;
         }
         logger.debug("--------sql execute end!");
-        ServerConnection source = session.getSource();
+        FrontendConnection source = serverSession.getSource();
         lock.lock();
         try {
             if (terminate.get()) {
@@ -186,14 +190,14 @@ public class OutputHandler extends BaseDMLHandler {
             this.netOutBytes += eofPacket.calcPacketSize();
             doSqlStat();
             HandlerTool.terminateHandlerTree(this);
-            session.multiStatementPacket(eofPacket, packetId);
+            serverSession.multiStatementPacket(eofPacket, packetId);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
-            session.setHandlerEnd(this);
-            session.setResponseTime(true);
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            serverSession.setHandlerEnd(this);
+            serverSession.setResponseTime(true);
+            boolean multiStatementFlag = serverSession.getIsMultiStatement().get();
             source.write(buffer);
-            session.multiStatementNextSql(multiStatementFlag);
+            serverSession.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
         }
@@ -202,11 +206,11 @@ public class OutputHandler extends BaseDMLHandler {
     private void doSqlStat() {
         if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
-            String sql = session.getSource().getExecuteSql();
+            String sql = serverSession.getSource().getExecuteSql();
             if (sql != null) {
                 netInBytes += sql.getBytes().length;
-                QueryResult queryResult = new QueryResult(session.getSource().getUser(), ServerParse.SELECT,
-                        sql, selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
+                QueryResult queryResult = new QueryResult(serverSession.getSource().getUser(), ServerParse.SELECT,
+                        sql, selectRows, netInBytes, netOutBytes, serverSession.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
                 if (logger.isDebugEnabled()) {
                     logger.debug("try to record sql:" + sql);
                 }
@@ -217,7 +221,7 @@ public class OutputHandler extends BaseDMLHandler {
 
     public void backendConnError(byte[] errMsg) {
         if (terminate.compareAndSet(false, true)) {
-            session.resetMultiStatementStatus();
+            serverSession.resetMultiStatementStatus();
             ErrorPacket err = new ErrorPacket();
             err.setErrNo(ErrorCode.ER_YES);
             err.setMessage(errMsg);
@@ -236,7 +240,7 @@ public class OutputHandler extends BaseDMLHandler {
                 error.setMessage("unknown error".getBytes());
             }
             error.setPacketId(++packetId);
-            session.getSource().write(error.toBytes());
+            serverSession.getSource().write(error.toBytes());
         } finally {
             lock.unlock();
         }
@@ -245,13 +249,13 @@ public class OutputHandler extends BaseDMLHandler {
     private void recycleResources() {
         if (buffer != null) {
             if (buffer.position() > 0) {
-                session.getSource().write(buffer);
+                serverSession.getSource().write(buffer);
             } else {
-                session.getSource().recycle(buffer);
+                serverSession.getSource().recycle(buffer);
                 buffer = null;
             }
         }
-        session.resetMultiStatementStatus();
+        serverSession.resetMultiStatementStatus();
     }
 
     @Override

@@ -112,7 +112,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset) throws SQLNonTransientException {
+    static String shardingValueToString(SQLExpr valueExpr, String clientCharset) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;

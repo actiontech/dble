@@ -1,10 +1,5 @@
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLNotNullConstraint;
-
 import java.util.List;
 
 public final class TableMeta {
@@ -78,63 +73,6 @@ public final class TableMeta {
         result = 31 * result + columns.hashCode();
 
         return result;
-    }
-
-    public static class ColumnMeta {
-        private String name;
-        private String dataType;
-        private boolean canNull = true;
-        private String defaultVal;
-
-        public ColumnMeta(SQLColumnDefinition def) {
-            this.name = StringUtil.removeBackAndDoubleQuote(def.getName().getSimpleName());
-            this.dataType = def.getDataType().getName();
-            for (SQLColumnConstraint constraint : def.getConstraints()) {
-                if (constraint instanceof SQLNotNullConstraint) {
-                    this.canNull = false;
-                    break;
-                }
-            }
-            this.defaultVal = null == def.getDefaultExpr() ? null : StringUtil.removeApostrophe(def.getDefaultExpr().toString());
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getDataType() {
-            return dataType;
-        }
-
-        public boolean isCanNull() {
-            return canNull;
-        }
-
-        public String getDefaultVal() {
-            return defaultVal;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            }
-            if (!(other instanceof ColumnMeta)) {
-                return false;
-            }
-            ColumnMeta temp = (ColumnMeta) other;
-            return name.equalsIgnoreCase(temp.getName()) && dataType.equals(temp.getDataType()) &&
-                    canNull == temp.isCanNull();
-        }
-
-        @Override
-        public int hashCode() {
-            int result = 31 + name.hashCode();
-            result = 31 * result + dataType.hashCode();
-            result = 31 * result + (canNull ? 1231 : 1237);
-
-            return result;
-        }
     }
 
 }

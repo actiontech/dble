@@ -8,6 +8,7 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
@@ -68,10 +69,10 @@ final class MetaHelper {
         tableMeta.setVersion(timeStamp);
         tableMeta.setCreateSql(createStatement.toString());
 
-        List<TableMeta.ColumnMeta> columns = new ArrayList<>(createStatement.getTableElementList().size());
+        List<ColumnMeta> columns = new ArrayList<>(createStatement.getTableElementList().size());
         for (SQLTableElement tableElement : createStatement.getTableElementList()) {
             if (tableElement instanceof SQLColumnDefinition) {
-                columns.add(new TableMeta.ColumnMeta((SQLColumnDefinition) tableElement));
+                columns.add(new ColumnMeta((SQLColumnDefinition) tableElement));
             }
         }
         tableMeta.setColumns(columns);

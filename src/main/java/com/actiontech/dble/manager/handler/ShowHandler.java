@@ -70,6 +70,9 @@ public final class ShowHandler {
             case ManagerParseShow.DATABASE:
                 ShowDatabase.execute(c);
                 break;
+            case ManagerParseShow.DATABASES:
+                ShowDatabases.execute(c);
+                break;
             case ManagerParseShow.SHARDING_NODE:
                 ShowShardingNode.execute(c, null);
                 break;
@@ -122,6 +125,9 @@ public final class ShowHandler {
                 break;
             case ManagerParseShow.WHITE_HOST:
                 ShowWhiteHost.execute(c);
+                break;
+            case ManagerParseShow.TABLES:
+                ShowTables.execute(c, stmt);
                 break;
             case ManagerParseShow.SQL:
                 boolean isClearSql = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());

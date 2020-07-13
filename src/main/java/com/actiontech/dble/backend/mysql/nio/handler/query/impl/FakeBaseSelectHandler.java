@@ -6,7 +6,8 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.Session;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +20,7 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
     private final boolean isInUnion;
     private final List<Item> selectList;
 
-    public FakeBaseSelectHandler(long id, NonBlockingSession session, List<Item> selectList, MultiNodeMergeHandler next, boolean isInUnion) {
+    public FakeBaseSelectHandler(long id, Session session, List<Item> selectList, MultiNodeMergeHandler next, boolean isInUnion) {
         super(id, session);
         this.nextHandler = next;
         this.isInUnion = isInUnion;
@@ -61,7 +62,7 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
         if (selectList.size() > 1) {
             RowDataPacket row = new RowDataPacket(fieldCount);
             for (Item i : selectList) {
-                List<RowDataPacket> rows = ((ItemFuncInner) i).getRows(session.getSource());
+                List<RowDataPacket> rows = ((ItemFuncInner) i).getRows((ServerConnection) (session.getSource()));
                 if (rows.size() > 1) {
                     return null;
                 } else {
@@ -73,7 +74,7 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
             return result;
         } else {
             Item i = selectList.get(0);
-            List<RowDataPacket> rows = ((ItemFuncInner) i).getRows(session.getSource());
+            List<RowDataPacket> rows = ((ItemFuncInner) i).getRows((ServerConnection) (session.getSource()));
             return rows;
         }
     }

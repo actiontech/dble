@@ -47,7 +47,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     public void buildOwn() {
         try {
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, pdVisitor);
             String sql = null;
             Map<String, String> mapTableToSimple = new HashMap<>();
             if (node.getAst() != null && node.getParent() == null) { // it's root
@@ -63,7 +63,6 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             } else {
                 rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
             }
-            this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrs.getNodes());
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception! Error:" + e.getMessage(), e);
@@ -78,7 +77,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             if (filters == null || filters.isEmpty())
                 throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "unexpected exception!");
             List<RouteResultsetNode> rrssList = new ArrayList<>();
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, pdVisitor);
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
             if (tableConfig == null || tableConfig instanceof GlobalTableConfig) {
                 for (Item filter : filters) {
@@ -96,9 +95,6 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
                     pdVisitor.visit();
                     RouteResultsetNode[] rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
                     rrssList.addAll(Arrays.asList(rrssArray));
-                }
-                if (tryGlobal) {
-                    this.needCommon = mergeBuilder.getNeedCommonFlag();
                 }
             }
             RouteResultsetNode[] rrssArray = new RouteResultsetNode[rrssList.size()];

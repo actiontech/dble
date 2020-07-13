@@ -5,8 +5,14 @@
 
 package com.actiontech.dble.config.model.user;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
 
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,4 +50,19 @@ public class ShardingUserConfig extends ServerUserConfig {
         schemas = newSchemas;
     }
 
+    @Override
+    public void isValidSchemaInfo(UserName user, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
+        if (!schemaInfo.isDual() && !SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaInfo.getSchema().toUpperCase())) {
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.getSchema());
+            if (schemaConfig == null) {
+                String msg = "Table " + StringUtil.getFullName(schemaInfo.getSchema(), schemaInfo.getTable()) + " doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
+            if (!schemas.contains(schemaInfo.getSchema())) {
+                String msg = "Access denied for user '" + user + "' to database '" + schemaInfo.getSchema() + "'";
+                throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            }
+            schemaInfo.setSchemaConfig(schemaConfig);
+        }
+    }
 }

@@ -83,6 +83,34 @@ public final class HandlerTool {
      * @param type   HandlerType
      * @return Item
      */
+    public static Item createManagerItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
+        Item ret;
+        if (sel.isWithSubQuery()) {
+            sel = PlanUtil.rebuildSubQueryItem(sel);
+        }
+        if (sel.basicConstItem())
+            return sel;
+        Item.ItemType i = sel.type();
+        if ((i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) && !(sel instanceof ItemFuncInner)) {
+            ItemFunc func = (ItemFunc) sel;
+            ret = createFunctionItem(func, fields, startIndex, allPushDown, type);
+
+        } else if (i == Item.ItemType.SUM_FUNC_ITEM) {
+            ret = createFieldItem(sel, fields, startIndex);
+        } else {
+            ret = createFieldItem(sel, fields, startIndex);
+        }
+        ret.fixFields();
+        return ret;
+    }
+    /**
+     * create Item, the Item value referenced by field and changed by field changes
+     *
+     * @param sel    Item
+     * @param fields List<Field>
+     * @param type   HandlerType
+     * @return Item
+     */
     public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
         Item ret;
         if (sel.isWithSubQuery()) {

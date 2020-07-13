@@ -204,7 +204,7 @@ public final class SubQueryPreProcessor {
 
         ItemField rightJoinColumn = new ItemField(null, alias, rightJoinName);
         // rename the left column's table name
-        result.query = new JoinNode(qtn.query, changeQuery);
+        result.query = new JoinNode(qtn.query, changeQuery, filter.getCharsetIndex());
         // leave origin sql to new join node
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
@@ -234,11 +234,11 @@ public final class SubQueryPreProcessor {
         }
         if (filter.isNeg()) {
             ((JoinNode) result.query).setLeftOuterJoin().setNotIn(true);
-            ItemFuncEqual joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+            ItemFuncEqual joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn, filter.getCharsetIndex());
             ((JoinNode) result.query).addJoinFilter(joinFilter);
             result.filter = null;
         } else {
-            Item joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn);
+            Item joinFilter = FilterUtils.equal(leftColumn, rightJoinColumn, filter.getCharsetIndex());
             result.query.query(joinFilter);
             result.filter = joinFilter;
         }

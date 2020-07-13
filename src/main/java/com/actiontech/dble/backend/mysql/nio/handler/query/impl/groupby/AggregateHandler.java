@@ -21,7 +21,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.AggregatorType;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ public class AggregateHandler extends BaseDMLHandler {
      * @param groupBys
      * @param referredSumFunctions
      */
-    public AggregateHandler(long id, NonBlockingSession session, List<Order> groupBys, List<ItemSum> referredSumFunctions) {
+    public AggregateHandler(long id, Session session, List<Order> groupBys, List<ItemSum> referredSumFunctions) {
         super(id, session);
         this.groupBys = groupBys;
         this.referredSumFunctions = referredSumFunctions;
@@ -79,7 +79,7 @@ public class AggregateHandler extends BaseDMLHandler {
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
         session.setHandlerStart(this);
-        this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
+        this.charset = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
         if (terminate.get())
             return;
         if (this.pool == null)

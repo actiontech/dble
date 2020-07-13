@@ -11,7 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
 
     public abstract void setForExplain();
 
-    public SubQueryHandler(long id, NonBlockingSession session) {
+    public SubQueryHandler(long id, Session session) {
         super(id, session);
         this.lock = new ReentrantLock();
     }

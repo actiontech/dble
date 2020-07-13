@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public class LimitHandler extends BaseDMLHandler {
     // current index
     private AtomicLong curIndex = new AtomicLong(-1L);
 
-    public LimitHandler(long id, NonBlockingSession session, long limitIndex, long limitCount) {
+    public LimitHandler(long id, Session session, long limitIndex, long limitCount) {
         super(id, session);
         this.limitIndex = limitIndex;
         this.limitCount = limitCount;

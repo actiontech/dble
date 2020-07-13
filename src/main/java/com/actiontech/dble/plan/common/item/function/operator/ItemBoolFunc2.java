@@ -16,9 +16,10 @@ import com.actiontech.dble.plan.common.item.function.primary.ItemBoolFunc;
 public abstract class ItemBoolFunc2 extends ItemBoolFunc {
     protected ArgComparator cmp;
 
-    public ItemBoolFunc2(Item a, Item b) {
+    public ItemBoolFunc2(Item a, Item b, int charsetIndex) {
         super(a, b);
-        cmp = new ArgComparator(a, b);
+        this.charsetIndex = charsetIndex;
+        cmp = new ArgComparator(a, b, charsetIndex);
     }
 
     public int setCmpFunc() {

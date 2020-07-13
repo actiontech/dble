@@ -132,7 +132,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * find the index of the key in column list
      *
-     * @param schemaInfo      SchemaInfo
+     * @param schemaInfo      ManagerSchemaInfo
      * @param replaceStmt     SQLReplaceStatement
      * @param partitionColumn partitionColumn
      * @return the index of the partition column
@@ -308,7 +308,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * find joinColumn index
      *
-     * @param schemaInfo  SchemaInfo
+     * @param schemaInfo  ManagerSchemaInfo
      * @param replaceStmt MySqlInsertStatement
      * @param joinColumn  joinColumn
      * @return -1 means no join key,otherwise means the index
@@ -322,7 +322,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * insert into .... select .... OR insert into table() values (),(),....
      *
-     * @param schemaInfo      SchemaInfo
+     * @param schemaInfo      ManagerSchemaInfo
      * @param rrs             RouteResultset
      * @param partitionColumn partitionColumn
      * @param replace         SQLReplaceStatement
@@ -346,7 +346,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToSting(expr, clientCharset);
+            String shardingValue = shardingValueToString(expr, clientCharset);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // no part find for this record
             if (nodeIndex == null) {
@@ -377,7 +377,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * insert single record
      *
-     * @param schemaInfo       SchemaInfo
+     * @param schemaInfo       ManagerSchemaInfo
      * @param rrs              RouteResultset
      * @param partitionColumn  partitionColumn
      * @param replaceStatement SQLReplaceStatement
@@ -387,7 +387,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                                     SQLReplaceStatement replaceStatement, String clientCharset) throws SQLNonTransientException {
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, replaceStatement, partitionColumn);
         SQLExpr valueExpr = replaceStatement.getValuesList().get(0).getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToSting(valueExpr, clientCharset);
+        String shardingValue = shardingValueToString(valueExpr, clientCharset);
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
         if (nodeIndex == null) {

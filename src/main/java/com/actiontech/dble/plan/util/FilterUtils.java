@@ -220,38 +220,8 @@ public final class FilterUtils {
     /**
      * create equal filter
      */
-    public static ItemFuncEqual equal(Item column, Item value) {
-        ItemFuncEqual f = new ItemFuncEqual(column, value);
-        PlanUtil.refreshReferTables(f);
-        return f;
-    }
-
-    public static ItemFuncGt greaterThan(Item column, Item value) {
-        ItemFuncGt f = new ItemFuncGt(column, value);
-        PlanUtil.refreshReferTables(f);
-        return f;
-    }
-
-    public static ItemFuncLt lessThan(Item column, Item value) {
-        ItemFuncLt f = new ItemFuncLt(column, value);
-        PlanUtil.refreshReferTables(f);
-        return f;
-    }
-
-    public static ItemFuncGe greaterEqual(Item column, Item value) {
-        ItemFuncGe f = new ItemFuncGe(column, value);
-        PlanUtil.refreshReferTables(f);
-        return f;
-    }
-
-    public static ItemFuncLe lessEqual(Item column, Item value) {
-        ItemFuncLe f = new ItemFuncLe(column, value);
-        PlanUtil.refreshReferTables(f);
-        return f;
-    }
-
-    public static ItemFuncNe notEqual(Item column, Item value) {
-        ItemFuncNe f = new ItemFuncNe(column, value);
+    public static ItemFuncEqual equal(Item column, Item value, int charsetIndex) {
+        ItemFuncEqual f = new ItemFuncEqual(column, value, charsetIndex);
         PlanUtil.refreshReferTables(f);
         return f;
     }

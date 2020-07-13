@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -15,7 +16,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.plan.node.ManagerTableNode;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +30,7 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
     private RowDataPacket tmpRow;
     private RowDataComparator rowComparator;
 
-    public AllAnySubQueryHandler(long id, NonBlockingSession session, ItemAllAnySubQuery itemSubQuery) {
+    public AllAnySubQueryHandler(long id, Session session, ItemAllAnySubQuery itemSubQuery) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
 
@@ -49,7 +50,9 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
                 this.fieldPackets = fieldPackets;
                 sourceField = HandlerTool.createField(this.fieldPackets.get(0));
                 Item select = itemSubQuery.getSelect();
-                select.setPushDownName(select.getAlias());
+                if (!(itemSubQuery.getPlanNode() instanceof ManagerTableNode)) {
+                    select.setPushDownName(select.getAlias());
+                }
                 Item tmpItem = HandlerTool.createItem(select, Collections.singletonList(this.sourceField), 0, isAllPushDown(), type());
                 itemSubQuery.setFiled(tmpItem);
                 rowComparator = new RowDataComparator(this.fieldPackets, Collections.singletonList(new Order(select)), this.isAllPushDown(), this.type());

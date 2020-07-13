@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OrderByHandler;
@@ -54,7 +55,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needWhereHandler = false;
             this.canPushDown = !node.existUnPushDownGroup();
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node, pdVisitor);
             String sql = null;
             Map<String, String> mapTableToSimple = new HashMap<>();
             if (node.getAst() != null && node.getParent() == null) { // it's root
@@ -76,7 +77,6 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             } else {
                 rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
             }
-            this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrs.getNodes());
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception! Error:" + e.getMessage(), e);
@@ -186,7 +186,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         List<Item> argList = new ArrayList<>();
         argList.add(keyInBig);
         argList.add(new ItemString(NEED_REPLACE));
-        ItemFuncIn filter = new ItemFuncIn(argList, false);
+        ItemFuncIn filter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
         strategyFilters.add(filter);
     }
 
@@ -209,7 +209,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);
                     argList.addAll(partList);
-                    ItemFuncIn inFilter = new ItemFuncIn(argList, false);
+                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
                     strategyFilters.add(inFilter);
                     partList = null;
                     partSize = 0;
@@ -220,7 +220,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             List<Item> argList = new ArrayList<>();
             argList.add(keyInBig);
             argList.addAll(partList);
-            ItemFuncIn inFilter = new ItemFuncIn(argList, false);
+            ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
             strategyFilters.add(inFilter);
         }
         // if no data

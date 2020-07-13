@@ -17,8 +17,8 @@ import java.util.List;
 public class ItemFuncNullif extends ItemBoolFunc2 {
     //ItemResult cached_result_type;//use for agg_arg_charsets_for_comparison
 
-    public ItemFuncNullif(Item a, Item b) {
-        super(a, b);
+    public ItemFuncNullif(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -81,6 +81,6 @@ public class ItemFuncNullif extends ItemBoolFunc2 {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncNullif(realArgs.get(0), realArgs.get(1));
+        return new ItemFuncNullif(realArgs.get(0), realArgs.get(1), this.charsetIndex);
     }
 }

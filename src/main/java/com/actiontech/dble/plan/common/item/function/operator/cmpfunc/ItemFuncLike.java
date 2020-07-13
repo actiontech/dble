@@ -22,8 +22,8 @@ public class ItemFuncLike extends ItemBoolFunc2 {
     private Item escape;
     private boolean isNot;
 
-    public ItemFuncLike(Item a, Item b, Item escape, boolean isNot) {
-        super(a, b);
+    public ItemFuncLike(Item a, Item b, Item escape, boolean isNot, int charsetIndex) {
+        super(a, b, charsetIndex);
         this.escape = escape;
         if (escape != null)
             args.add(escape);
@@ -90,7 +90,7 @@ public class ItemFuncLike extends ItemBoolFunc2 {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncLike(newArgs.get(0), newArgs.get(1), escape == null ? null : newArgs.get(2), this.isNot);
+        return new ItemFuncLike(newArgs.get(0), newArgs.get(1), escape == null ? null : newArgs.get(2), this.isNot, this.charsetIndex);
     }
 
 }

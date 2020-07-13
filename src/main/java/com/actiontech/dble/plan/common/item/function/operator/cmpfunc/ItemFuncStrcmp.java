@@ -22,8 +22,8 @@ public class ItemFuncStrcmp extends ItemBoolFunc2 {
      * @param a
      * @param b
      */
-    public ItemFuncStrcmp(Item a, Item b) {
-        super(a, b);
+    public ItemFuncStrcmp(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -46,6 +46,6 @@ public class ItemFuncStrcmp extends ItemBoolFunc2 {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncStrcmp(realArgs.get(0), realArgs.get(1));
+        return new ItemFuncStrcmp(realArgs.get(0), realArgs.get(1), this.charsetIndex);
     }
 }

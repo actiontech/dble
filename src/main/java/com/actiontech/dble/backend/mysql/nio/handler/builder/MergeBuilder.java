@@ -26,15 +26,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MergeBuilder {
-    private boolean needCommonFlag;
     private PlanNode node;
     private NonBlockingSession session;
     private Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     private PushDownVisitor pdVisitor;
 
-    MergeBuilder(NonBlockingSession session, PlanNode node, boolean needCommon, PushDownVisitor pdVisitor) {
+    MergeBuilder(NonBlockingSession session, PlanNode node, PushDownVisitor pdVisitor) {
         this.node = node;
-        this.needCommonFlag = needCommon;
         this.session = session;
         this.schemaConfigMap.putAll(DbleServer.getInstance().getConfig().getSchemas());
         this.pdVisitor = pdVisitor;
@@ -76,9 +74,5 @@ public class MergeBuilder {
         return RouterUtil.routeFromParserComplex(schemaConfig, druidParser, tableConfigMap, rrs, select, new ServerSchemaStatVisitor(), session.getSource());
     }
 
-    /* -------------------- getter/setter -------------------- */
-    boolean getNeedCommonFlag() {
-        return needCommonFlag;
-    }
 
 }

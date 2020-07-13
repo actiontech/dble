@@ -12,7 +12,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class UnionHandler extends BaseDMLHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UnionHandler.class);
 
-    public UnionHandler(long id, NonBlockingSession session, List<Item> selects, int nodeCount) {
+    public UnionHandler(long id, Session session, List<Item> selects, int nodeCount) {
         super(id, session);
         this.selects = selects;
         this.nodeCount = new AtomicInteger(nodeCount);

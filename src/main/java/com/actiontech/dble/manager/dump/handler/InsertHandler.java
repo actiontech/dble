@@ -3,6 +3,7 @@ package com.actiontech.dble.manager.dump.handler;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.manager.dump.DumpException;
 import com.actiontech.dble.manager.dump.DumpFileContext;
+import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -146,7 +147,7 @@ class InsertHandler extends DefaultHandler {
                 }
 
                 for (int i = 0; i < tableMeta.getColumns().size(); i++) {
-                    TableMeta.ColumnMeta column = tableMeta.getColumns().get(i);
+                    ColumnMeta column = tableMeta.getColumns().get(i);
                     String columnName = column.getName();
                     if (tableConfig.getIncrementColumn() != null && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;

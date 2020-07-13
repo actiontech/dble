@@ -10,14 +10,14 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 
 import java.util.List;
 
 public class RenameFieldHandler extends BaseDMLHandler {
     private String alias;
     private PlanNode.PlanNodeType childType;
-    public RenameFieldHandler(long id, NonBlockingSession session, String alias, PlanNode.PlanNodeType childType) {
+    public RenameFieldHandler(long id, Session session, String alias, PlanNode.PlanNodeType childType) {
         super(id, session);
         this.alias = alias;
         this.childType = childType;

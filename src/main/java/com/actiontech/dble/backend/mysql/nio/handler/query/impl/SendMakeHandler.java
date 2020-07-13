@@ -13,7 +13,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 
@@ -35,7 +35,7 @@ public class SendMakeHandler extends BaseDMLHandler {
     private String table;
     private String schema;
 
-    public SendMakeHandler(long id, NonBlockingSession session, List<Item> selects, String schema, String table, String tableAlias) {
+    public SendMakeHandler(long id, Session session, List<Item> selects, String schema, String table, String tableAlias) {
         super(id, session);
         lock = new ReentrantLock();
         this.selects = selects;

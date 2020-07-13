@@ -26,12 +26,13 @@ public class ItemFuncIn extends ItemFuncOptNeg {
      *
      * @param args
      */
-    public ItemFuncIn(List<Item> args, boolean isNegation) {
+    public ItemFuncIn(List<Item> args, boolean isNegation, int charsetIndex) {
         super(args, isNegation);
         Item arg0 = args.get(0);
         if (arg0 instanceof ItemBasicConstant) {
             leftResultType = arg0.resultType();
         }
+        this.charsetIndex = charsetIndex;
     }
 
     @Override
@@ -64,7 +65,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
             }
             if (nullValue = left.isNullValue())
                 return BigInteger.ZERO;
-            ArgComparator cmp = new ArgComparator(left, right);
+            ArgComparator cmp = new ArgComparator(left, right, charsetIndex);
             cmp.setCmpFunc(this, left, right, false);
             if (cmp.compare() == 0 && !right.isNullValue())
                 return !negated ? BigInteger.ONE : BigInteger.ZERO;
@@ -96,7 +97,7 @@ public class ItemFuncIn extends ItemFuncOptNeg {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIn(newArgs, this.negated);
+        return new ItemFuncIn(newArgs, this.negated, this.charsetIndex);
     }
 
 }

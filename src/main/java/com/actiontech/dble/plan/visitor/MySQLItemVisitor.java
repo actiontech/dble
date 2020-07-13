@@ -72,7 +72,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         this.usrVariables = usrVariables;
     }
 
-    private Item item;
+    protected Item item;
 
     public Item getItem() {
         return item;
@@ -118,7 +118,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables, charsetIndex);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -182,20 +182,20 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     Item itemLikeLeft = getItem(like.getLeft());
                     Item itemLikeRight = getItem(like.getRight());
                     boolean isNot = (like.getOperator() == SQLBinaryOperator.NotLike);
-                    item = new ItemFuncLike(itemLikeLeft, itemLikeRight, itemRight, isNot);
+                    item = new ItemFuncLike(itemLikeLeft, itemLikeRight, itemRight, isNot, charsetIndex);
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                             "not supported kind expression:" + x.getOperator());
                 }
                 break;
             case NotLike:
-                item = new ItemFuncLike(itemLeft, itemRight, null, true);
+                item = new ItemFuncLike(itemLeft, itemRight, null, true, charsetIndex);
                 break;
             case Like:
-                item = new ItemFuncLike(itemLeft, itemRight, null, false);
+                item = new ItemFuncLike(itemLeft, itemRight, null, false, charsetIndex);
                 break;
             case Equality:
-                item = new ItemFuncEqual(itemLeft, itemRight);
+                item = new ItemFuncEqual(itemLeft, itemRight, charsetIndex);
                 break;
             case Add:
                 item = new ItemFuncPlus(itemLeft, itemRight);
@@ -231,7 +231,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = new ItemCondOr(argsOr);
                 break;
             case BooleanXor:
-                item = new ItemFuncXor(itemLeft, itemRight);
+                item = new ItemFuncXor(itemLeft, itemRight, charsetIndex);
                 break;
             case BitwiseAnd:
                 item = new ItemFuncBitAnd(itemLeft, itemRight);
@@ -249,23 +249,23 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = new ItemFuncRightShift(itemLeft, itemRight);
                 break;
             case GreaterThan:
-                item = new ItemFuncGt(itemLeft, itemRight);
+                item = new ItemFuncGt(itemLeft, itemRight, charsetIndex);
                 break;
             case GreaterThanOrEqual:
-                item = new ItemFuncGe(itemLeft, itemRight);
+                item = new ItemFuncGe(itemLeft, itemRight, charsetIndex);
                 break;
             case NotEqual:
             case LessThanOrGreater:
-                item = new ItemFuncNe(itemLeft, itemRight);
+                item = new ItemFuncNe(itemLeft, itemRight, charsetIndex);
                 break;
             case LessThan:
-                item = new ItemFuncLt(itemLeft, itemRight);
+                item = new ItemFuncLt(itemLeft, itemRight, charsetIndex);
                 break;
             case LessThanOrEqual:
-                item = new ItemFuncLe(itemLeft, itemRight);
+                item = new ItemFuncLe(itemLeft, itemRight, charsetIndex);
                 break;
             case LessThanOrEqualOrGreaterThan:
-                item = new ItemFuncStrictEqual(itemLeft, itemRight);
+                item = new ItemFuncStrictEqual(itemLeft, itemRight, charsetIndex);
                 break;
             case RegExp:
                 item = new ItemFuncRegex(itemLeft, itemRight);
@@ -321,7 +321,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         List<Item> args = new ArrayList<>();
         args.add(left);
         args.addAll(visitExprList(x.getTargetList()));
-        item = new ItemFuncIn(args, isNeg);
+        item = new ItemFuncIn(args, isNeg, charsetIndex);
         initName(x);
     }
 
@@ -376,7 +376,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             elseExprNum = args.size();
             args.add(getItem(elseExpr));
         }
-        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum);
+        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum, charsetIndex);
     }
 
     @Override
@@ -796,14 +796,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager, usrVariables);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables, charsetIndex);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables, charsetIndex);
                 } else {
                     item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager, usrVariables);
                 }

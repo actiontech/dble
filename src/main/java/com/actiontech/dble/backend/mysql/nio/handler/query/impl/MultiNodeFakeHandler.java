@@ -5,7 +5,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ public class MultiNodeFakeHandler extends MultiNodeMergeHandler {
 
     private FakeBaseSelectHandler execHandler;
 
-    public MultiNodeFakeHandler(long id, NonBlockingSession session, List<Item> selectList, boolean partOfUnion) {
+    public MultiNodeFakeHandler(long id, Session session, List<Item> selectList, boolean partOfUnion) {
         super(id, session);
         this.execHandler = new FakeBaseSelectHandler(id, session, selectList, this, partOfUnion);
         this.merges.add(this);

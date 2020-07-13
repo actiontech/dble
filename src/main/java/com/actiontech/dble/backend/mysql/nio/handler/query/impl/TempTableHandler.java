@@ -19,7 +19,7 @@ import com.actiontech.dble.plan.common.exception.TempTableException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class TempTableHandler extends BaseDMLHandler {
     private Field sourceField;
     private Set<String> valueSet;
 
-    public TempTableHandler(long id, NonBlockingSession session, Item sourceSel) {
+    public TempTableHandler(long id, Session session, Item sourceSel) {
         super(id, session);
         this.lock = new ReentrantLock();
         this.tempTable = new TempTable();
@@ -72,9 +72,10 @@ public class TempTableHandler extends BaseDMLHandler {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
-                tempTable.setCharset(conn.getCharset().getResults());
+                String charSet = conn != null ? conn.getCharset().getResults() : session.getSource().getCharset().getResults();
+                tempTable.setCharset(charSet);
                 tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), BufferPoolManager.getBufferPool(),
-                        CharsetUtil.getJavaCharset(conn.getCharset().getResults())).setMemSizeController(session.getOtherBufferMC()));
+                        CharsetUtil.getJavaCharset(charSet)).setMemSizeController(session.getOtherBufferMC()));
                 List<Field> fields = HandlerTool.createFields(this.fieldPackets);
                 sourceSelIndex = HandlerTool.findField(sourceSel, fields, 0);
                 if (sourceSelIndex < 0)

@@ -24,6 +24,7 @@ import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -71,7 +72,7 @@ import static com.actiontech.dble.server.parser.ServerParse.DDL;
 /**
  * @author mycat
  */
-public class NonBlockingSession implements Session {
+public class NonBlockingSession extends Session {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
 
@@ -412,7 +413,6 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    @Override
     public int getTargetCount() {
         return target.size();
     }
@@ -437,7 +437,6 @@ public class NonBlockingSession implements Session {
         return sessionStage;
     }
 
-    @Override
     public void execute(RouteResultset rrs) {
         if (killed) {
             source.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");

@@ -6,38 +6,18 @@
 package com.actiontech.dble.manager.handler;
 
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.manager.response.ManagerSelectHandler;
 import com.actiontech.dble.manager.response.SelectMaxAllowedPacket;
 import com.actiontech.dble.manager.response.SelectSessionTxReadOnly;
 import com.actiontech.dble.manager.response.ShowSingleString;
 import com.actiontech.dble.route.parser.ManagerParseSelect;
 import com.actiontech.dble.server.response.SelectVersionComment;
-import com.actiontech.dble.sqlengine.TransformSQLJob;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.ParserException;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Iterator;
 
 import static com.actiontech.dble.route.parser.ManagerParseSelect.*;
 
+
 public final class SelectHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SelectHandler.class);
     private SelectHandler() {
     }
 
@@ -60,61 +40,9 @@ public final class SelectHandler {
                 ShowSingleString.execute(c, stmt.substring(rs >>> 8), "00:00:00");
                 break;
             default:
-                if (isSupportSelect(stmt)) {
-                    Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();
-                    if (iterator.hasNext()) {
-                        PhysicalDbGroup pool = iterator.next();
-                        final PhysicalDbInstance source = pool.getWriteDbInstance();
-                        TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
-                        sqlJob.run();
-                    } else {
-                        c.writeErrMessage(ErrorCode.ER_YES, "no valid dbGroup/dbInstance");
-                    }
-                } else {
-                    LOGGER.warn("Unsupported select:" + stmt);
-                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement " + stmt);
-                }
+                (new ManagerSelectHandler()).execute(c, stmt);
         }
 
     }
 
-    private static boolean isSupportSelect(String stmt) {
-        SQLStatementParser parser = new MySqlStatementParser(stmt);
-        SQLStatement statement;
-        try {
-            statement = parser.parseStatement();
-        } catch (ParserException e) {
-            return false;
-        }
-        if (!(statement instanceof SQLSelectStatement)) {
-            return false;
-        }
-
-        SQLSelectQuery sqlSelectQuery = ((SQLSelectStatement) statement).getSelect().getQuery();
-        if (!(sqlSelectQuery instanceof MySqlSelectQueryBlock)) {
-            return false;
-        }
-        MySqlSelectQueryBlock selectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
-        SQLTableSource mysqlFrom = selectQueryBlock.getFrom();
-        if (mysqlFrom != null) {
-            return false;
-        }
-        for (SQLSelectItem item : selectQueryBlock.getSelectList()) {
-            SQLExpr selectItem = item.getExpr();
-            if (!isVariantRef(selectItem)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean isVariantRef(SQLExpr expr) {
-        if (expr instanceof SQLVariantRefExpr) {
-            return true;
-        } else if (expr instanceof SQLPropertyExpr) {
-            return isVariantRef(((SQLPropertyExpr) expr).getOwner());
-        } else {
-            return false;
-        }
-    }
 }

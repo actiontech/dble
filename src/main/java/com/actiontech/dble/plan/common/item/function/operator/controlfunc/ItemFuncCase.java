@@ -33,12 +33,13 @@ public class ItemFuncCase extends ItemFunc {
      * @param firstExprNum -1 means no case exp,else means the index of args in case exp,case and else exp are at the end of args
      * @param elseExprNum  the index of else in args
      */
-    public ItemFuncCase(List<Item> args, int ncases, int firstExprNum, int elseExprNum) {
+    public ItemFuncCase(List<Item> args, int ncases, int firstExprNum, int elseExprNum, int charsetIndex) {
         super(args);
         this.ncases = ncases;
         this.firstExprNum = firstExprNum;
         this.elseExprNum = elseExprNum;
         this.cachedResultType = ItemResult.INT_RESULT;
+        this.charsetIndex = charsetIndex;
     }
 
     @Override
@@ -183,7 +184,7 @@ public class ItemFuncCase extends ItemFunc {
                 if (args.get(i).type() == ItemType.NULL_ITEM)
                     continue;
                 Item rightCmpItem = args.get(i);
-                ArgComparator comparator = new ArgComparator(leftCmpItem, rightCmpItem);
+                ArgComparator comparator = new ArgComparator(leftCmpItem, rightCmpItem, charsetIndex);
                 comparator.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
                 if (comparator.compare() == 0 && !rightCmpItem.isNullValue())
                     return args.get(i + 1);
@@ -227,6 +228,6 @@ public class ItemFuncCase extends ItemFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncCase(newArgs, ncases, firstExprNum, elseExprNum);
+        return new ItemFuncCase(newArgs, ncases, firstExprNum, elseExprNum, charsetIndex);
     }
 }

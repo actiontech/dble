@@ -24,4 +24,5 @@ public abstract class ServerUserConfig extends UserConfig {
     public WallProvider getBlacklist() {
         return blacklist;
     }
+
 }

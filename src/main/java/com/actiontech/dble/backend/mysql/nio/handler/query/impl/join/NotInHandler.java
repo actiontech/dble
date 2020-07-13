@@ -19,7 +19,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
     private AtomicBoolean fieldSent = new AtomicBoolean(false);
     private String charset = "UTF-8";
 
-    public NotInHandler(long id, NonBlockingSession session, List<Order> leftOrder, List<Order> rightOrder) {
+    public NotInHandler(long id, Session session, List<Order> leftOrder, List<Order> rightOrder) {
         super(id, session);
         this.leftOrders = leftOrder;
         this.rightOrders = rightOrder;
@@ -78,7 +78,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
         if (!fieldSent.compareAndSet(false, true)) {
-            this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
+            this.charset = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
             nextHandler.fieldEofResponse(null, null, leftFieldPackets, null, this.isLeft, conn);
             // logger.debug("all ready");
             startOwnThread(conn);
@@ -129,9 +129,8 @@ public class NotInHandler extends OwnThreadDMLHandler {
         MySQLConnection conn = (MySQLConnection) objects[0];
         LocalResult leftLocal = null, rightLocal = null;
         try {
-            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getSource().getCharset().getCollation());
             Comparator<RowDataPacket> notInComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
-                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), caseInsensitive);
+                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
 
             leftLocal = takeFirst(leftQueue);
             rightLocal = takeFirst(rightQueue);

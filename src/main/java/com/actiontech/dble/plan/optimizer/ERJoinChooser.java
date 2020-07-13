@@ -67,7 +67,7 @@ public class ERJoinChooser {
         if (jn.isLeftOuterJoin() && !jn.isNotIn()) {
             return leftJoinOptimizer();
         } else { // (jn.isInnerJoin()) {
-            return innerJoinOptimizer();
+            return innerJoinOptimizer(jn.getCharsetIndex());
         }
     }
 
@@ -134,7 +134,7 @@ public class ERJoinChooser {
      *
      * @return
      */
-    private JoinNode innerJoinOptimizer() {
+    private JoinNode innerJoinOptimizer(int charsetIndex) {
         initInnerJoinUnits(jn);
         if (joinUnits.size() == 1) {
             return jn;
@@ -143,7 +143,7 @@ public class ERJoinChooser {
         initJoinColumnInfo();
         while (trySelListIndex < selLists.size()) {
             List<JoinColumnInfo> selList = selLists.get(trySelListIndex);
-            JoinNode erJoinNode = tryMakeERJoin(selList);
+            JoinNode erJoinNode = tryMakeERJoin(selList, charsetIndex);
             if (erJoinNode == null) {
                 trySelListIndex++;
             } else {
@@ -162,23 +162,23 @@ public class ERJoinChooser {
         for (int i = 0; i < others.size(); i++) {
             // make up the unit which cna;t optimized  and global table
             PlanNode tnewOther = others.get(i);
-            PlanNode newT0 = joinWithGlobal(tnewOther, globals);
+            PlanNode newT0 = joinWithGlobal(tnewOther, globals, charsetIndex);
             others.set(i, newT0);
         }
         // only others and globals may have node and have been tried to ER JOIN
         if (globals.size() > 0) {
-            PlanNode globalJoin = makeJoinNode(globals);
+            PlanNode globalJoin = makeJoinNode(globals, charsetIndex);
             others.add(globalJoin);
         }
         // others' node is the join units which can not optimize, just merge them
-        JoinNode ret = (JoinNode) makeJoinNode(others);
+        JoinNode ret = (JoinNode) makeJoinNode(others, charsetIndex);
         ret.setOrderBys(jn.getOrderBys());
         ret.setGroupBys(jn.getGroupBys());
         ret.select(jn.getColumnsSelected());
         ret.setLimitFrom(jn.getLimitFrom());
         ret.setLimitTo(jn.getLimitTo());
         ret.setOtherJoinOnFilter(FilterUtils.and(jn.getOtherJoinOnFilter(), FilterUtils.and(otherJoinOns)));
-        Item unFoundSelFilter = makeRestFilter();
+        Item unFoundSelFilter = makeRestFilter(charsetIndex);
         if (unFoundSelFilter != null)
             ret.setOtherJoinOnFilter(FilterUtils.and(ret.getOtherJoinOnFilter(), unFoundSelFilter));
         // and the origin where and the remain condition in selLists
@@ -197,7 +197,7 @@ public class ERJoinChooser {
      *
      * @return
      */
-    private JoinNode tryMakeERJoin(List<JoinColumnInfo> selList) {
+    private JoinNode tryMakeERJoin(List<JoinColumnInfo> selList, int charsetIndex) {
         List<JoinColumnInfo> erKeys = new ArrayList<>();
         for (int i = 0; i < selList.size(); i++) {
             JoinColumnInfo jki = selList.get(i);
@@ -212,24 +212,24 @@ public class ERJoinChooser {
             if (!erKeys.isEmpty()) {
                 // er found
                 erKeys.add(0, jki);
-                return makeERJoin(erKeys);
+                return makeERJoin(erKeys, charsetIndex);
             }
         }
         return null;
     }
 
     // generate er join node ,remove jk of rKeyIndexs in selListIndex,replace the other selList's tn
-    private JoinNode makeERJoin(List<JoinColumnInfo> erKeys) {
+    private JoinNode makeERJoin(List<JoinColumnInfo> erKeys, int charsetIndex) {
         PlanNode t0 = erKeys.get(0).tn;
         PlanNode t1 = erKeys.get(1).tn;
-        JoinNode joinNode = new JoinNode(t0, t1);
-        List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, t0, t1, true);
+        JoinNode joinNode = new JoinNode(t0, t1, charsetIndex);
+        List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, t0, t1, true, charsetIndex);
         joinNode.setJoinFilter(joinFilter);
         for (int index = 2; index < erKeys.size(); index++) {
             t0 = joinNode;
             t1 = erKeys.get(index).tn;
-            joinNode = new JoinNode(t0, t1);
-            joinFilter = makeJoinFilter(joinNode, t0, t1, true);
+            joinNode = new JoinNode(t0, t1, charsetIndex);
+            joinFilter = makeJoinFilter(joinNode, t0, t1, true, charsetIndex);
             joinNode.setJoinFilter(joinFilter);
         }
         for (JoinColumnInfo jki : erKeys) {
@@ -249,12 +249,12 @@ public class ERJoinChooser {
      * @param units
      * @return
      */
-    private PlanNode makeJoinNode(List<PlanNode> units) {
+    private PlanNode makeJoinNode(List<PlanNode> units, int charsetIndex) {
         PlanNode ret = units.get(0);
         for (int i = 1; i < units.size(); i++) {
             PlanNode tni = units.get(i);
-            JoinNode joinNode = new JoinNode(ret, tni);
-            List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, ret, tni, true);
+            JoinNode joinNode = new JoinNode(ret, tni, charsetIndex);
+            List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, ret, tni, true, charsetIndex);
             joinNode.setJoinFilter(joinFilter);
             ret = joinNode;
         }
@@ -271,7 +271,7 @@ public class ERJoinChooser {
      * @param replaceSelList
      * @return
      */
-    private List<ItemFuncEqual> makeJoinFilter(JoinNode join, PlanNode t0, PlanNode t1, boolean replaceSelList) {
+    private List<ItemFuncEqual> makeJoinFilter(JoinNode join, PlanNode t0, PlanNode t1, boolean replaceSelList, int charsetIndex) {
         List<ItemFuncEqual> filters = new ArrayList<>();
         for (List<JoinColumnInfo> selList : selLists) {
             JoinColumnInfo jkit0 = null;
@@ -291,7 +291,7 @@ public class ERJoinChooser {
                     newJki.cm = jkit0.cm;
                     join.getERkeys().add(newJki.cm);
                 }
-                ItemFuncEqual bf = FilterUtils.equal(jkit0.key, jkit1.key);
+                ItemFuncEqual bf = FilterUtils.equal(jkit0.key, jkit1.key, charsetIndex);
                 filters.add(bf);
                 selList.remove(jkit0);
                 selList.remove(jkit1);
@@ -303,15 +303,15 @@ public class ERJoinChooser {
         return filters;
     }
 
-    private PlanNode joinWithGlobal(PlanNode t, List<PlanNode> globalList) {
+    private PlanNode joinWithGlobal(PlanNode t, List<PlanNode> globalList, int charsetIndex) {
         PlanNode newT = t;
         while (globalList.size() > 0) {
             boolean foundJoin = false;
             for (int i = 0; i < globalList.size(); i++) {
                 PlanNode global = globalList.get(i);
                 // try join
-                JoinNode joinNode = new JoinNode(newT, global);
-                List<ItemFuncEqual> jnFilter = makeJoinFilter(joinNode, newT, global, false);
+                JoinNode joinNode = new JoinNode(newT, global, charsetIndex);
+                List<ItemFuncEqual> jnFilter = makeJoinFilter(joinNode, newT, global, false, charsetIndex);
                 // @if no join column, then the other is cross join
                 if (jnFilter.size() > 0 || selLists.size() == 0) { // join
                     replaceSelListReferedTn(newT, global, joinNode);
@@ -484,13 +484,13 @@ public class ERJoinChooser {
      *
      * @return
      */
-    private Item makeRestFilter() {
+    private Item makeRestFilter(int charsetIndex) {
         Item filter = null;
         for (List<JoinColumnInfo> selList : selLists) {
             if (selList.size() > 2) {
                 Item sel0 = selList.get(0).key;
                 for (int index = 1; index < selList.size(); index++) {
-                    ItemFuncEqual bf = FilterUtils.equal(sel0, selList.get(index).key);
+                    ItemFuncEqual bf = FilterUtils.equal(sel0, selList.get(index).key, charsetIndex);
                     filter = FilterUtils.and(filter, bf);
                 }
             }

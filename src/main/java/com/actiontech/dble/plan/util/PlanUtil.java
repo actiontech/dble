@@ -461,7 +461,7 @@ public final class PlanUtil {
                 args.add(new ItemNull());
             }
             args.addAll(inSubItem.getValue());
-            return new ItemFuncIn(args, inSubItem.isNeg());
+            return new ItemFuncIn(args, inSubItem.isNeg(), inSubItem.getCharsetIndex());
         }
     }
 
@@ -506,7 +506,7 @@ public final class PlanUtil {
                         newArgs.add(new ItemNull());
                     }
                     newArgs.addAll(inSubItem.getValue());
-                    itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg()));
+                    itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg(), inSubItem.getCharsetIndex()));
                 }
             } else if (arg instanceof ItemFunc) {
                 itemTmp.arguments().set(index, rebuildSubQueryItem(arg));
@@ -519,9 +519,9 @@ public final class PlanUtil {
 
     private static Item genBoolItem(boolean isTrue) {
         if (isTrue) {
-            return new ItemFuncEqual(new ItemInt(1), new ItemInt(1));
+            return new ItemFuncEqual(new ItemInt(1), new ItemInt(1), 63);
         } else {
-            return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+            return new ItemFuncEqual(new ItemInt(1), new ItemInt(0), 63);
         }
     }
 

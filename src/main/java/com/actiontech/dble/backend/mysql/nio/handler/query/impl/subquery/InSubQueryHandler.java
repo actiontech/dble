@@ -15,7 +15,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
+import com.actiontech.dble.plan.node.ManagerTableNode;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +29,7 @@ public class InSubQueryHandler extends SubQueryHandler {
     private int rowCount = 0;
     private Field sourceField;
     private ItemInSubQuery itemSubQuery;
-    public InSubQueryHandler(long id, NonBlockingSession session, ItemInSubQuery itemSubQuery) {
+    public InSubQueryHandler(long id, Session session, ItemInSubQuery itemSubQuery) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
         this.maxPartSize = SystemConfig.getInstance().getNestLoopRowsSize();
@@ -49,7 +50,9 @@ public class InSubQueryHandler extends SubQueryHandler {
                 this.fieldPackets = fieldPackets;
                 sourceField = HandlerTool.createField(this.fieldPackets.get(0));
                 Item select = itemSubQuery.getSelect();
-                select.setPushDownName(select.getAlias());
+                if (!(itemSubQuery.getPlanNode() instanceof ManagerTableNode)) {
+                    select.setPushDownName(select.getAlias());
+                }
                 Item tmpItem = HandlerTool.createItem(select, Collections.singletonList(this.sourceField), 0, isAllPushDown(), type());
                 itemSubQuery.setFiled(tmpItem);
             }

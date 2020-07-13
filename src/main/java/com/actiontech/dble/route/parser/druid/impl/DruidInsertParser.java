@@ -131,7 +131,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     /**
      * find the index of the partition column
      *
-     * @param schemaInfo      SchemaInfo
+     * @param schemaInfo      ManagerSchemaInfo
      * @param insertStmt      MySqlInsertStatement
      * @param partitionColumn partitionColumn
      * @return the index of the partition column
@@ -202,7 +202,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
 
     /**
-     * @param schemaInfo      SchemaInfo
+     * @param schemaInfo      ManagerSchemaInfo
      * @param rrs             RouteResultset
      * @param partitionColumn partitionColumn
      * @param insertStmt      insertStmt
@@ -213,7 +213,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToSting(valueExpr, clientCharset);
+        String shardingValue = shardingValueToString(valueExpr, clientCharset);
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
@@ -249,7 +249,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     /**
      * insert into .... select .... or insert into table() values (),(),....
      *
-     * @param schemaInfo      SchemaInfo
+     * @param schemaInfo      ManagerSchemaInfo
      * @param rrs             RouteResultset
      * @param partitionColumn partitionColumn
      * @param insertStmt      insertStmt
@@ -273,7 +273,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToSting(expr, clientCharset);
+            String shardingValue = shardingValueToString(expr, clientCharset);
             checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // null means can't find any valid index
@@ -308,7 +308,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     /**
      * find joinColumn index
      *
-     * @param schemaInfo SchemaInfo
+     * @param schemaInfo ManagerSchemaInfo
      * @param insertStmt MySqlInsertStatement
      * @param joinColumn    joinColumn
      * @return -1 means no join key,otherwise means the index

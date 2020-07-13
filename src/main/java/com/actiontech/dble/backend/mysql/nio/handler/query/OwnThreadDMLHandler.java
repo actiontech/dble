@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -22,7 +22,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
     private Object ownThreadLock = new Object();
     private boolean preparedToRecycle;
 
-    public OwnThreadDMLHandler(long id, NonBlockingSession session) {
+    public OwnThreadDMLHandler(long id, Session session) {
         super(id, session);
         this.ownJobFlag = new AtomicBoolean(false);
         this.preparedToRecycle = false;

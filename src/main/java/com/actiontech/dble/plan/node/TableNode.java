@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
+import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.NamedField;
@@ -41,7 +42,7 @@ public class TableNode extends PlanNode {
 
     public TableNode(String schema, String viewName, List<String> columns) {
         if (schema == null || viewName == null)
-            throw new RuntimeException("Table db or name is null error!");
+            throw new RuntimeException("Schema name or Table name is null!");
         this.schema = schema;
         this.tableName = viewName;
         ServerConfig config = DbleServer.getInstance().getConfig();
@@ -118,7 +119,7 @@ public class TableNode extends PlanNode {
         innerFields.clear();
         String tmpTable = alias == null ? tableName : alias;
         if (tableMeta != null) {
-            for (TableMeta.ColumnMeta cm : tableMeta.getColumns()) {
+            for (ColumnMeta cm : tableMeta.getColumns()) {
                 NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
                 innerFields.put(tmpField, tmpField);
             }

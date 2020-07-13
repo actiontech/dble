@@ -4,6 +4,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
+import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
@@ -513,7 +514,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     static void checkDefaultValues(String columnValue, String tableName, String schema, String partitionColumn) throws SQLNonTransientException {
         if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
             TableMeta meta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema, tableName);
-            for (TableMeta.ColumnMeta columnMeta : meta.getColumns()) {
+            for (ColumnMeta columnMeta : meta.getColumns()) {
                 if (!columnMeta.isCanNull()) {
                     if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
                         String msg = "Sharding column can't be null when the table in MySQL column is not null";

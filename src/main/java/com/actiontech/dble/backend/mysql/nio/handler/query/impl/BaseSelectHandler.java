@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,29 +34,30 @@ public class BaseSelectHandler extends BaseDMLHandler {
     private final boolean autocommit;
     private volatile int fieldCounts = -1;
     private final RouteResultsetNode rrss;
+    private final NonBlockingSession serverSession;
 
-
-    public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, NonBlockingSession session) {
+    public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, Session session) {
         super(id, session);
+        serverSession = (NonBlockingSession) session;
         this.rrss = rrss;
         this.autocommit = autocommit;
     }
 
     public MySQLConnection initConnection() throws Exception {
-        if (session.closed()) {
+        if (serverSession.closed()) {
             return null;
         }
 
-        MySQLConnection exeConn = (MySQLConnection) session.getTarget(rrss);
-        if (session.tryExistsCon(exeConn, rrss)) {
+        MySQLConnection exeConn = (MySQLConnection) serverSession.getTarget(rrss);
+        if (serverSession.tryExistsCon(exeConn, rrss)) {
             exeConn.setRowDataFlowing(true);
             exeConn.setResponseHandler(this);
             return exeConn;
         } else {
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(rrss.getName());
-            //autocommit is session.getWriteSource().isAutocommit() && !session.getWriteSource().isTxStart()
+            //autocommit is serverSession.getWriteSource().isAutocommit() && !serverSession.getWriteSource().isTxStart()
             final BackendConnection newConn = dn.getConnection(dn.getDatabase(), rrss.getRunOnSlave(), rrss);
-            session.bindConnection(rrss, newConn);
+            serverSession.bindConnection(rrss, newConn);
             newConn.setResponseHandler(this);
             ((MySQLConnection) newConn).setRowDataFlowing(true);
             return (MySQLConnection) newConn;
@@ -63,21 +65,21 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     public void execute(MySQLConnection conn) {
-        if (session.closed()) {
+        if (serverSession.closed()) {
             conn.setRowDataFlowing(false);
-            session.clearResources(true);
+            serverSession.clearResources(true);
             return;
         }
-        conn.setSession(session);
+        conn.setSession(serverSession);
         if (conn.isClosed()) {
             conn.setRowDataFlowing(false);
-            session.onQueryError("failed or cancelled by other thread".getBytes());
+            serverSession.onQueryError("failed or cancelled by other thread".getBytes());
             return;
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
         }
-        conn.executeMultiNode(rrss, session.getSource(), autocommit);
+        conn.executeMultiNode(rrss, serverSession.getSource(), autocommit);
     }
 
     public RouteResultsetNode getRrss() {
@@ -92,7 +94,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        session.setHandlerEnd(this); //base start receive
+        serverSession.setHandlerEnd(this); //base start receive
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + "'s field is reached.");
         }
@@ -151,7 +153,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
             errMsg = "can't connect to shardingNode[" + node.getName() + "],due to " + e.getMessage();
             LOGGER.warn(errMsg);
         }
-        session.onQueryError(errMsg.getBytes());
+        serverSession.onQueryError(errMsg.getBytes());
     }
 
     @Override
@@ -161,7 +163,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         LOGGER.warn(conn.toString() + "|connectionClose()|" + reason);
         reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
-        session.onQueryError(reason.getBytes());
+        serverSession.onQueryError(reason.getBytes());
     }
 
     @Override
@@ -177,16 +179,16 @@ public class BaseSelectHandler extends BaseDMLHandler {
         LOGGER.info(conn.toString() + errMsg);
         if (terminate.get())
             return;
-        session.onQueryError(errMsg.getBytes());
+        serverSession.onQueryError(errMsg.getBytes());
     }
 
     @Override
     protected void onTerminate() {
-        if (autocommit && !session.getSource().isLocked()) {
-            this.session.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
+        if (autocommit && !serverSession.getSource().isLocked()) {
+            this.serverSession.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
         } else {
             //the connection should wait until the connection running finish
-            this.session.waitFinishConnection(rrss);
+            this.serverSession.waitFinishConnection(rrss);
         }
     }
 

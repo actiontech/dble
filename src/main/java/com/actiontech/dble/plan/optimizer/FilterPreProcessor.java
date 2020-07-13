@@ -122,13 +122,13 @@ public final class FilterPreProcessor {
             Item b = root.arguments().get(1);
             if (a.basicConstItem() && !b.basicConstItem() && !b.isWithSubQuery()) {
                 if (root instanceof ItemFuncGe) {
-                    newRoot = new ItemFuncLe(b, a);
+                    newRoot = new ItemFuncLe(b, a, root.getCharsetIndex());
                 } else if (root instanceof ItemFuncGt) {
-                    newRoot = new ItemFuncLt(b, a);
+                    newRoot = new ItemFuncLt(b, a, root.getCharsetIndex());
                 } else if (root instanceof ItemFuncLt) {
-                    newRoot = new ItemFuncGt(b, a);
+                    newRoot = new ItemFuncGt(b, a, root.getCharsetIndex());
                 } else if (root instanceof ItemFuncLe) {
-                    newRoot = new ItemFuncGe(b, a);
+                    newRoot = new ItemFuncGe(b, a, root.getCharsetIndex());
                 } else {
                     root.arguments().set(1, a);
                     root.arguments().set(0, b);
@@ -170,6 +170,8 @@ public final class FilterPreProcessor {
                 PlanUtil.refreshReferTables(andFilter);
                 return andFilter;
             } else {
+
+                int charsetIndex = 63;
                 // or
                 ItemCondOr orFilter = (ItemCondOr) filter;
                 HashMap<Item, Set<Item>> inMap = new HashMap<>();
@@ -181,6 +183,7 @@ public final class FilterPreProcessor {
                     if (subFilter instanceof ItemFuncEqual) {
                         Item a = subFilter.arguments().get(0);
                         Item b = subFilter.arguments().get(1);
+                        charsetIndex = subFilter.getCharsetIndex();
                         if (!a.canValued() && b.canValued()) {
                             if (!inMap.containsKey(a))
                                 inMap.put(a, new HashSet<Item>());
@@ -197,7 +200,7 @@ public final class FilterPreProcessor {
                     List<Item> args = new ArrayList<>();
                     args.add(entry.getKey());
                     args.addAll(entry.getValue());
-                    ItemFuncIn inItem = new ItemFuncIn(args, false);
+                    ItemFuncIn inItem = new ItemFuncIn(args, false, charsetIndex);
                     PlanUtil.refreshReferTables(inItem);
                     newSubFilterList.add(inItem);
                 }

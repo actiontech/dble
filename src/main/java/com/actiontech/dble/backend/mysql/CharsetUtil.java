@@ -370,8 +370,13 @@ public final class CharsetUtil {
         return INDEX_TO_COLLATION;
     }
 
-    public static boolean isCaseInsensitive(String collation) {
-        CollationInfo info = COLLATION_TO_INDEX.get(collation.toLowerCase());
-        return (info != null) && info.getCollation().endsWith("_ci");
+
+    public static boolean isCaseInsensitive(int index) {
+        if (index >= INDEX_TO_COLLATION.length || INDEX_TO_COLLATION[index] == null) {
+            LOGGER.info("can't find collation index " + index);
+            return false;
+        }
+        CollationInfo info = INDEX_TO_COLLATION[index];
+        return info.getCollation().endsWith("_ci");
     }
 }

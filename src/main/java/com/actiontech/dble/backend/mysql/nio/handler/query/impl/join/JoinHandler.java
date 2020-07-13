@@ -17,12 +17,12 @@ import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.backend.mysql.store.UnSortedLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
 import org.slf4j.Logger;
@@ -64,7 +64,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     protected ReentrantLock leftLock = new ReentrantLock();
     protected ReentrantLock rightLock = new ReentrantLock();
 
-    public JoinHandler(long id, NonBlockingSession session, boolean isLeftJoin, List<Order> leftOrder,
+    public JoinHandler(long id, Session session, boolean isLeftJoin, List<Order> leftOrder,
                        List<Order> rightOrder, Item otherJoinOn) {
         super(id, session);
         this.isLeftJoin = isLeftJoin;
@@ -99,9 +99,8 @@ public class JoinHandler extends OwnThreadDMLHandler {
             rightFieldPackets = fieldPackets;
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
-        if (conn != null) {
-            this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
-        }
+        this.charset = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
+
         if (!fieldSent.compareAndSet(false, true)) {
             List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
@@ -175,9 +174,8 @@ public class JoinHandler extends OwnThreadDMLHandler {
         MySQLConnection conn = (MySQLConnection) objects[0];
         LocalResult leftLocal = null, rightLocal = null;
         try {
-            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getSource().getCharset().getCollation());
             Comparator<RowDataPacket> joinComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
-                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), caseInsensitive);
+                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), CharsetUtil.getCollationIndex(session.getSource().getCharset().getCollation()));
 
             // logger.debug("merge Join start");
             leftLocal = takeFirst(leftQueue);

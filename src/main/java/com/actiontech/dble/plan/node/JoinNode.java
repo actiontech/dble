@@ -75,16 +75,17 @@ public class JoinNode extends PlanNode {
     private List<ERTable> erKeys = new ArrayList<>();
 
     private Strategy strategy = Strategy.SORTMERGE;
-
-    public JoinNode() {
+    private int charsetIndex;
+    public JoinNode(int charsetIndex) {
         this.leftOuter = false;
         this.rightOuter = false;
         this.needOptimizeJoinOrder = true;
         this.joinFilter = new ArrayList<>();
+        this.charsetIndex = charsetIndex;
     }
 
-    public JoinNode(PlanNode left, PlanNode right) {
-        this();
+    public JoinNode(PlanNode left, PlanNode right, int charsetIndex) {
+        this(charsetIndex);
         addChild(left);
         addChild(right);
         setKeepFieldSchema(left.isKeepFieldSchema() || right.isKeepFieldSchema());
@@ -210,7 +211,7 @@ public class JoinNode extends PlanNode {
     private ItemFuncEqual genJoinFilter(String using, Pair<String, String> leftJoinNode, Pair<String, String> rightJoinNode) {
         ItemField column1 = new ItemField(leftJoinNode.getKey(), leftJoinNode.getValue(), using);
         ItemField column2 = new ItemField(rightJoinNode.getKey(), rightJoinNode.getValue(), using);
-        return new ItemFuncEqual(column1, column2);
+        return new ItemFuncEqual(column1, column2, charsetIndex);
     }
 
     private void buildOtherJoinOn() {
@@ -230,6 +231,11 @@ public class JoinNode extends PlanNode {
 
     public void setNatural(boolean natural) {
         isNatural = natural;
+    }
+
+
+    public int getCharsetIndex() {
+        return charsetIndex;
     }
 
     @Override
@@ -326,11 +332,6 @@ public class JoinNode extends PlanNode {
             rightKeys.add(f.arguments().get(1));
         }
         return rightKeys;
-    }
-
-    public JoinNode addJoinColumns(Item leftKey, Item rightKey) {
-        this.joinFilter.add(FilterUtils.equal(leftKey, rightKey));
-        return this;
     }
 
     public void addJoinFilter(ItemFuncEqual filter) {
@@ -470,7 +471,7 @@ public class JoinNode extends PlanNode {
 
     @Override
     public JoinNode copy() {
-        JoinNode newJoinNode = new JoinNode();
+        JoinNode newJoinNode = new JoinNode(this.charsetIndex);
         this.copySelfTo(newJoinNode);
         newJoinNode.setJoinFilter(new ArrayList<ItemFuncEqual>());
         for (Item bf : joinFilter) {

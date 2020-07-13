@@ -8,13 +8,14 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.plan.node.ManagerTableNode;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +26,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
     private int rowCount = 0;
     private Field sourceField;
     private ItemSingleRowSubQuery itemSubQuery;
-    public SingleRowSubQueryHandler(long id, NonBlockingSession session, ItemSingleRowSubQuery itemSubQuery) {
+    public SingleRowSubQueryHandler(long id, Session session, ItemSingleRowSubQuery itemSubQuery) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
     }
@@ -88,7 +89,9 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
 
     private void setSubQueryFiled() {
         Item select = itemSubQuery.getSelect();
-        select.setPushDownName(select.getAlias());
+        if (!(itemSubQuery.getPlanNode() instanceof ManagerTableNode)) {
+            select.setPushDownName(select.getAlias());
+        }
         Item tmpItem = HandlerTool.createItem(select, Collections.singletonList(this.sourceField), 0, isAllPushDown(), type());
         itemSubQuery.setValue(tmpItem);
     }

@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.plan.common.item.function.operator.cmpfunc.util;
 
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.plan.common.MySQLcom;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
@@ -96,9 +97,10 @@ public class ArgComparator {
     public ArgComparator() {
     }
 
-    public ArgComparator(Item a, Item b) {
+    public ArgComparator(Item a, Item b, int charsetIndex) {
         this.a = a;
         this.b = b;
+        this.caseInsensitive = CharsetUtil.isCaseInsensitive(charsetIndex);
     }
 
     public int setCompareFunc(ItemFunc ownerarg, Item.ItemResult type) {
@@ -250,10 +252,6 @@ public class ArgComparator {
             a.setCmpContext(Item.ItemResult.INT_RESULT);
         if (b.isTemporal())
             b.setCmpContext(Item.ItemResult.INT_RESULT);
-    }
-
-    public void setCaseInsensitive(boolean caseInsensitive) {
-        this.caseInsensitive = caseInsensitive;
     }
 
     /**

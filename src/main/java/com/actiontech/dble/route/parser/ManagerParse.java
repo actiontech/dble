@@ -19,6 +19,7 @@ public final class ManagerParse {
     public static final int SELECT = 1;
     public static final int SET = 2;
     public static final int SHOW = 3;
+    public static final int DESCRIBE = 4;
     public static final int KILL_CONN = 5;
     public static final int STOP = 6;
     public static final int RELOAD = 7;
@@ -41,6 +42,9 @@ public final class ManagerParse {
     public static final int SPLIT = 24;
     public static final int DROP_DB = 25;
     public static final int FLOW_CONTROL = 26;
+    public static final int INSERT = 27;
+    public static final int DELETE = 28;
+    public static final int UPDATE = 29;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -59,7 +63,7 @@ public final class ManagerParse {
                     return dCheck(stmt, i);
                 case 'E':
                 case 'e':
-                    return eCheck(stmt, i);
+                    return eCheck(stmt);
                 case 'F':
                 case 'f':
                     return fCheck(stmt, i);
@@ -81,6 +85,12 @@ public final class ManagerParse {
                 case 'P':
                 case 'p':
                     return pCheck(stmt, i);
+                case 'I':
+                case 'i':
+                    return insert(stmt, i);
+                case 'U':
+                case 'u':
+                    return update(stmt, i);
                 default:
                     return OTHER;
             }
@@ -109,7 +119,10 @@ public final class ManagerParse {
                     return drCheck(stmt, offset);
                 case 'I':
                 case 'i':
-                    return disCheck(stmt, --offset);
+                    return disCheck(stmt);
+                case 'E':
+                case 'e':
+                    return descCheck(stmt);
                 default:
                     return OTHER;
             }
@@ -169,16 +182,28 @@ public final class ManagerParse {
         }
     }
 
-    private static int disCheck(String stmt, int offset) {
-        String thePart = stmt.substring(offset).toUpperCase();
+    private static int disCheck(String stmt) {
+        String thePart = stmt.toUpperCase();
         if (thePart.startsWith("DISABLE") && stmt.length() > 7 && ParseUtil.isSpace(stmt.charAt(7))) {
             return (8 << 8) | DISABLE;
         }
         return OTHER;
     }
 
-    private static int eCheck(String stmt, int offset) {
-        String thePart = stmt.substring(offset).toUpperCase();
+    private static int descCheck(String stmt) {
+        String thePart = stmt.toUpperCase();
+        if (thePart.startsWith("DESCRIBE") && stmt.length() > 8 && ParseUtil.isSpace(stmt.charAt(8))) {
+            return (9 << 8) | DESCRIBE;
+        } else if (thePart.startsWith("DESC") && stmt.length() > 4 && ParseUtil.isSpace(stmt.charAt(4))) {
+            return (5 << 8) | DESCRIBE;
+        } else if (thePart.startsWith("DELETE") && stmt.length() > 6 && ParseUtil.isSpace(stmt.charAt(6))) {
+            return DELETE;
+        }
+        return OTHER;
+    }
+
+    private static int eCheck(String stmt) {
+        String thePart = stmt.toUpperCase();
         if (thePart.startsWith("ENABLE") && stmt.length() > 6 && ParseUtil.isSpace(stmt.charAt(6))) {
             return (7 << 8) | ENABLE;
         }
@@ -571,6 +596,41 @@ public final class ManagerParse {
         }
         return OTHER;
     }
+
+    private static int insert(String stmt, int offset) {
+        if (stmt.length() > offset + 6) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'N' || c1 == 'n') && (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'E' || c3 == 'e') && (c4 == 'R' || c4 == 'r') && (c5 == 'T' || c5 == 't') &&
+                    ParseUtil.isSpace(c6)) {
+                return INSERT;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int update(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'P' || c1 == 'p') && (c2 == 'D' || c2 == 'd') &&
+                    (c3 == 'A' || c3 == 'a') && (c4 == 'T' || c4 == 't') && (c5 == 'E' || c5 == 'e') &&
+                    ParseUtil.isSpace(c6)) {
+                return UPDATE;
+            }
+        }
+        return OTHER;
+    }
+
 
     // SPLIT ' '
     private static int split(String stmt, int offset) {

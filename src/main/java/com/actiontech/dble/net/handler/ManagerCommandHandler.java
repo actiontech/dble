@@ -7,11 +7,11 @@ package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 
 public class ManagerCommandHandler extends FrontendCommandHandler {
-    public ManagerCommandHandler(FrontendConnection source) {
+    ManagerCommandHandler(ManagerConnection source) {
         super(source);
     }
     protected void handleDataByPacket(byte[] data) {
@@ -20,22 +20,27 @@ public class ManagerCommandHandler extends FrontendCommandHandler {
     }
     @Override
     protected void handleData(byte[] data) {
+        ManagerConnection mc = (ManagerConnection) source;
         switch (data[4]) {
+            case MySQLPacket.COM_INIT_DB:
+                commands.doInitDB();
+                mc.initDB(data);
+                break;
             case MySQLPacket.COM_QUERY:
                 commands.doQuery();
-                source.query(data);
+                mc.query(data);
                 break;
             case MySQLPacket.COM_PING:
                 commands.doPing();
-                source.ping();
+                mc.ping();
                 break;
             case MySQLPacket.COM_QUIT:
                 commands.doQuit();
-                source.close("quit cmd");
+                mc.close("quit cmd");
                 break;
             default:
                 commands.doOther();
-                source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                mc.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
     }
 }

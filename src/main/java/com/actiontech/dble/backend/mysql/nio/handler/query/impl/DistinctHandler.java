@@ -18,7 +18,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +35,11 @@ public class DistinctHandler extends BaseDMLHandler {
     /* if distinct is null, distinct the total row */
     private List<Item> distinctCols;
 
-    public DistinctHandler(long id, NonBlockingSession session, List<Item> columns) {
+    public DistinctHandler(long id, Session session, List<Item> columns) {
         this(id, session, columns, null);
     }
 
-    public DistinctHandler(long id, NonBlockingSession session, List<Item> columns, List<Order> fixedOrders) {
+    public DistinctHandler(long id, Session session, List<Item> columns, List<Order> fixedOrders) {
         super(id, session);
         this.distinctCols = columns;
         this.fixedOrders = fixedOrders;

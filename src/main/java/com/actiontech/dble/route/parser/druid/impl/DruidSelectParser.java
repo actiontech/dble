@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
+import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -274,7 +275,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
-                for (TableMeta.ColumnMeta column : tbMeta.getColumns()) {
+                for (ColumnMeta column : tbMeta.getColumns()) {
                     aliaColumns.put(column.getName(), column.getName());
                 }
             } else {

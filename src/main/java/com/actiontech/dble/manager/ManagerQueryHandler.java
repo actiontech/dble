@@ -5,6 +5,7 @@
  */
 package com.actiontech.dble.manager;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.handler.*;
 import com.actiontech.dble.manager.response.*;
@@ -60,6 +61,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 break;
             case ManagerParse.SHOW:
                 ShowHandler.handle(sql, c, rs >>> SHIFT);
+                break;
+            case ManagerParse.DESCRIBE:
+                Describe.execute(sql, c, rs >>> SHIFT);
                 break;
             case ManagerParse.KILL_CONN:
                 KillConnection.response(sql, rs >>> SHIFT, c);
@@ -128,6 +132,21 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 break;
             case ManagerParse.FLOW_CONTROL:
                 FlowControlHandler.handle(sql, c);
+                break;
+            case ManagerParse.INSERT:
+                DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                    (new InsertHandler()).handle(sql, c);
+                });
+                break;
+            case ManagerParse.DELETE:
+                DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                    (new DeleteHandler()).handle(sql, c);
+                });
+                break;
+            case ManagerParse.UPDATE:
+                DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                    (new UpdateHandler()).handle(sql, c);
+                });
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

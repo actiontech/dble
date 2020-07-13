@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     protected RouteResultsetNode[] route;
     int reachedConCount = 0;
 
-    public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session) {
+    public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, Session session) {
         super(id, session);
         this.exeHandlers = new ArrayList<>();
         this.lock = new ReentrantLock();
@@ -43,7 +43,7 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         session.setRouteResultToTrace(route);
     }
 
-    public MultiNodeMergeHandler(long id, NonBlockingSession session) {
+    public MultiNodeMergeHandler(long id, Session session) {
         super(id, session);
         this.lock = new ReentrantLock();
         this.exeHandlers = new ArrayList<>();

@@ -22,8 +22,10 @@ public final class ManagerParseShow {
     public static final int HELP = 6;
     public static final int CUSTOM_MYSQL_HA = 7;
     public static final int PROCESSOR = 8;
+    public static final int DATABASES = 9;
     public static final int SERVER = 10;
-    public static final int SQL = 11;
+    public static final int TABLES = 11;
+    public static final int SQL = 13;
     public static final int SQL_SLOW = 14;
     public static final int SQL_SUM_USER = 15;
     public static final int SQL_SUM_TABLE = 16;
@@ -98,10 +100,13 @@ public final class ManagerParseShow {
                     return show2Check(stmt, i);
                 case 'd':
                 case 'D':
-                    return show2DCheck(stmt, i);
+                    return show2DCheck(stmt, i, false);
                 case 'C':
                 case 'c':
                     return show2COCheck(stmt, i);
+                case 'T':
+                case 't':
+                    return show2TACheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -133,6 +138,21 @@ public final class ManagerParseShow {
                     return OTHER;
                 }
                 return CUSTOM_MYSQL_HA;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2TACheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ABLES".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'B' || c2 == 'b') && (c3 == 'L' || c3 == 'l') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == 'S' || c5 == 's')) {
+                return TABLES;
             }
         }
         return OTHER;
@@ -175,7 +195,7 @@ public final class ManagerParseShow {
                     return show2CCheck(stmt, offset);
                 case 'D':
                 case 'd':
-                    return show2DCheck(stmt, offset);
+                    return show2DCheck(stmt, offset, true);
                 case 'H':
                 case 'h':
                     return show2HCheck(stmt, offset);
@@ -436,12 +456,12 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@D
-    private static int show2DCheck(String stmt, int offset) {
+    private static int show2DCheck(String stmt, int offset, boolean withAt) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'A':
                 case 'a':
-                    return show2DACheck(stmt, offset);
+                    return show2DACheck(stmt, offset, withAt);
                 case 'D':
                 case 'd':
                     return show2DDCheck(stmt, offset);
@@ -459,7 +479,7 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATA
-    private static int show2DACheck(String stmt, int offset) {
+    private static int show2DACheck(String stmt, int offset, boolean withAt) {
         if (stmt.length() > offset + "TA".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -467,7 +487,7 @@ public final class ManagerParseShow {
                 switch (stmt.charAt(offset)) {
                     case 'B':
                     case 'b':
-                        return show2DataBCheck(stmt, offset);
+                        return show2DataBCheck(stmt, offset, withAt);
                     case '_':
                         return show2DataDistributionCheck(stmt, offset);
                     default:
@@ -1177,16 +1197,26 @@ public final class ManagerParseShow {
     }
 
     // SHOW @@DATABASE
-    private static int show2DataBCheck(String stmt, int offset) {
+    private static int show2DataBCheck(String stmt, int offset, boolean withAt) {
         if (stmt.length() > offset + "ASE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'A' || c1 == 'a') && (c2 == 'S' || c2 == 's') && (c3 == 'E' || c3 == 'e')) {
-                if (ParseUtil.isErrorTail(++offset, stmt)) {
-                    return OTHER;
+                if (withAt) {
+                    if (ParseUtil.isErrorTail(++offset, stmt)) {
+                        return OTHER;
+                    }
+                    return DATABASE;
+                } else if (stmt.length() > ++offset) {
+                    char c4 = stmt.charAt(offset);
+                    if ((c4 == 'S' || c4 == 's')) {
+                        if (ParseUtil.isErrorTail(++offset, stmt)) {
+                            return OTHER;
+                        }
+                        return DATABASES;
+                    }
                 }
-                return DATABASE;
             }
         }
         return OTHER;

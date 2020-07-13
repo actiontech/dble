@@ -23,10 +23,11 @@ import java.util.Map;
 public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
-    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
         super(currentDb, query, metaManager, usrVariables);
         this.leftOperand = leftOperand;
         this.isNeg = isNeg;
+        this.charsetIndex = charsetIndex;
         if (this.planNode.getColumnsSelected().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPERAND_COLUMNS, "", "Operand should contain 1 column(s)");
         }
@@ -67,7 +68,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg, this.metaManager, this.usrVariables);
+        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg, this.metaManager, this.usrVariables, this.charsetIndex);
     }
 
     public Item getLeftOperand() {

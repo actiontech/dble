@@ -196,33 +196,43 @@ public class MySQLPlanNodeVisitor {
             throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
         }
 
-        //here to check if the table name is a view in metaManager
-        PlanNode viewNode;
-        try {
-            viewNode = metaManager.getSyncView(schema, tableName);
-        } catch (SQLNonTransientException e) {
-            throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
-        }
-        if (viewNode != null) {
-            //consider if the table with other name
-            viewNode.setAlias(tableSource.getAlias() == null ? tableName : tableSource.getAlias());
-            this.tableNode = viewNode;
-            if (viewNode instanceof QueryNode) {
-                tableNode.setWithSubQuery(true);
-                tableNode.setExistView(true);
-                tableNode.setKeepFieldSchema(false);
-            }
-            return true;
-        } else {
+        if (metaManager != null) {
+            //here to check if the table name is a view in metaManager
+            PlanNode viewNode;
             try {
-                table = new TableNode(schema, tableName, this.metaManager);
+                viewNode = metaManager.getSyncView(schema, tableName);
             } catch (SQLNonTransientException e) {
                 throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
             }
+            if (viewNode != null) {
+                //consider if the table with other name
+                viewNode.setAlias(tableSource.getAlias() == null ? tableName : tableSource.getAlias());
+                this.tableNode = viewNode;
+                if (viewNode instanceof QueryNode) {
+                    tableNode.setWithSubQuery(true);
+                    tableNode.setExistView(true);
+                    tableNode.setKeepFieldSchema(false);
+                }
+                return true;
+            } else {
+                try {
+                    table = new TableNode(schema, tableName, this.metaManager);
+                } catch (SQLNonTransientException e) {
+                    throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+                }
+                ((TableNode) table).setHintList(tableSource.getHints());
+                this.tableNode = table;
+                return true;
+            }
+        } else {
+            try {
+                table = new ManagerTableNode(schema, tableName);
+            } catch (SQLNonTransientException e) {
+                throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+            }
+            this.tableNode = table;
+            return true;
         }
-        ((TableNode) table).setHintList(tableSource.getHints());
-        this.tableNode = table;
-        return true;
     }
 
     public boolean visit(SQLUnionQueryTableSource unionTables) {
@@ -242,7 +252,7 @@ public class MySQLPlanNodeVisitor {
         SQLTableSource right = joinTables.getRight();
         MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery, this.usrVariables);
         mtvRight.visit(right);
-        JoinNode joinNode = new JoinNode(mtvLeft.getTableNode(), mtvRight.getTableNode());
+        JoinNode joinNode = new JoinNode(mtvLeft.getTableNode(), mtvRight.getTableNode(), this.charsetIndex);
         joinNode.setContainsSubQuery(mtvLeft.getTableNode().isContainsSubQuery() || mtvRight.getTableNode().isContainsSubQuery());
         switch (joinTables.getJoinType()) {
             case JOIN:

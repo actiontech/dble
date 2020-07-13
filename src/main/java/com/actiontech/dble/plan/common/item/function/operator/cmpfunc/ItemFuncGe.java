@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncGe extends ItemBoolFunc2 {
 
-    public ItemFuncGe(Item a, Item b) {
-        super(a, b);
+    public ItemFuncGe(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class ItemFuncGe extends ItemBoolFunc2 {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncGe(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncGe(newArgs.get(0), newArgs.get(1), this.charsetIndex);
     }
 
 }

@@ -17,7 +17,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -36,7 +36,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     private LocalResult localResult;
     private BufferPool pool;
 
-    public OrderByHandler(long id, NonBlockingSession session, List<Order> orders) {
+    public OrderByHandler(long id, Session session, List<Order> orders) {
         super(id, session);
         this.orders = orders;
         int queueSize = SystemConfig.getInstance().getOrderByQueueSize();
@@ -59,7 +59,8 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
         this.fieldPackets = fieldPackets;
         RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type());
-        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+        String charSet = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
+        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, charSet).
                 setMemSizeController(session.getOrderBufferMC());
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
         startOwnThread(conn);

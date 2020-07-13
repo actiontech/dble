@@ -31,7 +31,7 @@ public final class MyOptimizer {
         try {
             // PreProcessor SubQuery ,transform in sub query to join
             node = SubQueryPreProcessor.optimize(node);
-            updateReferedTableNodes(node);
+            updateReferredTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<String>());
             if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery() || !PlanUtil.hasNoFakeNode(node)) {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
@@ -70,10 +70,37 @@ public final class MyOptimizer {
         }
     }
 
-    private static List<TableNode> updateReferedTableNodes(PlanNode node) {
+    public static PlanNode managerOptimize(PlanNode node) {
+        try {
+            // PreProcessor SubQuery ,transform in sub query to join
+            node = SubQueryPreProcessor.optimize(node);
+
+            // transform right join to left join
+            node = JoinPreProcessor.optimize(node);
+
+            //  filter expr which is always true/false
+            node = FilterPreProcessor.optimize(node);
+
+            //  push down filter
+            node = FilterPusher.optimize(node);
+
+            node = OrderByPusher.optimize(node);
+
+            node = LimitPusher.optimize(node);
+
+            node = SelectedProcessor.optimize(node);
+
+            return node;
+        } catch (MySQLOutPutException e) {
+            LoggerFactory.getLogger(MyOptimizer.class).error(node.toString(), e);
+            throw e;
+        }
+    }
+
+    private static List<TableNode> updateReferredTableNodes(PlanNode node) {
         List<TableNode> subTables = new ArrayList<>();
         for (PlanNode childNode : node.getChildren()) {
-            List<TableNode> childSubTables = updateReferedTableNodes(childNode);
+            List<TableNode> childSubTables = updateReferredTableNodes(childNode);
             node.getReferedTableNodes().addAll(childSubTables);
             subTables.addAll(childSubTables);
         }

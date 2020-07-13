@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query;
 
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.net.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +30,11 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     protected List<FieldPacket> fieldPackets = new ArrayList<>();
     protected BaseDMLHandler nextHandler = null;
     protected boolean isLeft = false;
-    protected NonBlockingSession session;
+    protected Session session;
     protected AtomicBoolean terminate = new AtomicBoolean(false);
     protected List<DMLResponseHandler> merges;
 
-    public BaseDMLHandler(long id, NonBlockingSession session) {
+    public BaseDMLHandler(long id, Session session) {
         this.id = id;
         this.session = session;
         this.merges = new ArrayList<>();

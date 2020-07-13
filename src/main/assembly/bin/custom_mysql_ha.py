@@ -12,19 +12,22 @@ def init():
     # logfile for initialization
 
     global logfile
-    logfile = './bin/custom_mysql_ha_logging.conf'
+    logfile = './logging.conf'
     global loggername
     loggername = 'DBLEDatahostCheck'
 
-    # dble schema.xml.
+    # dble db.xml.
 
-    global schemaxml
-    schemaxml = './conf/schema.xml'
+    global dbxml
+    dbxml = '/action/dble/conf/db.xml'
 
     # dble manage user.
 
-    global serverxml
-    serverxml = './conf/server.xml'
+    global userxml
+    userxml = '/action/dble/conf/user.xml'
+    
+    global portcnf
+    portcnf = "/action/dble/conf/bootstrap.cnf"
 
 # Log file initialization.
 
@@ -43,8 +46,6 @@ if __name__ == "__main__":
     log.info("Logger initialization is complete.")
     while "true":
         log.info("DBLE datahsots check begin...")
-        Dhcheck.main(log,schemaxml,serverxml)
+        Dhcheck.main(log,dbxml,userxml,portcnf)
         log.info("DBLE datahsots check end.")
         time.sleep(5)
-
-

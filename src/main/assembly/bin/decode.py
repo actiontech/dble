@@ -106,4 +106,3 @@ class DecryptByPublicKey(object):
         self._gen_rsa_pubkey()
         ret = self.decode()
         return ret
-

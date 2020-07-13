@@ -112,9 +112,9 @@
 #  use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds
 -DxaLogCleanPeriod=1000
 #  XA Recovery Log path
-# -DxaRecoveryLogBaseDir=/tmlogs/
+# -DxaRecoveryLogBaseDir=/xalogs/
 #  XA Recovery Log name
-#-DxaRecoveryLogBaseName=tmlog
+#-DxaRecoveryLogBaseName=xalog
 #  XA Retry count, retry times in backend, 0 means always retry until success
 #-DxaRetryCount=0
 

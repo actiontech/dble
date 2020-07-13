@@ -414,6 +414,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 if (tConfig != null && tConfig.getShardingNodes().size() == 1) {
                     dataNode = tConfig.getShardingNodes().get(0);
                     globalNodeSet.add(dataNode);
+                } else if(tConfig == null){
+                    dataNode = tSchema.getShardingNode();
+                    globalNodeSet.add(dataNode);
                 }
             }
         }

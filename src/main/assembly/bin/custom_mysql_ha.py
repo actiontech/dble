@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging.config
 import time
-
+import logging.config
 import dble_datahosts_check as Dhcheck
-
 
 # Need to update.
 
@@ -18,15 +16,18 @@ def init():
     global loggername
     loggername = 'DBLEDatahostCheck'
 
-    # dble sharding.xml.
+    # dble db.xml.
 
-    global schemaxml
-    schemaxml = './conf/sharding.xml'
+    global dbxml
+    dbxml = './conf/db.xml'
 
     # dble manage user.
 
-    global serverxml
-    serverxml = './conf/server.xml'
+    global userxml
+    userxml = './conf/user.xml'
+    
+    global portcnf
+    portcnf = "./conf/bootstrap.cnf"
 
 # Log file initialization.
 
@@ -45,8 +46,6 @@ if __name__ == "__main__":
     log.info("Logger initialization is complete.")
     while "true":
         log.info("DBLE datahsots check begin...")
-        Dhcheck.main(log,schemaxml,serverxml)
+        Dhcheck.main(log,dbxml,userxml,portcnf)
         log.info("DBLE datahsots check end.")
         time.sleep(5)
-
-

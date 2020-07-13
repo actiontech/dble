@@ -74,6 +74,7 @@ public final class ManagerParseShow {
     public static final int SHOW_USER_PRIVILEGE = 66;
     public static final int SHOW_QUESTIONS = 67;
     public static final int DATADISTRIBUTION_WHERE = 68;
+    public static final int CONNECTION_POOL_PROPERTY = 69;
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
@@ -1776,6 +1777,8 @@ public final class ManagerParseShow {
                     switch (stmt.charAt(offset)) {
                         case ' ':
                             return (offset << 8) | CONNECTION;
+                        case '_':
+                            return show2ConnectionPool(stmt, offset);
                         case '.':
                             return show2ConnectonDot(stmt, offset);
                         default:
@@ -1796,7 +1799,7 @@ public final class ManagerParseShow {
                     return show2XCount(stmt, offset, CONNECTION_COUNT);
                 case 's':
                 case 'S':
-                    return show2ConnectonSQL(stmt, offset);
+                    return show2ConnectionSQL(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -1804,8 +1807,26 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2ConnectionPool(String stmt, int offset) {
+        if (stmt.length() > offset + "POOL".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'p' || c1 == 'P') && (c2 == 'o' || c2 == 'O') && (c3 == 'o' || c3 == 'O') && (c4 == 'l' || c4 == 'L')) {
+                while (stmt.length() > ++offset) {
+                    if (!ParseUtil.isSpace(stmt.charAt(offset))) {
+                        return OTHER;
+                    }
+                }
+                return CONNECTION_POOL_PROPERTY;
+            }
+        }
+        return OTHER;
+    }
+
     // SHOW @@CONNECTION.SQL
-    private static int show2ConnectonSQL(String stmt, int offset) {
+    private static int show2ConnectionSQL(String stmt, int offset) {
         if (stmt.length() > offset + "QL".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);

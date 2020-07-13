@@ -48,6 +48,9 @@ public final class ShowHandler {
             case ManagerParseShow.CONNECTION:
                 ShowConnection.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
+            case ManagerParseShow.CONNECTION_POOL_PROPERTY:
+                ShowConnectionPoolProperty.execute(c);
+                break;
             case ManagerParseShow.BACKEND:
                 ShowBackend.execute(c, stmt.substring(rs >>> 8).trim());
                 break;

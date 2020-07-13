@@ -474,11 +474,16 @@ public class NonBlockingSession implements Session {
             return;
         }
 
-        setRouteResultToTrace(nodes);
+        // ddl
         if (rrs.getSqlType() == DDL) {
-            // ddl
+            if (transactionManager.getSessionXaID() != null) {
+                source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "DDL is not allowed to be executed in xa transaction.");
+                return;
+            }
+            setRouteResultToTrace(nodes);
             executeDDL(rrs);
         } else {
+            setRouteResultToTrace(nodes);
             // dml or simple select
             executeOther(rrs);
         }

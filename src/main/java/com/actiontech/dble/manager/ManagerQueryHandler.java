@@ -41,7 +41,7 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         ManagerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(String.valueOf(c) + sql);
+            LOGGER.debug(c + sql);
         }
 
         source.setExecuteSql(sql);

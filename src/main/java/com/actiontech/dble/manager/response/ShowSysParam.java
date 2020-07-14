@@ -118,10 +118,10 @@ public final class ShowSysParam {
         paramValues.add(new ParamInfo("processorCheckPeriod", sysConfig.getProcessorCheckPeriod() / 1000 + " Seconds", "The period between the jobs for cleaning the closed or overtime connections. The default is 1 second"));
         paramValues.add(new ParamInfo("sqlExecuteTimeout", sysConfig.getSqlExecuteTimeout() + " Seconds", "The max query executing time.If time out,the connection will be closed. The default is 300 seconds"));
         paramValues.add(new ParamInfo("recordTxn", sysConfig.getRecordTxn() + "", "Whether the transaction be recorded as a file,The default value is 0"));
-        paramValues.add(new ParamInfo("transactionLogBaseDir", sysConfig.getTransactionLogBaseDir(), "The directory of the transaction record file,The default value is ./txlogs"));
+        paramValues.add(new ParamInfo("transactionLogBaseDir", sysConfig.getTransactionLogBaseDir(), "The directory of the transaction record file,The default value is ./txlogs/"));
         paramValues.add(new ParamInfo("transactionLogBaseName", sysConfig.getTransactionLogBaseName(), "The name of the transaction record file.The default value is server-tx"));
         paramValues.add(new ParamInfo("transactionRotateSize", sysConfig.getTransactionRotateSize() + "M", "The max size of the transaction record file.The default value is 16M"));
-        paramValues.add(new ParamInfo("xaRecoveryLogBaseDir", sysConfig.getXaRecoveryLogBaseDir(), "The directory of the xa transaction record file,The default value is ./tmlogs"));
+        paramValues.add(new ParamInfo("xaRecoveryLogBaseDir", sysConfig.getXaRecoveryLogBaseDir(), "The directory of the xa transaction record file,The default value is ./xalogs/"));
         paramValues.add(new ParamInfo("xaRecoveryLogBaseName", sysConfig.getXaRecoveryLogBaseName(), "The name of the xa transaction record file.The default value is tmlog"));
         paramValues.add(new ParamInfo("xaSessionCheckPeriod", sysConfig.getXaSessionCheckPeriod() + "ms", "The xa transaction status check period.The default value is 1000ms"));
         paramValues.add(new ParamInfo("xaLogCleanPeriod", sysConfig.getXaLogCleanPeriod() + "ms", "The xa log clear period.The default value is 1000ms"));
@@ -147,13 +147,13 @@ public final class ShowSysParam {
         paramValues.add(new ParamInfo("backSocketSoRcvbuf", sysConfig.getBackSocketSoRcvbuf() + "B", "The buffer size of backend receive socket.The default value is 1024*1024*4"));
         paramValues.add(new ParamInfo("backSocketSoSndbuf", sysConfig.getBackSocketSoSndbuf() + "B", "The buffer size of backend send socket.The default value is 1024*1024"));
         paramValues.add(new ParamInfo("backSocketNoDelay", sysConfig.getBackSocketNoDelay() + "", "The backend nagle is disabled.The default value is 1"));
-        paramValues.add(new ParamInfo("viewPersistenceConfBaseDir", sysConfig.getViewPersistenceConfBaseDir(), "The directory of the view record file,The default value is ./viewConf"));
+        paramValues.add(new ParamInfo("viewPersistenceConfBaseDir", sysConfig.getViewPersistenceConfBaseDir(), "The directory of the view record file,The default value is ./viewConf/"));
         paramValues.add(new ParamInfo("viewPersistenceConfBaseName", sysConfig.getViewPersistenceConfBaseName(), "The name of the view record file.The default value is viewJson"));
         paramValues.add(new ParamInfo("joinQueueSize", sysConfig.getJoinQueueSize() + "", "Size of join queue,Avoid using too much memory"));
         paramValues.add(new ParamInfo("mergeQueueSize", sysConfig.getMergeQueueSize() + "", "Size of merge queue,Avoid using too much memory"));
         paramValues.add(new ParamInfo("orderByQueueSize", sysConfig.getOrderByQueueSize() + "", "Size of order by queue,Avoid using too much memory"));
         paramValues.add(new ParamInfo("enableSlowLog", sysConfig.getEnableSlowLog() + "", "Enable Slow Query Log"));
-        paramValues.add(new ParamInfo("slowLogBaseDir", sysConfig.getSlowLogBaseDir() + "", "The directory of slow query log,The default value is ./slowlogs"));
+        paramValues.add(new ParamInfo("slowLogBaseDir", sysConfig.getSlowLogBaseDir() + "", "The directory of slow query log,The default value is ./slowlogs/"));
         paramValues.add(new ParamInfo("slowLogBaseName", sysConfig.getSlowLogBaseName() + "", "The name of the slow query log.The default value is slow-query"));
         paramValues.add(new ParamInfo("flushSlowLogPeriod", sysConfig.getFlushSlowLogPeriod() + "s", "The period for flushing log to disk, the default is 1 second"));
         paramValues.add(new ParamInfo("flushSlowLogSize", sysConfig.getFlushSlowLogSize() + "", "The max size for flushing log to disk, the default is 1000 "));

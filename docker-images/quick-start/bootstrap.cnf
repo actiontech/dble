@@ -119,7 +119,7 @@
 #-DxaRetryCount=0
 
 #-DviewPersistenceConfBaseDir=/viewPath
-#-viewPersistenceConfBaseName=viewJson
+#-DviewPersistenceConfBaseName=viewJson
 
 #  for join tmp results
 #-DmergeQueueSize=1024

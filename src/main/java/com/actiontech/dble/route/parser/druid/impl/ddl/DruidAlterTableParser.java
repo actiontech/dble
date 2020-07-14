@@ -20,6 +20,7 @@ import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableAlterColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
 
@@ -49,7 +50,9 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                     alterItem instanceof SQLAlterTableDropPrimaryKey) {
                 support = true;
             } else if (alterItem instanceof SQLAlterTableAddIndex ||
-                    alterItem instanceof SQLAlterTableDropIndex) {
+                    alterItem instanceof SQLAlterTableDropIndex ||
+                    alterItem instanceof SQLAlterTableRenameIndex ||
+                    alterItem instanceof MySqlAlterTableAlterColumn) {
                 support = true;
                 rrs.setOnline(true);
             } else if (alterItem instanceof SQLAlterTableAddConstraint) {

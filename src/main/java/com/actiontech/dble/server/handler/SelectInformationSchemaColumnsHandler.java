@@ -104,18 +104,21 @@ public class SelectInformationSchemaColumnsHandler {
             return;
         }
 
+        String shardingNode = null;
         if (!schemaConfig.getTables().containsKey(table)) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
-            return;
+            if ((shardingNode = schemaConfig.getShardingNode()) == null) {
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
+                return;
+            }
+        } else {
+            BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
+            if (tableConfig == null) {
+                c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
+                return;
+            }
+            shardingNode = tableConfig.getShardingNodes().get(0);
         }
 
-        BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
-        if (tableConfig == null) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
-            return;
-        }
-
-        String shardingNode = tableConfig.getShardingNodes().get(0);
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
         String shardingDataBase = dn.getDatabase();
 

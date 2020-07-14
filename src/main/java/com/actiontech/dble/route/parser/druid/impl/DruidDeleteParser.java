@@ -118,7 +118,8 @@ public class DruidDeleteParser extends DruidModifyParser {
 
     @Override
     SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
-        return null;
+        stmt.accept(visitor);
+        return (SQLSelect) stmt;
     }
 
     @Override

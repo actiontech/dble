@@ -59,7 +59,6 @@ public class DruidUpdateParser extends DruidModifyParser {
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 if (tc == null || !(tc instanceof GlobalTableConfig)) {
                     isAllGlobal = false;
-                    break;
                 }
             }
 

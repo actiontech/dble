@@ -172,7 +172,7 @@ public final class SystemConfig {
     }
 
     public String getTransactionLogBaseDir() {
-        return this.getHomePath() + File.separatorChar + transactionLogBaseDir + File.separatorChar;
+        return (this.getHomePath() + File.separatorChar + transactionLogBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);
     }
 
     @SuppressWarnings("unused")
@@ -199,7 +199,7 @@ public final class SystemConfig {
     }
 
     public String getXaRecoveryLogBaseDir() {
-        return this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar;
+        return (this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);
     }
 
     @SuppressWarnings("unused")
@@ -857,7 +857,7 @@ public final class SystemConfig {
 
 
     public String getViewPersistenceConfBaseDir() {
-        return this.getHomePath() + File.separatorChar + viewPersistenceConfBaseDir + File.separatorChar;
+        return (this.getHomePath() + File.separatorChar + viewPersistenceConfBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);
     }
 
     @SuppressWarnings("unused")
@@ -981,7 +981,7 @@ public final class SystemConfig {
     }
 
     public String getSlowLogBaseDir() {
-        return this.getHomePath() + File.separatorChar + slowLogBaseDir + File.separatorChar;
+        return (this.getHomePath() + File.separatorChar + slowLogBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);
     }
 
     @SuppressWarnings("unused")

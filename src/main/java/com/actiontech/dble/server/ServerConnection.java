@@ -902,6 +902,9 @@ public class ServerConnection extends FrontendConnection {
             session.setKilled(false);
             session.setDiscard(false);
         }
+        if (session.isPrepared()) {
+            session.setPrepared(false);
+        }
     }
 
     @Override

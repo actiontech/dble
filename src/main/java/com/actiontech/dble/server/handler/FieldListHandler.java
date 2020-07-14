@@ -43,19 +43,64 @@ public final class FieldListHandler {
         SchemaMeta schemata = null;
         TableMeta tableMeta = null;
 
-        if (!schema.getTables().containsKey(table) || (schemata = ProxyMeta.getInstance().getTmManager().getCatalogs().get(cSchema)) == null || (tableMeta = schemata.getTableMeta(table)) == null) {
+        if ((schemata = ProxyMeta.getInstance().getTmManager().getCatalogs().get(cSchema)) == null || (tableMeta = schemata.getTableMeta(table)) == null) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
             return;
         }
 
         List<TableMeta.ColumnMeta> columns = tableMeta.getColumns();
         FieldPacket[] fields = new FieldPacket[columns.size()];
-
         for (int i = 0; i < columns.size(); i++) {
-            // for compatibility with OGG, column type only contains string or long; so, in other cases may not correct
-            fields[i] = PacketUtil.getField(columns.get(i).getName(), columns.get(i).getDataType().contains("char") ? Fields.FIELD_TYPE_VAR_STRING : Fields.FIELD_TYPE_LONG);
+            fields[i] = PacketUtil.getField(columns.get(i).getName(), getFieldType(columns.get(i).getDataType()));
         }
         doWrite(c, fields);
+    }
+
+    private static int getFieldType(String dataType) {
+        switch (dataType) {
+            case "tinyint":
+                return Fields.FIELD_TYPE_TINY;
+            case "smallint":
+                return Fields.FIELD_TYPE_SHORT;
+            case "mediumint":
+                return Fields.FIELD_TYPE_INT24;
+            case "int":
+            case "integer":
+                return Fields.FIELD_TYPE_LONG;
+            case "bigint":
+                return Fields.FIELD_TYPE_LONGLONG;
+            case "float":
+                return Fields.FIELD_TYPE_FLOAT;
+            case "double":
+                return Fields.FIELD_TYPE_DOUBLE;
+            case "decimal":
+                return Fields.FIELD_TYPE_NEW_DECIMAL;
+            case "date":
+                return Fields.FIELD_TYPE_DATE;
+            case "time":
+                return Fields.FIELD_TYPE_TIME;
+            case "year":
+                return Fields.FIELD_TYPE_YEAR;
+            case "datetime":
+                return Fields.FIELD_TYPE_DATETIME;
+            case "timestamp":
+                return Fields.FIELD_TYPE_TIMESTAMP;
+            case "char":
+                return Fields.FIELD_TYPE_STRING;
+            case "varchar":
+                return Fields.FIELD_TYPE_VAR_STRING;
+            case "tinyblob":
+            case "tinytext":
+            case "blob":
+            case "text":
+            case "mediumblob":
+            case "mediumtext":
+            case "longblob":
+            case "longtext":
+                return Fields.FIELD_TYPE_BLOB;
+            default:
+                return Fields.FIELD_TYPE_DECIMAL;
+        }
     }
 
     private static void doWrite(ServerConnection c, FieldPacket[] fields) {

@@ -5,19 +5,21 @@
 */
 package com.actiontech.dble.config.util;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ProblemReporter;
-import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.config.model.SystemConfig;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.*;
 
 import javax.xml.XMLConstants;
@@ -46,10 +48,10 @@ public final class ConfigUtil {
         StringBuilder s = new StringBuilder();
         int cur = 0;
         int textLen = text.length();
-        int propStart = -1;
-        int propStop = -1;
-        String propName = null;
-        String propValue = null;
+        int propStart;
+        int propStop;
+        String propName;
+        String propValue;
         for (; cur < textLen; cur = propStop + 1) {
             propStart = text.indexOf("${", cur);
             if (propStart < 0) {
@@ -102,37 +104,12 @@ public final class ConfigUtil {
         return builder.parse(xml);
     }
 
-    public static Map<String, Object> loadAttributes(Element e) {
-        Map<String, Object> map = new HashMap<>();
-        NamedNodeMap nm = e.getAttributes();
-        for (int j = 0; j < nm.getLength(); j++) {
-            Node n = nm.item(j);
-            if (n instanceof Attr) {
-                Attr attr = (Attr) n;
-                map.put(attr.getName(), attr.getNodeValue());
-            }
-        }
-        return map;
-    }
-
-    public static Element loadElement(Element parent, String tagName) {
-        NodeList nodeList = parent.getElementsByTagName(tagName);
-        if (nodeList.getLength() > 1) {
-            throw new ConfigException(tagName + " elements length  over one!");
-        }
-        if (nodeList.getLength() == 1) {
-            return (Element) nodeList.item(0);
-        } else {
-            return null;
-        }
-    }
-
     /**
-     * @param parent
+     * @param parent parent
      * @return key-value property
      */
-    public static Map<String, Object> loadElements(Element parent) {
-        Map<String, Object> map = new HashMap<>();
+    public static Properties loadElements(Element parent) {
+        Properties map = new Properties();
         NodeList children = parent.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             Node node = children.item(i);
@@ -142,23 +119,27 @@ public final class ConfigUtil {
                 if ("property".equals(name)) {
                     String key = e.getAttribute("name");
                     String value = e.getTextContent();
-                    map.put(key, StringUtil.isEmpty(value) ? null : value.trim());
+                    if (value == null) {
+                        map.put(key, "");
+                    } else {
+                        map.put(key, value.trim());
+                    }
                 }
             }
         }
         return map;
     }
 
-    public static void setSchemasForPool(Map<String, PhysicalDataHost> dataHostMap, Map<String, PhysicalDataNode> dataNodeMap) {
-        for (PhysicalDataHost dataHost : dataHostMap.values()) {
-            dataHost.setSchemas(getDataNodeSchemasOfDataHost(dataHost.getHostName(), dataNodeMap));
+    public static void setSchemasForPool(Map<String, PhysicalDbGroup> dbGroupMap, Map<String, ShardingNode> shardingNodeMap) {
+        for (PhysicalDbGroup dbGroup : dbGroupMap.values()) {
+            dbGroup.setSchemas(getShardingNodeSchemasOfDbGroup(dbGroup.getGroupName(), shardingNodeMap));
         }
     }
 
-    private static String[] getDataNodeSchemasOfDataHost(String dataHost, Map<String, PhysicalDataNode> dataNodeMap) {
+    private static String[] getShardingNodeSchemasOfDbGroup(String dbGroup, Map<String, ShardingNode> shardingNodeMap) {
         ArrayList<String> schemaList = new ArrayList<>(30);
-        for (PhysicalDataNode dn : dataNodeMap.values()) {
-            if (dn.getDataHost() != null && dn.getDataHost().getHostName().equals(dataHost)) {
+        for (ShardingNode dn : shardingNodeMap.values()) {
+            if (dn.getDbGroup() != null && dn.getDbGroup().getGroupName().equals(dbGroup)) {
                 schemaList.add(dn.getDatabase());
             }
         }
@@ -176,11 +157,6 @@ public final class ConfigUtil {
     /**
      * check element illegal value and return val
      *
-     * @param element
-     * @param attrName
-     * @param defaultValue
-     * @param reporter
-     * @return
      */
     public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
         if (element.hasAttribute(attrName)) {
@@ -195,26 +171,26 @@ public final class ConfigUtil {
         return defaultValue;
     }
 
-    public static String checkAndGetAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter) {
+    public static String checkBoolAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter, String fileName) {
         if (val != null) {
-            if (isBool(val) || isNumeric(val)) {
+            if (isBool(val)) {
                 return val;
             } else if (reporter != null) {
-                reporter.warn("property[" + propertyName + "] " + val + " in server.xml is illegal, use " + defaultValue + " replaced");
+                reporter.warn("[" + propertyName + "]'s value " + val + " in " + fileName + " is illegal, use " + defaultValue + " replaced");
             }
         }
         return defaultValue;
     }
 
 
-    public static String getAndSyncKeyVariables(Map<String, PhysicalDataHost> dataHosts, boolean needSync) throws Exception {
+    public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
         String msg = null;
-        if (dataHosts.size() == 0) {
-            //with no dataHosts, do not check the variables
+        if (dbGroups.size() == 0) {
+            //with no dbGroups, do not check the variables
             return null;
         }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dataHosts.size());
-        getAndSyncKeyVariablesForDataSources(dataHosts, keyVariablesTaskMap, needSync);
+        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
+        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
 
         boolean lowerCase = false;
         boolean isFirst = true;
@@ -236,9 +212,9 @@ public final class ConfigUtil {
                 minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
             }
         }
-        if (minNodePacketSize < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
-            DbleServer.getInstance().getConfig().getSystem().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
-            msg = "dble's maxPacketSize will be set to (the min of all dataHost's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+        if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
+            SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+            msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             LOGGER.warn(msg);
         }
         if (secondGroup.size() != 0) {
@@ -266,13 +242,13 @@ public final class ConfigUtil {
     }
 
 
-    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDataHost> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
-        ExecutorService service = Executors.newFixedThreadPool(dataHosts.size());
-        for (Map.Entry<String, PhysicalDataHost> entry : dataHosts.entrySet()) {
+    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
+        ExecutorService service = Executors.newFixedThreadPool(dbGroups.size());
+        for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
             String hostName = entry.getKey();
-            PhysicalDataHost pool = entry.getValue();
+            PhysicalDbGroup pool = entry.getValue();
 
-            for (PhysicalDataSource ds : pool.getAllDataSources()) {
+            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
                 if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                     continue;
                 }
@@ -294,9 +270,9 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDataSource ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
+    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDbInstance ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
         String dataSourceName = genDataSourceKey(hostName, ds.getName());
-        GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(ds, needSync);
+        GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(ds, needSync);
         Future<KeyVariables> future = service.submit(task);
         keyVariablesTaskMap.put(dataSourceName, future);
     }

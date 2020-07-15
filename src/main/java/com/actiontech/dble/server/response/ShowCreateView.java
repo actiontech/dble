@@ -64,7 +64,7 @@ public final class ShowCreateView {
             String schema = null;
             String view = null;
             if (statement.getName() instanceof SQLPropertyExpr) {
-                //show create view with schema
+                //show create view with sharding
                 SQLPropertyExpr sqlPropertyExpr = (SQLPropertyExpr) statement.getName();
                 //protocol not equals the nomul things
                 schema = sqlPropertyExpr.getOwner().toString();
@@ -88,7 +88,7 @@ public final class ShowCreateView {
     }
 
     public static void sendOutTheViewInfo(ServerConnection c, String schema, String viewName) throws SQLException {
-        //check if the view or schema doesn't exist
+        //check if the view or sharding doesn't exist
         if (schema == null || "".equals(schema)) {
             throw new SQLException("No database selected", "3D000", ErrorCode.ER_NO_DB_ERROR);
         }

@@ -21,7 +21,6 @@ public abstract class FrontendConnectionFactory {
     public FrontendConnection make(NetworkChannel channel) throws IOException {
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-
         FrontendConnection c = getConnection(channel);
         c.setSocketParams(true);
         return c;

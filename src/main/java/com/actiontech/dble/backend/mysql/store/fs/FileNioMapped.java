@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.store.fs;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
@@ -112,7 +112,7 @@ class FileNioMapped extends FileBase {
         fileLength = file.length();
         if (fileLength == 0) {
             // fileLength = 1024*1024* 1024;
-            fileLength = DbleServer.getInstance().getConfig().getSystem().getMappedFileSize();
+            fileLength = SystemConfig.getInstance().getMappedFileSize();
         }
         checkFileSizeLimit(fileLength);
         // maps new MappedByteBuffer; the old one is disposed during GC

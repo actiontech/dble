@@ -1,23 +1,23 @@
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.FlowControllerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 
 /**
  * Created by szf on 2020/4/9.
  */
 public final class WriteQueueFlowController {
     private static final WriteQueueFlowController INSTANCE = new WriteQueueFlowController();
-    private volatile FlowCotrollerConfig config = null;
+    private volatile FlowControllerConfig config = null;
 
     private WriteQueueFlowController() {
     }
 
     public static void init() throws Exception {
-        INSTANCE.config = new FlowCotrollerConfig(
-                DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl(),
-                DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold(),
-                DbleServer.getInstance().getConfig().getSystem().getFlowControlStopThreshold());
+        INSTANCE.config = new FlowControllerConfig(
+                SystemConfig.getInstance().isEnableFlowControl(),
+                SystemConfig.getInstance().getFlowControlStartThreshold(),
+                SystemConfig.getInstance().getFlowControlStopThreshold());
         if (INSTANCE.config.getEnd() < 0 || INSTANCE.config.getStart() <= 0) {
             throw new Exception("The flowControlStartThreshold & flowControlStopThreshold must be positive integer");
         } else if (INSTANCE.config.getEnd() >= INSTANCE.config.getStart()) {
@@ -25,11 +25,11 @@ public final class WriteQueueFlowController {
         }
     }
 
-    public static FlowCotrollerConfig getFlowCotrollerConfig() {
+    public static FlowControllerConfig getFlowCotrollerConfig() {
         return INSTANCE.config;
     }
 
-    public static void configChange(FlowCotrollerConfig newConfig) {
+    public static void configChange(FlowControllerConfig newConfig) {
         INSTANCE.config = newConfig;
     }
 

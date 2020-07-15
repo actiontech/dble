@@ -6,16 +6,21 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChangeUserPacket extends MySQLPacket {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChangeUserPacket.class);
     private final long clientFlags;
     private int charsetIndex;
     private String user;
     private byte[] password;
     private String database;
     private String authPlugin = "mysql_native_password";
+    private String tenant = "";
 
     public ChangeUserPacket(long clientFlags, int charsetIndex) {
         this.clientFlags = clientFlags;
@@ -38,6 +43,23 @@ public class ChangeUserPacket extends MySQLPacket {
             charsetIndex = mm.readUB2();
             if ((clientFlags & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
                 authPlugin = mm.readStringWithNull();
+            }
+            if ((clientFlags & Capabilities.CLIENT_CONNECT_ATTRS) != 0) {
+                long attrLength = mm.readLength();
+                while (attrLength > 0) {
+                    long start = mm.position();
+                    String charsetName = CharsetUtil.getJavaCharset(charsetIndex);
+                    try {
+                        String key = mm.readStringWithLength(charsetName);
+                        String value = mm.readStringWithLength(charsetName);
+                        if (key.equals("tenant")) {
+                            tenant = value;
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("read attribute filed", e);
+                    }
+                    attrLength -= (mm.position() - start);
+                }
             }
         }
     }
@@ -74,6 +96,10 @@ public class ChangeUserPacket extends MySQLPacket {
 
     public String getAuthPlugin() {
         return authPlugin;
+    }
+
+    public String getTenant() {
+        return tenant;
     }
 
 }

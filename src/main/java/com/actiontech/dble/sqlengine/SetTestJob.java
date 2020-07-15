@@ -7,7 +7,7 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
@@ -45,10 +45,10 @@ public class SetTestJob implements ResponseHandler, Runnable {
     public void run() {
         boolean sendTest = false;
         try {
-            Map<String, PhysicalDataHost> dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
-            for (PhysicalDataHost dn : dataHosts.values()) {
-                if (dn.getWriteSource().isAlive()) {
-                    dn.getWriteSource().getConnection(databaseName, true, this, null, false);
+            Map<String, PhysicalDbGroup> dbGroups = DbleServer.getInstance().getConfig().getDbGroups();
+            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+                if (dbGroup.getWriteDbInstance().isAlive()) {
+                    dbGroup.getWriteDbInstance().getConnection(databaseName, this, null, false);
                     sendTest = true;
                     break;
                 }
@@ -84,7 +84,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         if (hasReturn.compareAndSet(false, true)) {
             String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
             LOGGER.info(reason);
@@ -150,7 +150,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNodeOrDatabase=" +
+        return "SQLJob [Database=" +
                 databaseName + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

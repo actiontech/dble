@@ -7,10 +7,13 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public final class ReloadSlowQueryFlushSize {
     private ReloadSlowQueryFlushSize() {
@@ -23,7 +26,14 @@ public final class ReloadSlowQueryFlushSize {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the commend is not correct");
             return;
         }
-
+        try {
+            WriteDynamicBootstrap.getInstance().changeValue("flushSlowLogSize", String.valueOf(size));
+        } catch (IOException e) {
+            String msg = " reload @@slow_query.flushSize failed";
+            LOGGER.warn(String.valueOf(c) + " " + msg, e);
+            c.writeErrMessage(ErrorCode.ER_YES, msg);
+            return;
+        }
         SlowQueryLog.getInstance().setFlushSize(size);
         LOGGER.info(String.valueOf(c) + " reload @@slow_query.flushSize=" + size + " success by manager");
 

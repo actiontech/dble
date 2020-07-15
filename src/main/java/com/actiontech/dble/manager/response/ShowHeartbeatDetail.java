@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
@@ -112,9 +112,9 @@ public final class ShowHeartbeatDetail {
         int port = 0;
         MySQLHeartbeat hb = null;
 
-        Map<String, PhysicalDataHost> dataHosts = conf.getDataHosts();
-        for (PhysicalDataHost pool : dataHosts.values()) {
-            for (PhysicalDataSource ds : pool.getAllActiveDataSources()) {
+        Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
+        for (PhysicalDbGroup pool : dbGroups.values()) {
+            for (PhysicalDbInstance ds : pool.getAllActiveDbInstances()) {
                 if (name.equals(ds.getName())) {
                     hb = ds.getHeartbeat();
                     ip = ds.getConfig().getIp();

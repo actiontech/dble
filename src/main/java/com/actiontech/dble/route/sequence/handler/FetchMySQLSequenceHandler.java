@@ -7,7 +7,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
@@ -29,15 +29,15 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
 
     public void execute(SequenceVal seqVal) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        PhysicalDataNode mysqlDN = conf.getDataNodes().get(seqVal.dataNode);
+        ShardingNode mysqlDN = conf.getShardingNodes().get(seqVal.shardingNode);
         try {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("execute in data node " + seqVal.dataNode +
+                LOGGER.debug("execute in shardingNode " + seqVal.shardingNode +
                         " for fetch sequence sql " + seqVal.sql);
             }
             // change Select mode to Update mode. Make sure the query send to the write host
             mysqlDN.getConnection(mysqlDN.getDatabase(), true, true,
-                    new RouteResultsetNode(seqVal.dataNode, ServerParse.UPDATE,
+                    new RouteResultsetNode(seqVal.shardingNode, ServerParse.UPDATE,
                             seqVal.sql), this, seqVal);
         } catch (Exception e) {
             LOGGER.warn("get connection err: " + e);
@@ -57,16 +57,15 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
             conn.query(((SequenceVal) conn.getAttachment()).sql, true);
         } catch (Exception e) {
             LOGGER.warn("connection acquired error: " + e);
-            handleError(conn, e.getMessage());
+            handleError(conn.getAttachment(), e.getMessage());
             conn.close(e.getMessage());
         }
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("connect error: " + e);
-        handleError(conn, e.getMessage());
-        conn.closeWithoutRsp(e.getMessage());
+        handleError(attachment, e.getMessage());
     }
 
     @Override
@@ -76,7 +75,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         String errMsg = new String(err.getMessage());
 
         LOGGER.warn("errorResponse " + err.getErrNo() + " " + errMsg);
-        handleError(conn, errMsg);
+        handleError(conn.getAttachment(), errMsg);
 
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
@@ -121,8 +120,8 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         conn.release();
     }
 
-    private void handleError(BackendConnection c, String errMsg) {
-        SequenceVal seqVal = ((SequenceVal) c.getAttachment());
+    private void handleError(Object attachment, String errMsg) {
+        SequenceVal seqVal = ((SequenceVal) attachment);
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
         seqVal.dbretVal = null;
         seqVal.dbfinished = true;
@@ -131,7 +130,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.warn("connection " + conn + " closed, reason:" + reason);
-        handleError(conn, "connection " + conn + " closed, reason:" + reason);
+        handleError(conn.getAttachment(), "connection " + conn + " closed, reason:" + reason);
     }
 
     @Override

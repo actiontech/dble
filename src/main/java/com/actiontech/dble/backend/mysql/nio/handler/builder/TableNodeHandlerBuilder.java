@@ -9,9 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.TableNode;
@@ -23,7 +23,7 @@ import java.util.*;
 
 class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     private TableNode node;
-    private TableConfig tableConfig = null;
+    private BaseTableConfig tableConfig = null;
 
     TableNodeHandlerBuilder(NonBlockingSession session, TableNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -80,7 +80,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             List<RouteResultsetNode> rrssList = new ArrayList<>();
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
-            if (tableConfig == null || tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE) {
+            if (tableConfig == null || tableConfig instanceof GlobalTableConfig) {
                 for (Item filter : filters) {
                     node.setWhereFilter(filter);
                     RouteResultsetNode[] rrssArray = mergeBuilder.construct(schemaConfig).getNodes();

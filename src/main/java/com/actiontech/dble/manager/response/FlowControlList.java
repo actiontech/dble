@@ -12,6 +12,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -43,7 +44,7 @@ public final class FlowControlList {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("WRITE_QUEUE_SIZE", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -72,7 +73,7 @@ public final class FlowControlList {
             //find all server connection
             packetId = findAllServerConnection(buffer, c, packetId);
             //find all mysql connection
-            packetId = findAllMySQLConeection(buffer, c, packetId);
+            packetId = findAllMySQLConnection(buffer, c, packetId);
         }
 
         // write last eof
@@ -89,7 +90,7 @@ public final class FlowControlList {
         NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
         for (NIOProcessor p : processors) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc.isFlowControlled()) {
+                if (fc instanceof ServerConnection && fc.isFlowControlled()) {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode("ServerConnection", c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getId()));
@@ -103,7 +104,7 @@ public final class FlowControlList {
         return packetId;
     }
 
-    private static byte findAllMySQLConeection(ByteBuffer buffer, ManagerConnection c, byte packetId) {
+    private static byte findAllMySQLConnection(ByteBuffer buffer, ManagerConnection c, byte packetId) {
         NIOProcessor[] processors = DbleServer.getInstance().getBackendProcessors();
         for (NIOProcessor p : processors) {
             for (BackendConnection bc : p.getBackends().values()) {
@@ -112,7 +113,7 @@ public final class FlowControlList {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode("MySQLConnection", c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(mc.getThreadId()));
-                    row.add(StringUtil.encode(mc.getPool().getConfig().getUrl() + "/" + mc.getSchema() + " id = " + mc.getThreadId(), c.getCharset().getResults()));
+                    row.add(StringUtil.encode(mc.getDbInstance().getConfig().getUrl() + "/" + mc.getSchema() + " id = " + mc.getThreadId(), c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(mc.getWriteQueue().size()));
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);

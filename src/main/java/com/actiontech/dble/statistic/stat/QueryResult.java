@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.statistic.stat;
 
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.route.util.RouterUtil;
 
 /**
@@ -14,7 +15,7 @@ import com.actiontech.dble.route.util.RouterUtil;
  */
 public class QueryResult {
 
-    private String user;
+    private UserName user;
     private int sqlType;
     private String sql;
     private long sqlRows;
@@ -24,7 +25,7 @@ public class QueryResult {
     private long endTime;
     private long resultSize;
 
-    public QueryResult(String user, int sqlType, String sql, long sqlRows,
+    public QueryResult(UserName user, int sqlType, String sql, long sqlRows,
                        long netInBytes, long netOutBytes, long startTime, long endTime, long resultSize) {
         super();
         this.user = user;
@@ -38,7 +39,7 @@ public class QueryResult {
         this.resultSize = resultSize;
     }
 
-    public String getUser() {
+    public UserName getUser() {
         return user;
     }
 

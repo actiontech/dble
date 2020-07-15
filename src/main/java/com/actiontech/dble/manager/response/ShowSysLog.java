@@ -66,7 +66,7 @@ public final class ShowSysLog {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        String filename = SystemConfig.getHomePath() + File.separator + "logs" + File.separator + ShowServerLog.DEFAULT_LOGFILE;
+        String filename = SystemConfig.getInstance().getHomePath() + File.separator + "logs" + File.separator + ShowServerLog.DEFAULT_LOGFILE;
 
         String[] lines = getLinesByLogFile(filename, numLines);
 

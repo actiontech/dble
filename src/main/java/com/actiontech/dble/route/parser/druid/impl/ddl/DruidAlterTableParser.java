@@ -5,8 +5,10 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -18,6 +20,7 @@ import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableAlterColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
 
@@ -47,7 +50,9 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                     alterItem instanceof SQLAlterTableDropPrimaryKey) {
                 support = true;
             } else if (alterItem instanceof SQLAlterTableAddIndex ||
-                    alterItem instanceof SQLAlterTableDropIndex) {
+                    alterItem instanceof SQLAlterTableDropIndex ||
+                    alterItem instanceof SQLAlterTableRenameIndex ||
+                    alterItem instanceof MySqlAlterTableAlterColumn) {
                 support = true;
                 rrs.setOnline(true);
             } else if (alterItem instanceof SQLAlterTableAddConstraint) {
@@ -109,22 +114,29 @@ public class DruidAlterTableParser extends DefaultDruidParser {
      */
     private boolean influenceKeyColumn(SQLName name, SchemaConfig schema, String tableName) {
         String columnName = name.toString();
-        Map<String, TableConfig> tableConfig = schema.getTables();
-        TableConfig changedTable = tableConfig.get(tableName);
+        Map<String, BaseTableConfig> tableConfig = schema.getTables();
+        BaseTableConfig changedTable = tableConfig.get(tableName);
         if (changedTable == null) {
             return false;
         }
-        if (columnName.equalsIgnoreCase(changedTable.getPartitionColumn()) ||
-                columnName.equalsIgnoreCase(changedTable.getJoinKey())) {
+        if (changedTable instanceof ShardingTableConfig &&
+                columnName.equalsIgnoreCase(((ShardingTableConfig) changedTable).getShardingColumn())) {
+            return true;
+        }
+        if (changedTable instanceof ChildTableConfig &&
+                columnName.equalsIgnoreCase(((ChildTableConfig) changedTable).getJoinColumn())) {
             return true;
         }
         // Traversal all the table node to find if some table is the child table of the changedTale
-        for (Map.Entry<String, TableConfig> entry : tableConfig.entrySet()) {
-            TableConfig tb = entry.getValue();
-            if (tb.getParentTC() != null &&
-                    tableName.equalsIgnoreCase(tb.getParentTC().getName()) &&
-                    columnName.equalsIgnoreCase(tb.getParentKey())) {
-                return true;
+        for (Map.Entry<String, BaseTableConfig> entry : tableConfig.entrySet()) {
+            BaseTableConfig tb = entry.getValue();
+            if (tb instanceof ChildTableConfig) {
+                ChildTableConfig childTable = (ChildTableConfig) tb;
+                if (childTable.getParentTC() != null &&
+                        tableName.equalsIgnoreCase(childTable.getParentTC().getName()) &&
+                        columnName.equalsIgnoreCase(childTable.getParentColumn())) {
+                    return true;
+                }
             }
         }
         return false;

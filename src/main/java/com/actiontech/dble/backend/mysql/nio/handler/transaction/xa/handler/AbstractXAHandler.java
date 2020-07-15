@@ -40,6 +40,9 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     protected void changeStageTo(XAStage newStage) {
         if (newStage != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("xa stage will change to {}", newStage.getStage());
+            }
             this.reset();
             this.currentStage = newStage;
             this.currentStage.onEnterStage();
@@ -94,7 +97,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         boolean finished = result[0];
         boolean justRemoved = result[1];
         if (justRemoved) {
-            String closeReason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+            String closeReason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                     ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
             if (logger.isDebugEnabled()) {
                 logger.debug(closeReason);
@@ -112,7 +115,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         logger.warn("connection Error in xa transaction, err:", e);
         boolean finished;
         lock.lock();
@@ -122,8 +125,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         } finally {
             lock.unlock();
         }
-
-        currentStage.onConnectError((MySQLConnection) conn);
         if (finished) {
             changeStageTo(next());
         }

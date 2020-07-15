@@ -5,13 +5,11 @@
 
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
-import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
-import com.actiontech.dble.config.loader.SchemaLoader;
-import com.actiontech.dble.config.loader.xml.XMLConfigLoader;
-import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
-import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.config.loader.xml.XMLDbLoader;
+import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.optimizer.ERJoinChooser;
 import org.junit.Assert;
@@ -20,28 +18,17 @@ import org.junit.Test;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class ConfigTest {
 
-    private SystemConfig system;
-    private final Map<String, UserConfig> users;
-    private Map<String, PhysicalDataHost> dataHosts;
     private Map<ERTable, Set<ERTable>> erRealtions;
 
     public ConfigTest() {
 
-        String schemaFile = "/config/schema.xml";
-        String ruleFile = "/config/rule.xml";
-
-        XMLSchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile, true, null);
-        XMLConfigLoader configLoader = new XMLConfigLoader();
-
-        this.system = configLoader.getSystemConfig();
-        this.users = configLoader.getUserConfigs();
-        this.dataHosts = initDataHosts(schemaLoader);
+        String shardingFile = "/config/sharding.xml";
+        XMLShardingLoader schemaLoader = new XMLShardingLoader(shardingFile, true, null);
         this.erRealtions = schemaLoader.getErRelations();
 
     }
@@ -49,26 +36,26 @@ public class ConfigTest {
     /**
      * test FKERmap
      * <p>
-     * <schema name="dbtest">
-     * <table name="tb1" dataNode="dnTest2,dnTest1" rule="rule1" />
-     * <table name="tb2" dataNode="dnTest2,dnTest3" rule="rule1" />
-     * <table name="tb3" dataNode="dnTest1,dnTest2" rule="rule1" />
-     * </schema>
-     * <schema name="ertest">
-     * <table name="er_parent" cacheKey="ID" dataNode="dnTest1,dnTest2" rule="rule1">
-     * <childTable name="er_child1" cacheKey="child1_id" joinKey="child1_id" parentKey="id" >
-     * <childTable name="er_grandson" cacheKey="grandson_id" joinKey="grandson_id" parentKey="child1_id" />
+     * <sharding name="dbtest">
+     * <table name="tb1" shardingNode="dnTest2,dnTest1" rule="rule1" />
+     * <table name="tb2" shardingNode="dnTest2,dnTest3" rule="rule1" />
+     * <table name="tb3" shardingNode="dnTest1,dnTest2" rule="rule1" />
+     * </sharding>
+     * <sharding name="ertest">
+     * <table name="er_parent" dataNode="dnTest1,dnTest2" rule="rule1">
+     * <childTable name="er_child1" joinColumn="child1_id" parentColumn="id" >
+     * <childTable name="er_grandson" joinColumn="grandson_id" parentColumn="child1_id" />
      * </childTable>
-     * <childTable name="er_child2" cacheKey="child2_id" joinKey="child2_id" parentKey="id2" />
-     * <childTable name="er_child3" cacheKey="child3_id" joinKey="child_char" parentKey="c_char" />
-     * <childTable name="er_child4" cacheKey="child4_id" joinKey="child4_id" parentKey="id2" >
-     * <childTable name="er_grandson2" cacheKey="grandson2_id" joinKey="grandson2_id" parentKey="child4_id2" />
+     * <childTable name="er_child2" joinColumn="child2_id" parentColumn="id2" />
+     * <childTable name="er_child3" joinColumn="child_char" parentColumn="c_char" />
+     * <childTable name="er_child4" joinColumn="child4_id" parentColumn="id2" >
+     * <childTable name="er_grandson2" joinColumn="grandson2_id" parentColumn="child4_id2" />
      * </childTable>
-     * <childTable name="er_child5" cacheKey="child5_id" joinKey="child5_id" parentKey="id" >
-     * <childTable name="er_grandson3" cacheKey="grandson3_id" joinKey="grandson3_id" parentKey="child5_id2" />
+     * <childTable name="er_child5" joinColumn="child5_id" parentColumn="id" >
+     * <childTable name="er_grandson3" joinColumn="grandson3_id" parentColumn="child5_id2" />
      * </childTable>
      * </table>
-     * </schema>
+     * </sharding>
      */
     @Test
     public void testErRelations() {
@@ -131,16 +118,6 @@ public class ConfigTest {
         }
     }
 
-    /**
-     * testTempReadHostAvailable
-     */
-    @Test
-    public void testTempReadHostAvailable() {
-        PhysicalDataHost pool = this.dataHosts.get("localhost2");
-        DataHostConfig hostConfig = pool.getWriteSource().getHostConfig();
-        Assert.assertTrue(hostConfig.isTempReadHostAvailable() == true);
-    }
-
     
 
 
@@ -151,44 +128,16 @@ public class ConfigTest {
      */
     @Test
     public void testReadHostWeight() throws Exception {
+        String dbFile = "/config/db.xml";
+        XMLDbLoader dbLoader = new XMLDbLoader(dbFile, null);
+        Map<String, PhysicalDbGroup> dbGroups = dbLoader.getDbGroups();
+        PhysicalDbGroup pool = dbGroups.get("localhost2");
 
-        ArrayList<PhysicalDataSource> okSources = new ArrayList<PhysicalDataSource>();
-
-        PhysicalDataHost pool = this.dataHosts.get("localhost2");
-        okSources.addAll(pool.getAllActiveDataSources());
-        PhysicalDataSource source = pool.randomSelect(okSources, true);
+        ArrayList<PhysicalDbInstance> okSources = new ArrayList<PhysicalDbInstance>();
+        okSources.addAll(pool.getAllActiveDbInstances());
+        PhysicalDbInstance source = pool.randomSelect(okSources, true);
 
         Assert.assertTrue(source != null);
-    }
-
-    private Map<String, PhysicalDataHost> initDataHosts(SchemaLoader schemaLoader) {
-        Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
-        Map<String, PhysicalDataHost> nodes = new HashMap<String, PhysicalDataHost>(
-                nodeConfs.size());
-        for (DataHostConfig conf : nodeConfs.values()) {
-            PhysicalDataHost pool = getPhysicalDBPool(conf);
-            nodes.put(pool.getHostName(), pool);
-        }
-        return nodes;
-    }
-
-    private PhysicalDataSource createDataSource(DataHostConfig conf,
-                                                String hostName, DataSourceConfig node, boolean isRead) {
-        node.setIdleTimeout(system.getIdleTimeout());
-        return new MySQLDataSource(node, conf, isRead);
-    }
-
-    private PhysicalDataHost getPhysicalDBPool(DataHostConfig conf) {
-        String name = conf.getName();
-        PhysicalDataSource writeSources = createDataSource(conf, name, conf.getWriteHost(), false);
-        PhysicalDataSource[] readSources = new PhysicalDataSource[conf.getReadHosts().length];
-        int i = 0;
-        for (DataSourceConfig readHost : conf.getReadHosts()) {
-            readSources[i++] = createDataSource(conf, name, readHost, true);
-        }
-        PhysicalDataHost pool = new PhysicalDataHost(conf.getName(), conf, writeSources,
-                readSources, conf.getBalance());
-        return pool;
     }
 
 }

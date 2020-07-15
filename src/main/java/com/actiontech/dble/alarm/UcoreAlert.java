@@ -5,10 +5,9 @@
 
 package com.actiontech.dble.alarm;
 
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
+import com.actiontech.dble.cluster.general.bean.ClusterAlertBean;
+import com.actiontech.dble.config.model.SystemConfig;
 
 
 public final class UcoreAlert implements Alert {
@@ -16,11 +15,13 @@ public final class UcoreAlert implements Alert {
     private final String serverId;
     private final String sourceComponentId;
     private final String alertComponentId;
+    private AbstractConsulSender sender;
 
-    public UcoreAlert() {
-        serverId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-        sourceComponentId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-        alertComponentId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+    public UcoreAlert(AbstractConsulSender sender) {
+        serverId = SystemConfig.getInstance().getServerId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceName();
+        alertComponentId = SystemConfig.getInstance().getInstanceName();
+        this.sender = sender;
     }
 
     @Override
@@ -34,7 +35,7 @@ public final class UcoreAlert implements Alert {
                 setSourceComponentId(sourceComponentId).
                 setServerId(serverId).
                 setTimestampUnix(System.currentTimeMillis() * 1000000);
-        ClusterHelper.alert(alert);
+        sender.alert(alert);
     }
 
     @Override
@@ -44,7 +45,7 @@ public final class UcoreAlert implements Alert {
                 setSourceComponentId(sourceComponentId).
                 setServerId(serverId).
                 setResolveTimestampUnix(System.currentTimeMillis() * 1000000);
-        return ClusterHelper.alertResolve(alert);
+        return sender.alertResolve(alert);
     }
 
     @Override

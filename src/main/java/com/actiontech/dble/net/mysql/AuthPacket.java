@@ -7,15 +7,17 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.BufferUtil;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.Capabilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-
 
 
 /**
@@ -38,6 +40,7 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public class AuthPacket extends MySQLPacket {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthPacket.class);
     private static final byte[] FILLER = new byte[23];
 
     private long clientFlags;
@@ -50,6 +53,7 @@ public class AuthPacket extends MySQLPacket {
     private byte[] password;
     private String database;
     private String authPlugin;
+    private String tenant = "";
 
 
     private boolean multStatementAllow = false;
@@ -75,20 +79,46 @@ public class AuthPacket extends MySQLPacket {
         }
         mm.position(current + FILLER.length);
         user = mm.readStringWithNull(); //user name end by a [00]
-        password = mm.readBytesWithLength();
-        if (((clientFlags & Capabilities.CLIENT_CONNECT_WITH_DB) != 0) && mm.hasRemaining()) {
+        password = mm.readBytesWithLength(); //CLIENT_SECURE_CONNECTION
+        if ((clientFlags & Capabilities.CLIENT_MULTIPLE_STATEMENTS) != 0) {
+            multStatementAllow = true;
+        }
+        boolean clientWithDbJdbcBug = false;
+        if (((clientFlags & Capabilities.CLIENT_CONNECT_WITH_DB) != 0)) {
             database = mm.readStringWithNull();
             if (database != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 database = database.toLowerCase();
             }
-        }
-
-        if ((clientFlags & Capabilities.CLIENT_MULTIPLE_STATEMENTS) != 0) {
-            multStatementAllow = true;
+        } else {
+            clientWithDbJdbcBug = true;
         }
 
         if ((clientFlags & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
+            if (clientWithDbJdbcBug && mm.read(mm.position()) == 0) {
+                mm.read();
+                clientWithDbJdbcBug = false;
+            }
             authPlugin = mm.readStringWithNull();
+        }
+        if ((clientFlags & Capabilities.CLIENT_CONNECT_ATTRS) != 0) {
+            if (clientWithDbJdbcBug && mm.read(mm.position()) == 0) {
+                mm.read();
+            }
+            long attrLength = mm.readLength();
+            while (attrLength > 0) {
+                long start = mm.position();
+                String charsetName = CharsetUtil.getJavaCharset(charsetIndex);
+                try {
+                    String key = mm.readStringWithLength(charsetName);
+                    String value = mm.readStringWithLength(charsetName);
+                    if (key.equals("tenant")) {
+                        tenant = value;
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("read attribute filed", e);
+                }
+                attrLength -= (mm.position() - start);
+            }
         }
     }
 
@@ -277,12 +307,12 @@ public class AuthPacket extends MySQLPacket {
         return extra;
     }
 
-    public void setExtra(byte[] extra) {
-        this.extra = extra;
-    }
-
     public String getUser() {
         return user;
+    }
+
+    public String getTenant() {
+        return tenant;
     }
 
     public void setUser(String user) {

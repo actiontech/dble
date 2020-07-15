@@ -5,8 +5,7 @@
 
 package com.actiontech.dble.route.impl;
 
-import com.actiontech.dble.cache.LayerCachePool;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidParserFactory;
@@ -67,15 +66,15 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
     }
 
     @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
-        return this.route(schema, sqlType, origSQL, sc, cachePool, false);
+    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc) throws SQLException {
+        return this.route(schema, sqlType, origSQL, sc, false);
     }
 
 
     @Override
     public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
                                                 String originSql, RouteResultset rrs,
-                                                LayerCachePool cachePool, ServerConnection sc, boolean isExplain) throws SQLException {
+                                                ServerConnection sc, boolean isExplain) throws SQLException {
         SQLStatement statement = parserSQL(originSql, sc);
         if (sc.getSession2().getIsMultiStatement().get()) {
             originSql = statement.toString();

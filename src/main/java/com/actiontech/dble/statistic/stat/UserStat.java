@@ -5,7 +5,8 @@
 
 package com.actiontech.dble.statistic.stat;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.SQLRecord;
 import com.actiontech.dble.statistic.SQLRecorder;
@@ -19,9 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UserStat {
 
-    private volatile int sqlSlowTime = DbleServer.getInstance().getConfig().getSystem().getSqlSlowTime();
+    private volatile int sqlSlowTime = SystemConfig.getInstance().getSqlSlowTime();
 
-    private String user;
+    private UserName user;
 
     /**
      * concurrentMax
@@ -59,7 +60,7 @@ public class UserStat {
      */
     private SqlResultSizeRecorder sqlResultSizeRecorder = null;
 
-    public UserStat(String user) {
+    public UserStat(UserName user) {
         super();
 
         this.user = user;
@@ -68,12 +69,12 @@ public class UserStat {
         this.sqlLargeStat = new UserSqlLargeStat(10);
         this.sqlHighStat = new UserSqlHighStat();
 
-        int size = DbleServer.getInstance().getConfig().getSystem().getSqlRecordCount();
+        int size = SystemConfig.getInstance().getSqlRecordCount();
         this.sqlRecorder = new SQLRecorder(size);
         this.sqlResultSizeRecorder = new SqlResultSizeRecorder();
     }
 
-    public String getUser() {
+    public UserName getUser() {
         return user;
     }
 
@@ -179,7 +180,7 @@ public class UserStat {
         }
 
         //big size sql
-        if (resultSetSize >= DbleServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
+        if (resultSetSize >= SystemConfig.getInstance().getMaxResultSet()) {
             this.sqlResultSizeRecorder.addSql(sql, resultSetSize);
         }
 

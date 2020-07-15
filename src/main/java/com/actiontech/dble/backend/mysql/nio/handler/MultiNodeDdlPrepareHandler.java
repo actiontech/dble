@@ -7,10 +7,10 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -104,7 +104,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
             } else {
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), true, sessionAutocommit, node, this, node);
             }
         }
@@ -179,10 +179,10 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("backend connect", e);
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_ERROR);
+    public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getSource(),
+                (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_ERROR);
+
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);

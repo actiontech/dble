@@ -6,7 +6,8 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -57,7 +58,7 @@ public final class MyOptimizer {
 
                 node = SelectedProcessor.optimize(node);
 
-                boolean useJoinStrategy = DbleServer.getInstance().getConfig().getSystem().isUseJoinStrategy();
+                boolean useJoinStrategy = SystemConfig.getInstance().isUseJoinStrategy();
                 if (useJoinStrategy) {
                     node = JoinStrategyProcessor.optimize(node);
                 }
@@ -92,22 +93,22 @@ public final class MyOptimizer {
      * return -1 if all the table is not global table,need not global optimizer;
      * return 0 for other ,may need to global optimizer ;
      */
-    public static int checkGlobalTable(PlanNode node, Set<String> resultDataNodes) {
+    public static int checkGlobalTable(PlanNode node, Set<String> resultShardingNodes) {
         if (node.isWithSubQuery()) {
             return 0;
         }
-        Set<String> dataNodes = null;
+        Set<String> shardingNodes = null;
         boolean isAllGlobal = true;
         boolean isContainGlobal = false;
         for (TableNode tn : node.getReferedTableNodes()) {
             if (tn.getUnGlobalTableCount() == 0) {
                 isContainGlobal = true;
                 if (isAllGlobal) {
-                    if (dataNodes == null) {
-                        dataNodes = new HashSet<>();
-                        dataNodes.addAll(tn.getNoshardNode());
+                    if (shardingNodes == null) {
+                        shardingNodes = new HashSet<>();
+                        shardingNodes.addAll(tn.getNoshardNode());
                     } else {
-                        dataNodes.retainAll(tn.getNoshardNode());
+                        shardingNodes.retainAll(tn.getNoshardNode());
                     }
                 } else {
                     return 0;
@@ -121,15 +122,15 @@ public final class MyOptimizer {
         }
 
         if (isAllGlobal) {
-            if (dataNodes == null) { // all nonamenode
+            if (shardingNodes == null) { // all nonamenode
                 String db = SchemaUtil.getRandomDb();
                 SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(db);
-                node.setNoshardNode(schemaConfig.getAllDataNodes());
-                resultDataNodes.addAll(schemaConfig.getAllDataNodes());
+                node.setNoshardNode(schemaConfig.getAllShardingNodes());
+                resultShardingNodes.addAll(schemaConfig.getAllShardingNodes());
                 return 1;
-            } else if (dataNodes.size() > 0) { //all global table
-                node.setNoshardNode(dataNodes);
-                resultDataNodes.addAll(dataNodes);
+            } else if (shardingNodes.size() > 0) { //all global table
+                node.setNoshardNode(shardingNodes);
+                resultShardingNodes.addAll(shardingNodes);
                 String sql = node.getSql();
                 for (TableNode tn : node.getReferedTableNodes()) {
                     sql = RouterUtil.removeSchema(sql, tn.getSchema());

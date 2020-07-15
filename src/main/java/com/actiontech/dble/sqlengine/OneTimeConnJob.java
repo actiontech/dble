@@ -6,7 +6,7 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import org.slf4j.Logger;
@@ -18,12 +18,12 @@ public class OneTimeConnJob extends SQLJob {
     public static final Logger LOGGER = LoggerFactory.getLogger(OneTimeConnJob.class);
 
     private final SQLJobHandler jobHandler;
-    private final PhysicalDataSource ds;
+    private final PhysicalDbInstance ds;
     private final String schema;
     private final String sql;
     private final AtomicBoolean finished;
 
-    public OneTimeConnJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds) {
+    public OneTimeConnJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDbInstance ds) {
         super(sql, schema, jobHandler, ds);
         this.jobHandler = jobHandler;
         this.ds = ds;
@@ -34,7 +34,7 @@ public class OneTimeConnJob extends SQLJob {
 
     public void run() {
         try {
-            ds.getNewConnection(schema, this, null, false, true);
+            ds.createConnectionSkipPool(schema, this);
         } catch (Exception e) {
             this.connectionError(e, null);
         }

@@ -106,21 +106,32 @@ public final class ShowConnectionSQL {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(c.getId()));
         row.add(StringUtil.encode(c.getHost(), charset));
-        row.add(StringUtil.encode(c.getUser(), charset));
-        row.add(StringUtil.encode(c.getSchema(), charset));
+        row.add(StringUtil.encode(c.getUser().toString(), charset));
+        if (c instanceof ServerConnection) {
+            row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
+        } else {
+            row.add(StringUtil.encode("", charset));
+        }
         row.add(StringUtil.encode(FormatUtil.formatDate(c.getLastReadTime()), charset));
         long rt = c.getLastReadTime();
         long wt = c.getLastWriteTime();
         row.add(LongUtil.toBytes((wt >= rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
-        String executeSql = "";
-        if (c.getExecuteSql() != null) {
-            executeSql = c.getExecuteSql().length() <= 1024 ? c.getExecuteSql() : c.getExecuteSql().substring(0, 1024);
-        }
-        row.add(StringUtil.encode(executeSql, charset));
         if (c instanceof ServerConnection) {
+            String executeSql = "";
             ServerConnection sc = (ServerConnection) c;
+            if (sc.getExecuteSql() != null) {
+                executeSql = sc.getExecuteSql().length() <= 1024 ? sc.getExecuteSql() : sc.getExecuteSql().substring(0, 1024);
+            }
+            row.add(StringUtil.encode(executeSql, charset));
             row.add(StringUtil.encode(sc.getSession2().getSessionStage().toString(), charset));
         } else {
+
+            String executeSql = "";
+            ManagerConnection sc = (ManagerConnection) c;
+            if (sc.getExecuteSql() != null) {
+                executeSql = sc.getExecuteSql().length() <= 1024 ? sc.getExecuteSql() : sc.getExecuteSql().substring(0, 1024);
+            }
+            row.add(StringUtil.encode(executeSql, charset));
             row.add(StringUtil.encode("Manager connection", charset));
         }
         return row;

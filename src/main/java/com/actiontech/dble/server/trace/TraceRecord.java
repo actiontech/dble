@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class TraceRecord implements Cloneable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceRecord.class);
-    private final String dataNode;
+    private final String shardingNode;
     private final String ref;
     private long timestamp;
 
@@ -18,13 +18,13 @@ public class TraceRecord implements Cloneable {
         this(timestamp, "-", "-");
     }
 
-    public TraceRecord(long timestamp, String dataNode, String ref) {
+    public TraceRecord(long timestamp, String shardingNode, String ref) {
         this.timestamp = timestamp;
-        this.dataNode = dataNode;
+        this.shardingNode = shardingNode;
         this.ref = ref;
     }
-    public String getDataNode() {
-        return dataNode;
+    public String getShardingNode() {
+        return shardingNode;
     }
 
     public String getRef() {

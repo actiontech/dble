@@ -6,6 +6,7 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
@@ -104,28 +105,28 @@ public final class ConfFileHandler {
     private static void checkXMLFile(String xmlFileName, byte[] data)
             throws ParserConfigurationException, SAXException, IOException {
         InputStream dtdStream = new ByteArrayInputStream(new byte[0]);
-        File confDir = new File(SystemConfig.getHomePath(), "conf");
+        File confDir = new File(SystemConfig.getInstance().getHomePath(), "conf");
         switch (xmlFileName) {
-            case "schema.xml":
-                dtdStream = ResourceUtil.getResourceAsStream("/schema.dtd");
+            case ConfigFileName.SHARDING_XML:
+                dtdStream = ResourceUtil.getResourceAsStream("/sharding.dtd");
                 if (dtdStream == null) {
                     dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                            confDir, "schema.dtd")));
+                            confDir, "sharding.dtd")));
                 }
 
                 break;
-            case "server.xml":
-                dtdStream = ResourceUtil.getResourceAsStream("/server.dtd");
+            case ConfigFileName.DB_XML:
+                dtdStream = ResourceUtil.getResourceAsStream("/db.dtd");
                 if (dtdStream == null) {
                     dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                            confDir, "server.dtd")));
+                            confDir, "db.dtd")));
                 }
                 break;
-            case "rule.xml":
-                dtdStream = ResourceUtil.getResourceAsStream("/rule.dtd");
+            case ConfigFileName.USER_XML:
+                dtdStream = ResourceUtil.getResourceAsStream("/user.dtd");
                 if (dtdStream == null) {
                     dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                            confDir, "rule.dtd")));
+                            confDir, "user.dtd")));
                 }
                 break;
             default:
@@ -162,7 +163,7 @@ public final class ConfFileHandler {
                                                   ByteBuffer buffer, byte packetId, String fileName, String content) {
         LOGGER.info("Upload Daas Config file " + fileName + " ,content:" + content);
         String tempFileName = System.currentTimeMillis() + "_" + fileName;
-        File tempFile = new File(SystemConfig.getHomePath(), "conf" + File.separator + tempFileName);
+        File tempFile = new File(SystemConfig.getInstance().getHomePath(), "conf" + File.separator + tempFileName);
         BufferedOutputStream buff = null;
         boolean suc = false;
         try {
@@ -190,9 +191,9 @@ public final class ConfFileHandler {
         }
         if (suc) {
             // if succcess
-            File oldFile = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
+            File oldFile = new File(SystemConfig.getInstance().getHomePath(), "conf" + File.separator + fileName);
             if (oldFile.exists()) {
-                File backUP = new File(SystemConfig.getHomePath(), "conf" +
+                File backUP = new File(SystemConfig.getInstance().getHomePath(), "conf" +
                         File.separator + fileName + "_" +
                         System.currentTimeMillis() + "_auto");
                 if (!oldFile.renameTo(backUP)) {
@@ -201,7 +202,7 @@ public final class ConfFileHandler {
                     return showInfo(c, buffer, packetId, msg);
                 }
             }
-            File dst = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
+            File dst = new File(SystemConfig.getInstance().getHomePath(), "conf" + File.separator + fileName);
             if (!tempFile.renameTo(dst)) {
                 String msg = "rename file failed";
                 LOGGER.warn(msg + " for upload file " + tempFile.getAbsolutePath());
@@ -228,7 +229,7 @@ public final class ConfFileHandler {
 
     private static PackageBufINf showConfigFile(ManagerConnection c,
                                                 ByteBuffer buffer, byte packetId, String fileName) {
-        File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
+        File file = new File(SystemConfig.getInstance().getHomePath(), "conf" + File.separator + fileName);
         BufferedReader br = null;
         PackageBufINf bufINf = new PackageBufINf();
         try {
@@ -274,7 +275,7 @@ public final class ConfFileHandler {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         try {
             int i = 1;
-            File[] file = new File(SystemConfig.getHomePath(), "conf").listFiles();
+            File[] file = new File(SystemConfig.getInstance().getHomePath(), "conf").listFiles();
             if (file != null) {
                 for (File f : file) {
                     if (f.isFile()) {

@@ -6,9 +6,11 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.util.StringUtil;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +32,7 @@ public class ViewMetaParser {
         this.originalSql = originalSql;
     }
 
-    public void parseCreateView(ViewMeta viewMeta) {
+    public void parseCreateView(ViewMeta viewMeta) throws SQLException {
         String viewName = getViewName();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             viewName = viewName.toLowerCase();
@@ -38,7 +40,13 @@ public class ViewMetaParser {
 
         //delete the schema if exists
         if (viewName.indexOf('.') != -1) {
-            viewName = viewName.split("\\.")[1];
+            String[] viewNameInfo = viewName.split("\\.");
+            String schema = StringUtil.removeBackQuote(viewNameInfo[0]);
+            if (DbleServer.getInstance().getConfig().getSchemas().get(schema) == null) {
+                throw new SQLException("Unknown database '" + schema + "'", "42000", ErrorCode.ER_BAD_DB_ERROR);
+            }
+
+            viewName = viewNameInfo[1];
         }
         viewName = StringUtil.removeBackQuote(viewName);
 

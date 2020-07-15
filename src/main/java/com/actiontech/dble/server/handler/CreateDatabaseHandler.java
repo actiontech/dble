@@ -7,7 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
@@ -35,7 +35,7 @@ public final class CreateDatabaseHandler {
                 ok.setAffectedRows(1);
                 ok.write(c);
             } else {
-                throw new Exception("Can't create database '" + schema + "' that doesn't exists in schema.xml");
+                throw new Exception("Can't create database '" + schema + "' that doesn't exists in config");
             }
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());

@@ -1,7 +1,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadManager;
@@ -16,9 +16,7 @@ import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
 
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_END_NORMAL;
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_INTERRUPUTED;
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_STATUS_NONE;
+import static com.actiontech.dble.meta.ReloadStatus.*;
 
 /**
  * Created by szf on 2019/7/15.
@@ -114,7 +112,7 @@ public final class ShowReloadStatus {
             row.add(StringUtil.encode("", charset));
         } else {
             row.add(LongUtil.toBytes(status.getId()));
-            row.add(StringUtil.encode(status.getCluster(), charset));
+            row.add(StringUtil.encode(status.getClusterType(), charset));
             row.add(StringUtil.encode(status.getReloadType().toString(), charset));
             row.add(StringUtil.encode(status.getStatus(), charset));
             row.add(StringUtil.encode(FormatUtil.formatDate(status.getLastReloadStart()), charset));

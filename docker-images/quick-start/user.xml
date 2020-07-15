@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!-- - - Licensed under the Apache License, Version 2.0 (the "License");
+	- you may not use this file except in compliance with the License. - You
+	may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0
+	- - Unless required by applicable law or agreed to in writing, software -
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the
+	License for the specific language governing permissions and - limitations
+	under the License. -->
+<!DOCTYPE dble:user SYSTEM "user.dtd">
+<dble:user xmlns:dble="http://dble.cloud/" version="4.0">
+    <managerUser name="man1" password="654321"/>
+    <managerUser name="user" usingDecrypt="true" whiteIPs="127.0.0.1,0:0:0:0:0:0:0:1" readOnly="true" password="AqEkFEuIFAX6g2TJQnp4cJ2r7Yc0Z4/KBsZqKhT8qSz18Aj91e8lxO49BKQElC6OFfW4c38pCYa8QGFTub7pnw==" />
+
+    <shardingUser name="root" password="123456" schemas="testdb" readOnly="false" blacklist="blacklist1" maxCon="20"/>
+    <shardingUser name="root2" password="123456" schemas="testdb2" maxCon="20" tenant="tenant1">
+        <privileges check="true">
+            <schema name="TESTDB" dml="0110">
+                <table name="tb01" dml="0000"/>
+                <table name="tb02" dml="1111"/>
+            </schema>
+        </privileges>
+    </shardingUser>
+    <!--rwSplitUser not work for now-->
+    <rwSplitUser name="rwsu1" password="123456" dbGroup="dbGroup1" blacklist="blacklist1"
+                 maxCon="20"/>
+    <blacklist name="blacklist1">
+        <property name="selelctAllow">true</property>
+    </blacklist>
+</dble:user>

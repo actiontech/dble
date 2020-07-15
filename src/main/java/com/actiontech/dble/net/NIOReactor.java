@@ -10,6 +10,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,7 @@ public final class NIOReactor {
     public NIOReactor(String name) throws IOException {
         this.name = name;
         this.reactorR = new RW();
-        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+        if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
             this.useThreadUsageStat = true;
             this.workUsage = new ThreadWorkUsage();
             DbleServer.getInstance().getThreadUsedMap().put(name, workUsage);

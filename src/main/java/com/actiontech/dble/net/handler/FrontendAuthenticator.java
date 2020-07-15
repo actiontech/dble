@@ -6,13 +6,14 @@
 package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.server.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ import java.nio.ByteBuffer;
  *
  * @author mycat
  */
-public class FrontendAuthenticator implements NIOHandler {
+public abstract class FrontendAuthenticator implements NIOHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendAuthenticator.class);
     private static final byte[] AUTH_OK = new byte[]{7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0};
@@ -47,7 +48,7 @@ public class FrontendAuthenticator implements NIOHandler {
         });
     }
 
-    public void asynchronousHandle(byte[] data) {
+    private void asynchronousHandle(byte[] data) {
         // check quit packet
         if (data.length == QuitPacket.QUIT.length && data[4] == MySQLPacket.COM_QUIT) {
             source.close("quit packet");
@@ -86,51 +87,30 @@ public class FrontendAuthenticator implements NIOHandler {
         }
 
         // check mysql client user
-        String errMsg = AuthUtil.authority(source, authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
+        String errMsg = AuthUtil.authority(source, new UserName(authPacket.getUser(), authPacket.getTenant()), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
+        //this version is not support rwSplitUser
         if (errMsg == null) {
-            if (source instanceof ServerConnection) {
-                ((ServerConnection) source).getSession2().setRowCount(0);
-            }
+            errMsg = rejectRwSplitUser(authPacket);
+        }
+        if (errMsg == null) {
             success(authPacket);
         } else {
             failure(ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);
         }
     }
 
-    protected NIOHandler successCommendHandler() {
-        return new FrontendCommandHandler(source);
-    }
-
-    protected void success(AuthPacket auth) {
-        source.setAuthenticated(true);
-        source.setUser(auth.getUser());
-        source.setSchema(auth.getDatabase());
-        source.initCharsetIndex(auth.getCharsetIndex());
-        source.setHandler(successCommendHandler());
-        source.setMultStatementAllow(auth.isMultStatementAllow());
-        source.setClientFlags(auth.getClientFlags());
-        if (LOGGER.isDebugEnabled()) {
-            StringBuilder s = new StringBuilder();
-            s.append(source).append('\'').append(auth.getUser()).append("' login success");
-            byte[] extra = auth.getExtra();
-            if (extra != null && extra.length > 0) {
-                s.append(",extra:").append(new String(extra));
-            }
-            LOGGER.debug(s.toString());
-        }
-
+    private void success(AuthPacket auth) {
+        setConnProperties(auth);
         ByteBuffer buffer = source.allocate();
         if (isAuthSwitch) {
             source.write(source.writeToBuffer(SWITCH_AUTH_OK, buffer));
         } else {
             source.write(source.writeToBuffer(AUTH_OK, buffer));
         }
-        boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
-        boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
-        if (clientCompress && usingCompress) {
-            source.setSupportCompress(true);
-        }
     }
+
+    protected abstract void setConnProperties(AuthPacket auth);
+
 
     protected void failure(int errNo, String info) {
         LOGGER.info(source.toString() + info);
@@ -139,5 +119,15 @@ public class FrontendAuthenticator implements NIOHandler {
         } else {
             source.writeErrMessage((byte) 2, errNo, info);
         }
+    }
+
+    //todo: delete next version
+    private String rejectRwSplitUser(AuthPacket auth) {
+        UserName user = new UserName(auth.getUser(), auth.getTenant());
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+        if (userConfig instanceof RwSplitUserConfig) {
+            return "this version does not support rwSplitUser";
+        }
+        return null;
     }
 }

@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -766,7 +767,7 @@ public final class SetHandler {
 
     private static String getCharset(String charset) {
         if (charset.toLowerCase().equals("default")) {
-            charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
+            charset = SystemConfig.getInstance().getCharset();
         }
         charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
         if (checkCharset(charset)) {
@@ -789,7 +790,7 @@ public final class SetHandler {
             return null;
         }
         if (charset.toLowerCase().equals("default")) {
-            charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
+            charset = SystemConfig.getInstance().getCharset();
         } else {
             charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
             if (!checkCharset(charset)) {

@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -25,6 +25,7 @@ public class DruidDropIndexParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
+        rrs.setOnline(true);
         String schemaName = schema == null ? null : schema.getName();
         SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropStmt.getTableName());

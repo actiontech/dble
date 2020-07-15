@@ -7,6 +7,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -74,9 +75,9 @@ public final class ShowSQLSlow {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
-            String user = userStat.getUser();
+            UserName user = userStat.getUser();
             List<SQLRecord> keyList = userStat.getSqlRecorder().getRecords();
             for (SQLRecord key : keyList) {
                 if (key != null) {
@@ -100,9 +101,9 @@ public final class ShowSQLSlow {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(String user, SQLRecord sql, String charset) {
+    private static RowDataPacket getRow(UserName user, SQLRecord sql, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(user, charset));
+        row.add(StringUtil.encode(user.toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset));
         row.add(LongUtil.toBytes(sql.getExecuteTime()));
         row.add(StringUtil.encode(sql.getStatement(), charset));

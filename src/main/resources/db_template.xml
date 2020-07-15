@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!DOCTYPE dble:db SYSTEM "db.dtd">
+<dble:db xmlns:dble="http://dble.cloud/" version="4.0">
+    <dbGroup name="dbGroup1" rwSplitMode="2" delayThreshold="100">
+        <heartbeat>show slave status</heartbeat>
+        <dbInstance name="instanceM1" url="ip1:3306" user="your_user" password="your_psw" maxCon="1000" minCon="10"
+                    primary="true" readWeight="1" id="xx1">
+            <property name="testOnCreate">true</property>
+        </dbInstance>
+        <!--<dbInstance name="instanceS1" url="ip3:3306" user="your_user" password="your_psw" maxCon="1000" minCon="10"  readWeight="2" disabled="true">-->
+            <!--<property name="testOnCreate">false</property>-->
+        <!--</dbInstance>-->
+    </dbGroup>
+
+    <dbGroup name="dbGroup2" rwSplitMode="0" delayThreshold="100" disableHA="true">
+        <heartbeat errorRetryCount="1" timeout="10">show slave status</heartbeat>
+        <dbInstance name="instanceM2" url="ip2:3306" user="your_user" password="your_psw" maxCon="1000" minCon="10"
+                    primary="true">
+            <property name="testOnCreate">true</property>
+        </dbInstance>
+
+        <!-- can have multi read instances -->
+        <!--<dbInstance name="instanceS2" url="ip4:3306" user="your_user" password="your_psw" maxCon="1000" minCon="10" usingDecrypt="true">-->
+            <!--<property name="testOnCreate">true</property>-->
+        <!--</dbInstance>-->
+    </dbGroup>
+</dble:db>

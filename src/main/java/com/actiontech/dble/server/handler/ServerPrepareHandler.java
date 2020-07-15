@@ -1,13 +1,12 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.ByteUtil;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -106,14 +105,14 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     @Override
     public void execute(byte[] data) {
-        long psId = ByteUtil.readUB4(data, 5);
+        long statementId = ByteUtil.readUB4(data, 5); //skip to read
         PreparedStatement pStmt;
-        if ((pStmt = pStmtForId.get(psId)) == null) {
+        if ((pStmt = pStmtForId.get(statementId)) == null) {
             source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
             ExecutePacket packet = new ExecutePacket(pStmt);
             try {
-                packet.read(data, CharsetUtil.getJavaCharset(source.getCharset().getClient()));
+                packet.read(data, source.getCharset());
             } catch (UnsupportedEncodingException e) {
                 source.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, e.getMessage());
                 return;
@@ -125,6 +124,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute prepare sql: " + sql);
             }
+            pStmt.resetLongData();
             source.query(sql);
         }
     }
@@ -219,10 +219,13 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 case Fields.FIELD_TYPE_LONG_BLOB:
                     if (bindValue.getValue() instanceof ByteArrayOutputStream) {
                         byte[] bytes = ((ByteArrayOutputStream) bindValue.getValue()).toByteArray();
-                        sb.append("X'" + HexFormatUtil.bytesToHexString(bytes) + "'");
+                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
+                    } else if (bindValue.getValue() instanceof byte[]) {
+                        byte[] bytes = (byte[]) bindValue.getValue();
+                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
                     } else {
-                        LOGGER.info("bind value is not a instance of ByteArrayOutputStream, maybe someone change the implement of long data storage!");
-                        sb.append("'" + bindValue.getValue() + "'");
+                        LOGGER.warn("bind value is not a instance of ByteArrayOutputStream,its type is " + bindValue.getValue().getClass());
+                        sb.append("'").append(bindValue.getValue().toString()).append("'");
                     }
                     break;
                 case Fields.FIELD_TYPE_TIME:

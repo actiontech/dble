@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -17,6 +16,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.GroupByLocalResult;
 import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -74,7 +74,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         super(id, session);
         this.groupBys = groupBys;
         this.referredSumFunctions = referredSumFunctions;
-        int queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
+        int queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queue = new LinkedBlockingQueue<>(queueSize);
         this.outQueue = new LinkedBlockingQueue<>(queueSize);
         this.buckets = new ArrayList<>();

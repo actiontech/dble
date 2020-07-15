@@ -3,8 +3,10 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.model.user.UserPrivilegesConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -69,26 +71,27 @@ public final class ShowUserPrivilege {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        Map<String, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (Map.Entry<String, UserConfig> entry: users.entrySet()) {
-            String userName = entry.getKey();
+        Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
+        for (Map.Entry<UserName, UserConfig> entry: users.entrySet()) {
+            UserName userName = entry.getKey();
             UserConfig user = entry.getValue();
             // skip manager
-            if (user.isManager()) {
+            if (!(user instanceof ShardingUserConfig)) {
                 continue;
             }
+            ShardingUserConfig sUser = (ShardingUserConfig) user;
 
             String tableName;
             // privileges
             int[] pri;
             // user privilege config
-            UserPrivilegesConfig userPrivilegesConfig = user.getPrivilegesConfig();
+            UserPrivilegesConfig userPrivilegesConfig = sUser.getPrivilegesConfig();
             boolean noNeedCheck = userPrivilegesConfig == null || !userPrivilegesConfig.isCheck();
-            for (String schema : user.getSchemas()) {
+            for (String schema : sUser.getSchemas()) {
                 if (noNeedCheck || userPrivilegesConfig.getSchemaPrivilege(schema) == null) {
                     tableName = "*";
                     pri = ALL_PRIVILEGES;
-                    RowDataPacket row = getRow(userName, schema, tableName, pri, c.getCharset().getResults());
+                    RowDataPacket row = getRow(userName.toString(), schema, tableName, pri, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 } else {
@@ -97,13 +100,13 @@ public final class ShowUserPrivilege {
                     for (String tn : tables) {
                         tableName = tn;
                         pri = schemaPrivilege.getTablePrivilege(tn).getDml();
-                        RowDataPacket row = getRow(userName, schema, tableName, pri, c.getCharset().getResults());
+                        RowDataPacket row = getRow(userName.toString(), schema, tableName, pri, c.getCharset().getResults());
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                     }
                     tableName = "*";
                     pri = schemaPrivilege.getDml();
-                    RowDataPacket row = getRow(userName, schema, tableName, pri, c.getCharset().getResults());
+                    RowDataPacket row = getRow(userName.toString(), schema, tableName, pri, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
                 }

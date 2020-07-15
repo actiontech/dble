@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.log.slow;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.ServerConnection;
@@ -34,9 +32,7 @@ public class SlowQueryLogProcessor extends Thread {
 
     public SlowQueryLogProcessor() {
         this.queue = new LinkedBlockingQueue<>();
-        ServerConfig config = DbleServer.getInstance().getConfig();
-        SystemConfig systemConfig = config.getSystem();
-        this.store = new DailyRotateLogStore(systemConfig.getSlowLogBaseDir(), systemConfig.getSlowLogBaseName(), "log", 64, FILE_HEADER);
+        this.store = new DailyRotateLogStore(SystemConfig.getInstance().getSlowLogBaseDir(), SystemConfig.getInstance().getSlowLogBaseName(), "log", 64, FILE_HEADER);
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("SlowLogFlushTimerScheduler-%d").build());
     }
 

@@ -133,7 +133,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
     class SQLParser {
 
         /**
-         * fixName :schema and `
+         * fixName :sharding and `
          *
          * @param table
          * @return

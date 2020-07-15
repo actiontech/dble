@@ -71,42 +71,42 @@ public class ManagerParserTest {
     }
 
     @Test
-    public void testShowDataNode() {
-        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@datanode", 5));
-        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("SHOW @@DATANODE", 5));
-        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE", 5));
-        Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE   ", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
-                0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA=1", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
-                0xff & ManagerParseShow.parse("show @@DATANODE WHERE schema =1", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
-                0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA= 1", 5));
+    public void testShowShardingNode() {
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE, ManagerParseShow.parse("show @@shardingnode", 5));
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE, ManagerParseShow.parse("SHOW @@SHARDINGNODE", 5));
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE, ManagerParseShow.parse("show @@SHARDINGNODE", 5));
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE, ManagerParseShow.parse("show @@SHARDINGNODE   ", 5));
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE_SCHEMA,
+                0xff & ManagerParseShow.parse("show @@SHARDINGNODE WHERE SCHEMA=1", 5));
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE_SCHEMA,
+                0xff & ManagerParseShow.parse("show @@SHARDINGNODE WHERE schema =1", 5));
+        Assert.assertEquals(ManagerParseShow.SHARDING_NODE_SCHEMA,
+                0xff & ManagerParseShow.parse("show @@SHARDINGNODE WHERE SCHEMA= 1", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@DATANODEWHERE SCHEMA= 1", 5));
+                ManagerParseShow.parse("show @@SHARDINGNODEWHERE SCHEMA= 1", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@DATANODE WHERESCHEMA=1", 5));
+                ManagerParseShow.parse("show @@SHARDINGNODE WHERESCHEMA=1", 5));
 
     }
 
     @Test
     public void testShowDataSource() {
-        Assert.assertEquals(ManagerParseShow.DATASOURCE, ManagerParseShow.parse("show @@datasource", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE, ManagerParseShow.parse("SHOW @@DATASOURCE", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE, ManagerParseShow.parse(" show  @@DATASOURCE ", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE, ManagerParseShow.parse(" show  @@DATASOURCE   ", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_WHERE,
-                0xff & ManagerParseShow.parse(" show  @@DATASOURCE where datanode = 1", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_WHERE,
-                0xff & ManagerParseShow.parse(" show  @@DATASOURCE where datanode=1", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_WHERE,
-                0xff & ManagerParseShow.parse(" show  @@DATASOURCE WHERE datanode = 1", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_WHERE,
-                0xff & ManagerParseShow.parse(" show  @@DATASOURCE where DATAnode= 1 ", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE, ManagerParseShow.parse("show @@dbinstance", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE, ManagerParseShow.parse("SHOW @@DBINSTANCE", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE, ManagerParseShow.parse(" show  @@DBINSTANCE ", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE, ManagerParseShow.parse(" show  @@DBINSTANCE   ", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_WHERE,
+                0xff & ManagerParseShow.parse(" show  @@DBINSTANCE where shardingnode = 1", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_WHERE,
+                0xff & ManagerParseShow.parse(" show  @@DBINSTANCE where shardingnode=1", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_WHERE,
+                0xff & ManagerParseShow.parse(" show  @@DBINSTANCE WHERE shardingnode = 1", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_WHERE,
+                0xff & ManagerParseShow.parse(" show  @@DBINSTANCE where SHARDINGnode= 1 ", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse(" show  @@DATASOURCEwhere DATAnode= 1 ", 5));
+                ManagerParseShow.parse(" show  @@DBINSTANCEwhere SHARDINGnode= 1 ", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse(" show  @@DATASOURCE whereDATAnode= 1 ", 5));
+                ManagerParseShow.parse(" show  @@DBINSTANCE whereSHARDINGnode= 1 ", 5));
     }
 
     @Test
@@ -314,22 +314,22 @@ public class ManagerParserTest {
 
     @Test
     public void testSynStatus() {
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC,
-                0xff & ManagerParseShow.parse("show @@datasource.synstatus", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_SYNC,
+                0xff & ManagerParseShow.parse("show @@dbinstance.synstatus", 5));
     }
 
     @Test
     public void testSynDetail() {
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC_DETAIL,
-                ManagerParseShow.parse("show @@datasource.syndetail where name=slave", 5));
-        Assert.assertEquals(ManagerParseShow.DATASOURCE_SYNC_DETAIL,
-                ManagerParseShow.parse("show @@datasource.syndetail       where    name =   slave", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_SYNC_DETAIL,
+                ManagerParseShow.parse("show @@dbinstance.syndetail where name=slave", 5));
+        Assert.assertEquals(ManagerParseShow.DB_INSTANCE_SYNC_DETAIL,
+                ManagerParseShow.parse("show @@dbinstance.syndetail       where    name =   slave", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@datasource.syndetailwhere    name =   slave", 5));
+                ManagerParseShow.parse("show @@dbinstance.syndetailwhere    name =   slave", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@datasource.syndetail wherename=slave", 5));
+                ManagerParseShow.parse("show @@dbinstance.syndetail wherename=slave", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
-                ManagerParseShow.parse("show @@datasource.syndetail where name=slave ASDFASDF", 5));
+                ManagerParseShow.parse("show @@dbinstance.syndetail where name=slave ASDFASDF", 5));
     }
 
     @Test

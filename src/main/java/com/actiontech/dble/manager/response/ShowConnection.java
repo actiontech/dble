@@ -196,7 +196,7 @@ public final class ShowConnection {
         c.write(buffer);
     }
 
-    static void getWhereCondition(SQLExpr whereExpr, Map<String, String> whereInfo) {
+    public static void getWhereCondition(SQLExpr whereExpr, Map<String, String> whereInfo) {
         if (whereExpr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
             if (tmp.getLeft() instanceof SQLBinaryOpExpr) {
@@ -214,7 +214,7 @@ public final class ShowConnection {
             isMatch = fc.getHost().equals(whereInfo.get("host"));
         }
         if (whereInfo.get("user") != null) {
-            isMatch = isMatch && fc.getUser().equals(whereInfo.get("user"));
+            isMatch = isMatch && fc.getUser().toString().equals(whereInfo.get("user"));
         }
         return isMatch;
     }
@@ -226,8 +226,12 @@ public final class ShowConnection {
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(IntegerUtil.toBytes(c.getPort()));
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
-        row.add(StringUtil.encode(c.getUser(), charset));
-        row.add(StringUtil.encode(c.getSchema(), charset));
+        row.add(StringUtil.encode(c.getUser().toString(), charset));
+        if (c instanceof ServerConnection) {
+            row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
+        } else {
+            row.add(StringUtil.encode("", charset));
+        }
         row.add(StringUtil.encode(c.getCharset().getClient(), charset));
         row.add(StringUtil.encode(c.getCharset().getCollation(), charset));
         row.add(StringUtil.encode(c.getCharset().getResults(), charset));

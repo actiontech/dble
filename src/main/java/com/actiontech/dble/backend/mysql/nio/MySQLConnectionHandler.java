@@ -1,14 +1,15 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.handler.BackendAsyncHandler;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -48,13 +49,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         this.resultStatus = RESULT_STATUS_INIT;
     }
 
-    public void connectionError(Throwable e) {
-        if (responseHandler != null) {
-            responseHandler.connectionError(e, source);
-        }
-
-    }
-
     @Override
     public void handle(byte[] data) {
         if (session != null) {
@@ -63,7 +57,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         }
         if (source.isComplexQuery()) {
             offerData(data, DbleServer.getInstance().getComplexQueryExecutor());
-        } else if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+        } else if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             offerData(data);
         } else {
             offerData(data, DbleServer.getInstance().getBackendBusinessExecutor());
@@ -248,11 +242,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
         resultStatus = RESULT_STATUS_INIT;
-        this.source.setExecuting(false);
-        this.source.setRowDataFlowing(false);
-        this.source.signal();
-        ResponseHandler handler = this.responseHandler;
-        if (handler != null)
-            handler.connectionError(e, this.source);
+        this.source.close("handle data error:" + e.getMessage());
     }
 }

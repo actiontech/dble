@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+        <!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+        <!--
+         -
+         - Licensed under the Apache License, Version 2.0 (the "License");
+         - you may not use this file except in compliance with the License.
+         - You may obtain a copy of the License at
+         -
+         -      http://www.apache.org/licenses/LICENSE-2.0
+         -
+         - Unless required by applicable law or agreed to in writing, software
+         - distributed under the License is distributed on an "AS IS" BASIS,
+         - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         - See the License for the specific language governing permissions and
+         - limitations under the License.
+        -->
+        <!ELEMENT dble:sharding (schema*,shardingNode*,function*)>
+        <!ATTLIST dble:sharding xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:sharding version CDATA #IMPLIED>
+
+        <!ELEMENT schema ((shardingTable*|globalTable*|singleTable*)*)>
+        <!ATTLIST schema name NMTOKEN #REQUIRED>
+        <!ATTLIST schema shardingNode CDATA #IMPLIED>
+        <!ATTLIST schema sqlMaxLimit NMTOKEN #IMPLIED>
+
+        <!ELEMENT shardingTable (childTable*)>
+        <!ATTLIST shardingTable name CDATA #REQUIRED>
+        <!ATTLIST shardingTable shardingNode CDATA #REQUIRED>
+        <!ATTLIST shardingTable shardingColumn NMTOKEN #REQUIRED>
+        <!ATTLIST shardingTable function NMTOKEN #REQUIRED>
+        <!ATTLIST shardingTable sqlRequiredSharding NMTOKEN #IMPLIED>
+        <!ATTLIST shardingTable incrementColumn NMTOKEN #IMPLIED>
+        <!ATTLIST shardingTable sqlMaxLimit NMTOKEN #IMPLIED>
+
+        <!ELEMENT globalTable  EMPTY>
+        <!ATTLIST globalTable name CDATA #REQUIRED>
+        <!ATTLIST globalTable shardingNode CDATA #REQUIRED>
+        <!ATTLIST globalTable sqlMaxLimit NMTOKEN #IMPLIED>
+        <!ATTLIST globalTable checkClass NMTOKEN #IMPLIED>
+        <!ATTLIST globalTable cron CDATA #IMPLIED>
+
+        <!ELEMENT singleTable EMPTY>
+        <!ATTLIST singleTable name CDATA #REQUIRED>
+        <!ATTLIST singleTable shardingNode CDATA #REQUIRED>
+        <!ATTLIST singleTable sqlMaxLimit NMTOKEN #IMPLIED>
+
+        <!ELEMENT childTable (childTable*)>
+        <!ATTLIST childTable name NMTOKEN #REQUIRED>
+        <!ATTLIST childTable joinColumn NMTOKEN #REQUIRED>
+        <!ATTLIST childTable parentColumn NMTOKEN #REQUIRED>
+        <!ATTLIST childTable incrementColumn NMTOKEN #IMPLIED>
+        <!ATTLIST childTable sqlMaxLimit NMTOKEN #IMPLIED>
+
+
+        <!ELEMENT shardingNode EMPTY>
+        <!ATTLIST shardingNode name CDATA #REQUIRED>
+        <!ATTLIST shardingNode dbGroup CDATA #REQUIRED>
+        <!ATTLIST shardingNode database CDATA #REQUIRED>
+
+        <!ELEMENT function (property*)>
+        <!ATTLIST function name NMTOKEN #REQUIRED>
+        <!ATTLIST function class NMTOKEN #REQUIRED>
+
+        <!ELEMENT property (#PCDATA)*>
+        <!ATTLIST property name NMTOKEN #REQUIRED>
+
+

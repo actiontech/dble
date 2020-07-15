@@ -7,10 +7,10 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -30,7 +30,7 @@ import java.util.HashSet;
 /**
  * @author mycat
  */
-public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements LoadDataResponseHandler {
+public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -72,7 +72,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
             } else {
                 connRrns.add(node);
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }
@@ -125,7 +125,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
@@ -181,7 +181,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
                     session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), false);
                 } else {
-                    DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
                     boolean metaInitial = session.handleSpecial(rrs, true, null);
                     if (!metaInitial) {
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");
@@ -206,9 +205,9 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
-        super.connectionError(e, conn);
+    public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getSource(), (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
+        super.connectionError(e, attachment);
     }
 
     private void executeMetaDataFailed() {

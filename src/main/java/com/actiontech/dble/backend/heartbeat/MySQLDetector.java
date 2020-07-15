@@ -10,19 +10,16 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
-import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
-import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
-import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,18 +45,10 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     private volatile long lastSendQryTime;
     private volatile long lastReceivedQryTime;
     private volatile HeartbeatSQLJob sqlJob;
-    private BackendConnection con;
 
     public MySQLDetector(MySQLHeartbeat heartbeat) {
         this.heartbeat = heartbeat;
         this.isQuit = new AtomicBoolean(false);
-        con = null;
-        try {
-            MySQLDataSource ds = heartbeat.getSource();
-            con = ds.getConnectionForHeartbeat(null);
-        } catch (IOException e) {
-            LOGGER.warn("create heartbeat conn error", e);
-        }
     }
 
     boolean isHeartbeatTimeout() {
@@ -71,28 +60,21 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public void heartbeat() {
-        if (con == null) {
-            heartbeat.setErrorResult("can't create conn for heartbeat");
-            return;
-        } else if (con.isClosed()) {
-            heartbeat.setErrorResult("conn for heartbeat is closed");
-            return;
-        }
-
         lastSendQryTime = System.currentTimeMillis();
-        String[] fetchCols = {};
-        if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
-            fetchCols = MYSQL_SLAVE_STATUS_COLS;
-        } else if (heartbeat.getSource().getHostConfig().isSelectReadOnlySql()) {
-            fetchCols = MYSQL_READ_ONLY_COLS;
-        }
+        if (sqlJob == null) {
+            String[] fetchCols = {};
+            if (heartbeat.getSource().getDbGroupConfig().isShowSlaveSql()) {
+                fetchCols = MYSQL_SLAVE_STATUS_COLS;
+            } else if (heartbeat.getSource().getDbGroupConfig().isSelectReadOnlySql()) {
+                fetchCols = MYSQL_READ_ONLY_COLS;
+            }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("do heartbeat,conn is " + con);
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
+            sqlJob = new HeartbeatSQLJob(heartbeat, resultHandler);
+            heartbeat.getSource().createConnectionSkipPool(null, sqlJob);
+        } else {
+            sqlJob.execute();
         }
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
-        sqlJob = new HeartbeatSQLJob(heartbeat, con, resultHandler);
-        sqlJob.execute();
     }
 
     public void quit() {
@@ -110,11 +92,11 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         lastReceivedQryTime = System.currentTimeMillis();
         heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
         if (result.isSuccess()) {
-            PhysicalDataSource source = heartbeat.getSource();
+            PhysicalDbInstance source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
-            if (source.getHostConfig().isShowSlaveSql()) {
+            if (source.getDbGroupConfig().isShowSlaveSql()) {
                 setStatusBySlave(source, resultResult);
-            } else if (source.getHostConfig().isSelectReadOnlySql()) {
+            } else if (source.getDbGroupConfig().isSelectReadOnlySql()) {
                 setStatusByReadOnly(source, resultResult);
             } else {
                 setStatusForNormalHeartbeat(source);
@@ -122,25 +104,27 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
     }
 
-    private void setStatusForNormalHeartbeat(PhysicalDataSource source) {
+    private void setStatusForNormalHeartbeat(PhysicalDbInstance source) {
         if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
-    /** if recover failed, return true*/
-    private boolean checkRecoverFail(PhysicalDataSource source) {
+    /**
+     * if recover failed, return true
+     */
+    private boolean checkRecoverFail(PhysicalDbInstance source) {
         if (heartbeat.isStop()) {
             return true;
         }
         if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
             if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost checkRecoverFail read only status is back?
-                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
+                GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(source, true);
                 KeyVariables variables = task.call();
                 if (variables != null) {
                     source.setReadOnly(variables.isReadOnly());
                 } else {
-                    LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
-                    heartbeat.setErrorResult("GetAndSyncDataSourceKeyVariables failed");
+                    LOGGER.warn("GetAndSyncDbInstanceKeyVariables failed, set heartbeat Error");
+                    heartbeat.setErrorResult("GetAndSyncDbInstanceKeyVariables failed");
                     return true;
                 }
             }
@@ -152,34 +136,34 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 heartbeat.setErrorResult("testConnection failed");
                 return true;
             }
-            GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
+            GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(source, true);
             KeyVariables variables = task.call();
             if (variables == null ||
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
-                    variables.getMaxPacketSize() < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
-                String url = con.getHost() + ":" + con.getPort();
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                    variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize()) {
+                String url = heartbeat.getSource().getConfig().getUrl();
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                 String errMsg;
                 if (variables == null) {
-                    errMsg = "GetAndSyncDataSourceKeyVariables failed";
+                    errMsg = "GetAndSyncDbInstanceKeyVariables failed";
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                    errMsg = "this dataHost[=" + url + "]'s lower_case is wrong";
+                    errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
                 } else {
-                    errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
+                    errMsg = "this dbInstance[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();
                 }
                 LOGGER.warn(errMsg + ", set heartbeat Error");
                 if (variables != null) {
-                    AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
-                    ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
+                    AlertUtil.alert(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
+                    ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR.add(url);
                 }
                 heartbeat.setErrorResult(errMsg);
                 return true;
             } else {
-                String url = con.getHost() + ":" + con.getPort();
-                if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                    AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
-                            ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
+                String url = heartbeat.getSource().getConfig().getUrl();
+                if (ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR.contains(url)) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
+                    AlertUtil.alertResolve(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
+                            ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR, url);
                 }
                 if (!source.isSalveOrRead()) { // writehost checkRecoverFail read only
                     source.setReadOnly(variables.isReadOnly());
@@ -189,7 +173,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         return false;
     }
 
-    private void setStatusBySlave(PhysicalDataSource source, Map<String, String> resultResult) {
+    private void setStatusBySlave(PhysicalDbInstance source, Map<String, String> resultResult) {
         String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
         String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
         if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
@@ -197,7 +181,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
-                if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
+                if (behindMaster > source.getDbGroupConfig().getDelayThreshold()) {
                     MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
                 }
                 heartbeat.setSlaveBehindMaster(behindMaster);
@@ -216,7 +200,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
-    private void setStatusByReadOnly(PhysicalDataSource source, Map<String, String> resultResult) {
+    private void setStatusByReadOnly(PhysicalDbInstance source, Map<String, String> resultResult) {
         String readonly = resultResult != null ? resultResult.get("@@read_only") : null;
         if (readonly == null) {
             heartbeat.setErrorResult("result of select @@read_only is null");
@@ -229,7 +213,6 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
-
 
     public void close() {
         HeartbeatSQLJob curJob = sqlJob;

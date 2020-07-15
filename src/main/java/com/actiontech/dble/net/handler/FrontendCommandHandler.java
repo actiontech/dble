@@ -5,13 +5,11 @@
 */
 package com.actiontech.dble.net.handler;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
-import com.actiontech.dble.net.mysql.ChangeUserPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -21,23 +19,11 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-/**
- * FrontendCommandHandler
- *
- * @author mycat
- */
-public class FrontendCommandHandler implements NIOHandler {
+public abstract class FrontendCommandHandler implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendCommandHandler.class);
     protected final FrontendConnection source;
     protected final CommandCount commands;
-    private volatile byte[] dataTodo;
-    private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
-    private AtomicBoolean isAuthSwitch = new AtomicBoolean(false);
-    private volatile ChangeUserPacket changeUserPacket;
+    volatile byte[] dataTodo;
 
     FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
@@ -46,7 +32,7 @@ public class FrontendCommandHandler implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
-        if (data.length - MySQLPacket.PACKET_HEADER_SIZE >= DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
+        if (data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
             MySQLMessage mm = new MySQLMessage(data);
             mm.readUB3();
             byte packetId = 0;
@@ -66,33 +52,7 @@ public class FrontendCommandHandler implements NIOHandler {
             errPacket.write(source);
             return;
         }
-        if (source.getLoadDataInfileHandler() != null && source.getLoadDataInfileHandler().isStartLoadData()) {
-            MySQLMessage mm = new MySQLMessage(data);
-            int packetLength = mm.readUB3();
-            if (packetLength + 4 == data.length) {
-                source.loadDataInfileData(data);
-            }
-            return;
-        }
-
-        if (MySQLPacket.COM_STMT_SEND_LONG_DATA == data[4]) {
-            commands.doStmtSendLongData();
-            blobDataQueue.offer(data);
-            return;
-        } else if (MySQLPacket.COM_STMT_CLOSE == data[4]) {
-            commands.doStmtClose();
-            source.stmtClose(data);
-            return;
-        } else {
-            dataTodo = data;
-            if (MySQLPacket.COM_STMT_RESET == data[4]) {
-                blobDataQueue.clear();
-            }
-        }
-        if (source instanceof ServerConnection) {
-            ((ServerConnection) source).getSession2().resetMultiStatementStatus();
-        }
-        DbleServer.getInstance().getFrontHandlerQueue().offer(this);
+        handleDataByPacket(data);
     }
 
     public void handle() {
@@ -109,67 +69,7 @@ public class FrontendCommandHandler implements NIOHandler {
             source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
         }
     }
+    protected abstract void handleDataByPacket(byte[] data);
+    protected abstract void handleData(byte[] data);
 
-    protected void handleData(byte[] data) {
-        source.startProcess();
-        if (isAuthSwitch.compareAndSet(true, false)) {
-            commands.doOther();
-            source.changeUserAuthSwitch(data, changeUserPacket);
-            return;
-        }
-        switch (data[4]) {
-            case MySQLPacket.COM_INIT_DB:
-                commands.doInitDB();
-                source.initDB(data);
-                break;
-            case MySQLPacket.COM_QUERY:
-                commands.doQuery();
-                source.query(data);
-                break;
-            case MySQLPacket.COM_PING:
-                commands.doPing();
-                source.ping();
-                break;
-            case MySQLPacket.COM_QUIT:
-                commands.doQuit();
-                source.close("quit cmd");
-                break;
-            case MySQLPacket.COM_PROCESS_KILL:
-                commands.doKill();
-                source.kill(data);
-                break;
-            case MySQLPacket.COM_STMT_PREPARE:
-                commands.doStmtPrepare();
-                source.stmtPrepare(data);
-                break;
-            case MySQLPacket.COM_STMT_RESET:
-                commands.doStmtReset();
-                source.stmtReset(data);
-                break;
-            case MySQLPacket.COM_STMT_EXECUTE:
-                commands.doStmtExecute();
-                source.stmtExecute(data, blobDataQueue);
-                break;
-            case MySQLPacket.COM_HEARTBEAT:
-                commands.doHeartbeat();
-                source.heartbeat(data);
-                break;
-            case MySQLPacket.COM_SET_OPTION:
-                commands.doOther();
-                source.setOption(data) ;
-                break;
-            case MySQLPacket.COM_CHANGE_USER:
-                commands.doOther();
-                changeUserPacket = new ChangeUserPacket(source.getClientFlags(), CharsetUtil.getCollationIndex(source.getCharset().getCollation()));
-                source.changeUser(data, changeUserPacket, isAuthSwitch) ;
-                break;
-            case MySQLPacket.COM_RESET_CONNECTION:
-                commands.doOther();
-                source.resetConnection() ;
-                break;
-            default:
-                commands.doOther();
-                source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-        }
-    }
 }

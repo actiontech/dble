@@ -8,10 +8,6 @@ import java.sql.SQLNonTransientException;
 
 public class DefaultHandler implements StatementHandler {
 
-    public enum TableType {
-        SHARDING, INCREMENT, DEFAULT
-    }
-
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLNonTransientException {
         return null;
@@ -19,22 +15,22 @@ public class DefaultHandler implements StatementHandler {
 
     @Override
     public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
-        for (String dataNode : context.getTableConfig().getDataNodes()) {
-            context.getWriter().write(dataNode, SQLUtils.toMySqlString(sqlStatement), true, true);
+        for (String shardingNode : context.getTableConfig().getShardingNodes()) {
+            context.getWriter().write(shardingNode, SQLUtils.toMySqlString(sqlStatement), true, true);
         }
     }
 
     @Override
     public void handle(DumpFileContext context, String stmt) throws InterruptedException {
         if (context.getTable() == null) {
-            for (String dataNode : context.getAllDataNodes()) {
-                context.getWriter().write(dataNode, stmt);
+            for (String shardingNode : context.getAllShardingNodes()) {
+                context.getWriter().write(shardingNode, stmt);
             }
         } else if (context.getTableConfig() == null) {
-            context.getWriter().write(context.getDefaultDataNode(), stmt);
+            context.getWriter().write(context.getDefaultShardingNode(), stmt);
         } else {
-            for (String dataNode : context.getTableConfig().getDataNodes()) {
-                context.getWriter().write(dataNode, stmt, false, true);
+            for (String shardingNode : context.getTableConfig().getShardingNodes()) {
+                context.getWriter().write(shardingNode, stmt, false, true);
             }
         }
     }

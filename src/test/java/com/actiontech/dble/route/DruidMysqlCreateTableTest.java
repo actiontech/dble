@@ -5,10 +5,9 @@
 
 package com.actiontech.dble.route;
 
-import com.actiontech.dble.SimpleCachePool;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
@@ -33,7 +32,6 @@ import java.util.Map;
 @Ignore
 public class DruidMysqlCreateTableTest {
     protected Map<String, SchemaConfig> schemaMap;
-    protected LayerCachePool cachePool = new SimpleCachePool();
     protected RouteStrategy routeStrategy;
     protected ServerConnection sc = new ServerConnection();
     private static final String originSql1 = "CREATE TABLE autoslot"
@@ -46,23 +44,19 @@ public class DruidMysqlCreateTableTest {
 
 
     public DruidMysqlCreateTableTest() {
-        //		String schemaFile = "/route/schema.xml";
-        //		String ruleFile = "/route/rule.xml";
-        //		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile); \
-        //		schemaMap = schemaLoader.getSchemas();
         ServerConfig cnf = new ServerConfig();
         schemaMap = cnf.getSchemas();
 
         routeStrategy = RouteStrategyFactory.getRouteStrategy();
 
-        sc.setUser("test");
+        sc.setUser(new UserName("test",null));
     }
 
     @Test
     public void testCreate() throws SQLException {
 
         SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(schema, -1, originSql1, sc, cachePool);
+        RouteResultset rrs = routeStrategy.route(schema, -1, originSql1, sc);
         Assert.assertEquals(2, rrs.getNodes().length);
         String sql = rrs.getNodes()[0].getStatement();
 
@@ -73,7 +67,7 @@ public class DruidMysqlCreateTableTest {
     // @Test
     public void testInsert() throws SQLException {
         SchemaConfig schema = schemaMap.get("mysqldb");
-        RouteResultset rrs = routeStrategy.route(schema, -1, "insert into autoslot (id,sid) values(1,2) ", sc, cachePool);
+        RouteResultset rrs = routeStrategy.route(schema, -1, "insert into autoslot (id,sid) values(1,2) ", sc);
         Assert.assertEquals(1, rrs.getNodes().length);
 
         //Assert.assertTrue(isInsertHasSlot(rrs.getStatement()));

@@ -7,9 +7,10 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -36,7 +37,7 @@ public class MysqlDropViewHandler implements ResponseHandler {
     private RouteResultset rrs;
     private volatile byte packetId;
     private AtomicInteger viewNum;
-    private ViewMeta vm;
+    private ViewMeta vm; //if only for replace from a no sharding view to a sharding view
 
     public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNum) {
         this.session = session;
@@ -52,7 +53,7 @@ public class MysqlDropViewHandler implements ResponseHandler {
             innerExecute(conn, node);
         } else {
             // create new connection
-            PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+            ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
         }
     }
@@ -75,13 +76,15 @@ public class MysqlDropViewHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
+        RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
+        String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-        backConnectionErr(errPacket, conn, conn.syncAndExecute());
+        LOGGER.warn(errMsg);
+        backConnectionErr(errPacket, null, false);
     }
 
     @Override
@@ -100,7 +103,7 @@ public class MysqlDropViewHandler implements ResponseHandler {
         }
 
         if (viewNum.decrementAndGet() == 0) {
-            if (vm != null) {
+            if (vm != null) { // replace a new sharding view
                 try {
                     vm.addMeta(true);
                 } catch (SQLNonTransientException e) {
@@ -129,19 +132,19 @@ public class MysqlDropViewHandler implements ResponseHandler {
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        String errUser = source.getUser();
+        UserName errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
-
         String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
-                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
-
-        if (syncFinished) {
-            session.releaseConnectionIfSafe(conn, false);
-        } else {
-            conn.closeWithoutRsp("unfinished sync");
-            session.getTargetMap().remove(conn.getAttachment());
+        if (conn != null) {
+            LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
+                    " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+            if (syncFinished) {
+                session.releaseConnectionIfSafe(conn, false);
+            } else {
+                conn.closeWithoutRsp("unfinished sync");
+                session.getTargetMap().remove(conn.getAttachment());
+            }
         }
 
         if (viewNum.decrementAndGet() == 0) {

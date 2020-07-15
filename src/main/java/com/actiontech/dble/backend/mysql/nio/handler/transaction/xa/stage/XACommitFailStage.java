@@ -1,6 +1,5 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
@@ -11,6 +10,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.singleton.XASessionCheck;
@@ -29,7 +29,7 @@ public class XACommitFailStage extends XACommitStage {
 
     private AtomicInteger retryTimes = new AtomicInteger(1);
     private AtomicInteger backgroundRetryTimes = new AtomicInteger(0);
-    private int backgroundRetryCount = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
+    private int backgroundRetryCount = SystemConfig.getInstance().getXaRetryCount();
 
     public XACommitFailStage(NonBlockingSession session, AbstractXAHandler handler) {
         super(session, handler);
@@ -49,7 +49,7 @@ public class XACommitFailStage extends XACommitStage {
             return null;
         }
 
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1 || retryTimes.get() < AUTO_RETRY_TIMES) {
+        if (SystemConfig.getInstance().getUseSerializableMode() == 1 || retryTimes.get() < AUTO_RETRY_TIMES) {
             // try commit several times
             logger.warn("fail to COMMIT xa transaction " + xaId + " at the " + retryTimes + "th time!");
             XaDelayProvider.beforeInnerRetry(retryTimes.incrementAndGet(), xaId);
@@ -110,7 +110,7 @@ public class XACommitFailStage extends XACommitStage {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
             String xid = conn.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            XACheckHandler handler = new XACheckHandler(xid, conn.getSchema(), rrn.getName(), conn.getPool().getDataHost().getWriteSource());
+            XACheckHandler handler = new XACheckHandler(xid, conn.getSchema(), rrn.getName(), conn.getDbInstance().getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
             handler.checkXid();

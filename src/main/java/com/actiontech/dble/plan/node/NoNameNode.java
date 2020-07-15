@@ -7,6 +7,7 @@ package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,9 +31,15 @@ public class NoNameNode extends PlanNode {
         this.catalog = catalog;
         this.sql = sql;
         Set<String> set = new HashSet<>();
-        set.addAll(DbleServer.getInstance().getConfig().getDataNodes().keySet());
+        set.addAll(DbleServer.getInstance().getConfig().getShardingNodes().keySet());
         this.setNoshardNode(set);
         this.keepFieldSchema = true;
+    }
+
+
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        return null;
     }
 
     @Override

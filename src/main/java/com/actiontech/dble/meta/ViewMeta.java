@@ -45,11 +45,11 @@ public class ViewMeta {
         this.tmManager = tmManager;
     }
 
-    public void init(boolean isReplace) throws Exception {
+    public void init() throws Exception {
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
         viewParser.parseCreateView(this);
         //check if the select part has
-        checkDuplicate(viewParser.getType(), isReplace);
+        checkDuplicate(viewParser.getType());
         parseSelectInView();
     }
 
@@ -59,16 +59,23 @@ public class ViewMeta {
         msv.visit(selectStatement.getSelect().getQuery());
         PlanNode selNode = msv.getTableNode();
 
-        HashSet<String> schemas = new HashSet<>(4, 1);
+        boolean noShardingView = true;
+        if (selNode.getReferedTableNodes().size() == 0) {
+            noShardingView = false;
+        }
         for (TableNode tableNode : selNode.getReferedTableNodes()) {
             if (DbleServer.getInstance().getConfig().getSchemas().get(tableNode.getSchema()).isNoSharding()) {
-                schemas.add(tableNode.getSchema());
+                if (!schema.equals(tableNode.getSchema())) {
+                    noShardingView = false;
+                    break;
+                }
             } else {
+                noShardingView = false;
                 break;
             }
         }
 
-        if (schemas.size() == 1 && schemas.iterator().next().equals(schema)) {
+        if (noShardingView) {
             if (viewColumnMeta == null) {
                 selNode.setUpFields();
                 List<Item> selectItems = selNode.getColumnsSelected();
@@ -91,10 +98,10 @@ public class ViewMeta {
         }
     }
 
-    public void addMeta(boolean isNewCreate) throws SQLNonTransientException {
+    public void addMeta(boolean isNeedPersistence) throws SQLNonTransientException {
         try {
             tmManager.addMetaLock(schema, viewName, createSql);
-            if (isNewCreate && viewQuery instanceof QueryNode) {
+            if (isNeedPersistence) {
                 ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
             }
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
@@ -103,13 +110,13 @@ public class ViewMeta {
         }
     }
 
-    private void checkDuplicate(int type, Boolean isReplace) throws SQLException {
+    private void checkDuplicate(int type) throws SQLException {
 
         ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
         TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);
         //if the alter table
-        if (type == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
+        if (type == ViewMetaParser.TYPE_ALTER_VIEW) {
             if (viewNode == null) {
                 throw new SQLException("Table '" + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
@@ -130,7 +137,7 @@ public class ViewMeta {
             throw new SQLException("Table '" + viewName + "' already exists", "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }
 
-        if (type == ViewMetaParser.TYPE_CREATE_VIEW && !isReplace) {
+        if (type == ViewMetaParser.TYPE_CREATE_VIEW) {
             // if the sql without replace & the view exists
             if (viewNode != null) {
                 // return error because the view is exists
@@ -259,4 +266,9 @@ public class ViewMeta {
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
+
+    public String getSchema() {
+        return schema;
+    }
+
 }

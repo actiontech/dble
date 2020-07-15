@@ -97,7 +97,7 @@ public class XARollbackStage extends XAStage {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
             String xid = conn.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            XACheckHandler handler = new XACheckHandler(xid, conn.getSchema(), rrn.getName(), conn.getPool().getDataHost().getWriteSource());
+            XACheckHandler handler = new XACheckHandler(xid, conn.getSchema(), rrn.getName(), conn.getDbInstance().getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
             handler.killXaThread(xaOldThreadIds.get(rrn));
@@ -124,17 +124,6 @@ public class XARollbackStage extends XAStage {
     public void onConnectionClose(MySQLConnection conn) {
         if (lastStageIsXAEnd) {
             conn.closeWithoutRsp("conn has been closed");
-            conn.setXaStatus(TxState.TX_ROLLBACKED_STATE);
-        } else {
-            conn.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
-        }
-        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
-    }
-
-    @Override
-    public void onConnectError(MySQLConnection conn) {
-        if (lastStageIsXAEnd) {
-            conn.closeWithoutRsp("conn connect error");
             conn.setXaStatus(TxState.TX_ROLLBACKED_STATE);
         } else {
             conn.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);

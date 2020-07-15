@@ -7,6 +7,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -104,7 +105,7 @@ public final class ShowSQLSumUser {
         byte packetId = EOF.getPacketId();
         int i = 0;
 
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             i++;
             RowDataPacket row = getRow(userStat, i, c.getCharset().getResults());
@@ -134,14 +135,14 @@ public final class ShowSQLSumUser {
             return row;
         }
 
-        String user = userStat.getUser();
+        UserName user = userStat.getUser();
         UserSqlRWStat rwStat = userStat.getRWStat();
         long r = rwStat.getRCount();
         long w = rwStat.getWCount();
         String rStr = decimalFormat.format(1.0D * r / (r + w));
         int max = rwStat.getConcurrentMax();
 
-        row.add(StringUtil.encode(user, charset));
+        row.add(StringUtil.encode(user.toString(), charset));
         row.add(LongUtil.toBytes(r));
         row.add(LongUtil.toBytes(w));
         row.add(StringUtil.encode(String.valueOf(rStr), charset));

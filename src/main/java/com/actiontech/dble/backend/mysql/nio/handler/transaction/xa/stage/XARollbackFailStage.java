@@ -1,6 +1,5 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
@@ -9,6 +8,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.Abst
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.singleton.XASessionCheck;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ public class XARollbackFailStage extends XARollbackStage {
 
     private AtomicInteger retryTimes = new AtomicInteger(1);
     private AtomicInteger backgroundRetryTimes = new AtomicInteger(0);
-    private int backgroundRetryCount = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
+    private int backgroundRetryCount = SystemConfig.getInstance().getXaRetryCount();
 
     public XARollbackFailStage(NonBlockingSession session, AbstractXAHandler handler, boolean isFromEndStage) {
         super(session, handler, isFromEndStage);

@@ -9,7 +9,7 @@ import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.cache.CachePoolFactory;
 import com.actiontech.dble.cache.DefaultLayedCachePool;
 import com.actiontech.dble.cache.LayerCachePool;
-import com.actiontech.dble.cache.impl.EnchachePooFactory;
+import com.actiontech.dble.cache.impl.EnchachePoolFactory;
 import com.actiontech.dble.cache.impl.LevelDBCachePooFactory;
 import com.actiontech.dble.cache.impl.MapDBCachePooFactory;
 import com.actiontech.dble.cache.impl.RocksDBCachePoolFactory;
@@ -34,12 +34,15 @@ public final class CacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
     private static final CacheService INSTANCE = new CacheService();
     private static final String SQL_ROUTE_CACHE = "SQLRouteCache";
-    private static final String TABLE_ID_TO_DATANODE_CACHE = "TableID2DataNodeCache";
     private final Map<String, CachePoolFactory> poolFactories = new HashMap<>();
     private final ConcurrentMap<String, CachePool> allPools = new ConcurrentHashMap<>();
 
     private CacheService() {
-
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                clearCache();
+            }
+        });
     }
 
     public static CacheService getInstance() {
@@ -62,7 +65,6 @@ public final class CacheService {
             }
             boolean on = isSwitchOn(props);
             if (on) {
-                createRootLayedCachePool(props);
                 createSpecificPool(props, isLowerCaseTableNames);
             } else {
                 LOGGER.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
@@ -85,34 +87,6 @@ public final class CacheService {
             }
         }
         return use;
-    }
-
-    private void createRootLayedCachePool(Properties props) throws Exception {
-        String layedCacheType = props.getProperty("layedpool.TableID2DataNodeCacheType");
-        String cacheDefault = props.getProperty("layedpool.TableID2DataNodeCache");
-        if (cacheDefault != null && layedCacheType != null) {
-            throw new java.lang.IllegalArgumentException(
-                    "invalid cache config, layedpool.TableID2DataNodeCacheType and " +
-                            "layedpool.TableID2DataNodeCache don't coexist");
-        } else if (cacheDefault == null && layedCacheType == null) {
-            return;
-        }
-
-        final String rootlayedCacheName = "TableID2DataNodeCache";
-        int size = 0;
-        int timeOut = 0;
-        if (layedCacheType != null) {
-            props.remove("layedpool.TableID2DataNodeCacheType");
-        } else {
-            String value = (String) props.get("layedpool.TableID2DataNodeCache");
-            props.remove("layedpool.TableID2DataNodeCache");
-
-            String[] valueItems = value.split(",");
-            layedCacheType = valueItems[0];
-            size = Integer.parseInt(valueItems[1]);
-            timeOut = Integer.parseInt(valueItems[2]);
-        }
-        createLayeredPool(rootlayedCacheName, layedCacheType, size, timeOut);
     }
 
     private void createSpecificPool(Properties props, boolean isLowerCaseTableNames) throws Exception {
@@ -167,7 +141,7 @@ public final class CacheService {
         String lowerClass = factryClassName.toLowerCase();
         switch (lowerClass) {
             case "ehcache":
-                poolFactories.put(factoryType, new EnchachePooFactory());
+                poolFactories.put(factoryType, new EnchachePoolFactory());
                 break;
             case "leveldb":
                 poolFactories.put(factoryType, new LevelDBCachePooFactory());
@@ -206,14 +180,6 @@ public final class CacheService {
         allPools.put(poolName, cachePool);
     }
 
-    private void createLayeredPool(String cacheName, String type, int size, int expireSeconds) {
-        checkExists(cacheName);
-        LOGGER.info("create layer cache pool " + cacheName + " of type " + type + " ,default cache size " +
-                size + " ,default expire seconds" + expireSeconds);
-        DefaultLayedCachePool layerdPool = new DefaultLayedCachePool(cacheName, this.getCacheFact(type), size, expireSeconds);
-        this.allPools.put(cacheName, layerdPool);
-    }
-
     /**
      * get cache pool by name, caller should cache result
      *
@@ -237,19 +203,11 @@ public final class CacheService {
             pool.clearCache();
         }
         allPools.clear();
-        try {
-            init(isLowerCaseTableNames);
-        } catch (Exception e) {
-            throw e;
-        }
+        init(isLowerCaseTableNames);
     }
 
     public static CachePool getSqlRouteCache() {
         return INSTANCE.getCachePool(SQL_ROUTE_CACHE);
-    }
-
-    public static LayerCachePool getTableId2DataNodeCache() {
-        return (LayerCachePool) INSTANCE.getCachePool(TABLE_ID_TO_DATANODE_CACHE);
     }
 
     public static CachePool getCachePoolByName(String poolName) {

@@ -24,17 +24,17 @@ public class SequenceVal {
     AtomicBoolean fetching = new AtomicBoolean(false);
 
     //flag if the init of the Sequence is done
-    volatile boolean successFetched;
-    //the dataNode of sequence creater
-    volatile String dataNode;
+    private volatile boolean successFetched;
+    //the shardingNode of sequence creater
+    volatile String shardingNode;
     final String seqName;
     final String sql;
     private ReentrantLock executeLock = new ReentrantLock();
     private Condition condRelease = executeLock.newCondition();
 
-    public SequenceVal(String seqName, String dataNode) {
+    public SequenceVal(String seqName, String shardingNode) {
         this.seqName = seqName;
-        this.dataNode = dataNode;
+        this.shardingNode = shardingNode;
         sql = "SELECT dble_seq_nextval('" + seqName + "')";
     }
 
@@ -69,14 +69,6 @@ public class SequenceVal {
 
     public boolean isSuccessFetched() {
         return successFetched;
-    }
-
-    public long nextValue() {
-        if (!successFetched) {
-            throw new java.lang.RuntimeException(
-                    "sequence fetched failed  from db ");
-        }
-        return counter.getNext();
     }
 
     public void waitOtherFinish() {

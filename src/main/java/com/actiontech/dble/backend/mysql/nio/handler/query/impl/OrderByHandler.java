@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -14,6 +13,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.backend.mysql.store.SortedLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -39,7 +39,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     public OrderByHandler(long id, NonBlockingSession session, List<Order> orders) {
         super(id, session);
         this.orders = orders;
-        int queueSize = DbleServer.getInstance().getConfig().getSystem().getOrderByQueueSize();
+        int queueSize = SystemConfig.getInstance().getOrderByQueueSize();
         this.queue = new LinkedBlockingDeque<>(queueSize);
     }
 

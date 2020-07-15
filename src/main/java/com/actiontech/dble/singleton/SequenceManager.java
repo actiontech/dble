@@ -1,6 +1,6 @@
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.sequence.handler.*;
 
 /**
@@ -16,17 +16,25 @@ public final class SequenceManager {
 
     public static void init(int seqHandlerType) {
         switch (seqHandlerType) {
-            case SystemConfig.SEQUENCE_HANDLER_MYSQL:
+            case ClusterConfig.SEQUENCE_HANDLER_MYSQL:
                 INSTANCE.handler = new IncrSequenceMySQLHandler();
                 break;
-            case SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME:
+            case ClusterConfig.SEQUENCE_HANDLER_LOCAL_TIME:
                 INSTANCE.handler = new IncrSequenceTimeHandler();
                 break;
-            case SystemConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED:
-                INSTANCE.handler = new DistributedSequenceHandler();
+            case ClusterConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED:
+                if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
+                    INSTANCE.handler = new DistributedSequenceHandler();
+                } else {
+                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk clusetr");
+                }
                 break;
-            case SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
-                INSTANCE.handler = new IncrSequenceZKHandler();
+            case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
+                if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
+                    INSTANCE.handler = new IncrSequenceZKHandler();
+                } else {
+                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk clusetr");
+                }
                 break;
             default:
                 throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);

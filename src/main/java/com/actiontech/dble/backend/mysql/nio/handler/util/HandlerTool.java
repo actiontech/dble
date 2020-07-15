@@ -6,13 +6,13 @@
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler.HandlerType;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -313,16 +313,16 @@ public final class HandlerTool {
         }
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(logicSchema);
         if (schemaConfig.isNoSharding()) {
-            PhysicalDataNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getShardingNode());
             return dbNode.getDatabase().equals(sourceSchema);
         }
-        TableConfig tbConfig = schemaConfig.getTables().get(table);
+        BaseTableConfig tbConfig = schemaConfig.getTables().get(table);
         if (tbConfig == null) {
-            PhysicalDataNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getShardingNode());
             return dbNode.getDatabase().equals(sourceSchema);
         } else {
-            for (String dataNode : tbConfig.getDataNodes()) {
-                PhysicalDataNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+            for (String shardingNode : tbConfig.getShardingNodes()) {
+                ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
                 if (dbNode.getDatabase().equals(sourceSchema)) {
                     return true;
                 }

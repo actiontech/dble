@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!DOCTYPE dble:db SYSTEM "db.dtd">
+<dble:db xmlns:dble="http://dble.cloud/" version="3.0">
+
+    <dbGroup name="localhost1" rwSplitMode="0">
+        <heartbeat>select user()</heartbeat>
+        <dbInstance name="hostM1" url="localhost:3306" user="root" password="123456" maxCon="500" minCon="10"  primary="true">
+        </dbInstance>
+    </dbGroup>
+
+    <dbGroup name="localhost2" rwSplitMode="0">
+        <heartbeat>select user()</heartbeat>
+        <dbInstance name="hostM2" url="localhost:3306" user="root" password="123456"  maxCon="500" minCon="10"  primary="true">
+        </dbInstance>
+    </dbGroup>
+
+    <dbGroup name="localhost3" rwSplitMode="0">
+        <heartbeat>select user()</heartbeat>
+        <dbInstance name="hostM3" url="localhost:3306" user="root" password="123456"  maxCon="500" minCon="10"  primary="true" >
+        </dbInstance>
+    </dbGroup>
+
+    <dbGroup name="localhost4" rwSplitMode="0">
+        <heartbeat>select user()</heartbeat>
+        <dbInstance name="hostM1" url="localhost:3306" user="root" password="123456"  maxCon="500" minCon="10"  primary="true">
+        </dbInstance>
+    </dbGroup>
+</dble:db>

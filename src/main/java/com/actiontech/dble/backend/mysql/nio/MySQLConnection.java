@@ -7,13 +7,17 @@ package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.net.NIOConnector;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
@@ -34,6 +38,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
+import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -41,15 +47,54 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author mycat
+ * @author mycatc
  */
-public class MySQLConnection extends AbstractConnection implements
-        BackendConnection {
+public class MySQLConnection extends AbstractConnection implements BackendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnection.class);
+
+    public static final Comparator<BackendConnection> LAST_ACCESS_COMPARABLE;
+    private static final CommandPacket COMMIT = new CommandPacket();
+    private static final CommandPacket ROLLBACK = new CommandPacket();
+
+    static {
+        COMMIT.setPacketId(0);
+        COMMIT.setCommand(MySQLPacket.COM_QUERY);
+        COMMIT.setArg("commit".getBytes());
+        ROLLBACK.setPacketId(0);
+        ROLLBACK.setCommand(MySQLPacket.COM_QUERY);
+        ROLLBACK.setArg("rollback".getBytes());
+    }
+
+    static {
+        LAST_ACCESS_COMPARABLE = new Comparator<BackendConnection>() {
+            @Override
+            public int compare(final BackendConnection entryOne, final BackendConnection entryTwo) {
+                return Long.compare(entryOne.getLastTime(), entryTwo.getLastTime());
+            }
+        };
+    }
+
+    private AtomicInteger state = new AtomicInteger(INITIAL);
+
+    @Override
+    public boolean compareAndSet(int expect, int update) {
+        return state.compareAndSet(expect, update);
+    }
+
+    @Override
+    public void lazySet(int update) {
+        state.lazySet(update);
+    }
+
+    @Override
+    public int getState() {
+        return state.get();
+    }
+
     private volatile long lastTime;
     private volatile String schema = null;
     private volatile String oldSchema;
-    private volatile boolean borrowed = false;
+
     private volatile boolean isDDL = false;
     private volatile boolean isRowDataFlowing = false;
     private volatile boolean isExecuting = false;
@@ -73,7 +118,7 @@ public class MySQLConnection extends AbstractConnection implements
         flag |= Capabilities.CLIENT_LONG_FLAG;
         flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
         // flag |= Capabilities.CLIENT_NO_SCHEMA;
-        boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
+        boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
         if (usingCompress) {
             flag |= Capabilities.CLIENT_COMPRESS;
         }
@@ -93,20 +138,7 @@ public class MySQLConnection extends AbstractConnection implements
         return flag;
     }
 
-
-    private static final CommandPacket COMMIT = new CommandPacket();
-    private static final CommandPacket ROLLBACK = new CommandPacket();
-
-    static {
-        COMMIT.setPacketId(0);
-        COMMIT.setCommand(MySQLPacket.COM_QUERY);
-        COMMIT.setArg("commit".getBytes());
-        ROLLBACK.setPacketId(0);
-        ROLLBACK.setCommand(MySQLPacket.COM_QUERY);
-        ROLLBACK.setArg("rollback".getBytes());
-    }
-
-    private MySQLDataSource pool;
+    private volatile PhysicalDbInstance dbInstance;
     private boolean fromSlaveDB;
     private long threadId;
     private HandshakeV10Packet handshake;
@@ -118,18 +150,24 @@ public class MySQLConnection extends AbstractConnection implements
     private boolean isolationSynced;
     private volatile ResponseHandler respHandler;
 
-    public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean autocommitSynced, boolean isolationSynced) {
+    public MySQLConnection(NetworkChannel channel, DbInstanceConfig config, boolean fromSlaveDB, boolean autocommitSynced, boolean isolationSynced) {
         super(channel);
+        this.host = config.getIp();
+        this.port = config.getPort();
+        this.user = config.getUser();
+        this.password = config.getPassword();
+        this.fromSlaveDB = !config.isPrimary();
         this.lastTime = TimeUtil.currentTimeMillis();
+
         this.autocommitSynced = autocommitSynced;
-        boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.fromSlaveDB = fromSlaveDB;
         this.isolationSynced = isolationSynced;
         if (isolationSynced) {
-            this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+            this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
-            /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
+            /* if the txIsolation in bootstrap.cnf is different from the isolation level in MySQL node,
              * it need to sync the status firstly for new idle connection*/
             this.txIsolation = -1;
         }
@@ -144,13 +182,13 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void resetContextStatus() {
         if (isolationSynced) {
-            this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+            this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
             this.txIsolation = -1;
         }
-        boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
-        this.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        this.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
     }
@@ -181,8 +219,7 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void onConnectFailed(Throwable t) {
         if (handler instanceof MySQLConnectionHandler) {
-            MySQLConnectionHandler theHandler = (MySQLConnectionHandler) handler;
-            theHandler.connectionError(t);
+            LOGGER.warn("unexpected failure to connect in MySQLConnectionHandler");
         } else {
             ((MySQLConnectionAuthenticator) handler).connectionError(this, t);
         }
@@ -200,12 +237,13 @@ public class MySQLConnection extends AbstractConnection implements
         }
     }
 
-    public MySQLDataSource getPool() {
-        return pool;
+    public PhysicalDbInstance getDbInstance() {
+        return dbInstance;
     }
 
-    public void setPool(MySQLDataSource pool) {
-        this.pool = pool;
+    @Override
+    public void setDbInstance(PhysicalDbInstance instance) {
+        this.dbInstance = instance;
     }
 
     public void setUser(String user) {
@@ -254,7 +292,7 @@ public class MySQLConnection extends AbstractConnection implements
         AuthPacket packet = new AuthPacket();
         packet.setPacketId(1);
         packet.setMaxPacketSize(maxPacketSize);
-        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset());
         packet.setCharsetIndex(charsetIndex);
         packet.setUser(user);
         try {
@@ -319,6 +357,11 @@ public class MySQLConnection extends AbstractConnection implements
             packet.write(this);
         }
 
+    }
+
+    @Override
+    public void ping() {
+        write(PingPacket.PING);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
@@ -390,7 +433,7 @@ public class MySQLConnection extends AbstractConnection implements
         }
 
         int xaSyn = 0;
-        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
+        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
             xaSyn = 1;
         }
@@ -453,7 +496,7 @@ public class MySQLConnection extends AbstractConnection implements
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             return;
         }
-        // syn schema
+        // syn sharding
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         // and our query sql to multi command at last
         synSQL.append(rrn.getStatement()).append(";");
@@ -593,17 +636,21 @@ public class MySQLConnection extends AbstractConnection implements
 
     }
 
-
+    @Override
     public long getLastTime() {
         return lastTime;
     }
 
-    public void setLastTime(long lastTime) {
-        this.lastTime = lastTime;
+    public void close() {
+        close("normal", false);
     }
 
-    public void close() {
-        close("normal");
+    public void close(String reason, boolean closeFrontConn) {
+        if (closeFrontConn && session != null) {
+            session.getSource().close(reason);
+        } else {
+            close("normal");
+        }
     }
 
     /**
@@ -680,7 +727,7 @@ public class MySQLConnection extends AbstractConnection implements
                     handler.connectionClose(conn, reason);
                     respHandler = null;
                 } catch (Throwable e) {
-                    LOGGER.warn("get error close mysqlconnection ", e);
+                    LOGGER.warn("get error close mysql connection ", e);
                 }
             }
         });
@@ -699,6 +746,16 @@ public class MySQLConnection extends AbstractConnection implements
         }
     }
 
+    @Override
+    public void connect() {
+        if (channel instanceof AsynchronousSocketChannel) {
+            ((AsynchronousSocketChannel) channel).connect(
+                    new InetSocketAddress(getHost(), getPort()), this,
+                    (CompletionHandler) DbleServer.getInstance().getConnector());
+        } else {
+            ((NIOConnector) DbleServer.getInstance().getConnector()).postConnect(this);
+        }
+    }
 
     /**
      * close connection without closeResponseHandler
@@ -712,7 +769,10 @@ public class MySQLConnection extends AbstractConnection implements
     private synchronized void innerTerminate(String reason) {
         if (!isClosed()) {
             super.close(reason);
-            pool.connectionClosed(this);
+            // heartbeat conn is null
+            if (dbInstance != null) {
+                dbInstance.close(this);
+            }
         }
     }
 
@@ -760,7 +820,7 @@ public class MySQLConnection extends AbstractConnection implements
         setResponseHandler(null);
         setSession(null);
         logResponse.set(false);
-        pool.releaseChannel(this);
+        dbInstance.release(this);
     }
 
 
@@ -820,17 +880,6 @@ public class MySQLConnection extends AbstractConnection implements
     }
 
     @Override
-    public boolean isBorrowed() {
-        return borrowed;
-    }
-
-    @Override
-    public void setBorrowed(boolean borrowed) {
-        this.lastTime = TimeUtil.currentTimeMillis();
-        this.borrowed = borrowed;
-    }
-
-    @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
         result.append("MySQLConnection [backendId=");
@@ -843,8 +892,6 @@ public class MySQLConnection extends AbstractConnection implements
         result.append(schema);
         result.append(", old schema=");
         result.append(oldSchema);
-        result.append(", borrowed=");
-        result.append(borrowed);
         result.append(", fromSlaveDB=");
         result.append(fromSlaveDB);
         result.append(", mysqlId=");
@@ -889,7 +936,6 @@ public class MySQLConnection extends AbstractConnection implements
     public String compactInfo() {
         return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema;
     }
-
 
     @Override
     public boolean isDDL() {

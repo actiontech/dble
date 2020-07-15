@@ -7,20 +7,20 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
@@ -51,10 +51,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     protected long netOutBytes;
     private long resultSize;
     long selectRows;
-
-    private String cacheKeyTable = null;
-    private int cacheKeyIndex = -1;
-
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
@@ -86,8 +82,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             BackendConnection conn = session.getTarget(node);
             if (conn == null && rrs.isGlobalTable() && rrs.getGlobalBackupNodes() != null) {
                 // read only trx for global table
-                for (String dataNode : rrs.getGlobalBackupNodes()) {
-                    RouteResultsetNode tmpNode = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
+                for (String shardingNode : rrs.getGlobalBackupNodes()) {
+                    RouteResultsetNode tmpNode = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement());
                     conn = session.getTarget(tmpNode);
                     if (conn != null) {
                         finalNode = tmpNode;
@@ -105,7 +101,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         // create new connection
         node.setRunOnSlave(rrs.getRunOnSlave());
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        PhysicalDataNode dn = conf.getDataNodes().get(node.getName());
+        ShardingNode dn = conf.getShardingNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
 
@@ -136,14 +132,15 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
+    public void connectionError(Throwable e, Object attachment) {
+        RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
+        String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-        backConnectionErr(errPacket, conn, true);
+        LOGGER.warn(errMsg);
+        backConnectionErr(errPacket, null, false);
     }
 
     @Override
@@ -168,7 +165,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        String errUser = source.getUser();
+        UserName errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 
@@ -176,24 +173,30 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        if (conn.isClosed()) {
-            if (conn.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                session.getTargetMap().remove(rNode);
-            }
-        } else if (syncFinished) {
-            session.releaseConnectionIfSafe(conn, false);
-        } else {
-            conn.closeWithoutRsp("unfinished sync");
-            if (conn.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                session.getTargetMap().remove(rNode);
+        if (conn != null) {
+            if (conn.isClosed()) {
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
+            } else if (syncFinished) {
+                session.releaseConnectionIfSafe(conn, false);
+            } else {
+                conn.closeWithoutRsp("unfinished sync");
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
             }
         }
+
         source.setTxInterrupt(errMsg);
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
+                if (rrs.isLoadData()) {
+                    session.getSource().getLoadDataInfileHandler().clear();
+                }
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
                     buffer = source.writeToBuffer(errPkg.toBytes(), buffer);
@@ -251,27 +254,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    protected void executeMetaDataFailed(BackendConnection conn) {
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
-                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime(false);
-        session.multiStatementPacket(errPacket, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        doSqlStat();
-        if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
-        }
-        session.multiStatementNextSql(multiStatementFlag);
-    }
-
-
     /**
      * select
      * <p>
@@ -304,8 +286,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void doSqlStat() {
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+    protected void doSqlStat() {
+        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs.getStatement() != null) {
                 netInBytes = rrs.getStatement().getBytes().length;
@@ -330,14 +312,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
-
-
-        String cacheKey = null;
-        if (rrs.hasCacheKeyToCache()) {
-            String[] items = rrs.getCacheKeyItems();
-            cacheKeyTable = items[0];
-            cacheKey = items[1];
-        }
 
         header[3] = ++packetId;
 
@@ -365,14 +339,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     }
                     fieldPackets.add(fieldPk);
 
-                    // find cache key index
-                    if (cacheKey != null && cacheKeyIndex == -1) {
-                        String fieldName = new String(fieldPk.getName());
-                        if (cacheKey.equalsIgnoreCase(fieldName)) {
-                            cacheKeyIndex = i;
-                        }
-                    }
-
                     buffer = fieldPk.write(buffer, source, false);
                 }
 
@@ -392,46 +358,25 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += row.length;
         this.resultSize += row.length;
         this.selectRows++;
-
-        RowDataPacket rowDataPk = null;
-        // cache cacheKey-> dataNode
-        boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
-        if (cacheKeyIndex != -1 && !isBigPackage) {
-            rowDataPk = new RowDataPacket(fieldCount);
-            row[3] = packetId;
-            rowDataPk.read(row);
-            byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
-            if (key != null) {
-                String cacheKey = new String(key);
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                LayerCachePool pool = CacheService.getTableId2DataNodeCache();
-                if (pool != null) {
-                    pool.putIfAbsent(cacheKeyTable, cacheKey, rNode.getName());
-                }
-            }
-        }
-
         lock.lock();
         try {
             if (!writeToClient.get()) {
-                FlowCotrollerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
+                FlowControllerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
                 if (fconfig.isEnableFlowControl() &&
                         session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);
                 }
                 if (session.isPrepared()) {
-                    if (rowDataPk == null) {
-                        rowDataPk = new RowDataPacket(fieldCount);
-                        row[3] = ++packetId;
-                        rowDataPk.read(row);
-                    }
+                    RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
+                    row[3] = ++packetId;
+                    rowDataPk.read(row);
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPk);
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                     this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    if (isBigPackage) {
+                    if (row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
                         buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
                         this.packetId = (byte) session.getPacketId().get();
                     } else {
@@ -453,7 +398,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         connClosed = true;
         LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);

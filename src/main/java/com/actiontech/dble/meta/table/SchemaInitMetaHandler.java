@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
 
@@ -13,7 +13,7 @@ import java.util.Set;
 
 /**
  * Created by szf on 2019/4/4.
- * Handler for init meta of single schema
+ * Handler for init meta of single sharding
  */
 public class SchemaInitMetaHandler extends AbstractSchemaMetaHandler {
     private String schema;

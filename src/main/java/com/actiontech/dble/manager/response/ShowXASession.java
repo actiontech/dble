@@ -47,7 +47,7 @@ public final class ShowXASession {
         FIELDS[i] = PacketUtil.getField("XA_STATE", Fields.FIELD_TYPE_VARCHAR);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("DATANODES", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i] = PacketUtil.getField("SHARDING_NODES", Fields.FIELD_TYPE_VARCHAR);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);

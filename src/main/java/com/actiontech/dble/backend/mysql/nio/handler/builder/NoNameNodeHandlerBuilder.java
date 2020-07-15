@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeFakeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
 import com.actiontech.dble.plan.node.MergeNode;
@@ -56,7 +56,7 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
         String sql = visitor.getSql().toString();
         String schema = session.getSource().getSchema();
         SchemaConfig schemaConfig = schemaConfigMap.get(schema);
-        String randomDatenode = getRandomNode(schemaConfig.getAllDataNodes());
+        String randomDatenode = getRandomNode(schemaConfig.getAllShardingNodes());
         RouteResultsetNode[] rrss = new RouteResultsetNode[]{new RouteResultsetNode(randomDatenode, ServerParse.SELECT, sql)};
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session);

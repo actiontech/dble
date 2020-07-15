@@ -14,6 +14,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HeapItem;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -24,7 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -39,7 +43,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
-        this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
+        this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
     }

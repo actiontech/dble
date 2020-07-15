@@ -1,106 +1,107 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from xml.dom.minidom import parse
-import xml.dom.minidom
 import MySQLdb
 import MySQLdb.cursors
-from optparse import OptionParser
+import xml.dom.minidom
 import logging.config
 import decode
 
 # Get manager user infomation.
 
-def getManageruser(serverxml):
-    DOMTree = xml.dom.minidom.parse(serverxml)
+
+def getMangagerUser(userXml):
+    DOMTree = xml.dom.minidom.parse(userXml)
     collection = DOMTree.documentElement
     if collection.hasAttribute("shelf"):
         print ("Root element : %s" % collection.getAttribute("shelf"))
-    manageruser = {"host":"127.0.0.1","port":"9066"}
-    system = collection.getElementsByTagName('system')
-    propertys = system[0].getElementsByTagName("property")
-    for property in propertys:
-        if property.getAttribute("name").lower() == "managerport":
-            manageruser["port"]=property.childNodes[0].data
-    users = collection.getElementsByTagName("user")
+    managerUser = ''
+    users = collection.getElementsByTagName("managerUser")
     for user in users:
-        managerflag = 0
-        usingdecrypt = 0
-        manageruser["user"] = user.getAttribute("name")
-        propertys = user.getElementsByTagName("property")
-        for property in propertys:
-            if property.getAttribute("name").lower() == "manager" \
-                and property.childNodes[0].data.lower() == "true":
-                managerflag = 1 
-            elif property.getAttribute("name").lower() == "usingdecrypt" \
-                and int(property.childNodes[0].data) == 1:
-                usingdecrypt = 1
-            elif property.getAttribute("name").lower() == "password":
-                manageruser["password"] = property.childNodes[0].data
-        if usingdecrypt == 1:
-            manageruser["password"] = decode.DecryptByPublicKey(manageruser["password"]).decrypt().split(':')[2]   
-        if managerflag:
-            return manageruser
-    log.error("Don't find manager user in server.xml")
+        if  not user.getAttribute("readOnly") == "true":
+            managerUser = {"host":"127.0.0.1"}        
+            if user.getAttribute("usingDecrypt") == "true":  
+                managerUser["user"] = user.getAttribute("name")
+                managerUser["password"] = user.getAttribute("password")
+                managerUser["password"] = decode.DecryptByPublicKey(managerUser["password"]).decrypt().split(':')[2]     
+            else:
+                managerUser["user"] = user.getAttribute("name")
+                managerUser["password"] = user.getAttribute("password")
+       
+        if not managerUser:
+            log.error("Don't find manager user in xml")
+        else:
+            return managerUser
+    
+          
+# Get manager port from bootstrap.cnf.
 
-# Get hosts from schema.xml file.
+def getPort(portCnf):
+    with open(portCnf) as f:
+        lines = f.readlines()
+        for  line in lines:
+            if "DmanagerPort" in line:
+                b=line.split('=')[1].strip('\n')
+        return b
+                
+# Get dbInstance from db.xml file.
 
-def getHosts(schemaxml):
-    DOMTree = xml.dom.minidom.parse(schemaxml)
+
+def getHosts(dbXml):
+    DOMTree = xml.dom.minidom.parse(dbXml)
     collection = DOMTree.documentElement
     if collection.hasAttribute("shelf"):
         print ("Root element : %s" % collection.getAttribute("shelf"))
-    datahost_dict = {}
-    datahosts = collection.getElementsByTagName("dataHost")
-    for datahost in datahosts:
-        dh_name = datahost.getAttribute("name")
+    dbgroup_dict = {}
+    dbgroups  = collection.getElementsByTagName("dbGroup")
+    for dbgroup in dbgroups :
+        dh_name = dbgroup.getAttribute("name")
         hosts_list = []
-        writehosts = datahost.getElementsByTagName('writeHost')
-        if writehosts:
-            for writehost in writehosts:
+        dbinstances = dbgroup.getElementsByTagName("dbInstance")
+        for dbinstance in dbinstances:
+            if  dbinstance.getAttribute("primary") == "true":
                 writehost_conn = {}
                 writehost_conn["dhname"] = dh_name
-                writehost_conn["name"] = writehost.getAttribute("host")
-                wh_url = writehost.getAttribute("url").split(':')
+                writehost_conn["name"] = dbinstance.getAttribute("name")
+                wh_url = dbinstance.getAttribute("url").split(':')
                 writehost_conn["host"] = wh_url[0]
                 writehost_conn["port"] = wh_url[1]
-                writehost_conn["user"] = writehost.getAttribute("user")
-                writehost_conn["password"] = writehost.getAttribute("password")
-                usingdecrypt = writehost.getAttribute("usingDecrypt")
-                if usingdecrypt and usingdecrypt == "1":
+                writehost_conn["user"] = dbinstance.getAttribute("user")
+                writehost_conn["password"] = dbinstance.getAttribute("password")
+                usingdecrypt = dbinstance.getAttribute("usingDecrypt")
+                if usingdecrypt == 'true':
                     writehost_conn["password"] = \
                     decode.DecryptByPublicKey(writehost_conn["password"]).decrypt().split(':')[3]
                 writehost_conn["iswritehost"] = 1
                 hosts_list.append(writehost_conn)
-                readhosts = writehost.getElementsByTagName('readHost')
-                if readhosts:
-                    for readhost in readhosts:
-                        readhost_conn = {}
-                        readhost_conn["dhname"] = dh_name
-                        readhost_conn["name"] = readhost.getAttribute("host")
-                        rh_url = readhost.getAttribute("url").split(':')
-                        readhost_conn["host"] = rh_url[0]
-                        readhost_conn["port"] = rh_url[1]
-                        readhost_conn["user"] = readhost.getAttribute("user")
-                        readhost_conn["password"] = readhost.getAttribute("password")
-                        usingdecrypt = readhost.getAttribute("usingDecrypt")
-                        if usingdecrypt and usingdecrypt == "1":
-                            readhost_conn["password"] = \
-                            decode.DecryptByPublicKey(readhost_conn["password"]).decrypt().split(':')[3]
-                        readhost_conn["iswritehost"] = 0
-                        hosts_list.append(readhost_conn)
-        datahost_dict[dh_name] = hosts_list
-    return datahost_dict
-
+            else:
+                readhost_conn = {}
+                readhost_conn["dhname"] = dh_name
+                readhost_conn["name"] = dbinstance.getAttribute("name")
+                rh_url = dbinstance.getAttribute("url").split(':')
+                readhost_conn["host"] = rh_url[0]
+                readhost_conn["port"] = rh_url[1]
+                readhost_conn["user"] = dbinstance.getAttribute("user")
+                readhost_conn["password"] = dbinstance.getAttribute("password")
+                usingdecrypt = dbinstance.getAttribute("usingDecrypt")
+                if usingdecrypt == 'true':
+                    readhost_conn["password"] = \
+                    decode.DecryptByPublicKey(readhost_conn["password"]).decrypt().split(':')[3]
+                readhost_conn["iswritehost"] = 0
+                hosts_list.append(readhost_conn)
+        dbgroup_dict[dh_name] = hosts_list
+    return dbgroup_dict
+        
+    
 # If the instance is alive.
 
-def isAlive(datahost):
+def isAlive(dbgroup):
     conclusion = {}
     try:
-        db = MySQLdb.connect(host = datahost["host"],
-                             port = int(datahost["port"]),
-                             user = datahost["user"],
-                             passwd = datahost["password"],
+        db = MySQLdb.connect(host = dbgroup["host"],
+                             port = int(dbgroup["port"]),
+                             user = dbgroup["user"],
+                             passwd = dbgroup["password"],
                              cursorclass = MySQLdb.cursors.DictCursor)
         cursor = db.cursor()
         cursor.execute("select @@version as version;")
@@ -110,7 +111,7 @@ def isAlive(datahost):
             conclusion["canbemaster"] = 0
             if '5.7' in mysql_version:
                 log.debug("Server {0}:{1} version is {2}." \
-                          .format(datahost["host"],datahost["port"],mysql_version))
+                          .format(dbgroup["host"],dbgroup["port"],mysql_version))
                 cursor.execute("select * from performance_schema.replication_group_members;")
                 members = cursor.fetchall()
                 if members:
@@ -127,13 +128,13 @@ def isAlive(datahost):
                     conclusion["canbemaster"] = 1
             elif '8.0' in mysql_version:
                 log.debug("Server {0}:{1} version is {2}." \
-                          .format(datahost["host"],datahost["port"],mysql_version))
+                          .format(dbgroup["host"],dbgroup["port"],mysql_version))
                 cursor.execute("select * from performance_schema.replication_group_members;")
                 members = cursor.fetchall()
                 if members:
                     for row in members:
-                        if datahost["host"] == row.get("MEMBER_HOST").lower() \
-                                and  int(datahost["port"]) == int(row.get("MEMBER_PORT")) \
+                        if dbgroup["host"] == row.get("MEMBER_HOST").lower() \
+                                and  int(dbgroup["port"]) == int(row.get("MEMBER_PORT")) \
                                 and  row.get("MEMBER_ROLE").lower() == "primary":
                             conclusion["canbemaster"] = 1
                 else:
@@ -141,22 +142,22 @@ def isAlive(datahost):
             else:
                 conclusion["canbemaster"] = 1
                 log.Warn("The server {0}:{1} version is not in list '5.7 or 8.0'。" \
-                         .format(datahost["host"],datahost["port"]))
+                         .format(dbgroup["host"],dbgroup["port"]))
             log.debug("Server {0}:{1} check done." \
-                      .format(datahost["host"],datahost["port"]))
+                      .format(dbgroup["host"],dbgroup["port"]))
             return conclusion
     except Exception as e:
         log.error("Server {0}:{1} is dead!" \
-                  .format(datahost["host"],datahost["port"]))
+                  .format(dbgroup["host"],dbgroup["port"]))
         log.error("Reason:{0}".format(str(e)))
         conclusion["isalive"] = 0
         conclusion["canbemaster"] = 0
         return conclusion
 
-# Switch datahost master.            
+# Switch dbgroup master.            
 
 def switchDatahost(manageruser,towritehost):
-    switchstage = 0
+    switchStage = 0
     try:
         db = MySQLdb.connect(host = manageruser["host"],
                              port = int(manageruser["port"]),
@@ -164,7 +165,7 @@ def switchDatahost(manageruser,towritehost):
                              passwd = manageruser["password"],
                              cursorclass = MySQLdb.cursors.DictCursor)
         cursor = db.cursor()
-        cursor.execute("dataHost @@switch name = '{0}' master = '{1}';" \
+        cursor.execute("dbgroup @@switch name = '{0}' master = '{1}';" \
             .format(towritehost["dhname"],towritehost["name"])) 
         cursor.execute("show @@datasource;")
         result = cursor.fetchall()
@@ -173,7 +174,7 @@ def switchDatahost(manageruser,towritehost):
         log.debug(result)
         cursor.close()
         db.close()
-        switchstage = 1
+        switchStage = 1
     except Exception as e:
         log.error("The action Switch Datahost {0} master to {1} failed!" \
             .format(towritehost["dhname"],towritehost["name"]))
@@ -181,17 +182,17 @@ def switchDatahost(manageruser,towritehost):
             .format(str(e)))
         cursor.close()
         db.close()
-        switchstage = 0
-    return switchstage
-
-def main(log1,schemaxml,serverxml):
+        switchStage = 0
+    return switchStage
+    
+def main(log1,dbXml,userXml,portCnf):
     global log
     log = log1 
-    manager_user = getManageruser(serverxml)
-
+    manager_user = getMangagerUser(userXml)
+    port1 = getPort(portCnf)
+    manager_user['port'] = port1
     log.info("Get hosts from schema.xml file.")
-    hosts = getHosts(schemaxml)
-
+    hosts = getHosts(dbXml)
     log.info("MySQL instance status check.")
     for dhname in hosts.keys():
         log.info("Datahost {0} check begin!" \
@@ -202,10 +203,10 @@ def main(log1,schemaxml,serverxml):
             host["canbemaster"] = isalive["canbemaster"]
         log.info("Datahost {0} check end." \
             .format(dhname))
-   
+            
     log.info("Switch check.")
     for dhname in list(hosts.keys()):
-        needswitch = 0
+        needSwitch = 0
         for host in hosts[dhname]:
 
             # Writehost is not alive.
@@ -214,7 +215,7 @@ def main(log1,schemaxml,serverxml):
                 and not host["isalive"]:
                 log.info("Writehost {0}:{1} in {2} is not alive!" \
                     .format(host["host"],host["port"],dhname)) 
-                needswitch = 1
+                needSwitch = 1
 
             # Writehost is not primary in MGR.
 
@@ -222,7 +223,7 @@ def main(log1,schemaxml,serverxml):
                 and not host["canbemaster"]:
                 log.info("Writehost {0}:{1} in {2} is not primary in MGR!" \
                     .format(host["host"],host["port"],dhname)) 
-                needswitch = 1
+                needSwitch = 1
 
             # Readhost is not alive.
 
@@ -235,18 +236,19 @@ def main(log1,schemaxml,serverxml):
             else:
                 log.info("Instance {0}:{1} in {2} is normal!" \
                     .format(host["host"],host["port"],dhname))
-        if needswitch:
-            doswitch = 0
+        if needSwitch:
+            doSwitch = ''
             for host in hosts[dhname]:
                 if host["canbemaster"]:
                     log.info("Switch {2} writehost to {0}:{1};due to original writehost is not alive!" \
                         .format(host["host"],host["port"],dhname)) 
-                    doswitch = switchDatahost(manager_user,host)
+                    doSwitch = switchDatahost(manager_user,host)
                 else:
                     log.info("Do not switch {2} writehost to {0}:{1};due to canbemaster status is 0." \
                         .format(host["host"],host["port"],dhname))
-            if doswitch:
+            
+            if doSwitch:
                 log.info("Switch success!")
             else:
                 log.info("Switch failed!")
-
+    

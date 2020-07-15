@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.backend;
 
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.net.ClosableConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -13,7 +15,8 @@ import com.actiontech.dble.server.ServerConnection;
 
 import java.io.UnsupportedEncodingException;
 
-public interface BackendConnection extends ClosableConnection {
+public interface BackendConnection extends ClosableConnection, PooledEntry {
+
     boolean isDDL();
 
     boolean isFromSlaveDB();
@@ -26,13 +29,15 @@ public interface BackendConnection extends ClosableConnection {
 
     void setAttachment(Object attachment);
 
-    void setLastTime(long currentTimeMillis);
+    void ping();
 
-    void release();
+    void connect();
 
     boolean setResponseHandler(ResponseHandler commandHandler);
 
     void setSession(NonBlockingSession session);
+
+    void setDbInstance(PhysicalDbInstance instance);
 
     void commit();
 
@@ -42,19 +47,12 @@ public interface BackendConnection extends ClosableConnection {
 
     Object getAttachment();
 
-    // long getThreadId();
-
-
     void execute(RouteResultsetNode node, ServerConnection source,
                  boolean autocommit);
 
     boolean syncAndExecute();
 
     void rollback();
-
-    boolean isBorrowed();
-
-    void setBorrowed(boolean borrowed);
 
     int getTxIsolation();
 

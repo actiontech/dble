@@ -84,7 +84,7 @@ public class VarsExtractorHandler {
         for (Map.Entry<String, String> entry : vars.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
-            sb.append("key:").append(key).append(",value:").append(value+",");
+            sb.append("key:").append(key).append(",value:").append(value).append(",");
             systemVariables.setDefaultValue(key, value);
         }
         if (LOGGER.isDebugEnabled()) {

@@ -80,10 +80,15 @@ public class VarsExtractorHandler {
 
     void handleVars(Map<String, String> vars) {
         systemVariables = new SystemVariables();
+        StringBuilder sb = new StringBuilder("system default value:");
         for (Map.Entry<String, String> entry : vars.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
+            sb.append("key:").append(key).append(",value:").append(value+",");
             systemVariables.setDefaultValue(key, value);
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(sb.toString());
         }
         signalDone();
     }

@@ -122,6 +122,10 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 sc.write(sc.writeToBuffer(sc.getSession2().getOkByteArray(), sc.allocate()));
                 sc.getSession2().multiStatementNextSql(multiStatementFlag);
             }
+            if (sql.toLowerCase().contains("sql_mode")) { // because reset will clear sql_mode
+                conn.closeWithoutRsp("conn used for once");
+                return;
+            }
             ResetConnHandler handler = new ResetConnHandler();
             conn.setResponseHandler(handler);
             ((MySQLConnection) conn).setComplexQuery(true);

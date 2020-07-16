@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableH
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.route.RouteResultset;
@@ -62,11 +63,26 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
     protected void tryRouteInsertQuery(ServerConnection sc, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
         // insert into .... select ....
         SQLSelect select = acceptVisitor(stmt, visitor);
+
         String tableName = schemaInfo.getTable();
         SchemaConfig schema = schemaInfo.getSchemaConfig();
         BaseTableConfig tc = schema.getTables().get(tableName);
 
         Collection<String> routeShardingNodes;
+
+
+        for (String selectTable : visitor.getSelectTableList()) {
+            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
+                throw new SQLNonTransientException(msg);
+            }
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfox.getSchema()));
+        }
+        rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+
+
+
         if (tc == null || tc instanceof SingleTableConfig) {
             //only require when all the table and the route condition route to same node
             Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());

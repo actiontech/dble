@@ -191,6 +191,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         this.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
+        this.sysVariables.put("sql_mode", null);
     }
 
     public void setHost(String host) {

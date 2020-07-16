@@ -404,4 +404,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
+    @Override
+    String getErrorMsg() {
+        return "This `REPLACE ... SELECT Syntax` is not supported!";
+    }
+
 }

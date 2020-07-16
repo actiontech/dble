@@ -581,10 +581,12 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         //tmp now = backend -(backend &&frontend)
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
-            try {
-                BigDecimal vl = new BigDecimal(value);
-            } catch (NumberFormatException e) {
-                value = "`" + value + "`";
+            if (value != null) {
+                try {
+                    BigDecimal vl = new BigDecimal(value);
+                } catch (NumberFormatException e) {
+                    value = "`" + value + "`";
+                }
             }
             setVars.add(new Pair<>(entry.getKey(), value));
             toResetSys.add(entry.getKey());

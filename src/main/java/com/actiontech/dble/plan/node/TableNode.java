@@ -139,16 +139,9 @@ public class TableNode extends PlanNode {
             BaseTableConfig info = DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(tableName);
             if (info instanceof ShardingTableConfig) {
                 ShardingTableConfig shardingTableConfig = (ShardingTableConfig) info;
-                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                    if (shardingTableConfig.getShardingColumn().equalsIgnoreCase(columnsSelected.get(index).getItemName())) {
-                        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
-                                getSchemas().get(schema).getTables().get(tableName), alias, null);
-                    }
-                } else {
-                    if (shardingTableConfig.getShardingColumn().equals(columnsSelected.get(index).getItemName())) {
-                        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
-                                getSchemas().get(schema).getTables().get(tableName), alias, null);
-                    }
+                if (shardingTableConfig.getShardingColumn().equalsIgnoreCase(columnsSelected.get(index).getItemName())) {
+                    return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
+                            getSchemas().get(schema).getTables().get(tableName), alias, null);
                 }
             } else {
                 return null;

@@ -261,8 +261,9 @@ public class UshardSender extends AbstractConsulSender {
                 setSourceComponentId(sourceComponentId).
                 setAlertComponentId(alert.getAlertComponentId()).
                 setAlertComponentType(alert.getAlertComponentType()).
+                setResolveTimestampUnix(alert.getResolveTimestampUnix()).
                 setServerId(serverId).
-                setTimestampUnix(System.currentTimeMillis() * 1000000);
+                setTimestampUnix(alert.getTimestampUnix());
         if (alert.getLabels() != null) {
             builder.putAllLabels(alert.getLabels());
         }

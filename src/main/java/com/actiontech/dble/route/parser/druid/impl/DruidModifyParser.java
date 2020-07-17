@@ -281,11 +281,12 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + all the table must be mulit-node global(different node has the same data)
      * + all the dataNodes has all the table involved
      */
-    Collection<String> checkForMultiNodeGlobal(ServerSchemaStatVisitor visitor, GlobalTableConfig tc, SchemaConfig schema) throws SQLNonTransientException {
+    Collection<String> checkForMultiNodeGlobal(ServerSchemaStatVisitor visitor, GlobalTableConfig tc, SchemaConfig schema) throws SQLException {
         //multi-Node global table
         List<String> mustContainList = tc.getShardingNodes();
         for (String sTable : visitor.getSelectTableList()) {
-            BaseTableConfig stc = schema.getTables().get(sTable);
+            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(null, schema, sTable);
+            BaseTableConfig stc = schemaInfox.getSchemaConfig().getTables().get(schemaInfox.getTable());
             if (stc != null && stc instanceof GlobalTableConfig) {
                 if (!stc.getShardingNodes().containsAll(mustContainList)) {
                     throw new SQLNonTransientException(getErrorMsg());
@@ -516,7 +517,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
 
-    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema) throws SQLNonTransientException {
+    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema) throws SQLException {
         changeSql(rrs);
 
         Collection<String> routeShardingNodes;

@@ -17,6 +17,8 @@ public interface ReadTimeStatusInstance {
 
     boolean isAlive();
 
+    boolean skipEvit();
+
     DbInstanceConfig getConfig();
 
 }

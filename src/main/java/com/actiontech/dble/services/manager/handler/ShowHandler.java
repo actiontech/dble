@@ -49,7 +49,7 @@ public final class ShowHandler {
                 ShowConnection.execute(service, stmt.substring(rs >>> 8).trim());
                 break;
             case ManagerParseShow.CONNECTION_POOL_PROPERTY:
-                ShowConnectionPoolProperty.execute(c);
+                ShowConnectionPoolProperty.execute(service);
                 break;
             case ManagerParseShow.BACKEND:
                 ShowBackend.execute(service, stmt.substring(rs >>> 8).trim());

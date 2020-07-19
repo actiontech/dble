@@ -72,8 +72,8 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
 
         for (String selectTable : visitor.getSelectTableList()) {
-            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
-            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
+            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(service.getUser(), schema, selectTable);
+            if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }

@@ -96,9 +96,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             }
             String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiReplace(replace)) {
-                parserBatchInsert(schemaInfo, rrs, partitionColumn, replace, sc.getCharset().getClient());
+                parserBatchInsert(schemaInfo, rrs, partitionColumn, replace, service.getCharset().getClient());
             } else {
-                parserSingleInsert(schemaInfo, rrs, partitionColumn, replace, sc.getCharset().getClient());
+                parserSingleInsert(schemaInfo, rrs, partitionColumn, replace, service.getCharset().getClient());
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));

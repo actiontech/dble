@@ -19,7 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static com.actiontech.dble.services.mysqlauthenticate.PluginName.*;
+import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
+import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_native_password;
 
 
 /**

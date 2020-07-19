@@ -157,7 +157,6 @@ public final class ConfigUtil {
 
     /**
      * check element illegal value and return val
-     *
      */
     public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
         if (element.hasAttribute(attrName)) {

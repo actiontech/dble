@@ -1,9 +1,9 @@
 package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.manager.dump.handler.StatementHandler;
 import com.actiontech.dble.services.manager.dump.handler.StatementHandlerManager;
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;

@@ -31,19 +31,6 @@ public class HandlerBuilder {
         this.session = session;
     }
 
-    synchronized void checkRRSs(RouteResultsetNode[] rrssArray) {
-        for (RouteResultsetNode rrss : rrssArray) {
-            while (rrsNodes.contains(rrss)) {
-                rrss.getMultiplexNum().incrementAndGet();
-            }
-            rrsNodes.add(rrss);
-        }
-    }
-
-    synchronized void removeRrs(RouteResultsetNode rrsNode) {
-        rrsNodes.remove(rrsNode);
-    }
-
     /**
      * start all leaf handler of children of special handler
      */
@@ -59,6 +46,18 @@ public class HandlerBuilder {
         }
     }
 
+    synchronized void checkRRSs(RouteResultsetNode[] rrssArray) {
+        for (RouteResultsetNode rrss : rrssArray) {
+            while (rrsNodes.contains(rrss)) {
+                rrss.getMultiplexNum().incrementAndGet();
+            }
+            rrsNodes.add(rrss);
+        }
+    }
+
+    synchronized void removeRrs(RouteResultsetNode rrsNode) {
+        rrsNodes.remove(rrsNode);
+    }
 
     public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build-complex-sql");

@@ -70,6 +70,21 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.session = session;
     }
 
+    protected void execute(BackendConnection conn) {
+        if (session.closed()) {
+            session.clearResources(true);
+            recycleBuffer();
+            return;
+        }
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setSession(session);
+        boolean isAutocommit = session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart();
+        if (!isAutocommit && node.isModifySQL()) {
+            TxnLogHelper.putTxnLog(session.getShardingService(), node.getStatement());
+        }
+        conn.getBackendService().execute(node, session.getShardingService(), isAutocommit);
+    }
+
     @Override
     public void execute() throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "execute-for-sql");
@@ -106,6 +121,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
+<<<<<<< HEAD
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(true);
@@ -120,6 +136,19 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         conn.getBackendService().execute(node, session.getShardingService(), isAutocommit);
     }
+=======
+
+    protected void executeInExistsConnection(BackendConnection conn) {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "execute-in-exists-connection");
+        try {
+            TraceManager.crossThread(conn.getBackendService(), "backend-response-service", session.getShardingService());
+            execute(conn);
+        } finally {
+            TraceManager.finishSpan(session.getShardingService(), traceObject);
+        }
+    }
+
+>>>>>>>  #1880 Framework refactoring  code style change
 
 
 

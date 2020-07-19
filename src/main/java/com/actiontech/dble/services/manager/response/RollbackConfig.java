@@ -22,12 +22,11 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
-
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

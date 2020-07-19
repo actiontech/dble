@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by szf on 2020/5/9.
  */
-public class TraceManager {
+public final class TraceManager {
     private static final TraceManager INSTANCE = new TraceManager();
     private final JaegerTracer tracer;
     private final Map<AbstractService, List<TraceObject>> connectionTracerMap = new ConcurrentHashMap<>();
@@ -33,19 +33,19 @@ public class TraceManager {
         final String endPoint = SystemConfig.getInstance().getTraceEndPoint();
         if (endPoint != null) {
             final CompositeReporter compositeReporter = new CompositeReporter(
-                    new RemoteReporter.Builder()
-                            .withSender(new HttpSender.Builder(endPoint).build())
-                            .build(),
+                    new RemoteReporter.Builder().
+                            withSender(new HttpSender.Builder(endPoint).build()).
+                            build(),
                     new LoggingReporter()
             );
 
             final Metrics metrics = new Metrics(new NoopMetricsFactory());
 
-            JaegerTracer.Builder builder = new JaegerTracer.Builder("DBLE")
-                    .withReporter(compositeReporter)
-                    .withMetrics(metrics)
-                    .withExpandExceptionLogs()
-                    .withSampler(new ProbabilisticSampler(0.5));
+            JaegerTracer.Builder builder = new JaegerTracer.Builder("DBLE").
+                    withReporter(compositeReporter).
+                    withMetrics(metrics).
+                    withExpandExceptionLogs().
+                    withSampler(new ProbabilisticSampler(0.5));
 
             tracer = builder.build();
         } else {

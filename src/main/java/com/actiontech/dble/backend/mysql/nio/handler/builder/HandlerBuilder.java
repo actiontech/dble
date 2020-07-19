@@ -31,6 +31,21 @@ public class HandlerBuilder {
         this.session = session;
     }
 
+    /**
+     * start all leaf handler of children of special handler
+     */
+    public static void startHandler(DMLResponseHandler handler) throws Exception {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(TraceManager.getThreadService(), "execute-complex-sql");
+        try {
+            for (DMLResponseHandler startHandler : handler.getMerges()) {
+                MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+                mergeHandler.execute();
+            }
+        } finally {
+            TraceManager.finishSpan(TraceManager.getThreadService(), traceObject);
+        }
+    }
+
     synchronized void checkRRSs(RouteResultsetNode[] rrssArray) {
         for (RouteResultsetNode rrss : rrssArray) {
             while (rrsNodes.contains(rrss)) {
@@ -43,22 +58,6 @@ public class HandlerBuilder {
     synchronized void removeRrs(RouteResultsetNode rrsNode) {
         rrsNodes.remove(rrsNode);
     }
-
-    /**
-     * start all leaf handler of children of special handler
-     */
-    public static void startHandler(DMLResponseHandler handler) throws Exception {
-        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(TraceManager.getThreadService(), "execute-complex-sql");
-        try {
-            for (DMLResponseHandler startHandler : handler.getMerges()) {
-                MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-                mergeHandler.execute();
-            }
-        } finally {
-            TraceManager.finishSpan(TraceManager.getThreadService(),traceObject);
-        }
-    }
-
 
     public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build-complex-sql");

@@ -70,6 +70,21 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.session = session;
     }
 
+    protected void execute(BackendConnection conn) {
+        if (session.closed()) {
+            session.clearResources(true);
+            recycleBuffer();
+            return;
+        }
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setSession(session);
+        boolean isAutocommit = session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart();
+        if (!isAutocommit && node.isModifySQL()) {
+            TxnLogHelper.putTxnLog(session.getShardingService(), node.getStatement());
+        }
+        conn.getBackendService().execute(node, session.getShardingService(), isAutocommit);
+    }
+
     @Override
     public void execute() throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "execute-for-sql");
@@ -117,20 +132,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    protected void execute(BackendConnection conn) {
-        if (session.closed()) {
-            session.clearResources(true);
-            recycleBuffer();
-            return;
-        }
-        conn.getBackendService().setResponseHandler(this);
-        conn.getBackendService().setSession(session);
-        boolean isAutocommit = session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart();
-        if (!isAutocommit && node.isModifySQL()) {
-            TxnLogHelper.putTxnLog(session.getShardingService(), node.getStatement());
-        }
-        conn.getBackendService().execute(node, session.getShardingService(), isAutocommit);
-    }
 
     @Override
     public void clearAfterFailExecute() {

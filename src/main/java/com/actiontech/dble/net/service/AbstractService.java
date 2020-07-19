@@ -7,7 +7,6 @@ import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.singleton.TraceManager;
-import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +114,6 @@ public abstract class AbstractService implements Service {
     public abstract void handleData(ServiceTask task);
 
     public int nextPacketId() {
-       // LOGGER.info("get packetid increment " + connection.getId() + "  " + packetId.get(), new Exception("test"));
         return packetId.incrementAndGet();
     }
 

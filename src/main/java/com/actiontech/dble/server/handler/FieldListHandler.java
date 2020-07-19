@@ -8,7 +8,6 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.TableMeta;
-import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.EOFRowPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;

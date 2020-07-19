@@ -13,7 +13,6 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
-import io.opentracing.Span;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

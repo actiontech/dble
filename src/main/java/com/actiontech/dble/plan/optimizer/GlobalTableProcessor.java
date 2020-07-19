@@ -25,7 +25,7 @@ public final class GlobalTableProcessor {
         try {
             initGlobalStatus(qtn);
             return qtn;
-        }finally {
+        } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
             TraceManager.finishSpan(traceObject);
         }

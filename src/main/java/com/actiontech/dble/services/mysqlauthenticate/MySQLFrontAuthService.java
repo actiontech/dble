@@ -2,10 +2,7 @@ package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
@@ -17,13 +14,13 @@ import com.actiontech.dble.services.mysqlauthenticate.plugin.CachingSHA2Pwd;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.MySQLAuthPlugin;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.NativePwd;
 import com.actiontech.dble.singleton.TraceManager;
-import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static com.actiontech.dble.services.mysqlauthenticate.PluginName.*;
+import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
+import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_native_password;
 
 
 /**

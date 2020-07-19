@@ -14,9 +14,6 @@ import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
-import io.opentracing.Span;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 

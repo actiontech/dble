@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterLogic;
@@ -26,21 +25,19 @@ import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.meta.ReloadLogHelper;
-import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
-
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
-import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,11 +203,11 @@ public final class ReloadConfig {
     public static boolean reloadAll(final int loadAllMode) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-reload");
         try {
-        /*
-         *  1 load new conf
-         *  1.1 ConfigInitializer init adn check itself
-         *  1.2 ShardingNode/dbGroup test connection
-         */
+            /*
+             *  1 load new conf
+             *  1.1 ConfigInitializer init adn check itself
+             *  1.2 ShardingNode/dbGroup test connection
+             */
             ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
             ConfigInitializer loader;
             try {
@@ -249,7 +246,7 @@ public final class ReloadConfig {
     private static boolean intelligentReloadAll(int loadAllMode, ConfigInitializer loader) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-intelligent-reload");
         try {
-        /* 2.1.1 get diff of dbGroups */
+            /* 2.1.1 get diff of dbGroups */
             ServerConfig config = DbleServer.getInstance().getConfig();
             Map<String, PhysicalDbGroup> addOrChangeHosts = new HashMap<>();
             Map<String, PhysicalDbGroup> noChangeHosts = new HashMap<>();
@@ -284,23 +281,23 @@ public final class ReloadConfig {
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
             Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
 
-        /*
-         *  2 transform
-         *  2.1 old lDbInstance continue to work
-         *  2.1.1 define the diff of new & old dbGroup config
-         *  2.1.2 create new init plan for the reload
-         *  2.2 init the new lDbInstance
-         *  2.3 transform
-         *  2.4 put the old connection into a queue
-         */
+            /*
+             *  2 transform
+             *  2.1 old lDbInstance continue to work
+             *  2.1.1 define the diff of new & old dbGroup config
+             *  2.1.2 create new init plan for the reload
+             *  2.2 init the new lDbInstance
+             *  2.3 transform
+             *  2.4 put the old connection into a queue
+             */
 
 
-        /* 2.2 init the lDbInstance with diff*/
+            /* 2.2 init the lDbInstance with diff*/
             ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
             String reasonMsg = initDbGroupByMap(mergedDbGroups, newShardingNodes, loader.isFullyConfigured());
             ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
             if (reasonMsg == null) {
-            /* 2.3 apply new conf */
+                /* 2.3 apply new conf */
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {
@@ -381,7 +378,7 @@ public final class ReloadConfig {
             String reasonMsg = initDbGroupByMap(newDbGroups, newShardingNodes, loader.isFullyConfigured());
             ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
             if (reasonMsg == null) {
-            /* 2.3 apply new conf */
+                /* 2.3 apply new conf */
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {

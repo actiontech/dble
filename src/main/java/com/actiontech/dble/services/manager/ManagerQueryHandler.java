@@ -12,7 +12,6 @@ import com.actiontech.dble.services.manager.handler.*;
 import com.actiontech.dble.services.manager.response.*;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
-import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

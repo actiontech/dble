@@ -13,8 +13,6 @@ import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.TraceManager;
-import com.sun.prism.shader.Texture_RadialGradient_PAD_AlphaTest_Loader;
-import io.opentracing.Span;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
@@ -159,7 +157,6 @@ public final class ConfigUtil {
 
     /**
      * check element illegal value and return val
-     *
      */
     public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
         if (element.hasAttribute(attrName)) {

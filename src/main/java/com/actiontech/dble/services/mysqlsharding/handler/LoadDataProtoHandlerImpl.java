@@ -33,6 +33,7 @@ public class LoadDataProtoHandlerImpl extends MySQLProtoHandlerImpl {
                     }
                     return new ProtoHandlerResult(result.getCode(), result.getOffset());
                 }
+                return result;
             default:
                 return result;
         }

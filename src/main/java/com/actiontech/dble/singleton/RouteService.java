@@ -12,7 +12,6 @@ import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.route.handler.HintHandler;
 import com.actiontech.dble.route.handler.HintHandlerFactory;
 import com.actiontech.dble.route.handler.HintSQLHandler;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.google.common.collect.ImmutableMap;
@@ -45,9 +44,6 @@ public final class RouteService {
         try {
             String cacheKey = null;
 
-        /*
-         *  SELECT  SQL,  not cached in debug mode
-         */
             if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
                 cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + service.getUser() + "_" + stmt;
                 rrs = (RouteResultset) CacheService.getSqlRouteCache().get(cacheKey);
@@ -57,13 +53,10 @@ public final class RouteService {
                 }
             }
 
-        /*!dble: sql = select name from aa */
-        /*!dble: sharding = test */
             int hintLength = RouteService.isHintSql(stmt);
             if (hintLength != -1) {
                 int endPos = stmt.indexOf("*/");
                 if (endPos > 0) {
-                    // router by hint of !dble:
                     String hint = stmt.substring(hintLength, endPos).trim();
 
                     String hintSplit = "=";

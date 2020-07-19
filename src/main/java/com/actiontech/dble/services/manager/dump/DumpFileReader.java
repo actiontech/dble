@@ -3,7 +3,6 @@ package com.actiontech.dble.services.manager.dump;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.TraceManager;
-import io.opentracing.Span;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

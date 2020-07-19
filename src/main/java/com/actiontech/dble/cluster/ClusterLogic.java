@@ -49,7 +49,6 @@ import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import io.opentracing.Span;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

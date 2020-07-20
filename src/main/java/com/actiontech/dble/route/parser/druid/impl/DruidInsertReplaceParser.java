@@ -73,7 +73,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
         for (String selectTable : visitor.getSelectTableList()) {
             SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
-            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
@@ -82,7 +82,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
 
 
-
+        boolean isGlobal = false;
         if (tc == null || tc instanceof SingleTableConfig) {
             //only require when all the table and the route condition route to same node
             Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
@@ -91,6 +91,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
             //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
+            isGlobal = true;
             routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
         } else if (tc instanceof ShardingTableConfig) {
             routeShardingNodes = checkForShardingTable(visitor, select, sc, rrs, (ShardingTableConfig) tc, schemaInfo, stmt, schema);
@@ -99,7 +100,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         }
 
         //finally route for the result
-        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal);
 
         String sql = rrs.getStatement();
         for (Pair<String, String> table : ctx.getTables()) {

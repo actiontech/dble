@@ -51,7 +51,7 @@ public class DruidUpdateParser extends DruidModifyParser {
                 throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
             }
 
-            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList());
+            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList(), ShardingPrivileges.CheckType.UPDATE);
 
             boolean isAllGlobal = true;
             for (SchemaInfo schemaInfo : schemaInfos) {
@@ -88,7 +88,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 
             if (visitor.getFirstClassSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, schema);
+                routeForModifySubQueryList(rrs, tc, visitor, schema, sc);
                 return schema;
             } else if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);

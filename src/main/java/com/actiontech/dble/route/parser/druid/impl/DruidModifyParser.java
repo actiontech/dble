@@ -503,11 +503,11 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         rrs.setStatement(sql);
     }
 
-    List<SchemaUtil.SchemaInfo> checkPrivilegeForModifyTable(ServerConnection sc, String schemaName, SQLStatement stmt, List<SQLExprTableSource> tableList) throws SQLException {
+    List<SchemaUtil.SchemaInfo> checkPrivilegeForModifyTable(ServerConnection sc, String schemaName, SQLStatement stmt, List<SQLExprTableSource> tableList, ShardingPrivileges.CheckType type) throws SQLException {
         List<SchemaUtil.SchemaInfo> schemaInfos = new ArrayList<>();
         for (SQLExprTableSource x : tableList) {
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, x);
-            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), type)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
@@ -517,7 +517,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
 
-    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema) throws SQLException {
+    void routeForModifySubQueryList(RouteResultset rrs, BaseTableConfig tc, ServerSchemaStatVisitor visitor, SchemaConfig schema, ServerConnection sc) throws SQLException {
         changeSql(rrs);
 
         Collection<String> routeShardingNodes;
@@ -528,6 +528,16 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 ctx.getTables().clear();
                 Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), subVisitor.getAliasMap());
                 ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(subVisitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
+
+                for (String selectTable : subVisitor.getSelectTableList()) {
+                    SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
+                    if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
+                        String msg = "The statement DML privilege check is not passed, sql:" + rrs.getSrcStatement().replaceAll("[\\t\\n\\r]", " ");
+                        throw new SQLNonTransientException(msg);
+                    }
+                    rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfox.getSchema()));
+                }
+
                 checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
             }
             //set value for route result

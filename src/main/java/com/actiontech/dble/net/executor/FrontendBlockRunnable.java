@@ -20,8 +20,8 @@ public class FrontendBlockRunnable implements Runnable {
     private final BlockingQueue<ServiceTask> frontNormalTasks;
     private final Queue<ServiceTask> frontPriorityTasks;
 
-    public FrontendBlockRunnable(BlockingQueue<ServiceTask> frontEndTasks, Queue<ServiceTask> frontPriorityTasks) {
-        this.frontNormalTasks = frontEndTasks;
+    public FrontendBlockRunnable(Queue frontEndTasks, Queue<ServiceTask> frontPriorityTasks) {
+        this.frontNormalTasks = (BlockingQueue) frontEndTasks;
         this.frontPriorityTasks = frontPriorityTasks;
     }
 

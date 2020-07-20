@@ -54,7 +54,7 @@ public class DruidDeleteParser extends DruidModifyParser {
                 throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
             }
 
-            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList());
+            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList(), CheckType.DELETE);
 
             boolean isAllGlobal = true;
             for (SchemaInfo schemaInfo : schemaInfos) {
@@ -91,7 +91,7 @@ public class DruidDeleteParser extends DruidModifyParser {
             super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
 
             if (visitor.getSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, schema);
+                routeForModifySubQueryList(rrs, tc, visitor, schema, sc);
                 return schema;
             }
             String tableName = schemaInfo.getTable();

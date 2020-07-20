@@ -38,13 +38,11 @@ public final class UseHandler {
             service.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
             return;
         }
-        if (service.getUserConfig() instanceof ShardingUserConfig) {
-            ShardingUserConfig userConfig = (ShardingUserConfig) (service.getUserConfig());
-            if (!userConfig.getSchemas().contains(schema)) {
-                String msg = "Access denied for user '" + service.getUser() + "' to database '" + schema + "'";
-                service.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
-                return;
-            }
+        ShardingUserConfig userConfig = service.getUserConfig();
+        if (!userConfig.getSchemas().contains(schema)) {
+            String msg = "Access denied for user '" + service.getUser() + "' to database '" + schema + "'";
+            service.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
+            return;
         }
         service.setSchema(schema);
         service.getSession2().setRowCount(0);

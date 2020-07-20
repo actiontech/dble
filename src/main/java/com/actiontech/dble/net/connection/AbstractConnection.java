@@ -255,7 +255,7 @@ public abstract class AbstractConnection implements Connection {
         return true;
     }
 
-    public AbstractService getService() {
+    public synchronized AbstractService getService() {
         return service;
     }
 

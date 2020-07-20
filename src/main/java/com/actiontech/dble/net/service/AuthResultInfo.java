@@ -2,7 +2,6 @@ package com.actiontech.dble.net.service;
 
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.mysql.AuthPacket;
-import com.actiontech.dble.net.mysql.HandshakeV10Packet;
 
 /**
  * Created by szf on 2020/6/19.
@@ -14,7 +13,6 @@ public class AuthResultInfo {
     private UserConfig userConfig;
 
     private AuthPacket mysqlAuthPacket = null;
-    private HandshakeV10Packet handshakePacket = null;
 
     public AuthResultInfo(String errorMsg, AuthPacket authPacket, UserConfig userConfig) {
         this.success = errorMsg == null ? true : false;
@@ -23,9 +21,8 @@ public class AuthResultInfo {
         this.mysqlAuthPacket = authPacket;
     }
 
-    public AuthResultInfo(String errorMsg, HandshakeV10Packet handshakePacket) {
+    public AuthResultInfo(String errorMsg) {
         this.success = errorMsg == null ? true : false;
-        this.handshakePacket = handshakePacket;
     }
 
     public boolean isSuccess() {

@@ -564,7 +564,9 @@ public class NonBlockingSession implements Session {
                 shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
         } finally {
-            TraceManager.log(ImmutableMap.of("executableHandler", executableHandler), traceObject);
+            if (executableHandler != null) {
+                TraceManager.log(ImmutableMap.of("executableHandler", executableHandler), traceObject);
+            }
             TraceManager.finishSpan(traceObject);
         }
     }

@@ -98,7 +98,9 @@ public abstract class AbstractService implements Service {
     }
 
     public void cleanup() {
-        this.currentTask = null;
+        synchronized (this) {
+            this.currentTask = null;
+        }
         this.taskQueue.clear();
         TraceManager.sessionFinish(this);
     }

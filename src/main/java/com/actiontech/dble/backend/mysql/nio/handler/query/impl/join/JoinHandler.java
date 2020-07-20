@@ -265,7 +265,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     /**
      * @param leftRows
      * @param rightRows
-     * @param conn
+     * @param service
      * @return if is interrupted by next handler ,return true,else false
      * @throws Exception
      */

@@ -66,13 +66,13 @@ public class NativePwd extends MySQLAuthPlugin {
                 }
             case OkPacket.FIELD_COUNT:
                 // execute auth response
-                info = new AuthResultInfo(null, handshakePacket);
+                info = new AuthResultInfo(null);
                 return PluginName.plugin_same_with_default;
             case ErrorPacket.FIELD_COUNT:
                 ErrorPacket err = new ErrorPacket();
                 err.read(data);
                 String errMsg = new String(err.getMessage());
-                info = new AuthResultInfo(errMsg, handshakePacket);
+                info = new AuthResultInfo(errMsg);
                 return PluginName.plugin_same_with_default;
             default:
                 return PluginName.unsupport_plugin;

@@ -107,14 +107,14 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
                 return plugin_same_with_default;
             case OkPacket.FIELD_COUNT:
                 // get ok from mysql,login success
-                info = new AuthResultInfo(null, handshakePacket);
+                info = new AuthResultInfo(null);
                 return plugin_same_with_default;
             case ErrorPacket.FIELD_COUNT:
                 // get error response from the mysql,login be rejected
                 ErrorPacket err = new ErrorPacket();
                 err.read(data);
                 String errMsg = new String(err.getMessage());
-                info = new AuthResultInfo(errMsg, handshakePacket);
+                info = new AuthResultInfo(errMsg);
                 return plugin_same_with_default;
             case AuthSwitchRequestPackage.STATUS:
                 //need auth swith for other plugin

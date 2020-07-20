@@ -22,10 +22,6 @@ public abstract class MySQLBasedService extends AbstractService {
 
     protected UserConfig userConfig;
 
-    protected long clientFlags;
-
-    protected boolean isAuthenticated;
-
     protected volatile Map<String, String> usrVariables = new LinkedHashMap<>();
     protected volatile Map<String, String> sysVariables = new LinkedHashMap<>();
 
@@ -72,8 +68,10 @@ public abstract class MySQLBasedService extends AbstractService {
                 }
             } else {
                 this.handleInnerData(data);
+                synchronized (this) {
+                    currentTask = null;
+                }
             }
-            currentTask = null;
         }
     }
 

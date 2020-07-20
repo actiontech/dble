@@ -157,7 +157,7 @@ public class NIOSocketWR extends SocketWR {
         }
         WriteOutTask task;
         while ((task = writeQueue.poll()) != null) {
-            quitFlag = task == null ? false : task.closeFlag();
+            quitFlag = task.closeFlag();
             buffer = task.getBuffer();
             if (buffer.limit() == 0) {
                 con.recycle(buffer);

@@ -48,7 +48,6 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
         this.userConfig = info.getUserConfig();
         this.handler.setReadOnly(((ManagerUserConfig) userConfig).isReadOnly());
         connection.initCharsetIndex(info.getMysqlAuthPacket().getCharsetIndex());
-        this.clientFlags = info.getMysqlAuthPacket().getClientFlags();
         boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
         boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
         if (clientCompress && usingCompress) {

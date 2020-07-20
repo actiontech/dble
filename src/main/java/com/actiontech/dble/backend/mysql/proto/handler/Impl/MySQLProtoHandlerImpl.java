@@ -5,6 +5,7 @@ import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.nio.ByteBuffer;
 
 import static com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResultCode.*;
@@ -25,22 +26,16 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
     public ProtoHandlerResult handle(ByteBuffer dataBuffer, int offset, boolean isSupportCompress) {
         int position = dataBuffer.position();
         int length = getPacketLength(dataBuffer, offset, isSupportCompress);
-        //LOGGER.debug("THE LENGTH is position " + length + " " + position);
-        if (length > position) {
-            for (int i = 0; i < 30; i++) {
-                // LOGGER.debug(" " + Integer.toHexString(dataBuffer.get(i)));
-            }
-        }
         if (length == -1) {
             if (offset != 0) {
                 return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset);
-            } else if (dataBuffer != null && !dataBuffer.hasRemaining()) {
+            } else if (!dataBuffer.hasRemaining()) {
                 throw new RuntimeException("invalid dataBuffer capacity ,too little buffer size " +
                         dataBuffer.capacity());
             }
             return new ProtoHandlerResult(REACH_END_BUFFER, offset);
         }
-        if (position >= offset + length && dataBuffer != null) {
+        if (position >= offset + length) {
             // handle this package
             dataBuffer.position(offset);
             byte[] data = new byte[length];
@@ -56,10 +51,8 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             if (position != offset) {
                 // try next package parse
                 //dataBufferOffset = offset;
-                if (dataBuffer != null) {
-                    dataBuffer.position(position);
-                    return new ProtoHandlerResult(STLL_DATA_REMING, offset, data);
-                }
+                dataBuffer.position(position);
+                return new ProtoHandlerResult(STLL_DATA_REMING, offset, data);
             }
             return new ProtoHandlerResult(REACH_END_BUFFER, offset, data);
         } else {
@@ -72,8 +65,6 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             }
         }
     }
-
-
 
 
     private int getPacketLength(ByteBuffer buffer, int offset, boolean isSupportCompress) {

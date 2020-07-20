@@ -76,7 +76,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
     protected String executeSql;
     protected UserName user;
     private long clientFlags;
-
     private volatile boolean autocommit;
     private volatile boolean txStarted;
     private volatile boolean txChainBegin;
@@ -197,9 +196,8 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
                 protoLogicHandler.setOption(data);
                 break;
             case MySQLPacket.COM_CHANGE_USER:
-                //todo if get the user change packet ,the service should trance into auth
-                /*commands.doOther();
-                changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
+                commands.doOther();
+                /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
                 sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
                 break;
             case MySQLPacket.COM_RESET_CONNECTION:

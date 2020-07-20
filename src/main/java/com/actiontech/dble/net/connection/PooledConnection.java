@@ -44,7 +44,7 @@ public abstract class PooledConnection extends AbstractConnection {
     }
 
     @Override
-    public void cleanup() {
+    public synchronized void cleanup() {
         if (this.poolRelated != null) {
             poolRelated.close(this);
         }

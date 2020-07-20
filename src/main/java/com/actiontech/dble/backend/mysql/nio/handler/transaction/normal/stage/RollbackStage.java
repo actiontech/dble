@@ -2,6 +2,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage;
 
 
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -36,7 +37,11 @@ public class RollbackStage implements TransactionStage {
 
         session.setResponseTime(false);
         if (isFail) {
-            sendData.write(session.getSource());
+            if (sendData != null) {
+                sendData.write(session.getSource());
+            } else {
+                session.getShardingService().writeErrMessage(ErrorCode.ER_YES, "Unexpected error when rollback fail:with no message detail");
+            }
             return null;
         }
 

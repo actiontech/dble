@@ -297,7 +297,7 @@ public final class DbleServer {
             frontPriorityQueue = new ConcurrentLinkedQueue<>();
             frontHandlerQueue = new LinkedBlockingQueue<>();
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendBlockRunnable((LinkedBlockingQueue) frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendBlockRunnable(frontHandlerQueue, frontPriorityQueue));
             }
 
         }

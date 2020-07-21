@@ -143,7 +143,7 @@ public class FieldListHandler implements ResponseHandler {
             }
         }
         source.setTxInterrupt(errMsg);
-        if(session.closed()){
+        if (session.closed()) {
             recycleBuffer();
         }
         errPkg.write(source);
@@ -165,6 +165,7 @@ public class FieldListHandler implements ResponseHandler {
         try {
             if (buffer != null) {
                 session.getSource().recycle(buffer);
+                buffer = null;
             }
         } finally {
             lock.unlock();

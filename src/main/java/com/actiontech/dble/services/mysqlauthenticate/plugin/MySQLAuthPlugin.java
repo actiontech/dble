@@ -152,22 +152,26 @@ public abstract class MySQLAuthPlugin {
 
     public static MySQLAuthPlugin getDefaultPlugin(AbstractConnection connection) {
         String majorMySQLVersion = SystemConfig.getInstance().getFakeMySQLVersion();
-        String[] versions = majorMySQLVersion.split("\\.");
-        if (versions.length == 3) {
-            majorMySQLVersion = versions[0] + "." + versions[1];
-            for (int i = 0; i < SystemConfig.MYSQL_VERSIONS.length; i++) {
-                // version is x.y.z ,just compare the x.y
-                if (majorMySQLVersion.equals(SystemConfig.MYSQL_VERSIONS[i])) {
-                    switch (MYSQL_DEFAULT_PLUGIN[i]) {
-                        case mysql_native_password:
-                            return new NativePwd(connection);
-                        case caching_sha2_password:
-                            return new CachingSHA2Pwd(connection);
-                        default:
-                            return null;
+        if (majorMySQLVersion != null) {
+            String[] versions = majorMySQLVersion.split("\\.");
+            if (versions.length == 3) {
+                majorMySQLVersion = versions[0] + "." + versions[1];
+                for (int i = 0; i < SystemConfig.MYSQL_VERSIONS.length; i++) {
+                    // version is x.y.z ,just compare the x.y
+                    if (majorMySQLVersion.equals(SystemConfig.MYSQL_VERSIONS[i])) {
+                        switch (MYSQL_DEFAULT_PLUGIN[i]) {
+                            case mysql_native_password:
+                                return new NativePwd(connection);
+                            case caching_sha2_password:
+                                return new CachingSHA2Pwd(connection);
+                            default:
+                                return new NativePwd(connection);
+                        }
                     }
                 }
             }
+        } else {
+            return new NativePwd(connection);
         }
         return null;
     }

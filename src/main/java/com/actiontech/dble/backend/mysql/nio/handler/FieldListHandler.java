@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,7 +30,6 @@ public class FieldListHandler implements ResponseHandler {
     private volatile byte packetId;
     private volatile ByteBuffer buffer;
     private volatile boolean connClosed = false;
-    private List<FieldPacket> fieldPackets = new ArrayList<>();
 
     public FieldListHandler(NonBlockingSession session, RouteResultset rrs) {
         this.session = session;
@@ -104,7 +102,6 @@ public class FieldListHandler implements ResponseHandler {
             if (rrs.getTable() != null) {
                 fieldPk.setOrgTable(rrs.getTable().getBytes());
             }
-            fieldPackets.add(fieldPk);
             buffer = fieldPk.write(buffer, source, false);
         }
         eof[3] = ++packetId;

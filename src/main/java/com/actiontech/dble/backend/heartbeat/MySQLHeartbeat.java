@@ -118,12 +118,37 @@ public class MySQLHeartbeat {
         }
     }
 
-    public void setErrorResult(String errMsg) {
+    // only use when heartbeat connection is closed
+    boolean doHeartbeatRetry() {
+        if (errorRetryCount > 0 && ++errorCount <= errorRetryCount) {
+            // should continue checking error status
+            if (detector != null) {
+                detector.quit();
+            }
+            isChecking.set(false);
+            LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
+            heartbeat(); // error count not enough, heart beat again
+            return true;
+        }
+        return false;
+    }
+
+    void setErrorResult(String errMsg) {
+        LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setError");
+        // should continue checking error status
+        if (detector != null) {
+            detector.quit();
+        }
         this.isChecking.set(false);
         this.message = errMsg;
-        setError();
+        this.status = ERROR_STATUS;
+        startErrorTime.compareAndSet(-1, System.currentTimeMillis());
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
+        if (errorRetryCount > 0 && ++errorCount <= errorRetryCount) {
+            LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
+            heartbeat(); // error count not enough, heart beat again
+        }
     }
 
     void setResult(int result) {
@@ -174,32 +199,26 @@ public class MySQLHeartbeat {
         }
     }
 
-    private void setError() {
-        LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setError");
-        // should continue checking error status
-        if (detector != null) {
-            detector.quit();
-        }
-        this.status = ERROR_STATUS;
-        startErrorTime.compareAndSet(-1, System.currentTimeMillis());
-        if (isHeartbeatRetry()) {
-            heartbeatRetry(); // error count not enough, heart beat again
-        }
-    }
-
-    boolean isHeartbeatRetry() {
-        return errorRetryCount > 0 && ++errorCount <= errorRetryCount;
-    }
-
-    private void heartbeatRetry() {
-        LOGGER.info("heartbeat failed, retry for the " + errorCount + " times");
-        heartbeat();
-    }
-
     private void setTimeout() {
         LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
-        this.isChecking.set(false);
         status = TIMEOUT_STATUS;
+    }
+
+    public boolean isHeartBeatOK() {
+        if (status == OK_STATUS || status == INIT_STATUS) {
+            return true;
+        } else if (status == ERROR_STATUS) {
+            long timeDiff = System.currentTimeMillis() - this.startErrorTime.longValue();
+            if (timeDiff >= heartbeatTimeout) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("error heartbeat continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
+                }
+                return false;
+            }
+            return true;
+        } else { // TIMEOUT_STATUS
+            return false;
+        }
     }
 
     public Integer getSlaveBehindMaster() {
@@ -240,23 +259,6 @@ public class MySQLHeartbeat {
 
     public long getHeartbeatTimeout() {
         return heartbeatTimeout;
-    }
-
-    public boolean isHeartBeatOK() {
-        if (status == OK_STATUS || status == INIT_STATUS) {
-            return true;
-        } else if (status == ERROR_STATUS) {
-            long timeDiff = System.currentTimeMillis() - this.startErrorTime.longValue();
-            if (timeDiff >= heartbeatTimeout) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("error heartbeat continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
-                }
-                return false;
-            }
-            return true;
-        } else { // TIMEOUT_STATUS
-            return false;
-        }
     }
 
     String getHeartbeatSQL() {

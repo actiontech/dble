@@ -181,7 +181,8 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
-                if (behindMaster > source.getDbGroupConfig().getDelayThreshold()) {
+                int delayThreshold = source.getDbGroupConfig().getDelayThreshold();
+                if (delayThreshold > 0 && behindMaster > delayThreshold) {
                     MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
                 }
                 heartbeat.setSlaveBehindMaster(behindMaster);

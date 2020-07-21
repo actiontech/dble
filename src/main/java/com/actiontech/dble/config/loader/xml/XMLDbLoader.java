@@ -195,13 +195,20 @@ public class XMLDbLoader {
         boolean primary = Boolean.parseBoolean(primaryStr);
 
         DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary);
+        // maxCon
+        int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
+        conf.setMaxCon(maxCon);
+        // minCon
+        int minCon = Integer.parseInt(node.getAttribute("minCon"));
+        conf.setMinCon(minCon);
+        // read weight
         String readWeightStr = ConfigUtil.checkAndGetAttribute(node, "readWeight", String.valueOf(PhysicalDbGroup.WEIGHT), problemReporter);
         int readWeight = Integer.parseInt(readWeightStr);
-        int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
-        int minCon = Integer.parseInt(node.getAttribute("minCon"));
-        conf.setMaxCon(maxCon);
-        conf.setMinCon(minCon);
+        if (readWeight < 0) {
+            throw new ConfigException("readWeight attribute in dbInstance[" + name + "] can't be less than 0!");
+        }
         conf.setReadWeight(readWeight);
+        // id
         String id = node.getAttribute("id");
         if (StringUtil.isEmpty(id)) {
             conf.setId(name);

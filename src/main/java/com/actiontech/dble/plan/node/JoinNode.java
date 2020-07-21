@@ -99,9 +99,9 @@ public class JoinNode extends PlanNode {
                     for (int i = 0; i < pn.columnsSelected.size(); i++) {
                         Item cSelected = pn.columnsSelected.get(i);
                         if (cSelected.getAlias() != null && cSelected.getAlias().equalsIgnoreCase(sourceColumns.getItemName())) {
-                            return this.getChild().findFieldSourceFromIndex(i);
+                            return pn.findFieldSourceFromIndex(i);
                         } else if (cSelected.getAlias() == null && cSelected.getItemName().equalsIgnoreCase(sourceColumns.getItemName())) {
-                            return this.getChild().findFieldSourceFromIndex(i);
+                            return pn.findFieldSourceFromIndex(i);
                         }
                     }
                 }

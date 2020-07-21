@@ -3,6 +3,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -28,8 +29,9 @@ public class FieldListHandler implements ResponseHandler {
     private RouteResultset rrs;
     private ReentrantLock lock = new ReentrantLock();
     private volatile byte packetId;
-    protected volatile ByteBuffer buffer;
-    List<FieldPacket> fieldPackets = new ArrayList<>();
+    private volatile ByteBuffer buffer;
+    private volatile boolean connClosed = false;
+    private List<FieldPacket> fieldPackets = new ArrayList<>();
 
     public FieldListHandler(NonBlockingSession session, RouteResultset rrs) {
         this.session = session;
@@ -38,6 +40,7 @@ public class FieldListHandler implements ResponseHandler {
     }
 
     public void execute() throws Exception {
+        connClosed = false;
         RouteResultsetNode node = rrs.getNodes()[0];
         BackendConnection conn = session.getTarget(node);
         if (session.tryExistsCon(conn, node)) {
@@ -121,7 +124,18 @@ public class FieldListHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        //not happen
+        if (connClosed) {
+            return;
+        }
+        connClosed = true;
+        LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+        ErrorPacket err = new ErrorPacket();
+        err.setPacketId(++packetId);
+        err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
+        err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
+        backConnectionErr(err, conn, true);
     }
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {

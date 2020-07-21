@@ -21,7 +21,6 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.CollectionUtil;
-import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;

@@ -19,13 +19,17 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class FieldListHandler implements ResponseHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FieldListHandler.class);
     private NonBlockingSession session;
     private RouteResultset rrs;
+    private ReentrantLock lock = new ReentrantLock();
     private volatile byte packetId;
+    protected volatile ByteBuffer buffer;
+    List<FieldPacket> fieldPackets = new ArrayList<>();
 
     public FieldListHandler(NonBlockingSession session, RouteResultset rrs) {
         this.session = session;
@@ -80,13 +84,10 @@ public class FieldListHandler implements ResponseHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof, boolean isLeft, BackendConnection conn) {
         ServerConnection source = session.getSource();
-        ByteBuffer buffer = session.getSource().allocate();
-
-        List<FieldPacket> fieldPackets = new ArrayList<>();
+        buffer = session.getSource().allocate();
         for (int i = 0, len = fields.size(); i < len; ++i) {
             byte[] field = fields.get(i);
             field[3] = ++packetId;
-
 
             // save field
             FieldPacket fieldPk = new FieldPacket();
@@ -105,7 +106,6 @@ public class FieldListHandler implements ResponseHandler {
         }
         eof[3] = ++packetId;
         buffer = source.writeToBuffer(eof, buffer);
-        source.write(buffer);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class FieldListHandler implements ResponseHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        //not happen
+        session.getSource().write(buffer);
     }
 
     @Override
@@ -143,12 +143,31 @@ public class FieldListHandler implements ResponseHandler {
             }
         }
         source.setTxInterrupt(errMsg);
+        if(session.closed()){
+            recycleBuffer();
+        }
         errPkg.write(source);
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
+        if (session.closed()) {
+            session.clearResources(true);
+            recycleBuffer();
+            return;
+        }
         conn.setResponseHandler(this);
         conn.setSession(session);
         conn.execute(node, session.getSource(), session.getSource().isAutocommit());
+    }
+
+    public void recycleBuffer() {
+        lock.lock();
+        try {
+            if (buffer != null) {
+                session.getSource().recycle(buffer);
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 }

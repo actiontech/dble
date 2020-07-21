@@ -95,7 +95,8 @@ public class JoinNode extends PlanNode {
         if (columnsSelected.size() > index) {
             Item sourceColumns = columnsSelected.get(index);
             for (PlanNode pn : this.getChildren()) {
-                if (pn.getAlias() != null && pn.getAlias().equals(sourceColumns.getTableName())) {
+                if ((pn.getAlias() != null && pn.getAlias().equals(sourceColumns.getTableName()))
+                        || (pn.getAlias() == null && pn.getPureName().equals(sourceColumns.getTableName()))) {
                     for (int i = 0; i < pn.columnsSelected.size(); i++) {
                         Item cSelected = pn.columnsSelected.get(i);
                         if (cSelected.getAlias() != null && cSelected.getAlias().equalsIgnoreCase(sourceColumns.getItemName())) {

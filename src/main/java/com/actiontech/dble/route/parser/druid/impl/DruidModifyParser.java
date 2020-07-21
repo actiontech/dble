@@ -21,6 +21,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.CollectionUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -75,7 +76,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             if (tConfig instanceof ShardingTableConfig) {
                 BaseTableConfig checkConfig = dataSourceTc.getTableConfig();
                 if (checkConfig instanceof ShardingTableConfig && isSameSharding((ShardingTableConfig) tConfig, (ShardingTableConfig) checkConfig)) {
-                    checkForShardingRelationship(relationships, tableAliasMap, dataSourceTc.getAlias() == null ? checkConfig.getName() : dataSourceTc.getAlias(), ((ShardingTableConfig) checkConfig).getShardingColumn(), (ShardingTableConfig) tConfig);
+                    checkForShardingRelationship(relationships, tableAliasMap, dataSourceTc.getAlias() == null ? checkConfig.getName() : dataSourceTc.getAlias(), ((ShardingTableConfig) checkConfig).getShardingColumn(), (ShardingTableConfig) tConfig, tSchema);
                 } else {
                     throw new SQLNonTransientException(getErrorMsg());
                 }
@@ -84,7 +85,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             } else if (tConfig instanceof SingleTableConfig) {
                 checkForOneNodeRelationship(notShardingTableMap, tName, tConfig.getShardingNodes().get(0), partNodeList);
             } else if (tConfig instanceof ChildTableConfig) {
-                checkForERRelationship(tableAliasMap, (ChildTableConfig) tConfig, relationships);
+                checkForERRelationship(tableAliasMap, (ChildTableConfig) tConfig, relationships, tSchema);
             }
         } else {
             checkForOneNodeRelationship(notShardingTableMap, tName, tSchema.getShardingNode(), partNodeList);
@@ -110,9 +111,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
     private void checkForShardingRelationship(Set<TableStat.Relationship> relationships, Map<String, String> tableAliasMap, String sourceTableName, String sourceColumnName,
-                                              ShardingTableConfig tConfig) throws SQLException {
+                                              ShardingTableConfig tConfig, SchemaConfig tSchema) throws SQLException {
         TableStat.Column sourceColumn = new TableStat.Column(sourceTableName, sourceColumnName);
-        ArrayList<String> rsAlias = findAliasByMap(tableAliasMap, tConfig.getName());
+        ArrayList<String> rsAlias = findAliasByMap(tableAliasMap, tConfig.getName(), tSchema.getName() + "." + tConfig.getName());
         List<TableStat.Column> rsColumnList = new ArrayList<>();
         for (String rsAlia : rsAlias) {
             rsColumnList.add(new TableStat.Column(rsAlia, tConfig.getShardingColumn()));
@@ -148,9 +149,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         return hasReleation;
     }
 
-    private void checkForERRelationship(Map<String, String> tableAliasMap, ChildTableConfig tConfig, Set<TableStat.Relationship> relationships) throws SQLException {
-        ArrayList<String> selfAlias = findAliasByMap(tableAliasMap, tConfig.getName());
-        ArrayList<String> rsAlias = findAliasByMap(tableAliasMap, tConfig.getParentTC().getName());
+    private void checkForERRelationship(Map<String, String> tableAliasMap, ChildTableConfig tConfig, Set<TableStat.Relationship> relationships, SchemaConfig schemaConfig) throws SQLException {
+        ArrayList<String> selfAlias = findAliasByMap(tableAliasMap, tConfig.getName(), schemaConfig.getName() + "." + tConfig.getName());
+        ArrayList<String> rsAlias = findAliasByMap(tableAliasMap, tConfig.getParentTC().getName(), schemaConfig.getName() + "." + tConfig.getName());
         List<TableStat.Column> rsColumnList = new ArrayList<>();
         List<TableStat.Column> selfColumnList = new ArrayList<>();
         for (String rsAlia : rsAlias) {
@@ -187,7 +188,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             Pair<String, String> key = new Pair<>(dataSourceTc.getSchema(), dataSourceTc.getTableConfig().getName());
             if (!CollectionUtil.containDuplicate(visitor.getSelectTableList(), dataSourceTc.getTableConfig().getName())) {
                 ArrayList<String> partNodeList = new ArrayList<>();
-                routeForSourceTable(tc, rrs, allNodeSet, schema, routeUnit, partNodeList);
+                routeForSourceTable((ShardingTableConfig) dataSourceTc.getTableConfig(), rrs, allNodeSet, schema, routeUnit, partNodeList);
 
                 for (Pair<String, String> tn : ctx.getTables()) {
                     if (tn.equals(key)) {
@@ -466,10 +467,12 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         return null;
     }
 
-    private static ArrayList<String> findAliasByMap(Map<String, String> tableAliasMap, String name) {
+    private static ArrayList<String> findAliasByMap(Map<String, String> tableAliasMap, String name, String name2) {
         ArrayList<String> x = new ArrayList<>();
         for (Map.Entry<String, String> entry : tableAliasMap.entrySet()) {
             if (entry.getValue().equalsIgnoreCase(name)) {
+                x.add(entry.getKey());
+            } else if (entry.getValue().equalsIgnoreCase(name2)) {
                 x.add(entry.getKey());
             }
         }

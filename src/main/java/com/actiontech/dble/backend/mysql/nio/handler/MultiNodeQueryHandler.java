@@ -157,6 +157,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (recycledBuffer.compareAndSet(false, true)) {
             if (byteBuffer != null) {
                 session.getSource().recycle(byteBuffer);
+                byteBuffer = null;
             }
         }
     }

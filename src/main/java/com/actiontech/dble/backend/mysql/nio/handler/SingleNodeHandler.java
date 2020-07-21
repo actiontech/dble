@@ -157,6 +157,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         try {
             if (buffer != null) {
                 session.getSource().recycle(buffer);
+                buffer = null;
             }
         } finally {
             lock.unlock();

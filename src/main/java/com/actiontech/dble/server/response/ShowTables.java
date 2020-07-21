@@ -114,6 +114,7 @@ public final class ShowTables {
     }
 
     private static void responseDirect(ShardingService shardingService, String cSchema, ShowTablesStmtInfo info) {
+
         ByteBuffer buffer = shardingService.allocate();
         Map<String, String> tableMap = getTableSet(cSchema, info);
         PackageBufINf bufInf;
@@ -136,8 +137,7 @@ public final class ShowTables {
         } else {
             bufInf = writeTablesHeaderAndRows(buffer, shardingService, tableMap, schemaColumn);
         }
-
-        writeRowEof(bufInf.getBuffer(), shardingService, bufInf.getPacketId());
+        writeRowEof(bufInf.getBuffer(), shardingService);
     }
 
     public static PackageBufINf writeFullTablesHeader(ByteBuffer buffer, ShardingService shardingService, String cSchema, List<FieldPacket> fieldPackets) {
@@ -220,17 +220,16 @@ public final class ShowTables {
             row.add(StringUtil.encode(name, shardingService.getCharset().getResults()));
             row.setPacketId(shardingService.nextPacketId());
             buffer = row.write(buffer, shardingService, true);
-            LOGGER.info("name ================================== " + name);
         }
         PackageBufINf packBuffInfo = new PackageBufINf();
         packBuffInfo.setBuffer(buffer);
         return packBuffInfo;
     }
 
-    private static void writeRowEof(ByteBuffer buffer, ShardingService shardingService, byte packetId) {
+    private static void writeRowEof(ByteBuffer buffer, ShardingService shardingService) {
         // writeDirectly last eof
         EOFRowPacket lastEof = new EOFRowPacket();
-        lastEof.setPacketId(++packetId);
+        lastEof.setPacketId(shardingService.nextPacketId());
         lastEof.write(buffer, shardingService);
     }
 

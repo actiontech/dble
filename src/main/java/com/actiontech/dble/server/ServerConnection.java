@@ -25,10 +25,10 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.handler.FieldListHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.SetInnerHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.response.FieldList;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.ShowCreateView;
@@ -661,7 +661,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-        FieldListHandler.handle(sql, this);
+        FieldList.response(this, sql);
     }
 
     private void executeException(Exception e, String sql) {

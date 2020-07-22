@@ -123,25 +123,14 @@ public class PhysicalDbGroup {
         return writeDbInstance;
     }
 
-    public void init() {
+    public void init(String reason) {
         if (rwSplitMode == 0) {
-            writeDbInstance.init();
+            writeDbInstance.init(reason);
             return;
         }
 
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
-            entry.getValue().init();
-        }
-    }
-
-    public void start(String reason) {
-        if (rwSplitMode == 0) {
-            writeDbInstance.start(reason);
-            return;
-        }
-
-        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.start(reason);
+            entry.getValue().init(reason);
         }
     }
 

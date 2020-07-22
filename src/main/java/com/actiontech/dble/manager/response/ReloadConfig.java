@@ -497,7 +497,7 @@ public final class ReloadConfig {
             }
             dbGroup.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
             if (fullyConfigured) {
-                dbGroup.init();
+                dbGroup.init("reload config");
             } else {
                 LOGGER.info("dbGroup[" + hostName + "] is not fullyConfigured, so doing nothing");
             }

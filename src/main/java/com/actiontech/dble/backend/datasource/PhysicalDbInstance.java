@@ -74,14 +74,14 @@ public abstract class PhysicalDbInstance {
         this.disabled = new AtomicBoolean(org.disabled.get());
     }
 
-    public void init() {
+    public void init(String reason) {
         if (disabled.get() || fakeNode) {
-            LOGGER.info("{} is disabled or a fakeNode, skip initialization", name);
+            LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", name, reason);
             return;
         }
 
         if (!isInitial.compareAndSet(false, true)) {
-            LOGGER.info("{} has been initialized, skip", name);
+            LOGGER.info("init dbInstance[{}] because {}, but it has been initialized, skip initialization.", name, reason);
             return;
         }
 
@@ -100,7 +100,8 @@ public abstract class PhysicalDbInstance {
             config.setMaxCon(initSize);
         }
 
-        start("initial");
+        LOGGER.info("init dbInstance[{}]", name);
+        start(reason);
     }
 
     public void createConnectionSkipPool(String schema, ResponseHandler handler) {
@@ -385,7 +386,7 @@ public abstract class PhysicalDbInstance {
 
     public boolean enable() {
         if (disabled.compareAndSet(true, false)) {
-            start("execute manger cmd of enable");
+            start("execute manager cmd of enable");
             return true;
         }
         return false;

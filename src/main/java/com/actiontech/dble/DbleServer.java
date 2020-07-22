@@ -92,6 +92,7 @@ public final class DbleServer {
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
     private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
     private volatile boolean startup = false;
+
     private DbleServer() {
     }
 
@@ -295,7 +296,7 @@ public final class DbleServer {
         Map<String, PhysicalDbGroup> dbGroups = this.getConfig().getDbGroups();
         LOGGER.info("Initialize dbGroup ...");
         for (PhysicalDbGroup node : dbGroups.values()) {
-            node.init();
+            node.init("dble starts up");
         }
     }
 

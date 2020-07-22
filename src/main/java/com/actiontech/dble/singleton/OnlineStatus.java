@@ -92,7 +92,7 @@ public final class OnlineStatus {
                 ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
                         SystemConfig.getInstance().getInstanceName()));
             } else {
-                throw new IOException("Online path with other IP or serverPort exist,make sure different instance has different myid");
+                throw new IOException("Online path with other IP or serverPort exist,make sure different instance has different instanceName");
             }
         }
         if (onlineLock != null) {

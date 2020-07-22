@@ -36,9 +36,9 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     public void terminate() {
-        String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
-        LOGGER.info("terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
-        if (connection != null) {
+        if (connection != null && !connection.isClosed()) {
+            String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
+            LOGGER.info("terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
             connection.closeWithoutRsp("heartbeat quit");
         }
     }
@@ -128,16 +128,9 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        if (heartbeat.isChecking()) {
-            LOGGER.warn("heartbeat conn is closed in check, due to " + reason);
-            heartbeat.setErrorResult("heartbeat conn is closed in check, due to " + reason);
-            doFinished(true);
-        } else if (heartbeat.isHeartbeatRetry()) {
-            LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try immediately");
-            heartbeat.getSource().createConnectionSkipPool(null, this);
-        } else {
-            LOGGER.warn("heartbeat conn is closed, due to " + reason);
-            heartbeat.setErrorResult("heartbeat conn is closed, due to " + reason);
+        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
+        if (!heartbeat.doHeartbeatRetry()) {
+            heartbeat.setErrorResult("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ")");
         }
     }
 

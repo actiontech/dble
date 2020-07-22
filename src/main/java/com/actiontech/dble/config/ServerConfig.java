@@ -363,10 +363,15 @@ public class ServerConfig {
             // 2 backup
             //--------------------------------------------
             if (recycleDbGroups != null) {
-                for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
-                    if (oldDbGroup != null) {
+                String recycleGroupName;
+                PhysicalDbGroup recycleGroup;
+                for (Map.Entry<String, PhysicalDbGroup> entry : recycleDbGroups.entrySet()) {
+                    recycleGroupName = entry.getKey();
+                    recycleGroup = entry.getValue();
+                    // avoid recycleGroup == newGroup, can't stop recycleGroup
+                    if (newDbGroups.get(recycleGroupName) != recycleGroup) {
                         ReloadLogHelper.info("reload config, recycle old group. old active backend conn will be close", LOGGER);
-                        oldDbGroup.stop("reload config, recycle old group", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                        recycleGroup.stop("reload config, recycle old group", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                     }
                 }
             }

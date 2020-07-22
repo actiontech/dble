@@ -106,7 +106,7 @@ public final class RollbackConfig {
         lock.writeLock().lock();
         try {
             if (!rollback(TRIGGER_TYPE_COMMAND)) {
-                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
+                writeSpecialError(c, "Rollback interrupted by others,config should be reload");
             } else {
                 writeOKResult(c);
             }
@@ -164,16 +164,12 @@ public final class RollbackConfig {
         if (conf.canRollbackAll()) {
             if (conf.isFullyConfigured()) {
                 for (PhysicalDbGroup dn : dbGroups.values()) {
-                    dn.start("rollback, restart");
+                    dn.init("rollback up config");
                 }
             }
-            final Map<String, PhysicalDbGroup> cNodes = conf.getDbGroups();
+
             // apply
             boolean result = conf.rollback(users, schemas, shardingNodes, dbGroups, erRelations, backIsFullyConfiged);
-            // stop old resource heartbeat
-            for (PhysicalDbGroup dn : cNodes.values()) {
-                dn.stop("initial failed, rollback up config");
-            }
             if (!backIsFullyConfiged) {
                 for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                     for (FrontendConnection fcon : processor.getFrontends().values()) {

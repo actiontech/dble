@@ -109,10 +109,10 @@ public class FieldListHandler implements ResponseHandler {
             String orgTable = new String(fieldPk.getOrgTable());
             try {
                 String defaultVal = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable).getColumns().stream().filter(t -> orgName.equalsIgnoreCase(t.getName())).findFirst().get().getDefaultVal();
-                fieldPk.setDefaultVal(null != defaultVal ? defaultVal.getBytes() : new byte[]{(byte) 0x00});
+                fieldPk.setDefaultVal(null != defaultVal ? defaultVal.getBytes() : FieldPacket.DEFAULT_VALUE);
             } catch (SQLNonTransientException e) {
-                LOGGER.error("field list response skip because of Meta don't exist:schema[{}],table[{}]", rrs.getSchema(), orgTable, e);
-                return;
+                LOGGER.warn("field list response use default value because of Meta don't exist:schema[{}],table[{}]", rrs.getSchema(), orgTable, e);
+                fieldPk.setDefaultVal(FieldPacket.DEFAULT_VALUE);
             }
             buffer = fieldPk.write(buffer, source, false);
         }

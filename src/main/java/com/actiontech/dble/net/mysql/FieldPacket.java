@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
  */
 public class FieldPacket extends MySQLPacket {
     private static final byte[] DEFAULT_CATALOG = "def".getBytes();
+    public static final byte[] DEFAULT_VALUE = new byte[]{(byte) 0x00};
     private static final byte[] FILLER = new byte[2];
 
     private byte[] catalog = DEFAULT_CATALOG;

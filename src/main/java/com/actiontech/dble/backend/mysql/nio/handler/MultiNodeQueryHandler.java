@@ -35,7 +35,6 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -60,7 +59,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private final boolean modifiedSQL;
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> shardingNodePauseInfo; // only for debug
-    private AtomicBoolean recycledBuffer = new AtomicBoolean(false);
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -153,12 +151,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         session.forceClose("other node prepare conns failed");
     }
 
-    public void cleanBuffer() {
-        if (recycledBuffer.compareAndSet(false, true)) {
+    void cleanBuffer() {
+        lock.lock();
+        try {
             if (byteBuffer != null) {
                 session.getSource().recycle(byteBuffer);
                 byteBuffer = null;
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -381,7 +382,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                         session.resetMultiStatementStatus();
                         if (session.closed()) {
                             cleanBuffer();
-                        } else {
+                        } else if (byteBuffer != null) {
                             session.getSource().write(byteBuffer);
                         }
                         ErrorPacket errorPacket = createErrPkg(this.error);
@@ -430,7 +431,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             this.resultSize += row.length;
 
-            if (!errorResponse.get()) {
+            if (!errorResponse.get() && byteBuffer != null) {
                 FlowControllerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
                 if (fconfig.isEnableFlowControl() &&
                         session.getSource().getWriteQueue().size() > fconfig.getStart()) {
@@ -506,6 +507,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void writeEofResult(byte[] eof, ServerConnection source) {
+        if (byteBuffer == null) {
+            return;
+        }
         eof[3] = packetId;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + packetId);
@@ -533,6 +537,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void executeFieldEof(byte[] header, List<byte[]> fields, byte[] eof) {
+        if (byteBuffer == null) {
+            return;
+        }
         ServerConnection source = session.getSource();
         fieldCount = fields.size();
         header[3] = ++packetId;
@@ -627,7 +634,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
-    public void waitAllConnConnectorError() {
+    private void waitAllConnConnectorError() {
         while (connRrns.size() - 1 != errorConnsCnt) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }

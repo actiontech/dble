@@ -120,7 +120,7 @@ public class UnionHandler extends BaseDMLHandler {
         union.setCharsetIndex(fp1.getCharsetIndex());
         union.setDb(fp1.getDb());
         union.setDecimals((byte) Math.max(fp1.getDecimals(), fp2.getDecimals()));
-        union.setDefinition(fp1.getDefinition());
+        union.setDefaultVal(fp1.getDefaultVal());
         union.setFlags(fp1.getFlags() | fp2.getFlags());
         union.setLength(Math.max(fp1.getLength(), fp2.getLength()));
         FieldTypes fieldType1 = FieldTypes.valueOf(fp1.getType());

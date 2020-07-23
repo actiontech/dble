@@ -13,11 +13,13 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.sql.SQLNonTransientException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -101,6 +103,16 @@ public class FieldListHandler implements ResponseHandler {
             }
             if (rrs.getTable() != null) {
                 fieldPk.setOrgTable(rrs.getTable().getBytes());
+            }
+            //update default
+            String orgName = new String(fieldPk.getOrgName()).toUpperCase();
+            String orgTable = new String(fieldPk.getOrgTable());
+            try {
+                String defaultVal = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable).getColumns().stream().filter(t -> orgName.equalsIgnoreCase(t.getName())).findFirst().get().getDefaultVal();
+                fieldPk.setDefaultVal(null != defaultVal ? defaultVal.getBytes() : FieldPacket.DEFAULT_VALUE);
+            } catch (SQLNonTransientException e) {
+                LOGGER.warn("field list response use default value because of Meta don't exist:schema[{}],table[{}]", rrs.getSchema(), orgTable, e);
+                fieldPk.setDefaultVal(FieldPacket.DEFAULT_VALUE);
             }
             buffer = fieldPk.write(buffer, source, false);
         }

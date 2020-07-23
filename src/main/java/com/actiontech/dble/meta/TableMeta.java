@@ -84,6 +84,7 @@ public final class TableMeta {
         private String name;
         private String dataType;
         private boolean canNull = true;
+        private String defaultVal;
 
         public ColumnMeta(SQLColumnDefinition def) {
             this.name = StringUtil.removeBackAndDoubleQuote(def.getName().getSimpleName());
@@ -94,6 +95,7 @@ public final class TableMeta {
                     break;
                 }
             }
+            this.defaultVal = null == def.getDefaultExpr() ? null : StringUtil.removeApostrophe(def.getDefaultExpr().toString());
         }
 
         public String getName() {
@@ -106,6 +108,10 @@ public final class TableMeta {
 
         public boolean isCanNull() {
             return canNull;
+        }
+
+        public String getDefaultVal() {
+            return defaultVal;
         }
 
         @Override

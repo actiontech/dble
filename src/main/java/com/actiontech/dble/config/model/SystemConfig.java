@@ -15,6 +15,8 @@ import com.actiontech.dble.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
 
+import static com.actiontech.dble.backend.pool.PoolConfig.DEFAULT_IDLE_TIMEOUT;
+
 
 public final class SystemConfig {
     private ProblemReporter problemReporter = StartProblemReporter.getInstance();
@@ -75,6 +77,8 @@ public final class SystemConfig {
 
     //processor check conn
     private long processorCheckPeriod = 1000L;
+    //front conn idle timeout
+    private long idleTimeout = DEFAULT_IDLE_TIMEOUT;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
 
@@ -411,6 +415,19 @@ public final class SystemConfig {
             this.processorCheckPeriod = processorCheckPeriod;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "processorCheckPeriod", processorCheckPeriod, this.processorCheckPeriod));
+        }
+    }
+
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    @SuppressWarnings("unused")
+    public void setIdleTimeout(long idleTimeout) {
+        if (idleTimeout > 0) {
+            this.idleTimeout = idleTimeout;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "idleTimeout", idleTimeout, this.idleTimeout));
         }
     }
 

@@ -85,7 +85,6 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             channel = serverChannel.accept();
             channel.configureBlocking(false);
             FrontendConnection c = factory.make(channel);
-            c.setAccepted(true);
             c.setId(ID_GENERATOR.getId());
             NIOProcessor processor = DbleServer.getInstance().nextFrontProcessor();
             c.setProcessor(processor);

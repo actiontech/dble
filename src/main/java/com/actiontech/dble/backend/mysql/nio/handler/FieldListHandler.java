@@ -105,10 +105,10 @@ public class FieldListHandler implements ResponseHandler {
                 fieldPk.setOrgTable(rrs.getTable().getBytes());
             }
             //update default
-            String orgName = new String(fieldPk.getOrgName());
+            String orgName = new String(fieldPk.getOrgName()).toUpperCase();
             String orgTable = new String(fieldPk.getOrgTable());
             try {
-                String defaultVal = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable).getColumns().stream().filter(t -> orgName.equals(t.getName())).findFirst().get().getDefaultVal();
+                String defaultVal = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable).getColumns().stream().filter(t -> orgName.equalsIgnoreCase(t.getName())).findFirst().get().getDefaultVal();
                 fieldPk.setDefaultVal(null != defaultVal ? defaultVal.getBytes() : new byte[]{(byte) 0x00});
             } catch (SQLNonTransientException e) {
                 LOGGER.error("field list response skip because of Meta don't exist:schema[{}],table[{}]", rrs.getSchema(), orgTable, e);

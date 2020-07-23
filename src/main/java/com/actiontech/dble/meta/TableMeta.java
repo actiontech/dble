@@ -87,7 +87,7 @@ public final class TableMeta {
         private String defaultVal;
 
         public ColumnMeta(SQLColumnDefinition def) {
-            this.name = StringUtil.removeBackAndDoubleQuote(def.getName().getSimpleName());
+            this.name = StringUtil.removeBackAndDoubleQuote(def.getName().getSimpleName()).toUpperCase();
             this.dataType = def.getDataType().getName();
             for (SQLColumnConstraint constraint : def.getConstraints()) {
                 if (constraint instanceof SQLNotNullConstraint) {
@@ -123,7 +123,7 @@ public final class TableMeta {
                 return false;
             }
             ColumnMeta temp = (ColumnMeta) other;
-            return name.equals(temp.getName()) && dataType.equals(temp.getDataType()) &&
+            return name.equalsIgnoreCase(temp.getName()) && dataType.equals(temp.getDataType()) &&
                     canNull == temp.isCanNull();
         }
 

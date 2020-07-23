@@ -331,7 +331,7 @@ public class ProxyMetaManager {
             while (ClusterHelper.getChildrenSize(ddlPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
-                    LOGGER.info("waiting for DDL in " + ddlPath);
+                    LOGGER.warn("waiting for DDL in " + ddlPath);
                     times = 0;
                 }
                 times++;
@@ -341,7 +341,7 @@ public class ProxyMetaManager {
             times = 0;
             while (!lock.acquire()) {
                 if (times % 60 == 0) {
-                    LOGGER.info("tryAddSyncMetaLock failed");
+                    LOGGER.warn("tryAddSyncMetaLock failed");
                     times = 0;
                 }
                 times++;

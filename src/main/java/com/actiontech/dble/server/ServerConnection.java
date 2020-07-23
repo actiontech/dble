@@ -652,16 +652,9 @@ public class ServerConnection extends FrontendConnection {
     }
 
     public void fieldList(byte[] data) {
-        String sql = null;
-        try {
-            MySQLMessage mm = new MySQLMessage(data);
-            mm.position(5);
-            sql = mm.readString(charsetName.getClient());
-        } catch (UnsupportedEncodingException e) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
-            return;
-        }
-        FieldList.response(this, sql);
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        FieldList.response(this, mm.readStringWithNull());
     }
 
     private void executeException(Exception e, String sql) {

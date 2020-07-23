@@ -7,7 +7,6 @@ package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.backend.pool.PoolConfig;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
@@ -40,17 +39,16 @@ public abstract class FrontendConnection extends AbstractConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendConnection.class);
     private static final long AUTH_TIMEOUT = 15 * 1000L;
 
-    protected byte[] seed;
+    private byte[] seed;
     protected UserName user;
     private long clientFlags;
     protected String schema;
 
-    protected boolean isAccepted;
-    protected boolean isAuthenticated;
+    private boolean isAuthenticated;
 
     protected FrontendQueryHandler queryHandler;
     protected String executeSql;
-    protected final long idleTimeout = PoolConfig.DEFAULT_IDLE_TIMEOUT;
+    private final long idleTimeout = SystemConfig.getInstance().getIdleTimeout();
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -95,10 +93,6 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void setLocalPort(int localPort) {
         this.localPort = localPort;
-    }
-
-    public void setAccepted(boolean accepted) {
-        isAccepted = accepted;
     }
 
     public void setClientFlags(long clientFlags) {
@@ -267,7 +261,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
 
-    protected int getServerCapabilities() {
+    private int getServerCapabilities() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         flag |= Capabilities.CLIENT_FOUND_ROWS;

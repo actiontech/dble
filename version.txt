@@ -1,5 +1,5 @@
-GitVersion 734060dd3bc6dc4877e92fbd5be5f4f2bc7c9419
-BuildTime  20200724133218
+GitVersion xxxxxx
+BuildTime  yyyyMMddHHmmss
 MavenVersion 9.9.9.9
 GitUrl https://github.com/actiontech/dble
 WebSite https://opensource.actionsky.com/

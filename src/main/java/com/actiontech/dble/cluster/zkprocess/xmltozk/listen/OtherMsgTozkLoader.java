@@ -56,6 +56,10 @@ public class OtherMsgTozkLoader implements NotifyService {
         ZKPaths.mkdirs(ZKUtils.getConnection().getZookeeperClient().getZooKeeper(), ddlPath);
         LOGGER.info("OtherMsgTozkLoader zookeeper mkdir " + ddlPath + " success");
 
+        String viewPath = ClusterPathUtil.getViewPath();
+        ZKPaths.mkdirs(ZKUtils.getConnection().getZookeeperClient().getZooKeeper(), viewPath);
+        LOGGER.info("OtherMsgTozkLoader zookeeper mkdir " + viewPath + " success");
+
         String confStatusPath = ClusterPathUtil.getConfStatusPath();
         ZKPaths.mkdirs(ZKUtils.getConnection().getZookeeperClient().getZooKeeper(), confStatusPath);
         LOGGER.info("OtherMsgTozkLoader zookeeper mkdir " + confStatusPath + " success");

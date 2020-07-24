@@ -144,7 +144,7 @@ public class FieldListHandler implements ResponseHandler {
         err.setPacketId(++packetId);
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
-        backConnectionErr(err, conn, true);
+        backConnectionErr(err, conn, false);
     }
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
@@ -156,12 +156,18 @@ public class FieldListHandler implements ResponseHandler {
         if (conn != null) {
             LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                     " frontend host:" + errHost + "/" + errPort + "/" + errUser);
-            if (syncFinished) {
+            if (conn.isClosed()) {
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
+            } else if (syncFinished) {
                 session.releaseConnectionIfSafe(conn, false);
             } else {
                 conn.closeWithoutRsp("unfinished sync");
-                if (conn.getAttachment() == null) {
-                    session.getTargetMap().remove(conn.getAttachment());
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
                 }
             }
         }

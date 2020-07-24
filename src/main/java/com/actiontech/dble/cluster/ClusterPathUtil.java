@@ -185,6 +185,6 @@ public final class ClusterPathUtil {
     }
 
     public static String getViewLockPath(String schemaName, String viewName) {
-        return LOCK_BASE_PATH + "view_lock" + schemaName + SCHEMA_VIEW_SPLIT + viewName;
+        return LOCK_BASE_PATH + SEPARATOR + "view_lock" + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
     }
 }

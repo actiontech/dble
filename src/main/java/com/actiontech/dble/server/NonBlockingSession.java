@@ -939,16 +939,15 @@ public class NonBlockingSession implements Session {
                 source.setTxStart(false);
                 source.getAndIncrementXid();
             }
+            if (rrs.isOnline()) {
+                LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+                return true;
+            }
             if (!isSuccess) {
                 LOGGER.warn("DDL execute failed or Session closed, " +
                         "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             } else {
                 DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
-            }
-
-            if (rrs.isOnline()) {
-                LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
-                return true;
             }
 
             return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, rrs.getDdlType());

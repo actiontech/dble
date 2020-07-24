@@ -497,11 +497,13 @@ public class NonBlockingSession implements Session {
 
     private void executeDDL(RouteResultset rrs) {
         ExecutableHandler executableHandler;
+        boolean hasDDLInProcess = true;
         try {
             DDLTraceManager.getInstance().startDDL(source);
             // not hint and not online ddl
             if (rrs.getSchema() != null && !rrs.isOnline()) {
                 addTableMetaLock(rrs);
+                hasDDLInProcess = false;
                 DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, source);
             }
 
@@ -523,7 +525,9 @@ public class NonBlockingSession implements Session {
             discard = true;
         } catch (Exception e) {
             LOGGER.info(String.valueOf(source) + rrs, e);
-            handleSpecial(rrs, false, null);
+            if (!hasDDLInProcess) {
+                handleSpecial(rrs, false, null);
+            }
             source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         }
     }
@@ -938,13 +942,15 @@ public class NonBlockingSession implements Session {
             if (!isSuccess) {
                 LOGGER.warn("DDL execute failed or Session closed, " +
                         "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+            } else {
+                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
             }
 
             if (rrs.isOnline()) {
                 LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
                 return true;
             }
-            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
+
             return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, rrs.getDdlType());
         } else {
             LOGGER.info("Hint ddl do not update the meta");

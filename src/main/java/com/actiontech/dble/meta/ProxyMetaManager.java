@@ -141,7 +141,7 @@ public class ProxyMetaManager {
         }
     }
 
-    private boolean isOnMetaLock(String schema, String tbName) throws SQLNonTransientException {
+    private boolean isOnMetaLock(String schema, String tbName) {
         metaLock.lock();
         try {
             String lockKey = genLockKey(schema, tbName);

@@ -108,7 +108,7 @@ public final class ShowConnectionSQL {
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(StringUtil.encode(c.getUser().toString(), charset));
         if (c instanceof ServerConnection) {
-            row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
+            row.add(StringUtil.encode(c.getSchema(), charset));
         } else {
             row.add(StringUtil.encode("", charset));
         }

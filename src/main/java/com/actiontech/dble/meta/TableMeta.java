@@ -87,7 +87,7 @@ public final class TableMeta {
         private String defaultVal;
 
         public ColumnMeta(SQLColumnDefinition def) {
-            this.name = StringUtil.removeBackAndDoubleQuote(def.getName().getSimpleName()).toUpperCase();
+            this.name = StringUtil.removeBackAndDoubleQuote(def.getName().getSimpleName());
             this.dataType = def.getDataType().getName();
             for (SQLColumnConstraint constraint : def.getConstraints()) {
                 if (constraint instanceof SQLNotNullConstraint) {

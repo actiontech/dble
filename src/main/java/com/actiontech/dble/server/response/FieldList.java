@@ -17,7 +17,7 @@ public final class FieldList {
     private FieldList() {
     }
 
-    public static void response(ServerConnection c, String stmt) {
+    public static void response(ServerConnection c, String table) {
         String cSchema = c.getSchema();
         if (cSchema == null) {
             c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
@@ -36,8 +36,7 @@ public final class FieldList {
             return;
         }
 
-        String table = stmt.trim();
-        String shardingNode = null;
+        String shardingNode;
         if (!schemaConfig.getTables().containsKey(table)) {
             if ((shardingNode = schemaConfig.getShardingNode()) == null) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
@@ -46,7 +45,7 @@ public final class FieldList {
         } else {
             BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig == null) {
-                c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
+                c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn't exist");
                 return;
             }
             shardingNode = tableConfig.getShardingNodes().get(0);

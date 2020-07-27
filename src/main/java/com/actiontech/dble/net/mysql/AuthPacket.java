@@ -100,7 +100,10 @@ public class AuthPacket extends MySQLPacket {
             }
             authPlugin = mm.readStringWithNull();
         }
-        if ((clientFlags & Capabilities.CLIENT_CONNECT_ATTRS) != 0) {
+        // parsing user:tenant or connection attributes
+        String[] userSplit = user.split(":");
+        if ((clientFlags & Capabilities.CLIENT_CONNECT_ATTRS) != 0 && userSplit.length == 1) {
+            //use from connection attributes
             if (clientWithDbJdbcBug && mm.read(mm.position()) == 0) {
                 mm.read();
             }
@@ -119,6 +122,10 @@ public class AuthPacket extends MySQLPacket {
                 }
                 attrLength -= (mm.position() - start);
             }
+        } else if (userSplit.length == 2) {
+            //use from user:tenant
+            user = userSplit[0];
+            tenant = userSplit[1];
         }
     }
 

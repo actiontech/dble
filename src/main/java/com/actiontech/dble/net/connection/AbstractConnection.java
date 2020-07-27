@@ -41,28 +41,23 @@ public abstract class AbstractConnection implements Connection {
 
     protected volatile String closeReason;
 
-    //真实的net层级的信息
     protected String host;
     protected int localPort;
     protected int port;
-
 
     protected long id;
 
     protected volatile ByteBuffer readBuffer;
 
-    //写出队列，由NIOSokecetWR写入写出
     protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
 
     private volatile boolean flowControlled;
 
-    //连接设置
     protected int readBufferChunk;
     protected int maxPacketSize;
     protected volatile CharsetNames charsetName = new CharsetNames();
 
 
-    //统计值先不值得多管
     protected long startupTime;
     protected volatile long lastReadTime;
     protected volatile long lastWriteTime;
@@ -99,10 +94,6 @@ public abstract class AbstractConnection implements Connection {
             return;
         }
         netInBytes += got;
-        //LOGGER.debug("-------------------------------------------NET IN BYTES ======== " + netInBytes);
-        /*if (netInBytes > 15000) {
-            LOGGER.debug("----");
-        }*/
         service.handle(readBuffer);
     }
 
@@ -110,6 +101,7 @@ public abstract class AbstractConnection implements Connection {
     public void close(String reason) {
         if (!isClosed) {
             closeSocket();
+            LOGGER.info("connection id close for reason " + reason + " with connection " + toString());
             isClosed = true;
             if (processor != null) {
                 processor.removeConnection(this);
@@ -333,7 +325,7 @@ public abstract class AbstractConnection implements Connection {
     public void write(ByteBuffer buffer) {
         if (isClosed) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("it will not writeDirectly because of closed " + this);
+                LOGGER.debug("it will not writeDirectly because of closed " + this + " " + isClosed);
             }
             if (buffer != null) {
                 recycle(buffer);
@@ -422,9 +414,7 @@ public abstract class AbstractConnection implements Connection {
         this.socketWR.doNextWriteCheck();
     }
 
-    public void setProcessor(IOProcessor processor) {
-        this.processor = processor;
-    }
+    public abstract void setProcessor(IOProcessor processor);
 
     public void setId(long id) {
         this.id = id;

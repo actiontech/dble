@@ -5,6 +5,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
 import com.actiontech.dble.backend.pool.ReadTimeStatusInstance;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.QuitPacket;
@@ -64,6 +65,12 @@ public class BackendConnection extends PooledConnection {
 
     }
 
+    @Override
+    public void setProcessor(IOProcessor processor) {
+        this.processor = processor;
+        processor.addBackend(this);
+    }
+
 
     @Override
     public void stopFlowControl() {
@@ -101,7 +108,7 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public synchronized void close(final String reason) {
-        //LOGGER.info("connection id " + threadId + " close for reason " + reason, new Exception());
+        LOGGER.info("connection id " + threadId + " close for reason " + reason);
         boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
         if (!isClosed) {
             if (isAuthed && channel.isOpen() && closeReason != null) {
@@ -172,7 +179,7 @@ public class BackendConnection extends PooledConnection {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("").append(this.getClass()).
-                append(" Connection  with").append("port = " + port).append(" threadid = " + threadId).append(" db config = " + instance);
+                append(" Connection  with").append(" id = " + id).append(" port = " + localPort).append(" mysqlId = " + threadId).append(" db config = " + instance);
         return sb.toString();
     }
 }

@@ -250,11 +250,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     private boolean remove(final PooledConnection pooledConnection) {
-        if (!pooledConnection.compareAndSet(STATE_IN_USE, STATE_REMOVED) && !pooledConnection.compareAndSet(STATE_RESERVED, STATE_REMOVED) &&
-                !pooledConnection.compareAndSet(STATE_HEARTBEAT, STATE_REMOVED) && !isClosed.get()) {
-            LOGGER.warn("Attempt to remove an object that was not borrowed or reserved: {}", pooledConnection);
-            return false;
-        }
 
         final boolean removed = allConnections.remove(pooledConnection);
         if (!removed) {

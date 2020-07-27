@@ -375,7 +375,7 @@ public final class DbleServer {
                                 p.checkFrontCons();
                             }
                         } catch (Exception e) {
-                            LOGGER.info("checkFrontCons caught err:" + e);
+                            LOGGER.info("checkFrontCons caught err:", e);
                         }
                     }
                 });

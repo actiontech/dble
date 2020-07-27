@@ -32,6 +32,7 @@ public abstract class MySQLBasedService extends AbstractService {
 
     protected void taskToPriorityQueue(ServiceTask task) {
         DbleServer.getInstance().getFrontPriorityQueue().offer(task);
+        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null));
     }
 
     protected void taskToTotalQueue(ServiceTask task) {
@@ -42,6 +43,10 @@ public abstract class MySQLBasedService extends AbstractService {
     @Override
     public void handleData(ServiceTask task) {
         ServiceTask executeTask = null;
+        if (connection.isClosed()) {
+            return;
+        }
+
         synchronized (this) {
             if (currentTask == null) {
                 executeTask = taskQueue.poll();

@@ -102,7 +102,7 @@ public class AuthPacket extends MySQLPacket {
         }
         // parsing user:tenant or connection attributes
         String[] userSplit = user.split(":");
-        if ((clientFlags & Capabilities.CLIENT_CONNECT_ATTRS) != 0 && userSplit.length == 1) {
+        if (userSplit.length == 1 && (clientFlags & Capabilities.CLIENT_CONNECT_ATTRS) != 0) {
             //use from connection attributes
             if (clientWithDbJdbcBug && mm.read(mm.position()) == 0) {
                 mm.read();

@@ -10,8 +10,8 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStag
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -146,15 +146,17 @@ public final class IOProcessor {
                 checkConSendQueue(c);
                 if (c.isIdleTimeout()) {
                     if (!c.isManager()) {
-                        ShardingService s = (ShardingService) c.getService();
-                        String xaStage = s.getSession2().getTransactionManager().getXAStage();
-                        if (xaStage != null) {
-                            if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
-                                // Active/IDLE/PREPARED XA FrontendS will be rollbacked
-                                s.getConnection().close("Idle Timeout");
-                                XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                        if (c.getService() instanceof ShardingService) {
+                            ShardingService s = (ShardingService) c.getService();
+                            String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                            if (xaStage != null) {
+                                if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
+                                    // Active/IDLE/PREPARED XA FrontendS will be rollbacked
+                                    s.getConnection().close("Idle Timeout");
+                                    XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                                }
+                                return;
                             }
-                            return;
                         }
                     }
                     c.close("idle timeout");

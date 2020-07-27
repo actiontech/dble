@@ -116,9 +116,16 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
         this.proto = new MySQLProtoHandlerImpl();
+        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
     }
 
     public void query(String sql) {
+        sql = sql.trim();
+        // remove last ';'
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
+
         WallProvider blackList = ((ShardingUserConfig) userConfig).getBlacklist();
         if (blackList != null) {
             WallCheckResult result = blackList.check(sql);
@@ -136,6 +143,8 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         if (userConfig instanceof ShardingUserConfig) {
             readOnly = ((ShardingUserConfig) userConfig).isReadOnly();
         }
+
+
         this.handler.setReadOnly(readOnly);
         this.handler.setSessionReadOnly(sessionReadOnly);
         this.handler.query(sql);

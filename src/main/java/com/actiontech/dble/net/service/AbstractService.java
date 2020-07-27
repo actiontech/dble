@@ -28,7 +28,7 @@ public abstract class AbstractService implements Service {
 
     private AtomicInteger packetId = new AtomicInteger(0);
 
-    private volatile boolean isSupportCompress = false;
+    protected volatile boolean isSupportCompress = false;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
@@ -73,7 +73,7 @@ public abstract class AbstractService implements Service {
         }
     }
 
-    private void taskCreate(byte[] packetData) {
+    protected void taskCreate(byte[] packetData) {
         ServiceTask task = new ServiceTask(packetData, this);
         taskQueue.offer(task);
         taskToTotalQueue(task);

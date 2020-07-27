@@ -41,6 +41,9 @@ public class FrontendBlockRunnable implements Runnable {
                 if (task == null) {
                     task = frontNormalTasks.take();
                 }
+                if (task.getService() == null) {
+                    continue;
+                }
 
                 //threadUsageStat start
                 long workStart = 0;

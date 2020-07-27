@@ -120,7 +120,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
         if (hasReturn.compareAndSet(false, true)) {
             doFinished(false);
             if (!((SetCallBack) ((OneRawSQLQueryResultHandler) jobHandler).getCallback()).isBackToOtherThread()) {
-                service.write(responseService.getSession().getOKPacket());
+                shardingService.write(shardingService.getSession2().getOKPacket());
             }
             ResetConnHandler handler = new ResetConnHandler();
             responseService.setResponseHandler(handler);

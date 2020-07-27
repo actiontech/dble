@@ -2,18 +2,21 @@ package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
+import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.CachingSHA2Pwd;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.MySQLAuthPlugin;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.NativePwd;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.CompressUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

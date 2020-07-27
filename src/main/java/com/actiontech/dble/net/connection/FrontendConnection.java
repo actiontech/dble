@@ -1,6 +1,7 @@
 package com.actiontech.dble.net.connection;
 
 import com.actiontech.dble.config.model.db.PoolConfig;
+import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
@@ -66,6 +67,12 @@ public class FrontendConnection extends AbstractConnection {
         if (getService() instanceof FrontEndService) {
             ((FrontEndService) getService()).userConnectionCount();
         }
+    }
+
+    @Override
+    public void setProcessor(IOProcessor processor) {
+        this.processor = processor;
+        processor.addFrontend(this);
     }
 
     public boolean isIdleTimeout() {

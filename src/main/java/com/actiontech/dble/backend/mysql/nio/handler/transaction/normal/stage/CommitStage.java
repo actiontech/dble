@@ -51,7 +51,7 @@ public class CommitStage implements TransactionStage {
         } else {
             session.setFinishedCommitTime();
             session.setResponseTime(true);
-            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
+            session.getShardingService().write(sendData != null ? sendData : session.getShardingService().getSession2().getOKPacket());
         }
         session.clearSavepoint();
         return null;

@@ -30,7 +30,6 @@ public class OutputHandler extends BaseDMLHandler {
     private static Logger logger = LoggerFactory.getLogger(OutputHandler.class);
     protected final ReentrantLock lock;
 
-    private byte packetId;
     private ByteBuffer buffer;
     private boolean isBinary;
     private long netOutBytes;
@@ -40,7 +39,6 @@ public class OutputHandler extends BaseDMLHandler {
         super(id, session);
         session.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.packetId = (byte) session.getPacketId().get();
         this.isBinary = session.isPrepared();
         this.buffer = session.getFrontConnection().allocate();
     }
@@ -55,7 +53,7 @@ public class OutputHandler extends BaseDMLHandler {
         this.netOutBytes += ok.length;
         OkPacket okPacket = new OkPacket();
         okPacket.read(ok);
-        okPacket.setPacketId(++packetId);
+        okPacket.setPacketId(session.getShardingService().nextPacketId());
         ShardingService sessionShardingService = session.getShardingService();
         lock.lock();
         try {
@@ -97,17 +95,17 @@ public class OutputHandler extends BaseDMLHandler {
                 this.fieldPackets = fieldPackets;
             ResultSetHeaderPacket hp = new ResultSetHeaderPacket();
             hp.setFieldCount(fieldPackets.size());
-            hp.setPacketId(++packetId);
+            hp.setPacketId(session.getShardingService().nextPacketId());
             this.netOutBytes += hp.calcPacketSize();
             ShardingService shardingService = session.getShardingService();
             buffer = hp.write(buffer, shardingService, true);
             for (FieldPacket fp : fieldPackets) {
-                fp.setPacketId(++packetId);
+                fp.setPacketId(session.getShardingService().nextPacketId());
                 this.netOutBytes += fp.calcPacketSize();
                 buffer = fp.write(buffer, shardingService, true);
             }
             EOFPacket ep = new EOFPacket();
-            ep.setPacketId(++packetId);
+            ep.setPacketId(session.getShardingService().nextPacketId());
             this.netOutBytes += ep.calcPacketSize();
             buffer = ep.write(buffer, shardingService, true);
         } finally {
@@ -131,16 +129,14 @@ public class OutputHandler extends BaseDMLHandler {
             if (this.isBinary) {
                 BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
                 binRowPacket.read(this.fieldPackets, rowPacket);
-                binRowPacket.setPacketId(++packetId);
+                binRowPacket.setPacketId(session.getShardingService().nextPacketId());
                 this.netOutBytes += binRowPacket.calcPacketSize();
                 buffer = binRowPacket.write(buffer, session.getShardingService(), true);
-                this.packetId = (byte) session.getPacketId().get();
             } else {
                 if (rowPacket != null) {
-                    rowPacket.setPacketId(++packetId);
+                    rowPacket.setPacketId(session.getShardingService().nextPacketId());
                     this.netOutBytes += rowPacket.calcPacketSize();
                     buffer = rowPacket.write(buffer, session.getShardingService(), true);
-                    this.packetId = (byte) session.getPacketId().get();
                 } else {
                     row = rowNull;
                     RowDataPacket rowDataPk = new RowDataPacket(this.fieldPackets.size());
@@ -172,7 +168,7 @@ public class OutputHandler extends BaseDMLHandler {
             if (data != null) {
                 eofPacket.read(data);
             }
-            eofPacket.setPacketId(++packetId);
+            eofPacket.setPacketId(session.getShardingService().nextPacketId());
             this.netOutBytes += eofPacket.calcPacketSize();
             doSqlStat();
             HandlerTool.terminateHandlerTree(this);
@@ -220,7 +216,7 @@ public class OutputHandler extends BaseDMLHandler {
                 error.setErrNo(ErrorCode.ER_YES);
                 error.setMessage("unknown error".getBytes());
             }
-            error.setPacketId(++packetId);
+            error.setPacketId(session.getShardingService().nextPacketId());
             session.getFrontConnection().write(error.toBytes());
         } finally {
             lock.unlock();

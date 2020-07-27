@@ -5,11 +5,9 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.model.ERTable;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.plan.common.ptr.StringPtr;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -19,6 +17,7 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
@@ -26,14 +25,20 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/update.html
  *
  * @author huqing.yan
  */
-public class DruidUpdateParser extends DefaultDruidParser {
+public class DruidUpdateParser extends DruidModifyParser {
+
+    private static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `Complex Update Syntax` is not supported!";
+
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
@@ -41,58 +46,68 @@ public class DruidUpdateParser extends DefaultDruidParser {
         SQLTableSource tableSource = update.getTableSource();
         String schemaName = schema == null ? null : schema.getName();
         if (tableSource instanceof SQLJoinTableSource) {
-            StringPtr noShardingNode = new StringPtr(null);
-            Set<String> schemas = new HashSet<>();
-            if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, stmt, schemaName, schemas, noShardingNode)) {
-                String msg = "UPDATE query with multiple tables is not supported, sql:" + stmt;
-                throw new SQLNonTransientException(msg);
-            } else {
-                return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+            if (visitor.getSubQueryList().size() > 0) {
+                throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
             }
+
+            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList(), ShardingPrivileges.CheckType.UPDATE);
+
+            boolean isAllGlobal = true;
+            for (SchemaInfo schemaInfo : schemaInfos) {
+                BaseTableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+                if (tc == null || !(tc instanceof GlobalTableConfig)) {
+                    isAllGlobal = false;
+                }
+            }
+
+            Collection<String> routeShardingNodes;
+            if (isAllGlobal) {
+                routeShardingNodes = checkForMultiNodeGlobal(schemaInfos);
+            } else {
+                //try to route to single Node for each table
+                routeShardingNodes = checkForSingleNodeTable(rrs);
+            }
+
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+            rrs.setFinishedRoute(true);
+            return schema;
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.CheckType.UPDATE)) {
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-            if (visitor.getSubQueryList().size() > 0) {
-                StringPtr noShardingNode = new StringPtr(null);
-                Set<String> schemas = new HashSet<>();
-                if (!SchemaUtil.isNoSharding(sc, tableSource, stmt, stmt, schemaInfo.getSchema(), schemas, noShardingNode)) {
-                    String msg = "UPDATE query with sub-query  is not supported, sql:" + stmt;
-                    throw new SQLNonTransientException(msg);
-                } else {
-                    return routeToNoSharding(schema, rrs, schemas, noShardingNode);
-                }
-            }
 
             String tableName = schemaInfo.getTable();
+            BaseTableConfig tc = schema.getTables().get(tableName);
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
-            if (noShardingNode != null) {
+
+            if (visitor.getFirstClassSubQueryList().size() > 0) {
+                routeForModifySubQueryList(rrs, tc, visitor, schema, sc);
+                return schema;
+            } else if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);
                 rrs.setFinishedRoute(true);
                 return schema;
             }
-            TableConfig tc = schema.getTables().get(tableName);
-            checkTableExists(tc, schema.getName(), tableName, ServerPrivileges.CheckType.UPDATE);
 
-
-            if (tc.isGlobalTable()) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
+            checkTableExists(tc, schema.getName(), tableName, ShardingPrivileges.CheckType.UPDATE);
+            if (tc instanceof GlobalTableConfig) {
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
                 rrs.setFinishedRoute(true);
                 return schema;
             }
-            String partitionColumn = tc.getPartitionColumn();
-            String joinKey = tc.getJoinKey();
 
-            confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
+            confirmColumnNotUpdated(update, tc, rrs);
 
             confirmChildColumnNotUpdated(update, schema, tableName);
 
-            if (schema.getTables().get(tableName).isGlobalTable() && ctx.getTables().size() > 1) {
+            if (schema.getTables().get(tableName) instanceof GlobalTableConfig && ctx.getTables().size() > 1) {
                 throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
             }
 
@@ -106,6 +121,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
         }
         return schema;
     }
+
 
     private static boolean columnInExpr(SQLExpr sqlExpr, String colName) throws SQLNonTransientException {
         String column;
@@ -140,11 +156,11 @@ public class DruidUpdateParser extends DefaultDruidParser {
      * eg:update mytab set ptn_col = val, col1 = val1 where col1 = val11 and col2 = val22;
      * o the other operator, like between,not, Just Failed.
      *
-     * @param whereClauseExpr
-     * @param column
-     * @param value
+     * @param whereClauseExpr whereClauseExpr
+     * @param column          column
+     * @param value           value
+     * @param hasOR           the parent of whereClauseExpr hasOR/XOR
      * @return true Passed, false Failed
-     * @hasOR the parent of whereClauseExpr hasOR/XOR
      */
     private boolean shardColCanBeUpdated(SQLExpr whereClauseExpr, String column, SQLExpr value, boolean hasOR)
             throws SQLNonTransientException {
@@ -202,30 +218,44 @@ public class DruidUpdateParser extends DefaultDruidParser {
         return canUpdate;
     }
 
-    private void confirmShardColumnNotUpdated(SQLUpdateStatement update, SchemaConfig schema, String tableName, String partitionColumn, String joinKey, RouteResultset rrs) throws SQLNonTransientException {
+    private void confirmColumnNotUpdated(SQLUpdateStatement update, BaseTableConfig tableConfig, RouteResultset rrs) throws SQLNonTransientException {
         List<SQLUpdateSetItem> updateSetItem = update.getItems();
         if (updateSetItem != null && updateSetItem.size() > 0) {
-            boolean hasParent = (schema.getTables().get(tableName).getParentTC() != null);
+            String shardingColumn = null;
+            String incrementColumn = null;
+            String joinColumn = null;
+            if (tableConfig instanceof ShardingTableConfig) {
+                shardingColumn = ((ShardingTableConfig) tableConfig).getShardingColumn();
+                incrementColumn = ((ShardingTableConfig) tableConfig).getIncrementColumn();
+            } else if (tableConfig instanceof ChildTableConfig) {
+                joinColumn = ((ChildTableConfig) tableConfig).getJoinColumn();
+                incrementColumn = ((ChildTableConfig) tableConfig).getIncrementColumn();
+            }
             for (SQLUpdateSetItem item : updateSetItem) {
                 String column = StringUtil.removeBackQuote(item.getColumn().toString().toUpperCase());
                 //the alias must belong to sharding table because we only support update single table
                 if (column.contains(StringUtil.TABLE_COLUMN_SEPARATOR)) {
                     column = column.substring(column.indexOf(".") + 1).trim().toUpperCase();
                 }
-                if (partitionColumn != null && partitionColumn.equals(column)) {
+                if (shardingColumn != null && shardingColumn.equals(column)) {
                     boolean canUpdate;
                     canUpdate = ((update.getWhere() != null) && shardColCanBeUpdated(update.getWhere(),
-                            partitionColumn, item.getValue(), false));
+                            shardingColumn, item.getValue(), false));
 
                     if (!canUpdate) {
-                        String msg = "Sharding column can't be updated " + tableName + "->" + partitionColumn;
+                        String msg = "Sharding column can't be updated " + tableConfig.getName() + "->" + shardingColumn;
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }
                 }
-                if (hasParent) {
-                    if (column.equals(joinKey)) {
-                        String msg = "Parent relevant column can't be updated " + tableName + "->" + joinKey;
+                if (incrementColumn != null && column.equals(incrementColumn)) {
+                    String msg = "Increment column can't be updated " + tableConfig.getName() + "->" + incrementColumn;
+                    LOGGER.info(msg);
+                    throw new SQLNonTransientException(msg);
+                }
+                if (joinColumn != null) {
+                    if (column.equals(joinColumn)) {
+                        String msg = "Parent relevant column can't be updated " + tableConfig.getName() + "->" + joinColumn;
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }
@@ -235,12 +265,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
         }
     }
 
-
-    /**
-     * confirmChildColumnNotUpdated
-     *
-     * @throws SQLNonTransientException
-     */
     private void confirmChildColumnNotUpdated(SQLUpdateStatement update, SchemaConfig schema, String tableName) throws SQLNonTransientException {
         if (schema.getFkErRelations() == null) {
             return;
@@ -258,15 +282,27 @@ public class DruidUpdateParser extends DefaultDruidParser {
         }
     }
 
-
-    /**
-     * @param schema
-     * @param tableName
-     * @return
-     */
     private boolean isJoinColumn(String column, SchemaConfig schema, String tableName) {
         Map<ERTable, Set<ERTable>> map = schema.getFkErRelations();
         ERTable key = new ERTable(schema.getName(), tableName, column);
         return map.containsKey(key);
     }
+
+    @Override
+    int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException {
+        return 0;
+    }
+
+    @Override
+    String getErrorMsg() {
+        return MODIFY_SQL_NOT_SUPPORT_MESSAGE;
+    }
+
+    @Override
+    SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
+        stmt.accept(visitor);
+        return (SQLSelect) stmt;
+    }
+
+
 }

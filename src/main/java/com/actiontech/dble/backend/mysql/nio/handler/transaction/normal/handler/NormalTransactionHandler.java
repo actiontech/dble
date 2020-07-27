@@ -150,7 +150,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
         boolean finished = result[0];
         boolean justRemoved = result[1];
         if (justRemoved) {
-            String closeReason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+            String closeReason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                     ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
             this.setFail(closeReason);
 
@@ -165,7 +165,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
 
     // should be not happen
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         logger.warn("connection Error in normal transaction handler, err:", e);
         boolean finished;
         lock.lock();

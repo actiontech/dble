@@ -7,8 +7,9 @@ package com.actiontech.dble.util;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import sun.util.calendar.CalendarUtils;
 
-import java.text.ParseException;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -31,9 +32,8 @@ public final class DateUtil {
      *
      * @param dateStr
      * @return
-     * @throws ParseException
      */
-    public static Date parseDate(String dateStr) throws ParseException {
+    public static Date parseDate(String dateStr) {
         return parseDate(dateStr, DEFAULT_DATE_PATTERN);
     }
 
@@ -43,9 +43,8 @@ public final class DateUtil {
      * @param dateStr
      * @param datePattern
      * @return
-     * @throws ParseException
      */
-    public static Date parseDate(String dateStr, String datePattern) throws ParseException {
+    public static Date parseDate(String dateStr, String datePattern) {
         DateTime dt = DateTimeFormat.forPattern(datePattern).parseDateTime(dateStr);
         return dt.toDate();
     }
@@ -125,6 +124,44 @@ public final class DateUtil {
     public static int getMicroSecond(Date date) {
         DateTime dt = new DateTime(date);
         return dt.getMillisOfSecond();
+    }
+
+    /**
+     * Get the number of days between two times
+     *
+     * @param cal1
+     * @param cal2
+     * @return
+     */
+    public static long diffDays(Calendar cal1, Calendar cal2) {
+        boolean negativeFlag = false;
+        if (cal1.after(cal2)) {
+            Calendar oldCal1 = cal1;
+            cal1 = cal2;
+            cal2 = oldCal1;
+            negativeFlag = true;
+        }
+        int day1 = cal1.get(Calendar.DAY_OF_YEAR);
+        int day2 = cal2.get(Calendar.DAY_OF_YEAR);
+        int year1 = cal1.get(Calendar.YEAR);
+        int year2 = cal2.get(Calendar.YEAR);
+        int diffDays;
+        if (year1 != year2) {
+            int timeDistance = 0;
+            for (int i = year1; i < year2; i++) {
+                if (i == year1) {
+                    timeDistance += (CalendarUtils.isGregorianLeapYear(year1) ? 366 : 365) - day1;
+                } else if (CalendarUtils.isGregorianLeapYear(i)) {
+                    timeDistance += 366;
+                } else {
+                    timeDistance += 365;
+                }
+            }
+            diffDays = timeDistance + day2;
+        } else {
+            diffDays = day2 - day1;
+        }
+        return negativeFlag ? diffDays : -diffDays;
     }
 
 }

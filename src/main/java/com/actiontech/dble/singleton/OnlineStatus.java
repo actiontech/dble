@@ -5,21 +5,22 @@
 
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
+import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
-import com.actiontech.dble.cluster.bean.InstanceOnline;
-import com.alibaba.fastjson.JSONObject;
+import com.actiontech.dble.cluster.general.bean.InstanceOnline;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.util.NetUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -32,13 +33,14 @@ public final class OnlineStatus {
     private volatile DistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
     private volatile boolean mainThreadTryed = false;
-    private volatile int serverPort;
+    private final int serverPort;
     private String hostAddr;
     private final long startTime;
 
     private OnlineStatus() {
         startTime = System.currentTimeMillis();
-        hostAddr = getHostIp();
+        hostAddr = NetUtil.getHostIp();
+        serverPort = SystemConfig.getInstance().getServerPort();
     }
 
     private static final OnlineStatus INSTANCE = new OnlineStatus();
@@ -53,9 +55,9 @@ public final class OnlineStatus {
      * @return
      * @throws IOException
      */
-    public synchronized boolean mainThreadInitClusterOnline() throws IOException {
+    public synchronized boolean mainThreadInitClusterOnline() throws Exception {
         mainThreadTryed = true;
-        return clusterOnlinInit();
+        return clusterOnlineInit();
     }
 
 
@@ -64,9 +66,9 @@ public final class OnlineStatus {
      *
      * @throws IOException
      */
-    public void nodeListenerInitClusterOnline() throws IOException {
+    public void nodeListenerInitClusterOnline() throws Exception {
         if (mainThreadTryed) {
-            clusterOnlinInit();
+            clusterOnlineInit();
         }
     }
 
@@ -77,28 +79,27 @@ public final class OnlineStatus {
      * @return
      * @throws IOException
      */
-    public synchronized boolean clusterOnlinInit() throws IOException {
+    public synchronized boolean clusterOnlineInit() throws Exception {
         if (onlineInited) {
             //when the first init finished  the online check & rebuild would handle by ClusterOffLineListener
             return false;
         }
-        serverPort = DbleServer.getInstance().getConfig().getSystem().getServerPort();
         //check if the online mark is on than delete the mark and renew it
-        String oldValue = ClusterHelper.getKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
-                getValue(ClusterParamCfg.CLUSTER_CFG_MYID))).getValue();
-        if (!"".equals(oldValue)) {
+        String oldValue = ClusterHelper.getPathValue(ClusterPathUtil.getOnlinePath(
+                SystemConfig.getInstance().getInstanceName()));
+        if (!StringUtil.isEmpty((oldValue))) {
             if (InstanceOnline.getInstance().canRemovePath(oldValue)) {
-                ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
-                        getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+                ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
+                        SystemConfig.getInstance().getInstanceName()));
             } else {
-                throw new IOException("Online path with other IP or serverPort exist,make sure different instance has different myid");
+                throw new IOException("Online path with other IP or serverPort exist,make sure different instance has different instanceName");
             }
         }
         if (onlineLock != null) {
             onlineLock.release();
         }
-        onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
-                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+        onlineLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getOnlinePath(
+                SystemConfig.getInstance().getInstanceName()),
                 toString(), 6);
         int time = 0;
         while (!onlineLock.acquire()) {
@@ -125,8 +126,8 @@ public final class OnlineStatus {
             if (onlineLock != null) {
                 onlineLock.release();
             }
-            onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
-                    getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+            onlineLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getOnlinePath(
+                    SystemConfig.getInstance().getInstanceName()),
                     toString(), 6);
             int time = 0;
             while (!onlineLock.acquire()) {
@@ -138,7 +139,7 @@ public final class OnlineStatus {
                 // rebuild is triggered by online missing ,no wait for too long
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
             }
-            Repository newViewRepository = new CKVStoreRepository();
+            Repository newViewRepository = new KVStoreRepository();
             ProxyMeta.getInstance().getTmManager().setRepository(newViewRepository);
             Map<String, Map<String, String>> viewCreateSqlMap = newViewRepository.getViewCreateSqlMap();
             ProxyMeta.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
@@ -147,12 +148,15 @@ public final class OnlineStatus {
         return false;
     }
 
-
     public void shutdownClear() {
         if (onlineLock != null) {
             onlineLock.release();
-            ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
-                    getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+            try {
+                ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
+                        SystemConfig.getInstance().getInstanceName()));
+            } catch (Exception e) {
+                LOGGER.info("shut down online status clear failed", e);
+            }
             LOGGER.info("shut down online status clear");
         }
     }
@@ -162,42 +166,20 @@ public final class OnlineStatus {
             return false;
         }
         try {
-            JSONObject jsonObj = JSONObject.parseObject(value);
-            return serverPort == Long.parseLong(jsonObj.getString(SERVER_PORT)) &&
-                    hostAddr.equals(jsonObj.getString(HOST_ADDR));
+            JsonObject jsonObj = new JsonParser().parse(value).getAsJsonObject();
+            return serverPort == jsonObj.get(SERVER_PORT).getAsLong() &&
+                    hostAddr.equals(jsonObj.get(HOST_ADDR).getAsString());
         } catch (Exception e) {
             return false;
         }
     }
 
     public String toString() {
-        JSONObject online = new JSONObject();
-        online.put(SERVER_PORT, serverPort);
-        online.put(HOST_ADDR, hostAddr);
-        online.put(START_TIME, startTime);
-        return online.toJSONString();
-    }
-
-    private static String getHostIp() {
-        try {
-            Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-            while (allNetInterfaces.hasMoreElements()) {
-                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
-                Enumeration<InetAddress> addresses = netInterface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    InetAddress ip = (InetAddress) addresses.nextElement();
-                    if (ip != null &&
-                            ip instanceof Inet4Address &&
-                            !ip.isLoopbackAddress() &&
-                            ip.getHostAddress().indexOf(":") == -1) {
-                        return ip.getHostAddress();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            return null;
-        }
-        return null;
+        JsonObject online = new JsonObject();
+        online.addProperty(SERVER_PORT, serverPort);
+        online.addProperty(HOST_ADDR, hostAddr);
+        online.addProperty(START_TIME, startTime);
+        return (new Gson()).toJson(online);
     }
 
 }

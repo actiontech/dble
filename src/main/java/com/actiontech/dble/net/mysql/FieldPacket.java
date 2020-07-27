@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
  */
 public class FieldPacket extends MySQLPacket {
     private static final byte[] DEFAULT_CATALOG = "def".getBytes();
+    public static final byte[] DEFAULT_VALUE = new byte[]{(byte) 0x00};
     private static final byte[] FILLER = new byte[2];
 
     private byte[] catalog = DEFAULT_CATALOG;
@@ -54,7 +55,7 @@ public class FieldPacket extends MySQLPacket {
     private int type;
     private int flags;
     private byte decimals;
-    private byte[] definition;
+    private byte[] defaultVal;
 
     /**
      * change data to FieldPacket
@@ -96,8 +97,8 @@ public class FieldPacket extends MySQLPacket {
         size += (name == null ? 1 : BufferUtil.getLength(name));
         size += (orgName == null ? 1 : BufferUtil.getLength(orgName));
         size += 13; // 1+2+4+1+2+1+2
-        if (definition != null) {
-            size += BufferUtil.getLength(definition);
+        if (defaultVal != null) {
+            size += BufferUtil.getLength(defaultVal);
         }
         return size;
     }
@@ -122,7 +123,7 @@ public class FieldPacket extends MySQLPacket {
         this.decimals = mm.read();
         mm.move(FILLER.length);
         if (mm.hasRemaining()) {
-            this.definition = mm.readBytesWithLength();
+            this.defaultVal = mm.readBytesWithLength();
         }
     }
 
@@ -143,8 +144,8 @@ public class FieldPacket extends MySQLPacket {
         buffer.put((byte) 0x00);
         buffer.put((byte) 0x00);
         //buffer.position(buffer.position() + FILLER.length);
-        if (definition != null) {
-            BufferUtil.writeWithLength(buffer, definition);
+        if (defaultVal != null) {
+            BufferUtil.writeWithLength(buffer, defaultVal);
         }
     }
 
@@ -236,11 +237,11 @@ public class FieldPacket extends MySQLPacket {
         this.decimals = decimals;
     }
 
-    public byte[] getDefinition() {
-        return definition;
+    public byte[] getDefaultVal() {
+        return defaultVal;
     }
 
-    public void setDefinition(byte[] definition) {
-        this.definition = definition;
+    public void setDefaultVal(byte[] defaultVal) {
+        this.defaultVal = defaultVal;
     }
 }

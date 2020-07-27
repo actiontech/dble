@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.meta.ReloadLogHelper;
@@ -29,30 +29,30 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     public final ReloadLogHelper logger;
 
     private final String sql;
-    private final String dataNode;
+    private final String shardingNode;
     private final String schema;
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
-    private final PhysicalDataSource ds;
+    private final PhysicalDbInstance ds;
     private boolean isMustWriteNode;
     private AtomicBoolean finished = new AtomicBoolean(false);
 
-    public MultiTablesMetaJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds, boolean isReload) {
+    public MultiTablesMetaJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDbInstance ds, boolean isReload) {
         super();
         this.logger = new ReloadLogHelper(isReload);
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.ds = ds;
         this.schema = schema;
-        this.dataNode = null;
+        this.shardingNode = null;
     }
 
-    public MultiTablesMetaJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode, boolean isReload) {
+    public MultiTablesMetaJob(String sql, String shardingNode, SQLJobHandler jobHandler, boolean isMustWriteNode, boolean isReload) {
         super();
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.ds = null;
-        this.dataNode = dataNode;
+        this.shardingNode = shardingNode;
         this.schema = null;
         this.isMustWriteNode = isMustWriteNode;
         this.logger = new ReloadLogHelper(isReload);
@@ -61,15 +61,15 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     public void run() {
         try {
             if (ds == null) {
-                RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
+                RouteResultsetNode node = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
                 // create new connection
-                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
-                ds.getConnection(schema, true, this, null, false);
+                ds.getConnection(schema, this, null, false);
             }
         } catch (Exception e) {
-            logger.warn("can't get connection" + dataNode, e);
+            logger.warn("can't get connection" + shardingNode, e);
             doFinished(true);
         }
     }
@@ -83,9 +83,9 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        logger.info("connectionAcquired on connection " + conn);
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
+        logger.info("connectionAcquired on connection " + conn);
         try {
             conn.query(sql, true);
             connection = conn;
@@ -102,12 +102,12 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     private void doFinished(boolean failed) {
         logger.info("Finish MultiTablesMetaJob with result " + failed + " on connection " + connection);
         if (finished.compareAndSet(false, true)) {
-            jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+            jobHandler.finished(shardingNode == null ? schema : shardingNode, failed);
         }
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         logger.warn("can't get connection for sql :" + sql, e);
         doFinished(true);
     }
@@ -166,8 +166,8 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNode=" +
-                dataNode + ",schema=" +
+        return "SQLJob [shardingNode=" +
+                shardingNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

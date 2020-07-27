@@ -26,8 +26,8 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
     private boolean extracting = false;
     private volatile boolean metaInited = false;
 
-    public DDLNotifyTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode) {
-        super(schema, tableName, dataNodes, selfNode, false);
+    public DDLNotifyTableMetaHandler(String schema, String tableName, List<String> shardingNodes, Set<String> selfNode) {
+        super(schema, tableName, shardingNodes, selfNode, false);
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
     }

@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HeapItem;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -44,25 +45,42 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                                          List<Order> orderBys) {
         super(id, route, autocommit, session);
         this.orderBys = orderBys;
-        this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
+        this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         this.merges.add(this);
 
     }
 
     @Override
-    public void execute() throws Exception {
+    public void execute() {
         synchronized (exeHandlers) {
             if (terminate.get())
                 return;
-            for (BaseSelectHandler exeHandler : exeHandlers) {
-                session.setHandlerStart(exeHandler); //base start execute
+
+            if (Thread.currentThread().getName().contains("complexQueryExecutor")) {
+                doExecute();
+            } else {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        doExecute();
+                    }
+                });
+            }
+        }
+    }
+
+    private void doExecute() {
+        for (BaseSelectHandler exeHandler : exeHandlers) {
+            session.setHandlerStart(exeHandler); //base start execute
+            try {
                 MySQLConnection exeConn = exeHandler.initConnection();
-                if (exeConn != null) {
-                    exeConn.setComplexQuery(true);
-                    queues.put(exeConn, new LinkedBlockingQueue<>(queueSize));
-                    exeHandler.execute(exeConn);
-                }
+                exeConn.setComplexQuery(true);
+                queues.put(exeConn, new LinkedBlockingQueue<>(queueSize));
+                exeHandler.execute(exeConn);
+            } catch (Exception e) {
+                exeHandler.connectionError(e, exeHandler.getRrss());
+                return;
             }
         }
     }

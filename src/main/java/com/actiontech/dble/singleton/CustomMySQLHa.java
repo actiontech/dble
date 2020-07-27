@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,7 @@ public final class CustomMySQLHa {
 
     // return null if success
     public String start() {
-        if (DbleServer.getInstance().getConfig().getSystem().isUseOuterHa()) {
+        if (SystemConfig.getInstance().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             LOGGER.debug(msg);
             return msg;
@@ -38,7 +37,7 @@ public final class CustomMySQLHa {
             return "python process exists";
         }
         String exe = "python3";
-        String file = SystemConfig.getHomePath() + File.separatorChar + "bin" + File.separatorChar + "custom_mysql_ha.py";
+        String file = SystemConfig.getInstance().getHomePath() + File.separatorChar + "bin" + File.separatorChar + "custom_mysql_ha.py";
         String[] cmdArr = new String[]{exe, file};
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("a new  process `" + exe + " " + file + "` will be execute ");
@@ -60,10 +59,10 @@ public final class CustomMySQLHa {
 
     // return null if success
     public String stop(boolean byHook) {
-        if (DbleServer.getInstance().getConfig().getSystem().isUseOuterHa()) {
+        if (SystemConfig.getInstance().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             if (byHook) {
-                System.out.println(msg);
+                System.out.println("You use OuterHa or Cluster, no need to clean up ha process");
             } else if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(msg);
             }

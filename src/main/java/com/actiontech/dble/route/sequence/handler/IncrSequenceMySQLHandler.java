@@ -5,38 +5,33 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.sql.SQLNonTransientException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class IncrSequenceMySQLHandler implements SequenceHandler {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceMySQLHandler.class);
-
-    private static final String SEQUENCE_DB_PROPS = "sequence_db_conf.properties";
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
-    private static Set<String> dataNodes = new HashSet<>();
+    private static Set<String> shardingNodes = new HashSet<>();
 
     public void load(boolean isLowerCaseTableNames) {
         // load sequence properties
-        Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS, isLowerCaseTableNames);
+        Properties props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_DB_FILE_NAME, isLowerCaseTableNames);
         removeDesertedSequenceVals(props);
         putNewSequenceVals(props);
     }
 
-    public Set<String> getDataNodes() {
-        return dataNodes;
+    public Set<String> getShardingNodes() {
+        return shardingNodes;
     }
 
     private void removeDesertedSequenceVals(Properties props) {
@@ -52,12 +47,12 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     private void putNewSequenceVals(Properties props) {
         for (Map.Entry<Object, Object> entry : props.entrySet()) {
             String seqName = (String) entry.getKey();
-            String dataNode = (String) entry.getValue();
-            SequenceVal value = seqValueMap.putIfAbsent(seqName, new SequenceVal(seqName, dataNode));
+            String shardingNode = (String) entry.getValue();
+            SequenceVal value = seqValueMap.putIfAbsent(seqName, new SequenceVal(seqName, shardingNode));
             if (value != null) {
-                value.dataNode = dataNode;
+                value.shardingNode = shardingNode;
             }
-            dataNodes.add(dataNode);
+            shardingNodes.add(shardingNode);
         }
     }
 

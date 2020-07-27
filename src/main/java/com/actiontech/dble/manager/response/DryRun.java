@@ -5,15 +5,19 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.*;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.user.ManagerUserConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.table.DryRunGetNodeTablesHandler;
@@ -23,7 +27,6 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +89,7 @@ public final class DryRun {
             }
         }
         try {
-            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDataHosts(), false);
+            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDbGroups(), false);
             if (msg != null) {
                 list.add(new ErrorInfo("Backend", "WARNING", msg));
             }
@@ -99,19 +102,20 @@ public final class DryRun {
 
         ServerConfig serverConfig = new ServerConfig(loader);
         SystemVariables newSystemVariables = null;
-        VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());
+        VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDbGroups());
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (loader.isFullyConfigured()) {
                 list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
             } else {
-                list.add(new ErrorInfo("Backend", "WARNING", "No dataHost available"));
+                list.add(new ErrorInfo("Backend", "WARNING", "No dbGroup available"));
             }
         } else {
             try {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     serverConfig.reviseLowerCase();
                 } else {
+                    serverConfig.loadSequence();
                     serverConfig.selfChecking0();
                 }
                 //table exists check ,if the vars can not be touch ,the table check has no meaning
@@ -121,13 +125,13 @@ public final class DryRun {
             }
         }
 
-        if (handler.getUsedDataource() != null) {
-            handler.getUsedDataource().clearCons("dry run end");
+        if (handler.getUsedDbInstance() != null) {
+            handler.getUsedDbInstance().closeAllConnection("dry run end");
         }
 
         userCheck(list, serverConfig);
 
-        if (ClusterGeneralConfig.isUseGeneralCluster()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             ucoreConnectionTest(list);
         } else {
             list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));
@@ -139,9 +143,8 @@ public final class DryRun {
 
     private static void ucoreConnectionTest(List<ErrorInfo> list) {
         try {
-            String serverId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-            String selfPath = ClusterPathUtil.getOnlinePath(serverId);
-            ClusterHelper.getKV(selfPath);
+            String selfPath = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName());
+            ClusterHelper.getPathValue(selfPath);
         } catch (Exception e) {
             list.add(new ErrorInfo("Cluster", "ERROR", "Dble in cluster but all the ucore can't connect"));
         }
@@ -149,14 +152,14 @@ public final class DryRun {
 
 
     private static void tableExistsCheck(List<ErrorInfo> list, ServerConfig serverConfig, boolean isLowerCase) {
-        //get All the exists table from all dataNode
+        //get All the exists table from all shardingNode
 
-        Map<String, Set<String>> tableMap = showDataNodeTable(serverConfig, isLowerCase, list);
+        Map<String, Set<String>> tableMap = showShardingNodeTable(serverConfig, isLowerCase, list);
 
         for (SchemaConfig schema : serverConfig.getSchemas().values()) {
-            for (TableConfig table : schema.getTables().values()) {
+            for (BaseTableConfig table : schema.getTables().values()) {
                 StringBuilder sb = new StringBuilder("");
-                for (String exDn : table.getDataNodes()) {
+                for (String exDn : table.getShardingNodes()) {
                     if (tableMap.get(exDn) != null && !tableMap.get(exDn).contains(table.getName())) {
                         sb.append(exDn).append(",");
                     }
@@ -164,17 +167,17 @@ public final class DryRun {
 
                 if (sb.length() > 1) {
                     sb.setLength(sb.length() - 1);
-                    list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " don't exists in dataNode[" + sb.toString() + "]"));
+                    list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " don't exists in shardingNode[" + sb.toString() + "]"));
                 }
             }
         }
     }
 
-    private static Map<String, Set<String>> showDataNodeTable(ServerConfig serverConfig, boolean isLowerCase, List<ErrorInfo> list) {
+    private static Map<String, Set<String>> showShardingNodeTable(ServerConfig serverConfig, boolean isLowerCase, List<ErrorInfo> list) {
         Map<String, Set<String>> result = new ConcurrentHashMap<>();
-        AtomicInteger counter = new AtomicInteger(serverConfig.getDataNodes().size());
-        for (PhysicalDataNode dataNode : serverConfig.getDataNodes().values()) {
-            DryRunGetNodeTablesHandler showTablesHandler = new DryRunGetNodeTablesHandler(counter, dataNode, result, isLowerCase, list);
+        AtomicInteger counter = new AtomicInteger(serverConfig.getShardingNodes().size());
+        for (ShardingNode shardingNode : serverConfig.getShardingNodes().values()) {
+            DryRunGetNodeTablesHandler showTablesHandler = new DryRunGetNodeTablesHandler(counter, shardingNode, result, isLowerCase, list);
             showTablesHandler.execute();
         }
         while (counter.get() != 0) {
@@ -236,18 +239,18 @@ public final class DryRun {
 
 
     private static void userCheck(List<ErrorInfo> list, ServerConfig serverConfig) {
-        Map<String, UserConfig> userMap = serverConfig.getUsers();
+        Map<UserName, UserConfig> userMap = serverConfig.getUsers();
         if (userMap != null && userMap.size() > 0) {
             Set<String> schema = new HashSet<>();
             boolean hasManagerUser = false;
             boolean hasServerUser = false;
             for (UserConfig user : userMap.values()) {
-                if (user.isManager()) {
+                if (user instanceof ManagerUserConfig) {
                     hasManagerUser = true;
-                    continue;
+                } else if (user instanceof ShardingUserConfig) {
+                    hasServerUser = true;
+                    schema.addAll(((ShardingUserConfig) user).getSchemas());
                 }
-                hasServerUser = true;
-                schema.addAll(user.getSchemas());
             }
             if (!hasServerUser) {
                 list.add(new ErrorInfo("Xml", "WARNING", "There is No Server User"));

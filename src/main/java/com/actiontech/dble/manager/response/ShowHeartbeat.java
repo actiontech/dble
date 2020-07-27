@@ -1,13 +1,13 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
@@ -19,6 +19,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
+import com.actiontech.dble.util.TimeUtil;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -73,7 +74,7 @@ public final class ShowHeartbeat {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("RS_MESSAGE ", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -112,9 +113,9 @@ public final class ShowHeartbeat {
         List<RowDataPacket> list = new LinkedList<>();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
-        Map<String, PhysicalDataHost> dataHosts = conf.getDataHosts();
-        for (PhysicalDataHost pool : dataHosts.values()) {
-            for (PhysicalDataSource ds : pool.getAllDataSources()) {
+        Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
+        for (PhysicalDbGroup pool : dbGroups.values()) {
+            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
                 MySQLHeartbeat hb = ds.getHeartbeat();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(ds.getName().getBytes());
@@ -129,7 +130,7 @@ public final class ShowHeartbeat {
                     row.add(hb.getRecorder().get().getBytes());
                     String lat = hb.getLastActiveTime();
                     row.add(lat == null ? null : lat.getBytes());
-                    row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
+                    row.add(hb.isStop() || TimeUtil.currentTimeMillis() < ds.getHeartbeatRecoveryTime() ? "true".getBytes() : "false".getBytes());
                     row.add(hb.getMessage() == null ? null : hb.getMessage().getBytes());
                 } else {
                     row.add(null);

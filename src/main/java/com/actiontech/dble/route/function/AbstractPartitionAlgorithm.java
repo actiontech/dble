@@ -61,9 +61,9 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
      * valid the consistency between table's node size and rule's node size
      *
      * @param dnSize int
-     * @return -1 if table datanode size < rule function partition size
-     * 0 if table datanode size == rule function partition size
-     * 1 if table datanode size > rule function partition size
+     * @return -1 if table shardingnode size < rule function partition size
+     * 0 if table shardingnode size == rule function partition size
+     * 1 if table shardingnode size > rule function partition size
      */
     public final int suitableFor(int dnSize) {
         int nPartition = getPartitionNum();

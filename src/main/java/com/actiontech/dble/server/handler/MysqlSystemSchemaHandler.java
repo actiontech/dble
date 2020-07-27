@@ -24,6 +24,7 @@ public final class MysqlSystemSchemaHandler {
     }
 
     public static final String SCHEMATA_TABLE = "SCHEMATA";
+    public static final String COLUMNS_TABLE = "COLUMNS";
     public static final String INFORMATION_SCHEMA = "INFORMATION_SCHEMA";
 
     public static void handle(ServerConnection sc, SchemaUtil.SchemaInfo schemaInfo, SQLSelectQuery sqlSelectQuery) {
@@ -39,11 +40,19 @@ public final class MysqlSystemSchemaHandler {
             sc.write(sc.writeToBuffer(OkPacket.OK, sc.allocate()));
             return;
         }
+
         FieldPacket[] fields = generateFieldPacket(mySqlSelectQueryBlock.getSelectList());
-        if (schemaInfo != null && INFORMATION_SCHEMA.equals(schemaInfo.getSchema().toUpperCase()) &&
-                SCHEMATA_TABLE.equals(schemaInfo.getTable().toUpperCase())) {
-            MysqlInformationSchemaHandler.handle(sc, fields);
-            return;
+        if (schemaInfo != null && INFORMATION_SCHEMA.equals(schemaInfo.getSchema().toUpperCase())) {
+            switch (schemaInfo.getTable().toUpperCase()) {
+                case SCHEMATA_TABLE:
+                    MysqlInformationSchemaHandler.handle(sc, fields);
+                    return;
+                case COLUMNS_TABLE:
+                    new SelectInformationSchemaColumnsHandler().handle(sc, fields, mySqlSelectQueryBlock);
+                    return;
+                default:
+                    break;
+            }
         }
 
         doWrite(fields.length, fields, null, sc);

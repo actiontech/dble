@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -52,7 +52,7 @@ public final class ReloadMetaData {
             }
         }
 
-        String msg = "data host has no write_host";
+        String msg = "dbGroup has no primary dbInstance";
         boolean isOK = true;
         boolean interrupt = false;
         final ReentrantLock lock = ProxyMeta.getInstance().getTmManager().getMetaLock();

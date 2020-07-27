@@ -21,23 +21,23 @@ public class DumpFileWriter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     private static final String FILE_NAME_FORMAT = "%s-%s-%d.dump";
-    private Map<String, DataNodeWriter> dataNodeWriters = new ConcurrentHashMap<>();
+    private Map<String, ShardingNodeWriter> shardingNodeWriters = new ConcurrentHashMap<>();
     private AtomicInteger finished = new AtomicInteger(0);
     private volatile boolean isDeleteFile = false;
 
     public void open(String writePath, int writeQueueSize) throws IOException {
-        Set<String> dataNodes = DbleServer.getInstance().getConfig().getDataNodes().keySet();
+        Set<String> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes().keySet();
         Date date = new Date();
-        for (String dataNode : dataNodes) {
-            DataNodeWriter writer = new DataNodeWriter(dataNode, writeQueueSize);
-            writer.open(String.format(FILE_NAME_FORMAT, writePath, dataNode, date.getTime()));
-            dataNodeWriters.put(dataNode, writer);
+        for (String shardingNode : shardingNodes) {
+            ShardingNodeWriter writer = new ShardingNodeWriter(shardingNode, writeQueueSize);
+            writer.open(String.format(FILE_NAME_FORMAT, writePath, shardingNode, date.getTime()));
+            shardingNodeWriters.put(shardingNode, writer);
         }
     }
 
     public void start() {
         Thread writer;
-        for (Map.Entry<String, DataNodeWriter> entry : dataNodeWriters.entrySet()) {
+        for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
             writer = new Thread(entry.getValue(), entry.getKey() + "-writer-" + finished.incrementAndGet());
             writer.start();
             entry.getValue().self = writer;
@@ -45,15 +45,15 @@ public class DumpFileWriter {
     }
 
     public void stop() {
-        for (Map.Entry<String, DataNodeWriter> entry : dataNodeWriters.entrySet()) {
+        for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
             if (entry.getValue().self != null) {
                 entry.getValue().self.interrupt();
             }
         }
     }
 
-    public void write(String dataNode, String stmt, boolean isChanged, boolean needEOF) throws InterruptedException {
-        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+    public void write(String shardingNode, String stmt, boolean isChanged, boolean needEOF) throws InterruptedException {
+        ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
             if (writer.isAddEof()) {
                 writer.write(";");
@@ -65,12 +65,12 @@ public class DumpFileWriter {
         }
     }
 
-    public void write(String dataNode, String stmt) throws InterruptedException {
-        write(dataNode, stmt, false, true);
+    public void write(String shardingNode, String stmt) throws InterruptedException {
+        write(shardingNode, stmt, false, true);
     }
 
-    public void writeInsertHeader(String dataNode, String stmt) throws InterruptedException {
-        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+    public void writeInsertHeader(String shardingNode, String stmt) throws InterruptedException {
+        ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
             writer.write("\n");
             writer.write(stmt);
@@ -78,15 +78,15 @@ public class DumpFileWriter {
         }
     }
 
-    public void writeInsertValues(String dataNode, String stmt) throws InterruptedException {
-        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+    public void writeInsertValues(String shardingNode, String stmt) throws InterruptedException {
+        ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
             writer.write(stmt);
         }
     }
 
     public void writeAll(String stmt) throws InterruptedException {
-        for (DataNodeWriter writer : dataNodeWriters.values()) {
+        for (ShardingNodeWriter writer : shardingNodeWriters.values()) {
             writer.write(stmt);
             writer.write(";");
         }
@@ -100,18 +100,18 @@ public class DumpFileWriter {
         this.isDeleteFile = deleteFile;
     }
 
-    class DataNodeWriter implements Runnable {
+    class ShardingNodeWriter implements Runnable {
         private FileChannel fileChannel;
         private BlockingQueue<String> queue;
         private int queueSize;
-        private String dataNode;
+        private String shardingNode;
         private String path;
         private Thread self;
         // insert values eof
         private boolean addEof = false;
 
-        DataNodeWriter(String dataNode, int queueSize) {
-            this.dataNode = dataNode;
+        ShardingNodeWriter(String shardingNode, int queueSize) {
+            this.shardingNode = shardingNode;
             this.queueSize = queueSize;
             this.queue = new ArrayBlockingQueue<>(queueSize);
         }
@@ -135,7 +135,7 @@ public class DumpFileWriter {
 
         void close() throws IOException {
             this.fileChannel.close();
-            dataNodeWriters.remove(dataNode);
+            shardingNodeWriters.remove(shardingNode);
             if (isDeleteFile) {
                 FileUtils.delete(path);
             }
@@ -170,9 +170,9 @@ public class DumpFileWriter {
                     }
                 }
             } catch (IOException e) {
-                LOGGER.warn("dump file writer[" + dataNode + "] occur error:" + e.getMessage());
+                LOGGER.warn("dump file writer[" + shardingNode + "] occur error:" + e.getMessage());
             } catch (InterruptedException ie) {
-                LOGGER.warn("dump file writer[" + dataNode + "] is interrupted.");
+                LOGGER.warn("dump file writer[" + shardingNode + "] is interrupted.");
             } finally {
                 finished.decrementAndGet();
                 try {

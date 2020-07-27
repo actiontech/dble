@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.log.transaction;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.ServerConnection;
@@ -32,9 +30,7 @@ public class TxnLogProcessor extends Thread {
     public TxnLogProcessor() {
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
         this.queue = new LinkedBlockingQueue<>(256);
-        ServerConfig config = DbleServer.getInstance().getConfig();
-        SystemConfig systemConfig = config.getSystem();
-        this.store = new DailyRotateLogStore(systemConfig.getTransactionLogBaseDir(), systemConfig.getTransactionLogBaseName(), "log", systemConfig.getTransactionRotateSize(), null);
+        this.store = new DailyRotateLogStore(SystemConfig.getInstance().getTransactionLogBaseDir(), SystemConfig.getInstance().getTransactionLogBaseName(), "log", SystemConfig.getInstance().getTransactionRotateSize(), null);
     }
 
     @Override

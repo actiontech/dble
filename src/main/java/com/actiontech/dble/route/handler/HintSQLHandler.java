@@ -5,9 +5,10 @@
 
 package com.actiontech.dble.route.handler;
 
-import com.actiontech.dble.cache.LayerCachePool;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.route.*;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.RouteStrategy;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -23,17 +24,17 @@ public class HintSQLHandler implements HintHandler {
 
     private RouteStrategy routeStrategy;
 
-    public HintSQLHandler() {
+    HintSQLHandler() {
         this.routeStrategy = RouteStrategyFactory.getRouteStrategy();
     }
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
-                                LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+                                String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
         RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
-                hintSQLValue, sc, cachePool);
+                hintSQLValue, sc);
 
         if (rrs.isNeedOptimizer()) {
             throw new SQLSyntaxErrorException("Complex SQL not supported in hint");

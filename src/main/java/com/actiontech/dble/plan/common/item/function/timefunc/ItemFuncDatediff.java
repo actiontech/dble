@@ -10,6 +10,7 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.primary.ItemIntFunc;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MyTime;
+import com.actiontech.dble.util.DateUtil;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -37,7 +38,7 @@ public class ItemFuncDatediff extends ItemIntFunc {
         }
         java.util.Calendar cal1 = ltime1.toCalendar();
         java.util.Calendar cal2 = ltime2.toCalendar();
-        long diff = (cal1.getTimeInMillis() - cal2.getTimeInMillis()) / (24 * 3600);
+        long diff = DateUtil.diffDays(cal1, cal2);
         return BigInteger.valueOf(diff);
     }
 

@@ -1,12 +1,14 @@
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.cluster.bean.KvBean;
-import com.actiontech.dble.cluster.bean.ClusterAlertBean;
-import com.actiontech.dble.cluster.bean.SubscribeRequest;
-import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
+import com.actiontech.dble.cluster.general.bean.KvBean;
 
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 /**
  * Created by szf on 2019/3/11.
@@ -14,62 +16,29 @@ import java.util.Properties;
 public interface ClusterSender {
 
     /**
-     * only init the connection preperties for the clusterSender
-     * mainly used by shell to upload xml config
-     * do not start any Thread in this function!
-     *
-     * @param ucoreProperties
-     */
-    void initConInfo(Properties ucoreProperties);
-
-    /**
      * general config init of clusterSender
      * There are several task may be start
      * 1 init the config
      * 2 start customized connection controller
      *
-     * @param properties
      */
-    void initCluster(Properties properties);
+    void initCluster();
 
-    /**
-     * lock a path,so that other DbleServer in cluster can not hold the path in the same time
-     * return sessionId of the lock,if the return String is not null or "" means lock success
-     * the lock value is also import ,the lock also need to be regarded as a KV
-     * <p>
-     * NOTICE: the lock should only influences it self,the child path should be available to other DbleServer to write
-     *
-     * @param path
-     * @param value
-     * @return
-     * @throws Exception
-     */
-    String lock(String path, String value) throws Exception;
-
-
-    /**
-     * use the locked path and sessionId to unlock a path
-     * and the KV of the lock should be removed
-     *
-     * @param key
-     * @param sessionId
-     */
-    void unlockKey(String key, String sessionId);
 
     /**
      * put KV into cluster
      *
-     * @param path
-     * @param value
-     * @throws Exception
+     * @param path set path
+     * @param value set value
+     * @throws Exception io or net error
      */
     void setKV(String path, String value) throws Exception;
 
     /**
      * get KV from cluster
      *
-     * @param path
-     * @return
+     * @param path get path
+     * @return key value pair
      */
     KvBean getKV(String path);
 
@@ -78,8 +47,8 @@ public interface ClusterSender {
      * <p>
      * NOTICE: the KV in result list should be full path
      *
-     * @param path
-     * @return
+     * @param path get path
+     * @return all key value tree
      */
     List<KvBean> getKVPath(String path);
 
@@ -87,38 +56,55 @@ public interface ClusterSender {
      * clean/delete all the KV under the path
      * NOTICE: path itself also need cleaned
      *
-     * @param path
+     * @param path delete path
      */
     void cleanPath(String path);
 
     /**
      * clean/delete single KV
      *
-     * @param path
+     * @param path  delete path
      */
     void cleanKV(String path);
 
-    SubscribeReturnBean subscribeKvPrefix(SubscribeRequest request) throws Exception;
+    /**
+     * createSelfTempNode for sync status
+     * @param path create path
+     * @param value content
+     * @throws Exception  io or net error
+     */
+    void createSelfTempNode(String path, String value) throws Exception;
 
     /**
-     * alert something into cluster
-     *
-     * @param alert
+     * write xml and sequence to cluster and change status
+     * @throws Exception  io or net error
      */
-    void alert(ClusterAlertBean alert);
+    void writeConfToCluster() throws Exception;
 
     /**
-     * notify cluster some alert is resolved
-     *
-     * @param alert
-     * @return
+     * createDistributeLock
+     * @param path lock path
+     * @param value lock value
+     * @return lock
      */
-    boolean alertResolve(ClusterAlertBean alert);
+    DistributeLock createDistributeLock(String path, String value);
+    /**
+     * createDistributeLock with maxErrorCnt
+     * @param path lock path
+     * @param value lock value
+     * @return lock
+     */
+    DistributeLock createDistributeLock(String path, String value, int maxErrorCnt);
 
     /**
-     * check if the cluster config is complete,if not throw a RunTimeException
-     *
-     * @param properties
+     * get online nodes
+     * @return online node and info
      */
-    void checkClusterConfig(Properties properties);
+    Map<String, String> getOnlineMap();
+
+    /**
+     * forceResumePause sharding node
+     * @throws Exception   io or net error
+     */
+    void forceResumePause() throws Exception;
 }

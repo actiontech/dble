@@ -7,6 +7,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -86,9 +87,9 @@ public final class ShowSQLHigh {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
-            String user = userStat.getUser();
+            UserName user = userStat.getUser();
             List<SqlFrequency> list = userStat.getSqlHigh().getSqlFrequency(isClear);
             if (list != null) {
                 int i = 1;
@@ -114,11 +115,11 @@ public final class ShowSQLHigh {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(int i, String user, String sql, long count, long avgTime, long maxTime,
+    private static RowDataPacket getRow(int i, UserName user, String sql, long count, long avgTime, long maxTime,
                                         long minTime, long executeTime, long lastTime, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(i));
-        row.add(StringUtil.encode(user, charset));
+        row.add(StringUtil.encode(user.toString(), charset));
         row.add(LongUtil.toBytes(count));
         row.add(LongUtil.toBytes(avgTime));
         row.add(LongUtil.toBytes(maxTime));

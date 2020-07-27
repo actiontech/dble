@@ -7,44 +7,52 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.user.ServerUserConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.handler.FrontendPrepareHandler;
+import com.actiontech.dble.net.handler.LoadDataInfileHandler;
+import com.actiontech.dble.net.handler.ServerUserAuthenticator;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.SetInnerHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.response.FieldList;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
-import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.response.ShowCreateView;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TsQueriesCounter;
+import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
+import com.alibaba.druid.wall.WallCheckResult;
+import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -53,7 +61,6 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ServerConnection extends FrontendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
-    private static final long AUTH_TIMEOUT = 15 * 1000L;
 
     private volatile int txIsolation;
     private volatile boolean autocommit;
@@ -69,11 +76,18 @@ public class ServerConnection extends FrontendConnection {
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
 
-    public ServerConnection(NetworkChannel channel)
-            throws IOException {
+    private FrontendPrepareHandler prepareHandler;
+    private LoadDataInfileHandler loadDataInfileHandler;
+    private boolean sessionReadOnly = false;
+    private volatile boolean multiStatementAllow = false;
+    private ServerUserConfig userConfig;
+
+    public ServerConnection(NetworkChannel channel) throws IOException {
         super(channel);
+
+        this.handler = new ServerUserAuthenticator(this);
         this.txInterrupted = false;
-        this.autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.txID = new AtomicLong(1);
         this.sptprepare = new ServerSptPrepare(this);
         this.usrVariables = new LinkedHashMap<>();
@@ -97,18 +111,13 @@ public class ServerConnection extends FrontendConnection {
         return sptprepare;
     }
 
-    public void setSptprepare(ServerSptPrepare sptprepare) {
-        this.sptprepare = sptprepare;
+
+    public ServerUserConfig getUserConfig() {
+        return userConfig;
     }
 
-    @Override
-    public boolean isIdleTimeout() {
-        if (isAuthenticated) {
-            return super.isIdleTimeout();
-        } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
-                    lastReadTime) + AUTH_TIMEOUT;
-        }
+    public void setUserConfig(ServerUserConfig userConfig) {
+        this.userConfig = userConfig;
     }
 
     public int getTxIsolation() {
@@ -158,7 +167,7 @@ public class ServerConnection extends FrontendConnection {
         return session;
     }
 
-    void setSession2(NonBlockingSession session2) {
+    public void setSession2(NonBlockingSession session2) {
         this.session = session2;
     }
 
@@ -188,10 +197,76 @@ public class ServerConnection extends FrontendConnection {
         this.innerSetTask = innerSetTask;
     }
 
+    public LoadDataInfileHandler getLoadDataInfileHandler() {
+        return loadDataInfileHandler;
+    }
+
+    public void setLoadDataInfileHandler(LoadDataInfileHandler loadDataInfileHandler) {
+        this.loadDataInfileHandler = loadDataInfileHandler;
+    }
+
+    public boolean isMultiStatementAllow() {
+        return multiStatementAllow;
+    }
+
+    public void setMultiStatementAllow(boolean multiStatementAllow) {
+        this.multiStatementAllow = multiStatementAllow;
+    }
+
+    public void setPrepareHandler(FrontendPrepareHandler prepareHandler) {
+        this.prepareHandler = prepareHandler;
+    }
+
+    public void setSessionReadOnly(boolean sessionReadOnly) {
+        this.sessionReadOnly = sessionReadOnly;
+    }
+
+    public boolean isReadOnly() {
+        return sessionReadOnly;
+    }
+
+
+    public void setSchema(String schema) {
+        if (schema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            schema = schema.toLowerCase();
+        }
+        this.schema = schema;
+    }
+
+
+    public void changeUserAuthSwitch(byte[] data, ChangeUserPacket changeUserPacket) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("changeUser AuthSwitch request");
+        }
+        AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
+        authSwitchResponse.read(data);
+        changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
+        String errMsg = AuthUtil.authority(this, new UserName(changeUserPacket.getUser(), changeUserPacket.getTenant()), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
+        byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
+        if (errMsg == null) {
+            changeUserSuccess(changeUserPacket, packetId);
+        } else {
+            writeErrMessage(packetId, ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);
+        }
+    }
+
+    private void changeUserSuccess(ChangeUserPacket newUser, byte packetId) {
+        UserName user = new UserName(newUser.getUser(), newUser.getTenant());
+        this.setUser(user);
+        this.setUserConfig((ServerUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user));
+        this.setSchema(newUser.getDatabase());
+        this.initCharsetIndex(newUser.getCharsetIndex());
+        OkPacket ok = new OkPacket();
+        ok.read(OkPacket.OK);
+        ok.setPacketId(packetId);
+        ok.write(this);
+    }
+
     @Override
     protected void setRequestTime() {
-        session.setRequestTime();
-
+        if (session != null) {
+            session.setRequestTime();
+        }
     }
 
     @Override
@@ -201,7 +276,9 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public void markFinished() {
-        session.setStageFinished();
+        if (session != null) {
+            session.setStageFinished();
+        }
     }
 
     public boolean executeInnerSetTask() {
@@ -273,12 +350,6 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    @Override
-    public void ping() {
-        Ping.response(this);
-    }
-
-    @Override
     public void heartbeat(byte[] data) {
         Heartbeat.response(this, data);
     }
@@ -316,8 +387,7 @@ public class ServerConnection extends FrontendConnection {
     }
 
     public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
-        ServerConfig conf = DbleServer.getInstance().getConfig();
-        UserConfig user = conf.getUsers().get(this.getUser());
+        ShardingUserConfig user = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(this.user));
         if (user == null || !user.getSchemas().contains(schemaInfo.getSchema())) {
             writeErrMessage("42000", "Access denied for user '" + this.getUser() + "' to database '" + schemaInfo.getSchema() + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
@@ -328,8 +398,7 @@ public class ServerConnection extends FrontendConnection {
             if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);
             } else {
-                TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
-                if (tc == null) {
+                if (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()) == null) {
                     // check view
                     ShowCreateView.response(this, schemaInfo.getSchema(), schemaInfo.getTable());
                     return;
@@ -342,7 +411,7 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
+    private void routeEndExecuteSQL(String sql, int type, SchemaConfig schemaConfig) {
         if (session.isKilled()) {
             writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
             return;
@@ -350,7 +419,7 @@ public class ServerConnection extends FrontendConnection {
 
         RouteResultset rrs;
         try {
-            rrs = RouteService.getInstance().route(schema, type, sql, this);
+            rrs = RouteService.getInstance().route(schemaConfig, type, sql, this);
             if (rrs == null) {
                 return;
             }
@@ -369,6 +438,223 @@ public class ServerConnection extends FrontendConnection {
 
         session.endRoute(rrs);
         session.execute(rrs);
+    }
+
+    public void initDB(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        String db = null;
+        try {
+            db = mm.readString(charsetName.getClient());
+        } catch (UnsupportedEncodingException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
+            return;
+        }
+        if (db != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            db = db.toLowerCase();
+        }
+        // check sharding
+        if (db == null || !DbleServer.getInstance().getConfig().getSchemas().containsKey(db)) {
+            writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
+            return;
+        }
+        if (userConfig instanceof ShardingUserConfig && !((ShardingUserConfig) userConfig).getSchemas().contains(db)) {
+            String s = "Access denied for user '" + user + "' to database '" + db + "'";
+            writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
+            return;
+        }
+        this.schema = db;
+        session.setRowCount(0);
+        write(writeToBuffer(OkPacket.OK, allocate()));
+    }
+
+
+    public void loadDataInfileStart(String sql) {
+        if (loadDataInfileHandler != null) {
+            try {
+                loadDataInfileHandler.start(sql);
+            } catch (Exception e) {
+                LOGGER.info("load data error", e);
+                writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
+            }
+
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile sql is not  unsupported!");
+        }
+    }
+
+    public void loadDataInfileData(byte[] data) {
+        if (loadDataInfileHandler != null) {
+            try {
+                loadDataInfileHandler.handle(data);
+            } catch (Exception e) {
+                LOGGER.info("load data error", e);
+                writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
+            }
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile  data is not  unsupported!");
+        }
+
+    }
+
+    public void loadDataInfileEnd(byte packID) {
+        if (loadDataInfileHandler != null) {
+            try {
+                loadDataInfileHandler.end(packID);
+            } catch (Exception e) {
+                LOGGER.info("load data error", e);
+                writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
+            }
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile end is not  unsupported!");
+        }
+    }
+
+
+    public void stmtPrepare(byte[] data) {
+        if (prepareHandler != null) {
+            MySQLMessage mm = new MySQLMessage(data);
+            mm.position(5);
+            String sql = null;
+            try {
+                sql = mm.readString(charsetName.getClient());
+            } catch (UnsupportedEncodingException e) {
+                writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET,
+                        "Unknown charset '" + charsetName.getClient() + "'");
+                return;
+            }
+            if (sql == null || sql.length() == 0) {
+                writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
+                return;
+            }
+
+            // record SQL
+            this.setExecuteSql(sql);
+
+            // execute
+            prepareHandler.prepare(sql);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtSendLongData(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.sendLongData(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void setOption(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data); //see sql\protocol_classic.cc parse_packet
+        if (mm.length() == 7) {
+            mm.position(5);
+            int optCommand = mm.readUB2();
+            if (optCommand == 0) {
+                this.multiStatementAllow = true;
+                write(writeToBuffer(EOFPacket.EOF, allocate()));
+                return;
+            } else if (optCommand == 1) {
+                this.multiStatementAllow = false;
+                write(writeToBuffer(EOFPacket.EOF, allocate()));
+                return;
+            }
+        }
+        writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
+    }
+
+    //  mysql-server\sql\sql_class.cc void THD::cleanup_connection(void)
+    public void resetConnection() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("resetConnection request");
+        }
+        this.innerCleanUp();
+        this.write(OkPacket.OK);
+    }
+
+    public void changeUser(byte[] data, ChangeUserPacket changeUserPacket, AtomicBoolean isAuthSwitch) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("changeUser request");
+        }
+        this.innerCleanUp();
+        changeUserPacket.read(data);
+        if ("mysql_native_password".equals(changeUserPacket.getAuthPlugin())) {
+            AuthSwitchRequestPackage authSwitch = new AuthSwitchRequestPackage(changeUserPacket.getAuthPlugin().getBytes(), this.getSeed());
+            authSwitch.setPacketId(changeUserPacket.getPacketId() + 1);
+            isAuthSwitch.set(true);
+            authSwitch.write(this);
+        } else {
+            writeErrMessage((byte) (changeUserPacket.getPacketId() + 1), ErrorCode.ER_PLUGIN_IS_NOT_LOADED, "NOT SUPPORT THIS PLUGIN!");
+        }
+    }
+
+    public void stmtReset(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.reset(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtExecute(byte[] data, Queue<byte[]> dataqueue) {
+        byte[] sendData = dataqueue.poll();
+        while (sendData != null) {
+            this.stmtSendLongData(sendData);
+            sendData = dataqueue.poll();
+        }
+        if (prepareHandler != null) {
+            prepareHandler.execute(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtClose(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.close(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+
+    public void rawHandle(final byte[] data) {
+
+        //load data infile  client send empty packet which size is 4
+        if (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0) {
+            // load in data empty packet
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    loadDataInfileEnd(data[3]);
+                }
+            });
+            return;
+        }
+        //when TERMINATED char of load data infile is \001
+        if (data.length > 4 && data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == MySQLPacket.COM_QUIT) {
+            this.getProcessor().getCommands().doQuit();
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    close("quit cmd");
+                }
+            });
+            return;
+        }
+        handler.handle(data);
+
+    }
+
+    public void kill(byte[] data) {
+        writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+    }
+
+    public void fieldList(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        FieldList.response(this, mm.readStringWithNull());
     }
 
     private void executeException(Exception e, String sql) {
@@ -444,10 +730,10 @@ public class ServerConnection extends FrontendConnection {
 
     private void doLockTable(String sql) {
         String db = this.schema;
-        SchemaConfig schema = null;
+        SchemaConfig schemaConfig = null;
         if (this.schema != null) {
-            schema = DbleServer.getInstance().getConfig().getSchemas().get(this.schema);
-            if (schema == null) {
+            schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(this.schema);
+            if (schemaConfig == null) {
                 writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown Database '" + db + "'");
                 return;
             }
@@ -455,7 +741,7 @@ public class ServerConnection extends FrontendConnection {
 
         RouteResultset rrs;
         try {
-            rrs = RouteService.getInstance().route(schema, ServerParse.LOCK, sql, this);
+            rrs = RouteService.getInstance().route(schemaConfig, ServerParse.LOCK, sql, this);
         } catch (Exception e) {
             executeException(e, sql);
             return;
@@ -492,9 +778,9 @@ public class ServerConnection extends FrontendConnection {
 
         this.getSysVariables().clear();
         this.getUsrVariables().clear();
-        autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
-        txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
-        this.setCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+        txIsolation = SystemConfig.getInstance().getTxIsolation();
+        this.setCharacterSet(SystemConfig.getInstance().getCharset());
         lastInsertId = 0;
 
         //prepare
@@ -504,11 +790,60 @@ public class ServerConnection extends FrontendConnection {
     }
 
     @Override
-    public synchronized void close(String reason) {
-        TsQueriesCounter.getInstance().addToHistory(session);
-        super.close(reason);
-        session.terminate();
+    public void handlerQuery(String sql) {
+        WallProvider blackList = userConfig.getBlacklist();
+        if (blackList != null) {
+            WallCheckResult result = blackList.check(sql);
+            if (!result.getViolations().isEmpty()) {
+                LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
+                        result.getViolations().get(0).getMessage() + " \r\n " + sql);
+                writeErrMessage(ErrorCode.ERR_WRONG_USED, "The statement is unsafe SQL, reject for user '" + user + "'");
+                return;
+            }
+        }
 
+        SerializableLock.getInstance().lock(this.id);
+        // execute
+        if (queryHandler != null) {
+            boolean readOnly = false;
+            if (userConfig instanceof ShardingUserConfig) {
+                readOnly = ((ShardingUserConfig) userConfig).isReadOnly();
+            }
+            queryHandler.setReadOnly(readOnly);
+            queryHandler.setSessionReadOnly(sessionReadOnly);
+            queryHandler.query(sql);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Query unsupported!");
+        }
+    }
+
+    @Override
+    public void handle(final byte[] data) {
+        setRequestTime();
+        if (isSupportCompress()) {
+            List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, decompressUnfinishedDataQueue);
+            for (byte[] pack : packs) {
+                if (pack.length != 0) {
+                    rawHandle(pack);
+                }
+            }
+
+        } else {
+            rawHandle(data);
+        }
+    }
+
+    @Override
+    public synchronized void close(String reason) {
+        if (isClosed) {
+            return;
+        }
+        super.close(reason);
+        if (session != null) {
+            TsQueriesCounter.getInstance().addToHistory(session);
+            session.terminate();
+
+        }
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
         }
@@ -532,14 +867,14 @@ public class ServerConnection extends FrontendConnection {
         result.append(schema);
         result.append(", host=");
         result.append(host);
+        result.append(",port=");
+        result.append(port);
         result.append(", user=");
         result.append(user);
         result.append(",txIsolation=");
         result.append(txIsolation);
         result.append(", autocommit=");
         result.append(autocommit);
-        result.append(", schema=");
-        result.append(schema);
         if (sysVariables.size() > 0) {
             result.append(", ");
             result.append(getStringOfSysVariables());
@@ -559,6 +894,9 @@ public class ServerConnection extends FrontendConnection {
         if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
+        }
+        if (session.isPrepared()) {
+            session.setPrepared(false);
         }
     }
 
@@ -594,12 +932,14 @@ public class ServerConnection extends FrontendConnection {
         SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(buffer);
-        if (session.isDiscard() || session.isKilled()) {
-            session.setKilled(false);
-            session.setDiscard(false);
-        }
-        if (session.isPrepared()) {
-            session.setPrepared(false);
+        if (session != null) {
+            if (session.isDiscard() || session.isKilled()) {
+                session.setKilled(false);
+                session.setDiscard(false);
+            }
+            if (session.isPrepared()) {
+                session.setPrepared(false);
+            }
         }
     }
 

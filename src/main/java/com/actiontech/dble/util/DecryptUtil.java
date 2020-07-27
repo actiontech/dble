@@ -86,19 +86,19 @@ public final class DecryptUtil {
         return new String(plainBytes);
     }
 
-    public static String dbHostDecrypt(boolean usingDecrypt, String host, String user, String password) {
+    public static String dbHostDecrypt(boolean usingDecrypt, String name, String user, String password) {
         if (usingDecrypt) {
             //type:host:user:password
             //1:my_host1:test:test
             try {
                 String[] passwords = DecryptUtil.decrypt(password).split(":");
-                if (passwords.length == 4 && "1".equals(passwords[0]) && host.equals(passwords[1]) && user.equals(passwords[2])) {
+                if (passwords.length == 4 && "1".equals(passwords[0]) && name.equals(passwords[1]) && user.equals(passwords[2])) {
                     return passwords[3];
                 }
             } catch (Exception e2) {
-                throw new ConfigException("host " + host + ",user " + user + " password need to decrypt, but failed !", e2);
+                throw new ConfigException("host " + name + ",user " + user + " password need to decrypt, but failed !", e2);
             }
-            throw new ConfigException("host " + host + ",user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
+            throw new ConfigException("host " + name + ",user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
         }
         return password;
     }

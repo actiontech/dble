@@ -5,20 +5,19 @@
 */
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 
-/**
- * ManagerCommandHandler
- *
- * @author mycat
- */
 public class ManagerCommandHandler extends FrontendCommandHandler {
     public ManagerCommandHandler(FrontendConnection source) {
         super(source);
     }
-
+    protected void handleDataByPacket(byte[] data) {
+        dataTodo = data;
+        DbleServer.getInstance().getFrontHandlerQueue().offer(this);
+    }
     @Override
     protected void handleData(byte[] data) {
         switch (data[4]) {

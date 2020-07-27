@@ -119,9 +119,12 @@ hs_err_pid*
 src/main/resources/server.xml
 src/main/resources/schema.xml 
 src/main/resources/rule.xml
-src/main/resources/zkconf/server.xml
-src/main/resources/zkconf/schema.xml 
-src/main/resources/zkconf/rule.xml
+src/main/resources/db.xml
+src/main/resources/sharding.xml 
+src/main/resources/user.xml
+src/main/resources/bootstrap.dynamic.cnf
+src/main/resources/bootstrap.cnf
+src/main/resources/cluster.cnf
 version.txt
 dependency-reduced-pom.xml
 checkstyle-result.out

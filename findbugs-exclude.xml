@@ -28,7 +28,7 @@
         <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta$Builder"/>
     </Match>
     <Match>
-        <Package name="com.actiontech.dble.cluster.impl.ushard"/>
+        <Package name="com.actiontech.dble.cluster.general.impl.ushard"/>
     </Match>
     <Match>
         <Package name="com.actiontech.dble.alarm"/>
@@ -132,6 +132,12 @@
         <Method name="read"/>
         <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
     </Match>
+    <Match>
+        <Class name="com.actiontech.dble.meta.ProxyMetaManager"/>
+        <Method name="notifyResponseClusterDDL"/>
+        <Bug pattern="UL_UNRELEASED_LOCK_EXCEPTION_PATH"/>
+    </Match>
+
     <!-- STYLE end -->
 
     <!-- PERFORMANCE -->

@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.util;
 
+import java.util.Arrays;
+
 /**
  * @author mycat
  */
@@ -25,15 +27,22 @@ public final class HexFormatUtil {
     }
 
     public static byte[] fromHex(String src) {
-        String[] hex = src.split(" ");
-        byte[] b = new byte[hex.length];
-        for (int i = 0; i < hex.length; i++) {
-            b[i] = (byte) (Integer.parseInt(hex[i], 16) & 0xff);
+        if (src.length() % 2 != 0) {
+            src = "0" + src;
+        }
+        char[] chars = src.toCharArray();
+        byte[] b = new byte[chars.length / 2];
+        for (int i = 0; i < chars.length; i = i + 2) {
+            String tmp = new String(Arrays.copyOfRange(chars, i, i + 2));
+            b[i / 2] = (byte) (Integer.parseInt(tmp, 16) & 0xff);
         }
         return b;
     }
 
     public static String fromHex(String hexString, String charset) {
+        if (hexString.equals("\0")) {
+            return "NULL";
+        }
         try {
             byte[] b = fromHex(hexString);
             if (charset == null) {

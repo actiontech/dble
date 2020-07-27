@@ -8,7 +8,10 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
@@ -36,12 +39,13 @@ public final class MysqlInformationSchemaHandler {
      */
     public static void handle(ServerConnection c, FieldPacket[] fields) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<String, UserConfig> users = conf.getUsers();
+        Map<UserName, UserConfig> users = conf.getUsers();
         UserConfig user = users == null ? null : users.get(c.getUser());
         RowDataPacket[] rows = null;
         if (user != null) {
+            ShardingUserConfig shardingUser = (ShardingUserConfig) user;
             TreeSet<String> schemaSet = new TreeSet<>();
-            Set<String> schemaList = user.getSchemas();
+            Set<String> schemaList = shardingUser.getSchemas();
             if (schemaList == null || schemaList.size() == 0) {
                 schemaSet.addAll(conf.getSchemas().keySet());
             } else {
@@ -51,10 +55,11 @@ public final class MysqlInformationSchemaHandler {
             rows = new RowDataPacket[schemaSet.size()];
             int index = 0;
             for (String name : schemaSet) {
-                String charset = conf.getSystem().getCharset();
+                String charset = SystemConfig.getInstance().getCharset();
                 RowDataPacket row = new RowDataPacket(fields.length);
                 for (int j = 0; j < fields.length; j++) {
-                    switch (StringUtil.decode(fields[j].getName(), c.getCharset().getResults())) {
+                    String columnName = StringUtil.decode(fields[j].getName(), c.getCharset().getResults());
+                    switch (columnName.toUpperCase()) {
                         case "SCHEMA_NAME":
                             row.add(StringUtil.encode(name, c.getCharset().getResults()));
                             break;

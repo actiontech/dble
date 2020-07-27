@@ -8,8 +8,8 @@ package com.actiontech.dble.manager.handler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.OnOffAlert;
-import com.actiontech.dble.manager.response.OnOffSlowQueryLog;
 import com.actiontech.dble.manager.response.OnOffCustomMySQLHa;
+import com.actiontech.dble.manager.response.OnOffSlowQueryLog;
 import com.actiontech.dble.route.parser.ManagerParseOnOff;
 
 public final class DisableHandler {

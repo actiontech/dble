@@ -1,0 +1,25 @@
+#
+# Copyright (C) 2016-2020 ActionTech.
+# License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+#
+
+
+clusterEnable=false
+# cluster ucore/zk
+clusterMode=zk
+# zk:  clusterIP=10.186.19.aa:2281,10.186.60.bb:2281
+clusterIP=10.186.61.132:2181
+# zk not need cluster.port
+clusterPort=5700
+rootPath=/dble
+#cluster namespace, please use the same one in one cluster
+clusterId=cluster-1
+# if HA need sync by cluster, only useful when useOuterHa=true
+needSyncHa=false
+# unit is millisecond
+showBinlogStatusTimeout=60000
+sequenceHandlerType=2
+# valid for sequenceHandlerType=2 or 3
+#sequenceStartTime=2010-11-04 09:42:54
+# valid for sequenceHandlerType=3 and clusterMode is zk, default true
+#sequenceInstanceByZk=true

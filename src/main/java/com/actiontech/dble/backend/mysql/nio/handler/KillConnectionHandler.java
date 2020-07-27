@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.alarm.AlarmCode;
@@ -11,7 +11,9 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +44,9 @@ public class KillConnectionHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
-        if (conn != null) {
-            AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
-            toKilled.close("exception:" + e.toString());
-        }
+    public void connectionError(Throwable e, Object attachment) {
+        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + toKilled.toString() + " failed:" + e.getMessage(), null);
+        toKilled.close("exception:" + e.toString());
     }
 
     @Override

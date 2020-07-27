@@ -5,8 +5,10 @@
 
 package com.actiontech.dble.log.transaction;
 
+import com.actiontech.dble.config.model.user.UserName;
+
 public class TxnBinaryLog {
-    private String user;
+    private UserName user;
     private String host;
     private String schema;
     private long xid;
@@ -22,11 +24,11 @@ public class TxnBinaryLog {
         this.connId = connId;
     }
 
-    public String getUser() {
+    public UserName getUser() {
         return user;
     }
 
-    public void setUser(String user) {
+    public void setUser(UserName user) {
         this.user = user;
     }
 

@@ -9,7 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -54,7 +54,7 @@ public final class ShowCreateDatabase {
             String schema = StringUtil.removeBackQuote(statement.getDatabase().toString());
             SchemaConfig sc = DbleServer.getInstance().getConfig().getSchemas().get(schema);
             if (sc == null) {
-                throw new Exception("Unknown schema '" + schema + "' in server.xml");
+                throw new Exception("Unknown schema '" + schema + "' in config");
             }
             ByteBuffer buffer = c.allocate();
             // write header

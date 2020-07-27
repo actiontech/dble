@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public final class SerializableLock {
     }
 
     public void lock(long frontId) {
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
+        if (SystemConfig.getInstance().getUseSerializableMode() == 1) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("try to get lock id " + frontId + ", trace" + printTrace());
             }
@@ -44,7 +44,7 @@ public final class SerializableLock {
     }
 
     public void unLock(long frontId) {
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
+        if (SystemConfig.getInstance().getUseSerializableMode() == 1) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("try unlock id " + frontId + ", trace" + printTrace());
             }

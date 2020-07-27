@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.FilterUtils;
@@ -82,7 +82,7 @@ public final class FilterJoinColumnPusher {
 
     private static PlanNode pushJoinNodeFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
         JoinNode jn = (JoinNode) qtn;
-        PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
+        PlanUtil.findJoinColumnsAndRemoveIt(dnfNodeToPush, jn);
         if (dnfNodeToPush.isEmpty()) {
             return qtn;
         }

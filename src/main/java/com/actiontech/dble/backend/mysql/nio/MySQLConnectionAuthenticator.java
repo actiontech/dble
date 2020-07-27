@@ -1,14 +1,13 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
-import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
@@ -26,21 +25,19 @@ import java.util.Arrays;
 public class MySQLConnectionAuthenticator implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnectionAuthenticator.class);
     private final MySQLConnection source;
-    private final ResponseHandler listener;
-    private byte[] publicKey = null;
+    private final MySQLConnectionListener listener;
     private String authPluginName = null;
     private byte[] authPluginData = null;
 
 
-    public MySQLConnectionAuthenticator(MySQLConnection source,
-                                        ResponseHandler listener) {
+    public MySQLConnectionAuthenticator(MySQLConnection source, MySQLConnectionListener listener) {
         this.source = source;
         this.listener = listener;
     }
 
     public void connectionError(MySQLConnection c, Throwable e) {
         if (listener != null) {
-            listener.connectionError(e, c);
+            listener.onCreateFail(c, e);
         }
     }
 
@@ -49,7 +46,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         try {
             BinaryPacket bin2 = new BinaryPacket();
             if (checkPubicKey(data)) {
-                publicKey = bin2.readKey(data);
+                byte[] publicKey = bin2.readKey(data);
                 if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN)) {
                     PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY, publicKey, source);
                 } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
@@ -71,12 +68,12 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     source.setHandler(new MySQLConnectionHandler(source));
                     source.setAuthenticated(true);
                     boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & packet.getServerCapabilities());
-                    boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
+                    boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
                     if (clientCompress && usingCompress) {
                         source.setSupportCompress(true);
                     }
                     if (listener != null) {
-                        listener.connectionAcquired(source);
+                        listener.onCreateSuccess(source);
                     }
                     break;
                 case ErrorPacket.FIELD_COUNT:
@@ -125,8 +122,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());
             if (listener != null) {
-                listener.connectionError(e, source);
-                return;
+                listener.onCreateFail(source, e);
             }
         }
     }
@@ -137,7 +133,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         source.setHandshake(packet);
         source.setThreadId(packet.getThreadId());
 
-        source.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        source.initCharacterSet(SystemConfig.getInstance().getCharset());
     }
 
     private void auth323(byte packetId) {

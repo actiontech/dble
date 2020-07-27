@@ -62,7 +62,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
 
     /**
      * <p>
-     * if autocommit =0, can not use slave except use balance hint.
+     * if autocommit =0, can not use slave except use rwSplitMode hint.
      * <p>
      * of course, the query  is select or show (canRunInReadDB=true)
      *

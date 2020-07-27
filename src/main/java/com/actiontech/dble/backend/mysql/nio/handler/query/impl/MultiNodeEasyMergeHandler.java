@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -31,17 +32,34 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public void execute() throws Exception {
+    public void execute() {
         synchronized (exeHandlers) {
             if (terminate.get())
                 return;
-            for (BaseSelectHandler exeHandler : exeHandlers) {
-                session.setHandlerStart(exeHandler); //base start execute
+
+            if (Thread.currentThread().getName().contains("complexQueryExecutor")) {
+                doExecute();
+            } else {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        doExecute();
+                    }
+                });
+            }
+        }
+    }
+
+    private void doExecute() {
+        for (BaseSelectHandler exeHandler : exeHandlers) {
+            session.setHandlerStart(exeHandler); //base start execute
+            try {
                 MySQLConnection exeConn = exeHandler.initConnection();
-                if (exeConn != null) {
-                    exeConn.setComplexQuery(true);
-                    exeHandler.execute(exeConn);
-                }
+                exeConn.setComplexQuery(true);
+                exeHandler.execute(exeConn);
+            } catch (Exception e) {
+                exeHandler.connectionError(e, exeHandler.getRrss());
+                return;
             }
         }
     }

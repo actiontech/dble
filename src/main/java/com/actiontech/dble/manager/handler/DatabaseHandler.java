@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 public final class DatabaseHandler {
 
     private static final OkPacket OK = new OkPacket();
-    private static final Pattern PATTERN = Pattern.compile("^\\s*(create|drop)\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("^\\s*(create|drop)\\s*database\\s*@@shardingNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
 
     private static final String CREATE_DATABASE = "create database if not exists `%s`";
     private static final String DROP_DATABASE = "drop database if exists `%s`";
@@ -54,38 +54,38 @@ public final class DatabaseHandler {
 
         Matcher ma = PATTERN.matcher(stmt);
         if (!ma.matches() || !ma.group(2).equals(ma.group(4))) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create|drop database @@dataNode ='dn......'");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create|drop database @@shardingNode ='dn......'");
             return;
         }
-        String dataNodeStr = ma.group(3);
-        Set<String> dataNodes = new HashSet<>(Arrays.asList(SplitUtil.split(dataNodeStr, ',', '$', '-')));
-        //check dataNodes
-        for (String singleDn : dataNodes) {
-            if (DbleServer.getInstance().getConfig().getDataNodes().get(singleDn) == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "DataNode " + singleDn + " does not exists");
+        String shardingNodeStr = ma.group(3);
+        Set<String> shardingNodes = new HashSet<>(Arrays.asList(SplitUtil.split(shardingNodeStr, ',', '$', '-')));
+        //check shardingNodes
+        for (String singleDn : shardingNodes) {
+            if (DbleServer.getInstance().getConfig().getShardingNodes().get(singleDn) == null) {
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "shardingNode " + singleDn + " does not exists");
                 return;
             }
         }
 
-        final List<String> errDataNodes = new CopyOnWriteArrayList<>();
-        final Map<String, PhysicalDataNode> allDataNodes = DbleServer.getInstance().getConfig().getDataNodes();
-        final AtomicInteger numberCount = new AtomicInteger(dataNodes.size());
-        for (final String dataNode : dataNodes) {
-            PhysicalDataNode dn = allDataNodes.get(dataNode);
-            final PhysicalDataSource ds = dn.getDataHost().getWriteSource();
+        final List<String> errShardingNodes = new CopyOnWriteArrayList<>();
+        final Map<String, ShardingNode> allShardingNodes = DbleServer.getInstance().getConfig().getShardingNodes();
+        final AtomicInteger numberCount = new AtomicInteger(shardingNodes.size());
+        for (final String shardingNode : shardingNodes) {
+            ShardingNode dn = allShardingNodes.get(shardingNode);
+            final PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
             final String schema = dn.getDatabase();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                 @Override
                 public void onResult(SQLQueryResult<Map<String, String>> result) {
                     if (!result.isSuccess()) {
                         dn.setSchemaExists(false);
-                        errDataNodes.add(dataNode);
+                        errShardingNodes.add(shardingNode);
                     } else if (isCreate) {
                         dn.setSchemaExists(true);
-                        tryResolve(ds.getHostConfig().getName(), ds.getConfig().getHostName(), dataNode, schema, ds.getConfig().getId());
+                        tryResolve(ds.getDbGroupConfig().getName(), ds.getConfig().getInstanceName(), shardingNode, schema, ds.getConfig().getId());
                     } else {
                         dn.setSchemaExists(false);
-                        tryAlert(ds.getHostConfig().getName(), ds.getConfig().getHostName(), dataNode, schema, ds.getConfig().getId());
+                        tryAlert(ds.getDbGroupConfig().getName(), ds.getConfig().getInstanceName(), shardingNode, schema, ds.getConfig().getId());
                     }
                     numberCount.decrementAndGet();
                 }
@@ -99,7 +99,7 @@ public final class DatabaseHandler {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
 
-        writeResponse(c, errDataNodes);
+        writeResponse(c, errShardingNodes);
     }
 
     private static void writeResponse(ManagerConnection c, List<String> errMsg) {
@@ -112,23 +112,23 @@ public final class DatabaseHandler {
         }
     }
 
-    private static void tryResolve(String dataHost, String dataHost2, String dataNode, String schema, String dataHostId) {
-        String key = "DataHost[" + dataHost + "." + dataHost2 + "],data_node[" + dataNode + "],schema[" + schema + "]";
-        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dataHost + "-" + dataHost2);
-            labels.put("data_node", dataNode);
-            AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dataHostId, labels,
-                    ToResolveContainer.DATA_NODE_LACK, key);
+    private static void tryResolve(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dbInstanceId) {
+        String key = "dbInstance[" + dbGroupName + "." + dbInstanceName + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
+        if (ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupName + "-" + dbInstanceName);
+            labels.put("sharding_node", shardingNode);
+            AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dbInstanceId, labels,
+                    ToResolveContainer.SHARDING_NODE_LACK, key);
         }
     }
 
-    private static void tryAlert(String dataHost, String dataHost2, String dataNode, String schema, String dataHostId) {
-        String key = "DataHost[" + dataHost + "." + dataHost2 + "],data_node[" + dataNode + "],schema[" + schema + "]";
-        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dataHost + "-" + dataHost2);
-            labels.put("data_node", dataNode);
-            AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dataHostId, labels);
-            ToResolveContainer.DATA_NODE_LACK.add(key);
+    private static void tryAlert(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dbInstanceId) {
+        String key = "dbInstance[" + dbGroupName + "." + dbInstanceName + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
+        if (ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupName + "-" + dbInstanceName);
+            labels.put("sharding_node", shardingNode);
+            AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dbInstanceId, labels);
+            ToResolveContainer.SHARDING_NODE_LACK.add(key);
         }
     }
 }

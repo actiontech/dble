@@ -187,7 +187,7 @@ public final class FilterPusher {
         List<Item> rightCopyedPushFilters = new LinkedList<>();
         List<Item> dnfNodeToCurrent = new LinkedList<>();
 
-        PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
+        PlanUtil.findJoinColumnsAndRemoveIt(dnfNodeToPush, jn);
         for (Item filter : dnfNodeToPush) {
             // ex. 1 = -1
             if (filter.getReferTables().size() == 0) {

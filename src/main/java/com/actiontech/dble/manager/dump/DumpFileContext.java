@@ -1,9 +1,9 @@
 package com.actiontech.dble.manager.dump;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.manager.dump.handler.DefaultHandler;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,17 +14,16 @@ import java.util.Set;
  */
 public final class DumpFileContext {
 
-    // current schema
+    // current sharding
     private String schema;
-    private String defaultDataNode;
-    private Set<String> allDataNodes;
+    private String defaultShardingNode;
+    private Set<String> allShardingNodes;
 
     // current table
     private String table;
-    private TableConfig tableConfig;
+    private BaseTableConfig tableConfig;
     private int partitionColumnIndex = -1;
     private int incrementColumnIndex = -1;
-    private DefaultHandler.TableType tableType = null;
 
     // other
     private boolean isSkip = false;
@@ -49,15 +48,15 @@ public final class DumpFileContext {
             throw new DumpException("schema[" + schema + "] doesn't exist in config.");
         }
         this.schema = schema;
-        this.defaultDataNode = schemaConfig.getDataNode();
-        this.allDataNodes = schemaConfig.getAllDataNodes();
+        this.defaultShardingNode = schemaConfig.getShardingNode();
+        this.allShardingNodes = schemaConfig.getAllShardingNodes();
         this.table = null;
     }
 
     void setDefaultSchema(SchemaConfig schemaConfig) {
         this.schema = schemaConfig.getName();
-        this.defaultDataNode = schemaConfig.getDataNode();
-        this.allDataNodes = schemaConfig.getAllDataNodes();
+        this.defaultShardingNode = schemaConfig.getShardingNode();
+        this.allShardingNodes = schemaConfig.getAllShardingNodes();
     }
 
     public boolean isSkipContext() {
@@ -69,8 +68,8 @@ public final class DumpFileContext {
     }
 
 
-    public String getDefaultDataNode() {
-        return defaultDataNode;
+    public String getDefaultShardingNode() {
+        return defaultShardingNode;
     }
 
     public String getTable() {
@@ -94,33 +93,20 @@ public final class DumpFileContext {
             throw new DumpException("Can't tell which schema the table[" + table + "] belongs to.");
         }
         this.tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table);
-        if (this.tableConfig == null && this.defaultDataNode == null) {
+        if (this.tableConfig == null && this.defaultShardingNode == null) {
             throw new DumpException("schema " + schema + " has no default node.");
         }
-        if (this.tableConfig != null && this.tableConfig.getParentTC() != null) {
+        if (this.tableConfig != null && this.tableConfig instanceof ChildTableConfig) {
             throw new DumpException("can't process child table, skip.");
         }
-        if (this.tableConfig != null) {
-            if (tableConfig.getPartitionColumn() != null) {
-                this.tableType = DefaultHandler.TableType.SHARDING;
-                return;
-            } else if (tableConfig.isAutoIncrement()) {
-                this.tableType = DefaultHandler.TableType.INCREMENT;
-                return;
-            }
-        }
-        this.tableType = DefaultHandler.TableType.DEFAULT;
+
     }
 
-    public DefaultHandler.TableType getTableType() {
-        return tableType;
-    }
-
-    public TableConfig getTableConfig() {
+    public BaseTableConfig getTableConfig() {
         return tableConfig;
     }
 
-    public void setTableConfig(TableConfig tableConfig) {
+    public void setTableConfig(BaseTableConfig tableConfig) {
         this.tableConfig = tableConfig;
     }
 
@@ -164,8 +150,8 @@ public final class DumpFileContext {
         return config;
     }
 
-    public Set<String> getAllDataNodes() {
-        return allDataNodes;
+    public Set<String> getAllShardingNodes() {
+        return allShardingNodes;
     }
 
 }

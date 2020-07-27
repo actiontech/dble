@@ -6,70 +6,113 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
+import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.sqlengine.SQLJob;
-import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
+import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
+import com.google.common.collect.ImmutableList;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
-abstract class DruidInsertReplaceParser extends DefaultDruidParser {
-    static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal, SchemaInfo schemaInfo)
-            throws SQLNonTransientException {
-        if (tc.getDirectRouteTC() != null) {
-            ColumnRoute columnRoute = new ColumnRoute(joinKeyVal);
-            checkDefaultValues(joinKeyVal, tc, schemaInfo.getSchema(), tc.getJoinKey());
-            Set<String> dataNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
-            if (dataNodeSet.size() != 1) {
-                throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + dataNodeSet.size());
-            }
-            String dn = dataNodeSet.iterator().next();
-            if (SQLJob.LOGGER.isDebugEnabled()) {
-                SQLJob.LOGGER.debug("found partion node (using parent partition rule directly) for child table to insert  " + dn + " sql :" + rrs.getStatement());
-            }
-            return RouterUtil.routeToSingleNode(rrs, dn);
-        }
-        return null;
-    }
+abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
+    static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `INSERT ... SELECT Syntax` is not supported!";
 
     /**
-     * check if the column is not null and the
+     * The insert/replace .... select route function interface
+     * check the insert table config and category discussion with
+     * + single node table
+     * + sharding table
+     * + multi-node global table
+     *
+     * @param sc
+     * @param rrs
+     * @param stmt
+     * @param visitor
+     * @param schemaInfo
+     * @throws SQLException
      */
-    static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
-        if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
-            TableMeta meta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
-            for (TableMeta.ColumnMeta columnMeta : meta.getColumns()) {
-                if (!columnMeta.isCanNull()) {
-                    if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
-                        String msg = "Sharding column can't be null when the table in MySQL column is not null";
-                        LOGGER.info(msg);
-                        throw new SQLNonTransientException(msg);
-                    }
-                }
+    protected void tryRouteInsertQuery(ServerConnection sc, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
+        // insert into .... select ....
+        SQLSelect select = acceptVisitor(stmt, visitor);
+
+        String tableName = schemaInfo.getTable();
+        SchemaConfig schema = schemaInfo.getSchemaConfig();
+        BaseTableConfig tc = schema.getTables().get(tableName);
+
+        Collection<String> routeShardingNodes;
+
+
+        for (String selectTable : visitor.getSelectTableList()) {
+            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
+                throw new SQLNonTransientException(msg);
             }
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfox.getSchema()));
         }
+        rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+
+
+        boolean isGlobal = false;
+        if (tc == null || tc instanceof SingleTableConfig) {
+            //only require when all the table and the route condition route to same node
+            Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
+            ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
+            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
+            routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
+            //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
+        } else if (tc instanceof GlobalTableConfig) {
+            isGlobal = true;
+            routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
+        } else if (tc instanceof ShardingTableConfig) {
+            routeShardingNodes = checkForShardingTable(visitor, select, sc, rrs, (ShardingTableConfig) tc, schemaInfo, stmt, schema);
+        } else {
+            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
+        }
+
+        //finally route for the result
+        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal);
+
+        String sql = rrs.getStatement();
+        for (Pair<String, String> table : ctx.getTables()) {
+            String schemaName = table.getKey();
+            sql = RouterUtil.removeSchema(sql, schemaName);
+        }
+        rrs.setStatement(sql);
+
+        rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
+    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -77,6 +120,9 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         } else if (valueExpr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             shardingValue = charExpr.getText();
+        } else if (valueExpr instanceof SQLHexExpr) {
+            SQLHexExpr hexExpr = (SQLHexExpr) valueExpr;
+            shardingValue = HexFormatUtil.fromHex(hexExpr.getHex(), CharsetUtil.getJavaCharset(clientCharset));
         }
 
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
@@ -142,19 +188,19 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     }
 
 
-    void fetchChildTableToRoute(TableConfig tc, String joinKeyVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
+    void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             //get child result will be blocked, so use ComplexQueryExecutor
             @Override
             public void run() {
-                // route by sql query root parent's data node
-                String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
+                // route by sql query root parent's shardingNode
+                String findRootTBSql = tc.getLocateRTableKeySql() + joinColumnVal;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                 }
                 FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
                 try {
-                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
+                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getShardingNodes());
                     if (dn == null) {
                         sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
                         return;
@@ -174,5 +220,10 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
                 }
             }
         });
+    }
+
+    @Override
+    String getErrorMsg() {
+        return MODIFY_SQL_NOT_SUPPORT_MESSAGE;
     }
 }

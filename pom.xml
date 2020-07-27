@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ Copyright (C) 2016-2020 ActionTech.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
@@ -19,23 +19,17 @@
         <app.encoding>UTF-8</app.encoding>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
-        <config.version>3.0</config.version>
-        <server.comment>dble Server (ActionTech)</server.comment>
+        <config.version>4.0</config.version>
         <project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>
-        <grpc.version>1.4.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
+        <grpc.version>1.5.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
     </properties>
     <repositories>
         <repository>
             <id>repo1</id>
             <name>Maven Repository Switchboard</name>
             <url>https://repo1.maven.org/maven2/</url>
-        </repository>
-        <repository>
-            <id>repo2</id>
-            <name>Human Readable Name for this Mirror.</name>
-            <url>https://repo2.maven.org/maven2/</url>
         </repository>
         <repository>
             <id>jenkins</id>
@@ -50,11 +44,6 @@
             <url>https://repo1.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
-            <id>repo2</id>
-            <name>Human Readable Name for this Mirror.</name>
-            <url>https://repo2.maven.org/maven2/</url>
-        </pluginRepository>
-        <pluginRepository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
             <url>https://repo.jenkins-ci.org/releases/</url>
@@ -62,11 +51,6 @@
     </pluginRepositories>
 
     <dependencies>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>2.6.1</version>
-        </dependency>
         <dependency>
             <groupId>org.iq80.leveldb</groupId>
             <artifactId>leveldb</artifactId>
@@ -80,7 +64,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <version>24.1.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -96,6 +80,10 @@
                     <groupId>c3p0</groupId>
                     <artifactId>c3p0</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -109,6 +97,12 @@
             <artifactId>ehcache-core</artifactId>
             <version>2.6.11</version>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mapdb</groupId>
@@ -212,12 +206,24 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
-            <version>2.11.0</version>
+            <version>4.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-recipes</artifactId>
-            <version>2.11.0</version>
+            <version>4.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
@@ -229,12 +235,26 @@
                     <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.62</version>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- joda time execute time -->
         <dependency>
@@ -293,11 +313,16 @@
             <testResource>
                 <directory>src/test/resources</directory>
                 <excludes>
-                    <exclude>**/.svn/**</exclude>
-                    <exclude>rule_template.xml</exclude>
-                    <exclude>schema_template.xml</exclude>
-                    <exclude>server_template.xml</exclude>
+                    <exclude>*_template.xml</exclude>
                 </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>*_template.xml</include>
+                    <include>*.dtd</include>
+                    <include>*.txt</include>
+                </includes>
             </testResource>
         </testResources>
         <pluginManagement>
@@ -426,22 +451,6 @@
                                     <token>@config_version@</token>
                                     <value>${config.version}</value>
                                 </replacement>
-                                <replacement>
-                                    <token>@version-comment@</token>
-                                    <value>${server.comment}</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@annotation-name@</token>
-                                    <value>dble:</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@root_prefix@</token>
-                                    <value>dble</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@domain@</token>
-                                    <value>http://dble.cloud/</value>
-                                </replacement>
                             </replacements>
                         </configuration>
                     </execution>
@@ -512,7 +521,7 @@
                 <artifactId>appassembler-maven-plugin</artifactId>
                 <version>1.7</version>
                 <configuration>
-                    <configurationDirectory>conf</configurationDirectory>
+                    <configurationDirectory>bin</configurationDirectory>
                     <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
@@ -527,34 +536,7 @@
                             <platforms>
                                 <platform>jsw</platform>
                             </platforms>
-                            <jvmSettings>
-                                <!-- 启动内存配置 -->
-                                <maxStackSize>128</maxStackSize>
-                                <systemProperties>
-                                    <systemProperty>DBLE_HOME=.</systemProperty>
-                                </systemProperties>
-                                <extraArguments>
-                                    <extraArgument>-server</extraArgument>
-                                    <extraArgument>-XX:+AggressiveOpts</extraArgument>
-                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
-                                    <!-- 远程JMX -->
-                                    <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.host=127.0.0.1</extraArgument>
-                                    <extraArgument>-Xmx4G</extraArgument>
-                                    <extraArgument>-Xms1G</extraArgument>
-                                    <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
-                                    <extraArgument>-XX:+PrintHeapAtGC</extraArgument>
-                                    <extraArgument>-XX:+PrintGCDateStamps</extraArgument>
-                                    <extraArgument>-Xloggc:./logs/gc_%t_%p.log</extraArgument>
-                                    <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
-                                    <extraArgument>-XX:+PrintGCDetails</extraArgument>
-                                    <extraArgument>-XX:+HeapDumpOnOutOfMemoryError</extraArgument>
-                                    <extraArgument>-XX:HeapDumpPath=./logs/</extraArgument>
-                                </extraArguments>
-                            </jvmSettings>
+
                             <generatorConfigurations>
                                 <generatorConfiguration>
                                     <generator>jsw</generator>
@@ -564,6 +546,10 @@
                                     </includes>
 
                                     <configuration>
+                                        <property>
+                                            <name>wrapper.java.additional_file</name>
+                                            <value>conf/bootstrap.cnf</value>
+                                        </property>
                                         <property>
                                             <name>configuration.directory.in.classpath.first</name>
                                             <value>conf</value>

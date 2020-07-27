@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
@@ -32,9 +32,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     private final boolean autocommit;
     private volatile int fieldCounts = -1;
-
-
-    private RouteResultsetNode rrss;
+    private final RouteResultsetNode rrss;
 
 
     public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, NonBlockingSession session) {
@@ -54,9 +52,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
             exeConn.setResponseHandler(this);
             return exeConn;
         } else {
-            PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
+            ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(rrss.getName());
             //autocommit is session.getWriteSource().isAutocommit() && !session.getWriteSource().isTxStart()
-            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, rrss.getRunOnSlave(), rrss);
+            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), rrss.getRunOnSlave(), rrss);
             session.bindConnection(rrss, newConn);
             newConn.setResponseHandler(this);
             ((MySQLConnection) newConn).setRowDataFlowing(true);
@@ -140,7 +138,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
      * thread status is running.
      */
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         if (terminate.get())
             return;
         String errMsg;
@@ -149,8 +147,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else if (e instanceof NullPointerException) {
             errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
         } else {
-            LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
-            errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+            RouteResultsetNode node = (RouteResultsetNode) attachment;
+            errMsg = "can't connect to shardingNode[" + node.getName() + "],due to " + e.getMessage();
+            LOGGER.warn(errMsg);
         }
         session.onQueryError(errMsg.getBytes());
     }
@@ -160,7 +159,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         LOGGER.warn(conn.toString() + "|connectionClose()|" + reason);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         session.onQueryError(reason.getBytes());
     }

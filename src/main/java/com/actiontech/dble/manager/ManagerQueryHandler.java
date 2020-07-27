@@ -22,12 +22,15 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
     private static final int SHIFT = 8;
     private final ManagerConnection source;
 
+    private Boolean readOnly = true;
+
     public ManagerQueryHandler(ManagerConnection source) {
         this.source = source;
     }
 
     @Override
     public void setReadOnly(Boolean readOnly) {
+        this.readOnly = readOnly;
     }
 
     @Override
@@ -38,10 +41,17 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         ManagerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(String.valueOf(c) + sql);
+            LOGGER.debug(c + sql);
         }
+
+        source.setExecuteSql(sql);
         int rs = ManagerParse.parse(sql);
-        switch (rs & 0xff) {
+        int sqlType = rs & 0xff;
+        if (readOnly && sqlType != ManagerParse.SELECT && sqlType != ManagerParse.SHOW) {
+            c.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");
+            return;
+        }
+        switch (sqlType) {
             case ManagerParse.SELECT:
                 SelectHandler.handle(sql, c, rs >>> SHIFT);
                 break;
@@ -109,8 +119,8 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.RELEASE_RELOAD_METADATA:
                 ReleaseReloadMetadata.execute(c);
                 break;
-            case ManagerParse.DATAHOST:
-                DataHostHandler.handle(sql, c);
+            case ManagerParse.DB_GROUP:
+                DbGroupHAHandler.handle(sql, c);
                 break;
             case ManagerParse.SPLIT:
                 c.skipIdleCheck(true);

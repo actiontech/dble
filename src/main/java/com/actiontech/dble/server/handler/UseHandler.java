@@ -7,12 +7,11 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.net.handler.FrontendPrivileges;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Set;
 
 /**
  * @author mycat
@@ -37,28 +36,24 @@ public final class UseHandler {
                 schema = schema.toLowerCase();
             }
         }
-        FrontendPrivileges privileges = c.getPrivileges();
-        if (schema == null || !privileges.schemaExists(schema)) {
+        if (!DbleServer.getInstance().getConfig().getSchemas().containsKey(schema)) {
             c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
             return;
         }
-        String user = c.getUser();
-        if (!privileges.userExists(user, c.getHost())) {
-            c.writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + c.getUser() + "'");
-            return;
+        if (c.getUserConfig() instanceof ShardingUserConfig) {
+            ShardingUserConfig userConfig = (ShardingUserConfig) (c.getUserConfig());
+            if (!userConfig.getSchemas().contains(schema)) {
+                String msg = "Access denied for user '" + c.getUser() + "' to database '" + schema + "'";
+                c.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
+                return;
+            }
         }
-        Set<String> schemas = privileges.getUserSchemas(user);
-        if (schemas == null || schemas.size() == 0 || schemas.contains(schema)) {
-            c.setSchema(schema);
-            ByteBuffer buffer = c.allocate();
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.getSession2().setRowCount(0);
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), buffer));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
-        } else {
-            String msg = "Access denied for user '" + c.getUser() + "' to database '" + schema + "'";
-            c.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
-        }
+        c.setSchema(schema);
+        ByteBuffer buffer = c.allocate();
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+        c.getSession2().setRowCount(0);
+        c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), buffer));
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
     }
 
 }

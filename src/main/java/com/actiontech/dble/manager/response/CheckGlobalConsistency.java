@@ -5,8 +5,9 @@ import com.actiontech.dble.backend.datasource.check.GlobalCheckJob;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -16,7 +17,10 @@ import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -56,7 +60,7 @@ public final class CheckGlobalConsistency {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ERROR_NODE_NUMBER", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -90,29 +94,29 @@ public final class CheckGlobalConsistency {
                 if (table != null) {
                     String[] tables = table.split(",");
                     for (String singleTable : tables) {
-                        TableConfig config = sc.getTables().get(singleTable);
-                        if (config == null || !config.isGlobalTable() || !config.isGlobalCheck()) {
+                        BaseTableConfig config = sc.getTables().get(singleTable);
+                        if (config == null || !(config instanceof GlobalTableConfig) || !((GlobalTableConfig) config).isGlobalCheck()) {
                             con.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "tables must exist and must be global table with global check");
                             return;
                         } else {
-                            jobs.add(new GlobalCheckJob(config, schema, consistencyCheck));
+                            jobs.add(new GlobalCheckJob((GlobalTableConfig) config, schema, consistencyCheck));
                         }
                     }
                 } else {
-                    for (Map.Entry<String, TableConfig> te : sc.getTables().entrySet()) {
-                        TableConfig config = te.getValue();
-                        if (config.isGlobalTable() && config.isGlobalCheck()) {
-                            jobs.add(new GlobalCheckJob(config, schema, consistencyCheck));
+                    for (Map.Entry<String, BaseTableConfig> te : sc.getTables().entrySet()) {
+                        BaseTableConfig config = te.getValue();
+                        if ((config instanceof GlobalTableConfig) && ((GlobalTableConfig) config).isGlobalCheck()) {
+                            jobs.add(new GlobalCheckJob((GlobalTableConfig) config, schema, consistencyCheck));
                         }
                     }
                 }
             }
         } else {
             for (Map.Entry<String, SchemaConfig> se : schemaConfigs.entrySet()) {
-                for (Map.Entry<String, TableConfig> te : se.getValue().getTables().entrySet()) {
-                    TableConfig config = te.getValue();
-                    if (config.isGlobalTable() && config.isGlobalCheck()) {
-                        jobs.add(new GlobalCheckJob(config, se.getKey(), consistencyCheck));
+                for (Map.Entry<String, BaseTableConfig> te : se.getValue().getTables().entrySet()) {
+                    BaseTableConfig config = te.getValue();
+                    if ((config instanceof GlobalTableConfig) && ((GlobalTableConfig) config).isGlobalCheck()) {
+                        jobs.add(new GlobalCheckJob((GlobalTableConfig) config, se.getKey(), consistencyCheck));
                     }
                 }
             }
@@ -176,11 +180,7 @@ public final class CheckGlobalConsistency {
     public void collectResult(String schema, String table, int distinctNo, int errorNo) {
         lock.lock();
         try {
-            List<ConsistencyResult> list = resultMap.get(schema);
-            if (list == null) {
-                list = Collections.synchronizedList(new ArrayList<ConsistencyResult>());
-                resultMap.put(schema, list);
-            }
+            List<ConsistencyResult> list = resultMap.computeIfAbsent(schema, k -> Collections.synchronizedList(new ArrayList<>()));
             list.add(new ConsistencyResult(table, distinctNo, errorNo));
         } finally {
             lock.unlock();

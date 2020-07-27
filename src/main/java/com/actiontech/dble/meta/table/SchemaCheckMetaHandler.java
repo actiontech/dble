@@ -9,7 +9,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
@@ -22,7 +22,7 @@ import java.util.Set;
 /**
  * Created by szf on 2019/4/4.
  * Only used to table schedule structure check
- * Get latest meta from all dataNode and just check whether the table meta is the same
+ * Get latest meta from all shardingNode and just check whether the table meta is the same
  */
 public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaCheckMetaHandler.class);

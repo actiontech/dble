@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.backend.mysql.xa;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public final class XAStateLog {
     private static final Repository FILE_REPOSITORY;
 
     static {
-        if (ClusterGeneralConfig.isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode()) {
             FILE_REPOSITORY = new KVStoreRepository();
         } else {
             FILE_REPOSITORY = new FileSystemRepository();
@@ -59,7 +59,7 @@ public final class XAStateLog {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         coordinatorLogEntry.setTxState(sessionState);
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
-        if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             return true;
         }
         //will preparing, may success send but failed received,should be rollback
@@ -137,7 +137,7 @@ public final class XAStateLog {
                             logs.add(log);
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {

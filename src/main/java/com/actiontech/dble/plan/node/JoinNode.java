@@ -6,7 +6,7 @@
 package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -16,6 +16,7 @@ import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEq
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
@@ -90,11 +91,33 @@ public class JoinNode extends PlanNode {
     }
 
     @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        if (columnsSelected.size() > index) {
+            Item sourceColumns = columnsSelected.get(index);
+            for (PlanNode pn : this.getChildren()) {
+                if ((pn.getAlias() != null && pn.getAlias().equals(sourceColumns.getTableName())) ||
+                        (pn.getAlias() == null && pn.getPureName().equals(sourceColumns.getTableName()))) {
+                    for (int i = 0; i < pn.columnsSelected.size(); i++) {
+                        Item cSelected = pn.columnsSelected.get(i);
+                        if (cSelected.getAlias() != null && cSelected.getAlias().equalsIgnoreCase(sourceColumns.getItemName())) {
+                            return pn.findFieldSourceFromIndex(i);
+                        } else if (cSelected.getAlias() == null && cSelected.getItemName().equalsIgnoreCase(sourceColumns.getItemName())) {
+                            return pn.findFieldSourceFromIndex(i);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+
+    @Override
     public void setUpFields() {
         super.setUpFields();
         buildJoinFilters();
         buildOtherJoinOn();
-        buildJoinKeys(false);
+        buildJoinColumns(false);
     }
 
     @Override
@@ -275,14 +298,14 @@ public class JoinNode extends PlanNode {
      *
      * @param clearName if true:clear filter's itemname,else keep
      */
-    private void buildJoinKeys(boolean clearName) {
+    private void buildJoinColumns(boolean clearName) {
         Iterator<ItemFuncEqual> iterator = joinFilter.iterator();
         while (iterator.hasNext()) {
             ItemFuncEqual bf = iterator.next();
             if (clearName)
                 bf.setItemName(null);
-            boolean isJoinKey = PlanUtil.isJoinKey(bf, this);
-            if (!isJoinKey) {
+            boolean isJoinColumn = PlanUtil.isJoinColumn(bf, this);
+            if (!isJoinColumn) {
                 otherJoinOnFilter = FilterUtils.and(otherJoinOnFilter, bf);
                 iterator.remove();
             }
@@ -305,7 +328,7 @@ public class JoinNode extends PlanNode {
         return rightKeys;
     }
 
-    public JoinNode addJoinKeys(Item leftKey, Item rightKey) {
+    public JoinNode addJoinColumns(Item leftKey, Item rightKey) {
         this.joinFilter.add(FilterUtils.equal(leftKey, rightKey));
         return this;
     }
@@ -372,7 +395,7 @@ public class JoinNode extends PlanNode {
         this.leftOuter = this.rightOuter;
         this.rightOuter = tmpOuter;
 
-        this.buildJoinKeys(true);
+        this.buildJoinColumns(true);
 
     }
 

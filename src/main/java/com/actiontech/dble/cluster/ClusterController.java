@@ -5,15 +5,18 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.util.ParameterMapping;
+import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.util.ResourceUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 /**
@@ -23,75 +26,62 @@ public final class ClusterController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterController.class);
 
-    public static final String CONFIG_FILE_NAME = "/myid.properties";
+    public static final String CONFIG_FILE_NAME = "/cluster.cnf";
     public static final String CONFIG_MODE_UCORE = "ucore";
     public static final String CONFIG_MODE_USHARD = "ushard";
     public static final String CONFIG_MODE_ZK = "zk";
-    public static final String CONFIG_MODE_SINGLE = "false";
     public static final String CONFIG_MODE_CUSTOMIZATION = "customization";
 
     public static final int GRPC_SUBTIMEOUT = 70;
     public static final int GENERAL_GRPC_TIMEOUT = 10;
 
-
-    private static Properties properties = null;
-
     private ClusterController() {
     }
 
-    public static ClusterGeneralConfig init() {
-        //read from myid.properties to tall use zk or ucore
-        try {
-            properties = loadMyidPropersites();
-            ClusterGeneralConfig clusterGeneralConfig = ClusterGeneralConfig.initConfig(properties);
-            ClusterGeneralConfig.initData(properties);
-            return clusterGeneralConfig;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    public static void init() {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            //read from cluster.cnf to tall use zk or ucore
+            try {
+                ClusterGeneralConfig.initConfig();
+                ClusterGeneralConfig.initData();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            LOGGER.info("No Cluster Config .......start in single mode");
         }
     }
 
-    public static void initFromShellUcore() {
-        properties = loadMyidPropersites();
-        ClusterGeneralConfig.initConfig(properties);
-        ClusterGeneralConfig.getInstance().getClusterSender().checkClusterConfig(properties);
-        ClusterGeneralConfig.getInstance().getClusterSender().initConInfo(properties);
-    }
 
-    public static void initFromShellZK() {
-        properties = loadMyidPropersites();
-        checkClusterMode(CONFIG_MODE_ZK);
-        ZkConfig.setZkProperties(properties);
-    }
-
-
-    private static Properties loadMyidPropersites() {
+    public static void loadClusterProperties() throws InvocationTargetException, IllegalAccessException {
         Properties pros = new Properties();
 
         try (InputStream configIS = ResourceUtil.getResourceAsStream(CONFIG_FILE_NAME)) {
             if (configIS == null) {
-                return pros;
+                LOGGER.warn(CONFIG_FILE_NAME + " is not exists");
             }
             pros.load(configIS);
         } catch (IOException e) {
-            LOGGER.error("ClusterController LoadMyidPropersites error:", e);
+            LOGGER.error("ClusterController load " + CONFIG_FILE_NAME + " error:", e);
         }
+        ClusterConfig clusterConfig = ClusterConfig.getInstance();
 
-        //check if the
-        if (!CONFIG_MODE_SINGLE.equalsIgnoreCase(pros.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            if (Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey())) ||
-                    Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_CFG_CLUSTERID.getKey())) ||
-                    Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_CFG_MYID.getKey()))) {
-                throw new RuntimeException("Cluster Config is not completely set");
+        ParameterMapping.mapping(clusterConfig, pros, StartProblemReporter.getInstance());
+        if (pros.size() > 0) {
+            String[] propItem = new String[pros.size()];
+            pros.keySet().toArray(propItem);
+            StartProblemReporter.getInstance().addError("These properties in cluster.cnf are not recognized: " + StringUtil.join(propItem, ","));
+        }
+        if (clusterConfig.isClusterEnable()) {
+            if (Strings.isNullOrEmpty(clusterConfig.getClusterIP())) {
+                StartProblemReporter.getInstance().addError("clusterIP need to set in cluster.cnf when clusterEnable is true");
             }
-        }
-        return pros;
-
-    }
-
-    private static void checkClusterMode(String clusterMode) {
-        if (!clusterMode.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            throw new RuntimeException("Cluster mode is not " + clusterMode);
+            if (Strings.isNullOrEmpty(clusterConfig.getClusterId())) {
+                StartProblemReporter.getInstance().addError("clusterId need to set in cluster.cnf when clusterEnable is true");
+            }
+            if (Strings.isNullOrEmpty(clusterConfig.getRootPath())) {
+                StartProblemReporter.getInstance().addError("rootPath need to set in cluster.cnf when clusterEnable is true");
+            }
         }
     }
 

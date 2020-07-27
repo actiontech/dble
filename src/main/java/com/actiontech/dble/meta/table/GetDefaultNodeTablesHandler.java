@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -19,7 +19,7 @@ public class GetDefaultNodeTablesHandler extends GetNodeTablesHandler {
     private SchemaConfig config;
 
     GetDefaultNodeTablesHandler(SchemaConfig config) {
-        super(config.getDataNode(), !config.isNoSharding());
+        super(config.getShardingNode(), !config.isNoSharding());
         this.config = config;
     }
 

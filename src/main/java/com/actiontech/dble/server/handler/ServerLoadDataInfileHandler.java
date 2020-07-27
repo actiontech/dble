@@ -8,9 +8,12 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
@@ -44,7 +47,6 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,9 +76,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean isHasStoreToFile = false;
 
     private SchemaConfig schema;
-    private final SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
+    private final SystemConfig systemConfig = SystemConfig.getInstance();
     private String tableName;
-    private TableConfig tableConfig;
+    private BaseTableConfig tableConfig;
     private int partitionColumnIndex = -1;
     private int autoIncrementIndex = -1;
     private boolean appendAutoIncrementColumn = false;
@@ -147,7 +149,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        // if there are schema in sql, remove it.
+        // if there are sharding in sql, remove it.
         if (statement.getTableName() instanceof SQLPropertyExpr) {
             statement.setTableName(new SQLIdentifierExpr(tableName));
         }
@@ -167,7 +169,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
+        tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
@@ -175,18 +177,22 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        if (tableConfig != null && tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
-            final String incrementColumn = tableConfig.getIncrementColumn();
-            statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
-            autoIncrementIndex = statement.getColumns().size() - 1;
-            appendAutoIncrementColumn = true;
-            sql = SQLUtils.toMySqlString(statement);
-            if (incrementColumn.equalsIgnoreCase(getPartitionColumn())) {
-                partitionColumnIndex = autoIncrementIndex;
+        if (tableConfig != null && autoIncrementIndex == -1) {
+            final String incrementColumn = getIncrementColumn();
+            if (incrementColumn != null) {
+                statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
+                autoIncrementIndex = statement.getColumns().size() - 1;
+                appendAutoIncrementColumn = true;
+                sql = SQLUtils.toMySqlString(statement);
+                if (incrementColumn.equalsIgnoreCase(getPartitionColumn())) {
+                    partitionColumnIndex = autoIncrementIndex;
+                }
             }
         }
 
-        if (tableConfig != null && tableConfig.getPartitionColumn() != null && partitionColumnIndex == -1) {
+        if (tableConfig != null &&
+                (tableConfig instanceof ShardingTableConfig || tableConfig instanceof ChildTableConfig) &&
+                partitionColumnIndex == -1) {
             serverConnection.writeErrMessage(ErrorCode.ER_KEY_COLUMN_DOES_NOT_EXITS, "can't find partition column.");
             clear();
             return;
@@ -241,19 +247,18 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
      * findout the index of the partition key
      */
     private boolean trySetPartitionOrAutoIncrementColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
-        if (tableConfig != null) {
+        if (tableConfig != null && (tableConfig instanceof ShardingTableConfig || tableConfig instanceof ChildTableConfig)) {
             List<SQLExpr> columns = sqlStatement.getColumns();
             String pColumn = getPartitionColumn();
-            boolean autoIncrement = tableConfig.isAutoIncrement();
-            if (pColumn != null || autoIncrement) {
-                String incrementColumn = tableConfig.getIncrementColumn();
+            String incrementColumn = getIncrementColumn();
+            if (pColumn != null || incrementColumn != null) {
                 if (columns != null && columns.size() > 0) {
                     for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
                         String column = StringUtil.removeBackQuote(columns.get(i).toString());
                         if (column.equalsIgnoreCase(pColumn)) {
                             partitionColumnIndex = i;
                         }
-                        if (autoIncrement && column.equalsIgnoreCase(incrementColumn)) {
+                        if (incrementColumn != null && column.equalsIgnoreCase(incrementColumn)) {
                             autoIncrementIndex = i;
                         }
                     }
@@ -266,7 +271,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                                 if (column.equalsIgnoreCase(pColumn)) {
                                     partitionColumnIndex = i;
                                 }
-                                if (autoIncrement && column.equalsIgnoreCase(incrementColumn)) {
+                                if (incrementColumn != null && column.equalsIgnoreCase(incrementColumn)) {
                                     autoIncrementIndex = i;
                                 }
                             }
@@ -320,12 +325,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private RouteResultset tryDirectRoute(String strSql, String[] lineList) throws SQLException {
         RouteResultset rrs = new RouteResultset(strSql, ServerParse.INSERT);
         rrs.setLoadData(true);
-        if (tableConfig != null && tableConfig.isGlobalTable()) {
-            ArrayList<String> dataNodes = tableConfig.getDataNodes();
-            RouteResultsetNode[] rrsNodes = new RouteResultsetNode[dataNodes.size()];
-            for (int i = 0, dataNodesSize = dataNodes.size(); i < dataNodesSize; i++) {
-                String dataNode = dataNodes.get(i);
-                RouteResultsetNode rrNode = new RouteResultsetNode(dataNode, ServerParse.INSERT, strSql);
+        if (tableConfig != null && tableConfig instanceof GlobalTableConfig) {
+            List<String> shardingNodes = tableConfig.getShardingNodes();
+            RouteResultsetNode[] rrsNodes = new RouteResultsetNode[shardingNodes.size()];
+            for (int i = 0, shardingNodesSize = shardingNodes.size(); i < shardingNodesSize; i++) {
+                String shardingNode = shardingNodes.get(i);
+                RouteResultsetNode rrNode = new RouteResultsetNode(shardingNode, ServerParse.INSERT, strSql);
                 rrsNodes[i] = rrNode;
             }
             rrs.setGlobalTable(true);
@@ -441,6 +446,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
+            serverConnection.updateLastReadTime();
             data.setData(null);
         }
     }
@@ -485,7 +491,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
         rrs.setFinishedRoute(true);
-        rrs.setGlobalTable(tableConfig != null && this.tableConfig.isGlobalTable());
+        rrs.setGlobalTable(tableConfig != null && tableConfig instanceof GlobalTableConfig);
+
         int size = routeMap.size();
         RouteResultsetNode[] routeResultsetNodes = new RouteResultsetNode[size];
         int index = 0;
@@ -793,15 +800,24 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private String getPartitionColumn() {
-        String pColumn;
-        if (tableConfig.getParentTC() != null) {
-            pColumn = tableConfig.getJoinKey();
-        } else {
-            pColumn = tableConfig.getPartitionColumn();
+        String pColumn = null;
+        if (tableConfig instanceof ChildTableConfig) {
+            pColumn = ((ChildTableConfig) tableConfig).getJoinColumn();
+        } else if (tableConfig instanceof ShardingTableConfig) {
+            pColumn = ((ShardingTableConfig) tableConfig).getShardingColumn();
         }
         return pColumn;
     }
 
+    private String getIncrementColumn() {
+        String pColumn = null;
+        if (tableConfig instanceof ChildTableConfig) {
+            pColumn = ((ChildTableConfig) tableConfig).getIncrementColumn();
+        } else if (tableConfig instanceof ShardingTableConfig) {
+            pColumn = ((ShardingTableConfig) tableConfig).getIncrementColumn();
+        }
+        return pColumn;
+    }
 
     /**
      * deleteFile and its children

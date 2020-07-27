@@ -44,7 +44,7 @@ public final class SelectSessionTxReadOnly {
         // write rows
         RowDataPacket row = new RowDataPacket(1);
         row.setPacketId(++packetId);
-        row.add(LongUtil.toBytes(0));
+        row.add(LongUtil.toBytes(c.getUserConfig().isReadOnly() ? 1 : 0));
         buffer = row.write(buffer, c, true);
 
         // write last eof

@@ -6,7 +6,7 @@
 package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
@@ -75,7 +75,7 @@ public class ServerMetaHandler {
             SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
             if (filter != null) {
                 multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
+                ReloadLogHelper.infoList("sharding filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
             }
             multiTableMeta.execute();
         }

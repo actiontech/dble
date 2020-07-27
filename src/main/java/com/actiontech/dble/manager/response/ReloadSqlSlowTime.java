@@ -6,6 +6,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.statistic.stat.UserStat;
@@ -27,7 +28,7 @@ public final class ReloadSqlSlowTime {
             return;
         }
 
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             userStat.setSlowTime(time);
         }

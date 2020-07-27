@@ -5,9 +5,9 @@
 */
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.route.handler.HintHandler;
 import com.actiontech.dble.route.handler.HintHandlerFactory;
@@ -54,7 +54,7 @@ public final class RouteService {
         }
 
         /*!dble: sql = select name from aa */
-        /*!dble: schema = test */
+        /*!dble: sharding = test */
         int hintLength = RouteService.isHintSql(stmt);
         if (hintLength != -1) {
             int endPos = stmt.indexOf("*/");
@@ -79,11 +79,11 @@ public final class RouteService {
                     if (hintHandler != null) {
                         if (hintHandler instanceof HintSQLHandler) {
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
-                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, CacheService.getTableId2DataNodeCache(), hintSql, hintSqlType, hintMap);
+                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, hintSql, hintSqlType, hintMap);
                             // HintSQLHandler will always send to master
                             rrs.setRunOnSlave(false);
                         } else {
-                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, CacheService.getTableId2DataNodeCache(), hintSql, sqlType, hintMap);
+                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, hintSql, sqlType, hintMap);
                         }
                     } else {
                         String msg = "Not supported hint sql type : " + hintType;
@@ -97,11 +97,11 @@ public final class RouteService {
                 }
             } else {
                 stmt = stmt.trim();
-                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, CacheService.getTableId2DataNodeCache(), isExplain);
+                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, isExplain);
             }
         } else {
             stmt = stmt.trim();
-            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, CacheService.getTableId2DataNodeCache(), isExplain);
+            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, isExplain);
         }
 
         if (rrs != null && sqlType == ServerParse.SELECT && rrs.isSqlRouteCacheAble() && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null &&

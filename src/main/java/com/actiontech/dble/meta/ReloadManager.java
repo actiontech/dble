@@ -1,6 +1,6 @@
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.cluster.values.ConfStatus;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.sequence;
 
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
 import com.actiontech.dble.route.util.PropertiesUtil;
-import org.junit.Assert;
 import org.apache.curator.test.TestingServer;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +41,8 @@ public class IncrSequenceZKHandlerTest {
         testingServer.start();
         incrSequenceZKHandler = new IncrSequenceZKHandler[MAX_CONNECTION];
         results = new ConcurrentSkipListSet();
+        ClusterConfig.getInstance().setRootPath("/dble");
+        ClusterConfig.getInstance().setClusterId("test");
     }
 
     @Test

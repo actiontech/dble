@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.statistic.stat;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,7 +31,7 @@ public final class QueryTimeCostContainer {
     }
 
     private QueryTimeCostContainer() {
-        this.maxSize = DbleServer.getInstance().getConfig().getSystem().getMaxCostStatSize();
+        this.maxSize = SystemConfig.getInstance().getMaxCostStatSize();
         recorders = new QueryTimeCost[maxSize];
     }
 

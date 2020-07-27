@@ -19,7 +19,7 @@
             <fileMode>0755</fileMode>
             <includes>
                 <include>dble</include>
-                <include>wrapper-linux*</include>
+                <include>wrapper*</include>
             </includes>
         </fileSet>
         <fileSet>

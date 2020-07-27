@@ -1,14 +1,15 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -20,8 +21,8 @@ import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ShowBackend
@@ -52,7 +53,7 @@ public final class ShowBackendStat {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("TOTAL", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -71,7 +72,7 @@ public final class ShowBackendStat {
         HashMap<String, BackendStat> infos = stat();
 
         byte packetId = EOF.getPacketId();
-        for (Map.Entry<String, BackendStat> entry: infos.entrySet()) {
+        for (Map.Entry<String, BackendStat> entry : infos.entrySet()) {
             RowDataPacket row = getRow(entry.getValue(), c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
@@ -93,24 +94,24 @@ public final class ShowBackendStat {
     }
 
     private static HashMap<String, BackendStat> stat() {
-        HashMap<String, BackendStat> all = new HashMap<String, BackendStat>();
+        HashMap<String, BackendStat> all = new HashMap<>();
 
         for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
-                if ((bc == null) || !(bc instanceof MySQLConnection)) {
+                if (!(bc instanceof MySQLConnection)) {
                     break;
                 }
 
                 MySQLConnection con = (MySQLConnection) bc;
                 String host = con.getHost();
                 long port = con.getPort();
-                BackendStat info = all.get(host + Long.toString(port));
+                BackendStat info = all.get(host + port);
                 if (info == null) {
                     info = new BackendStat(host, port);
-                    all.put(host + Long.toString(port), info);
+                    all.put(host + port, info);
                 }
 
-                if (con.isBorrowed()) {
+                if (con.getState() == PooledEntry.STATE_IN_USE) {
                     info.addActive();
                 }
                 info.addTotal();
@@ -132,21 +133,27 @@ public final class ShowBackendStat {
             this.active = 0;
             this.total = 0;
         }
+
         public String getHost() {
             return this.host;
         }
+
         public long getPort() {
             return this.port;
         }
+
         public void addActive() {
             this.active++;
         }
+
         public void addTotal() {
             this.total++;
         }
+
         public long getActive() {
             return this.active;
         }
+
         public long getTotal() {
             return this.total;
         }

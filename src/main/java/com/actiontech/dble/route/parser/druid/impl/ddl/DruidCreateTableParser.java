@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -71,7 +71,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         try {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);
         } catch (SQLException e) {
-            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist in the config of schema";
+            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist in the config of sharding";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
         return schemaInfo.getSchemaConfig();

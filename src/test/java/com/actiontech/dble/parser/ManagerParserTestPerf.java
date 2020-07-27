@@ -23,8 +23,8 @@ public class ManagerParserTestPerf {
 
     public void testPerformanceWhere() {
         for (int i = 0; i < 500000; i++) {
-            ManagerParse.parse(" show  @@datasource where datanode = 1");
-            ManagerParse.parse(" show  @@datanode where schema = 1");
+            ManagerParse.parse(" show  @@datasource where shardingnode = 1");
+            ManagerParse.parse(" show  @@shardingnode where sharding = 1");
         }
     }
 

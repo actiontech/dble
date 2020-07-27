@@ -7,9 +7,9 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -82,7 +82,7 @@ public class DefaultDruidParser implements DruidParser {
         return schemaConfig;
     }
 
-    private Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
+    protected Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
         if (originTableAliasMap == null) {
             return null;
         }
@@ -143,7 +143,7 @@ public class DefaultDruidParser implements DruidParser {
     }
 
 
-    void checkTableExists(TableConfig tc, String schemaName, String tableName, ServerPrivileges.CheckType chekcType) throws SQLException {
+    void checkTableExists(BaseTableConfig tc, String schemaName, String tableName, ShardingPrivileges.CheckType chekcType) throws SQLException {
         if (tc == null) {
             if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
                 String msg = "View '" + schemaName + "." + tableName + "' Not Support " + chekcType;
@@ -161,7 +161,7 @@ public class DefaultDruidParser implements DruidParser {
         }
     }
 
-    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, Set<String> schemas, StringPtr dataNode) {
+    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, Set<String> schemas, StringPtr shardingNode) {
         String statement = rrs.getStatement();
         for (String realSchema : schemas) {
             statement = RouterUtil.removeSchema(statement, realSchema);
@@ -170,16 +170,16 @@ public class DefaultDruidParser implements DruidParser {
             statement = RouterUtil.removeSchema(statement, schema.getName());
         }
         rrs.setStatement(statement);
-        String dataNodeTarget = dataNode.get();
-        if (dataNodeTarget == null) {
+        String shardingNodeTarget = shardingNode.get();
+        if (shardingNodeTarget == null) {
             //no_name node
             if (schema == null) {
                 String db = SchemaUtil.getRandomDb();
                 schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
             }
-            dataNodeTarget = schema.getRandomDataNode();
+            shardingNodeTarget = schema.getRandomShardingNode();
         }
-        RouterUtil.routeToSingleNode(rrs, dataNodeTarget);
+        RouterUtil.routeToSingleNode(rrs, shardingNodeTarget);
         rrs.setFinishedRoute(true);
         return schema;
     }
@@ -209,7 +209,7 @@ public class DefaultDruidParser implements DruidParser {
             }
         }
         if (nodeSet.size() > 1) {
-            throw new SQLNonTransientException("delete/update sharding table with a limit route to multiNode not support");
+            throw new SQLNonTransientException("delete/update schema table with a limit route to multiNode not support");
         } else {
             RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
             int i = 0;

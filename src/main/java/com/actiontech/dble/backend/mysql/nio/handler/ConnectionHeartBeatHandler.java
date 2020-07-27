@@ -6,17 +6,15 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnectionListener;
+import com.actiontech.dble.backend.pool.util.TimerHolder;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * heartbeat check for mysql connections
@@ -24,50 +22,65 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author wuzhih
  */
 public class ConnectionHeartBeatHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionHeartBeatHandler.class);
 
-    protected final ReentrantLock lock = new ReentrantLock();
-    final Condition condition = lock.newCondition();
+    private final Object heartbeatLock;
+    private volatile Timeout heartbeatTimeout;
+    private final BackendConnection conn;
+    private final MySQLConnectionListener listener;
+    private boolean finished = false;
 
-
-    public void doHeartBeat(BackendConnection conn) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("do heartbeat for con " + conn);
-        }
-        lock.lock();
-        try {
-            conn.setResponseHandler(this);
-            MySQLConnection mCon = (MySQLConnection) conn;
-            mCon.write(mCon.writeToBuffer(PingPacket.PING, mCon.allocate()));
-            long validateTime = 2;
-            if (!condition.await(validateTime, TimeUnit.SECONDS)) {
-                //if the thread be waked up by timer than close the connection
-                conn.close("heartbeat timeout ");
-            }
-        } catch (Exception e) {
-            executeException(conn, e);
-        } finally {
-            lock.unlock();
+    public ConnectionHeartBeatHandler(BackendConnection conn, boolean isBlock, MySQLConnectionListener listener) {
+        conn.setResponseHandler(this);
+        this.conn = conn;
+        this.listener = listener;
+        if (isBlock) {
+            this.heartbeatLock = new Object();
+        } else {
+            this.heartbeatLock = null;
         }
     }
 
+    public boolean ping(long timeout) {
+        conn.ping();
+        if (heartbeatLock != null) {
+            synchronized (heartbeatLock) {
+                try {
+                    heartbeatLock.wait(timeout);
+                } catch (InterruptedException e) {
+                    finished = false;
+                }
+            }
+            return finished;
+        } else {
+            heartbeatTimeout = TimerHolder.getTimer().newTimeout(new TimerTask() {
+                @Override
+                public void run(Timeout timeout) throws Exception {
+                    conn.closeWithoutRsp("conn heart timeout");
+                }
+            }, timeout, TimeUnit.MILLISECONDS);
+            return true;
+        }
+    }
 
     /**
      * if the query returns ok than just release the connection
      * and go on check the next one
      *
      * @param ok
-     * @param conn
+     * @param con
      */
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        lock.lock();
-        try {
-            condition.signal();
-            conn.release();
-        } finally {
-            lock.unlock();
+    public void okResponse(byte[] ok, BackendConnection con) {
+        if (heartbeatLock != null) {
+            synchronized (heartbeatLock) {
+                finished = true;
+                heartbeatLock.notifyAll();
+            }
+            return;
         }
+
+        heartbeatTimeout.cancel();
+        listener.onHeartbeatSuccess(con);
     }
 
     /**
@@ -75,84 +88,54 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
      * start the next one
      *
      * @param data
-     * @param conn
+     * @param con
      */
     @Override
-    public void errorResponse(byte[] data, BackendConnection conn) {
-        lock.lock();
-        try {
-            condition.signal();
-            conn.close("heatbeat return error");
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * if the heartbeat throws the Exception than close the connection
-     *
-     * @param c
-     * @param e
-     */
-    private void executeException(BackendConnection c, Throwable e) {
-        lock.lock();
-        try {
-            condition.signal();
-            c.close("heatbeat exception:" + e);
-            LOGGER.info("executeException   ", e);
-        } finally {
-            lock.unlock();
-        }
+    public void errorResponse(byte[] data, BackendConnection con) {
     }
 
     /**
      * if when the query going on the conneciton be closed
      * than just do nothing and go on for next one
      *
-     * @param conn
+     * @param con
      * @param reason
      */
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
-        lock.lock();
-        try {
-            condition.signal();
-            LOGGER.info("connection closed " + conn + " reason:" + reason);
-        } finally {
-            lock.unlock();
-        }
+    public void connectionClose(BackendConnection con, String reason) {
+
     }
 
     /**
      * @param eof
      * @param isLeft
-     * @param conn
+     * @param con
      */
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection con) {
         // not called
     }
 
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, BackendConnection con) {
         // not called
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection con) {
         // not called
         return false;
     }
 
     @Override
-    public void connectionAcquired(BackendConnection conn) {
+    public void connectionAcquired(BackendConnection con) {
         // not called
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         // not called
     }
 }

@@ -52,10 +52,8 @@ public final class ShowServerLog {
     }
 
     private static File getLogFile(String logFile) {
-
-        String homePath = SystemConfig.getHomePath();
-        File file = new File(homePath, "logs" + File.separator + logFile);
-        return file;
+        String homePath = SystemConfig.getInstance().getHomePath();
+        return new File(homePath, "logs" + File.separator + logFile);
     }
 
     public static void handle(String stmt, ManagerConnection c) {
@@ -173,7 +171,7 @@ public final class ShowServerLog {
     private static PackageBufINf showLogSum(ManagerConnection c,
                                             ByteBuffer buffer, byte packetId) {
         PackageBufINf bufINf = new PackageBufINf();
-        File[] logFiles = new File(SystemConfig.getHomePath(), "logs").listFiles();
+        File[] logFiles = new File(SystemConfig.getInstance().getHomePath(), "logs").listFiles();
         StringBuilder fileNames = new StringBuilder();
         if (logFiles != null) {
             for (File f : logFiles) {

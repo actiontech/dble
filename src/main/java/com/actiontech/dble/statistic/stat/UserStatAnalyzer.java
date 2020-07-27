@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.statistic.stat;
 
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.server.parser.ServerParse;
 
 import java.util.Map;
@@ -17,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class UserStatAnalyzer implements QueryResultListener {
 
-    private ConcurrentHashMap<String, UserStat> userStatMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<UserName, UserStat> userStatMap = new ConcurrentHashMap<>();
 
     private static final UserStatAnalyzer INSTANCE = new UserStatAnalyzer();
 
@@ -36,7 +37,7 @@ public final class UserStatAnalyzer implements QueryResultListener {
             case ServerParse.INSERT:
             case ServerParse.DELETE:
             case ServerParse.REPLACE:
-                String user = query.getUser();
+                UserName user = query.getUser();
                 int sqlType = query.getSqlType();
                 String sql = query.getSql();
                 long sqlRows = query.getSqlRows();
@@ -57,8 +58,8 @@ public final class UserStatAnalyzer implements QueryResultListener {
         }
     }
 
-    public Map<String, UserStat> getUserStatMap() {
-        Map<String, UserStat> map = new ConcurrentHashMap<>(userStatMap.size());
+    public Map<UserName, UserStat> getUserStatMap() {
+        Map<UserName, UserStat> map = new ConcurrentHashMap<>(userStatMap.size());
         map.putAll(userStatMap);
         return map;
     }

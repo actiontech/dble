@@ -7,7 +7,7 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorInfo;
@@ -28,13 +28,13 @@ public class SpecialSqlJob extends SQLJob {
 
     private final SQLJobHandler jobHandler;
     private final ResponseHandler sqlJob;
-    private final PhysicalDataSource ds;
+    private final PhysicalDbInstance ds;
     private final String schema;
     private final String sql;
     private final List<ErrorInfo> list;
     private final AtomicBoolean finished;
 
-    public SpecialSqlJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds, List<ErrorInfo> list) {
+    public SpecialSqlJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDbInstance ds, List<ErrorInfo> list) {
         super(sql, schema, jobHandler, ds);
         this.jobHandler = jobHandler;
         this.ds = ds;
@@ -53,7 +53,7 @@ public class SpecialSqlJob extends SQLJob {
                 @Override
                 public void run() {
                     try {
-                        ds.getConnection(schema, true, sqlJob, null, false);
+                        ds.getConnection(schema, sqlJob, null, false);
                     } catch (Exception e) {
                         sqlJob.connectionError(e, null);
                     }
@@ -77,9 +77,9 @@ public class SpecialSqlJob extends SQLJob {
 
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(Throwable e, Object attachment) {
         LOGGER.warn("can't get connection for sql :" + sql, e);
-        list.add(new ErrorInfo("Meta", "WARNING", "Can't get connection for Meta check in dataNode[" + ds.getName() + "." + schema + "]"));
+        list.add(new ErrorInfo("Meta", "WARNING", "Can't get connection for Meta check in shardingNode[" + ds.getName() + "." + schema + "]"));
         doFinished(true);
     }
 
@@ -102,7 +102,7 @@ public class SpecialSqlJob extends SQLJob {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
-        list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get error"));
+        list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get error"));
 
         LOGGER.info(errMsg);
         doFinished(true);
@@ -112,7 +112,7 @@ public class SpecialSqlJob extends SQLJob {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         if (doFinished(true)) {
-            list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get connection closed"));
+            list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get connection closed"));
         }
     }
 

@@ -8,7 +8,7 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ShowVariablesHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -30,7 +30,7 @@ public final class ShowVariables {
 
         RouteResultset rrs = new RouteResultset(stmt, ServerParse.SHOW);
         try {
-            RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+            RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
             ShowVariablesHandler handler = new ShowVariablesHandler(rrs, c.getSession2());
             try {
                 handler.execute();

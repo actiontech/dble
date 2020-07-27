@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
@@ -13,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.store.UnSortedLocalResult;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.exception.TempTableException;
@@ -54,8 +54,8 @@ public class TempTableHandler extends BaseDMLHandler {
         super(id, session);
         this.lock = new ReentrantLock();
         this.tempTable = new TempTable();
-        this.maxPartSize = DbleServer.getInstance().getConfig().getSystem().getNestLoopRowsSize();
-        this.maxConnSize = DbleServer.getInstance().getConfig().getSystem().getNestLoopConnSize();
+        this.maxPartSize = SystemConfig.getInstance().getNestLoopRowsSize();
+        this.maxConnSize = SystemConfig.getInstance().getNestLoopConnSize();
         this.sourceSel = sourceSel;
         this.valueSet = new HashSet<>();
     }

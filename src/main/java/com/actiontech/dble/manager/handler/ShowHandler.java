@@ -7,14 +7,14 @@ package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.singleton.CustomMySQLHa;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.sqlengine.TransformSQLJob;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -48,6 +48,9 @@ public final class ShowHandler {
             case ManagerParseShow.CONNECTION:
                 ShowConnection.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
+            case ManagerParseShow.CONNECTION_POOL_PROPERTY:
+                ShowConnectionPoolProperty.execute(c);
+                break;
             case ManagerParseShow.BACKEND:
                 ShowBackend.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
@@ -63,33 +66,33 @@ public final class ShowHandler {
             case ManagerParseShow.DATABASE:
                 ShowDatabase.execute(c);
                 break;
-            case ManagerParseShow.DATA_NODE:
-                ShowDataNode.execute(c, null);
+            case ManagerParseShow.SHARDING_NODE:
+                ShowShardingNode.execute(c, null);
                 break;
-            case ManagerParseShow.DATANODE_SCHEMA: {
+            case ManagerParseShow.SHARDING_NODE_SCHEMA: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
                 } else {
-                    ShowDataNode.execute(c, name);
+                    ShowShardingNode.execute(c, name);
                 }
                 break;
             }
-            case ManagerParseShow.DATASOURCE:
-                ShowDataSource.execute(c, null);
+            case ManagerParseShow.DB_INSTANCE:
+                ShowDbInstance.execute(c, null);
                 break;
-            case ManagerParseShow.DATASOURCE_WHERE: {
+            case ManagerParseShow.DB_INSTANCE_WHERE: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
                 } else {
-                    ShowDataSource.execute(c, name);
+                    ShowDbInstance.execute(c, name);
                 }
                 break;
             }
-            case ManagerParseShow.TABLE_DATA_NODE: {
+            case ManagerParseShow.TABLE_SHARDING_NODE: {
                 String tableInfo = stmt.substring(rs >>> 8).trim();
-                ShowTableDataNode.execute(c, tableInfo);
+                ShowTableShardingNode.execute(c, tableInfo);
                 break;
             }
             case ManagerParseShow.PAUSE_DATANDE:
@@ -170,11 +173,11 @@ public final class ShowHandler {
             case ManagerParseShow.HEARTBEAT_DETAIL://by songwie
                 ShowHeartbeatDetail.response(c, stmt);
                 break;
-            case ManagerParseShow.DATASOURCE_SYNC://by songwie
-                ShowDatasourceSyn.response(c);
+            case ManagerParseShow.DB_INSTANCE_SYNC://by songwie
+                ShowDbInstanceSyn.response(c);
                 break;
-            case ManagerParseShow.DATASOURCE_SYNC_DETAIL://by songwie
-                ShowDatasourceSynDetail.response(c, stmt);
+            case ManagerParseShow.DB_INSTANCE_SYNC_DETAIL://by songwie
+                ShowDbInstanceSynDetail.response(c, stmt);
                 break;
             case ManagerParseShow.DIRECTMEMORY:
                 ShowDirectMemory.execute(c);
@@ -250,14 +253,14 @@ public final class ShowHandler {
                 break;
             default:
                 if (isSupportShow(stmt)) {
-                    Iterator<PhysicalDataHost> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+                    Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();
                     if (iterator.hasNext()) {
-                        PhysicalDataHost pool = iterator.next();
-                        final PhysicalDataSource source = pool.getWriteSource();
+                        PhysicalDbGroup pool = iterator.next();
+                        final PhysicalDbInstance source = pool.getWriteDbInstance();
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {
-                        c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");
+                        c.writeErrMessage(ErrorCode.ER_YES, "no valid dbGroup");
                     }
                 } else {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

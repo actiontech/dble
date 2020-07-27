@@ -7,6 +7,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -78,9 +79,9 @@ public final class ShowSQL {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
-            String user = userStat.getUser();
+            UserName user = userStat.getUser();
             List<UserSqlLastStat.SqlLast> queries = userStat.getSqlLastStat().getQueries();
             int i = 1;
             for (UserSqlLastStat.SqlLast sqlLast : queries) {
@@ -107,11 +108,11 @@ public final class ShowSQL {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(String user, UserSqlLastStat.SqlLast sql, int idx, String charset) {
+    private static RowDataPacket getRow(UserName user, UserSqlLastStat.SqlLast sql, int idx, String charset) {
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(idx));
-        row.add(StringUtil.encode(user, charset));
+        row.add(StringUtil.encode(user.toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset));
         row.add(LongUtil.toBytes(sql.getExecuteTime()));
         row.add(StringUtil.encode(sql.getSql(), charset));

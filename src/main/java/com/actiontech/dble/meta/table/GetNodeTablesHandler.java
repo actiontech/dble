@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -29,35 +29,35 @@ public abstract class GetNodeTablesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(GetNodeTablesHandler.class);
     protected static final String SQL = "show full tables where Table_type ='BASE TABLE' ";
     private static final String SQL_WITH_VIEW = "show full tables ";
-    protected String dataNode;
+    protected String shardingNode;
     protected boolean isFinished = false;
     protected Lock lock = new ReentrantLock();
     protected Condition notify = lock.newCondition();
     private String sql = SQL;
 
-    GetNodeTablesHandler(String dataNode, boolean skipView) {
-        this.dataNode = dataNode;
+    GetNodeTablesHandler(String shardingNode, boolean skipView) {
+        this.shardingNode = shardingNode;
         if (!skipView) {
             sql = SQL_WITH_VIEW;
         }
     }
 
-    GetNodeTablesHandler(String dataNode) {
-        this(dataNode, true);
+    GetNodeTablesHandler(String shardingNode) {
+        this(shardingNode, true);
     }
 
     public void execute() {
-        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+        ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol, "Table_type"};
-        PhysicalDataSource ds = dn.getDataHost().getWriteSource();
+        PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), ds));
             SQLJob sqlJob = new SQLJob(sql, dn.getDatabase(), resultHandler, ds);
             sqlJob.run();
         } else {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), null));
-            SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
+            SQLJob sqlJob = new SQLJob(sql, shardingNode, resultHandler, false);
             sqlJob.run();
         }
     }
@@ -76,10 +76,10 @@ public abstract class GetNodeTablesHandler {
 
     private class MySQLShowTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         private String mysqlShowTableCol;
-        private PhysicalDataSource ds;
+        private PhysicalDbInstance ds;
         private String schema;
 
-        MySQLShowTablesListener(String mysqlShowTableCol, String schema, PhysicalDataSource ds) {
+        MySQLShowTablesListener(String mysqlShowTableCol, String schema, PhysicalDbInstance ds) {
             this.mysqlShowTableCol = mysqlShowTableCol;
             this.ds = ds;
             this.schema = schema;
@@ -89,26 +89,26 @@ public abstract class GetNodeTablesHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             String key = null;
             if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
+                key = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
             }
             if (!result.isSuccess()) {
                 //not thread safe
-                String warnMsg = "Can't show tables from DataNode:" + dataNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from shardingNode:" + shardingNode + "! Maybe the shardingNode is not initialized!";
                 LOGGER.warn(warnMsg);
                 if (ds != null) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                    labels.put("data_node", dataNode);
-                    AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
-                    ToResolveContainer.DATA_NODE_LACK.add(key);
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                    labels.put("sharding_node", shardingNode);
+                    AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
+                    ToResolveContainer.SHARDING_NODE_LACK.add(key);
                 }
                 handleFinished();
                 return;
             }
-            if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                labels.put("data_node", dataNode);
-                AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
-                        ToResolveContainer.DATA_NODE_LACK, key);
+            if (ds != null && ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                labels.put("sharding_node", shardingNode);
+                AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                        ToResolveContainer.SHARDING_NODE_LACK, key);
             }
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {

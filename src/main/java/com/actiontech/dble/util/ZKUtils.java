@@ -6,8 +6,7 @@
 package com.actiontech.dble.util;
 
 
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.config.model.ClusterConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -47,7 +46,7 @@ public final class ZKUtils {
     }
 
     private static CuratorFramework createConnection() {
-        String url = ZkConfig.getInstance().getZkURL();
+        String url = ClusterConfig.getInstance().getClusterIP();
         CuratorFramework framework = CuratorFrameworkFactory.newClient(url, new ExponentialBackoffRetry(100, 6));
         // start connection
         framework.start();
@@ -79,33 +78,12 @@ public final class ZKUtils {
     }
 
 
-    public static void addViewPathCache(String path, PathChildrenCacheListener listener) {
-        try {
-            //watch the child status
-            final PathChildrenCache childrenCache = new PathChildrenCache(getConnection(), path, true);
-            childrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
-            childrenCache.getListenable().addListener(listener);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void createTempNode(String parent, String node) throws Exception {
-        String path = ZKPaths.makePath(parent, node);
-        createTempNode(path);
-    }
-
     public static void createTempNode(String parent, String node, byte[] data) throws Exception {
         String path = ZKPaths.makePath(parent, node);
-        curatorFramework.create().withMode(CreateMode.EPHEMERAL).forPath(path, data);
+        createTempNode(path, data);
     }
 
-    public static void createTempNode(String path) throws Exception {
-        curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path);
-    }
-
-    public static void createOnline(String parent, String node, OnlineStatus instanceOnline) throws Exception {
-        String path = ZKPaths.makePath(parent, node);
-        curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, instanceOnline.toString().getBytes());
+    public static void createTempNode(String path, byte[] data) throws Exception {
+        curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, data);
     }
 }

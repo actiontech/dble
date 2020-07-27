@@ -57,8 +57,8 @@ public abstract class AbstractConnection implements NIOConnection {
     protected long lastLargeMessageTime;
     protected volatile boolean isClosed = false;
     protected long startupTime;
-    protected long lastReadTime;
-    protected long lastWriteTime;
+    protected volatile long lastReadTime;
+    protected volatile long lastWriteTime;
     protected long netInBytes;
     protected long netOutBytes;
 

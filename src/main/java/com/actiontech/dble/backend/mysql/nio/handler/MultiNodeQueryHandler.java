@@ -82,9 +82,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     protected void reset() {
         super.reset();
-        /*if (rrs.isLoadData()) {
-            packetId = session.getShardingService().getLoadDataInfileHandler().getLastPackId();
-        }*/
         connRrns.clear();
         this.netOutBytes = 0;
         this.resultSize = 0;

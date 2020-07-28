@@ -331,9 +331,7 @@ public class MySQLResponseService extends MySQLBasedService {
         Set<String> toResetSys = new HashSet<>();
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
-        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) ? 0 : 1;
-        LOGGER.info("the char set info x " + clientCharset + " " + this.toString());
-        LOGGER.info("the char set info y " + this.getConnection().getCharsetName() + " " + this.toString());
+        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
         int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
@@ -347,7 +345,6 @@ public class MySQLResponseService extends MySQLBasedService {
             getChangeSchemaCommand(sb, connection.getSchema());
         }
         if (charsetSyn == 1) {
-            LOGGER.info("the char set info do the sync " + this.toString());
             getCharsetCommand(sb, clientCharset);
         }
         if (txIsolationSyn == 1) {
@@ -377,9 +374,11 @@ public class MySQLResponseService extends MySQLBasedService {
     }
 
     private static void getChangeSchemaCommand(StringBuilder sb, String schema) {
-        sb.append("use `");
-        sb.append(schema);
-        sb.append("`;");
+        if (schema != null) {
+            sb.append("use `");
+            sb.append(schema);
+            sb.append("`;");
+        }
     }
 
     private static void getCharsetCommand(StringBuilder sb, CharsetNames clientCharset) {
@@ -802,8 +801,6 @@ public class MySQLResponseService extends MySQLBasedService {
             }
             if (remains == 0) { // syn command finished
                 this.updateConnectionInfo(service);
-                LOGGER.info(" back connection sync success for the status is " + clientCharset + "  " + service);
-                LOGGER.info(" back connection sync success for the real is " + service.connection.getCharsetName() + " " + service);
                 service.metaDataSynced = true;
                 return false;
             }

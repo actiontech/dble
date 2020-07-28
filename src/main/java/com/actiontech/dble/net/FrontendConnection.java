@@ -225,9 +225,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public boolean isIdleTimeout() {
         if (isAuthenticated) {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime.get(), lastReadTime.get()) + idleTimeout;
         } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime.get(), lastReadTime.get()) + AUTH_TIMEOUT;
         }
     }
 

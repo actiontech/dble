@@ -133,7 +133,7 @@ public class NIOSocketWR extends SocketWR {
                     if (written > 0) {
                         con.netOutBytes += written;
                         con.processor.addNetOutBytes(written);
-                        con.lastWriteTime = TimeUtil.currentTimeMillis();
+                        con.lastWriteTime.set(TimeUtil.currentTimeMillis());
                     } else {
                         break;
                     }
@@ -182,7 +182,7 @@ public class NIOSocketWR extends SocketWR {
                     if (written > 0) {
                         con.netOutBytes += written;
                         con.processor.addNetOutBytes(written);
-                        con.lastWriteTime = TimeUtil.currentTimeMillis();
+                        con.lastWriteTime.set(TimeUtil.currentTimeMillis());
                     } else {
                         break;
                     }

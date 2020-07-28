@@ -112,9 +112,9 @@ public final class ShowConnectionSQL {
         } else {
             row.add(StringUtil.encode("", charset));
         }
-        row.add(StringUtil.encode(FormatUtil.formatDate(c.getLastReadTime()), charset));
-        long rt = c.getLastReadTime();
-        long wt = c.getLastWriteTime();
+        row.add(StringUtil.encode(FormatUtil.formatDate(c.getLastReadTime().get()), charset));
+        long rt = c.getLastReadTime().get();
+        long wt = c.getLastWriteTime().get();
         row.add(LongUtil.toBytes((wt >= rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
         if (c instanceof ServerConnection) {
             String executeSql = "";

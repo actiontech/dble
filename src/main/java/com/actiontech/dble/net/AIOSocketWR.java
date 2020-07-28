@@ -96,7 +96,7 @@ public class AIOSocketWR extends SocketWR {
 
         con.netOutBytes += result;
         con.processor.addNetOutBytes(result);
-        con.lastWriteTime = TimeUtil.currentTimeMillis();
+        con.lastWriteTime.set(TimeUtil.currentTimeMillis());
         boolean noMoreData = this.write0();
         if (noMoreData) {
             this.doNextWriteCheck();

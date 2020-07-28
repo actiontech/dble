@@ -29,6 +29,7 @@ import java.nio.channels.NetworkChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author mycat
@@ -57,8 +58,8 @@ public abstract class AbstractConnection implements NIOConnection {
     protected long lastLargeMessageTime;
     protected volatile boolean isClosed = false;
     protected long startupTime;
-    protected long lastReadTime;
-    protected long lastWriteTime;
+    protected AtomicLong lastReadTime = new AtomicLong(0);
+    protected AtomicLong lastWriteTime = new AtomicLong(0);
     protected long netInBytes;
     protected long netOutBytes;
 
@@ -83,8 +84,8 @@ public abstract class AbstractConnection implements NIOConnection {
             socketWR = new NIOSocketWR(this);
         }
         this.startupTime = TimeUtil.currentTimeMillis();
-        this.lastReadTime = startupTime;
-        this.lastWriteTime = startupTime;
+        this.lastReadTime.set(startupTime);
+        this.lastWriteTime.set(startupTime);
     }
 
     public AbstractConnection() {
@@ -195,7 +196,7 @@ public abstract class AbstractConnection implements NIOConnection {
         return startupTime;
     }
 
-    public long getLastReadTime() {
+    public AtomicLong getLastReadTime() {
         return lastReadTime;
     }
 
@@ -205,7 +206,7 @@ public abstract class AbstractConnection implements NIOConnection {
         this.readBuffer = processor.getBufferPool().allocate(size);
     }
 
-    public long getLastWriteTime() {
+    public AtomicLong getLastWriteTime() {
         return lastWriteTime;
     }
 
@@ -278,9 +279,9 @@ public abstract class AbstractConnection implements NIOConnection {
             return;
         }
 
-        lastReadTime = TimeUtil.currentTimeMillis();
+        lastReadTime.set(TimeUtil.currentTimeMillis());
         if (lastReadTime == lastWriteTime) {
-            lastWriteTime--;
+            lastReadTime.getAndDecrement();
         }
         if (got < 0) {
             if (this instanceof MySQLConnection) {
@@ -356,7 +357,7 @@ public abstract class AbstractConnection implements NIOConnection {
         // received large message in recent 30 seconds
         // then change to direct buffer for performance
         if (readBuffer != null && !readBuffer.isDirect() &&
-                lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
+                lastLargeMessageTime < lastReadTime.get() - 30 * 1000L) {  // used temp heap
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + readBuffer.capacity());
             }
@@ -733,7 +734,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public void updateLastReadTime() {
-        this.lastReadTime = TimeUtil.currentTimeMillis();
+        this.lastReadTime.set(TimeUtil.currentTimeMillis());
     }
 
     /*

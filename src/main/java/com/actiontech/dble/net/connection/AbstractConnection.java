@@ -495,7 +495,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void setCharsetName(CharsetNames charsetName) {
-        this.charsetName = charsetName;
+        this.charsetName = charsetName.copyObj();
     }
 
 

@@ -104,16 +104,11 @@ public final class ConditionUtil {
         String schemaName = table.getKey();
         String tableName = table.getValue();
         tableFullName = schemaName + "." + tableName;
-        if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase())) {
+
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+        if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase()) || schemaConfig == null) {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("condition [" + condition + "] will be pruned for schema name " + schemaName.toUpperCase());
-            }
-            return null;
-        }
-        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
-        if (schemaConfig == null) {
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("condition [" + condition + "] will be pruned for schema is not config " + schemaName);
             }
             return null;
         }

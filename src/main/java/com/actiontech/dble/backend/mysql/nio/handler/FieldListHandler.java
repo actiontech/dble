@@ -108,7 +108,11 @@ public class FieldListHandler implements ResponseHandler {
             String orgName = new String(fieldPk.getOrgName()).toUpperCase();
             String orgTable = new String(fieldPk.getOrgTable());
             try {
-                String defaultVal = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable).getColumns().stream().filter(t -> orgName.equalsIgnoreCase(t.getName())).findFirst().get().getDefaultVal();
+                boolean isTable = null != ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable);
+                String defaultVal = null;
+                if (isTable) {
+                    defaultVal = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(rrs.getSchema(), orgTable).getColumns().stream().filter(t -> orgName.equalsIgnoreCase(t.getName())).findFirst().get().getDefaultVal();
+                }
                 fieldPk.setDefaultVal(null != defaultVal ? defaultVal.getBytes() : FieldPacket.DEFAULT_VALUE);
             } catch (SQLNonTransientException e) {
                 LOGGER.warn("field list response use default value because of Meta don't exist:schema[{}],table[{}]", rrs.getSchema(), orgTable, e);

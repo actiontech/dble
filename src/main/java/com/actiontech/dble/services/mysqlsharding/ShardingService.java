@@ -112,6 +112,7 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         this.loadDataInfileHandler = new ServerLoadDataInfileHandler(this);
         this.prepareHandler = new ServerPrepareHandler(this);
         this.session = new NonBlockingSession(this);
+        session.setRowCount(0);
         this.commands = connection.getProcessor().getCommands();
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);

@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
@@ -24,6 +25,7 @@ import java.util.*;
 
 public final class ConditionUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConditionUtil.class);
+
     private ConditionUtil() {
     }
 
@@ -102,13 +104,15 @@ public final class ConditionUtil {
         String schemaName = table.getKey();
         String tableName = table.getValue();
         tableFullName = schemaName + "." + tableName;
-        if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase())) {
+
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+        if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase()) || schemaConfig == null) {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("condition [" + condition + "] will be pruned for schema name " + schemaName.toUpperCase());
             }
             return null;
         }
-        BaseTableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName).getTables().get(tableName);
+        BaseTableConfig tableConfig = schemaConfig.getTables().get(tableName);
         if (tableConfig == null) {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("condition [" + condition + "] will be pruned for table is not config " + tableName);
@@ -233,6 +237,7 @@ public final class ConditionUtil {
         }
         return mergedRouteUnitList;
     }
+
     private static List<RouteCalculateUnit> changeAndToOr(List<RouteCalculateUnit> list1, List<RouteCalculateUnit> list2) {
         if (list1.size() == 0) {
             return list2;

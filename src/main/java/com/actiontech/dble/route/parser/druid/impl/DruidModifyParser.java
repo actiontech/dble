@@ -187,7 +187,8 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             Pair<String, String> key = new Pair<>(dataSourceTc.getSchema(), dataSourceTc.getTableConfig().getName());
             if (!CollectionUtil.containDuplicate(visitor.getSelectTableList(), dataSourceTc.getTableConfig().getName())) {
                 ArrayList<String> partNodeList = new ArrayList<>();
-                routeForSourceTable((ShardingTableConfig) dataSourceTc.getTableConfig(), rrs, allNodeSet, schema, routeUnit, partNodeList);
+                routeForSourceTable((ShardingTableConfig) dataSourceTc.getTableConfig(), rrs, allNodeSet,
+                        DbleServer.getInstance().getConfig().getSchemas().get(dataSourceTc.getSchema()), routeUnit, partNodeList);
 
                 for (Pair<String, String> tn : ctx.getTables()) {
                     if (tn.equals(key)) {

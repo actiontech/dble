@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by szf on 2017/10/12.
@@ -78,15 +76,12 @@ public class KVStoreRepository implements Repository {
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
                 SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
         final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
+        if (!distributeLock.acquire()) {
+            String msg = "other session/dble instance is operating view, try it later or check the cluster lock";
+            LOGGER.warn(msg);
+            throw new RuntimeException(msg);
+        }
         try {
-            int time = 0;
-            while (!distributeLock.acquire()) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
-                if (time++ % 10 == 0) {
-                    LOGGER.info(" view meta waiting for the lock " + schemaName + " " + viewName);
-                }
-            }
-
             ClusterDelayProvider.delayAfterGetLock();
 
             Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
@@ -125,15 +120,13 @@ public class KVStoreRepository implements Repository {
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
                 SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
         final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
+        if (!distributeLock.acquire()) {
+            String msg = "other session/dble instance is operating view, try it later or check the cluster lock";
+            LOGGER.warn(msg);
+            throw new RuntimeException(msg);
+        }
         try {
             viewCreateSqlMap.get(schemaName).remove(viewName);
-            int time = 0;
-            while (!distributeLock.acquire()) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
-                if (time++ % 10 == 0) {
-                    LOGGER.warn(" view meta waiting for the lock " + schemaName + " " + viewName);
-                }
-            }
             ClusterDelayProvider.delayAfterGetLock();
             ClusterHelper.cleanKV(ClusterPathUtil.getViewPath(schemaName, viewName));
             ClusterDelayProvider.delayAfterViewSetKey();
@@ -147,10 +140,10 @@ public class KVStoreRepository implements Repository {
             }
             fileSystemRepository.saveMapToFile();
         } catch (RuntimeException e) {
-            LOGGER.warn("delete ucore node error :　" + e.getMessage());
+            LOGGER.warn("delete view node error :　" + e.getMessage());
             throw e;
         } catch (Exception e) {
-            LOGGER.warn("delete ucore node error :　" + e.getMessage());
+            LOGGER.warn("delete view node error :　" + e.getMessage());
             throw new RuntimeException(e);
         } finally {
             ClusterDelayProvider.beforeDeleteViewNotic();

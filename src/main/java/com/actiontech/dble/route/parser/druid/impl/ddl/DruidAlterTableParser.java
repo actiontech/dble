@@ -51,7 +51,6 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                 support = true;
             } else if (alterItem instanceof SQLAlterTableAddIndex ||
                     alterItem instanceof SQLAlterTableDropIndex ||
-                    alterItem instanceof SQLAlterTableRenameIndex ||
                     alterItem instanceof MySqlAlterTableAlterColumn) {
                 support = true;
                 rrs.setOnline(true);

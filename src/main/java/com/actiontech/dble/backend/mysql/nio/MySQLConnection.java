@@ -937,7 +937,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     }
 
     public String compactInfo() {
-        return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema;
+        return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema + ", mysqlid=" + threadId;
     }
 
     @Override

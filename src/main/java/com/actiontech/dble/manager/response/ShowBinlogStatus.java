@@ -147,7 +147,7 @@ public final class ShowBinlogStatus {
 
                 }
             } catch (Exception e) {
-                logger.info("catch Exception", e);
+                logger.warn("catch Exception", e);
             } finally {
                 DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
                 distributeLock.release();

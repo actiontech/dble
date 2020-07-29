@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
-import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterLogic;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -29,17 +28,22 @@ public class BinlogPauseStatusListener implements PathChildrenCacheListener {
             LOGGER.debug("event happen:" + event.toString());
         }
         switch (event.getType()) {
-            case CHILD_ADDED:
+            case CHILD_ADDED: {
                 ChildData childData = event.getData();
-                ClusterDelayProvider.delayWhenReponseViewNotic();
                 LOGGER.info("childEvent " + childData.getPath() + " " + event.getType());
                 String value = new String(childData.getData(), StandardCharsets.UTF_8);
                 ClusterLogic.executeBinlogPauseEvent(value);
-                break;
+            }
+            break;
             case CHILD_UPDATED:
                 break;
-            case CHILD_REMOVED:
-                break;
+            case CHILD_REMOVED: {
+                ChildData childData = event.getData();
+                LOGGER.info("childEvent " + childData.getPath() + " " + event.getType());
+                String value = new String(childData.getData(), StandardCharsets.UTF_8);
+                ClusterLogic.executeBinlogPauseDeleteEvent(value);
+            }
+            break;
             default:
                 break;
         }

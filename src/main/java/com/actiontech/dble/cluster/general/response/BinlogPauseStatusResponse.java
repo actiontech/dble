@@ -34,12 +34,13 @@ public class BinlogPauseStatusResponse implements ClusterXmlLoader {
             //the value of key is empty,just doing nothing
             return;
         }
-        if (KvBean.DELETE.equals(configValue.getChangeType())) {
-            // delete node
-            return;
-        }
+
         String value = configValue.getValue();
-        ClusterLogic.executeBinlogPauseEvent(value);
+        if (KvBean.DELETE.equals(configValue.getChangeType())) {
+            ClusterLogic.executeBinlogPauseDeleteEvent(value);
+        } else {
+            ClusterLogic.executeBinlogPauseEvent(value);
+        }
     }
 
 

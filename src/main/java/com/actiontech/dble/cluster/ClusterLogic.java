@@ -116,6 +116,18 @@ public final class ClusterLogic {
         }
     }
 
+    public static void executeBinlogPauseDeleteEvent(String value) {
+        if (StringUtils.isEmpty(value)) {
+            return;
+        }
+        if (value.equals(SystemConfig.getInstance().getInstanceName())) {
+            LOGGER.info("Self Notice,Do nothing return");
+            return;
+        }
+        // delete node
+        DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
+    }
+
     public static void executeBinlogPauseEvent(String value) throws Exception {
         if (StringUtils.isEmpty(value)) {
             return;
@@ -130,14 +142,14 @@ public final class ClusterLogic {
         LOGGER.info("start pause for binlog status");
         boolean isPaused = ShowBinlogStatus.waitAllSession();
         if (!isPaused) {
-            cleanBackupLocked();
+            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
             ClusterHelper.createSelfTempNode(ClusterPathUtil.getBinlogPauseStatus(), "Error can't wait all session finished ");
             return;
         }
         try {
             ClusterHelper.createSelfTempNode(ClusterPathUtil.getBinlogPauseStatus(), ClusterPathUtil.SUCCESS);
         } catch (Exception e) {
-            cleanBackupLocked();
+            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
             LOGGER.warn("create binlogPause instance failed", e);
         }
     }
@@ -437,12 +449,6 @@ public final class ClusterLogic {
             }
         } else {
             LOGGER.warn("Sequence To Local: get empty value,path is" + configValue.getKey());
-        }
-    }
-
-    private static synchronized void cleanBackupLocked() {
-        if (DbleServer.getInstance().getBackupLocked() != null) {
-            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
         }
     }
 

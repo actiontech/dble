@@ -8,7 +8,8 @@ for M in ${ip_master_arr[@]}
 do
 mysql -h$M -p3306 -uroot -p123456 \
   -e "SET @@GLOBAL.group_replication_bootstrap_group=1;" \
-  -e "create user 'repl'@'%';" \
+  -e "drop user if exists repl;" \
+  -e "create user repl@'%';" \
   -e "GRANT REPLICATION SLAVE ON *.* TO repl@'%';" \
   -e "flush privileges;" \
   -e "change master to master_user='root' for channel 'group_replication_recovery';" \

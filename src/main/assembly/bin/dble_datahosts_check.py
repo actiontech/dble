@@ -191,7 +191,7 @@ def main(log1,dbXml,userXml,portCnf):
     manager_user = getMangagerUser(userXml)
     port1 = getPort(portCnf)
     manager_user['port'] = port1
-    log.info("Get hosts from schema.xml file.")
+    log.info("Get hosts from db.xml file.")
     hosts = getHosts(dbXml)
     log.info("MySQL instance status check.")
     for dhname in hosts.keys():

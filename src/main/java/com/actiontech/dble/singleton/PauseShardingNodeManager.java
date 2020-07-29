@@ -215,6 +215,7 @@ public final class PauseShardingNodeManager {
 
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
+            ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), ClusterPathUtil.SUCCESS);
             Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
             StringBuffer sb = new StringBuffer();
             for (; ; ) {

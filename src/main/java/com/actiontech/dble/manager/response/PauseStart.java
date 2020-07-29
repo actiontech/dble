@@ -85,7 +85,6 @@ public final class PauseStart {
             return;
         }
 
-
         //self pause the shardingNode
         long timeOut = Long.parseLong(ma.group(2)) * 1000;
         long beginTime = System.currentTimeMillis();
@@ -143,8 +142,7 @@ public final class PauseStart {
             if (!nextTurn) {
                 recycleFinish = true;
                 break;
-            }
-            if (!recycleFinish) {
+            } else {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10L));
             }
         }

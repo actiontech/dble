@@ -320,7 +320,7 @@ public final class ClusterLogic {
 
     public static Thread pauseShardingNodeEvent(String value, final Lock lock) throws Exception {
         final PauseInfo pauseInfo = new PauseInfo(value);
-        if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
+        if (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             return null;
         }
         final String shardingNodes = pauseInfo.getShardingNodes();
@@ -356,7 +356,7 @@ public final class ClusterLogic {
                                 }
                             }
                             if (!nextTurn) {
-                                ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), SystemConfig.getInstance().getInstanceName());
+                                ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), ClusterPathUtil.SUCCESS);
                                 break;
                             }
                         } finally {
@@ -378,7 +378,7 @@ public final class ClusterLogic {
 
     public static void resumeShardingNodeEvent(String value, final Lock lock, Thread waitThread) throws Exception {
         final PauseInfo pauseInfo = new PauseInfo(value);
-        if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
+        if (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             return;
         }
         lock.lock();

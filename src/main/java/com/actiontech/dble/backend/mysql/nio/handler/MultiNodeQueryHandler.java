@@ -227,12 +227,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.read(data);
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId); //just for normal error
+
+        String errMsg = new String(errPacket.getMessage());
+        LOGGER.warn("execute sql err :" + errMsg + " con:" + conn);
+
         err = errPacket;
         session.resetMultiStatementStatus();
         lock.lock();
         try {
             if (!isFail()) {
-                setFail(new String(err.getMessage()));
+                setFail(errMsg);
             }
             if (errConnection == null) {
                 errConnection = new ArrayList<>();

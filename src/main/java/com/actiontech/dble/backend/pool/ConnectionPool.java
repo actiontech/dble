@@ -1,5 +1,9 @@
 package com.actiontech.dble.backend.pool;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -12,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -108,7 +113,15 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
                 return conn;
             }
         }
+
         totalConnections.decrementAndGet();
+        // alert
+        String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
+        LOGGER.warn(maxConError);
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+        AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
+        ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+
         return null;
     }
 
@@ -164,6 +177,12 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
         conn.lazySet(STATE_NOT_IN_USE);
         synchronizer.signal();
+
+        if (ToResolveContainer.CREATE_CONN_FAIL.contains(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName())) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+            AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", config.getId(), labels,
+                    ToResolveContainer.CREATE_CONN_FAIL, instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+        }
     }
 
     @Override
@@ -174,6 +193,9 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         if (conn != null) {
             conn.closeWithoutRsp("create fail");
         }
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+        AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
+        ToResolveContainer.CREATE_CONN_FAIL.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
     }
 
     @Override

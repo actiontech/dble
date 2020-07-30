@@ -14,8 +14,8 @@ import static com.actiontech.dble.backend.mysql.view.Repository.SCHEMA_VIEW_SPLI
  */
 public final class ClusterPathUtil {
     private ClusterPathUtil() {
-
     }
+
     public static final String LOCAL_WRITE_PATH = "./";
 
     public static final String SEPARATOR = "/";
@@ -39,7 +39,6 @@ public final class ClusterPathUtil {
     public static final String SUCCESS = "success";
     public static final String DB_GROUP_STATUS = "dbGroup_status";
 
-    //depth:3,child node of conf_base_path
     public static String getConfShardingPath() {
         return CONF_BASE_PATH + "sharding";
     }
@@ -53,8 +52,6 @@ public final class ClusterPathUtil {
     }
 
 
-
-
     public static String getHaBasePath() {
         return BASE_PATH + "dbGroups" + SEPARATOR;
     }
@@ -66,15 +63,19 @@ public final class ClusterPathUtil {
     public static String getHaStatusPath(String dbGroupName) {
         return getHaStatusPath() + SEPARATOR + dbGroupName;
     }
+
     public static String getHaResponsePath() {
         return getHaBasePath() + "dbGroup_response";
     }
+
     public static String getHaResponsePath(String dhName) {
         return getHaResponsePath() + SEPARATOR + dhName;
     }
+
     public static String getHaLockPath(String dhName) {
         return LOCK_BASE_PATH + SEPARATOR + "dbGroup_locks" + SEPARATOR + dhName;
     }
+
     //depth:2,sequences path:base_path/sequences
     private static final String SEQUENCES = "sequences";
 
@@ -87,12 +88,12 @@ public final class ClusterPathUtil {
         return getSequencesPath() + SEPARATOR + "common";
     }
 
-    //depth:2,lock_base_path: base_path/lock/
     private static final String LOCK_BASE_PATH = BASE_PATH + "lock";
+
     public static String getLockBasePath() {
         return LOCK_BASE_PATH;
     }
-    //depth:3, lock path : lock_base_path/...(detail)
+
     public static String getSyncMetaLockPath() {
         return LOCK_BASE_PATH + SEPARATOR + "syncMeta.lock";
     }
@@ -109,7 +110,6 @@ public final class ClusterPathUtil {
         return getConfStatusPath() + SEPARATOR + "operator";
     }
 
-    //depth:2,child node of base_path
     public static String getOnlinePath() {
         return BASE_PATH + "online";
     }
@@ -118,7 +118,6 @@ public final class ClusterPathUtil {
         return getOnlinePath() + SEPARATOR + instanceName;
     }
 
-    //depth:2,binlog_pause path:base_path/binlog_pause
     private static final String BINLOG_PAUSE_PATH = BASE_PATH + "binlog_pause";
     private static final String BINLOG_PAUSE_STATUS = "status";
 
@@ -130,24 +129,27 @@ public final class ClusterPathUtil {
     public static String getBinlogPause() {
         return BINLOG_PAUSE_PATH;
     }
+
     public static String getBinlogPauseStatus() {
         return BINLOG_PAUSE_PATH + SEPARATOR + BINLOG_PAUSE_STATUS;
     }
 
 
-    //depth:2,child node of base_path
     public static String getDDLPath() {
         return BASE_PATH + "ddl";
     }
 
-    //depth:2,child node of base_path
     public static String getDDLPath(String fullName) {
         return getDDLPath() + SEPARATOR + fullName;
     }
 
-    //depth:2,child node of base_path
+
+    public static String getDDLLockPath() {
+        return LOCK_BASE_PATH + SEPARATOR + "ddl_lock";
+    }
+
     public static String getDDLLockPath(String fullName) {
-        return LOCK_BASE_PATH + SEPARATOR + "ddl_lock" + SEPARATOR + fullName;
+        return getDDLLockPath() + SEPARATOR + fullName;
     }
 
     public static String getPauseShardingNodePath() {
@@ -184,7 +186,10 @@ public final class ClusterPathUtil {
         return getViewChangePath() + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
     }
 
+    public static String getViewLockPath() {
+        return LOCK_BASE_PATH + SEPARATOR + "view_lock";
+    }
     public static String getViewLockPath(String schemaName, String viewName) {
-        return LOCK_BASE_PATH + SEPARATOR + "view_lock" + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
+        return getViewLockPath() + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
     }
 }

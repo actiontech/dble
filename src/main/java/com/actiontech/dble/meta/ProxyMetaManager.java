@@ -327,20 +327,10 @@ public class ProxyMetaManager {
     private void tryAddSyncMetaLock() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             int times = 0;
-            String ddlPath = ClusterPathUtil.getDDLPath();
-            while (ClusterHelper.getChildrenSize(ddlPath) > 0) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                if (times % 60 == 0) {
-                    LOGGER.warn("waiting for DDL in " + ddlPath);
-                    times = 0;
-                }
-                times++;
-            }
             DistributeLock lock = ClusterHelper.createDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
-
-            times = 0;
             while (!lock.acquire()) {
-                if (times % 60 == 0) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+                if (times % 100 == 0) {
                     LOGGER.warn("tryAddSyncMetaLock failed");
                     times = 0;
                 }
@@ -348,6 +338,28 @@ public class ProxyMetaManager {
             }
             DistributeLockManager.addLock(lock);
 
+
+            times = 0;
+            String ddlLockPath = ClusterPathUtil.getDDLLockPath();
+            while (ClusterHelper.getChildrenSize(ddlLockPath) > 0) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                if (times % 60 == 0) {
+                    LOGGER.warn("waiting for DDL finished ");
+                    times = 0;
+                }
+                times++;
+            }
+
+            times = 0;
+            String viewLockPath = ClusterPathUtil.getViewLockPath();
+            while (ClusterHelper.getChildrenSize(viewLockPath) > 0) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                if (times % 60 == 0) {
+                    LOGGER.warn("waiting for view finished");
+                    times = 0;
+                }
+                times++;
+            }
         }
     }
 

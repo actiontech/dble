@@ -146,7 +146,7 @@ public class OutputHandler extends BaseDMLHandler {
                     row[3] = (byte) serverSession.getShardingService().nextPacketId();
                     rowDataPk.read(row);
                     this.netOutBytes += row.length;
-                    rowDataPk.write(buffer, serverSession.getShardingService(), true);
+                    buffer = rowDataPk.write(buffer, serverSession.getShardingService(), true);
                 }
             }
         } finally {

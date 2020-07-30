@@ -460,7 +460,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getShardingService(), true);
                 } else {
-                    rowDataPk.write(byteBuffer, session.getShardingService(), true);
+                    byteBuffer = rowDataPk.write(byteBuffer, session.getShardingService(), true);
                 }
             }
         } catch (Exception e) {

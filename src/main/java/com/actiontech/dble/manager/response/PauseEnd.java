@@ -60,8 +60,7 @@ public final class PauseEnd {
                 }
 
                 if (!PauseShardingNodeManager.getInstance().tryResume()) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
-                    return;
+                    OK.setMessage(("No shardingNode paused, But still notify cluster").getBytes());
                 }
 
                 PauseShardingNodeManager.getInstance().resumeCluster();

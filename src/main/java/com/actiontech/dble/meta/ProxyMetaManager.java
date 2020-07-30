@@ -341,7 +341,7 @@ public class ProxyMetaManager {
 
             times = 0;
             String ddlLockPath = ClusterPathUtil.getDDLLockPath();
-            while (ClusterHelper.getChildrenSize(ddlLockPath) > 0) {
+            while (!StringUtil.isEmpty(ClusterHelper.getPathValue(ddlLockPath)) && ClusterHelper.getChildrenSize(ddlLockPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
                     LOGGER.warn("waiting for DDL finished ");
@@ -352,7 +352,7 @@ public class ProxyMetaManager {
 
             times = 0;
             String viewLockPath = ClusterPathUtil.getViewLockPath();
-            while (ClusterHelper.getChildrenSize(viewLockPath) > 0) {
+            while (!StringUtil.isEmpty(ClusterHelper.getPathValue(viewLockPath)) && ClusterHelper.getChildrenSize(viewLockPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
                     LOGGER.warn("waiting for view finished");

@@ -242,7 +242,7 @@ public final class PauseShardingNodeManager {
 
     public void resumeCluster() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
 
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
@@ -252,6 +252,7 @@ public final class PauseShardingNodeManager {
             ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getPauseResumePath(), "");
 
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
             distributeLock.release();
         }
 

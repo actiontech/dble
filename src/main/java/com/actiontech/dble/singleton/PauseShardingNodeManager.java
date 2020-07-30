@@ -230,8 +230,8 @@ public final class PauseShardingNodeManager {
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
                     LOGGER.info("wait for cluster timeout, try to resume the self & others");
                     PauseShardingNodeManager.getInstance().resume();
-                    PauseShardingNodeManager.getInstance().resumeCluster();
                     c.writeErrMessage(1003, "There are some node in cluster can't recycle backend");
+                    PauseShardingNodeManager.getInstance().resumeCluster();
                     return false;
                 }
             }
@@ -242,15 +242,15 @@ public final class PauseShardingNodeManager {
 
     public void resumeCluster() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
+
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
-
             LOGGER.info("try to resume cluster and waiting for others to response");
 
             ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(), "");
             ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getPauseResumePath(), "");
 
-            ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
             distributeLock.release();
         }

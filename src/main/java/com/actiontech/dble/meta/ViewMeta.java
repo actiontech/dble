@@ -51,6 +51,9 @@ public class ViewMeta {
         //check if the select part has
         checkDuplicate(viewParser.getType());
         parseSelectInView();
+        if (viewParser.getType() != ViewMetaParser.TYPE_CREATE_VIEW) {
+            createSql = "replace view " + viewName + " as " + selectSql;
+        }
     }
 
     private void parseSelectInView() throws SQLException {
@@ -197,21 +200,9 @@ public class ViewMeta {
         return getFirstNoMergeNode(node);
     }
 
-    /**
-     * get the select part of view create sql
-     *
-     * @return
-     */
-    public String parseSelect() {
-        return null;
-    }
 
     public String getCreateSql() {
         return createSql;
-    }
-
-    public void setCreateSql(String createSql) {
-        this.createSql = createSql;
     }
 
     public String getViewName() {
@@ -226,9 +217,6 @@ public class ViewMeta {
         return viewQuery;
     }
 
-    public void setViewQuery(QueryNode viewQuery) {
-        this.viewQuery = viewQuery;
-    }
 
     public String getSelectSql() {
         return selectSql;

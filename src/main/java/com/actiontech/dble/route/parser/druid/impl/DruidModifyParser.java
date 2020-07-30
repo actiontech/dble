@@ -69,6 +69,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         String sName = tn.getKey();
         String tName = tn.getValue();
         SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
+        if (tSchema == null) {
+            throw new SQLNonTransientException(sName + "." + tName + " not exists");
+        }
         BaseTableConfig tConfig = tSchema.getTables().get(tName);
 
         if (tConfig != null) {
@@ -338,6 +341,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     String sName = table.getKey();
                     String tName = table.getValue();
                     SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
+                    if (tSchema == null) {
+                        throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                    }
                     BaseTableConfig tConfig = tSchema.getTables().get(tName);
                     if (tConfig != null && tConfig instanceof ShardingTableConfig) {
                         if (!CollectionUtil.containDuplicate(visitor.getSelectTableList(), tName)) {
@@ -359,6 +365,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             String sName = table.getKey();
             String tName = table.getValue();
             SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
+            if (tSchema == null) {
+                throw new SQLNonTransientException(sName + "." + tName + " not exists");
+            }
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
                 if (!dataNode.equals(tSchema.getShardingNode())) {
@@ -382,51 +391,21 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     Collection<String> checkForSingleNodeTable(RouteResultset rrs) throws SQLNonTransientException {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
         Set<String> involvedNodeSet = new HashSet<>();
-        //loop for the tables & conditions
-        for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
-            Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
-            if (tablesAndConditions != null) {
-                for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
-                    Pair<String, String> table = entry.getKey();
-                    String sName = table.getKey();
-                    String tName = table.getValue();
-                    SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
-                    BaseTableConfig tConfig = tSchema.getTables().get(tName);
-                    if (tConfig != null && tConfig instanceof ShardingTableConfig) {
-                        if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, involvedNodeSet, tablesSet, entry, table, tConfig)) {
-                            throw new SQLNonTransientException(getErrorMsg());
-                        }
-                    }
 
-                }
-            }
-        }
-
+        routeForShardingConditionsToOneNode(rrs, tablesSet, involvedNodeSet);
         String currentNode = null;
         for (String x : involvedNodeSet) {
             currentNode = x;
         }
 
-        if (currentNode == null) {
-            for (Pair<String, String> table : tablesSet) {
-                String sName = table.getKey();
-                String tName = table.getValue();
-                SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
-                BaseTableConfig tConfig = tSchema.getTables().get(tName);
-                if (tConfig != null && tConfig.getShardingNodes().size() == 1) {
-                    currentNode = tConfig.getShardingNodes().get(0);
-                    involvedNodeSet.add(currentNode);
-                } else if (tConfig == null) {
-                    currentNode = tSchema.getShardingNode();
-                    involvedNodeSet.add(currentNode);
-                }
-            }
-        }
+        routeForNoShardingTablesToOneNode(currentNode, tablesSet, involvedNodeSet);
+
 
         if (involvedNodeSet.size() > 1 || currentNode == null) {
             throw new SQLNonTransientException(getErrorMsg());
         }
 
+        //check for table remain
         for (Pair<String, String> table : tablesSet) {
             String sName = table.getKey();
             String tName = table.getValue();
@@ -447,6 +426,54 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             }
         }
         return involvedNodeSet;
+    }
+
+
+    void routeForShardingConditionsToOneNode(RouteResultset rrs, Set<Pair<String, String>> tablesSet, Set<String> involvedNodeSet) throws SQLNonTransientException {
+        //sharding calculate
+        //loop for the tables & conditions
+        for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
+            Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
+            if (tablesAndConditions != null) {
+                for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
+                    Pair<String, String> table = entry.getKey();
+                    String sName = table.getKey();
+                    String tName = table.getValue();
+                    SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
+                    if (tSchema == null) {
+                        throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                    }
+                    BaseTableConfig tConfig = tSchema.getTables().get(tName);
+                    if (tConfig != null && tConfig instanceof ShardingTableConfig) {
+                        if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, involvedNodeSet, tablesSet, entry, table, tConfig)) {
+                            throw new SQLNonTransientException(getErrorMsg());
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    void routeForNoShardingTablesToOneNode(String currentNode, Set<Pair<String, String>> tablesSet, Set<String> involvedNodeSet) throws SQLNonTransientException {
+        if (currentNode == null) {
+            for (Pair<String, String> table : tablesSet) {
+                String sName = table.getKey();
+                String tName = table.getValue();
+                SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
+                if (tSchema == null) {
+                    throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                }
+                BaseTableConfig tConfig = tSchema.getTables().get(tName);
+                if (tConfig != null && tConfig.getShardingNodes().size() == 1) {
+                    currentNode = tConfig.getShardingNodes().get(0);
+                    involvedNodeSet.add(currentNode);
+                } else if (tConfig == null) {
+                    currentNode = tSchema.getShardingNode();
+                    involvedNodeSet.add(currentNode);
+                }
+            }
+        }
     }
 
     static RouteResultset routeByERParentColumn(RouteResultset rrs, ChildTableConfig tc, String joinColumnVal, SchemaUtil.SchemaInfo schemaInfo)

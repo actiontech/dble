@@ -7,10 +7,7 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -73,6 +70,10 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void put(String schemaName, String viewName, String createSql) {
+        if (DistributeLockManager.isLooked(ClusterPathUtil.getSyncMetaLockPath())) {
+            String msg = "There is another instance init meta data, try it later.";
+            throw new RuntimeException(msg);
+        }
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
                 SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
         final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
@@ -117,6 +118,10 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void delete(String schemaName, String viewName) {
+        if (DistributeLockManager.isLooked(ClusterPathUtil.getSyncMetaLockPath())) {
+            String msg = "There is another instance init meta data, try it later.";
+            throw new RuntimeException(msg);
+        }
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
                 SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
         final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);

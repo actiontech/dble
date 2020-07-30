@@ -64,6 +64,16 @@ public final class ClusterHelper {
         }
     }
 
+
+    public static String getPathKey(String path) throws Exception {
+        KvBean kv = getKV(path);
+        if (kv == null) {
+            return null;
+        } else {
+            return kv.getKey();
+        }
+    }
+
     public static List<KvBean> getKVPath(String path) throws Exception {
         return ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path);
     }

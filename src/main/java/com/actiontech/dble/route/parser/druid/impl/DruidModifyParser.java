@@ -398,7 +398,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             currentNode = x;
         }
 
-        routeForNoShardingTablesToOneNode(currentNode, tablesSet, involvedNodeSet);
+        currentNode = routeForNoShardingTablesToOneNode(currentNode, tablesSet, involvedNodeSet);
 
 
         if (involvedNodeSet.size() > 1 || currentNode == null) {
@@ -455,7 +455,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         }
     }
 
-    void routeForNoShardingTablesToOneNode(String currentNode, Set<Pair<String, String>> tablesSet, Set<String> involvedNodeSet) throws SQLNonTransientException {
+    String routeForNoShardingTablesToOneNode(String currentNode, Set<Pair<String, String>> tablesSet, Set<String> involvedNodeSet) throws SQLNonTransientException {
         if (currentNode == null) {
             for (Pair<String, String> table : tablesSet) {
                 String sName = table.getKey();
@@ -474,6 +474,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 }
             }
         }
+        return currentNode;
     }
 
     static RouteResultset routeByERParentColumn(RouteResultset rrs, ChildTableConfig tc, String joinColumnVal, SchemaUtil.SchemaInfo schemaInfo)

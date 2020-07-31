@@ -132,6 +132,7 @@ public class FieldListHandler implements ResponseHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+        session.releaseConnectionIfSafe(conn, false);
         session.getSource().write(buffer);
     }
 

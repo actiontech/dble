@@ -18,6 +18,7 @@ import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -149,6 +150,12 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         this.handler.setReadOnly(readOnly);
         this.handler.setSessionReadOnly(sessionReadOnly);
         this.handler.query(sql);
+    }
+
+    @Override
+    protected void taskToTotalQueue(ServiceTask task) {
+        session.setRequestTime();
+        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
     @Override

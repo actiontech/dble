@@ -191,6 +191,11 @@ public class MySQLResponseService extends MySQLBasedService {
             executor = DbleServer.getInstance().getBackendBusinessExecutor();
         }
 
+        if (session != null) {
+            if (session.isKilled()) return;
+            session.setBackendResponseTime(this);
+        }
+
         if (isHandling.compareAndSet(false, true)) {
             executor.execute(new Runnable() {
                 @Override

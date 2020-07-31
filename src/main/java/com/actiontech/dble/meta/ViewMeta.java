@@ -52,7 +52,7 @@ public class ViewMeta {
         checkDuplicate(viewParser.getType());
         parseSelectInView();
         if (viewParser.getType() != ViewMetaParser.TYPE_CREATE_VIEW) {
-            createSql = "replace view " + viewName + " as " + selectSql;
+            createSql = "create or replace view " + viewName + " as " + selectSql;
         }
     }
 

@@ -186,8 +186,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         LOGGER.warn("backend connect " + reason + ", conn info:" + service);
         ErrorPacket errPacket = new ErrorPacket();
-        byte lastPacketId = (byte) session.getShardingService().nextPacketId();
-        errPacket.setPacketId(++lastPacketId);
+        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         reason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getConnection().getSchema() + "],threadID[" +
                 ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
@@ -241,11 +240,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         pauseTime((MySQLResponseService) service);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
-        err = errPacket;
         session.resetMultiStatementStatus();
         lock.lock();
         try {
             if (!isFail()) {
+                err = errPacket;
+                errPacket.setPacketId(session.getShardingService().nextPacketId());
                 setFail(new String(err.getMessage()));
             }
             if (errConnection == null) {
@@ -258,8 +258,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 } else if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
                 }
-                errPacket.setPacketId(session.getShardingService().nextPacketId()); //just for normal error
-                handleEndPacket(errPacket, AutoTxOperation.ROLLBACK, false);
+                //just for normal error
+                handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
             }
         } finally {
             lock.unlock();

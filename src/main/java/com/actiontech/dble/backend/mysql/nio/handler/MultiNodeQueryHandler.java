@@ -87,6 +87,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.resultSize = 0;
     }
 
+    public void writeRemingBuffer() {
+        if (byteBuffer != null) {
+            session.getSource().write(byteBuffer);
+        }
+    }
+
     public NonBlockingSession getSession() {
         return session;
     }

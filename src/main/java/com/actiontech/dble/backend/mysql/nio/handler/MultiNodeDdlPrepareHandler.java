@@ -325,6 +325,11 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     public void clearAfterFailExecute() {
     }
 
+    @Override
+    public void writeRemingBuffer() {
+
+    }
+
     private void handleRollbackPacket(byte[] data, String reason) {
         ShardingService source = session.getShardingService();
         boolean inTransaction = !source.isAutocommit() || source.isTxStart();

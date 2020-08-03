@@ -1031,7 +1031,6 @@ public class NonBlockingSession extends Session {
         return false;
     }
 
-
     public OkPacket getOKPacket() {
         OkPacket ok = new OkPacket();
         byte packet = (byte) this.getPacketId().incrementAndGet();

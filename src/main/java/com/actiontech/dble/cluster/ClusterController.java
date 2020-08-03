@@ -54,16 +54,7 @@ public final class ClusterController {
 
 
     public static void loadClusterProperties() throws InvocationTargetException, IllegalAccessException {
-        Properties pros = new Properties();
-
-        try (InputStream configIS = ResourceUtil.getResourceAsStream(CONFIG_FILE_NAME)) {
-            if (configIS == null) {
-                LOGGER.warn(CONFIG_FILE_NAME + " is not exists");
-            }
-            pros.load(configIS);
-        } catch (IOException e) {
-            LOGGER.error("ClusterController load " + CONFIG_FILE_NAME + " error:", e);
-        }
+        Properties pros = readClusterProperties();
         ClusterConfig clusterConfig = ClusterConfig.getInstance();
 
         ParameterMapping.mapping(clusterConfig, pros, StartProblemReporter.getInstance());
@@ -83,6 +74,20 @@ public final class ClusterController {
                 StartProblemReporter.getInstance().addError("rootPath need to set in cluster.cnf when clusterEnable is true");
             }
         }
+    }
+
+    public static Properties readClusterProperties() {
+        Properties pros = new Properties();
+
+        try (InputStream configIS = ResourceUtil.getResourceAsStream(CONFIG_FILE_NAME)) {
+            if (configIS == null) {
+                LOGGER.warn(CONFIG_FILE_NAME + " is not exists");
+            }
+            pros.load(configIS);
+        } catch (IOException e) {
+            LOGGER.error("ClusterController load " + CONFIG_FILE_NAME + " error:", e);
+        }
+        return pros;
     }
 
 }

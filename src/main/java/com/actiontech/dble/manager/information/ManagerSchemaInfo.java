@@ -5,10 +5,7 @@
 
 package com.actiontech.dble.manager.information;
 
-import com.actiontech.dble.manager.information.tables.DemoTest1;
-import com.actiontech.dble.manager.information.tables.DemoTest2;
-import com.actiontech.dble.manager.information.tables.DbleVariables;
-import com.actiontech.dble.manager.information.tables.Version;
+import com.actiontech.dble.manager.information.tables.*;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -26,12 +23,15 @@ public final class ManagerSchemaInfo {
 
         registerTable(new Version());
         registerTable(new DbleVariables());
+        registerTable(new DbleThreadPool());
+        registerTable(new DbleFrontConnections());
     }
 
 
     private void registerTable(ManagerBaseTable table) {
         tables.put(table.getTableName(), table);
     }
+
     public static ManagerSchemaInfo getInstance() {
         return INSTANCE;
     }

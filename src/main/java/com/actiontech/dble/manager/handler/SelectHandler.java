@@ -27,13 +27,17 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.ParserException;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
 import static com.actiontech.dble.route.parser.ManagerParseSelect.*;
 
 public final class SelectHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SelectHandler.class);
     private SelectHandler() {
     }
 
@@ -67,7 +71,8 @@ public final class SelectHandler {
                         c.writeErrMessage(ErrorCode.ER_YES, "no valid dbGroup/dbInstance");
                     }
                 } else {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                    LOGGER.warn("Unsupported select:" + stmt);
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement " + stmt);
                 }
         }
 
@@ -75,7 +80,12 @@ public final class SelectHandler {
 
     private static boolean isSupportSelect(String stmt) {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
-        SQLStatement statement = parser.parseStatement();
+        SQLStatement statement;
+        try {
+            statement = parser.parseStatement();
+        } catch (ParserException e) {
+            return false;
+        }
         if (!(statement instanceof SQLSelectStatement)) {
             return false;
         }

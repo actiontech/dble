@@ -21,7 +21,10 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowWarningsStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.ParserException;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
@@ -30,6 +33,7 @@ import java.util.Iterator;
  * @author mycat
  */
 public final class ShowHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowHandler.class);
     private ShowHandler() {
     }
 
@@ -263,14 +267,20 @@ public final class ShowHandler {
                         c.writeErrMessage(ErrorCode.ER_YES, "no valid dbGroup");
                     }
                 } else {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                    LOGGER.warn("Unsupported show:" + stmt);
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement " + stmt);
                 }
         }
     }
 
     private static boolean isSupportShow(String stmt) {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
-        SQLStatement statement = parser.parseStatement();
+        SQLStatement statement;
+        try {
+            statement = parser.parseStatement();
+        } catch (ParserException e) {
+            return false;
+        }
         return statement instanceof MySqlShowWarningsStatement || statement instanceof MySqlShowVariantsStatement;
     }
 }

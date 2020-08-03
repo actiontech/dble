@@ -136,7 +136,7 @@ public final class UpdateHandler {
 
     private String getColumnName(String columnName, String expectTableName) throws SQLException {
         if (columnName.contains(StringUtil.TABLE_COLUMN_SEPARATOR)) {
-            String[] columnInfo = columnName.split(StringUtil.TABLE_COLUMN_SEPARATOR);
+            String[] columnInfo = columnName.split("\\.");
             if (columnInfo.length > 3) {
                 throw new SQLException("Unknown column '" + columnName + "' in 'field list'", "42S22", ErrorCode.ER_BAD_FIELD_ERROR);
             } else if (columnInfo.length == 3) {

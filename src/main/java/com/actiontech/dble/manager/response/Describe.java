@@ -63,7 +63,7 @@ public final class Describe {
         String tableName = stmt.substring(offset).trim().toLowerCase();
         ManagerBaseTable table = ManagerSchemaInfo.getInstance().getTables().get(tableName);
         if (table == null) {
-            c.writeErrMessage("42S02", " Table '" + ManagerSchemaInfo.SCHEMA_NAME + "." + table + "' doesn't exist", ErrorCode.ER_NO_SUCH_TABLE);
+            c.writeErrMessage("42S02", " Table '" + ManagerSchemaInfo.SCHEMA_NAME + "." + tableName + "' doesn't exist", ErrorCode.ER_NO_SUCH_TABLE);
             return;
         }
         ByteBuffer buffer = c.allocate();

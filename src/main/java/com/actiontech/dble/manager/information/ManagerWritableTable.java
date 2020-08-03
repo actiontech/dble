@@ -64,12 +64,13 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
             List<SQLExpr> value = valuesClause.getValues();
             LinkedHashMap<String, String> row = new LinkedHashMap<>();
             int index = 0;
-            for (String columnName : columns.keySet()) {
+            for (Map.Entry<String, ColumnMeta> column : columns.entrySet()) {
+                String columnName = column.getKey();
                 if (insertColumns.size() > index && columnName.equals(insertColumns.get(index))) {
                     row.put(columnName, ManagerTableUtil.valueToString(value.get(index)));
                     index++;
                 } else {
-                    row.put(columnName, columns.get(columnName).getDefaultVal());
+                    row.put(columnName, column.getValue().getDefaultVal());
                 }
             }
             lst.add(row);

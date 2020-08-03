@@ -1025,16 +1025,6 @@ public class NonBlockingSession implements Session {
         return false;
     }
 
-
-    public void multiStatementNextSql(boolean flag) {
-        //todo 多语句回环需要处理 后续删除
-        /*if (flag) {
-            this.setRequestTime();
-            this.setQueryStartTime(System.currentTimeMillis());
-            DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) shardingService.getHandler());
-        }*/
-    }
-
     public OkPacket getOKPacket() {
         OkPacket ok = new OkPacket();
         byte packet = (byte) this.getPacketId().incrementAndGet();

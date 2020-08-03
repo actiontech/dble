@@ -20,4 +20,7 @@ public interface ExecutableHandler {
      * execute the handler
      */
     void clearAfterFailExecute();
+
+
+    void writeRemingBuffer();
 }

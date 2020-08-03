@@ -78,17 +78,13 @@ public final class KillHandler {
         NonBlockingSession killSession = ((ShardingService) killConn.getService()).getSession2();
         if (killSession.getTransactionManager().getXAStage() != null ||
                 killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
-            boolean multiStatementFlag = service.getSession2().getIsMultiStatement().get();
             getOkPacket(service).write(service.getConnection());
-            service.getSession2().multiStatementNextSql(multiStatementFlag);
             return;
         }
 
         killSession.setKilled(true);
         // return ok to front connection that sends kill query
-        boolean multiStatementFlag = service.getSession2().getIsMultiStatement().get();
         getOkPacket(service).write(service.getConnection());
-        service.getSession2().multiStatementNextSql(multiStatementFlag);
 
         while (true) {
             if (!killSession.isKilled()) {

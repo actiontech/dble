@@ -139,6 +139,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
+    public void writeRemingBuffer() {
+
+    }
+
+    @Override
     public void connectionAcquired(final BackendConnection conn) {
         session.bindConnection(node, conn);
         execute(conn);

@@ -4,12 +4,12 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.DbInstanceStatus;
+import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.cluster.values.DbInstanceStatus;
-import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.util.DbXmlWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
@@ -146,7 +146,7 @@ public final class HaConfigManager {
             jsonObject.addProperty(JSON_NAME, dbGroup.getName());
             List<DbInstanceStatus> list = new ArrayList<>();
             for (DBInstance dbInstance : dbGroup.getDbInstance()) {
-                list.add(new DbInstanceStatus(dbInstance.getName(), "true".equals(dbInstance.getDisabled()), dbInstance.getPrimary()));
+                list.add(new DbInstanceStatus(dbInstance.getName(), "true".equals(dbInstance.getDisabled()), dbInstance.getPrimary() != null && dbInstance.getPrimary()));
             }
             Gson gson = new Gson();
             jsonObject.add(JSON_LIST, gson.toJsonTree(list));

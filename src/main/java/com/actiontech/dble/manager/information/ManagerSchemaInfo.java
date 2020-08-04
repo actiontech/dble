@@ -25,6 +25,7 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleVariables());
         registerTable(new DbleThreadPool());
         registerTable(new DbleFrontConnections());
+        registerTable(new DbleBackendConnections());
     }
 
 

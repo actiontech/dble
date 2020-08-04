@@ -862,6 +862,10 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
         return respHandler;
     }
 
+    public NonBlockingSession getSession() {
+        return session;
+    }
+
     public void setSession(NonBlockingSession session) {
         this.session = session;
         if (handler instanceof MySQLConnectionHandler) {

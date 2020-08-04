@@ -7,9 +7,12 @@ package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
+import com.actiontech.dble.meta.TableMeta;
+import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -25,6 +28,7 @@ import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
+import com.actiontech.dble.util.HexFormatUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -143,7 +147,7 @@ public final class RouterUtil {
             if (unit.isAlwaysFalse()) {
                 rrs.setAlwaysFalse(true);
             }
-            RouteResultset rrsTmp = RouterUtil.tryRouteForTablesComplex(schemaMap, druidParser.getCtx(), unit, rrs);
+            RouteResultset rrsTmp = RouterUtil.tryRouteForTablesComplex(schemaMap, druidParser.getCtx(), unit, rrs, sc.getCharset().getClient());
             if (rrsTmp != null && (rrsTmp.getNodes() != null || rrsTmp.getNodes().length != 0)) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {
@@ -198,7 +202,7 @@ public final class RouterUtil {
             if (unit.isAlwaysFalse()) {
                 rrs.setAlwaysFalse(true);
             }
-            RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement));
+            RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), sc.getCharset().getClient());
             if (rrsTmp != null && (rrsTmp.getNodes() != null || rrsTmp.getNodes().length != 0)) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {
@@ -360,11 +364,11 @@ public final class RouterUtil {
         }
     }
 
-    private static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, ChildTableConfig tc,
-                                                        ColumnRoute colRoutePairSet) throws SQLNonTransientException {
+    private static Set<String> ruleByJoinValueCalculate(String schemaName, RouteResultset rrs, ChildTableConfig tc,
+                                                        ColumnRoute colRoutePairSet, String clientCharset) throws SQLNonTransientException {
         Set<String> retNodeSet = new LinkedHashSet<>();
         if (tc.getDirectRouteTC() != null) {
-            Set<String> nodeSet = ruleCalculate(rrs, tc.getDirectRouteTC(), colRoutePairSet, false);
+            Set<String> nodeSet = ruleCalculate(schemaName, rrs, tc.getDirectRouteTC(), colRoutePairSet, false, clientCharset);
             if (nodeSet.isEmpty()) {
                 throw new SQLNonTransientException("parent key can't find  valid shardingNode ,expect 1 but found: " + nodeSet.size());
             }
@@ -379,7 +383,7 @@ public final class RouterUtil {
         return retNodeSet;
     }
 
-    public static Set<String> ruleCalculate(RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, boolean ignoreNull) {
+    public static Set<String> ruleCalculate(String schemaName, RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, boolean ignoreNull, String clientCharset) {
         Set<String> routeNodeSet = new LinkedHashSet<>();
         if (columnRoute.getColValue() != null) {
             String value = columnRoute.getColValue();
@@ -389,12 +393,12 @@ public final class RouterUtil {
                 return routeNodeSet;
             }
             if (!ignoreNull || !columnRoute.getColValue().equalsIgnoreCase("null")) {
-                String shardingNode = ruleCalculateSingleValue(tc, columnRoute.getColValue());
+                String shardingNode = ruleCalculateSingleValue(schemaName, tc, columnRoute.getColValue(), clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         } else if (columnRoute.getInValues() != null) {
             for (String value : columnRoute.getInValues()) {
-                String shardingNode = ruleCalculateSingleValue(tc, value);
+                String shardingNode = ruleCalculateSingleValue(schemaName, tc, value, clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         }
@@ -452,7 +456,28 @@ public final class RouterUtil {
         return routeNodeSet;
     }
 
-    private static String ruleCalculateSingleValue(ShardingTableConfig tc, String value) {
+    private static String ruleCalculateSingleValue(String schemaName, ShardingTableConfig tc, String value, String clientCharset) {
+        if (value.startsWith("0x")) {
+            TableMeta orgTbMeta = null;
+            try {
+                orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName,
+                        tc.getName());
+            } catch (SQLNonTransientException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+            String dataType = null;
+            for (TableMeta.ColumnMeta column : orgTbMeta.getColumns()) {
+                if (column.getName().equalsIgnoreCase(tc.getShardingColumn())) {
+                    dataType = column.getDataType();
+                    break;
+                }
+            }
+            if (FieldUtil.isNumberType(dataType)) {
+                value = Long.parseLong(value.substring(2), 16) + "";
+            } else {
+                value = HexFormatUtil.fromHex(value.substring(2), CharsetUtil.getJavaCharset(clientCharset));
+            }
+        }
         Integer nodeIndex = tc.getFunction().calculate(value);
         if (nodeIndex == null) {
             String msg = "can't find any valid shardingNode in table[" + tc.getName() +
@@ -469,7 +494,9 @@ public final class RouterUtil {
         return tc.getShardingNodes().get(nodeIndex);
     }
 
-    public static String tryRouteTablesToOneNodeForComplex(RouteResultset rrs, DruidShardingParseInfo ctx, Set<String> schemaList, int tableSize) throws SQLException {
+    public static String tryRouteTablesToOneNodeForComplex(
+            RouteResultset rrs, DruidShardingParseInfo ctx,
+            Set<String> schemaList, int tableSize, String clientCharset) throws SQLException {
         if (ctx.getTables().size() != tableSize) {
             return null;
         }
@@ -513,7 +540,7 @@ public final class RouterUtil {
                         String tableName = table.getValue();
                         SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
                         BaseTableConfig tableConfig = schema.getTables().get(tableName);
-                        if (!tryCalcNodeForShardingColumn(rrs, tmpResultNodes, tablesSet, entry, table, tableConfig)) {
+                        if (!tryCalcNodeForShardingColumn(schemaName, rrs, tmpResultNodes, tablesSet, entry, table, tableConfig, clientCharset)) {
                             return null;
                         }
                     }
@@ -583,9 +610,9 @@ public final class RouterUtil {
 
 
     public static boolean tryCalcNodeForShardingColumn(
-            RouteResultset rrs, Set<String> resultNodes, Set<Pair<String, String>> tablesSet,
+            String schemaName, RouteResultset rrs, Set<String> resultNodes, Set<Pair<String, String>> tablesSet,
             Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry, Pair<String, String> table,
-            BaseTableConfig tableConfig) throws SQLNonTransientException {
+            BaseTableConfig tableConfig, String clientCharset) throws SQLNonTransientException {
         if (tableConfig == null) {
             return false; //  alias table, may subquery
         }
@@ -602,7 +629,7 @@ public final class RouterUtil {
                 return false;
             }
             try {
-                Set<String> shardingNodeSet = ruleCalculate(rrs, shardingTableConfig, partitionValue, false);
+                Set<String> shardingNodeSet = ruleCalculate(schemaName, rrs, shardingTableConfig, partitionValue, false, clientCharset);
                 resultNodes.addAll(shardingNodeSet);
             } catch (Exception e) { //complex filter
                 return true;
@@ -618,7 +645,7 @@ public final class RouterUtil {
             if (joinColumnValue == null) {
                 return false;
             }
-            Set<String> shardingNodeSet = ruleByJoinValueCalculate(rrs, (ChildTableConfig) tableConfig, joinColumnValue);
+            Set<String> shardingNodeSet = ruleByJoinValueCalculate(schemaName, rrs, (ChildTableConfig) tableConfig, joinColumnValue, clientCharset);
             if (shardingNodeSet.size() > 1) {
                 return false;
             }
@@ -636,7 +663,7 @@ public final class RouterUtil {
      */
     private static RouteResultset tryRouteForTables(
             SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, RouteResultset rrs,
-            boolean isSelect) throws SQLException {
+            boolean isSelect, String clientCharset) throws SQLException {
         List<Pair<String, String>> tables = ctx.getTables();
 
         // no sharding table
@@ -646,7 +673,7 @@ public final class RouterUtil {
         }
 
         if (tables.size() == 1) {
-            return RouterUtil.tryRouteForOneTable(schema, routeUnit, tables.get(0).getValue(), rrs, isSelect);
+            return RouterUtil.tryRouteForOneTable(schema, routeUnit, tables.get(0).getValue(), rrs, isSelect, clientCharset);
         }
 
         /*
@@ -658,7 +685,7 @@ public final class RouterUtil {
         Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
         if (tablesAndConditions != null && tablesAndConditions.size() > 0) {
             //findRouter for shard-ing table
-            RouterUtil.findRouterForTablesInOneSchema(schema, rrs, tablesAndConditions, tablesRouteMap, false);
+            RouterUtil.findRouterForTablesInOneSchema(schema, rrs, tablesAndConditions, tablesRouteMap, false, clientCharset);
             if (rrs.isFinishedRoute()) {
                 return rrs;
             }
@@ -692,8 +719,9 @@ public final class RouterUtil {
     /**
      * tryRouteFor multiTables
      */
-    private static RouteResultset tryRouteForTablesComplex(Map<Pair<String, String>, SchemaConfig> schemaMap, DruidShardingParseInfo ctx,
-                                                           RouteCalculateUnit routeUnit, RouteResultset rrs)
+    private static RouteResultset tryRouteForTablesComplex(
+            Map<Pair<String, String>, SchemaConfig> schemaMap, DruidShardingParseInfo ctx,
+            RouteCalculateUnit routeUnit, RouteResultset rrs, String clientCharset)
             throws SQLException {
 
         List<Pair<String, String>> tables = ctx.getTables();
@@ -706,7 +734,7 @@ public final class RouterUtil {
         }
 
         if (tables.size() == 1) {
-            return RouterUtil.tryRouteForOneTable(schemaMap.get(firstTable), routeUnit, firstTable.getValue(), rrs, true);
+            return RouterUtil.tryRouteForOneTable(schemaMap.get(firstTable), routeUnit, firstTable.getValue(), rrs, true, clientCharset);
         }
 
         /*
@@ -718,7 +746,7 @@ public final class RouterUtil {
         Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
         if (tablesAndConditions != null && tablesAndConditions.size() > 0) {
             //findRouter for shard-ing table
-            RouterUtil.findRouterForMultiSchemaTables(schemaMap, rrs, tablesAndConditions, tablesRouteMap);
+            RouterUtil.findRouterForMultiSchemaTables(schemaMap, rrs, tablesAndConditions, tablesRouteMap, clientCharset);
             if (rrs.isFinishedRoute()) {
                 return rrs;
             }
@@ -774,9 +802,9 @@ public final class RouterUtil {
     /**
      * tryRouteForOneTable
      */
-    public static RouteResultset tryRouteForOneTable(SchemaConfig schema,
-                                                     RouteCalculateUnit routeUnit, String tableName, RouteResultset rrs,
-                                                     boolean isSelect) throws SQLException {
+    public static RouteResultset tryRouteForOneTable(
+            SchemaConfig schema, RouteCalculateUnit routeUnit, String tableName, RouteResultset rrs,
+            boolean isSelect, String clientCharset) throws SQLException {
         BaseTableConfig tc = schema.getTables().get(tableName);
         if (tc == null) {
             String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
@@ -812,7 +840,7 @@ public final class RouterUtil {
                 Pair<String, String> table = new Pair<>(schema.getName(), tableName);
                 Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
                 if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
-                    RouterUtil.findRouterForTablesInOneSchema(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, true);
+                    RouterUtil.findRouterForTablesInOneSchema(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, true, clientCharset);
                     if (rrs.isFinishedRoute()) {
                         return rrs;
                     }
@@ -832,7 +860,7 @@ public final class RouterUtil {
             }
             Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
             if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
-                RouterUtil.findRouterForTablesInOneSchema(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, true);
+                RouterUtil.findRouterForTablesInOneSchema(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, true, clientCharset);
                 if (rrs.isFinishedRoute()) {
                     return rrs;
                 }
@@ -877,7 +905,7 @@ public final class RouterUtil {
     private static void findRouterForMultiSchemaTables(
             Map<Pair<String, String>, SchemaConfig> schemaMap, RouteResultset rrs,
             Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions,
-            Map<Pair<String, String>, Set<String>> tablesRouteMap) throws SQLNonTransientException {
+            Map<Pair<String, String>, Set<String>> tablesRouteMap, String clientCharset) throws SQLNonTransientException {
 
         //router for shard-ing tables
         for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
@@ -888,10 +916,10 @@ public final class RouterUtil {
 
             if (tableConfig != null) {
                 if ((tableConfig instanceof ShardingTableConfig)) {
-                    if (findRouterWithConditionsForShardingTable(rrs, tablesRouteMap, table, (ShardingTableConfig) tableConfig, entry.getValue()))
+                    if (findRouterWithConditionsForShardingTable(schema.getName(), rrs, tablesRouteMap, table, (ShardingTableConfig) tableConfig, entry.getValue(), clientCharset))
                         return;
                 } else if (tableConfig instanceof ChildTableConfig) {
-                    if (findRouterWithConditionsForChildTable(rrs, tablesRouteMap, table, (ChildTableConfig) tableConfig, entry.getValue()))
+                    if (findRouterWithConditionsForChildTable(schema.getName(), rrs, tablesRouteMap, table, (ChildTableConfig) tableConfig, entry.getValue(), clientCharset))
                         return;
                 }
             }
@@ -905,7 +933,7 @@ public final class RouterUtil {
     private static void findRouterForTablesInOneSchema(
             SchemaConfig schema, RouteResultset rrs, Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions,
             Map<Pair<String, String>, Set<String>> tablesRouteMap,
-            boolean isSingleTable) throws SQLNonTransientException {
+            boolean isSingleTable, String clientCharset) throws SQLNonTransientException {
 
         //router for shard-ing tables
         for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
@@ -924,19 +952,19 @@ public final class RouterUtil {
             }
             //shard-ing table,childTable or others . global table or single node shard-ing table will router later
             if ((tableConfig instanceof ShardingTableConfig)) {
-                if (findRouterWithConditionsForShardingTable(rrs, tablesRouteMap, table, (ShardingTableConfig) tableConfig, entry.getValue()))
+                if (findRouterWithConditionsForShardingTable(schema.getName(), rrs, tablesRouteMap, table, (ShardingTableConfig) tableConfig, entry.getValue(), clientCharset))
                     return;
             } else if (tableConfig instanceof ChildTableConfig) {
-                if (findRouterWithConditionsForChildTable(rrs, tablesRouteMap, table, (ChildTableConfig) tableConfig, entry.getValue()))
+                if (findRouterWithConditionsForChildTable(schema.getName(), rrs, tablesRouteMap, table, (ChildTableConfig) tableConfig, entry.getValue(), clientCharset))
                     return;
             }
         }
     }
 
     private static boolean findRouterWithConditionsForShardingTable(
-            RouteResultset rrs, Map<Pair<String, String>, Set<String>> tablesRouteMap,
+            String schemaName, RouteResultset rrs, Map<Pair<String, String>, Set<String>> tablesRouteMap,
             Pair<String, String> table, ShardingTableConfig tableConfig,
-            Map<String, ColumnRoute> columnsMap) throws SQLNonTransientException {
+            Map<String, ColumnRoute> columnsMap, String clientCharset) throws SQLNonTransientException {
 
         String partitionCol = tableConfig.getShardingColumn();
         boolean isFoundPartitionValue = partitionCol != null && columnsMap.get(partitionCol) != null;
@@ -944,7 +972,7 @@ public final class RouterUtil {
         // where filter contains partition column
         if (isFoundPartitionValue) {
             ColumnRoute partitionValue = columnsMap.get(partitionCol);
-            Set<String> shardingNodeSet = ruleCalculate(rrs, tableConfig, partitionValue, rrs.isComplexSQL());
+            Set<String> shardingNodeSet = ruleCalculate(schemaName, rrs, tableConfig, partitionValue, rrs.isComplexSQL(), clientCharset);
             if (shardingNodeSet.size() > 0) {
                 tablesRouteMap.computeIfAbsent(table, k -> new HashSet<>());
                 tablesRouteMap.get(table).addAll(shardingNodeSet);
@@ -958,15 +986,15 @@ public final class RouterUtil {
     }
 
     private static boolean findRouterWithConditionsForChildTable(
-            RouteResultset rrs, Map<Pair<String, String>, Set<String>> tablesRouteMap,
+            String schemaName, RouteResultset rrs, Map<Pair<String, String>, Set<String>> tablesRouteMap,
             Pair<String, String> table, ChildTableConfig tableConfig,
-            Map<String, ColumnRoute> columnsMap) throws SQLNonTransientException {
+            Map<String, ColumnRoute> columnsMap, String clientCharset) throws SQLNonTransientException {
 
         String joinColumn = tableConfig.getJoinColumn();
 
         // where filter contains partition column
         if (joinColumn != null && columnsMap.get(joinColumn) != null) {
-            routerForJoinTable(rrs, tableConfig, columnsMap, joinColumn);
+            routerForJoinTable(schemaName, rrs, tableConfig, columnsMap, joinColumn, clientCharset);
             return true;
         } else {
             //no partition column,router to all nodes
@@ -977,10 +1005,12 @@ public final class RouterUtil {
     }
 
 
-    private static void routerForJoinTable(RouteResultset rrs, ChildTableConfig tableConfig, Map<String, ColumnRoute> columnsMap, String joinColumn) throws SQLNonTransientException {
+    private static void routerForJoinTable(
+            String schemaName, RouteResultset rrs, ChildTableConfig tableConfig, Map<String, ColumnRoute> columnsMap,
+            String joinColumn, String clientCharset) throws SQLNonTransientException {
         //childTable  (if it's ER JOIN of select)must find root table,remove childTable, only left root table
         ColumnRoute joinColumnValue = columnsMap.get(joinColumn);
-        Set<String> shardingNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinColumnValue);
+        Set<String> shardingNodeSet = ruleByJoinValueCalculate(schemaName, rrs, tableConfig, joinColumnValue, clientCharset);
 
         if (shardingNodeSet.isEmpty()) {
             throw new SQLNonTransientException(

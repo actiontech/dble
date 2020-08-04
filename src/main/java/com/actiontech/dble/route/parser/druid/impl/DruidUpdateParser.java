@@ -67,7 +67,7 @@ public class DruidUpdateParser extends DruidModifyParser {
                 routeShardingNodes = checkForMultiNodeGlobal(schemaInfos);
             } else {
                 //try to route to single Node for each table
-                routeShardingNodes = checkForSingleNodeTable(rrs);
+                routeShardingNodes = checkForSingleNodeTable(rrs, sc.getCharset().getClient());
             }
 
             RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
@@ -112,7 +112,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             }
 
             if (update.getLimit() != null) {
-                this.updateAndDeleteLimitRoute(rrs, tableName, schema);
+                this.updateAndDeleteLimitRoute(rrs, tableName, schema, sc.getCharset().getClient());
             }
 
             if (ctx.getTables().size() == 0) {

@@ -86,7 +86,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             if (child.getIncrementColumn() != null) {
                 replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, child.getIncrementColumn());
             }
-            parserChildTable(schemaInfo, rrs, replace, sc, isExplain);
+            parserChildTable(schemaInfo, rrs, replace, sc, isExplain, sc.getCharset().getClient());
             return schema;
         } else if (tc instanceof ShardingTableConfig) {
             ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
@@ -274,7 +274,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, SQLReplaceStatement replace, final ServerConnection sc, boolean isExplain) throws SQLNonTransientException {
+    private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, SQLReplaceStatement replace, final ServerConnection sc, boolean isExplain, String clientCharset) throws SQLNonTransientException {
         final SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
         final ChildTableConfig tc = (ChildTableConfig) (schema.getTables().get(tableName));
@@ -292,7 +292,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         final String sql = RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partition key
-        RouteResultset theRrs = routeByERParentColumn(rrs, tc, realVal, schemaInfo);
+        RouteResultset theRrs = routeByERParentColumn(rrs, tc, realVal, schemaInfo, clientCharset);
         if (theRrs != null) {
             rrs.setFinishedRoute(true);
         } else {
@@ -346,7 +346,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToSting(expr, clientCharset);
+            TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                    schemaInfo.getTable());
+            String shardingValue = shardingValueToSting(expr, clientCharset, orgTbMeta.getColumns().get(shardingColIndex).getDataType());
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // no part find for this record
             if (nodeIndex == null) {
@@ -387,7 +389,10 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                                     SQLReplaceStatement replaceStatement, String clientCharset) throws SQLNonTransientException {
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, replaceStatement, partitionColumn);
         SQLExpr valueExpr = replaceStatement.getValuesList().get(0).getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToSting(valueExpr, clientCharset);
+
+        TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                schemaInfo.getTable());
+        String shardingValue = shardingValueToSting(valueExpr, clientCharset, orgTbMeta.getColumns().get(shardingColIndex).getDataType());
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
         if (nodeIndex == null) {

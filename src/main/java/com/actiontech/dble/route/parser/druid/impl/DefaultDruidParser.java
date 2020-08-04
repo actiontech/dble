@@ -200,10 +200,10 @@ public class DefaultDruidParser implements DruidParser {
      * if the update/delete with limit route to more than one sharding-table throw a new Execption
      *
      */
-    void updateAndDeleteLimitRoute(RouteResultset rrs, String tableName, SchemaConfig schema) throws SQLException {
+    void updateAndDeleteLimitRoute(RouteResultset rrs, String tableName, SchemaConfig schema, String clientCharset) throws SQLException {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false);
+            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false, clientCharset);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
             }

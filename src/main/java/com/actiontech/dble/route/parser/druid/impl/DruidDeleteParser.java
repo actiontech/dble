@@ -70,7 +70,7 @@ public class DruidDeleteParser extends DruidModifyParser {
                 routeShardingNodes = checkForMultiNodeGlobal(schemaInfos);
             } else {
                 //try to route to single Node for each table
-                routeShardingNodes = checkForSingleNodeTable(rrs);
+                routeShardingNodes = checkForSingleNodeTable(rrs, sc.getCharset().getClient());
             }
 
             RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
@@ -108,7 +108,7 @@ public class DruidDeleteParser extends DruidModifyParser {
             }
 
             if (delete.getLimit() != null) {
-                this.updateAndDeleteLimitRoute(rrs, tableName, schema);
+                this.updateAndDeleteLimitRoute(rrs, tableName, schema, sc.getCharset().getClient());
             }
         }
         return schema;

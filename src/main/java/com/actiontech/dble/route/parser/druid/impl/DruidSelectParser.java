@@ -101,7 +101,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                         return schemaInfo.getSchemaConfig();
                     }
                     if (visitor.getSubQueryList().size() > 0) {
-                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction(), sc.getCharset().getClient());
                     }
 
                     //route for single table
@@ -113,11 +113,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
                 super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction(), sc.getCharset().getClient());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction(), sc.getCharset().getClient());
         }
         return schema;
     }
@@ -152,7 +152,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (unit.isAlwaysFalse()) {
                     rrs.setAlwaysFalse(true);
                 }
-                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true);
+                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true, sc.getCharset().getClient());
                 if (rrsTmp != null && rrsTmp.getNodes() != null) {
                     Collections.addAll(nodeSet, rrsTmp.getNodes());
                     if (rrsTmp.isGlobalTable()) {
@@ -193,7 +193,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                                 SQLSelectStatement selectStmt) throws SQLException {
         super.visitorParse(schema, rrs, selectStmt, visitor, sc, isExplain);
         if (visitor.getSubQueryList().size() > 0) {
-            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction(), sc.getCharset().getClient());
             return;
         }
         RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
@@ -211,9 +211,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         return false;
     }
 
-    private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
+    private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize, String clientCharset) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize);
+        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize, clientCharset);
         if (shardingNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
@@ -479,7 +479,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         return groupByCols;
     }
 
-    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc, int tableSize, boolean ontainsInnerFunction)
+    private SchemaConfig executeComplexSQL(
+            String schemaName, SchemaConfig schema, RouteResultset rrs,
+            SQLSelectStatement selectStmt, ServerConnection sc, int tableSize, boolean containsInnerFunction, String clientCharset)
             throws SQLException {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
@@ -489,12 +491,12 @@ public class DruidSelectParser extends DefaultDruidParser {
             MysqlSystemSchemaHandler.handle(sc, null, selectStmt.getSelect().getQuery());
             rrs.setFinishedExecute(true);
             return schema;
-        } else if (ontainsInnerFunction) {
+        } else if (containsInnerFunction) {
             rrs.setNeedOptimizer(true);
             rrs.setSqlStatement(selectStmt);
             return schema;
         } else {
-            tryRouteToOneNodeForComplex(rrs, selectStmt, tableSize);
+            tryRouteToOneNodeForComplex(rrs, selectStmt, tableSize, clientCharset);
             return schema;
         }
     }

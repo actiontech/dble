@@ -47,8 +47,8 @@ abstract class DruidModifyParser extends DefaultDruidParser {
 
 
     private void routeForSourceTable(ShardingTableConfig tc, RouteResultset rrs, Set<String> allNodeSet, SchemaConfig schema,
-                                     RouteCalculateUnit routeUnit, ArrayList<String> partNodeList) throws SQLException {
-        RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, routeUnit, tc.getName(), rrs, true);
+                                     RouteCalculateUnit routeUnit, ArrayList<String> partNodeList, String clientCharset) throws SQLException {
+        RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, routeUnit, tc.getName(), rrs, true, clientCharset);
         if (rrsTmp != null && rrsTmp.getNodes() != null) {
             for (RouteResultsetNode n : rrsTmp.getNodes()) {
                 partNodeList.add(n.getName());
@@ -183,15 +183,14 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * check the each table has the relation to connection to data-from table
      */
     private void checkForShardingSingleRouteUnit(Map<String, List<String>> notShardingTableMap, RouteCalculateUnit routeUnit, RouteTableConfigInfo dataSourceTc,
-                                                 ServerSchemaStatVisitor visitor, Map<String, String> tableAliasMap, Set<String> allNodeSet, SchemaConfig schema,
-                                                 ShardingTableConfig tc, RouteResultset rrs) throws SQLException {
+                                                 ServerSchemaStatVisitor visitor, Map<String, String> tableAliasMap, Set<String> allNodeSet, RouteResultset rrs, String clientCharset) throws SQLException {
         Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
         if (tablesAndConditions != null) {
             Pair<String, String> key = new Pair<>(dataSourceTc.getSchema(), dataSourceTc.getTableConfig().getName());
             if (!CollectionUtil.containDuplicate(visitor.getSelectTableList(), dataSourceTc.getTableConfig().getName())) {
                 ArrayList<String> partNodeList = new ArrayList<>();
                 routeForSourceTable((ShardingTableConfig) dataSourceTc.getTableConfig(), rrs, allNodeSet,
-                        DbleServer.getInstance().getConfig().getSchemas().get(dataSourceTc.getSchema()), routeUnit, partNodeList);
+                        DbleServer.getInstance().getConfig().getSchemas().get(dataSourceTc.getSchema()), routeUnit, partNodeList, clientCharset);
 
                 for (Pair<String, String> tn : ctx.getTables()) {
                     if (tn.equals(key)) {
@@ -212,15 +211,15 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * the scene change to route to single node
      */
     private Collection<String> checkShardingKeyConstant(RouteTableConfigInfo dataSourceTc, RouteResultset rrs, ServerSchemaStatVisitor visitor,
-                                                        String tableName, ShardingTableConfig tc, SchemaConfig schema) throws SQLException {
+                                                        String tableName, ShardingTableConfig tc, SchemaConfig schema, String clientCharset) throws SQLException {
         RouteCalculateUnit singleRouteUnit = new RouteCalculateUnit();
         singleRouteUnit.addShardingExpr(new Pair<>(dataSourceTc.getSchema(), tableName), tc.getShardingColumn(), dataSourceTc.getValue());
-        RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, singleRouteUnit, tc.getName(), rrs, true);
+        RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, singleRouteUnit, tc.getName(), rrs, true, clientCharset);
         if (rrsTmp != null && rrsTmp.getNodes() != null) {
             if (rrsTmp.getNodes().length > 1) {
                 throw new SQLNonTransientException(getErrorMsg());
             }
-            checkForSingleNodeTable(visitor, rrsTmp.getNodes()[0].getName(), rrs);
+            checkForSingleNodeTable(visitor, rrsTmp.getNodes()[0].getName(), rrs, clientCharset);
             return ImmutableList.of(rrsTmp.getNodes()[0].getName());
         } else {
             throw new SQLNonTransientException(getErrorMsg());
@@ -234,7 +233,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + the select can be ER route to all the dataNodes
      */
     Collection<String> checkForShardingTable(ServerSchemaStatVisitor visitor, SQLSelect select, ServerConnection sc, RouteResultset rrs,
-                                             ShardingTableConfig tc, SchemaUtil.SchemaInfo schemaInfo, SQLStatement stmt, SchemaConfig schema) throws SQLException {
+                                             ShardingTableConfig tc, SchemaUtil.SchemaInfo schemaInfo, SQLStatement stmt, SchemaConfig schema, String clientCharset) throws SQLException {
         //the insert table is a sharding table
         String tableName = schemaInfo.getTable();
         String schemaName = schema == null ? null : schema.getName();
@@ -252,7 +251,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             if (dataSourceTc == null) {
                 throw new SQLNonTransientException(getErrorMsg());
             } else if (dataSourceTc.getTableConfig() == null) {
-                return checkShardingKeyConstant(dataSourceTc, rrs, visitor, tableName, tc, schema);
+                return checkShardingKeyConstant(dataSourceTc, rrs, visitor, tableName, tc, schema, clientCharset);
             } else if (dataSourceTc.getTableConfig() instanceof ShardingTableConfig && isSameSharding(tc, (ShardingTableConfig) (dataSourceTc.getTableConfig()))) {
                 Map<String, String> tableAliasMap = getTableAliasMap(schemaName, visitor.getAliasMap());
                 ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schemaName));
@@ -261,7 +260,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 Set<String> allNodeSet = new HashSet<>();
 
                 for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
-                    checkForShardingSingleRouteUnit(notShardingTableMap, routeUnit, dataSourceTc, visitor, tableAliasMap, allNodeSet, schema, tc, rrs);
+                    checkForShardingSingleRouteUnit(notShardingTableMap, routeUnit, dataSourceTc, visitor, tableAliasMap, allNodeSet, rrs, clientCharset);
                 }
 
                 for (Map.Entry<String, List<String>> entry : notShardingTableMap.entrySet()) {
@@ -329,7 +328,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + sharding table has condition to route to the dataNode
      * + nosharding/global table exists in that dataNode
      */
-    void checkForSingleNodeTable(ServerSchemaStatVisitor visitor, String dataNode, RouteResultset rrs) throws SQLNonTransientException {
+    void checkForSingleNodeTable(ServerSchemaStatVisitor visitor, String dataNode, RouteResultset rrs, String clientCharset) throws SQLNonTransientException {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
 
         //loop for the tables & conditions
@@ -349,7 +348,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                         if (!CollectionUtil.containDuplicate(visitor.getSelectTableList(), tName)) {
                             Set<String> tmpResultNodes = new HashSet<>();
                             tmpResultNodes.add(dataNode);
-                            if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, tmpResultNodes, tablesSet, entry, table, tConfig)) {
+                            if (!RouterUtil.tryCalcNodeForShardingColumn(sName, rrs, tmpResultNodes, tablesSet, entry, table, tConfig, clientCharset)) {
                                 throw new SQLNonTransientException(getErrorMsg());
                             }
                         } else {
@@ -388,11 +387,11 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
 
-    Collection<String> checkForSingleNodeTable(RouteResultset rrs) throws SQLNonTransientException {
+    Collection<String> checkForSingleNodeTable(RouteResultset rrs, String clientCharset) throws SQLNonTransientException {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
         Set<String> involvedNodeSet = new HashSet<>();
 
-        routeForShardingConditionsToOneNode(rrs, tablesSet, involvedNodeSet);
+        routeForShardingConditionsToOneNode(rrs, tablesSet, involvedNodeSet, clientCharset);
         String currentNode = null;
         for (String x : involvedNodeSet) {
             currentNode = x;
@@ -429,7 +428,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
     }
 
 
-    void routeForShardingConditionsToOneNode(RouteResultset rrs, Set<Pair<String, String>> tablesSet, Set<String> involvedNodeSet) throws SQLNonTransientException {
+    private void routeForShardingConditionsToOneNode(RouteResultset rrs, Set<Pair<String, String>> tablesSet, Set<String> involvedNodeSet, String clientCharset) throws SQLNonTransientException {
         //sharding calculate
         //loop for the tables & conditions
         for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
@@ -445,7 +444,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     }
                     BaseTableConfig tConfig = tSchema.getTables().get(tName);
                     if (tConfig != null && tConfig instanceof ShardingTableConfig) {
-                        if (!RouterUtil.tryCalcNodeForShardingColumn(rrs, involvedNodeSet, tablesSet, entry, table, tConfig)) {
+                        if (!RouterUtil.tryCalcNodeForShardingColumn(sName, rrs, involvedNodeSet, tablesSet, entry, table, tConfig, clientCharset)) {
                             throw new SQLNonTransientException(getErrorMsg());
                         }
                     }
@@ -477,12 +476,12 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         return currentNode;
     }
 
-    static RouteResultset routeByERParentColumn(RouteResultset rrs, ChildTableConfig tc, String joinColumnVal, SchemaUtil.SchemaInfo schemaInfo)
+    static RouteResultset routeByERParentColumn(RouteResultset rrs, ChildTableConfig tc, String joinColumnVal, SchemaUtil.SchemaInfo schemaInfo, String clientCharset)
             throws SQLNonTransientException {
         if (tc.getDirectRouteTC() != null) {
             ColumnRoute columnRoute = new ColumnRoute(joinColumnVal);
             checkDefaultValues(joinColumnVal, tc.getName(), schemaInfo.getSchema(), tc.getJoinColumn());
-            Set<String> shardingNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
+            Set<String> shardingNodeSet = RouterUtil.ruleCalculate(schemaInfo.getSchema(), rrs, tc.getDirectRouteTC(), columnRoute, false, clientCharset);
             if (shardingNodeSet.size() != 1) {
                 throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + shardingNodeSet.size());
             }
@@ -569,7 +568,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfox.getSchema()));
                 }
 
-                checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
+                checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs, sc.getCharset().getClient());
             }
             //set value for route result
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));

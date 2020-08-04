@@ -14,10 +14,13 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.singleton.FrontendUserManager;
+import com.actiontech.dble.util.IPAddressUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Set;
 
 public final class AuthUtil {
     private AuthUtil() {
@@ -38,7 +41,7 @@ public final class AuthUtil {
             return "Access denied for user '" + user + "'";
         }
 
-        if (userConfig.getWhiteIPs().size() > 0 && !userConfig.getWhiteIPs().contains(source.getHost())) {
+        if (!checkWhiteIPs(source, userConfig.getWhiteIPs())) {
             return "Access denied for user '" + user + "' with host '" + source.getHost() + "'";
         }
 
@@ -75,6 +78,22 @@ public final class AuthUtil {
                 break;
         }
         return null;
+    }
+
+    private static boolean checkWhiteIPs(FrontendConnection source, Set<String> whiteIPs) {
+        // whether to check
+        if (null == whiteIPs || whiteIPs.size() == 0) {
+            return true;
+        }
+        String host = source.getHost();
+        return whiteIPs.stream().anyMatch(e -> {
+            try {
+                return IPAddressUtil.match(host, e);
+            } catch (UnknownHostException unknownHostException) {
+                LOGGER.warn(source.toString(), e);
+                return false;
+            }
+        });
     }
 
     private static boolean checkPassword(final FrontendConnection source, byte[] password, String pass) {

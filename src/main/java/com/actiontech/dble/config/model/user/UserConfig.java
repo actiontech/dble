@@ -44,8 +44,8 @@ public class UserConfig {
 
     private Set<String> genWhiteIPs(String strWhiteIPs) {
         Set<String> result = new HashSet<>();
-        if (strWhiteIPs != null) {
-            String[] theWhiteIPs = SplitUtil.split(strWhiteIPs, ',', '$', '-');
+        if (!StringUtil.isEmpty(strWhiteIPs)) {
+            String[] theWhiteIPs = SplitUtil.split(strWhiteIPs, ',');
             result.addAll(Arrays.asList(theWhiteIPs));
         }
         return result;

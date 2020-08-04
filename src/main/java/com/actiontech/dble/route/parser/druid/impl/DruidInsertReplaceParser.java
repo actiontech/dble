@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
+import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -87,7 +88,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             //only require when all the table and the route condition route to same node
             Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
             ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
-            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
+            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
             //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
@@ -112,7 +113,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToString(SQLExpr valueExpr, String clientCharset) throws SQLNonTransientException {
+    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset, String dataType) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -122,7 +123,11 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             shardingValue = charExpr.getText();
         } else if (valueExpr instanceof SQLHexExpr) {
             SQLHexExpr hexExpr = (SQLHexExpr) valueExpr;
-            shardingValue = HexFormatUtil.fromHex(hexExpr.getHex(), CharsetUtil.getJavaCharset(clientCharset));
+            if (FieldUtil.isNumberType(dataType)) {
+                shardingValue = Long.parseLong(hexExpr.getHex(), 16) + "";
+            } else {
+                shardingValue = HexFormatUtil.fromHex(hexExpr.getHex(), CharsetUtil.getJavaCharset(clientCharset));
+            }
         }
 
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
@@ -130,7 +135,6 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         }
         return shardingValue;
     }
-
 
     int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
         if (incrementColumn == null) {

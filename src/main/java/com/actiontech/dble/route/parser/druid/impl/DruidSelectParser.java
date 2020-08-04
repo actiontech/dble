@@ -26,7 +26,6 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -154,7 +153,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (unit.isAlwaysFalse()) {
                     rrs.setAlwaysFalse(true);
                 }
-                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true);
+                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true, service.getCharset().getClient());
                 if (rrsTmp != null && rrsTmp.getNodes() != null) {
                     Collections.addAll(nodeSet, rrsTmp.getNodes());
                     if (rrsTmp.isGlobalTable()) {
@@ -213,9 +212,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         return false;
     }
 
-    private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
+    private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize, String clientCharset) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize);
+        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize, clientCharset);
         if (shardingNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
@@ -480,8 +479,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         return groupByCols;
     }
-
-    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ShardingService service, int tableSize, boolean ontainsInnerFunction)
+    private SchemaConfig executeComplexSQL(
+            String schemaName, SchemaConfig schema, RouteResultset rrs,
+            SQLSelectStatement selectStmt, ShardingService service, int tableSize, boolean containsInnerFunction)
             throws SQLException {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
@@ -491,12 +491,12 @@ public class DruidSelectParser extends DefaultDruidParser {
             MysqlSystemSchemaHandler.handle(service, null, selectStmt.getSelect().getQuery());
             rrs.setFinishedExecute(true);
             return schema;
-        } else if (ontainsInnerFunction) {
+        } else if (containsInnerFunction) {
             rrs.setNeedOptimizer(true);
             rrs.setSqlStatement(selectStmt);
             return schema;
         } else {
-            tryRouteToOneNodeForComplex(rrs, selectStmt, tableSize);
+            tryRouteToOneNodeForComplex(rrs, selectStmt, tableSize, service.getCharset().getClient());
             return schema;
         }
     }

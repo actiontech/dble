@@ -336,13 +336,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(table, getPartitionColumn(), parseFieldString(lineList[partitionColumnIndex], loadData.getEnclose(), loadData.getEscape()));
-                return RouterUtil.tryRouteForOneTable(schema, routeCalculateUnit, tableName, rrs, false);
+                return RouterUtil.tryRouteForOneTable(schema, routeCalculateUnit, tableName, rrs, false, statement.getCharset());
             } else {
                 String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
                 if (noShardingNode != null) {
                     return RouterUtil.routeToSingleNode(rrs, noShardingNode);
                 }
-                return RouterUtil.tryRouteForOneTable(schema, new RouteCalculateUnit(), tableName, rrs, false);
+                return RouterUtil.tryRouteForOneTable(schema, new RouteCalculateUnit(), tableName, rrs, false, statement.getCharset());
             }
         }
     }

@@ -34,23 +34,14 @@ public final class TraceManager {
         if (endPoint != null) {
             final CompositeReporter compositeReporter = new CompositeReporter(
                     new RemoteReporter.Builder().
-<<<<<<< HEAD
-                            withSender(new HttpSender.Builder(endPoint).build()).build(),
-=======
                             withSender(new HttpSender.Builder(endPoint).build()).
                             build(),
->>>>>>>  #1880 Framework refactoring  code style change
                     new LoggingReporter()
             );
 
             final Metrics metrics = new Metrics(new NoopMetricsFactory());
 
-<<<<<<< HEAD
             JaegerTracer.Builder builder = new JaegerTracer.Builder("DBLE").withReporter(compositeReporter).
-=======
-            JaegerTracer.Builder builder = new JaegerTracer.Builder("DBLE").
-                    withReporter(compositeReporter).
->>>>>>>  #1880 Framework refactoring  code style change
                     withMetrics(metrics).
                     withExpandExceptionLogs().
                     withSampler(new ProbabilisticSampler(0.5));

@@ -84,7 +84,7 @@ public abstract class AbstractConnection implements Connection {
 
         lastReadTime = TimeUtil.currentTimeMillis();
         if (lastReadTime == lastWriteTime) {
-            lastWriteTime--;
+            lastWriteTime = lastReadTime - 1;
         }
         if (got < 0) {
             this.close("stream closed");

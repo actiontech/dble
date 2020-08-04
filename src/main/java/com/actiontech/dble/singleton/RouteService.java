@@ -53,11 +53,6 @@ public final class RouteService {
                 }
             }
 
-<<<<<<< HEAD
-            /*!dble: sql = select name from aa */
-            /*!dble: sharding = test */
-=======
->>>>>>>  #1880 Framework refactoring  code style change
             int hintLength = RouteService.isHintSql(stmt);
             if (hintLength != -1) {
                 int endPos = stmt.indexOf("*/");

@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.manager;
 
-import com.actiontech.dble.manager.handler.ShowServerLog;
+import com.actiontech.dble.services.manager.handler.ShowServerLog;
 import org.junit.Assert;
 import org.junit.Test;
 

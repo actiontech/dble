@@ -7,6 +7,7 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
 import org.slf4j.Logger;
@@ -38,17 +39,22 @@ public class VarsExtractorHandler {
     }
 
     public SystemVariables execute() {
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-        PhysicalDbInstance ds = getPhysicalDbInstance();
-        this.usedDbInstance = ds;
-        if (ds != null) {
-            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
-            sqlJob.run();
-            waitDone();
-        } else {
-            LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-system-variables-from-backend");
+        try {
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
+            PhysicalDbInstance ds = getPhysicalDbInstance();
+            this.usedDbInstance = ds;
+            if (ds != null) {
+                OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
+                sqlJob.run();
+                waitDone();
+            } else {
+                LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
+            }
+            return systemVariables;
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
-        return systemVariables;
     }
 
     private PhysicalDbInstance getPhysicalDbInstance() {

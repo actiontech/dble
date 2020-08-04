@@ -6,17 +6,20 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +65,8 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     }
 
     public void run() {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("sql-job-start");
+        TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
             if (ds == null) {
                 RouteResultsetNode node = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
@@ -74,6 +79,8 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         } catch (Exception e) {
             LOGGER.warn("can't get connection", e);
             doFinished(true);
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
     }
 
@@ -89,13 +96,17 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(conn.getBackendService(), "sql-job-send-command");
         try {
-            conn.query(sql, true);
+            conn.getBackendService().query(sql, true);
             connection = conn;
         } catch (Exception e) { // (UnsupportedEncodingException e) {
+            LOGGER.debug("......", e);
             doFinished(true);
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
 
     }
@@ -119,16 +130,16 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + conn;
+                " from of sql :" + sql + " at con:" + service;
 
         LOGGER.info(errMsg);
-        if (!conn.syncAndExecute()) {
-            conn.closeWithoutRsp("unfinished sync");
+        if (!((MySQLResponseService) service).syncAndExecute()) {
+            service.getConnection().businessClose("unfinished sync");
             doFinished(true);
             return;
         }
@@ -137,24 +148,24 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
             String xid = sql.substring(sql.indexOf("'"), sql.length()).trim();
             testXid = true;
-            ((MySQLConnection) conn).sendQueryCmd("xa start " + xid, conn.getCharset());
+            ((MySQLResponseService) service).sendQueryCmd("xa start " + xid, service.getConnection().getCharsetName());
         } else if (errPg.getErrNo() == ErrorCode.ER_XAER_DUPID) {
             // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
-            conn.close("test xid existence");
+            service.getConnection().close("test xid existence");
             doFinished(true);
         } else {
-            conn.release();
+            ((MySQLResponseService) service).release();
             doFinished(true);
         }
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        if (conn.syncAndExecute()) {
+    public void okResponse(byte[] ok, AbstractService service) {
+        if (((MySQLResponseService) service).syncAndExecute()) {
             if (testXid) {
-                conn.closeWithoutRsp("test xid existence");
+                service.getConnection().businessClose("test xid existence");
             } else {
-                conn.release();
+                ((MySQLResponseService) service).release();
             }
             doFinished(false);
         }
@@ -162,25 +173,25 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         jobHandler.onHeader(fields);
 
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        conn.release();
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+        ((MySQLResponseService) service).release();
         doFinished(false);
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         doFinished(true);
     }
 

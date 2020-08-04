@@ -8,9 +8,10 @@ package com.actiontech.dble.backend.datasource;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,25 +89,30 @@ public class ShardingNode {
 
     public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
                               ResponseHandler handler, Object attachment) throws Exception {
-        if (isMustWrite) {
-            getWriteNodeConnection(schema, handler, attachment);
-            return;
-        }
-        if (rrs.getRunOnSlave() == null) {
-            if (rrs.canRunINReadDB(autoCommit)) {
-                dbGroup.getRWSplitCon(schema, handler, attachment);
-            } else {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
+        try {
+            if (isMustWrite) {
                 getWriteNodeConnection(schema, handler, attachment);
+                return;
             }
-        } else {
-            if (rrs.getRunOnSlave()) {
-                if (!dbGroup.getReadCon(schema, handler, attachment)) {
-                    throw new IllegalArgumentException("no valid read dbInstance in dbGroup:" + dbGroup.getGroupName());
+            if (rrs.getRunOnSlave() == null) {
+                if (rrs.canRunINReadDB(autoCommit)) {
+                    dbGroup.getRWSplitCon(schema, handler, attachment);
+                } else {
+                    getWriteNodeConnection(schema, handler, attachment);
                 }
             } else {
-                rrs.setCanRunInReadDB(false);
-                getWriteNodeConnection(schema, handler, attachment);
+                if (rrs.getRunOnSlave()) {
+                    if (!dbGroup.getReadCon(schema, handler, attachment)) {
+                        throw new IllegalArgumentException("no valid read dbInstance in dbGroup:" + dbGroup.getGroupName());
+                    }
+                } else {
+                    rrs.setCanRunInReadDB(false);
+                    getWriteNodeConnection(schema, handler, attachment);
+                }
             }
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
     }
 

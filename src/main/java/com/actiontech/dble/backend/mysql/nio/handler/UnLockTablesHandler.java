@@ -5,14 +5,16 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +47,9 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         if (lockedCons.size() == 0) {
             LOGGER.info("find no locked backend connection!" + session.getSource());
             OkPacket ok = new OkPacket();
-            ok.setPacketId(++packetId);
+            ok.setPacketId(session.getShardingService().nextPacketId());
             ok.setPacketLength(7); // the size of unlock table's response OK packet is 7
-            ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
+            ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
             ok.write(session.getSource());
             return;
         }
@@ -65,10 +67,10 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             if (clearIfSessionClosed(session)) {
                 return;
             }
-            conn.setResponseHandler(this);
-            conn.setSession(session);
+            conn.getBackendService().setResponseHandler(this);
+            conn.getBackendService().setSession(session);
             try {
-                conn.execute(node, session.getSource(), autocommit);
+                conn.getBackendService().execute(node, session.getShardingService(), autocommit);
             } catch (Exception e) {
                 connectionError(e, node);
             }
@@ -81,13 +83,13 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void errorResponse(byte[] err, AbstractService service) {
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
-            session.releaseConnectionIfSafe(conn, false);
+            session.releaseConnectionIfSafe(((MySQLResponseService) service), false);
         } else {
-            conn.closeWithoutRsp("unfinished sync");
-            session.getTargetMap().remove(conn.getAttachment());
+            service.getConnection().businessClose("unfinished sync");
+            session.getTargetMap().remove(((MySQLResponseService) service).getAttachment());
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
@@ -95,17 +97,17 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         if (!isFail()) {
             setFail(errMsg);
         }
-        LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
+        LOGGER.info("error response from " + service + " err " + errMsg + " code:" + errPacket.getErrNo());
 
-        this.tryErrorFinished(this.decrementToZero(conn));
+        this.tryErrorFinished(this.decrementToZero(((MySQLResponseService) service)));
     }
 
     @Override
-    public void okResponse(byte[] data, BackendConnection conn) {
-        boolean executeResponse = conn.syncAndExecute();
+    public void okResponse(byte[] data, AbstractService service) {
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
-            boolean isEndPack = decrementToZero(conn);
-            session.releaseConnection(conn);
+            boolean isEndPack = decrementToZero(((MySQLResponseService) service));
+            session.releaseConnection(((MySQLResponseService) service).getConnection());
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {
                     tryErrorFinished(true);
@@ -115,44 +117,41 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
                 ok.read(data);
                 lock.lock();
                 try {
-                    ok.setPacketId(++packetId);
-                    ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
+                    ok.setPacketId(session.getShardingService().nextPacketId());
+                    ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
                 } finally {
                     lock.unlock();
                 }
-                session.multiStatementPacket(ok, packetId);
-                boolean multiStatementFlag = session.getIsMultiStatement().get();
                 ok.write(session.getSource());
-                session.multiStatementNextSql(multiStatementFlag);
             }
         }
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         LOGGER.info("unexpected packet for " +
-                conn + " bound by " + session.getSource() +
+                service + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         LOGGER.info("unexpected packet for " +
-                conn + " bound by " + session.getSource() +
+                service + " bound by " + session.getSource() +
                 ": row data packet");
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         LOGGER.info("unexpected packet for " +
-                conn + " bound by " + session.getSource() +
+                service + " bound by " + session.getSource() +
                 ": row's eof");
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         // TODO Auto-generated method stub
 
     }

@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.plan.node;
 
-import com.actiontech.dble.manager.information.ManagerBaseTable;
-import com.actiontech.dble.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
 import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
+import com.actiontech.dble.services.manager.information.ManagerBaseTable;
+import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;

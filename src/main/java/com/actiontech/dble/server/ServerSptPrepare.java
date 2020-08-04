@@ -5,20 +5,22 @@
 */
 package com.actiontech.dble.server;
 
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public final class ServerSptPrepare {
-    private ServerConnection source;
+    private ShardingService service;
     private Map<String, List<String>> sptPrepares;
     private List<String> sptArguments;
     private String sptStmt;
     private boolean isUserVar;
     private String name;
 
-    public ServerSptPrepare(ServerConnection c) {
-        this.source = c;
+    public ServerSptPrepare(ShardingService service) {
+        this.service = service;
         this.sptPrepares = new HashMap<>();
         this.sptArguments = null;
         this.isUserVar = false;
@@ -55,7 +57,7 @@ public final class ServerSptPrepare {
     /* In user variable, the string is primordial, so we have to truncate the quotes */
     private String getStmtFromUserVar() {
         String key = "@" + sptStmt;
-        String stmt = source.getUsrVariables().get(key);
+        String stmt = service.getUsrVariables().get(key);
         String rstmt = null;
 
         if (stmt != null) {

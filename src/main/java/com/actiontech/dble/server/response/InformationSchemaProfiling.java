@@ -8,9 +8,10 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.mysql.EOFRowPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.service.AbstractService;
 
 import java.nio.ByteBuffer;
 
@@ -28,9 +29,9 @@ public final class InformationSchemaProfiling {
     /**
      * response method.
      *
-     * @param c
+     * @param service
      */
-    public static void response(ServerConnection c) {
+    public static void response(AbstractService service) {
 
 
         int i = 0;
@@ -44,32 +45,27 @@ public final class InformationSchemaProfiling {
         FIELDS[i + 2] = PacketUtil.getField("Percentage", Fields.FIELD_TYPE_DECIMAL);
         FIELDS[i + 2].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
-        ByteBuffer buffer = c.allocate();
+        ByteBuffer buffer = service.allocate();
 
-        // write header
-        buffer = HEADER.write(buffer, c, true);
+        // writeDirectly header
+        buffer = HEADER.write(buffer, service, true);
 
-        // write fields
+        // writeDirectly fields
         for (FieldPacket field : FIELDS) {
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
 
-        // write eof
-        buffer = EOF.write(buffer, c, true);
+        // writeDirectly eof
+        buffer = EOF.write(buffer, service, true);
 
-        // write rows
+        // writeDirectly rows
         packetId = EOF.getPacketId();
 
 
-        // write last eof
-        EOFPacket lastEof = new EOFPacket();
+        // writeDirectly last eof
+        EOFRowPacket lastEof = new EOFRowPacket();
         lastEof.setPacketId(++packetId);
-        buffer = lastEof.write(buffer, c, true);
-
-        // post write
-        c.write(buffer);
-
-
+        lastEof.write(buffer, service);
     }
 
 

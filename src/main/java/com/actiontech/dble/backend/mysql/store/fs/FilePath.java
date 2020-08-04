@@ -202,7 +202,7 @@ public abstract class FilePath {
     }
 
     /**
-     * Create an output stream to write into the file.
+     * Create an output stream to writeDirectly into the file.
      *
      * @param append if true, the file will grow, if false, the file will be
      *               truncated first
@@ -226,7 +226,7 @@ public abstract class FilePath {
     public abstract InputStream newInputStream() throws IOException;
 
     /**
-     * Disable the ability to write.
+     * Disable the ability to writeDirectly.
      *
      * @return true if the call was successful
      */

@@ -6,7 +6,6 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
@@ -30,18 +29,21 @@ import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.manager.response.ReloadConfig;
-import com.actiontech.dble.manager.response.RollbackConfig;
-import com.actiontech.dble.manager.response.ShowBinlogStatus;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.RollbackConfig;
+import com.actiontech.dble.services.manager.response.ShowBinlogStatus;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -69,8 +71,10 @@ public final class ClusterLogic {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterLogic.class);
 
     private static Map<String, String> ddlLockMap = new ConcurrentHashMap<String, String>();
+
     private ClusterLogic() {
     }
+
     public static void executeViewEvent(String path, String key, String value) throws Exception {
         String[] childNameInfo = key.split(Repository.SCHEMA_VIEW_SPLIT);
         String schema = childNameInfo[0];
@@ -185,6 +189,7 @@ public final class ClusterLogic {
         ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
         ClusterHelper.createSelfTempNode(ClusterPathUtil.getDDLPath(fullName), ClusterPathUtil.SUCCESS);
     }
+
     public static void ddlUpdateEvent(String keyName, DDLInfo ddlInfo) throws Exception {
         LOGGER.info("ddl execute success notice");
         String[] tableInfo = keyName.split("\\.");
@@ -336,11 +341,11 @@ public final class ClusterLogic {
                         lock.lock();
                         try {
                             boolean nextTurn = false;
-                            for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
+                            for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
-                                    if (entry.getValue() instanceof ServerConnection) {
-                                        ServerConnection sconnection = (ServerConnection) entry.getValue();
-                                        for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : sconnection.getSession2().getTargetMap().entrySet()) {
+                                    if (!entry.getValue().isManager()) {
+                                        ShardingService shardingService = (ShardingService) entry.getValue().getService();
+                                        for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : shardingService.getSession2().getTargetMap().entrySet()) {
                                             if (shardingNodeSet.contains(conEntry.getKey().getName())) {
                                                 nextTurn = true;
                                                 break;
@@ -842,16 +847,20 @@ public final class ClusterLogic {
     }
 
     public static String waitingForAllTheNode(String path, String checkString) throws Exception {
-        Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
-        StringBuffer errorMsg = new StringBuffer();
-        for (; ; ) {
-            errorMsg.setLength(0);
-            if (checkResponseForOneTime(checkString, path, expectedMap, errorMsg)) {
-                break;
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("wait-for-others-cluster");
+        try {
+            Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
+            StringBuffer errorMsg = new StringBuffer();
+            for (; ; ) {
+                errorMsg.setLength(0);
+                if (checkResponseForOneTime(checkString, path, expectedMap, errorMsg)) {
+                    break;
+                }
             }
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+            return errorMsg.length() <= 0 ? null : errorMsg.toString();
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
-        return errorMsg.length() <= 0 ? null : errorMsg.toString();
     }
 
     public static void syncDbXmlToLocal(XmlProcessBase xmlParseBase, KvBean configValue) throws Exception {
@@ -984,6 +993,7 @@ public final class ClusterLogic {
             LOGGER.warn(" server offline binlog status check error: ", e);
         }
     }
+
     public static void checkDDLAndRelease(String crashNode) {
         //deal with the status when the ddl is init notified
         //and than the ddl server is shutdown

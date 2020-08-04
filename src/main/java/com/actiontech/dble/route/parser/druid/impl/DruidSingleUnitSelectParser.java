@@ -11,8 +11,9 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
@@ -28,7 +29,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         String schemaName = schema == null ? null : schema.getName();
@@ -43,10 +44,10 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 StringPtr noShardingNode = new StringPtr(null);
                 Set<String> schemas = new HashSet<>();
                 if ((schemaMap != null && schemaMap.size() == 1) &&
-                        SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+                        SchemaUtil.isNoSharding(service, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
                     return routeToNoSharding(schema, rrs, schemas, noShardingNode);
                 } else {
-                    super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+                    super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
                     return schema;
                 }
             }
@@ -57,22 +58,22 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 }
             }
 
-            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+            super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
             if (visitor.getSubQueryList().size() > 0) {
                 this.getCtx().clearRouteCalculateUnit();
             }
             // change canRunInReadDB
-            if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
+            if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !service.isAutocommit()) {
                 rrs.setCanRunInReadDB(false);
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             StringPtr noShardingNode = new StringPtr(null);
             Set<String> schemas = new HashSet<>();
             if ((schemaMap != null && schemaMap.size() == 1) &&
-                    SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+                    SchemaUtil.isNoSharding(service, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
                 return routeToNoSharding(schema, rrs, schemas, noShardingNode);
             } else {
-                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+                super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
             }
         }
         return schema;

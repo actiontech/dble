@@ -30,6 +30,7 @@
 
 
 -DfakeMySQLVersion=5.7.11
+#-DtraceEndPoint=http://10.186.60.96:14268/api/traces
 
 # serverBacklog size,default 2048
 -DserverBacklog=2048

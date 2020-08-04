@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,21 @@ public class HandlerBuilder {
         this.session = session;
     }
 
+    /**
+     * start all leaf handler of children of special handler
+     */
+    public static void startHandler(DMLResponseHandler handler) throws Exception {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(TraceManager.getThreadService(), "execute-complex-sql");
+        try {
+            for (DMLResponseHandler startHandler : handler.getMerges()) {
+                MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+                mergeHandler.execute();
+            }
+        } finally {
+            TraceManager.finishSpan(TraceManager.getThreadService(), traceObject);
+        }
+    }
+
     synchronized void checkRRSs(RouteResultsetNode[] rrssArray) {
         for (RouteResultsetNode rrss : rrssArray) {
             while (rrsNodes.contains(rrss)) {
@@ -43,42 +59,41 @@ public class HandlerBuilder {
         rrsNodes.remove(rrsNode);
     }
 
-    /**
-     * start all leaf handler of children of special handler
-     */
-    public static void startHandler(DMLResponseHandler handler) throws Exception {
-        for (DMLResponseHandler startHandler : handler.getMerges()) {
-            MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            mergeHandler.execute();
-        }
-    }
-
-
     public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
-        BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
-        builder.build();
-        return builder;
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build-complex-sql");
+        try {
+            BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
+            builder.build();
+            return builder;
+        } finally {
+            TraceManager.finishSpan(session.getShardingService(), traceObject);
+        }
     }
 
     public BaseHandlerBuilder build() throws Exception {
-        final long startTime = System.nanoTime();
-        BaseHandlerBuilder builder = getBuilder(session, node, false);
-        DMLResponseHandler endHandler = builder.getEndHandler();
-        OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
-        endHandler.setNextHandler(fh);
-        //set slave only into rrsNode
-        for (DMLResponseHandler startHandler : fh.getMerges()) {
-            MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
-                baseHandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build&execute-complex-sql");
+        try {
+            final long startTime = System.nanoTime();
+            BaseHandlerBuilder builder = getBuilder(session, node, false);
+            DMLResponseHandler endHandler = builder.getEndHandler();
+            OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+            endHandler.setNextHandler(fh);
+            //set slave only into rrsNode
+            for (DMLResponseHandler startHandler : fh.getMerges()) {
+                MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+                for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
+                    baseHandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
+                }
             }
+            session.endComplexRoute();
+            HandlerBuilder.startHandler(fh);
+            session.endComplexExecute();
+            long endTime = System.nanoTime();
+            logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
+            return builder;
+        } finally {
+            TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
-        session.endComplexRoute();
-        HandlerBuilder.startHandler(fh);
-        session.endComplexExecute();
-        long endTime = System.nanoTime();
-        logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
-        return builder;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

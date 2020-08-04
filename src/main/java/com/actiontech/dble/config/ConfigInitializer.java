@@ -24,6 +24,7 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
+import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,23 +47,27 @@ public class ConfigInitializer implements ProblemReporter {
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
     public ConfigInitializer(boolean lowerCaseNames) {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("load-config-file");
+        try {
+            //load db.xml
+            XMLDbLoader dbLoader = new XMLDbLoader(null, this);
+            this.dbGroups = dbLoader.getDbGroups();
 
-        //load db.xml
-        XMLDbLoader dbLoader = new XMLDbLoader(null, this);
-        this.dbGroups = dbLoader.getDbGroups();
+            //load sharding.xml
+            XMLShardingLoader shardingLoader = new XMLShardingLoader(lowerCaseNames, this);
+            this.schemas = shardingLoader.getSchemas();
+            this.erRelations = shardingLoader.getErRelations();
+            this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
 
-        //load sharding.xml
-        XMLShardingLoader shardingLoader = new XMLShardingLoader(lowerCaseNames, this);
-        this.schemas = shardingLoader.getSchemas();
-        this.erRelations = shardingLoader.getErRelations();
-        this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
+            //load user.xml
+            XMLUserLoader userLoader = new XMLUserLoader(null, this);
+            this.users = userLoader.getUsers();
 
-        //load user.xml
-        XMLUserLoader userLoader = new XMLUserLoader(null, this);
-        this.users = userLoader.getUsers();
-
-        deleteRedundancyConf();
-        checkWriteHost();
+            deleteRedundancyConf();
+            checkWriteHost();
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
     }
 
     @Override
@@ -166,51 +171,56 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     public void testConnection() {
-        Map<String, List<Pair<String, String>>> hostSchemaMap = genHostSchemaMap();
-        Set<String> errNodeKeys = new HashSet<>();
-        Set<String> errSourceKeys = new HashSet<>();
-        BoolPtr isConnectivity = new BoolPtr(true);
-        BoolPtr isAllDbInstanceConnected = new BoolPtr(true);
-        for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
-            String hostName = entry.getKey();
-            List<Pair<String, String>> nodeList = entry.getValue();
-            PhysicalDbGroup pool = dbGroups.get(hostName);
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("test-connection");
+        try {
+            Map<String, List<Pair<String, String>>> hostSchemaMap = genHostSchemaMap();
+            Set<String> errNodeKeys = new HashSet<>();
+            Set<String> errSourceKeys = new HashSet<>();
+            BoolPtr isConnectivity = new BoolPtr(true);
+            BoolPtr isAllDbInstanceConnected = new BoolPtr(true);
+            for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
+                String hostName = entry.getKey();
+                List<Pair<String, String>> nodeList = entry.getValue();
+                PhysicalDbGroup pool = dbGroups.get(hostName);
 
-            checkMaxCon(pool);
-            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
-                if (ds.getConfig().isDisabled()) {
-                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
-                    LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
-                    ds.setTestConnSuccess(false);
-                    continue;
-                } else if (ds.isFakeNode()) {
-                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is fake Node"));
-                    LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
-                    ds.setTestConnSuccess(false);
-                    continue;
+                checkMaxCon(pool);
+                for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
+                    if (ds.getConfig().isDisabled()) {
+                        errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
+                        LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
+                        ds.setTestConnSuccess(false);
+                        continue;
+                    } else if (ds.isFakeNode()) {
+                        errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is fake Node"));
+                        LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
+                        ds.setTestConnSuccess(false);
+                        continue;
+                    }
+                    testDbInstance(errNodeKeys, errSourceKeys, isConnectivity, isAllDbInstanceConnected, nodeList, pool, ds);
                 }
-                testDbInstance(errNodeKeys, errSourceKeys, isConnectivity, isAllDbInstanceConnected, nodeList, pool, ds);
             }
-        }
 
-        if (!isAllDbInstanceConnected.get()) {
-            StringBuilder sb = new StringBuilder("SelfCheck### there are some dbInstance connection failed, pls check these dbInstance:");
-            for (String key : errSourceKeys) {
-                sb.append("{");
-                sb.append(key);
-                sb.append("},");
+            if (!isAllDbInstanceConnected.get()) {
+                StringBuilder sb = new StringBuilder("SelfCheck### there are some dbInstance connection failed, pls check these dbInstance:");
+                for (String key : errSourceKeys) {
+                    sb.append("{");
+                    sb.append(key);
+                    sb.append("},");
+                }
+                throw new ConfigException(sb.toString());
             }
-            throw new ConfigException(sb.toString());
-        }
 
-        if (!isConnectivity.get()) {
-            StringBuilder sb = new StringBuilder("SelfCheck### there are some sharding node connection failed, pls check these dbInstance:");
-            for (String key : errNodeKeys) {
-                sb.append("{");
-                sb.append(key);
-                sb.append("},");
+            if (!isConnectivity.get()) {
+                StringBuilder sb = new StringBuilder("SelfCheck### there are some sharding node connection failed, pls check these dbInstance:");
+                for (String key : errNodeKeys) {
+                    sb.append("{");
+                    sb.append(key);
+                    sb.append("},");
+                }
+                LOGGER.warn(sb.toString());
             }
-            LOGGER.warn(sb.toString());
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
     }
 

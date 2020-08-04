@@ -6,8 +6,8 @@
 package com.actiontech.dble.config.model.user;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.util.StringUtil;
 
 import java.sql.SQLException;

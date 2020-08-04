@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.net.handler;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -16,13 +16,13 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
-    private final MySQLConnection backendConnection;
+    private final MySQLResponseService service;
     private ReentrantLock lock = new ReentrantLock();
     private Condition condRelease = this.lock.newCondition();
 
-    public BackEndRecycleRunnable(MySQLConnection backendConnection) {
-        this.backendConnection = backendConnection;
-        backendConnection.setRecycler(this);
+    public BackEndRecycleRunnable(MySQLResponseService service) {
+        this.service = service;
+        service.setRecycler(this);
     }
 
 
@@ -31,23 +31,22 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
         try {
             lock.lock();
             try {
-                if (backendConnection.isRowDataFlowing()) {
-
+                if (service.isRowDataFlowing()) {
                     if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                        backendConnection.close("recycle time out");
+                        service.getConnection().businessClose("recycle time out");
                     } else {
-                        backendConnection.release();
+                        service.release();
                     }
                 } else {
-                    backendConnection.release();
+                    service.release();
                 }
             } catch (Exception e) {
-                backendConnection.close("recycle exception");
+                service.getConnection().businessClose("recycle exception");
             } finally {
                 lock.unlock();
             }
         } catch (Throwable e) {
-            backendConnection.close("recycle exception");
+            service.getConnection().businessClose("recycle exception");
         }
     }
 

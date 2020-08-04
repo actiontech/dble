@@ -18,10 +18,11 @@ import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
@@ -123,8 +124,8 @@ public final class RouterUtil {
     public static RouteResultset routeFromParserComplex(
             SchemaConfig schema, DruidParser druidParser, Map<Pair<String, String>, SchemaConfig> schemaMap,
             RouteResultset rrs, SQLStatement statement,
-            ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
-        druidParser.parser(schema, rrs, statement, visitor, sc);
+            ServerSchemaStatVisitor visitor, ShardingService service) throws SQLException {
+        druidParser.parser(schema, rrs, statement, visitor, service);
         if (rrs.isFinishedExecute()) {
             return null;
         }
@@ -166,8 +167,8 @@ public final class RouterUtil {
 
     public static RouteResultset routeFromParser(DruidParser druidParser, SchemaConfig schema, RouteResultset rrs, SQLStatement statement,
                                                  ServerSchemaStatVisitor visitor,
-                                                 ServerConnection sc, boolean isExplain) throws SQLException {
-        schema = druidParser.parser(schema, rrs, statement, visitor, sc, isExplain);
+                                                 ShardingService service, boolean isExplain) throws SQLException {
+        schema = druidParser.parser(schema, rrs, statement, visitor, service, isExplain);
         if (rrs.isFinishedExecute()) {
             return null;
         }

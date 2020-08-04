@@ -5,11 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
@@ -52,7 +53,7 @@ public class SendMakeHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
             session.setHandlerStart(this);
@@ -82,14 +83,14 @@ public class SendMakeHandler extends BaseDMLHandler {
                     tmpFp.setType(FieldTypes.MYSQL_TYPE_VAR_STRING.numberValue());
                 newFieldPackets.add(tmpFp);
             }
-            nextHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, conn);
+            nextHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, service);
         } finally {
             lock.unlock();
         }
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
             if (terminate.get())
@@ -100,7 +101,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                 byte[] b = selItem.getRowPacketByte();
                 newRp.add(b);
             }
-            nextHandler.rowResponse(null, newRp, this.isLeft, conn);
+            nextHandler.rowResponse(null, newRp, this.isLeft, service);
             return false;
         } finally {
             lock.unlock();
@@ -108,13 +109,13 @@ public class SendMakeHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
             if (terminate.get())
                 return;
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(eof, this.isLeft, conn);
+            nextHandler.rowEofResponse(eof, this.isLeft, service);
         } finally {
             lock.unlock();
         }

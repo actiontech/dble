@@ -7,7 +7,8 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.AbstractService;
 
 import java.nio.ByteBuffer;
 
@@ -34,7 +35,6 @@ import java.nio.ByteBuffer;
  * 2                          (filler), always 0x00
  * n (Length Coded Binary)    default
  *
- * @see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Field_Packet
  * </pre>
  *
  * @author mycat
@@ -77,15 +77,19 @@ public class FieldPacket extends MySQLPacket {
     }
 
     @Override
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c,
+    public ByteBuffer write(ByteBuffer buffer, AbstractService service,
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
-        buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size,
+        buffer = service.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size,
                 writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         writeBody(buffer);
         return buffer;
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection connection) {
     }
 
     @Override

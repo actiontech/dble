@@ -2,11 +2,8 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.LongUtil;
 
 import java.nio.ByteBuffer;
@@ -24,38 +21,28 @@ public class SelectRowCount implements InnerFuncResponse {
     private static final EOFPacket EOF = new EOFPacket();
 
 
-    public static void response(ServerConnection c) {
-        byte packetId = setCurrentPacket(c);
-        HEADER.setPacketId(++packetId);
+    public static void response(ShardingService service) {
+        HEADER.setPacketId(service.nextPacketId());
         FIELDS[0] = PacketUtil.getField("ROW_COUNT()", Fields.FIELD_TYPE_LONG);
-        FIELDS[0].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
+        FIELDS[0].setPacketId(service.nextPacketId());
+        EOF.setPacketId(service.nextPacketId());
 
-        ByteBuffer buffer = c.allocate();
-        buffer = HEADER.write(buffer, c, true);
+        ByteBuffer buffer = service.allocate();
+        buffer = HEADER.write(buffer, service, true);
         for (FieldPacket field : FIELDS) {
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
-        buffer = EOF.write(buffer, c, true);
+        buffer = EOF.write(buffer, service, true);
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(LongUtil.toBytes(c.getSession2().getRowCount()));
-        row.setPacketId(++packetId);
-        buffer = row.write(buffer, c, true);
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementPacket(lastEof, packetId);
-        buffer = lastEof.write(buffer, c, true);
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        c.write(buffer);
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        row.add(LongUtil.toBytes(service.getSession2().getRowCount()));
+        row.setPacketId(service.nextPacketId());
+        buffer = row.write(buffer, service, true);
+        EOFRowPacket lastEof = new EOFRowPacket();
+        lastEof.setPacketId(service.nextPacketId());
+        lastEof.write(buffer, service);
     }
 
-
-    public static byte setCurrentPacket(ServerConnection c) {
-        byte packetId = (byte) c.getSession2().getPacketId().get();
-        return packetId;
-    }
 
     @Override
     public List<FieldPacket> getField() {
@@ -66,10 +53,10 @@ public class SelectRowCount implements InnerFuncResponse {
 
 
     @Override
-    public List<RowDataPacket> getRows(ServerConnection c) {
+    public List<RowDataPacket> getRows(ShardingService service) {
         List<RowDataPacket> result = new ArrayList<>();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(LongUtil.toBytes(c.getSession2().getRowCount()));
+        row.add(LongUtil.toBytes(service.getSession2().getRowCount()));
         result.add(row);
         return result;
     }

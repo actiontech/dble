@@ -129,7 +129,7 @@ public class ClusterClearKeyListener implements Runnable {
 
     /**
      * handle the back data from the subscribe
-     * if the config version changes,write the file
+     * if the config version changes,writeDirectly the file
      * or just start a new waiting
      */
     public void handle(Map<String, KvBean> diffMap) {

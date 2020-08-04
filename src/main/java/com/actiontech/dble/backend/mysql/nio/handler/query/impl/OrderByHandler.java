@@ -5,9 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.LocalResult;
@@ -16,8 +14,10 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, final AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -59,15 +59,14 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
         this.fieldPackets = fieldPackets;
         RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type());
-        String charSet = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
-        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, charSet).
+        localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, CharsetUtil.getJavaCharset(((MySQLResponseService) service).getCharset().getResults())).
                 setMemSizeController(session.getOrderBufferMC());
-        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
-        startOwnThread(conn);
+        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
+        startOwnThread(service);
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return true;
         try {
@@ -79,7 +78,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;
@@ -92,8 +91,8 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
     @Override
     protected void ownThreadJob(Object... objects) {
-        MySQLConnection conn = (MySQLConnection) objects[0];
-        recordElapsedTime("order write start :");
+        MySQLResponseService service = (MySQLResponseService) objects[0];
+        recordElapsedTime("order writeDirectly start :");
         try {
             while (true) {
                 if (terminate.get()) {
@@ -110,7 +109,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                     //ignore error
                 }
             }
-            recordElapsedTime("order write end :");
+            recordElapsedTime("order writeDirectly end :");
             localResult.done();
             recordElapsedTime("order read start :");
             while (true) {
@@ -121,12 +120,12 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                 if (row == null) {
                     break;
                 }
-                if (nextHandler.rowResponse(null, row, this.isLeft, conn))
+                if (nextHandler.rowResponse(null, row, this.isLeft, service))
                     break;
             }
             recordElapsedTime("order read end:");
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(null, this.isLeft, conn);
+            nextHandler.rowEofResponse(null, this.isLeft, service);
         } catch (Exception e) {
             String msg = "OrderBy thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

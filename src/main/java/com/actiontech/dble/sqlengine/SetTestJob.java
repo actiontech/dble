@@ -6,18 +6,19 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.handler.SetCallBack;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +32,15 @@ public class SetTestJob implements ResponseHandler, Runnable {
     private final String sql;
     private final String databaseName;
     private final SQLJobHandler jobHandler;
-    private final ServerConnection sc;
+    private final ShardingService shardingService;
     private final AtomicBoolean hasReturn = new AtomicBoolean(false);
 
-    public SetTestJob(String sql, String databaseName, SQLJobHandler jobHandler, ServerConnection sc) {
+    public SetTestJob(String sql, String databaseName, SQLJobHandler jobHandler, ShardingService service) {
         super();
         this.sql = sql;
         this.databaseName = databaseName;
         this.jobHandler = jobHandler;
-        this.sc = sc;
+        this.shardingService = service;
     }
 
     public void run() {
@@ -58,14 +59,14 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
                 LOGGER.info(reason, e);
                 doFinished(true);
-                sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
+                shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
             }
         }
         if (!sendTest && hasReturn.compareAndSet(false, true)) {
             String reason = "can't get backend connection for sql :" + sql + " all datasrouce dead";
             LOGGER.info(reason);
             doFinished(true);
-            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
+            shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
         }
     }
 
@@ -74,9 +75,9 @@ public class SetTestJob implements ResponseHandler, Runnable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
-        ((MySQLConnection) conn).sendQueryCmd(sql, sc.getCharset());
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
+        conn.getBackendService().sendQueryCmd(sql, shardingService.getCharset());
     }
 
     private void doFinished(boolean failed) {
@@ -89,62 +90,60 @@ public class SetTestJob implements ResponseHandler, Runnable {
             String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
             LOGGER.info(reason);
             doFinished(true);
-            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
+            shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
         }
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         if (hasReturn.compareAndSet(false, true)) {
             LOGGER.info("connectionClose sql :" + sql);
             doFinished(true);
-            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, "connectionClose:" + reason);
+            this.shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, "connectionClose:" + reason);
         }
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         if (hasReturn.compareAndSet(false, true)) {
             ErrorPacket errPg = new ErrorPacket();
             errPg.read(err);
             doFinished(true);
-            conn.release(); //conn context not change
-            sc.writeErrMessage(errPg.getErrNo(), new String(errPg.getMessage()));
+            ((MySQLResponseService) service).release(); //conn context not change
+            this.shardingService.writeErrMessage(errPg.getErrNo(), new String(errPg.getMessage()));
         }
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
+    public void okResponse(byte[] ok, AbstractService service) {
+        MySQLResponseService responseService = (MySQLResponseService) service;
         if (hasReturn.compareAndSet(false, true)) {
             doFinished(false);
             if (!((SetCallBack) ((OneRawSQLQueryResultHandler) jobHandler).getCallback()).isBackToOtherThread()) {
-                boolean multiStatementFlag = sc.getSession2().getIsMultiStatement().get();
-                sc.write(sc.writeToBuffer(sc.getSession2().getOkByteArray(), sc.allocate()));
-                sc.getSession2().multiStatementNextSql(multiStatementFlag);
+                shardingService.write(shardingService.getSession2().getOKPacket());
             }
             ResetConnHandler handler = new ResetConnHandler();
-            conn.setResponseHandler(handler);
-            ((MySQLConnection) conn).setComplexQuery(true);
-            MySQLConnection connection = (MySQLConnection) conn;
-            connection.write(connection.writeToBuffer(ResetConnectionPacket.RESET, connection.allocate()));
+            responseService.setResponseHandler(handler);
+            responseService.setComplexQuery(true);
+            responseService.writeDirectly(responseService.writeToBuffer(ResetConnectionPacket.RESET, responseService.allocate()));
         }
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         //will not happen
 
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         //will not happen
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         //will not happen
     }
 

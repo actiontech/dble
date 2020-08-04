@@ -5,11 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.backend.BackendConnection;
+
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 /**
  * Created by nange on 2015/3/31.
  */
 public interface LoadDataResponseHandler {
-    void requestDataResponse(byte[] row, BackendConnection conn);
+    void requestDataResponse(byte[] row, MySQLResponseService service);
 }

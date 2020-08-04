@@ -6,18 +6,20 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,43 +45,44 @@ public class BaseSelectHandler extends BaseDMLHandler {
         this.autocommit = autocommit;
     }
 
-    public MySQLConnection initConnection() throws Exception {
+    public BackendConnection initConnection() throws Exception {
         if (serverSession.closed()) {
             return null;
         }
 
-        MySQLConnection exeConn = (MySQLConnection) serverSession.getTarget(rrss);
+        BackendConnection exeConn = serverSession.getTarget(rrss);
         if (serverSession.tryExistsCon(exeConn, rrss)) {
-            exeConn.setRowDataFlowing(true);
-            exeConn.setResponseHandler(this);
+            exeConn.getBackendService().setRowDataFlowing(true);
+            exeConn.getBackendService().setResponseHandler(this);
             return exeConn;
         } else {
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(rrss.getName());
             //autocommit is serverSession.getWriteSource().isAutocommit() && !serverSession.getWriteSource().isTxStart()
             final BackendConnection newConn = dn.getConnection(dn.getDatabase(), rrss.getRunOnSlave(), rrss);
             serverSession.bindConnection(rrss, newConn);
-            newConn.setResponseHandler(this);
-            ((MySQLConnection) newConn).setRowDataFlowing(true);
-            return (MySQLConnection) newConn;
+            newConn.getBackendService().setResponseHandler(this);
+            newConn.getBackendService().setRowDataFlowing(true);
+            return newConn;
         }
     }
 
-    public void execute(MySQLConnection conn) {
+    public void execute(MySQLResponseService service) {
+        TraceManager.crossThread(service, "base-sql-execute", serverSession.getShardingService());
         if (serverSession.closed()) {
-            conn.setRowDataFlowing(false);
+            service.setRowDataFlowing(false);
             serverSession.clearResources(true);
             return;
         }
-        conn.setSession(serverSession);
-        if (conn.isClosed()) {
-            conn.setRowDataFlowing(false);
+        service.setSession(serverSession);
+        if (service.getConnection().isClosed()) {
+            service.setRowDataFlowing(false);
             serverSession.onQueryError("failed or cancelled by other thread".getBytes());
             return;
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
+            LOGGER.debug(service.toString() + " send sql:" + rrss.getStatement());
         }
-        conn.executeMultiNode(rrss, serverSession.getSource(), autocommit);
+        service.executeMultiNode(rrss, serverSession.getShardingService(), autocommit);
     }
 
     public RouteResultsetNode getRrss() {
@@ -87,16 +90,16 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        conn.syncAndExecute();
+    public void okResponse(byte[] ok, AbstractService service) {
+        ((MySQLResponseService) service).syncAndExecute();
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
-        serverSession.setHandlerEnd(this); //base start receive
+                                 boolean isLeft, AbstractService service) {
+        serverSession.setHandlerEnd(this);
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + "'s field is reached.");
+            LOGGER.debug(service.toString() + "'s field is reached.");
         }
         if (terminate.get()) {
             return;
@@ -111,11 +114,11 @@ public class BaseSelectHandler extends BaseDMLHandler {
             field.read(field1);
             fieldPackets.add(field);
         }
-        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService conn) {
         if (terminate.get())
             return true;
         RowDataPacket rp = new RowDataPacket(fieldCounts);
@@ -125,14 +128,14 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + " 's rowEof is reached.");
+            LOGGER.debug(service.toString() + " 's rowEof is reached.");
         }
         if (this.terminate.get()) {
             return;
         }
-        nextHandler.rowEofResponse(data, this.isLeft, conn);
+        nextHandler.rowEofResponse(data, this.isLeft, service);
     }
 
     /**
@@ -157,26 +160,26 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(AbstractService service, String reason) {
         if (terminate.get())
             return;
-        LOGGER.warn(conn.toString() + "|connectionClose()|" + reason);
-        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
-                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+        LOGGER.warn(service.toString() + "|connectionClose()|" + reason);
+        reason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getConnection().getSchema() + "],threadID[" +
+                ((BackendConnection) service.getConnection()).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         serverSession.onQueryError(reason.getBytes());
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg;
         try {
-            errMsg = new String(errPacket.getMessage(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
+            errMsg = new String(errPacket.getMessage(), CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()));
         } catch (UnsupportedEncodingException e) {
-            errMsg = "UnsupportedEncodingException:" + conn.getCharset();
+            errMsg = "UnsupportedEncodingException:" + service.getConnection().getCharsetName();
         }
-        LOGGER.info(conn.toString() + errMsg);
+        LOGGER.info(service.toString() + errMsg);
         if (terminate.get())
             return;
         serverSession.onQueryError(errMsg.getBytes());
@@ -184,7 +187,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     protected void onTerminate() {
-        if (autocommit && !serverSession.getSource().isLocked()) {
+        if (autocommit && !serverSession.getShardingService().isLocked()) {
             this.serverSession.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
         } else {
             //the connection should wait until the connection running finish

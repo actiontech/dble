@@ -5,11 +5,13 @@
  */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnectionListener;
+import com.actiontech.dble.backend.pool.PooledConnectionListener;
 import com.actiontech.dble.backend.pool.util.TimerHolder;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 
@@ -26,11 +28,11 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     private final Object heartbeatLock;
     private volatile Timeout heartbeatTimeout;
     private final BackendConnection conn;
-    private final MySQLConnectionListener listener;
+    private final PooledConnectionListener listener;
     private boolean finished = false;
 
-    public ConnectionHeartBeatHandler(BackendConnection conn, boolean isBlock, MySQLConnectionListener listener) {
-        conn.setResponseHandler(this);
+    public ConnectionHeartBeatHandler(BackendConnection conn, boolean isBlock, PooledConnectionListener listener) {
+        conn.getBackendService().setResponseHandler(this);
         this.conn = conn;
         this.listener = listener;
         if (isBlock) {
@@ -41,7 +43,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     public boolean ping(long timeout) {
-        conn.ping();
+        conn.getBackendService().ping();
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
                 try {
@@ -55,7 +57,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             heartbeatTimeout = TimerHolder.getTimer().newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
-                    conn.closeWithoutRsp("conn heart timeout");
+                    conn.businessClose("conn heart timeout");
                 }
             }, timeout, TimeUnit.MILLISECONDS);
             return true;
@@ -67,10 +69,10 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
      * and go on check the next one
      *
      * @param ok
-     * @param con
+     * @param service
      */
     @Override
-    public void okResponse(byte[] ok, BackendConnection con) {
+    public void okResponse(byte[] ok, AbstractService service) {
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
                 finished = true;
@@ -80,62 +82,42 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         }
 
         heartbeatTimeout.cancel();
-        listener.onHeartbeatSuccess(con);
-    }
-
-    /**
-     * if heart beat returns error than clase the connection and
-     * start the next one
-     *
-     * @param data
-     * @param con
-     */
-    @Override
-    public void errorResponse(byte[] data, BackendConnection con) {
-    }
-
-    /**
-     * if when the query going on the conneciton be closed
-     * than just do nothing and go on for next one
-     *
-     * @param con
-     * @param reason
-     */
-    @Override
-    public void connectionClose(BackendConnection con, String reason) {
-
-    }
-
-    /**
-     * @param eof
-     * @param isLeft
-     * @param con
-     */
-    @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection con) {
-        // not called
-    }
-
-
-    @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection con) {
-        // not called
+        listener.onHeartbeatSuccess((PooledConnection) service.getConnection());
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection con) {
-        // not called
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+
+    }
+
+    @Override
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         return false;
     }
 
     @Override
-    public void connectionAcquired(BackendConnection con) {
-        // not called
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+
     }
+
+    @Override
+    public void connectionClose(AbstractService service, String reason) {
+
+    }
+
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
         // not called
+    }
+
+    @Override
+    public void connectionAcquired(com.actiontech.dble.net.connection.BackendConnection connection) {
+
+    }
+
+    @Override
+    public void errorResponse(byte[] err, AbstractService service) {
+
     }
 }

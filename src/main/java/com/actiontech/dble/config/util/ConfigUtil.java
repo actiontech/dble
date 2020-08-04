@@ -12,6 +12,7 @@ import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.singleton.TraceManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
@@ -156,7 +157,6 @@ public final class ConfigUtil {
 
     /**
      * check element illegal value and return val
-     *
      */
     public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
         if (element.hasAttribute(attrName)) {
@@ -184,61 +184,66 @@ public final class ConfigUtil {
 
 
     public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
-        String msg = null;
-        if (dbGroups.size() == 0) {
-            //with no dbGroups, do not check the variables
-            return null;
-        }
-        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
+        try {
+            String msg = null;
+            if (dbGroups.size() == 0) {
+                //with no dbGroups, do not check the variables
+                return null;
+            }
+            Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
+            getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
 
-        boolean lowerCase = false;
-        boolean isFirst = true;
-        Set<String> firstGroup = new HashSet<>();
-        Set<String> secondGroup = new HashSet<>();
-        int minNodePacketSize = Integer.MAX_VALUE;
-        for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
-            String dataSourceName = entry.getKey();
-            Future<KeyVariables> future = entry.getValue();
-            KeyVariables keyVariables = future.get();
-            if (keyVariables != null) {
-                if (isFirst) {
-                    lowerCase = keyVariables.isLowerCase();
-                    isFirst = false;
-                    firstGroup.add(dataSourceName);
-                } else if (keyVariables.isLowerCase() != lowerCase) {
-                    secondGroup.add(dataSourceName);
+            boolean lowerCase = false;
+            boolean isFirst = true;
+            Set<String> firstGroup = new HashSet<>();
+            Set<String> secondGroup = new HashSet<>();
+            int minNodePacketSize = Integer.MAX_VALUE;
+            for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+                String dataSourceName = entry.getKey();
+                Future<KeyVariables> future = entry.getValue();
+                KeyVariables keyVariables = future.get();
+                if (keyVariables != null) {
+                    if (isFirst) {
+                        lowerCase = keyVariables.isLowerCase();
+                        isFirst = false;
+                        firstGroup.add(dataSourceName);
+                    } else if (keyVariables.isLowerCase() != lowerCase) {
+                        secondGroup.add(dataSourceName);
+                    }
+                    minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
                 }
-                minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
             }
-        }
-        if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
-            SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
-            msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
-            LOGGER.warn(msg);
-        }
-        if (secondGroup.size() != 0) {
-            // if all datasoure's lower case are not equal, throw exception
-            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
-            String firstGroupValue;
-            String secondGroupValue;
-            if (lowerCase) {
-                firstGroupValue = " not 0 :";
-                secondGroupValue = " 0 :";
-            } else {
-                firstGroupValue = " 0 :";
-                secondGroupValue = " not 0 :";
+            if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
+                SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+                msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+                LOGGER.warn(msg);
             }
-            sb.append("These MySQL's value is");
-            sb.append(firstGroupValue);
-            sb.append(Strings.join(firstGroup, ','));
-            sb.append(".And these MySQL's value is");
-            sb.append(secondGroupValue);
-            sb.append(Strings.join(secondGroup, ','));
-            sb.append(".");
-            throw new IOException(sb.toString());
+            if (secondGroup.size() != 0) {
+                // if all datasoure's lower case are not equal, throw exception
+                StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
+                String firstGroupValue;
+                String secondGroupValue;
+                if (lowerCase) {
+                    firstGroupValue = " not 0 :";
+                    secondGroupValue = " 0 :";
+                } else {
+                    firstGroupValue = " 0 :";
+                    secondGroupValue = " not 0 :";
+                }
+                sb.append("These MySQL's value is");
+                sb.append(firstGroupValue);
+                sb.append(Strings.join(firstGroup, ','));
+                sb.append(".And these MySQL's value is");
+                sb.append(secondGroupValue);
+                sb.append(Strings.join(secondGroup, ','));
+                sb.append(".");
+                throw new IOException(sb.toString());
+            }
+            return msg;
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
-        return msg;
     }
 
 

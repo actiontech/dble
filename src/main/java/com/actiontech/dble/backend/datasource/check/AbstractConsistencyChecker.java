@@ -1,7 +1,7 @@
 package com.actiontech.dble.backend.datasource.check;
 
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.manager.response.CheckGlobalConsistency;
+import com.actiontech.dble.services.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;

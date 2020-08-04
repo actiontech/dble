@@ -15,6 +15,8 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
@@ -27,7 +29,8 @@ public final class MyOptimizer {
     }
 
     public static PlanNode optimize(PlanNode node) {
-
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-sql");
+        TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
             // PreProcessor SubQuery ,transform in sub query to join
             node = SubQueryPreProcessor.optimize(node);
@@ -67,6 +70,8 @@ public final class MyOptimizer {
         } catch (MySQLOutPutException e) {
             LoggerFactory.getLogger(MyOptimizer.class).error(node.toString(), e);
             throw e;
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
     }
 

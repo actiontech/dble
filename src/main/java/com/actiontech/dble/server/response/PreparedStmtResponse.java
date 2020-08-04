@@ -6,10 +6,10 @@
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PreparedStatement;
-import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.PreparedOkPacket;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 import java.nio.ByteBuffer;
 
@@ -20,45 +20,45 @@ public final class PreparedStmtResponse {
     private PreparedStmtResponse() {
     }
 
-    public static void response(PreparedStatement pStmt, FrontendConnection c) {
+    public static void response(PreparedStatement pStmt, ShardingService service) {
         byte packetId = 0;
 
-        // write preparedOk packet
+        // writeDirectly preparedOk packet
         PreparedOkPacket preparedOk = new PreparedOkPacket();
         preparedOk.setPacketId(++packetId);
         preparedOk.setStatementId(pStmt.getId());
         preparedOk.setColumnsNumber(pStmt.getColumnsNumber());
         preparedOk.setParametersNumber(pStmt.getParametersNumber());
-        ByteBuffer buffer = preparedOk.write(c.allocate(), c, true);
+        ByteBuffer buffer = preparedOk.write(service.allocate(), service, true);
 
-        // write parameter field packet
+        // writeDirectly parameter field packet
         int parametersNumber = preparedOk.getParametersNumber();
         if (parametersNumber > 0) {
             for (int i = 0; i < parametersNumber; i++) {
                 FieldPacket field = new FieldPacket();
                 field.setPacketId(++packetId);
-                buffer = field.write(buffer, c, true);
+                buffer = field.write(buffer, service, true);
             }
             EOFPacket eof = new EOFPacket();
             eof.setPacketId(++packetId);
-            buffer = eof.write(buffer, c, true);
+            buffer = eof.write(buffer, service, true);
         }
 
-        // write column field packet
+        // writeDirectly column field packet
         int columnsNumber = preparedOk.getColumnsNumber();
         if (columnsNumber > 0) {
             for (int i = 0; i < columnsNumber; i++) {
                 FieldPacket field = new FieldPacket();
                 field.setPacketId(++packetId);
-                buffer = field.write(buffer, c, true);
+                buffer = field.write(buffer, service, true);
             }
             EOFPacket eof = new EOFPacket();
             eof.setPacketId(++packetId);
-            buffer = eof.write(buffer, c, true);
+            buffer = eof.write(buffer, service, true);
         }
 
         // send buffer
-        c.write(buffer);
+        service.writeDirectly(buffer);
     }
 
 }

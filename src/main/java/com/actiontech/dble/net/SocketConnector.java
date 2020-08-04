@@ -7,4 +7,7 @@ package com.actiontech.dble.net;
 
 public interface SocketConnector {
 
+    void start();
+
+    void postConnect(com.actiontech.dble.net.connection.AbstractConnection c);
 }

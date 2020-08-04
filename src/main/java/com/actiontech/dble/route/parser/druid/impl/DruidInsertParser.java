@@ -19,9 +19,10 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
@@ -44,20 +45,20 @@ import java.util.*;
 
 public class DruidInsertParser extends DruidInsertReplaceParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
 
         MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = insert.getTableSource();
-        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
-        if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.INSERT)) {
+        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, tableSource);
+        if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.INSERT)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
             throw new SQLNonTransientException(msg);
         }
 
         if (insert.getQuery() != null) {
-            tryRouteInsertQuery(sc, rrs, stmt, visitor, schemaInfo);
+            tryRouteInsertQuery(service, rrs, stmt, visitor, schemaInfo);
             return schema;
         }
 
@@ -68,7 +69,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
-        if (parserNoSharding(sc, schemaName, schemaInfo, rrs, insert)) {
+        if (parserNoSharding(service, schemaName, schemaInfo, rrs, insert)) {
             return schema;
         }
 
@@ -86,7 +87,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             if (child.getIncrementColumn() != null) {
                 insert = genNewMySqlInsertStatement(rrs, insert, schemaInfo, child.getIncrementColumn());
             }
-            parserChildTable(schemaInfo, rrs, insert, sc, isExplain);
+            parserChildTable(schemaInfo, rrs, insert, service, isExplain);
             return schema;
         } else if (tc instanceof ShardingTableConfig) {
             ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
@@ -95,9 +96,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             }
             String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiInsert(insert)) {
-                parserBatchInsert(schemaInfo, rrs, partitionColumn, insert, sc.getCharset().getClient());
+                parserBatchInsert(schemaInfo, rrs, partitionColumn, insert, service.getCharset().getClient());
             } else {
-                parserSingleInsert(schemaInfo, rrs, partitionColumn, insert, sc.getCharset().getClient());
+                parserSingleInsert(schemaInfo, rrs, partitionColumn, insert, service.getCharset().getClient());
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
@@ -145,7 +146,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + insertStmt);
     }
 
-    private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,
+    private boolean parserNoSharding(ShardingService service, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,
                                      MySqlInsertStatement insert) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
@@ -153,7 +154,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             Set<String> schemas = new HashSet<>();
             if (insert.getQuery() != null) {
                 SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
-                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, schemas, noShardingNodePr)) {
+                if (!SchemaUtil.isNoSharding(service, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, schemas, noShardingNodePr)) {
                     return false;
                 }
             }
@@ -174,7 +175,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     }
 
     private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, MySqlInsertStatement insertStmt,
-                                  final ServerConnection sc, boolean isExplain) throws SQLNonTransientException {
+                                  final ShardingService service, boolean isExplain) throws SQLNonTransientException {
 
         final SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
@@ -196,7 +197,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
-            fetchChildTableToRoute(tc, joinColumnVal, sc, schema, sql, rrs, isExplain);
+            fetchChildTableToRoute(tc, joinColumnVal, service, schema, sql, rrs, isExplain);
         }
     }
 

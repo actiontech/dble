@@ -13,9 +13,10 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -29,7 +30,7 @@ import java.sql.SQLNonTransientException;
 
 public class DruidCreateTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
         MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement) stmt;
         rrs.setDdlType(DDLInfo.DDLType.CREATE_TABLE);
@@ -41,7 +42,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         }
 
         String schemaName = schema == null ? null : schema.getName();
-        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
+        SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, createStmt.getTableSource());
         TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (tableMeta != null && !createStmt.isIfNotExiists()) {
             String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' or table meta already exists";
@@ -50,7 +51,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 
         String statement;
         if (createStmt.getLike() != null) {
-            SchemaInfo likeSchemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getLike());
+            SchemaInfo likeSchemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, createStmt.getLike());
             TableMeta likeTableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(likeSchemaInfo.getSchema(), likeSchemaInfo.getTable());
             if (likeTableMeta == null) {
                 String msg = "Table '" + likeSchemaInfo.getSchema() + "." + likeSchemaInfo.getTable() + "' or table meta doesn't exist";

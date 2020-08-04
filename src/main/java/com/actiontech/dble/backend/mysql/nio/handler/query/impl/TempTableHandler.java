@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
@@ -15,11 +15,13 @@ import com.actiontech.dble.backend.mysql.store.UnSortedLocalResult;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.exception.TempTableException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +64,7 @@ public class TempTableHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         if (terminate.get()) {
             return;
         }
@@ -72,7 +74,7 @@ public class TempTableHandler extends BaseDMLHandler {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
-                String charSet = conn != null ? conn.getCharset().getResults() : session.getSource().getCharset().getResults();
+                String charSet = service != null ? ((MySQLResponseService) service).getCharset().getResults() : session.getSource().getCharsetName().getResults();
                 tempTable.setCharset(charSet);
                 tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), BufferPoolManager.getBufferPool(),
                         CharsetUtil.getJavaCharset(charSet)).setMemSizeController(session.getOtherBufferMC()));
@@ -82,7 +84,7 @@ public class TempTableHandler extends BaseDMLHandler {
                     throw new TempTableException("sourcesel [" + sourceSel.toString() + "] not found in fields");
                 sourceField = fields.get(sourceSelIndex);
                 if (nextHandler != null) {
-                    nextHandler.fieldEofResponse(headerNull, fieldsNull, fieldPackets, eofNull, this.isLeft, conn);
+                    nextHandler.fieldEofResponse(headerNull, fieldsNull, fieldPackets, eofNull, this.isLeft, service);
                 } else {
                     throw new TempTableException("unexpected nextHandler is null");
                 }
@@ -93,14 +95,14 @@ public class TempTableHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
             if (terminate.get()) {
                 return true;
             }
             if (++rowCount > maxPartSize * maxConnSize) {
-                String errMessage = "temptable too much rows,[rows size is " + rowCount + "], conn info [" + conn.toString() + "] !";
+                String errMessage = "temptable too much rows,[rows size is " + rowCount + "], conn info [" + service.toString() + "] !";
                 LOGGER.info(errMessage);
                 throw new TempTableException(errMessage);
             }
@@ -119,7 +121,7 @@ public class TempTableHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
             // callBack after terminated
@@ -131,10 +133,10 @@ public class TempTableHandler extends BaseDMLHandler {
             tempDoneCallBack.call();
             RowDataPacket rp = null;
             while ((rp = tempTable.nextRow()) != null) {
-                nextHandler.rowResponse(null, rp, this.isLeft, conn);
+                nextHandler.rowResponse(null, rp, this.isLeft, service);
             }
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(eof, this.isLeft, conn);
+            nextHandler.rowEofResponse(eof, this.isLeft, service);
         } catch (Exception e) {
             LOGGER.info("rowEof exception!", e);
             throw new TempTableException("rowEof exception!", e);

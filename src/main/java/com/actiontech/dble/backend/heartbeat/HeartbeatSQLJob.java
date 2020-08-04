@@ -5,12 +5,13 @@
 
 package com.actiontech.dble.backend.heartbeat;
 
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.sqlengine.SQLJobHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,20 +40,20 @@ public class HeartbeatSQLJob implements ResponseHandler {
         if (connection != null && !connection.isClosed()) {
             String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
             LOGGER.info("terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
-            connection.closeWithoutRsp("heartbeat quit");
+            connection.businessClose("heartbeat quit");
         }
     }
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
         this.connection = conn;
-        conn.setResponseHandler(this);
-        ((MySQLConnection) conn).setComplexQuery(true);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setComplexQuery(true);
         try {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("do heartbeat,conn is " + conn);
             }
-            conn.query(sql);
+            conn.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
         }
@@ -65,7 +66,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("do heartbeat,conn is " + connection);
             }
-            connection.query(sql);
+            connection.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
         }
@@ -85,16 +86,16 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
+    public void errorResponse(byte[] err, AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
         heartbeat.setErrorResult(new String(errPg.getMessage()));
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + conn;
+                " from of sql :" + sql + " at con:" + service;
 
         LOGGER.info(errMsg);
-        if (!conn.syncAndExecute()) {
-            conn.closeWithoutRsp("unfinished sync");
+        if (!((MySQLResponseService) service).syncAndExecute()) {
+            service.getConnection().businessClose("unfinished sync");
             doFinished(true);
             return;
         }
@@ -102,35 +103,36 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
-        if (conn.syncAndExecute()) {
+    public void okResponse(byte[] ok, AbstractService service) {
+        if (((MySQLResponseService) service).syncAndExecute()) {
             doFinished(false);
         }
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         jobHandler.onHeader(fields);
 
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         doFinished(false);
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
+    public void connectionClose(AbstractService service, String reason) {
+        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try immedia");
         if (!heartbeat.doHeartbeatRetry()) {
             heartbeat.setErrorResult("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ")");
+            doFinished(true);
         }
     }
 

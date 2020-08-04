@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.net.Session;
 
@@ -29,7 +30,7 @@ public class RenameFieldHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
         for (FieldPacket fp : fieldPackets) {
             fp.setTable(alias.getBytes());
@@ -38,19 +39,19 @@ public class RenameFieldHandler extends BaseDMLHandler {
                 fp.setOrgTable("*".getBytes());
             }
         }
-        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        nextHandler.rowResponse(rowNull, rowPacket, this.isLeft, conn);
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+        nextHandler.rowResponse(rowNull, rowPacket, this.isLeft, service);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(eof, this.isLeft, conn);
+        nextHandler.rowEofResponse(eof, this.isLeft, service);
     }
 
     @Override

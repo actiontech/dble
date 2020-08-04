@@ -4,7 +4,6 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.manager.handler.ShowProcesslistHandler;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -19,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class XARecoverHandler {
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(ShowProcesslistHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(XARecoverHandler.class);
     private boolean isCommit;
     private ParticipantLogEntry logEntry;
     private Lock lock;

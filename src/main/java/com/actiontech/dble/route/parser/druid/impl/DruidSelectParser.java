@@ -26,10 +26,11 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.StringUtil;
@@ -59,7 +60,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         String schemaName = schema == null ? null : schema.getName();
@@ -73,27 +74,27 @@ public class DruidSelectParser extends DefaultDruidParser {
             //three types of select route according to the from item in select sql
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
-                routeForNoFrom(schema, rrs, visitor, isExplain, sc, selectStmt);
+                routeForNoFrom(schema, rrs, visitor, isExplain, service, selectStmt);
                 return schema;
             } else if (mysqlFrom instanceof SQLExprTableSource) {
                 SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-                SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
+                SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, fromSource);
                 if (schemaInfo.isDual()) {
                     //dual just route for a Random shardingNode
                     RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                     return schema;
                 } else if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaInfo.getSchema().toUpperCase())) {
                     //sys_schema just use a special handler to response
-                    MysqlSystemSchemaHandler.handle(sc, schemaInfo, mysqlSelectQuery);
+                    MysqlSystemSchemaHandler.handle(service, schemaInfo, mysqlSelectQuery);
                     rrs.setFinishedExecute(true);
                     return schema;
                 } else {
                     //normal sharding in config
-                    if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
+                    if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
                         String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                         throw new SQLNonTransientException(msg);
                     }
-                    super.visitorParse(schema != null ? schema : schemaInfo.getSchemaConfig(), rrs, stmt, visitor, sc, isExplain);
+                    super.visitorParse(schema != null ? schema : schemaInfo.getSchemaConfig(), rrs, stmt, visitor, service, isExplain);
                     //check to route for complex
                     if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
                             hasInnerFuncSelect(visitor.getFunctions())) {
@@ -102,30 +103,30 @@ public class DruidSelectParser extends DefaultDruidParser {
                         return schemaInfo.getSchemaConfig();
                     }
                     if (visitor.getSubQueryList().size() > 0) {
-                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, service, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
                     }
 
                     //route for single table
-                    routeSingleTable(rrs, schemaInfo, mysqlSelectQuery, selectStmt, sc);
+                    routeSingleTable(rrs, schemaInfo, mysqlSelectQuery, selectStmt, service);
                     return schema;
                 }
 
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
-                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+                super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
+                return executeComplexSQL(schemaName, schema, rrs, selectStmt, service, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
-            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+            super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
+            return executeComplexSQL(schemaName, schema, rrs, selectStmt, service, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
         }
         return schema;
     }
 
 
     private void routeSingleTable(RouteResultset rrs, SchemaInfo schemaInfo, MySqlSelectQueryBlock mysqlSelectQuery,
-                                  SQLSelectStatement selectStmt, ServerConnection sc) throws SQLException {
+                                  SQLSelectStatement selectStmt, ShardingService service) throws SQLException {
         rrs.setSchema(schemaInfo.getSchema());
         rrs.setTable(schemaInfo.getTable());
         rrs.setTableAlias(schemaInfo.getTableAlias());
@@ -133,7 +134,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         SchemaConfig schema = schemaInfo.getSchemaConfig();
 
         String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
-        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
+        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !service.isAutocommit()) {
             rrs.setCanRunInReadDB(false);
         }
         if (noShardingNode != null) {
@@ -190,11 +191,11 @@ public class DruidSelectParser extends DefaultDruidParser {
      * check the sql subquery first
      * route for a NoNameTable
      */
-    private void routeForNoFrom(SchemaConfig schema, RouteResultset rrs, ServerSchemaStatVisitor visitor, boolean isExplain, ServerConnection sc,
+    private void routeForNoFrom(SchemaConfig schema, RouteResultset rrs, ServerSchemaStatVisitor visitor, boolean isExplain, ShardingService service,
                                 SQLSelectStatement selectStmt) throws SQLException {
-        super.visitorParse(schema, rrs, selectStmt, visitor, sc, isExplain);
+        super.visitorParse(schema, rrs, selectStmt, visitor, service, isExplain);
         if (visitor.getSubQueryList().size() > 0) {
-            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
+            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, service, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
             return;
         }
         RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
@@ -480,14 +481,14 @@ public class DruidSelectParser extends DefaultDruidParser {
         return groupByCols;
     }
 
-    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc, int tableSize, boolean ontainsInnerFunction)
+    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ShardingService service, int tableSize, boolean ontainsInnerFunction)
             throws SQLException {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
-        if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+        if (SchemaUtil.isNoSharding(service, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
             return routeToNoSharding(schema, rrs, schemas, noShardingNode);
         } else if (schemas.size() > 0 && SchemaUtil.MYSQL_SYS_SCHEMA.containsAll(schemas)) {
-            MysqlSystemSchemaHandler.handle(sc, null, selectStmt.getSelect().getQuery());
+            MysqlSystemSchemaHandler.handle(service, null, selectStmt.getSelect().getQuery());
             rrs.setFinishedExecute(true);
             return schema;
         } else if (ontainsInnerFunction) {

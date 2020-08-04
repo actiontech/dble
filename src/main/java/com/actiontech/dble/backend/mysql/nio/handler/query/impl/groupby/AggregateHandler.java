@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby;
 
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
@@ -15,6 +15,7 @@ import com.actiontech.dble.backend.mysql.store.DistinctLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.external.ResultStore;
 import com.actiontech.dble.plan.common.field.Field;
@@ -22,6 +23,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.AggregatorType;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,9 +79,9 @@ public class AggregateHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, BackendConnection conn) {
+                                 byte[] eofNull, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
-        this.charset = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
+        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharsetName().getResults());
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -94,13 +96,13 @@ public class AggregateHandler extends BaseDMLHandler {
         comparator = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type());
         prepareSumAggregators(sums, this.referredSumFunctions, this.fieldPackets, this.isAllPushDown());
         setupSumFunctions(sums);
-        sendGroupFieldPackets(conn);
+        sendGroupFieldPackets(service);
     }
 
     /**
      * new fieldPackets: generated function result + origin fieldpackets
      */
-    private void sendGroupFieldPackets(BackendConnection conn) {
+    private void sendGroupFieldPackets(AbstractService service) {
         List<FieldPacket> newFps = new ArrayList<>();
         for (ItemSum sum1 : sums) {
             Item sum = sum1;
@@ -109,11 +111,11 @@ public class AggregateHandler extends BaseDMLHandler {
             newFps.add(tmp);
         }
         newFps.addAll(this.fieldPackets);
-        nextHandler.fieldEofResponse(null, null, newFps, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, newFps, null, this.isLeft, service);
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         LOGGER.debug("rowresponse");
         if (terminate.get())
             return true;
@@ -127,7 +129,7 @@ public class AggregateHandler extends BaseDMLHandler {
                 boolean sameGroupRow = this.groupBys.size() == 0 || (comparator.compare(originRp, rowPacket) == 0);
                 if (!sameGroupRow) {
                     // send the completed result firstly
-                    sendGroupRowPacket((MySQLConnection) conn);
+                    sendGroupRowPacket((MySQLResponseService) service);
                     originRp = rowPacket;
                     initSumFunctions(sums, rowPacket);
                 } else {
@@ -140,7 +142,7 @@ public class AggregateHandler extends BaseDMLHandler {
         }
     }
 
-    private void sendGroupRowPacket(MySQLConnection conn) {
+    private void sendGroupRowPacket(MySQLResponseService service) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
         for (ItemSum sum : this.sums) {
             byte[] tmp = sum.getRowPacketByte();
@@ -149,28 +151,28 @@ public class AggregateHandler extends BaseDMLHandler {
         for (int i = 0; i < originRp.getFieldCount(); i++) {
             newRp.add(originRp.getValue(i));
         }
-        nextHandler.rowResponse(null, newRp, this.isLeft, conn);
+        nextHandler.rowResponse(null, newRp, this.isLeft, service);
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         LOGGER.debug("row eof for orderby.");
         if (terminate.get())
             return;
         if (!hasFirstRow) {
             if (HandlerTool.needSendNoRow(this.groupBys))
-                sendNoRowGroupRowPacket((MySQLConnection) conn);
+                sendNoRowGroupRowPacket((MySQLResponseService) service);
         } else {
-            sendGroupRowPacket((MySQLConnection) conn);
+            sendGroupRowPacket((MySQLResponseService) service);
         }
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(data, this.isLeft, conn);
+        nextHandler.rowEofResponse(data, this.isLeft, service);
     }
 
     /**
      * send data to next even no data here. eg: select count(*) from t2 ,if t2 empty,then send 0
      */
-    private void sendNoRowGroupRowPacket(MySQLConnection conn) {
+    private void sendNoRowGroupRowPacket(MySQLResponseService service) {
         RowDataPacket newRp = new RowDataPacket(this.fieldPackets.size() + this.sums.size());
         // @bug 1050
         // sumfuncs are front
@@ -183,7 +185,7 @@ public class AggregateHandler extends BaseDMLHandler {
             newRp.add(null);
         }
         originRp = null;
-        nextHandler.rowResponse(null, newRp, this.isLeft, conn);
+        nextHandler.rowResponse(null, newRp, this.isLeft, service);
     }
 
     /**

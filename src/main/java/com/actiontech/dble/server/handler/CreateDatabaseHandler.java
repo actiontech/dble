@@ -10,7 +10,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLCreateDatabaseStatement;
 
@@ -22,7 +23,7 @@ public final class CreateDatabaseHandler {
     private CreateDatabaseHandler() {
     }
 
-    public static void handle(String stmt, ServerConnection c) {
+    public static void handle(String stmt, ShardingService service) {
         try {
             stmt = stmt.replace("/*!", "/*#");
             SQLCreateDatabaseStatement statement = (SQLCreateDatabaseStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
@@ -33,12 +34,12 @@ public final class CreateDatabaseHandler {
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(1);
                 ok.setAffectedRows(1);
-                ok.write(c);
+                ok.write(service.getConnection());
             } else {
                 throw new Exception("Can't create database '" + schema + "' that doesn't exists in config");
             }
         } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
         }
     }
 }

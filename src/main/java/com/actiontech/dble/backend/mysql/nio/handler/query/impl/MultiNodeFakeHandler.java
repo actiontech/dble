@@ -1,9 +1,10 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
+
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.net.Session;
 
@@ -23,24 +24,24 @@ public class MultiNodeFakeHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
-        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
+        nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return true;
-        return nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
+        return nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         if (this.terminate.get())
             return;
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(null, this.isLeft, conn);
+        nextHandler.rowEofResponse(null, this.isLeft, service);
     }
 
     @Override

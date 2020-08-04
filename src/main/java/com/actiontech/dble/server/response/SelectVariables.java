@@ -8,11 +8,8 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +30,7 @@ public final class SelectVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectVariables.class);
 
 
-    public static void execute(ServerConnection c, String sql) {
+    public static void execute(ShardingService service, String sql) {
         String subSql = sql.substring(sql.indexOf("SELECT") + 6);
         List<String> splitVar = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(subSql);
         splitVar = convert(splitVar);
@@ -42,44 +39,43 @@ public final class SelectVariables {
         FieldPacket[] fields = new FieldPacket[fieldCount];
 
         int i = 0;
-        byte packetId = setCurrentPacket(c);
-        header.setPacketId(++packetId);
+        header.setPacketId(service.nextPacketId());
         for (String s : splitVar) {
             fields[i] = PacketUtil.getField(s, Fields.FIELD_TYPE_VAR_STRING);
-            fields[i++].setPacketId(++packetId);
+            fields[i++].setPacketId(service.nextPacketId());
         }
 
 
-        ByteBuffer buffer = c.allocate();
+        ByteBuffer buffer = service.allocate();
 
-        // write header
-        buffer = header.write(buffer, c, true);
+        // writeDirectly header
+        buffer = header.write(buffer, service, true);
 
-        // write fields
+        // writeDirectly fields
         for (FieldPacket field : fields) {
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
 
 
         EOFPacket eof = new EOFPacket();
-        eof.setPacketId(++packetId);
-        // write eof
-        buffer = eof.write(buffer, c, true);
+        eof.setPacketId(service.nextPacketId());
+        // writeDirectly eof
+        buffer = eof.write(buffer, service, true);
 
-        // write rows
+        // writeDirectly rows
         //byte packetId = eof.packetId;
 
         RowDataPacket row = new RowDataPacket(fieldCount);
         for (String s : splitVar) {
             switch (s.toLowerCase()) {
                 case "character_set_client":
-                    row.add(c.getCharset().getClient() != null ? c.getCharset().getClient().getBytes() : null);
+                    row.add(service.getCharset().getClient() != null ? service.getCharset().getClient().getBytes() : null);
                     break;
                 case "character_set_results":
-                    row.add(c.getCharset().getResults() != null ? c.getCharset().getResults().getBytes() : null);
+                    row.add(service.getCharset().getResults() != null ? service.getCharset().getResults().getBytes() : null);
                     break;
                 case "collation_connection":
-                    row.add(c.getCharset().getCollation() != null ? c.getCharset().getCollation().getBytes() : null);
+                    row.add(service.getCharset().getCollation() != null ? service.getCharset().getCollation().getBytes() : null);
                     break;
                 default:
                     String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);
@@ -88,19 +84,14 @@ public final class SelectVariables {
 
         }
 
-        row.setPacketId(++packetId);
-        buffer = row.write(buffer, c, true);
+        row.setPacketId(service.nextPacketId());
+        buffer = row.write(buffer, service, true);
 
 
-        // write lastEof
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementPacket(lastEof, packetId);
-        buffer = lastEof.write(buffer, c, true);
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        // write buffer
-        c.write(buffer);
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        // writeDirectly lastEof
+        EOFRowPacket lastEof = new EOFRowPacket();
+        lastEof.setPacketId(service.nextPacketId());
+        lastEof.write(buffer, service);
     }
 
     private static List<String> convert(List<String> in) {
@@ -168,8 +159,8 @@ public final class SelectVariables {
     }
 
 
-    public static byte setCurrentPacket(ServerConnection c) {
-        byte packetId = (byte) c.getSession2().getPacketId().get();
+    public static byte setCurrentPacket(ShardingService service) {
+        byte packetId = (byte) service.getSession2().getPacketId().get();
         return packetId;
     }
 

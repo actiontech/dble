@@ -9,10 +9,10 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.manager.response.ShowConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.services.manager.response.ShowConnection;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.*;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -68,16 +68,16 @@ public class SelectInformationSchemaColumnsHandler {
         this.done = lock.newCondition();
     }
 
-    public void handle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void handle(ShardingService service, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                sqlhandle(c, fields0, mySqlSelectQueryBlock);
+                sqlhandle(service, fields0, mySqlSelectQueryBlock);
             }
         });
     }
 
-    public void sqlhandle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void sqlhandle(ShardingService shardingService, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
         SQLExpr whereExpr = mySqlSelectQueryBlock.getWhere();
 
         Map<String, String> whereInfo = new HashMap<>();
@@ -88,32 +88,32 @@ public class SelectInformationSchemaColumnsHandler {
 
         // the where condition should be contain table_schema, table_name equivalence judgment
         if ((cSchema = containsKeyIngoreCase(whereInfo, INFORMATION_SCHEMACOLUMNS_COLS[1])) == null || (table = containsKeyIngoreCase(whereInfo, INFORMATION_SCHEMACOLUMNS_COLS[2])) == null) {
-            MysqlSystemSchemaHandler.doWrite(fields0.length, fields0, null, c);
+            MysqlSystemSchemaHandler.doWrite(fields0.length, fields0, null, shardingService);
             return;
         }
 
         SchemaConfig schemaConfig = null;
         if ((schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(cSchema)) == null) {
-            c.writeErrMessage("42000", "Unknown database '" + cSchema + "'", ErrorCode.ER_BAD_DB_ERROR);
+            shardingService.writeErrMessage("42000", "Unknown database '" + cSchema + "'", ErrorCode.ER_BAD_DB_ERROR);
             return;
         }
 
-        ShardingUserConfig userConfig = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(c.getUser()));
+        ShardingUserConfig userConfig = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(shardingService.getUser()));
         if (userConfig == null || !userConfig.getSchemas().contains(cSchema)) {
-            c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            shardingService.writeErrMessage("42000", "Access denied for user '" + shardingService.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
 
         String shardingNode = null;
         if (!schemaConfig.getTables().containsKey(table)) {
             if ((shardingNode = schemaConfig.getShardingNode()) == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
+                shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
                 return;
             }
         } else {
             BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig == null) {
-                c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
+                shardingService.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
                 return;
             }
             shardingNode = tableConfig.getShardingNodes().get(0);
@@ -182,7 +182,7 @@ public class SelectInformationSchemaColumnsHandler {
         waitDone();
 
         if (!success) {
-            c.writeErrMessage(ErrorCode.ER_YES, "occur Exception, so see dble.log to check reason");
+            shardingService.writeErrMessage(ErrorCode.ER_YES, "occur Exception, so see dble.log to check reason");
             return;
         }
 
@@ -193,12 +193,12 @@ public class SelectInformationSchemaColumnsHandler {
             for (Map<String, String> data : result) {
                 RowDataPacket row = new RowDataPacket(fieldCount);
                 for (String col : selectCols) {
-                    row.add(null == data.get(col) ? null : StringUtil.encode(data.get(col), c.getCharset().getResults()));
+                    row.add(null == data.get(col) ? null : StringUtil.encode(data.get(col), shardingService.getCharset().getResults()));
                 }
                 rows[index++] = row;
             }
         }
-        MysqlSystemSchemaHandler.doWrite(fieldCount, fields, rows, c);
+        MysqlSystemSchemaHandler.doWrite(fieldCount, fields, rows, shardingService);
     }
 
     public void replaceSchema(SQLExpr whereExpr, String realSchema) {

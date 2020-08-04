@@ -24,9 +24,9 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
@@ -60,10 +60,9 @@ import java.util.regex.Pattern;
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
     //innodb limit of columns per table, https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html
     private static final int DEFAULT_MAX_COLUMNS = 1017;
-    private ServerConnection serverConnection;
+    private ShardingService service;
     private String sql;
     private String fileName;
-    private byte packID = 0;
     private MySqlLoadDataInFileStatement statement;
 
     private Map<String, LoadData> routeResultMap = new HashMap<>();
@@ -82,12 +81,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private int partitionColumnIndex = -1;
     private int autoIncrementIndex = -1;
     private boolean appendAutoIncrementColumn = false;
-    private boolean isStartLoadData = false;
 
-
-    public ServerLoadDataInfileHandler(ServerConnection serverConnection) {
-        this.serverConnection = serverConnection;
-
+    public ServerLoadDataInfileHandler(ShardingService service) {
+        this.service = service;
     }
 
     private static String parseFileName(String sql) {
@@ -128,24 +124,21 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     @Override
     public void start(String strSql) {
-        clear();
         this.sql = strSql;
-        this.packID = (byte) serverConnection.getSession2().getPacketId().get();
-
         if (this.checkPartition(strSql)) {
-            serverConnection.writeErrMessage(ErrorCode.ER_UNSUPPORTED_PS, " unsupported load data with Partition");
+            service.writeErrMessage(ErrorCode.ER_UNSUPPORTED_PS, " unsupported load data with Partition");
             clear();
             return;
         }
 
         try {
             statement = (MySqlLoadDataInFileStatement) new MySqlStatementParser(strSql).parseStatement();
-            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(serverConnection.getUser(), serverConnection.getSchema(), statement.getTableName(), null);
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), statement.getTableName(), null);
             tableName = schemaInfo.getTable();
             schema = schemaInfo.getSchemaConfig();
         } catch (SQLException e) {
             clear();
-            serverConnection.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
 
@@ -158,18 +151,18 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         if (!ProxyMeta.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
             String msg = "Table '" + schema.getName() + "." + tableName + "' or table mata doesn't exist";
             clear();
-            serverConnection.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
+            service.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
             return;
         }
 
         fileName = parseFileName(strSql);
         if (fileName == null) {
-            serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, " file name is null !");
+            service.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, " file name is null !");
             clear();
             return;
         }
 
-        tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
+        tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + service.getConnection().getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
@@ -193,32 +186,30 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         if (tableConfig != null &&
                 (tableConfig instanceof ShardingTableConfig || tableConfig instanceof ChildTableConfig) &&
                 partitionColumnIndex == -1) {
-            serverConnection.writeErrMessage(ErrorCode.ER_KEY_COLUMN_DOES_NOT_EXITS, "can't find partition column.");
+            service.writeErrMessage(ErrorCode.ER_KEY_COLUMN_DOES_NOT_EXITS, "can't find partition column.");
             clear();
             return;
         }
 
         parseLoadDataPram();
         if (statement.isLocal()) {
-            isStartLoadData = true;
             //request file from client
-            ByteBuffer buffer = serverConnection.allocate();
+            ByteBuffer buffer = service.allocate();
             RequestFilePacket filePacket = new RequestFilePacket();
             filePacket.setFileName(fileName.getBytes());
             filePacket.setPacketId(1);
-            filePacket.write(buffer, serverConnection, true);
+            filePacket.write(buffer, service, true);
         } else {
             if (!new File(fileName).exists()) {
                 String msg = fileName + " is not found!";
                 clear();
-                serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, msg);
+                service.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, msg);
             } else {
                 if (parseFileByLine(fileName, loadData.getCharset())) {
                     RouteResultset rrs = buildResultSet(routeResultMap);
                     if (rrs != null) {
                         flushDataToFile();
-                        isStartLoadData = false;
-                        serverConnection.getSession2().execute(rrs);
+                        service.getSession2().execute(rrs);
                     }
                 }
             }
@@ -230,7 +221,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         try {
             if (sql == null) {
                 clear();
-                serverConnection.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
                 return;
             }
             BinaryPacket packet = new BinaryPacket();
@@ -277,7 +268,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             }
                         }
                     } catch (Exception e) {
-                        serverConnection.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL or table meta error");
+                        service.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL or table meta error");
                         clear();
                         return false;
                     }
@@ -446,7 +437,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
-            serverConnection.updateLastReadTime();
+            service.updateLastReadTime();
             data.setData(null);
         }
     }
@@ -576,12 +567,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     @Override
-    public void end(byte packId) {
-        isStartLoadData = false;
-        this.packID = packId;
+    public void end(byte packetId) {
+        service.setPacketId(packetId);
         //empty packet for end
         saveByteOrToFile(null, true);
-
         if (isHasStoreToFile) {
             parseFileByLine(tempFile, loadData.getCharset());
         } else {
@@ -589,9 +578,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             if ("".equals(content)) {
                 clear();
                 OkPacket ok = new OkPacket();
-                ok.setPacketId(++packId);
+                ok.setPacketId(service.nextPacketId());
                 ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
-                ok.write(serverConnection);
+                ok.write(service.getConnection());
                 return;
             }
             // List<String> lines = Splitter.on(loadData.getLineTerminatedBy()).omitEmptyStrings().splitToList(content);
@@ -631,7 +620,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             parseOneLine(row);
                         } catch (Exception e) {
                             clear();
-                            serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                            service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
                             return;
                         }
                     } else {
@@ -646,7 +635,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = buildResultSet(routeResultMap);
         if (rrs != null) {
             flushDataToFile();
-            serverConnection.getSession2().execute(rrs);
+            service.getSession2().execute(rrs);
         }
     }
 
@@ -690,8 +679,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         parseOneLine(row);
                     } catch (Exception e) {
                         clear();
-                        byte packId = packID;
-                        serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
                         return false;
                     }
                     empty = false;
@@ -700,12 +688,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
             }
             if (empty) {
-                byte packId = packID;
                 clear();
                 OkPacket ok = new OkPacket();
-                ok.setPacketId(++packId);
+                ok.setPacketId(service.nextPacketId());
                 ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
-                ok.write(serverConnection);
+                ok.write(service.getConnection());
                 return false;
             }
             return true;
@@ -759,11 +746,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     public void clear() {
-        isStartLoadData = false;
+        service.resetProto();
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;
-        packID = 0;
         tempByteBufferSize = 0;
         tableName = null;
         partitionColumnIndex = -1;
@@ -784,18 +770,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         fileName = null;
         statement = null;
         routeResultMap.clear();
-    }
-
-
-    @Override
-    public byte getLastPackId() {
-        return packID;
-    }
-
-
-    @Override
-    public boolean isStartLoadData() {
-        return isStartLoadData;
     }
 
 

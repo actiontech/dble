@@ -50,7 +50,7 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
         mainTape.end = file.getFilePointer();
         rowCount += rows.size();
         if (logger.isDebugEnabled()) {
-            logger.debug("write rows to disk end:" + TimeUtil.currentTimeMillis());
+            logger.debug("writeDirectly rows to disk end:" + TimeUtil.currentTimeMillis());
         }
         return rowCount;
     }

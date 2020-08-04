@@ -7,18 +7,18 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 public final class SptDrop {
     private SptDrop() {
     }
 
-    public static void response(ServerConnection c) {
-        String name = c.getSptPrepare().getName();
-        if (c.getSptPrepare().delPrepare(name)) {
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+    public static void response(ShardingService service) {
+        String name = service.getSptPrepare().getName();
+        if (service.getSptPrepare().delPrepare(name)) {
+            service.writeDirectly(service.writeToBuffer(OkPacket.OK, service.allocate()));
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_STMT_HANDLER, "Unknown prepared statement handler" + name + " given to DEALLOCATE PREPARE");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_STMT_HANDLER, "Unknown prepared statement handler" + name + " given to DEALLOCATE PREPARE");
         }
     }
 }

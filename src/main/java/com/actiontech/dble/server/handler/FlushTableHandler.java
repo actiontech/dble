@@ -8,7 +8,8 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlFlushStatement;
 
 /**
@@ -19,16 +20,16 @@ public final class FlushTableHandler {
     private FlushTableHandler() {
     }
 
-    public static void handle(String stmt, ServerConnection c) {
+    public static void handle(String stmt, ShardingService service) {
         try {
             stmt = stmt.replace("/*!", "/*#");
             MySqlFlushStatement statement = (MySqlFlushStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
             OkPacket ok = new OkPacket();
             ok.setPacketId(1);
             ok.setAffectedRows(1);
-            ok.write(c);
+            ok.write(service.getConnection());
         } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
         }
     }
 }

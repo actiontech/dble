@@ -298,21 +298,21 @@ public final class StringUtil {
         int strIndex = 0;
         ByteArrayOutputStream out = new ByteArrayOutputStream(bytesLen);
         while (true) {
-            if (srcString.charAt(strIndex) == '\\') { // write it out as-is
+            if (srcString.charAt(strIndex) == '\\') { // writeDirectly it out as-is
                 out.write(src[bufIndex++]);
             } else { // Grab the first byte
                 int loByte = src[bufIndex];
                 if (loByte < 0) {
                     loByte += 256; // adjust for signedness/wrap-around
                 }
-                out.write(loByte); // We always write the first byte
+                out.write(loByte); // We always writeDirectly the first byte
                 if (loByte >= 0x80) {
                     if (bufIndex < (bytesLen - 1)) {
                         int hiByte = src[bufIndex + 1];
                         if (hiByte < 0) {
                             hiByte += 256; // adjust for signedness/wrap-around
                         }
-                        out.write(hiByte); // write the high byte here, and
+                        out.write(hiByte); // writeDirectly the high byte here, and
                         // increment the index for the high
                         // byte
                         bufIndex++;

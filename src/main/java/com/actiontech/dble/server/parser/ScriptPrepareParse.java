@@ -6,7 +6,8 @@
 package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.util.LinkedList;
@@ -21,7 +22,7 @@ public final class ScriptPrepareParse {
     private ScriptPrepareParse() {
     }
 
-    public static int parse(String stmt, int offset, ServerConnection c) {
+    public static int parse(String stmt, int offset, ShardingService service) {
         int i = offset;
         for (; i < stmt.length(); ++i) {
             switch (stmt.charAt(i)) {
@@ -36,13 +37,13 @@ public final class ScriptPrepareParse {
                     break;
                 case 'P':
                 case 'p':
-                    return prepareParse(stmt, i, c);
+                    return prepareParse(stmt, i, service);
                 case 'E':
                 case 'e':
-                    return executeParse(stmt, i, c);
+                    return executeParse(stmt, i, service);
                 case 'D':
                 case 'd':
-                    return dParse(stmt, i, c);
+                    return dParse(stmt, i, service);
                 default:
                     return OTHER;
             }
@@ -80,7 +81,7 @@ public final class ScriptPrepareParse {
         return i - 1;
     }
 
-    private static int prepareParse(String stmt, int offset, ServerConnection c) {
+    private static int prepareParse(String stmt, int offset, ShardingService service) {
         String name = null;
 
         offset += "REPARE".length();
@@ -112,9 +113,9 @@ public final class ScriptPrepareParse {
                             switch (c5) {
                                 case '\'':
                                 case '"':
-                                    return parseStmtFrom(stmt, offset, c, name);
+                                    return parseStmtFrom(stmt, offset, service, name);
                                 case '@':
-                                    return parseStmtFromUser(stmt, offset, c, name);
+                                    return parseStmtFromUser(stmt, offset, service, name);
                                 default:
                                     break;
                             }
@@ -126,7 +127,7 @@ public final class ScriptPrepareParse {
         return OTHER;
     }
 
-    private static int parseStmtFrom(String stmt, int offset, ServerConnection c, String name) {
+    private static int parseStmtFrom(String stmt, int offset, ShardingService service, String name) {
         String exestmt = null;
 
         char c1 = stmt.charAt(offset);
@@ -137,12 +138,12 @@ public final class ScriptPrepareParse {
         if (offset + 1 != stmt.length()) {
             return OTHER;
         }
-        c.getSptPrepare().setName(name);
-        c.getSptPrepare().setExePrepare(exestmt, false);
+        service.getSptPrepare().setName(name);
+        service.getSptPrepare().setExePrepare(exestmt, false);
         return PREPARE;
     }
 
-    private static int parseStmtFromUser(String stmt, int offset, ServerConnection c, String name) {
+    private static int parseStmtFromUser(String stmt, int offset, ShardingService service, String name) {
         String exestmt = null;
         int i = ++offset;
         for (; i < stmt.length(); i++) {
@@ -153,14 +154,14 @@ public final class ScriptPrepareParse {
                 if (offset + 1 != stmt.length()) {
                     return OTHER;
                 }
-                c.getSptPrepare().setName(name);
-                c.getSptPrepare().setExePrepare(exestmt, true);
+                service.getSptPrepare().setName(name);
+                service.getSptPrepare().setExePrepare(exestmt, true);
                 return PREPARE;
             }
         }
         exestmt = stmt.substring(offset, i).toUpperCase();
-        c.getSptPrepare().setName(name);
-        c.getSptPrepare().setExePrepare(exestmt, true);
+        service.getSptPrepare().setName(name);
+        service.getSptPrepare().setExePrepare(exestmt, true);
         return PREPARE;
     }
 
@@ -183,7 +184,7 @@ public final class ScriptPrepareParse {
         parts.add(stmt.substring(start, stmt.length()));
     }
 
-    private static int executeParse(String stmt, int offset, ServerConnection c) {
+    private static int executeParse(String stmt, int offset, ShardingService service) {
         String name = null;
 
         offset += "XECUTE".length();
@@ -199,8 +200,8 @@ public final class ScriptPrepareParse {
             }
             if (i == stmt.length()) {
                 name = stmt.substring(offset, i).toUpperCase();
-                c.getSptPrepare().setName(name);
-                c.getSptPrepare().setArguments(null);
+                service.getSptPrepare().setName(name);
+                service.getSptPrepare().setArguments(null);
                 return EXECUTE;
             } else {
                 offset = skipSpaceAndComment(stmt, i);
@@ -216,8 +217,8 @@ public final class ScriptPrepareParse {
                             offset = skipSpaceAndComment(stmt, offset);
                             List<String> arguments = new LinkedList<String>();
                             argsParse(stmt, offset, arguments);
-                            c.getSptPrepare().setName(name);
-                            c.getSptPrepare().setArguments(arguments);
+                            service.getSptPrepare().setName(name);
+                            service.getSptPrepare().setArguments(arguments);
                             return EXECUTE;
                         }
                     }
@@ -260,16 +261,16 @@ public final class ScriptPrepareParse {
         return i;
     }
 
-    private static int dParse(String stmt, int offset, ServerConnection c) {
+    private static int dParse(String stmt, int offset, ShardingService service) {
         if (stmt.length() > offset) {
             char c1 = stmt.charAt(++offset);
             switch (c1) {
                 case 'E':
                 case 'e':
-                    return dropParse(stmt, offset, c, false);
+                    return dropParse(stmt, offset, service, false);
                 case 'R':
                 case 'r':
-                    return dropParse(stmt, offset, c, true);
+                    return dropParse(stmt, offset, service, true);
                 default:
                     break;
             }
@@ -277,7 +278,7 @@ public final class ScriptPrepareParse {
         return OTHER;
     }
 
-    private static int dropParse(String stmt, int offset, ServerConnection c, boolean isdrop) {
+    private static int dropParse(String stmt, int offset, ShardingService service, boolean isdrop) {
         String name;
         if (isdrop) {
             offset += "OP".length();
@@ -306,13 +307,13 @@ public final class ScriptPrepareParse {
                                 name = stmt.substring(offset, i).toUpperCase();
                                 offset = skipSpaceAndComment(stmt, i);
                                 if (offset + 1 == stmt.length()) {
-                                    c.getSptPrepare().setName(name);
+                                    service.getSptPrepare().setName(name);
                                 }
                                 return DROP;
                             }
                         }
                         name = stmt.substring(offset, i).toUpperCase();
-                        c.getSptPrepare().setName(name);
+                        service.getSptPrepare().setName(name);
                         return DROP;
                     }
                 }

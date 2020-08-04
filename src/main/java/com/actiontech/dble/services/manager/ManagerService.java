@@ -9,15 +9,14 @@ import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.net.mysql.AuthPacket;
-import com.actiontech.dble.net.mysql.CharsetNames;
-import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.PingPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.CommandCount;
 
 import java.io.UnsupportedEncodingException;
 
@@ -34,17 +33,20 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
 
     private final ManagerSession session;
 
+    protected final CommandCount commands;
 
     public ManagerService(AbstractConnection connection) {
         super(connection);
         this.handler = new ManagerQueryHandler(this);
         this.proto = new MySQLProtoHandlerImpl();
         this.session = new ManagerSession(this);
+        this.commands = connection.getProcessor().getCommands();
     }
 
     public void initFromAuthInfo(AuthResultInfo info) {
         AuthPacket auth = info.getMysqlAuthPacket();
         this.user = new UserName(auth.getUser(), auth.getTenant());
+        this.schema = info.getMysqlAuthPacket().getDatabase();
         this.userConfig = info.getUserConfig();
         this.handler.setReadOnly(((ManagerUserConfig) userConfig).isReadOnly());
         connection.initCharsetIndex(info.getMysqlAuthPacket().getCharsetIndex());
@@ -59,8 +61,12 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
     @Override
     protected void handleInnerData(byte[] data) {
         switch (data[4]) {
+            case MySQLPacket.COM_INIT_DB:
+                commands.doInitDB();
+                this.initDB(data);
+                break;
             case MySQLPacket.COM_QUERY:
-                //commands.doQuery();
+                commands.doQuery();
                 try {
                     handler.query(getCommand(data, this.getConnection().getCharsetName()));
                 } catch (UnsupportedEncodingException e) {
@@ -68,15 +74,15 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
                 }
                 break;
             case MySQLPacket.COM_PING:
-                //commands.doPing();
+                commands.doPing();
                 PingPacket.response(this);
                 break;
             case MySQLPacket.COM_QUIT:
-                //commands.doQuit();
+                commands.doQuit();
                 connection.close("quit cmd");
                 break;
             default:
-                //commands.doOther();
+                commands.doOther();
                 this.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
     }
@@ -135,5 +141,29 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
 
     public ManagerSession getSession2() {
         return session;
+    }
+
+    public void initDB(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        String db = null;
+        try {
+            db = mm.readString(this.getCharset().getClient());
+        } catch (UnsupportedEncodingException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + this.getCharset().getClient() + "'");
+            return;
+        }
+        if (db != null) {
+            db = db.toLowerCase();
+        }
+        // check sharding
+        if (db == null || !ManagerSchemaInfo.SCHEMA_NAME.equals(db)) {
+            writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
+            return;
+        }
+        this.schema = db;
+        OkPacket okPacket = new OkPacket();
+        okPacket.read(OkPacket.OK);
+        okPacket.write(this.getConnection());
     }
 }

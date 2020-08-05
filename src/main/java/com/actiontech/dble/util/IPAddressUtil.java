@@ -62,7 +62,7 @@ public final class IPAddressUtil {
         } else if (target.contains(SEPARATOR_3)) {
             //rule CIDR
             String[] sourceSplit = target.split(SEPARATOR_3);
-            if (null != sourceSplit && sourceSplit.length == 2 && isIPCidr(sourceSplit[0], Integer.valueOf(sourceSplit[1]))) {
+            if (null != sourceSplit && sourceSplit.length == 2 && isIPCidr(sourceSplit[0], Integer.parseInt(sourceSplit[1]))) {
                 return Pattern.matches(PATTERN_IP, sourceSplit[0]);
             }
         } else {
@@ -123,7 +123,7 @@ public final class IPAddressUtil {
             //rule CIDR
             String[] sourceSplit = source.split(SEPARATOR_3);
             if (null != sourceSplit && sourceSplit.length == 2) {
-                IpSubnetFilterRule rule = new IpSubnetFilterRule(sourceSplit[0], Integer.valueOf(sourceSplit[1]), IpFilterRuleType.ACCEPT);
+                IpSubnetFilterRule rule = new IpSubnetFilterRule(sourceSplit[0], Integer.parseInt(sourceSplit[1]), IpFilterRuleType.ACCEPT);
                 return rule.matches(newSockAddress(target));
             }
         } else {

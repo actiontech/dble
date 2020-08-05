@@ -14,14 +14,17 @@ import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.IPAddressUtil;
 
+import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Set;
 
 public final class AuthUtil {
     private AuthUtil() {
     }
 
-    public static String auhth(UserName user, AbstractConnection connection, byte[] seed, byte[] password, String schema, PluginName plugin) {
+    public static String auth(UserName user, AbstractConnection connection, byte[] seed, byte[] password, String schema, PluginName plugin) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(connection.getService(), "user-auth-for-right&password");
         try {
             UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
@@ -42,8 +45,8 @@ public final class AuthUtil {
                 return "Access denied for manager user '" + user + "'";
             }
 
-            if (userConfig.getWhiteIPs().size() > 0 && !userConfig.getWhiteIPs().contains(connection.getHost())) {
-                return "Access denied for user '" + user + "' with host '" + connection.getHost() + "'";
+            if (!checkWhiteIPs(fcon, userConfig.getWhiteIPs())) {
+                return "Access denied for user '" + user + "' with host '" + fcon.getHost() + "'";
             }
 
             // check password
@@ -82,6 +85,21 @@ public final class AuthUtil {
         } finally {
             TraceManager.finishSpan(connection.getService(), traceObject);
         }
+    }
+
+    private static boolean checkWhiteIPs(FrontendConnection source, Set<String> whiteIPs) {
+        // whether to check
+        if (null == whiteIPs || whiteIPs.size() == 0) {
+            return true;
+        }
+        String host = source.getHost();
+        return whiteIPs.stream().anyMatch(e -> {
+            try {
+                return IPAddressUtil.match(host, e);
+            } catch (UnknownHostException unknownHostException) {
+                return false;
+            }
+        });
     }
 
 

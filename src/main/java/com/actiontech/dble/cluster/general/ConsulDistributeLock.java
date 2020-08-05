@@ -50,17 +50,18 @@ public class ConsulDistributeLock extends DistributeLock {
             if ("".equals(sessionId)) {
                 errorCount++;
                 if (errorCount == maxErrorCnt) {
-                    throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");
+                    throw new RuntimeException(" get DistributeLock from ucore error,ucore maybe offline ");
                 }
+                LOGGER.warn(" get DistributeLock from ucore failed");
                 return false;
             }
             session = sessionId;
             errorCount = 0;
         } catch (Exception e) {
-            LOGGER.warn(" get lock from ucore error", e);
+            LOGGER.warn(" get DistributeLock from ucore error", e);
             errorCount++;
             if (errorCount >= maxErrorCnt) {
-                throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");
+                throw new RuntimeException(" get DistributeLock from ucore error, ucore maybe offline ");
             }
             return false;
         }

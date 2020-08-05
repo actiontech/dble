@@ -19,7 +19,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -192,7 +191,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         final String sql = RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
-        RouteResultset theRrs = routeByERParentColumn(rrs, tc, realVal, schemaInfo);
+        RouteResultset theRrs = routeByERParentColumn(rrs, tc, realVal, schemaInfo, service.getCharset().getClient());
         if (theRrs != null) {
             rrs.setFinishedRoute(true);
         } else {
@@ -214,7 +213,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
-        String shardingValue = shardingValueToString(valueExpr, clientCharset);
+        TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                schemaInfo.getTable());
+        String shardingValue = shardingValueToSting(valueExpr, clientCharset, orgTbMeta.getColumns().get(shardingColIndex).getDataType());
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
@@ -274,7 +275,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            String shardingValue = shardingValueToString(expr, clientCharset);
+            TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                    schemaInfo.getTable());
+            String shardingValue = shardingValueToSting(expr, clientCharset, orgTbMeta.getColumns().get(shardingColIndex).getDataType());
             checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // null means can't find any valid index

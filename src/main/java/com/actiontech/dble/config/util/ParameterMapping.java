@@ -47,7 +47,7 @@ public final class ParameterMapping {
             }
 
             if (obj instanceof String) {
-                String valStr = (String) obj;
+                String valStr = ((String) obj).trim();
                 if (!StringUtil.isEmpty(valStr)) {
                     valStr = ConfigUtil.filter(valStr);
                 }

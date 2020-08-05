@@ -5,14 +5,14 @@
 */
 package com.actiontech.dble.server.parser;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.response.ShowColumns;
 import com.actiontech.dble.server.response.ShowIndex;
 import com.actiontech.dble.server.response.ShowTableStatus;
 import com.actiontech.dble.server.response.ShowTablesStmtInfo;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author mycat
@@ -306,14 +306,73 @@ public final class ServerParseShow {
             if ((c1 == 'A' || c1 == 'a') &&
                     (c2 == 'S' || c2 == 's') &&
                     (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'S' || c4 == 's')) {
-                //because phpMyAdmin use show database xxx ,loosen the check to let the phpMyAdmin work properly
+                    (c4 == 'S' || c4 == 's') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return DATABASES;
+            }
+            //"show database " statement need stricter inspection #1961
+            int j = offset;
+            for (; j < stmt.length(); j++) {
+                switch (stmt.charAt(j)) {
+                    case ' ':
+                    case '\r':
+                    case '\n':
+                    case '\t':
+                        continue;
+                    case 'L':
+                    case 'l':
+                        return showDatabasesLike(stmt, offset);
+                    case 'W':
+                    case 'w':
+                        return showDatabasesWhere(stmt, offset);
+                    default:
+                        return OTHER;
+                }
             }
         }
         return OTHER;
     }
 
+    private static int showDatabasesLike(String stmt, int offset) {
+        if (stmt.length() > offset + "like".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'I' || c2 == 'i') &&
+                    (c3 == 'K' || c3 == 'k') &&
+                    (c4 == 'E' || c4 == 'e')) {
+                if (c5 != ' ' && c5 != '\r' && c5 != '\n' && c5 != '\t') {
+                    return OTHER;
+                }
+                return DATABASES;
+            }
+        }
+        return OTHER;
+    }
+    private static int showDatabasesWhere(String stmt, int offset) {
+        if (stmt.length() > offset + "where".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'W' || c1 == 'w') &&
+                    (c2 == 'H' || c2 == 'h') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    (c4 == 'R' || c4 == 'r') &&
+                    (c5 == 'E' || c5 == 'e')) {
+                if (c6 != ' ' && c6 != '\r' && c6 != '\n' && c6 != '\t') {
+                    return OTHER;
+                }
+                return DATABASES;
+            }
+        }
+        return OTHER;
+    }
     private static int showSCheck(String stmt, int offset) {
         // the length of "ession" or "chemas" is 6.
         if (stmt.length() > offset + 6) {

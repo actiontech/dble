@@ -221,6 +221,10 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
                 commands.doOther();
                 protoLogicHandler.resetConnection();
                 break;
+            case MySQLPacket.COM_FIELD_LIST:
+                commands.doOther();
+                protoLogicHandler.fieldList(data);
+                break;
             default:
                 commands.doOther();
                 writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");

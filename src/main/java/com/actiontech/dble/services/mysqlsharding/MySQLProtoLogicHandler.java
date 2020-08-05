@@ -5,6 +5,7 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.server.response.FieldList;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
 import org.slf4j.Logger;
@@ -127,6 +128,12 @@ public class MySQLProtoLogicHandler {
         }
         service.innerCleanUp();
         service.writeDirectly(OkPacket.OK);
+    }
+
+    public void fieldList(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        FieldList.response(service, mm.readStringWithNull());
     }
 
 

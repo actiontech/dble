@@ -235,17 +235,14 @@ public class XMLUserLoader {
         return new UserConfig(name, password, strWhiteIPs, strMaxCon);
     }
 
-    private Set<String> checkWhiteIPs(String strWhiteIPs) {
-        Set<String> result = new HashSet<>();
+    private void checkWhiteIPs(String strWhiteIPs) {
         if (!StringUtil.isEmpty(strWhiteIPs)) {
             String[] theWhiteIPs = SplitUtil.split(strWhiteIPs, ',');
             Set<String> incorrectIPs = Arrays.stream(theWhiteIPs).filter(e -> !IPAddressUtil.check(e)).collect(Collectors.toSet());
             if (null != incorrectIPs && incorrectIPs.size() > 0) {
                 throw new ConfigException("The configuration contains incorrect IP" + new Gson().toJson(incorrectIPs));
             }
-            result.addAll(Arrays.asList(theWhiteIPs));
         }
-        return result;
     }
 
     private void checkVersion(Element root) {

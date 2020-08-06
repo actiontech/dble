@@ -87,7 +87,7 @@ public class UnionHandler extends BaseDMLHandler {
     }
 
     private void checkFieldPackets() {
-        for (int i = 0; i < selects.size(); i++) {
+        for (int i = 0; i < fieldPackets.size(); i++) {
             FieldPacket fp = this.fieldPackets.get(i);
             Item sel = selects.get(i);
             fp.setName(sel.getItemName().getBytes());

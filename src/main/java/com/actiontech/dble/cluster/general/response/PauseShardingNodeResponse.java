@@ -39,7 +39,7 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
             return;
         }
         String key = configValue.getKey();
-        String value = configValue.getKey();
+        String value = configValue.getValue();
         if (ClusterPathUtil.getPauseResultNodePath().equals(key)) {
             waitThread = ClusterLogic.pauseShardingNodeEvent(value, lock);
         } else if (ClusterPathUtil.getPauseResumePath().equals(key)) {

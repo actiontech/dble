@@ -5,6 +5,9 @@
 
 package com.actiontech.dble.services.manager.information;
 
+import com.actiontech.dble.services.factorys.information.tables.DbleBackendConnections;
+import com.actiontech.dble.services.factorys.information.tables.DbleFrontConnections;
+import com.actiontech.dble.services.factorys.information.tables.DbleThreadPool;
 import com.actiontech.dble.services.manager.information.tables.DbleVariables;
 import com.actiontech.dble.services.manager.information.tables.DemoTest1;
 import com.actiontech.dble.services.manager.information.tables.DemoTest2;
@@ -26,16 +29,19 @@ public final class ManagerSchemaInfo {
 
         registerTable(new Version());
         registerTable(new DbleVariables());
+        registerTable(new DbleThreadPool());
+        registerTable(new DbleFrontConnections());
+        registerTable(new DbleBackendConnections());
     }
 
 
     private void registerTable(ManagerBaseTable table) {
         tables.put(table.getTableName(), table);
     }
+
     public static ManagerSchemaInfo getInstance() {
         return INSTANCE;
     }
-
 
     public Map<String, ManagerBaseTable> getTables() {
         return tables;

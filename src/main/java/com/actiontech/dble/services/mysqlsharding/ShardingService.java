@@ -60,7 +60,7 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingService.class);
 
-    private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
+    private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<>();
 
     private final ServerQueryHandler handler;
 

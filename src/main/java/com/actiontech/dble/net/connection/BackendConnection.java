@@ -25,7 +25,7 @@ public class BackendConnection extends PooledConnection {
 
     private long threadId = 0;
 
-    ReadTimeStatusInstance instance;
+    private ReadTimeStatusInstance instance;
 
     public BackendConnection(NetworkChannel channel, SocketWR socketWR, ReadTimeStatusInstance instance, ResponseHandler handler) {
         super(channel, socketWR);

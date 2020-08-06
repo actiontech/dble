@@ -352,6 +352,7 @@ public abstract class PhysicalDbInstance {
         LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
         heartbeat.stop(reason);
         connectionPool.stop(reason, closeFront);
+        isInitial.set(false);
     }
 
     public void closeAllConnection(String reason) {
@@ -439,9 +440,9 @@ public abstract class PhysicalDbInstance {
     @Override
     public String toString() {
         return "dbInstance[name=" + name +
-                ",disabled=" +
-                disabled.toString() + ",maxCon=" +
-                config.getMaxCon() + "]";
+                ",disabled=" + disabled.toString() +
+                ",maxCon=" + config.getMaxCon() +
+                ",minCon=" + config.getMinCon() + "]";
     }
 
 }

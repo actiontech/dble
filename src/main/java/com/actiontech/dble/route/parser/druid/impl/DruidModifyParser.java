@@ -3,6 +3,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
@@ -71,7 +72,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         String tName = tn.getValue();
         SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
         if (tSchema == null) {
-            throw new SQLNonTransientException(sName + "." + tName + " not exists");
+            throw new SQLNonTransientException("Table " + sName + "." + tName + " not exists");
         }
         BaseTableConfig tConfig = tSchema.getTables().get(tName);
 
@@ -285,11 +286,11 @@ abstract class DruidModifyParser extends DefaultDruidParser {
      * + all the table must be mulit-node global(different node has the same data)
      * + all the dataNodes has all the table involved
      */
-    Collection<String> checkForMultiNodeGlobal(ServerSchemaStatVisitor visitor, GlobalTableConfig tc, SchemaConfig schema) throws SQLException {
+    Collection<String> checkForMultiNodeGlobal(UserName user, ServerSchemaStatVisitor visitor, GlobalTableConfig tc, SchemaConfig schema) throws SQLException {
         //multi-Node global table
         List<String> mustContainList = tc.getShardingNodes();
         for (String sTable : visitor.getSelectTableList()) {
-            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(null, schema, sTable);
+            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(user, schema, sTable);
             BaseTableConfig stc = schemaInfox.getSchemaConfig().getTables().get(schemaInfox.getTable());
             if (stc != null && stc instanceof GlobalTableConfig) {
                 if (!stc.getShardingNodes().containsAll(mustContainList)) {
@@ -342,7 +343,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     String tName = table.getValue();
                     SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
                     if (tSchema == null) {
-                        throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                        throw new SQLNonTransientException("Table " + sName + "." + tName + " not exists");
                     }
                     BaseTableConfig tConfig = tSchema.getTables().get(tName);
                     if (tConfig != null && tConfig instanceof ShardingTableConfig) {
@@ -366,7 +367,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             String tName = table.getValue();
             SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
             if (tSchema == null) {
-                throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                throw new SQLNonTransientException("Table " + sName + "." + tName + " not exists");
             }
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
@@ -441,7 +442,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     String tName = table.getValue();
                     SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
                     if (tSchema == null) {
-                        throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                        throw new SQLNonTransientException("Table " + sName + "." + tName + " not exists");
                     }
                     BaseTableConfig tConfig = tSchema.getTables().get(tName);
                     if (tConfig != null && tConfig instanceof ShardingTableConfig) {
@@ -462,7 +463,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 String tName = table.getValue();
                 SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
                 if (tSchema == null) {
-                    throw new SQLNonTransientException(sName + "." + tName + " not exists");
+                    throw new SQLNonTransientException("Table " + sName + "." + tName + " not exists");
                 }
                 BaseTableConfig tConfig = tSchema.getTables().get(tName);
                 if (tConfig != null && tConfig.getShardingNodes().size() == 1) {
@@ -574,7 +575,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             //set value for route result
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
-            routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
+            routeShardingNodes = checkForMultiNodeGlobal(service.getUser(), visitor, (GlobalTableConfig) tc, schema);
         } else {
             throw new SQLNonTransientException(getErrorMsg());
         }

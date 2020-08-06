@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.common.item.function.mathsfunc;
 
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.primary.ItemFuncNum1;
 
 import java.math.BigDecimal;
@@ -18,6 +19,9 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
 
     public ItemFuncRoundOrTruncate(List<Item> args, boolean truncate) {
         super(args);
+        if (this.args != null && this.args.size() == 1) {
+            this.args.add(new ItemInt(0));
+        }
         this.truncate = truncate;
     }
 

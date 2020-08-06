@@ -3,9 +3,15 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.manager.information;
+package com.actiontech.dble.services.manager.information;
 
-import com.actiontech.dble.manager.information.tables.*;
+import com.actiontech.dble.services.factorys.information.tables.DbleBackendConnections;
+import com.actiontech.dble.services.factorys.information.tables.DbleFrontConnections;
+import com.actiontech.dble.services.factorys.information.tables.DbleThreadPool;
+import com.actiontech.dble.services.manager.information.tables.DbleVariables;
+import com.actiontech.dble.services.manager.information.tables.DemoTest1;
+import com.actiontech.dble.services.manager.information.tables.DemoTest2;
+import com.actiontech.dble.services.manager.information.tables.Version;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -36,7 +42,6 @@ public final class ManagerSchemaInfo {
     public static ManagerSchemaInfo getInstance() {
         return INSTANCE;
     }
-
 
     public Map<String, ManagerBaseTable> getTables() {
         return tables;

@@ -2,20 +2,20 @@
  * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
-package com.actiontech.dble.manager.information.tables;
+package com.actiontech.dble.services.factorys.information.tables;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.backend.pool.PooledEntry;
+import com.actiontech.dble.backend.pool.ReadTimeStatusInstance;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.manager.information.ManagerBaseTable;
 import com.actiontech.dble.meta.ColumnMeta;
-import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.services.manager.information.ManagerBaseTable;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.nio.ByteBuffer;
@@ -107,7 +107,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(100);
-        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
+        for (IOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
                 lst.add(getRow(bc));
             }
@@ -117,29 +117,31 @@ public final class DbleBackendConnections extends ManagerBaseTable {
 
     private LinkedHashMap<String, String> getRow(BackendConnection c) {
         LinkedHashMap<String, String> row = new LinkedHashMap<>();
-        MySQLConnection conn = (MySQLConnection) c;
+
         row.put("backend_conn_id", c.getId() + "");
-        PhysicalDbInstance instance = conn.getDbInstance();
+        ReadTimeStatusInstance instance = c.getInstance();
         if (instance != null) {
-            row.put("db_group_name", instance.getDbGroup().getGroupName());
-            row.put("db_instance_name", instance.getName());
+            row.put("db_group_name", instance.getDbGroupConfig().getName());
+            row.put("db_instance_name", instance.getConfig().getInstanceName());
             row.put("user", instance.getConfig().getUser());
         }
         row.put("remote_addr", c.getHost());
         row.put("remote_port", c.getPort() + "");
-        row.put("remote_processlist_id", conn.getThreadId() + "");
+        row.put("remote_processlist_id", c.getThreadId() + "");
         row.put("local_port", c.getLocalPort() + "");
-        row.put("processor_id", conn.getProcessor().getName());
-        row.put("schema", conn.getSchema() == null ? "NULL" : conn.getSchema());
-        if (conn.getSession() != null) {
-            row.put("session_conn_id", conn.getSession().getSource().getId() + "");
+        row.put("processor_id", c.getProcessor().getName());
+        row.put("schema", c.getSchema() == null ? "NULL" : c.getSchema());
+
+        MySQLResponseService service = c.getBackendService();
+        if (service.getSession() != null) {
+            row.put("session_conn_id", service.getSession().getSource().getId() + "");
         }
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
-        ByteBuffer bb = conn.getReadBuffer();
+        ByteBuffer bb = c.getReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");
-        row.put("conn_send_task_queue", conn.getWriteQueue().size() + "");
+        row.put("conn_send_task_queue", c.getWriteQueue().size() + "");
 
-        RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
+        RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
         if (rrn != null) {
             String sql = rrn.getStatement();
             if (sql.length() > 1024) {
@@ -148,15 +150,15 @@ public final class DbleBackendConnections extends ManagerBaseTable {
                 row.put("sql", sql);
             }
         }
-        long rt = conn.getLastReadTime().get();
-        long wt = conn.getLastWriteTime().get();
+        long rt = c.getLastReadTime();
+        long wt = c.getLastWriteTime();
         row.put("sql_execute_time", ((wt >= rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)) + "");
-        row.put("mark_as_expired_timestamp", conn.getOldTimestamp() + "");
+        row.put("mark_as_expired_timestamp", c.getPoolDestroyedTime() + "");
         row.put("conn_net_in", c.getNetInBytes() + "");
         row.put("conn_net_out", c.getNetOutBytes() + "");
 
-        if (conn.getState() == PooledEntry.INITIAL) {
-            ResponseHandler handler = conn.getRespHandler();
+        if (c.getState() == PooledConnection.INITIAL) {
+            ResponseHandler handler = service.getResponseHandler();
             row.put("used_for_heartbeat", handler instanceof HeartbeatSQLJob ? "true" : "false");
             row.put("borrowed_from_pool", "true");
         } else {
@@ -165,10 +167,10 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         }
 
         row.put("conn_closing", c.isClosed() ? "true" : "false");
-        if (conn.getXaStatus() != null) {
-            row.put("xa_status", conn.getXaStatus().toString());
+        if (service.getXaStatus() != null) {
+            row.put("xa_status", service.getXaStatus().toString());
         }
-        row.put("in_transaction", !conn.isAutocommit() + "");
+        row.put("in_transaction", !service.isAutocommit() + "");
         return row;
     }
 

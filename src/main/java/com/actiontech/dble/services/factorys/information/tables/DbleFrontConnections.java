@@ -3,15 +3,16 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.manager.information.tables;
+package com.actiontech.dble.services.factorys.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.manager.information.ManagerBaseTable;
 import com.actiontech.dble.meta.ColumnMeta;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.net.NIOProcessor;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.service.FrontEndService;
+import com.actiontech.dble.services.manager.information.ManagerBaseTable;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.nio.ByteBuffer;
@@ -88,7 +89,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(100);
-        for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
+        for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (!fc.isClosed()) {
                     lst.add(getRow(fc));
@@ -106,26 +107,28 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         row.put("remote_port", c.getPort() + "");
         row.put("local_port", c.getLocalPort() + "");
         row.put("processor_id", c.getProcessor().getName());
-        row.put("user", c.getUser().getName());
-        row.put("tenant", c.getUser().getTenant() == null ? "NULL" : c.getUser().getTenant());
-        row.put("schema", c.getSchema() == null ? "NULL" : c.getSchema());
 
-        long rt = c.getLastReadTime().get();
-        long wt = c.getLastWriteTime().get();
+        FrontEndService service = c.getFrontEndService();
+        row.put("user", service.getUser().getName());
+        row.put("tenant", service.getUser().getTenant() == null ? "NULL" : service.getUser().getTenant());
+
+
+        long rt = c.getLastReadTime();
+        long wt = c.getLastWriteTime();
         row.put("sql_execute_time", ((wt >= rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)) + "");
         row.put("sql_start_timestamp", rt + "");
 
-        if (c.getExecuteSql() != null) {
-            row.put("sql", c.getExecuteSql().length() <= 1024 ? c.getExecuteSql() : c.getExecuteSql().substring(0, 1024));
+        if (service.getExecuteSql() != null) {
+            row.put("sql", service.getExecuteSql().length() <= 1024 ? service.getExecuteSql() : service.getExecuteSql().substring(0, 1024));
         }
 
-        if (c instanceof ServerConnection) {
-            ServerConnection sc = (ServerConnection) c;
-            row.put("sql_stage", sc.getSession2().getSessionStage().toString());
-            row.put("in_transaction", !sc.isAutocommit() + "");
-        } else {
+        if (c.isManager()) {
             row.put("sql_stage", "Manager connection");
             row.put("in_transaction", "Manager connection");
+        } else {
+            row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
+            row.put("in_transaction", !((ShardingService) service).isAutocommit() + "");
+            row.put("schema", ((ShardingService) service).getSchema() == null ? "NULL" : ((ShardingService) service).getSchema());
         }
         row.put("conn_net_in", c.getNetInBytes() + "");
         row.put("conn_net_out", c.getNetOutBytes() + "");

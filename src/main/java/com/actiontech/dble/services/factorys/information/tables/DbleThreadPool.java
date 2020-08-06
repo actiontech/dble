@@ -3,12 +3,12 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.manager.information.tables;
+package com.actiontech.dble.services.factorys.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.manager.information.ManagerBaseTable;
 import com.actiontech.dble.meta.ColumnMeta;
+import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.util.NameableExecutor;
 
 import java.util.ArrayList;

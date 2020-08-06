@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Created by szf on 2020/6/15.
  */
-public abstract class AbstractConnection implements Connection {
+public abstract class AbstractConnection<T> implements Connection {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractConnection.class);
 

@@ -17,13 +17,17 @@ public final class XmltoZkMain {
     private XmltoZkMain() {
     }
 
-    public static void main(String[] args) throws Exception {
-        ClusterController.loadClusterProperties();
-        if (!ClusterController.CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
-            throw new RuntimeException("Cluster mode is not " + ClusterController.CONFIG_MODE_ZK);
+    public static void main(String[] args) {
+        try {
+            ClusterController.loadClusterProperties();
+            if (!ClusterController.CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
+                throw new RuntimeException("Cluster mode is not " + ClusterController.CONFIG_MODE_ZK);
+            }
+            initFileToZK();
+            System.out.println("XmltoZkMain Finished");
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
-        initFileToZK();
-        System.out.println("XmltoZkMain Finished");
     }
 
     public static void initFileToZK() throws Exception {

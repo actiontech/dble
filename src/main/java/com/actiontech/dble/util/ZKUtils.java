@@ -30,6 +30,7 @@ public final class ZKUtils {
         try {
             curatorFramework = createConnection();
         } catch (RuntimeException e) {
+            e.printStackTrace();
             System.exit(-1);
         }
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

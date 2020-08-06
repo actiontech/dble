@@ -10,7 +10,6 @@ import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
-import com.actiontech.dble.services.mysqlauthenticate.plugin.CachingSHA2Pwd;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.MySQLAuthPlugin;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.NativePwd;
 import com.actiontech.dble.singleton.TraceManager;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
 import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_native_password;
 
 
@@ -68,8 +66,7 @@ public class MySQLFrontAuthService extends MySQLBasedService implements AuthServ
                     switch (plugin.handleData(data)) {
                         case caching_sha2_password:
                             hasAuthSwitched = true;
-                            this.plugin = new CachingSHA2Pwd(plugin);
-                            requestToSwitch(caching_sha2_password);
+                            requestToSwitch(mysql_native_password);
                             break;
                         case mysql_native_password:
                             hasAuthSwitched = true;

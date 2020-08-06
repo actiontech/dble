@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.util;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
 /**
@@ -21,7 +21,7 @@ public final class ExecutorUtil {
 
     private static NameableExecutor createFixed(String name, int size, boolean isDaemon) {
         NameableThreadFactory factory = new NameableThreadFactory(name, isDaemon);
-        return new NameableExecutor(name, size, size, Long.MAX_VALUE, new ArrayBlockingQueue<Runnable>(10240), factory);
+        return new NameableExecutor(name, size, size, Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>(), factory);
     }
 
     public static NameableExecutor createCached(String name, int size) {

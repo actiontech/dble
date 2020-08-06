@@ -47,6 +47,7 @@
 -DmaxPacketSize=167772160
 -DtxIsolation=2
 #-Dautocommit=1
+#-DidleTimeout=60000
 
 # option
 #-DuseCompression=1

@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -45,6 +45,7 @@ public final class ManagerParse {
     public static final int INSERT = 27;
     public static final int DELETE = 28;
     public static final int UPDATE = 29;
+    public static final int FRESH_CONN = 30;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -215,8 +216,22 @@ public final class ManagerParse {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("FILE @@")) {
             return CONFIGFILE;
-        } else if (stmt.length() > offset + "LOW_CONTROL".length()) {
-            char c1 = stmt.charAt(++offset);
+        }
+        char c1 = stmt.charAt(++offset);
+        switch (c1) {
+            case 'L':
+            case 'l':
+                return flCheck(stmt, offset);
+            case 'R':
+            case 'r':
+                return frCheck(stmt, offset);
+            default:
+                return OTHER;
+        }
+    }
+
+    private static int flCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OW_CONTROL".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
@@ -227,8 +242,7 @@ public final class ManagerParse {
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
             char c11 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') &&
-                    (c2 == 'O' || c2 == 'o') &&
+            if ((c2 == 'O' || c2 == 'o') &&
                     (c3 == 'W' || c3 == 'w') &&
                     (c4 == '_') &&
                     (c5 == 'C' || c5 == 'c') &&
@@ -243,6 +257,37 @@ public final class ManagerParse {
         }
         return OTHER;
     }
+
+
+    private static int frCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'H' || c3 == 'h') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                return freshCheck(stmt, offset);
+            }
+        }
+        return OTHER;
+    }
+
+    private static int freshCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'C' || c1 == 'c') && (c2 == 'O' || c2 == 'o') &&
+                    (c3 == 'N' || c3 == 'n') && (c4 == 'N' || c4 == 'n') && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                return FRESH_CONN;
+            }
+        }
+        return OTHER;
+    }
+
 
     private static int cCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {

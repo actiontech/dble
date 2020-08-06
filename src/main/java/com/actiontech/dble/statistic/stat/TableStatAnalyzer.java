@@ -174,7 +174,6 @@ public final class TableStatAnalyzer implements QueryResultListener {
 
                 } else if (stmt instanceof SQLSelectStatement) {
 
-                    //TODO: modify by owenludong
                     String dbType = stmt.getDbType();
                     if (!StringUtil.isEmpty(dbType) && JdbcConstants.MYSQL.equals(dbType)) {
                         stmt.accept(new MySqlASTVisitorAdapter() {

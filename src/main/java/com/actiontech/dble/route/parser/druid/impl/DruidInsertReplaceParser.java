@@ -14,14 +14,15 @@ import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
+import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -53,14 +54,14 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
      * + sharding table
      * + multi-node global table
      *
-     * @param sc
+     * @param service
      * @param rrs
      * @param stmt
      * @param visitor
      * @param schemaInfo
      * @throws SQLException
      */
-    protected void tryRouteInsertQuery(ServerConnection sc, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
+    protected void tryRouteInsertQuery(ShardingService service, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
         // insert into .... select ....
         SQLSelect select = acceptVisitor(stmt, visitor);
 
@@ -72,8 +73,8 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
 
         for (String selectTable : visitor.getSelectTableList()) {
-            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(sc.getUser(), schema, selectTable);
-            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
+            SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(service.getUser(), schema, selectTable);
+            if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
@@ -87,14 +88,14 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             //only require when all the table and the route condition route to same node
             Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
             ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
-            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
+            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
             //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
             isGlobal = true;
             routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
         } else if (tc instanceof ShardingTableConfig) {
-            routeShardingNodes = checkForShardingTable(visitor, select, sc, rrs, (ShardingTableConfig) tc, schemaInfo, stmt, schema);
+            routeShardingNodes = checkForShardingTable(visitor, select, service, rrs, (ShardingTableConfig) tc, schemaInfo, stmt, schema);
         } else {
             throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
         }
@@ -112,7 +113,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setFinishedRoute(true);
     }
 
-    static String shardingValueToString(SQLExpr valueExpr, String clientCharset) throws SQLNonTransientException {
+    static String shardingValueToSting(SQLExpr valueExpr, String clientCharset, String dataType) throws SQLNonTransientException {
         String shardingValue = null;
         if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) valueExpr;
@@ -122,7 +123,11 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             shardingValue = charExpr.getText();
         } else if (valueExpr instanceof SQLHexExpr) {
             SQLHexExpr hexExpr = (SQLHexExpr) valueExpr;
-            shardingValue = HexFormatUtil.fromHex(hexExpr.getHex(), CharsetUtil.getJavaCharset(clientCharset));
+            if (FieldUtil.isNumberType(dataType)) {
+                shardingValue = Long.parseLong(hexExpr.getHex(), 16) + "";
+            } else {
+                shardingValue = HexFormatUtil.fromHex(hexExpr.getHex(), CharsetUtil.getJavaCharset(clientCharset));
+            }
         }
 
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
@@ -130,7 +135,6 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         }
         return shardingValue;
     }
-
 
     int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
         if (incrementColumn == null) {
@@ -188,7 +192,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
     }
 
 
-    void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
+    void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ShardingService service, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             //get child result will be blocked, so use ComplexQueryExecutor
             @Override
@@ -198,11 +202,11 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                 }
-                FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
+                FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, service.getSession2());
                 try {
                     String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getShardingNodes());
                     if (dn == null) {
-                        sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
+                        service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
                         return;
                     }
                     if (LOGGER.isDebugEnabled()) {
@@ -210,13 +214,13 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
                     }
                     RouterUtil.routeToSingleNode(rrs, dn);
                     if (isExplain) {
-                        ExplainHandler.writeOutHeadAndEof(sc, rrs);
+                        ExplainHandler.writeOutHeadAndEof(service, rrs);
                     } else {
-                        sc.getSession2().execute(rrs);
+                        service.getSession2().execute(rrs);
                     }
                 } catch (ConnectionException e) {
-                    sc.setTxInterrupt(e.toString());
-                    sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
+                    service.setTxInterrupt(e.toString());
+                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
                 }
             }
         });

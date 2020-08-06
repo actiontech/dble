@@ -6,18 +6,20 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.ConnectionException;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.CacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,12 +88,12 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                         session.clearResources(true);
                         return null;
                     }
-                    conn.setResponseHandler(this);
-                    conn.setSession(session);
-                    ((MySQLConnection) conn).setComplexQuery(true);
-                    conn.execute(node, session.getSource(), false);
+                    conn.getBackendService().setResponseHandler(this);
+                    conn.getBackendService().setSession(session);
+                    conn.getBackendService().setComplexQuery(true);
+                    conn.getBackendService().execute(node, session.getShardingService(), false);
                 } else {
-                    mysqlDN.getConnection(mysqlDN.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
+                    mysqlDN.getConnection(mysqlDN.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
                 }
             } catch (Exception e) {
                 LOGGER.info("get connection err " + e);
@@ -136,22 +138,21 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
      * even if the session is close ,the session close would get the connection
      * from target and close it
      * So wo just think about one question?Is this connection need release
-     *
-     * @param con BackendConnection
      */
-    private void releaseConnIfSafe(BackendConnection con) {
-        RouteResultsetNode node = (RouteResultsetNode) con.getAttachment();
-        if (session.getTarget(node) != con) {
-            con.release();
+    private void releaseConnIfSafe(MySQLResponseService service) {
+        RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
+        if (session.getTarget(node) != service.getConnection()) {
+            service.getConnection().release();
         }
     }
 
     @Override
     public void connectionAcquired(BackendConnection conn) {
-        conn.setResponseHandler(this);
-        conn.setSession(session);
+        conn.getBackendService().setResponseHandler(this);
+        conn.getBackendService().setSession(session);
+        conn.getBackendService().setSession(session);
         try {
-            conn.query(sql);
+            conn.getBackendService().query(sql);
         } catch (Exception e) {
             executeException(conn, e);
         }
@@ -165,47 +166,48 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] data, BackendConnection conn) {
+    public void errorResponse(byte[] data, AbstractService service) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
+        MySQLResponseService responseService = (MySQLResponseService) service;
         String msg = new String(err.getMessage());
         LOGGER.info("errorResponse " + err.getErrNo() + " " + msg);
-        boolean executeResponse = conn.syncAndExecute();
+        boolean executeResponse = responseService.syncAndExecute();
         if (executeResponse) {
-            nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), msg);
-            releaseConnIfSafe(conn);
+            nodesErrorReason.put(((RouteResultsetNode) responseService.getAttachment()).getName(), msg);
+            releaseConnIfSafe((MySQLResponseService) service);
         } else {
-            nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "sync context error:" + msg);
-            RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
-            if (session.getTarget(node) == conn) {
+            nodesErrorReason.put(((RouteResultsetNode) responseService.getAttachment()).getName(), "sync context error:" + msg);
+            RouteResultsetNode node = (RouteResultsetNode) responseService.getAttachment();
+            if (session.getTarget(node) == responseService.getConnection()) {
                 session.getTargetMap().remove(node);
             }
-            conn.closeWithoutRsp("unfinished sync");
+            service.getConnection().businessClose("unfinished sync");
         }
-        countResult((RouteResultsetNode) conn.getAttachment());
+        countResult((RouteResultsetNode) responseService.getAttachment());
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
+    public void okResponse(byte[] ok, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("okResponse " + conn);
+            LOGGER.debug("okResponse " + service);
         }
-        boolean executeResponse = conn.syncAndExecute();
+        boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
-            countResult((RouteResultsetNode) conn.getAttachment());
-            releaseConnIfSafe(conn);
+            countResult((RouteResultsetNode) ((MySQLResponseService) service).getAttachment());
+            releaseConnIfSafe((MySQLResponseService) service);
         }
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("received rowResponse response from  " + conn);
+            LOGGER.debug("received rowResponse response from  " + service);
         }
         if (hadResult.compareAndSet(false, true)) {
             lock.lock();
             try {
-                shardingNode = ((RouteResultsetNode) conn.getAttachment()).getName();
+                shardingNode = ((RouteResultsetNode) ((MySQLResponseService) service).getAttachment()).getName();
                 result.signal();
             } finally {
                 lock.unlock();
@@ -218,31 +220,32 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("rowEofResponse" + conn);
+            LOGGER.debug("rowEofResponse" + service);
         }
-        countResult((RouteResultsetNode) conn.getAttachment());
-        releaseConnIfSafe(conn);
+        countResult((RouteResultsetNode) ((MySQLResponseService) service).getAttachment());
+        releaseConnIfSafe((MySQLResponseService) service);
     }
 
     private void executeException(BackendConnection c, Throwable e) {
-        nodesErrorReason.put(((RouteResultsetNode) c.getAttachment()).getName(), e.getMessage());
-        countResult((RouteResultsetNode) c.getAttachment());
+        nodesErrorReason.put(((RouteResultsetNode) c.getBackendService().getAttachment()).getName(), e.getMessage());
+        countResult((RouteResultsetNode) c.getBackendService().getAttachment());
         LOGGER.info("executeException   " + e);
-        releaseConnIfSafe(c);
+        releaseConnIfSafe(c.getBackendService());
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.info("connection closed " + conn + " reason:" + reason);
-        nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "connection closed ,mysql id:" + ((MySQLConnection) conn).getThreadId());
-        countResult((RouteResultsetNode) conn.getAttachment());
+    public void connectionClose(AbstractService service, String reason) {
+        LOGGER.info("connection closed " + service + " reason:" + reason);
+        MySQLResponseService responseService = (MySQLResponseService) service;
+        nodesErrorReason.put(((RouteResultsetNode) responseService.getAttachment()).getName(), "connection closed ,mysql id:" + responseService.getConnection().getThreadId());
+        countResult((RouteResultsetNode) responseService.getAttachment());
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
     }
 
 

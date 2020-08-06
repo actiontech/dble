@@ -24,13 +24,17 @@ public final class XmltoCluster {
 
     }
 
-    public static void main(String[] args) throws Exception {
-        ClusterController.loadClusterProperties();
-        ClusterGeneralConfig.initConfig();
-        AbstractConsulSender sender = ((AbstractConsulSender) (ClusterGeneralConfig.getInstance().getClusterSender()));
-        sender.initConInfo();
-        initFileToUcore(sender);
-        System.out.println("XmltoZkMain Finished");
+    public static void main(String[] args) {
+        try {
+            ClusterController.loadClusterProperties();
+            ClusterGeneralConfig.initConfig();
+            AbstractConsulSender sender = ((AbstractConsulSender) (ClusterGeneralConfig.getInstance().getClusterSender()));
+            sender.initConInfo();
+            initFileToUcore(sender);
+            System.out.println("XmltoZkMain Finished");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static void initFileToUcore(AbstractConsulSender sender) throws Exception {

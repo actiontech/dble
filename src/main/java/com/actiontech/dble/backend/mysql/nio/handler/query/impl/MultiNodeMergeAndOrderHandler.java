@@ -6,17 +6,18 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HeapItem;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     private final int queueSize;
     // map;conn->blocking queue.if receive row packet, add to the queue,if receive rowEof packet, add NullHeapItem into queue;
-    private Map<MySQLConnection, BlockingQueue<HeapItem>> queues;
+    private Map<MySQLResponseService, BlockingQueue<HeapItem>> queues;
     private List<Order> orderBys;
     private RowDataComparator rowComparator;
     private volatile boolean noNeedRows = false;
@@ -74,10 +75,10 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         for (BaseSelectHandler exeHandler : exeHandlers) {
             session.setHandlerStart(exeHandler); //base start execute
             try {
-                MySQLConnection exeConn = exeHandler.initConnection();
-                exeConn.setComplexQuery(true);
-                queues.put(exeConn, new LinkedBlockingQueue<>(queueSize));
-                exeHandler.execute(exeConn);
+                BackendConnection exeConn = exeHandler.initConnection();
+                exeConn.getBackendService().setComplexQuery(true);
+                queues.put(exeConn.getBackendService(), new LinkedBlockingQueue<>(queueSize));
+                exeHandler.execute(exeConn.getBackendService());
             } catch (Exception e) {
                 exeHandler.connectionError(e, exeHandler.getRrss());
                 return;
@@ -87,9 +88,9 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + "'s field is reached.");
+            LOGGER.debug(service.toString() + "'s field is reached.");
         }
         session.setHandlerStart(this);
         // if terminated
@@ -101,7 +102,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 rowComparator = new RowDataComparator(this.fieldPackets, orderBys, this.isAllPushDown(), this.type());
-                nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
+                nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
             }
             if (++reachedConCount == route.length) {
                 session.allBackendConnReceive();
@@ -113,11 +114,11 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get() || noNeedRows)
             return true;
 
-        MySQLConnection mySQLConn = (MySQLConnection) conn;
+        MySQLResponseService mySQLConn = (MySQLResponseService) service;
         BlockingQueue<HeapItem> queue = queues.get(mySQLConn);
         if (queue == null)
             return true;
@@ -131,15 +132,15 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        MySQLConnection mySQLConn = (MySQLConnection) conn;
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+        AbstractService responseService = (MySQLResponseService) service;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(mySQLConn.toString() + " 's rowEof is reached.");
+            LOGGER.debug(responseService.toString() + " 's rowEof is reached.");
         }
 
         if (this.terminate.get())
             return;
-        BlockingQueue<HeapItem> queue = queues.get(mySQLConn);
+        BlockingQueue<HeapItem> queue = queues.get(responseService);
         if (queue == null)
             return;
         try {
@@ -168,7 +169,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                 }
             });
             // init heap
-            for (Entry<MySQLConnection, BlockingQueue<HeapItem>> entry : queues.entrySet()) {
+            for (Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry : queues.entrySet()) {
                 HeapItem firstItem = entry.getValue().take();
                 heap.add(firstItem);
             }
@@ -213,7 +214,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     @Override
     protected void terminateThread() throws Exception {
-        for (Entry<MySQLConnection, BlockingQueue<HeapItem>> entry : this.queues.entrySet()) {
+        for (Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry : this.queues.entrySet()) {
             // add EOF to signal atoMerge thread
             entry.getValue().clear();
             entry.getValue().put(new HeapItem(null, null, entry.getKey()));
@@ -223,9 +224,9 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     @Override
     protected void recycleResources() {
-        Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+        Iterator<Entry<MySQLResponseService, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
         while (iterator.hasNext()) {
-            Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iterator.next();
+            Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry = iterator.next();
             // fair lock queue,poll for clear
             while (true) {
                 if (entry.getValue().poll() == null) {

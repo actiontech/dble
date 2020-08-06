@@ -1429,4 +1429,19 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_GEOMETRY,
             },
     };
+
+
+    public static boolean isNumberType(String dataType) {
+        if (dataType == null) return false;
+        dataType = dataType.toUpperCase();
+        return dataType.contains("BIT") ||
+                dataType.contains("TINYINT") ||
+                dataType.contains("BOOL") ||
+                dataType.contains("SMALLINT") ||
+                dataType.contains("MEDIUMINT") ||
+                dataType.contains("INT") ||
+                dataType.contains("INTEGER") ||
+                dataType.contains("BIGINT");
+    }
+
 }

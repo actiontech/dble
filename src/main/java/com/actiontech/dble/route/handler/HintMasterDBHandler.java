@@ -9,8 +9,8 @@ package com.actiontech.dble.route.handler;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +28,12 @@ public class HintMasterDBHandler implements HintHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(HintMasterDBHandler.class);
 
     @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
+    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ShardingService service,
                                 String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
-                schema, sqlType, realSQL, sc);
+                schema, sqlType, realSQL, service);
 
         LOGGER.debug("rrs(): " + rrs); // master
         Boolean isRouteToMaster = null;

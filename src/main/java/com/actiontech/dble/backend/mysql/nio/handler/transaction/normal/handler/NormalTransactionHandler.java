@@ -5,19 +5,21 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.handler;
 
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.CommitStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.RollbackStage;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     private static Logger logger = LoggerFactory.getLogger(NormalTransactionHandler.class);
 
     private volatile TransactionStage currentStage;
-    private volatile byte[] sendData;
+    private volatile MySQLPacket sendData;
 
     public NormalTransactionHandler(NonBlockingSession session) {
         super(session);
@@ -50,12 +52,12 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
 
         reset();
         unResponseRrns.addAll(session.getTargetKeys());
-        List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
+        List<BackendConnection> conns = new ArrayList<>(session.getTargetCount());
         BackendConnection conn;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             conn = session.getTarget(rrn);
-            conn.setResponseHandler(this);
-            conns.add((MySQLConnection) conn);
+            conn.getBackendService().setResponseHandler(this);
+            conns.add(conn);
         }
         changeStageTo(new CommitStage(session, conns, implicitCommitHandler));
     }
@@ -70,14 +72,14 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
         }
 
         reset();
-        List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
+        List<BackendConnection> conns = new ArrayList<>(session.getTargetCount());
         BackendConnection conn;
         for (RouteResultsetNode node : session.getTargetKeys()) {
             conn = session.getTarget(node);
             if (!conn.isClosed()) {
                 unResponseRrns.add(node);
-                conn.setResponseHandler(this);
-                conns.add((MySQLConnection) conn);
+                conn.getBackendService().setResponseHandler(this);
+                conns.add(conn);
             }
         }
 
@@ -91,10 +93,8 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     @Override
-    public void turnOnAutoCommit(byte[] previousSendData) {
+    public void turnOnAutoCommit(MySQLPacket previousSendData) {
         this.sendData = previousSendData;
-        this.packetId = previousSendData[3];
-        this.packetId--;
     }
 
     private void changeStageTo(TransactionStage newStage) {
@@ -105,9 +105,9 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     private TransactionStage next() {
-        byte[] data = null;
+        MySQLPacket data = null;
         if (isFail()) {
-            data = createErrPkg(error).toBytes();
+            data = createErrPkg(error);
         } else if (sendData != null) {
             data = sendData;
         }
@@ -115,48 +115,48 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     @Override
-    public void okResponse(byte[] ok, BackendConnection conn) {
+    public void okResponse(byte[] ok, AbstractService service) {
         if (logger.isDebugEnabled()) {
-            logger.debug("receive ok from " + conn);
+            logger.debug("receive ok from " + service);
         }
-        conn.syncAndExecute();
-        if (decrementToZero(conn)) {
+        ((MySQLResponseService) service).syncAndExecute();
+        if (decrementToZero(((MySQLResponseService) service))) {
             changeStageTo(next());
         }
     }
 
     @Override
-    public void errorResponse(byte[] err, BackendConnection conn) {
-        conn.syncAndExecute();
+    public void errorResponse(byte[] err, AbstractService service) {
+        ((MySQLResponseService) service).syncAndExecute();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
         this.setFail(errMsg);
 
-        MySQLConnection mysqlCon = (MySQLConnection) conn;
+        MySQLResponseService mySQLResponseService = (MySQLResponseService) service;
         if (logger.isDebugEnabled()) {
-            logger.debug("receive error [" + errMsg + "] from " + mysqlCon);
+            logger.debug("receive error [" + errMsg + "] from " + mySQLResponseService);
         }
 
-        mysqlCon.closeWithoutRsp("rollback/commit return error response.");
-        if (decrementToZero(mysqlCon)) {
+        mySQLResponseService.getConnection().businessClose("rollback/commit return error response.");
+        if (decrementToZero(mySQLResponseService)) {
             changeStageTo(next());
         }
     }
 
     @Override
-    public void connectionClose(final BackendConnection conn, final String reason) {
-        boolean[] result = decrementToZeroAndCheckNode(conn);
+    public void connectionClose(final AbstractService service, final String reason) {
+        boolean[] result = decrementToZeroAndCheckNode((MySQLResponseService) service);
         boolean finished = result[0];
         boolean justRemoved = result[1];
         if (justRemoved) {
-            String closeReason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
-                    ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+            String closeReason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getSchema() + "],threadID[" +
+                    ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
             this.setFail(closeReason);
 
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            RouteResultsetNode rNode = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             session.getTargetMap().remove(rNode);
-            conn.setResponseHandler(null);
+            ((MySQLResponseService) service).setResponseHandler(null);
             if (finished) {
                 changeStageTo(next());
             }
@@ -186,7 +186,6 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
         errorConnsCnt = 0;
         firstResponsed = false;
         unResponseRrns.clear();
-        packetId = 0;
         isFailed.set(false);
     }
 
@@ -202,18 +201,18 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
         logger.warn("unexpected filed eof response in normal transaction");
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         logger.warn("unexpected row response in normal transaction");
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         logger.warn("unexpected row eof response in normal transaction");
     }
 

@@ -14,9 +14,10 @@ import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -27,18 +28,18 @@ import java.sql.SQLNonTransientException;
 import java.util.*;
 
 /**
- * lock tables [table] [write|read]
+ * lock tables [table] [writeDirectly|read]
  *
  * @author songdabin
  */
 public class DruidLockTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, Set<String>> shardingNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
-            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schema == null ? null : schema.getName(), item.getTableSource());
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schema == null ? null : schema.getName(), item.getTableSource());
 
             String table = schemaInfo.getTable();
             String schemaName = schemaInfo.getSchema();
@@ -60,8 +61,8 @@ public class DruidLockTableParser extends DefaultDruidParser {
         }
 
         Set<RouteResultsetNode> lockedNodes = new HashSet<>();
-        if (sc.isLocked()) {
-            lockedNodes.addAll(sc.getSession2().getTargetMap().keySet());
+        if (service.isLocked()) {
+            lockedNodes.addAll(service.getSession2().getTargetMap().keySet());
         }
         List<RouteResultsetNode> nodes = new ArrayList<>();
         for (Map.Entry<String, Set<String>> entry : shardingNodeToLocks.entrySet()) {

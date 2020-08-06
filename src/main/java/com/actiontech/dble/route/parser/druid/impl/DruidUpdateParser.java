@@ -12,9 +12,10 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLObject;
@@ -40,18 +41,18 @@ public class DruidUpdateParser extends DruidModifyParser {
     private static final String MODIFY_SQL_NOT_SUPPORT_MESSAGE = "This `Complex Update Syntax` is not supported!";
 
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
         MySqlUpdateStatement update = (MySqlUpdateStatement) stmt;
         SQLTableSource tableSource = update.getTableSource();
         String schemaName = schema == null ? null : schema.getName();
         if (tableSource instanceof SQLJoinTableSource) {
-            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+            super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
             if (visitor.getSubQueryList().size() > 0) {
                 throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
             }
 
-            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(sc, schemaName, stmt, visitor.getMotifyTableSourceList(), ShardingPrivileges.CheckType.UPDATE);
+            List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(service, schemaName, stmt, visitor.getMotifyTableSourceList());
 
             boolean isAllGlobal = true;
             for (SchemaInfo schemaInfo : schemaInfos) {
@@ -67,28 +68,28 @@ public class DruidUpdateParser extends DruidModifyParser {
                 routeShardingNodes = checkForMultiNodeGlobal(schemaInfos);
             } else {
                 //try to route to single Node for each table
-                routeShardingNodes = checkForSingleNodeTable(rrs);
+                routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
 
             RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
             rrs.setFinishedRoute(true);
             return schema;
         } else {
-            SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
-            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
+            SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, (SQLExprTableSource) tableSource);
+            if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+            super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
 
             String tableName = schemaInfo.getTable();
             BaseTableConfig tc = schema.getTables().get(tableName);
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 
             if (visitor.getFirstClassSubQueryList().size() > 0) {
-                routeForModifySubQueryList(rrs, tc, visitor, schema, sc);
+                routeForModifySubQueryList(rrs, tc, visitor, schema, service);
                 return schema;
             } else if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);
@@ -112,7 +113,7 @@ public class DruidUpdateParser extends DruidModifyParser {
             }
 
             if (update.getLimit() != null) {
-                this.updateAndDeleteLimitRoute(rrs, tableName, schema);
+                this.updateAndDeleteLimitRoute(rrs, tableName, schema, service.getCharset().getClient());
             }
 
             if (ctx.getTables().size() == 0) {

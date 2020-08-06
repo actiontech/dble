@@ -8,11 +8,8 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.Isolations;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -30,24 +27,23 @@ public final class SessionIsolation {
     private static final EOFPacket EOF = new EOFPacket();
 
 
-    public static void response(ServerConnection c, String column) {
-        byte packetId = setCurrentPacket(c);
-        HEADER.setPacketId(++packetId);
+    public static void response(ShardingService service, String column) {
+        HEADER.setPacketId(service.nextPacketId());
         FIELDS[0] = PacketUtil.getField(column, Fields.FIELD_TYPE_STRING);
-        FIELDS[0].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
+        FIELDS[0].setPacketId(service.nextPacketId());
+        EOF.setPacketId(service.nextPacketId());
 
-        ByteBuffer buffer = c.allocate();
-        buffer = HEADER.write(buffer, c, true);
+        ByteBuffer buffer = service.allocate();
+        buffer = HEADER.write(buffer, service, true);
         for (FieldPacket field : FIELDS) {
-            buffer = field.write(buffer, c, true);
+            buffer = field.write(buffer, service, true);
         }
-        buffer = EOF.write(buffer, c, true);
+        buffer = EOF.write(buffer, service, true);
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 
         String value = "";
-        switch (c.getTxIsolation()) {
+        switch (service.getTxIsolation()) {
             case Isolations.READ_COMMITTED:
                 value = "READ-COMMITTED";
                 break;
@@ -63,21 +59,12 @@ public final class SessionIsolation {
             default:
                 break;
         }
-        row.add(StringUtil.encode(value, c.getCharset().getResults()));
-        row.setPacketId(++packetId);
-        buffer = row.write(buffer, c, true);
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementPacket(lastEof, packetId);
-        buffer = lastEof.write(buffer, c, true);
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        c.write(buffer);
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
-    }
-
-    public static byte setCurrentPacket(ServerConnection c) {
-        byte packetId = (byte) c.getSession2().getPacketId().get();
-        return packetId;
+        row.add(StringUtil.encode(value, service.getCharset().getResults()));
+        row.setPacketId(service.nextPacketId());
+        buffer = row.write(buffer, service, true);
+        EOFRowPacket lastEof = new EOFRowPacket();
+        lastEof.setPacketId(service.nextPacketId());
+        lastEof.write(buffer, service);
     }
 
 }

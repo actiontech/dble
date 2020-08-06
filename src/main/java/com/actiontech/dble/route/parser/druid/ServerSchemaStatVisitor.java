@@ -293,7 +293,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return true;
     }
 
-
     @Override
     public boolean visit(SQLBinaryOpExpr x) {
         if (isUnaryParentEffect(x)) return true;
@@ -518,8 +517,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                     if (item instanceof SQLNullExpr) {
                         condition.getValues().add(item);
                     } else {
-                        Object value = SQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
-                        condition.getValues().add(value);
+                        if (item instanceof SQLHexExpr) {
+                            condition.getValues().add(item);
+                        } else {
+                            Object value = SQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
+                            condition.getValues().add(value);
+                        }
                     }
                 }
             }

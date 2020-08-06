@@ -1,31 +1,35 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage;
 
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.NonBlockingSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class RollbackStage implements TransactionStage {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(RollbackStage.class);
     private NonBlockingSession session;
-    private final List<MySQLConnection> conns;
+    private final List<BackendConnection> conns;
 
-    public RollbackStage(NonBlockingSession session, List<MySQLConnection> conns) {
+    public RollbackStage(NonBlockingSession session, List<BackendConnection> conns) {
         this.session = session;
         this.conns = conns;
     }
 
     @Override
     public void onEnterStage() {
-        for (final MySQLConnection conn : conns) {
-            conn.rollback();
+        for (final BackendConnection conn : conns) {
+            conn.getBackendService().rollback();
         }
         session.setDiscard(true);
     }
 
     @Override
-    public TransactionStage next(boolean isFail, String errMsg, byte[] sendData) {
+    public TransactionStage next(boolean isFail, String errMsg, MySQLPacket sendData) {
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
@@ -33,19 +37,23 @@ public class RollbackStage implements TransactionStage {
         }
 
         session.setResponseTime(false);
+
+        LOGGER.info("GET INTO THE NET LEVEL AND THE RESULT IS " + isFail);
         if (isFail) {
-            session.getSource().write(sendData);
+            if (sendData != null) {
+                sendData.write(session.getSource());
+            } else {
+                session.getShardingService().writeErrMessage(ErrorCode.ER_YES, "Unexpected error when rollback fail:with no message detail");
+            }
             return null;
         }
 
+
         if (sendData != null) {
-            session.getPacketId().set(sendData[3]);
+            sendData.write(session.getSource());
         } else {
-            sendData = session.getOkByteArray();
+            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
         }
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        session.getSource().write(sendData);
-        session.multiStatementNextSql(multiStatementFlag);
         session.clearSavepoint();
         return null;
     }

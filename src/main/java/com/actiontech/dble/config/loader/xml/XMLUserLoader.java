@@ -15,9 +15,11 @@ import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.IPAddressUtil;
 import com.alibaba.druid.wall.WallConfig;
 import com.alibaba.druid.wall.WallProvider;
 import com.alibaba.druid.wall.spi.MySqlWallProvider;
+import com.google.gson.Gson;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -26,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class XMLUserLoader {
     private final Map<UserName, UserConfig> users;
@@ -228,7 +231,18 @@ public class XMLUserLoader {
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
+        checkWhiteIPs(strWhiteIPs);
         return new UserConfig(name, password, strWhiteIPs, strMaxCon);
+    }
+
+    private void checkWhiteIPs(String strWhiteIPs) {
+        if (!StringUtil.isEmpty(strWhiteIPs)) {
+            String[] theWhiteIPs = SplitUtil.split(strWhiteIPs, ',');
+            Set<String> incorrectIPs = Arrays.stream(theWhiteIPs).filter(e -> !IPAddressUtil.check(e)).collect(Collectors.toSet());
+            if (null != incorrectIPs && incorrectIPs.size() > 0) {
+                throw new ConfigException("The configuration contains incorrect IP" + new Gson().toJson(incorrectIPs));
+            }
+        }
     }
 
     private void checkVersion(Element root) {

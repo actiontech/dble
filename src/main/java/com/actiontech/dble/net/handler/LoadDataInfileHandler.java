@@ -16,12 +16,7 @@ public interface LoadDataInfileHandler {
 
     void handle(byte[] data);
 
-    void end(byte packID);
+    void end(byte packetId);
 
     void clear();
-
-    byte getLastPackId();
-
-    boolean isStartLoadData();
-
 }

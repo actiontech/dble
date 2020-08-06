@@ -71,7 +71,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
     @Override
     public final int addRows(List<RowDataPacket> rows) {
         /**
-         * we should make rows sorted first, then write them into file
+         * we should make rows sorted first, then writeDirectly them into file
          */
         if (logger.isDebugEnabled()) {
             logger.debug(" convert list to array start:" + TimeUtil.currentTimeMillis());
@@ -96,7 +96,7 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
         tapes.add(tape);
         rowCount += rows.size();
         if (logger.isDebugEnabled()) {
-            logger.debug("write rows to disk end:" + TimeUtil.currentTimeMillis());
+            logger.debug("writeDirectly rows to disk end:" + TimeUtil.currentTimeMillis());
         }
         return rowCount;
     }

@@ -7,10 +7,9 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.singleton.BufferPoolManager;
-import com.actiontech.dble.singleton.SerializableLock;
 
 import java.nio.ByteBuffer;
 
@@ -58,7 +57,7 @@ public class OkPacket extends MySQLPacket {
         }
     }
 
-    public void read(byte[] data) {
+    public OkPacket read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         packetLength = mm.readUB3();
         packetId = mm.read();
@@ -70,9 +69,10 @@ public class OkPacket extends MySQLPacket {
         if (mm.hasRemaining()) {
             this.message = mm.readBytesWithLength();
         }
+        return this;
     }
 
-    public ByteBuffer write(ByteBuffer buffer, FrontendConnection c) {
+    public ByteBuffer write(ByteBuffer buffer, AbstractConnection c) {
 
         int size = calcPacketSize();
         buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size,
@@ -89,13 +89,14 @@ public class OkPacket extends MySQLPacket {
         }
 
         return buffer;
-
     }
 
-    public void write(FrontendConnection c) {
-        if (c instanceof ServerConnection) {
-            SerializableLock.getInstance().unLock(c.getId());
-        }
+    public void write(ByteBuffer buffer, AbstractService service) {
+        service.writeWithBuffer(this, buffer);
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = write(c.allocate(), c);
         c.write(buffer);
     }
@@ -180,5 +181,9 @@ public class OkPacket extends MySQLPacket {
 
     public void setMessage(byte[] message) {
         this.message = message;
+    }
+
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

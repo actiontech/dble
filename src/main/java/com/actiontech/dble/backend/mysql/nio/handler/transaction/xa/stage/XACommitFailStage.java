@@ -3,7 +3,9 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACheckHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.AbstractXAHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
@@ -11,8 +13,10 @@ import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.XASessionCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +41,7 @@ public class XACommitFailStage extends XACommitStage {
     }
 
     @Override
-    public XAStage next(boolean isFail, String errMsg, byte[] errPacket) {
+    public XAStage next(boolean isFail, String errMsg, MySQLPacket errPacket) {
         String xaId = session.getSessionXaID();
         if (!isFail || xaOldThreadIds.isEmpty()) {
             XAStateLog.saveXARecoveryLog(xaId, TxState.TX_COMMITTED_STATE);
@@ -81,56 +85,57 @@ public class XACommitFailStage extends XACommitStage {
     }
 
     @Override
-    public void onEnterStage(MySQLConnection conn) {
-        RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
-        if (!conn.isClosed() && conn.getXaStatus() != TxState.TX_COMMIT_FAILED_STATE) {
-            xaHandler.fakedResponse(conn, null);
+    public void onEnterStage(MySQLResponseService service) {
+        RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
+        if (!service.getConnection().isClosed() && service.getXaStatus() != TxState.TX_COMMIT_FAILED_STATE) {
+            xaHandler.fakedResponse(service, null);
             session.releaseConnection(rrn, true, false);
             return;
         }
-        MySQLConnection newConn = session.freshConn(conn, xaHandler);
-        xaOldThreadIds.putIfAbsent(conn.getAttachment(), conn.getThreadId());
-        if (newConn.equals(conn)) {
-            xaHandler.fakedResponse(conn, "fail to fresh connection to commit failed xa transaction");
+        MySQLResponseService newService = session.freshConn(service.getConnection(), xaHandler);
+        xaOldThreadIds.putIfAbsent(service.getAttachment(), service.getConnection().getThreadId());
+        if (newService.equals(service)) {
+            xaHandler.fakedResponse(service, "fail to fresh connection to commit failed xa transaction");
         } else {
-            String xaTxId = conn.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
+            String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
-            newConn.execCmd("XA COMMIT " + xaTxId);
+            newService.execCmd("XA COMMIT " + xaTxId);
         }
     }
 
     @Override
-    public void onConnectionOk(MySQLConnection conn) {
-        xaOldThreadIds.remove(conn.getAttachment());
-        super.onConnectionOk(conn);
+    public void onConnectionOk(MySQLResponseService service) {
+        xaOldThreadIds.remove(service.getAttachment());
+        super.onConnectionOk(service);
     }
 
     @Override
-    public void onConnectionError(MySQLConnection conn, int errNo) {
+    public void onConnectionError(MySQLResponseService service, int errNo) {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
-            RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
-            String xid = conn.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            XACheckHandler handler = new XACheckHandler(xid, conn.getSchema(), rrn.getName(), conn.getDbInstance().getDbGroup().getWriteDbInstance());
+            RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
+            String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
+            XACheckHandler handler = new XACheckHandler(xid, service.getConnection().getSchema(), rrn.getName(),
+                    ((PhysicalDbInstance) service.getConnection().getPoolRelated().getInstance()).getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
             handler.checkXid();
             if (handler.isSuccess() && !handler.isExistXid()) {
                 // Unknown XID ,if xa transaction only contains select statement, xid will lost after restart server although prepared
                 xaOldThreadIds.remove(rrn);
-                conn.setXaStatus(TxState.TX_COMMITTED_STATE);
-                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
-                conn.setXaStatus(TxState.TX_INITIALIZE_STATE);
+                service.setXaStatus(TxState.TX_COMMITTED_STATE);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
+                service.setXaStatus(TxState.TX_INITIALIZE_STATE);
             } else {
                 if (handler.isExistXid()) {
                     // kill mysql connection holding xa transaction, so current xa transaction can be committed next time.
-                    handler.killXaThread(xaOldThreadIds.get(conn.getAttachment()));
+                    handler.killXaThread(xaOldThreadIds.get(service.getAttachment()));
                 }
-                conn.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
+                service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
             }
         } else {
-            conn.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
-            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
+            service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
+            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
         }
     }
 

@@ -4,12 +4,12 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.DbInstanceStatus;
+import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.cluster.values.DbInstanceStatus;
-import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.util.DbXmlWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
@@ -71,7 +71,7 @@ public final class HaConfigManager {
     }
 
     public void write(DbGroups dbs, int reloadId) throws IOException {
-        HA_LOGGER.info("try to write DbGroups into local file " + reloadId);
+        HA_LOGGER.info("try to writeDirectly DbGroups into local file " + reloadId);
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
@@ -80,7 +80,7 @@ public final class HaConfigManager {
                 path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;
                 this.xmlProcess.safeParseWriteToXml(dbs, path, "db");
             } else {
-                HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());
+                HA_LOGGER.info("reloadId changes when try to writeDirectly the local file,just skip " + reloadIndex.get());
             }
         } finally {
             lock.readLock().unlock();
@@ -99,7 +99,7 @@ public final class HaConfigManager {
         if (isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
-                HA_LOGGER.info("get into write process");
+                HA_LOGGER.info("get into writeDirectly process");
                 waitingSet.add(dbGroup);
                 dbXmlWriteJob = new DbXmlWriteJob(waitingSet, dbGroups, reloadIndex.get());
                 thisTimeJob = dbXmlWriteJob;
@@ -146,7 +146,7 @@ public final class HaConfigManager {
             jsonObject.addProperty(JSON_NAME, dbGroup.getName());
             List<DbInstanceStatus> list = new ArrayList<>();
             for (DBInstance dbInstance : dbGroup.getDbInstance()) {
-                list.add(new DbInstanceStatus(dbInstance.getName(), "true".equals(dbInstance.getDisabled()), dbInstance.getPrimary()));
+                list.add(new DbInstanceStatus(dbInstance.getName(), "true".equals(dbInstance.getDisabled()), dbInstance.getPrimary() != null && dbInstance.getPrimary()));
             }
             Gson gson = new Gson();
             jsonObject.add(JSON_LIST, gson.toJsonTree(list));

@@ -206,7 +206,7 @@ public final class FileUtils {
     }
 
     /**
-     * Create an output stream to write into the file. This method is similar to
+     * Create an output stream to writeDirectly into the file. This method is similar to
      * Java 7 <code>java.nio.file.Path.newOutputStream</code>.
      *
      * @param fileName the file name
@@ -232,7 +232,7 @@ public final class FileUtils {
     // special methods =======================================
 
     /**
-     * Disable the ability to write. The file can still be deleted afterwards.
+     * Disable the ability to writeDirectly. The file can still be deleted afterwards.
      *
      * @param fileName the file name
      * @return true if the call was successful
@@ -343,7 +343,7 @@ public final class FileUtils {
     }
 
     /**
-     * Fully write to the file. This will write all remaining bytes.
+     * Fully writeDirectly to the file. This will writeDirectly all remaining bytes.
      *
      * @param channel the file channel
      * @param src     the byte buffer

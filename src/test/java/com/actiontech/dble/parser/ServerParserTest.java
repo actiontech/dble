@@ -138,6 +138,13 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases", 4));
         Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("SHOW DATABASES", 4));
         Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("SHOW databases ", 4));
+        //"show database " statement need stricter inspection #1961
+    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases ...", 4));
+    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases...", 4));
+    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases like... ", 4));
+    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases where...", 4));
+    	Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases like ...", 4));
+    	Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases where ...", 4));
     }
 
     @Test

@@ -9,7 +9,8 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.server.ServerConnection;
+
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 public final class MysqlProcHandler {
     private MysqlProcHandler() {
@@ -24,8 +25,8 @@ public final class MysqlProcHandler {
         FIELDS[1] = PacketUtil.getField("type", Fields.FIELD_TYPE_VAR_STRING);
     }
 
-    public static void handle(ServerConnection c) {
-        MysqlSystemSchemaHandler.doWrite(FIELD_COUNT, FIELDS, null, c);
+    public static void handle(ShardingService service) {
+        MysqlSystemSchemaHandler.doWrite(FIELD_COUNT, FIELDS, null, service);
     }
 
 

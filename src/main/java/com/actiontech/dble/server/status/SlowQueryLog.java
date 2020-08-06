@@ -7,8 +7,9 @@ package com.actiontech.dble.server.status;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.slow.SlowQueryLogProcessor;
-import com.actiontech.dble.server.ServerConnection;
+
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public final class SlowQueryLog {
         this.flushSize = flushSize;
     }
 
-    public void putSlowQueryLog(ServerConnection c, TraceResult log) {
-        processor.putSlowQueryLog(c, log);
+    public void putSlowQueryLog(ShardingService service, TraceResult log) {
+        processor.putSlowQueryLog(service, log);
     }
 }

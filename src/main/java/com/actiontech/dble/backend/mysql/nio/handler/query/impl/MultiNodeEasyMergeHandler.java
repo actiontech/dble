@@ -6,10 +6,10 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
@@ -54,9 +54,9 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
         for (BaseSelectHandler exeHandler : exeHandlers) {
             session.setHandlerStart(exeHandler); //base start execute
             try {
-                MySQLConnection exeConn = exeHandler.initConnection();
-                exeConn.setComplexQuery(true);
-                exeHandler.execute(exeConn);
+                BackendConnection exeConn = exeHandler.initConnection();
+                exeConn.getBackendService().setComplexQuery(true);
+                exeHandler.execute(exeConn.getBackendService());
             } catch (Exception e) {
                 exeHandler.connectionError(e, exeHandler.getRrss());
                 return;
@@ -66,9 +66,9 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, BackendConnection conn) {
+                                 boolean isLeft, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + "'s field is reached.");
+            LOGGER.debug(service.toString() + "'s field is reached.");
         }
         session.setHandlerStart(this);
         // if terminated
@@ -79,7 +79,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
         try {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
-                nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
+                nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
             }
             startEasyMerge();
             if (++reachedConCount == route.length) {
@@ -91,16 +91,16 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         if (terminate.get())
             return true;
-        return nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
+        return nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
+    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + " 's rowEof is reached.");
+            LOGGER.debug(service.toString() + " 's rowEof is reached.");
         }
 
         if (this.terminate.get())
@@ -109,7 +109,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
         try {
             if (++rowEndConCount == route.length) {
                 session.setHandlerEnd(this);
-                nextHandler.rowEofResponse(null, this.isLeft, conn);
+                nextHandler.rowEofResponse(null, this.isLeft, service);
             }
         } finally {
             lock.unlock();

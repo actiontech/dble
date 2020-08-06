@@ -110,7 +110,7 @@ public final class SystemVariables {
         sessionVariables.put("ndb-allow-copying-alter-table", "0");
         sessionVariables.put("ndb_autoincrement_prefetch_sz", "32");
         sessionVariables.put("ndb-blob-read-batch-bytes", "65536");
-        sessionVariables.put("ndb-blob-write-batch-bytes", "65536");
+        sessionVariables.put("ndb-blob-writeDirectly-batch-bytes", "65536");
         sessionVariables.put("ndb_deferred_constraints", "0");
         sessionVariables.put("ndb_force_send", "1");
         sessionVariables.put("ndb_fully_replicated", "0");

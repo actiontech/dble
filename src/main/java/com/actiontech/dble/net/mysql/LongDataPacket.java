@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.MySQLMessage;
+import com.actiontech.dble.net.connection.AbstractConnection;
 
 /**
  * <pre>
@@ -46,6 +47,11 @@ public class LongDataPacket extends MySQLPacket {
         pStmtId = mm.readUB4();
         paramId = mm.readUB2();
         this.longData = mm.readBytes(packetLength - (1 + 4 + 2));
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection connection) {
+
     }
 
     @Override

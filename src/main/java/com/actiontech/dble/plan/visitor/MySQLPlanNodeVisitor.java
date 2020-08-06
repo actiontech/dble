@@ -22,6 +22,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.util.FilterUtils;
+import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.*;
@@ -64,12 +65,17 @@ public class MySQLPlanNodeVisitor {
     }
 
     public boolean visit(SQLSelectStatement node) {
-        SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery, this.usrVariables);
-        mtv.visit(sqlSelect);
-        this.tableNode = mtv.getTableNode();
-        this.containSchema = mtv.isContainSchema();
-        return true;
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("visit-for-sql-structure");
+        try {
+            SQLSelectQuery sqlSelect = node.getSelect().getQuery();
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery, this.usrVariables);
+            mtv.visit(sqlSelect);
+            this.tableNode = mtv.getTableNode();
+            this.containSchema = mtv.isContainSchema();
+            return true;
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
     }
 
     public void visit(SQLSelectQuery node) {

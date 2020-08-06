@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
+import com.actiontech.dble.net.connection.AbstractConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,11 @@ public class ChangeUserPacket extends MySQLPacket {
                 }
             }
         }
+    }
+
+    @Override
+    public void bufferWrite(AbstractConnection connection) {
+
     }
 
     @Override

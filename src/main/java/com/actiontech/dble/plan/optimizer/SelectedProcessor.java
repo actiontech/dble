@@ -111,7 +111,10 @@ public final class SelectedProcessor {
     // if order by item is not FIELD_ITEM, we need to add back to select list and push down
     private static List<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
         List<Item> pushList = new LinkedList<Item>();
-        pushList.addAll(pdRefers);
+        pushList.addAll(child.getColumnsSelected());
+        for (Item pdRefer : pdRefers) {
+            addToListWithoutDuplicate(pushList, pdRefer);
+        }
         for (Order order : child.getOrderBys()) {
             if (order.getItem().type() != Item.ItemType.FIELD_ITEM) {
                 addToListWithoutDuplicate(pushList, order.getItem());

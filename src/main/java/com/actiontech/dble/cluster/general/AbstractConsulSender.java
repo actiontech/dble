@@ -33,6 +33,7 @@ import java.util.Map;
 public abstract class AbstractConsulSender implements ClusterSender {
     public static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsulSender.class);
 
+    protected static final String ERROR_MSG = "ALL the url to cluster connect failure,";
 
     /**
      * only init the connection preperties for the clusterSender

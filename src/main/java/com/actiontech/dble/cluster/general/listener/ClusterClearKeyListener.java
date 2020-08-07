@@ -161,12 +161,13 @@ public class ClusterClearKeyListener implements Runnable {
         return this.childService.get(key);
     }
 
-    public void initAllNode() {
+    public void initAllNode() throws Exception {
         for (Map.Entry<String, ClusterXmlLoader> service : childService.entrySet()) {
             try {
                 service.getValue().notifyCluster();
             } catch (Exception e) {
                 LOGGER.warn(" ClusterClearKeyListener init all node error:", e);
+                throw e;
             }
         }
     }

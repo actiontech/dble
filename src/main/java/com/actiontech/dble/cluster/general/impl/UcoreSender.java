@@ -144,7 +144,7 @@ public final class UcoreSender extends AbstractConsulSender {
                 }
             }
         }
-        throw new IOException("ALL the ucore connect failure");
+        throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
     }
 
     @Override
@@ -182,7 +182,7 @@ public final class UcoreSender extends AbstractConsulSender {
                     }
                 }
             }
-            throw new IOException("ALL the ucore connect failure");
+            throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
         }
     }
 
@@ -209,7 +209,7 @@ public final class UcoreSender extends AbstractConsulSender {
                 }
             }
             if (output == null) {
-                throw new RuntimeException("ALL the ucore connect failure");
+                throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
             }
         }
 
@@ -245,7 +245,7 @@ public final class UcoreSender extends AbstractConsulSender {
             }
         }
         if (output == null) {
-            throw new RuntimeException("ALL the ucore connect failure");
+            throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
         }
         for (int i = 0; i < output.getKeysCount(); i++) {
             KvBean bean = new KvBean(output.getKeys(i), output.getValues(i), output.getIndex());
@@ -280,7 +280,7 @@ public final class UcoreSender extends AbstractConsulSender {
                 }
             }
             if (!flag) {
-                throw new RuntimeException("ALL the ucore connect failure");
+                throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
             }
         }
         cleanKV(path.substring(0, path.length() - 1));
@@ -336,7 +336,7 @@ public final class UcoreSender extends AbstractConsulSender {
                 }
             }
         }
-        throw new IOException("ALL the ucore connect failure");
+        throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
     }
 
     @Override
@@ -466,7 +466,7 @@ public final class UcoreSender extends AbstractConsulSender {
                 }
             }
         }
-        throw new IOException("ALL the ucore connect failure");
+        throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
     }
 
 

@@ -62,7 +62,7 @@ done
 
 #startup Server
 RUN_CMD="\"$JAVA_HOME/bin/java\""
-RUN_CMD="$RUN_CMD -DDBLE_HOME=\"$DBLE_HOME\""
+RUN_CMD="$RUN_CMD -DhomePath=\"$DBLE_HOME\""
 RUN_CMD="$RUN_CMD -classpath \"$DBLE_CLASSPATH\""
 RUN_CMD="$RUN_CMD $JAVA_OPTS"
 RUN_CMD="$RUN_CMD com.actiontech.dble.DbleStartup  $@"

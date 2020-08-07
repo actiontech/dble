@@ -14,6 +14,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.sqlengine.TransformSQLJob;
 import com.actiontech.dble.util.StringUtil;
@@ -229,6 +230,10 @@ public final class ShowHandler {
                 break;
             case ManagerParseShow.CUSTOM_MYSQL_HA:
                 ShowSingleValue.execute(service, "@@custom_mysql_ha", CustomMySQLHa.getInstance().isProcessAlive() ? 1L : 0L);
+                break;
+            case ManagerParseShow.CAP_CLIENT_FOUND_ROWS:
+
+                ShowSingleValue.execute(service, "@@cap_client_found_rows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() ? 1L : 0L);
                 break;
             case ManagerParseShow.COLLATION:
                 ShowCollatin.execute(service);

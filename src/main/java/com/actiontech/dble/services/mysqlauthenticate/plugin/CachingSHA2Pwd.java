@@ -70,7 +70,7 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
         try {
             PluginName name = PluginName.valueOf(auth.getAuthPlugin());
             if (pluginName == name) {
-                String errMsg = AuthUtil.auth(new UserName(authPacket.getUser(), authPacket.getTenant()), connection, seed, authPacket.getPassword(), authPacket.getDatabase(), pluginName);
+                String errMsg = AuthUtil.auth(new UserName(authPacket.getUser(), authPacket.getTenant()), connection, seed, authPacket.getPassword(), authPacket.getDatabase(), pluginName, auth.getClientFlags());
                 UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(new UserName(authPacket.getUser(), authPacket.getTenant()));
                 info = new AuthResultInfo(errMsg, authPacket, userConfig);
                 return plugin_same_with_default;
@@ -139,7 +139,7 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
         authSwitchResponse.read(data);
         authPacket.setPassword(authSwitchResponse.getAuthPluginData());
 
-        String errMsg = AuthUtil.auth(new UserName(authPacket.getUser(), authPacket.getTenant()), connection, seed, authPacket.getPassword(), authPacket.getDatabase(), pluginName);
+        String errMsg = AuthUtil.auth(new UserName(authPacket.getUser(), authPacket.getTenant()), connection, seed, authPacket.getPassword(), authPacket.getDatabase(), pluginName, authPacket.getClientFlags());
 
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(new UserName(authPacket.getUser(), authPacket.getTenant()));
         info = new AuthResultInfo(errMsg, authPacket, userConfig);

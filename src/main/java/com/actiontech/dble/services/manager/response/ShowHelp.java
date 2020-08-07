@@ -228,6 +228,11 @@ public final class ShowHelp {
         // fresh con
         HELPS.put("fresh conn [forced] where dbGroup ='?' [and dbInstance ='?']", "fresh conn some dbGroup/dbInstance");
 
+        // cap_client_found_rows
+        HELPS.put("show @@cap_client_found_rows", "Show if the clientFoundRows capabilities is enabled");
+        HELPS.put("enable @@cap_client_found_rows", "Turn on the clientFoundRows capabilities");
+        HELPS.put("disable @@cap_client_found_rows", "Turn off the clientFoundRows capabilities");
+
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

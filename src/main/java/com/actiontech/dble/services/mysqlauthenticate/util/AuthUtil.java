@@ -6,12 +6,14 @@
 package com.actiontech.dble.services.mysqlauthenticate.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
+import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.IPAddressUtil;
@@ -24,7 +26,7 @@ public final class AuthUtil {
     private AuthUtil() {
     }
 
-    public static String auth(UserName user, AbstractConnection connection, byte[] seed, byte[] password, String schema, PluginName plugin) {
+    public static String auth(UserName user, AbstractConnection connection, byte[] seed, byte[] password, String schema, PluginName plugin, long clientFlags) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(connection.getService(), "user-auth-for-right&password");
         try {
             UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
@@ -67,6 +69,10 @@ public final class AuthUtil {
                         return "Access denied for user '" + user + "' to database '" + schema + "'";
                     default:
                         break;
+                }
+
+                if ((Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & clientFlags)) != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
+                    return "The client requested CLIENT_FOUND_ROWS capabilities does not match, in the manager use show @@cap_client_found_rows check latest status.";
                 }
             }
 

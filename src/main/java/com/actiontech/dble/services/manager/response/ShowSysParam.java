@@ -100,6 +100,7 @@ public final class ShowSysParam {
         paramValues.add(new ParamInfo("serverBacklog", sysConfig.getServerBacklog() + "", "The NIO/AIO reactor backlog,the max of create connection request at one time.The default value is 2048"));
         paramValues.add(new ParamInfo("maxCon", sysConfig.getMaxCon() + "", "The number of max connections the server allowed "));
         paramValues.add(new ParamInfo("useCompression", sysConfig.getUseCompression() + "", "Whether the Compression is enable,The default number is 0 "));
+        paramValues.add(new ParamInfo("capClientFoundRows", sysConfig.isCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows,The default value is true"));
         paramValues.add(new ParamInfo("usingAIO", sysConfig.getUsingAIO() + "", "Whether the AIO is enable, The default number is 0(use NIO instead)"));
         paramValues.add(new ParamInfo("useThreadUsageStat", sysConfig.getUseThreadUsageStat() + "", "Whether the thread usage statistics function is enabled.The default value is 0"));
         paramValues.add(new ParamInfo("usePerformanceMode", sysConfig.getUsePerformanceMode() + "", "Whether use the performance mode is enabled.The default value is 0"));

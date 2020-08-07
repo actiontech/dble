@@ -10,6 +10,7 @@ import com.actiontech.dble.net.mysql.AuthSwitchResponsePackage;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
+import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.util.RandomUtil;
 
 import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
@@ -179,7 +180,10 @@ public abstract class MySQLAuthPlugin {
     private static long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
-        flag |= Capabilities.CLIENT_FOUND_ROWS;
+        boolean isEnableCapClientFoundRows = CapClientFoundRows.getInstance().isEnableCapClientFoundRows();
+        if (isEnableCapClientFoundRows) {
+            flag |= Capabilities.CLIENT_FOUND_ROWS;
+        }
         flag |= Capabilities.CLIENT_LONG_FLAG;
         flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
         // flag |= Capabilities.CLIENT_NO_SCHEMA;

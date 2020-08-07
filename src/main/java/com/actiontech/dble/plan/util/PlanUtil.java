@@ -167,7 +167,7 @@ public final class PlanUtil {
             Item func = sel.cloneStruct();
             if (sel.getReferTables().isEmpty()) {
                 func.setPushDownName(null);
-                sel.setPushDownName(func.getItemName());
+                sel.setPushDownName(sel.getAlias() != null ? sel.getAlias() : func.getItemName());
                 return func;
             }
             if (!subQueryOpt && (func.isWithSumFunc())) {
@@ -180,7 +180,7 @@ public final class PlanUtil {
             }
             refreshReferTables(func);
             func.setPushDownName(null);
-            sel.setPushDownName(func.getItemName());
+            sel.setPushDownName(sel.getAlias() != null ? sel.getAlias() : func.getItemName());
             return func;
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported!");

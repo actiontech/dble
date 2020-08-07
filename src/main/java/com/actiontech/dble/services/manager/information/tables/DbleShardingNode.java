@@ -20,13 +20,13 @@ public class DbleShardingNode extends ManagerBaseTable {
 
     private static final String TABLE_NAME = "dble_sharding_node";
 
-    private static final String COLUMN_1 = "name";
+    private static final String COLUMN_NAME = "name";
 
-    private static final String COLUMN_2 = "db_group";
+    private static final String COLUMN_DB_GROUP = "db_group";
 
-    private static final String COLUMN_3 = "db_schema";
+    private static final String COLUMN_DB_SCHEMA = "db_schema";
 
-    private static final String COLUMN_4 = "pause";
+    private static final String COLUMN_PAUSE = "pause";
 
     public DbleShardingNode() {
         super(TABLE_NAME, 4);
@@ -34,17 +34,17 @@ public class DbleShardingNode extends ManagerBaseTable {
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_1, new ColumnMeta(COLUMN_1, "varchar(64)", false, true));
-        columnsType.put(COLUMN_1, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_NAME, new ColumnMeta(COLUMN_NAME, "varchar(64)", false, true));
+        columnsType.put(COLUMN_NAME, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_2, new ColumnMeta(COLUMN_2, "varchar(64)", false));
-        columnsType.put(COLUMN_2, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_DB_GROUP, new ColumnMeta(COLUMN_DB_GROUP, "varchar(64)", false));
+        columnsType.put(COLUMN_DB_GROUP, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_3, new ColumnMeta(COLUMN_3, "varchar(64)", false));
-        columnsType.put(COLUMN_3, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_DB_SCHEMA, new ColumnMeta(COLUMN_DB_SCHEMA, "varchar(64)", false));
+        columnsType.put(COLUMN_DB_SCHEMA, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_4, new ColumnMeta(COLUMN_4, "varchar(5)", true));
-        columnsType.put(COLUMN_4, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_PAUSE, new ColumnMeta(COLUMN_PAUSE, "varchar(5)", true));
+        columnsType.put(COLUMN_PAUSE, Fields.FIELD_TYPE_VAR_STRING);
     }
 
     @Override
@@ -53,10 +53,10 @@ public class DbleShardingNode extends ManagerBaseTable {
         Map<String, ShardingNode> shardingNodeMap = new TreeMap<>(DbleServer.getInstance().getConfig().getShardingNodes());
         return shardingNodeMap.values().stream().map(e -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-            map.put(COLUMN_1, e.getName());
-            map.put(COLUMN_2, e.getDbGroupName());
-            map.put(COLUMN_3, e.getDatabase());
-            map.put(COLUMN_4, null != pauseNodeSet && pauseNodeSet.contains(e.getName()) ? "true" : "false");
+            map.put(COLUMN_NAME, e.getName());
+            map.put(COLUMN_DB_GROUP, e.getDbGroupName());
+            map.put(COLUMN_DB_SCHEMA, e.getDatabase());
+            map.put(COLUMN_PAUSE, null != pauseNodeSet && pauseNodeSet.contains(e.getName()) ? "true" : "false");
             return map;
         }).collect(Collectors.toList());
     }

@@ -19,11 +19,11 @@ public class DbleSchema extends ManagerBaseTable {
 
     private static final String TABLE_NAME = "dble_schema";
 
-    private static final String COLUMN_1 = "name";
+    private static final String COLUMN_NAME = "name";
 
-    private static final String COLUMN_2 = "sharding_node";
+    private static final String COLUMN_SHARDING_NODE = "sharding_node";
 
-    private static final String COLUMN_3 = "sql_max_limit";
+    private static final String COLUMN_SQL_MAX_LIMIT = "sql_max_limit";
 
     public DbleSchema() {
         super(TABLE_NAME, 3);
@@ -31,14 +31,14 @@ public class DbleSchema extends ManagerBaseTable {
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_1, new ColumnMeta(COLUMN_1, "varchar(64)", false, true));
-        columnsType.put(COLUMN_1, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_NAME, new ColumnMeta(COLUMN_NAME, "varchar(64)", false, true));
+        columnsType.put(COLUMN_NAME, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_2, new ColumnMeta(COLUMN_2, "varchar(64)", true));
-        columnsType.put(COLUMN_2, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(64)", true));
+        columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_3, new ColumnMeta(COLUMN_3, "int(11)", true));
-        columnsType.put(COLUMN_3, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_SQL_MAX_LIMIT, new ColumnMeta(COLUMN_SQL_MAX_LIMIT, "int(11)", true));
+        columnsType.put(COLUMN_SQL_MAX_LIMIT, Fields.FIELD_TYPE_LONG);
 
     }
 
@@ -47,9 +47,9 @@ public class DbleSchema extends ManagerBaseTable {
         Map<String, SchemaConfig> schemaMap = new TreeMap<>(DbleServer.getInstance().getConfig().getSchemas());
         return schemaMap.values().stream().map(e -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-            map.put(COLUMN_1, e.getName());
-            map.put(COLUMN_2, e.getShardingNode());
-            map.put(COLUMN_3, String.valueOf(e.getDefaultMaxLimit()));
+            map.put(COLUMN_NAME, e.getName());
+            map.put(COLUMN_SHARDING_NODE, e.getShardingNode());
+            map.put(COLUMN_SQL_MAX_LIMIT, String.valueOf(e.getDefaultMaxLimit()));
             return map;
         }).collect(Collectors.toList());
     }

@@ -8,10 +8,7 @@ package com.actiontech.dble.services.manager.information;
 import com.actiontech.dble.services.factorys.information.tables.DbleBackendConnections;
 import com.actiontech.dble.services.factorys.information.tables.DbleFrontConnections;
 import com.actiontech.dble.services.factorys.information.tables.DbleThreadPool;
-import com.actiontech.dble.services.manager.information.tables.DbleVariables;
-import com.actiontech.dble.services.manager.information.tables.DemoTest1;
-import com.actiontech.dble.services.manager.information.tables.DemoTest2;
-import com.actiontech.dble.services.manager.information.tables.Version;
+import com.actiontech.dble.services.manager.information.tables.*;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -32,6 +29,9 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleThreadPool());
         registerTable(new DbleFrontConnections());
         registerTable(new DbleBackendConnections());
+        registerTable(new DbleShardingNode());
+        registerTable(new DbleSchema());
+        registerTable(new DbleThreadUsage());
     }
 
 

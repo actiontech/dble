@@ -5,9 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -52,12 +54,13 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
                 pdVisitor.visit();
                 sql = pdVisitor.getSql().toString();
             }
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
             RouteResultsetNode[] rrssArray;
             // maybe some node is view
             if (sql == null) {
-                rrssArray = mergeBuilder.construct().getNodes();
+                rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
             } else {
-                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst()).getNodes();
+                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst(), schemaConfig).getNodes();
             }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
@@ -75,10 +78,11 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
                 throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "unexpected exception!");
             List<RouteResultsetNode> rrssList = new ArrayList<>();
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
             if (tableConfig == null || tableConfig.getTableType() == TableTypeEnum.TYPE_GLOBAL_TABLE) {
                 for (Item filter : filters) {
                     node.setWhereFilter(filter);
-                    RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
+                    RouteResultsetNode[] rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
                     rrssList.addAll(Arrays.asList(rrssArray));
                 }
                 if (filters.size() == 1) {
@@ -89,7 +93,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
                 for (Item filter : filters) {
                     node.setWhereFilter(filter);
                     pdVisitor.visit();
-                    RouteResultsetNode[] rrssArray = mergeBuilder.construct().getNodes();
+                    RouteResultsetNode[] rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
                     rrssList.addAll(Arrays.asList(rrssArray));
                 }
                 if (tryGlobal) {

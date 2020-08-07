@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MergeBuilder {
+
     private boolean needCommonFlag;
     private PlanNode node;
     private NonBlockingSession session;
@@ -47,19 +48,19 @@ public class MergeBuilder {
      * @return RouteResultset
      * @throws SQLException SQLException
      */
-    public RouteResultset construct() throws SQLException {
+    public RouteResultset construct(SchemaConfig schemaConfig) throws SQLException {
         pdVisitor.visit();
         String sql = pdVisitor.getSql().toString();
-        return constructByQuery(sql);
+        return constructByQuery(sql, schemaConfig);
     }
 
-    public RouteResultset constructByQuery(String sql) throws SQLException {
+    public RouteResultset constructByQuery(String sql, SchemaConfig schemaConfig) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
-        return constructByStatement(sql, select);
+        return constructByStatement(sql, select, schemaConfig);
     }
 
-    public RouteResultset constructByStatement(String sql, SQLSelectStatement select) throws SQLException {
+    public RouteResultset constructByStatement(String sql, SQLSelectStatement select, SchemaConfig schemaConfig) throws SQLException {
         ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
         DruidSingleUnitSelectParser druidParser = new DruidSingleUnitSelectParser();
 
@@ -72,7 +73,7 @@ public class MergeBuilder {
             }
         }
         druidParser.setSchemaMap(tableConfigMap);
-        return RouterUtil.routeFromParserComplex(druidParser, tableConfigMap, rrs, select, sql, pool, visitor, session.getSource(), node);
+        return RouterUtil.routeFromParserComplex(schemaConfig, druidParser, tableConfigMap, rrs, select, sql, pool, visitor, session.getSource(), node);
 
     }
 

@@ -124,10 +124,10 @@ public final class RouterUtil {
     }
 
 
-    public static RouteResultset routeFromParserComplex(DruidParser druidParser, Map<String, SchemaConfig> schemaMap, RouteResultset rrs, SQLStatement statement,
+    public static RouteResultset routeFromParserComplex(SchemaConfig schemaConfig, DruidParser druidParser, Map<String, SchemaConfig> schemaMap, RouteResultset rrs, SQLStatement statement,
                                                         String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor visitor,
                                                         ServerConnection sc, PlanNode node) throws SQLException {
-        druidParser.parser(null, rrs, statement, originSql, cachePool, visitor, sc);
+        druidParser.parser(schemaConfig, rrs, statement, originSql, cachePool, visitor, sc);
         if (rrs.isFinishedExecute()) {
             return null;
         }

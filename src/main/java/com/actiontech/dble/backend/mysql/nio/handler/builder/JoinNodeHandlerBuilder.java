@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
@@ -61,12 +62,19 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 pdVisitor.visit();
                 sql = pdVisitor.getSql().toString();
             }
+            SchemaConfig schemaConfig;
+            String schemaName = this.session.getSource().getSchema();
+            if (schemaName != null) {
+                schemaConfig = schemaConfigMap.get(schemaName);
+            } else {
+                schemaConfig = schemaConfigMap.entrySet().iterator().next().getValue(); //random schemaConfig
+            }
             RouteResultsetNode[] rrssArray;
             // maybe some node is view
             if (sql == null) {
-                rrssArray = mergeBuilder.construct().getNodes();
+                rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
             } else {
-                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst()).getNodes();
+                rrssArray = mergeBuilder.constructByStatement(sql, node.getAst(), schemaConfig).getNodes();
             }
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);

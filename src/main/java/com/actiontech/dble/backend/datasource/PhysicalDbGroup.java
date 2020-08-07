@@ -163,8 +163,9 @@ public class PhysicalDbGroup {
                 allSourceMap.get(sourceName).stop(reason, closeFront);
             }
         }
-        Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
+
         if (closeFront) {
+            Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
             while (iterator.hasNext()) {
                 PooledConnection con = iterator.next();
                 if (con instanceof BackendConnection) {

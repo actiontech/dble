@@ -93,7 +93,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
             isGlobal = true;
-            routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
+            routeShardingNodes = checkForMultiNodeGlobal(service.getUser(), visitor, (GlobalTableConfig) tc, schema);
         } else if (tc instanceof ShardingTableConfig) {
             routeShardingNodes = checkForShardingTable(visitor, select, service, rrs, (ShardingTableConfig) tc, schemaInfo, stmt, schema);
         } else {

@@ -16,6 +16,7 @@ import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.PropertiesUtil;
 import com.actiontech.dble.util.StringUtil;
 import io.grpc.Channel;
@@ -72,10 +73,11 @@ public final class UcoreSender extends AbstractConsulSender {
         Channel channel = ManagedChannelBuilder.forAddress(getIpList().get(0),
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-        startUpdateNodes();
+        if (!skipSyncUcores()) {
+            startUpdateNodes();
+        }
         ClusterToXml.loadKVtoFile(this);
     }
-
     @Override
     public String lock(String path, String value) throws Exception {
         UcoreInterface.LockOnSessionInput input = UcoreInterface.LockOnSessionInput.newBuilder().setKey(path).setValue(value).setTTLSeconds(30).build();
@@ -515,5 +517,13 @@ public final class UcoreSender extends AbstractConsulSender {
         return ipList;
     }
 
+
+    private boolean skipSyncUcores() {
+        if (LOGGER.isDebugEnabled()) {
+            String info = DebugUtil.getDebugInfo("skipSyncUcores.txt");
+            return "skipSyncUcores".equals(info);
+        }
+        return false;
+    }
 
 }

@@ -80,12 +80,16 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void init(String reason) {
+        init(reason, false);
+    }
+
+    public void init(String reason, boolean isFresh) {
         if (disabled.get() || fakeNode) {
             LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", name, reason);
             return;
         }
 
-        if (!isInitial.compareAndSet(false, true)) {
+        if (!isFresh && !isInitial.compareAndSet(false, true)) {
             LOGGER.info("init dbInstance[{}] because {}, but it has been initialized, skip initialization.", name, reason);
             return;
         }

@@ -225,6 +225,9 @@ public final class ShowHelp {
         //dump file
         HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to shardingNode");
 
+        // fresh con
+        HELPS.put("fresh conn [forced] where dbGroup ='?' [and dbInstance ='?']", "fresh conn some dbGroup/dbInstance");
+
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

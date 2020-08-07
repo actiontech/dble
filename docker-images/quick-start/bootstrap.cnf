@@ -44,6 +44,7 @@
 -DmaxPacketSize=167772160
 -DtxIsolation=2
 #-Dautocommit=1
+#-DidleTimeout=60000
 
 # option
 #-DuseCompression=1
@@ -65,7 +66,6 @@
 #  processor check conn
 -DprocessorCheckPeriod=1000
 -DsqlExecuteTimeout=3000
--DidleTimeout=1800000
 
 
 #-DbackSocket unit:bytes

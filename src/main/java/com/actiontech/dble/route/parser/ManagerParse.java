@@ -46,6 +46,7 @@ public final class ManagerParse {
     public static final int DELETE = 28;
     public static final int UPDATE = 29;
     public static final int FRESH_CONN = 30;
+    public static final int USE = 31;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -91,7 +92,7 @@ public final class ManagerParse {
                     return insert(stmt, i);
                 case 'U':
                 case 'u':
-                    return update(stmt, i);
+                    return uCheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -659,23 +660,6 @@ public final class ManagerParse {
         return OTHER;
     }
 
-    private static int update(String stmt, int offset) {
-        if (stmt.length() > offset + 3) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            if ((c1 == 'P' || c1 == 'p') && (c2 == 'D' || c2 == 'd') &&
-                    (c3 == 'A' || c3 == 'a') && (c4 == 'T' || c4 == 't') && (c5 == 'E' || c5 == 'e') &&
-                    ParseUtil.isSpace(c6)) {
-                return UPDATE;
-            }
-        }
-        return OTHER;
-    }
-
 
     // SPLIT ' '
     private static int split(String stmt, int offset) {
@@ -858,6 +842,46 @@ public final class ManagerParse {
                 if (ParseUtil.isErrorTail(offset, stmt)) {
                     return (offset << 8) | KILL_XA_SESSION;
                 }
+            }
+        }
+        return OTHER;
+    }
+
+
+    // UPDATE' ' | USE' '
+    private static int uCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'P':
+                case 'p':
+                    if (stmt.length() > offset + 5) {
+                        char c1 = stmt.charAt(++offset);
+                        char c2 = stmt.charAt(++offset);
+                        char c3 = stmt.charAt(++offset);
+                        char c4 = stmt.charAt(++offset);
+                        char c5 = stmt.charAt(++offset);
+                        if ((c1 == 'D' || c1 == 'd') &&
+                                (c2 == 'A' || c2 == 'a') &&
+                                (c3 == 'T' || c3 == 't') &&
+                                (c4 == 'E' || c4 == 'e') &&
+                                (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                            return UPDATE;
+                        }
+                    }
+                    break;
+                case 'S':
+                case 's':
+                    if (stmt.length() > offset + 2) {
+                        char c1 = stmt.charAt(++offset);
+                        char c2 = stmt.charAt(++offset);
+                        if ((c1 == 'E' || c1 == 'e') &&
+                                (c2 == ' ' || c2 == '\t' || c2 == '\r' || c2 == '\n')) {
+                            return (offset << 8) | USE;
+                        }
+                    }
+                    break;
+                default:
+                    return OTHER;
             }
         }
         return OTHER;

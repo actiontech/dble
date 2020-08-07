@@ -1,0 +1,19 @@
+#
+# Copyright (C) 2016-2020 ActionTech.
+# License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+#
+
+
+clusterEnable=true
+clusterMode=ucore
+clusterIP=127.0.0.1
+clusterPort=25700
+rootPath=universe/dble
+clusterId=cluster-1
+needSyncHa=true
+showBinlogStatusTimeout=60000
+sequenceHandlerType=2
+# valid for sequenceHandlerType=2 or 3
+#sequenceStartTime=2010-11-04 09:42:54
+# valid for sequenceHandlerType=3 and clusterMode is zk, default true
+sequenceInstanceByZk=true

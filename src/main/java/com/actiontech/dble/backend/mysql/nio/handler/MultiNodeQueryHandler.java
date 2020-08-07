@@ -28,7 +28,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
-import com.actiontech.dble.util.DebugPauseUtil;
+import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -654,7 +654,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     private void initDebugInfo() {
         if (LOGGER.isDebugEnabled()) {
-            String info = DebugPauseUtil.getPauseInfo("MultiNodeQueryHandler.txt");
+            String info = DebugUtil.getDebugInfo("MultiNodeQueryHandler.txt");
             if (info != null) {
                 LOGGER.debug("Pause info of MultiNodeQueryHandler is " + info);
                 String[] infos = info.split(";");

@@ -11,13 +11,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 
-public final class DebugPauseUtil {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DebugPauseUtil.class);
+public final class DebugUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DebugUtil.class);
 
-    private DebugPauseUtil() {
+    private DebugUtil() {
     }
 
-    public static String getPauseInfo(String fileName) {
+    public static String getDebugInfo(String fileName) {
         File pauseFile = new File(SystemConfig.getInstance().getHomePath() + File.separator + "conf", fileName);
         if (!pauseFile.exists()) {
             LOGGER.debug(pauseFile.getAbsolutePath() + " is not exists");
@@ -33,7 +33,7 @@ public final class DebugPauseUtil {
             in = new BufferedReader(reader);
             line = in.readLine();
         } catch (IOException e) {
-            LOGGER.warn("getPauseInfo error", e);
+            LOGGER.warn("getDebugInfo error", e);
         } finally {
             if (in != null) {
                 try {

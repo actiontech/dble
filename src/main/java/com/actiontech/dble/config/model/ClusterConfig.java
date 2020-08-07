@@ -188,7 +188,11 @@ public final class ClusterConfig {
         Properties props = new Properties();
         JsonObject jsonObject = new JsonParser().parse(strJson).getAsJsonObject();
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-            props.put(entry.getKey(), entry.getValue().toString());
+            String key = entry.getKey();
+            if (key.equals("problemReporter") || key.equals("startTimeMilliseconds")) {
+                continue;
+            }
+            props.put(key, entry.getValue().getAsString());
 
         }
         return props;

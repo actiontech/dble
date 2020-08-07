@@ -31,9 +31,10 @@ public final class XmltoCluster {
             AbstractConsulSender sender = ((AbstractConsulSender) (ClusterGeneralConfig.getInstance().getClusterSender()));
             sender.initConInfo();
             initFileToUcore(sender);
-            System.out.println("XmltoZkMain Finished");
-        } catch (Exception e) {
+            System.out.println("XmlToClusterMain Finished");
+        } catch (Throwable e) {
             e.printStackTrace();
+            System.exit(-1);
         }
     }
 

@@ -21,7 +21,7 @@ if [ ! -n "$1" ]; then
     DBLE_HOME=`pwd`
 fi
 cd $CURR_DIR
-$JAVA_CMD -Xms256M -Xmx1G  -DDBLE_HOME=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
+$JAVA_CMD -Xms256M -Xmx1G  -DhomePath=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
 if [ $? -eq 0 ]; then
     echo "--------finish with success -------"
     exit 0

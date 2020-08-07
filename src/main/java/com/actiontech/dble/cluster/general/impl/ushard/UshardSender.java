@@ -127,7 +127,7 @@ public class UshardSender extends AbstractConsulSender {
         try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
         } catch (Exception e1) {
-            throw new IOException("ALL the ucore connect failure");
+            throw new IOException(ERROR_MSG);
         }
     }
 
@@ -139,7 +139,7 @@ public class UshardSender extends AbstractConsulSender {
         try {
             output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
         } catch (Exception e1) {
-            throw new RuntimeException("ALL the ucore connect failure");
+            throw new RuntimeException(ERROR_MSG);
         }
 
         return new KvBean(path, output.getValue(), 0);
@@ -158,7 +158,7 @@ public class UshardSender extends AbstractConsulSender {
         try {
             output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
         } catch (Exception e1) {
-            throw new RuntimeException("ALL the ucore connect failure");
+            throw new RuntimeException(ERROR_MSG);
         }
 
         for (int i = 0; i < output.getKeysCount(); i++) {
@@ -177,7 +177,7 @@ public class UshardSender extends AbstractConsulSender {
         try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
         } catch (Exception e1) {
-            throw new RuntimeException("ALL the ucore connect failure");
+            throw new RuntimeException(ERROR_MSG);
         }
         cleanKV(path.substring(0, path.length() - 1));
     }

@@ -283,7 +283,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         while (totalConnections.get() > 0) {
             for (PooledConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {
-                    conn.closePooldestroyed(closureReason);
+                    ((BackendConnection) conn).closeWithFront(closureReason);
                 } else {
                     conn.close(closureReason);
                 }
@@ -303,12 +303,11 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     public void stop(final String closureReason, boolean closeFront) {
         if (isClosed.compareAndSet(false, true)) {
             stopEvictor();
-        }
-        stopEvictor();
-        if (closeFront) {
-            forceCloseAllConnection(closureReason);
-        } else {
-            softCloseAllConnections(closureReason);
+            if (closeFront) {
+                forceCloseAllConnection(closureReason);
+            } else {
+                softCloseAllConnections(closureReason);
+            }
         }
     }
 

@@ -141,6 +141,9 @@ public class ManagerQueryHandler {
                         (new UpdateHandler()).handle(sql, service);
                     });
                     break;
+                case ManagerParse.FRESH_CONN:
+                    FreshBackendConnHandler.handle(sql, service);
+                    break;
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             }

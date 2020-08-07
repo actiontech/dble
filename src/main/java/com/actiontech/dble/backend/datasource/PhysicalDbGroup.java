@@ -16,7 +16,9 @@ import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
+import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -132,6 +134,19 @@ public class PhysicalDbGroup {
         }
     }
 
+    public void init(String[] sourceNames, String reason, boolean isFresh) {
+        if (rwSplitMode == 0) {
+            writeDbInstance.init(reason, isFresh);
+            return;
+        }
+
+        for (String sourceName : sourceNames) {
+            if (allSourceMap.containsKey(sourceName)) {
+                allSourceMap.get(sourceName).init(reason, isFresh);
+            }
+        }
+    }
+
     public void stop(String reason) {
         stop(reason, false);
     }
@@ -139,6 +154,28 @@ public class PhysicalDbGroup {
     public void stop(String reason, boolean closeFront) {
         for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
             dbInstance.stop(reason, closeFront);
+        }
+    }
+
+    public void stop(String[] sourceNames, String reason, boolean closeFront) {
+        for (String sourceName : sourceNames) {
+            if (allSourceMap.containsKey(sourceName)) {
+                allSourceMap.get(sourceName).stop(reason, closeFront);
+            }
+        }
+
+        if (closeFront) {
+            Iterator<PooledConnection> iterator = IOProcessor.BACKENDS_OLD.iterator();
+            while (iterator.hasNext()) {
+                PooledConnection con = iterator.next();
+                if (con instanceof BackendConnection) {
+                    BackendConnection backendCon = (BackendConnection) con;
+                    if (backendCon.getPoolDestroyedTime() != 0 && Arrays.asList(sourceNames).contains(backendCon.getInstance().getConfig().getInstanceName())) {
+                        backendCon.closeWithFront("old active backend conn will be forced closed by closing front conn");
+                        iterator.remove();
+                    }
+                }
+            }
         }
     }
 

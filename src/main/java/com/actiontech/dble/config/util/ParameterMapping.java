@@ -100,7 +100,7 @@ public final class ParameterMapping {
                 }
                 continue;
             }
-
+            valStr = valStr.trim();
             if (!StringUtil.isEmpty(valStr)) {
                 valStr = ConfigUtil.filter(valStr);
             }

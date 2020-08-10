@@ -48,7 +48,7 @@
 
 # option
 #-DuseCompression=1
-#-DcapClientFoundRows=true
+#-DcapClientFoundRows=false
 -DusingAIO=0
 
 -DuseThreadUsageStat=1

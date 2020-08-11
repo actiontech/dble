@@ -16,7 +16,7 @@ public class JoinInnerNode extends PlanNode {
         return PlanNode.PlanNodeType.JOIN_INNER;
     }
 
-    public JoinInnerNode() {
+    private JoinInnerNode() {
         super();
     }
 

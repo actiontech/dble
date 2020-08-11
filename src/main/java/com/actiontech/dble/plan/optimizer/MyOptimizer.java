@@ -9,6 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
+import com.actiontech.dble.plan.node.JoinInnerNode;
+import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -31,7 +33,7 @@ public final class MyOptimizer {
             // PreProcessor SubQuery ,transform in sub query to join
             node = SubQueryPreProcessor.optimize(node);
             updateReferedTableNodes(node);
-            int existGlobal = checkGlobalTable(node, new HashSet<String>());
+            int existGlobal = checkGlobalTable(node, new HashSet<>());
             if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery() || !PlanUtil.hasNoFakeNode(node)) {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
                 //node = SubQueryProcessor.optimize(node);
@@ -120,6 +122,7 @@ public final class MyOptimizer {
             }
         }
 
+
         if (isAllGlobal) {
             if (dataNodes == null) { // all nonamenode
                 String db = SchemaUtil.getRandomDb();
@@ -139,9 +142,22 @@ public final class MyOptimizer {
             } else {
                 return 0;
             }
+        } else if (containsNoNameNode(node)) {
+            return 0;
         }
         return -1;
     }
 
+    private static boolean containsNoNameNode(PlanNode node) {
+        if (node instanceof NoNameNode || node instanceof JoinInnerNode) {
+            return true;
+        }
+        for (PlanNode child : node.getChildren()) {
+            if (containsNoNameNode(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 }

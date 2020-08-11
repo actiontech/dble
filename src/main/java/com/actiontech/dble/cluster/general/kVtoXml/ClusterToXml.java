@@ -16,6 +16,8 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
@@ -29,6 +31,7 @@ public final class ClusterToXml {
 
     private static ClusterOffLineListener offlineStatusListener = null;
 
+    private static List<Thread> threads = new ArrayList<>(3);
 
     private ClusterToXml() {
 
@@ -64,14 +67,6 @@ public final class ClusterToXml {
             thread.setName("UCORE_KEY_LISTENER");
             thread.start();
 
-            Thread thread2 = new Thread(ddlListener);
-            thread2.setName("DDL_UCORE_LISTENER");
-            thread2.start();
-
-            Thread thread3 = new Thread(viewListener);
-            thread3.setName("VIEW_UCORE_LISTENER");
-            thread3.start();
-
             Thread thread4 = new Thread(offlineStatusListener);
             thread4.setName("ONLINE_UCORE_LISTENER");
             thread4.start();
@@ -84,16 +79,29 @@ public final class ClusterToXml {
             thread7.setName("CONFIG_STATUS_UCORE_LISTENER");
             thread7.start();
 
+            Thread thread2 = new Thread(ddlListener);
+            thread2.setName("DDL_UCORE_LISTENER");
+            threads.add(thread2);
+
+            Thread thread3 = new Thread(viewListener);
+            thread3.setName("VIEW_UCORE_LISTENER");
+            threads.add(thread3);
 
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
                 ClusterSingleKeyListener dbGroupHaListener = new ClusterSingleKeyListener(ClusterPathUtil.getHaBasePath(), new DbGroupHaResponse(), sender);
                 Thread thread5 = new Thread(dbGroupHaListener);
                 thread5.setName("DB_GROUP_HA_LISTENER");
-                thread5.start();
+                threads.add(thread5);
             }
 
         } catch (Exception e) {
             LOGGER.warn("loadKVtoFile", e);
+        }
+    }
+
+    public static void startMetaListener() {
+        for (Thread thread : threads) {
+            thread.start();
         }
     }
 

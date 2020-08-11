@@ -33,10 +33,7 @@ import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
-import com.actiontech.dble.singleton.FrontendUserManager;
-import com.actiontech.dble.singleton.RouteService;
-import com.actiontech.dble.singleton.SerializableLock;
-import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.CommandCount;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -641,6 +638,18 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
             session.setRequestTime();
             session.setQueryStartTime(System.currentTimeMillis());
             taskMultiQueryCreate(protoLogicHandler.getMultiQueryData());
+        }
+    }
+
+
+    public void cleanup() {
+        super.cleanup();
+        if (session != null) {
+            TsQueriesCounter.getInstance().addToHistory(session);
+            session.terminate();
+        }
+        if (getLoadDataInfileHandler() != null) {
+            getLoadDataInfileHandler().clear();
         }
     }
 

@@ -37,6 +37,7 @@ public class ItemRef extends Item {
         this.table = table;
         this.tableAlias = tableAlias;
         this.fieldAlias = fieldAlias;
+        this.charsetIndex = ref.charsetIndex;
     }
 
     @Override

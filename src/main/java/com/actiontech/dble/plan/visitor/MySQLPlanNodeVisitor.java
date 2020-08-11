@@ -121,8 +121,7 @@ public class MySQLPlanNodeVisitor {
                 if (selectItems != null) {
                     innerNode.select(selectItems);
                 }
-                JoinInnerNode joinInnerNode = new JoinInnerNode(innerNode, mtv.getTableNode());
-                this.tableNode = joinInnerNode;
+                this.tableNode = new JoinInnerNode(innerNode, mtv.getTableNode());
                 this.containSchema = mtv.isContainSchema();
             } else {
                 visit(from);

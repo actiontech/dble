@@ -40,6 +40,10 @@ public final class WriteQueueFlowController {
     public static int getFlowStart() {
         return INSTANCE.config.getStart();
     }
+
+    public static int getFlowEnd() {
+        return INSTANCE.config.getEnd();
+    }
 }
 
 

@@ -27,7 +27,7 @@ public final class ShowServer {
     private ShowServer() {
     }
 
-    private static final int FIELD_COUNT = 8;
+    private static final int FIELD_COUNT = 7;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -54,10 +54,6 @@ public final class ShowServer {
 
         FIELDS[i] = PacketUtil.getField("RELOAD_TIME",
                 Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("ROLLBACK_TIME",
-                Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("CHARSET", Fields.FIELD_TYPE_VAR_STRING);
@@ -112,7 +108,6 @@ public final class ShowServer {
         row.add(LongUtil.toBytes(total));
         row.add(LongUtil.toBytes(max));
         row.add(StringUtil.encode(FormatUtil.formatDate(server.getConfig().getReloadTime()), charset));
-        row.add(LongUtil.toBytes(server.getConfig().getRollbackTime()));
         row.add(StringUtil.encode(charset, charset));
         row.add(StringUtil.encode(DbleServer.getInstance().isOnline() ? "ON" : "OFF", charset));
         return row;

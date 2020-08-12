@@ -23,7 +23,6 @@ public final class ManagerParse {
     public static final int KILL_CONN = 5;
     public static final int STOP = 6;
     public static final int RELOAD = 7;
-    public static final int ROLLBACK = 8;
     public static final int OFFLINE = 9;
     public static final int ONLINE = 10;
     public static final int CHECK = 11;
@@ -424,9 +423,6 @@ public final class ManagerParse {
                 case 'E':
                 case 'e':
                     return reCheck(stmt, offset);
-                case 'O':
-                case 'o':
-                    return rollback(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -559,26 +555,6 @@ public final class ManagerParse {
             if ((c3 == 'A' || c3 == 'a') && (c4 == 'D' || c4 == 'd') &&
                     (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 return (offset << 8) | RELOAD;
-            }
-        }
-        return OTHER;
-    }
-
-    // ROLLBACK' '
-    private static int rollback(String stmt, int offset) {
-        if (stmt.length() > offset + 7) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') && (c2 == 'L' || c2 == 'l') &&
-                    (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a') &&
-                    (c5 == 'C' || c5 == 'c') && (c6 == 'K' || c6 == 'k') &&
-                    (c7 == ' ' || c7 == '\t' || c7 == '\r' || c7 == '\n')) {
-                return (offset << 8) | ROLLBACK;
             }
         }
         return OTHER;

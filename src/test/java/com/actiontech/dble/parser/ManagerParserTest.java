@@ -252,13 +252,6 @@ public class ManagerParserTest {
         Assert.assertEquals(3, parser4.getMode());
     }
 
-
-    @Test
-    public void testRollback() {
-        Assert.assertEquals(ManagerParse.ROLLBACK, 0xff & ManagerParse.parse("rollback @@"));
-        Assert.assertEquals(ManagerParse.ROLLBACK, 0xff & ManagerParse.parse(" ROLLBACK "));
-    }
-
     @Test
     public void testOnOff() {
         Assert.assertEquals(ManagerParse.ONLINE, ManagerParse.parse("online "));

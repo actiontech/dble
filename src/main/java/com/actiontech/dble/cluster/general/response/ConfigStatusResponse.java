@@ -55,13 +55,8 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
             //self node
             return;
         }
-        //step 2 check the change type /rollback /reload
-        if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
-            ClusterLogic.rollbackConfigEvent(value);
-        } else {
-            //step 3 reload the config and set the self config status
-            ClusterLogic.reloadConfigEvent(value, status.getParams());
-        }
+        //step 2reload the config and set the self config status
+        ClusterLogic.reloadConfigEvent(value, status.getParams());
     }
 
 

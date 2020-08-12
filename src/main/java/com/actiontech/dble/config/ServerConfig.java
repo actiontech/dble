@@ -45,24 +45,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class ServerConfig {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ServerConfig.class);
-    private static final int ROLLBACK = 2;
-    private static final int RELOAD_ALL = 3;
 
     private volatile Map<UserName, UserConfig> users;
-    private volatile Map<UserName, UserConfig> users2;
     private volatile Map<String, SchemaConfig> schemas;
-    private volatile Map<String, SchemaConfig> schemas2;
     private volatile Map<String, ShardingNode> shardingNodes;
-    private volatile Map<String, ShardingNode> shardingNodes2;
     private volatile Map<String, PhysicalDbGroup> dbGroups;
-    private volatile Map<String, PhysicalDbGroup> dbGroups2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
-    private volatile Map<ERTable, Set<ERTable>> erRelations2;
     private volatile boolean fullyConfigured;
-    private volatile boolean fullyConfigured2;
     private volatile long reloadTime;
-    private volatile long rollbackTime;
-    private volatile int status;
     private volatile boolean changing = false;
     private final ReentrantReadWriteLock lock;
     private ConfigInitializer confInitNew;
@@ -79,8 +69,6 @@ public class ServerConfig {
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
 
         this.reloadTime = TimeUtil.currentTimeMillis();
-        this.rollbackTime = -1L;
-        this.status = RELOAD_ALL;
 
         this.lock = new ReentrantReadWriteLock();
 
@@ -98,8 +86,6 @@ public class ServerConfig {
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
 
         this.reloadTime = TimeUtil.currentTimeMillis();
-        this.rollbackTime = -1L;
-        this.status = RELOAD_ALL;
 
         this.lock = new ReentrantReadWriteLock();
     }
@@ -133,19 +119,9 @@ public class ServerConfig {
         return users;
     }
 
-    public Map<UserName, UserConfig> getBackupUsers() {
-        waitIfChanging();
-        return users2;
-    }
-
     public Map<String, SchemaConfig> getSchemas() {
         waitIfChanging();
         return schemas;
-    }
-
-    public Map<String, SchemaConfig> getBackupSchemas() {
-        waitIfChanging();
-        return schemas2;
     }
 
     public Map<String, ShardingNode> getShardingNodes() {
@@ -153,30 +129,14 @@ public class ServerConfig {
         return shardingNodes;
     }
 
-
-    public Map<String, ShardingNode> getBackupShardingNodes() {
-        waitIfChanging();
-        return shardingNodes2;
-    }
-
     public Map<String, PhysicalDbGroup> getDbGroups() {
         waitIfChanging();
         return dbGroups;
     }
 
-    public Map<String, PhysicalDbGroup> getBackupDbGroups() {
-        waitIfChanging();
-        return dbGroups2;
-    }
-
     public Map<ERTable, Set<ERTable>> getErRelations() {
         waitIfChanging();
         return erRelations;
-    }
-
-    public Map<ERTable, Set<ERTable>> getBackupErRelations() {
-        waitIfChanging();
-        return erRelations2;
     }
 
     public ReentrantReadWriteLock getLock() {
@@ -188,27 +148,15 @@ public class ServerConfig {
         return reloadTime;
     }
 
-    public long getRollbackTime() {
-        waitIfChanging();
-        return rollbackTime;
-    }
-
-    public boolean backIsFullyConfiged() {
-        waitIfChanging();
-        return fullyConfigured2;
-    }
-
     public boolean reload(Map<UserName, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                           Map<String, ShardingNode> newShardingNodes, Map<String, PhysicalDbGroup> newDbGroups,
-                          Map<String, PhysicalDbGroup> changeOrAddDbGroups,
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
                           final int loadAllMode) throws SQLNonTransientException {
-        boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, changeOrAddDbGroups, recycleDbGroups, newErRelations,
+        boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations,
                 newSystemVariables, isFullyConfigured, loadAllMode);
         this.reloadTime = TimeUtil.currentTimeMillis();
-        this.status = RELOAD_ALL;
         return result;
     }
 
@@ -313,26 +261,10 @@ public class ServerConfig {
         return false;
     }
 
-    public boolean canRollbackAll() {
-        return status == RELOAD_ALL && users2 != null && schemas2 != null && shardingNodes2 != null && dbGroups2 != null;
-    }
-
-    public boolean rollback(Map<UserName, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
-                            Map<String, ShardingNode> backupShardingNodes, Map<String, PhysicalDbGroup> backupDbGroups,
-                            Map<ERTable, Set<ERTable>> backupErRelations, boolean backDbGroupWithoutWR) throws SQLNonTransientException {
-
-        boolean result = apply(backupUsers, backupSchemas, backupShardingNodes, backupDbGroups, backupDbGroups, this.dbGroups, backupErRelations,
-                DbleServer.getInstance().getSystemVariables(), backDbGroupWithoutWR, ManagerParseConfig.OPTR_MODE);
-        this.rollbackTime = TimeUtil.currentTimeMillis();
-        this.status = ROLLBACK;
-        return result;
-    }
-
     private boolean apply(Map<UserName, UserConfig> newUsers,
                           Map<String, SchemaConfig> newSchemas,
                           Map<String, ShardingNode> newShardingNodes,
                           Map<String, PhysicalDbGroup> newDbGroups,
-                          Map<String, PhysicalDbGroup> changeOrAddDbGroups,
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables,
@@ -375,12 +307,6 @@ public class ServerConfig {
                     }
                 }
             }
-            this.shardingNodes2 = this.shardingNodes;
-            this.dbGroups2 = this.dbGroups;
-            this.users2 = this.users;
-            this.schemas2 = this.schemas;
-            this.erRelations2 = this.erRelations;
-            this.fullyConfigured2 = this.fullyConfigured;
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;

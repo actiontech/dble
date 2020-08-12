@@ -11,7 +11,6 @@ package com.actiontech.dble.cluster.values;
 public class ConfStatus {
     public enum Status {
         RELOAD_ALL,
-        ROLLBACK,
         RELOAD_META
     }
 

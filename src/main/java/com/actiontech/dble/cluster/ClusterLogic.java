@@ -35,9 +35,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
-
 import com.actiontech.dble.services.manager.response.ReloadConfig;
-import com.actiontech.dble.services.manager.response.RollbackConfig;
 import com.actiontech.dble.services.manager.response.ShowBinlogStatus;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.HaConfigManager;
@@ -70,7 +68,7 @@ import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_CLUSTER;
 public final class ClusterLogic {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterLogic.class);
 
-    private static Map<String, String> ddlLockMap = new ConcurrentHashMap<String, String>();
+    private static Map<String, String> ddlLockMap = new ConcurrentHashMap<>();
 
     private ClusterLogic() {
     }
@@ -244,35 +242,6 @@ public final class ClusterLogic {
             }
         }
     }
-
-    public static void rollbackConfigEvent(String value) throws Exception {
-        LOGGER.info("rollback " + ClusterPathUtil.getConfStatusOperatorPath() + " " + value);
-        try {
-            ClusterDelayProvider.delayBeforeSlaveRollback();
-            try {
-                boolean result = RollbackConfig.rollback(TRIGGER_TYPE_CLUSTER);
-                if (!checkLocalResult(result)) {
-                    return;
-                }
-            } catch (Exception e) {
-                LOGGER.warn("rollback config for cluster error: ", e);
-                throw e;
-            } finally {
-                ReloadManager.reloadFinish();
-            }
-
-            ClusterDelayProvider.delayAfterSlaveRollback();
-            LOGGER.info("rollback config: sent config status success to cluster center start");
-            ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
-            LOGGER.info("rollback config: sent config status success to cluster center end");
-        } catch (Exception e) {
-            String errorInfo = e.getMessage() == null ? e.toString() : e.getMessage();
-            LOGGER.info("rollback config: sent config status failed to cluster center start");
-            ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), errorInfo);
-            LOGGER.info("rollback config: sent config status failed to cluster center end");
-        }
-    }
-
 
     public static void reloadConfigEvent(String value, String params) throws Exception {
         try {

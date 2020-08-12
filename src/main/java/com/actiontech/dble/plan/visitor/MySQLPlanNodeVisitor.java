@@ -507,7 +507,13 @@ public class MySQLPlanNodeVisitor {
     }
 
     private boolean isUnion(SQLUnionOperator unionOperator) {
-        return unionOperator == SQLUnionOperator.UNION || unionOperator == SQLUnionOperator.DISTINCT;
+        if (unionOperator == SQLUnionOperator.UNION || unionOperator == SQLUnionOperator.DISTINCT) {
+            return true;
+        } else if (unionOperator == SQLUnionOperator.UNION_ALL) {
+            return false;
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "You have an error in your SQL syntax;" + unionOperator.toString());
+        }
     }
 
     private void handleHavingCondition(SQLExpr havingExpr) {

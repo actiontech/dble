@@ -37,7 +37,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     private volatile AbstractService service;
-    protected IOProcessor processor;
+    protected volatile IOProcessor processor;
 
     protected volatile String closeReason;
 

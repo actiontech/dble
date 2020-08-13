@@ -5,7 +5,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
 import com.actiontech.dble.backend.pool.ReadTimeStatusInstance;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
@@ -38,8 +37,6 @@ public class MySQLConnectionFactory extends PooledConnectionFactory {
         BackendConnection connection = new BackendConnection(channel, socketWR, instance, handler);
         connection.setSocketParams(false);
         socketWR.initFromConnection(connection);
-        IOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
-        connection.setProcessor(processor);
         DbleServer.getInstance().getConnector().postConnect(connection);
         return connection;
     }
@@ -60,8 +57,6 @@ public class MySQLConnectionFactory extends PooledConnectionFactory {
         BackendConnection connection = new BackendConnection(channel, socketWR, instance, listener, schema);
         socketWR.initFromConnection(connection);
         connection.setSocketParams(false);
-        IOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
-        connection.setProcessor(processor);
         DbleServer.getInstance().getConnector().postConnect(connection);
         return connection;
     }

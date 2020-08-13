@@ -102,7 +102,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     public static void clearCache() {
-        visitCache.get().clear();
+        if (visitCache.get() != null) {
+            visitCache.get().clear();
+        }
     }
 
     @Override

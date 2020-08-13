@@ -136,16 +136,22 @@ public class DbleEntry extends ManagerBaseTable {
     }
 
     public static Map<String, UserConfig> getUserConfig() {
-        if (userConfigCache != null) {
-            return userConfigCache;
+        Map<String, UserConfig> tmp = userConfigCache;
+        if (tmp == null) {
+            synchronized (DbleEntry.class) {
+                tmp = userConfigCache;
+                if (tmp == null) {
+                    tmp = Maps.newLinkedHashMap();
+                    Long entryId = 0L;
+                    Map<UserName, UserConfig> map = DbleServer.getInstance().getConfig().getUsers();
+                    for (UserConfig u : map.values()) {
+                        tmp.put(++entryId + "", u);
+                    }
+                    userConfigCache = tmp;
+                }
+            }
         }
-        userConfigCache = Maps.newLinkedHashMap();
-        Long entryId = 0L;
-        Map<UserName, UserConfig> map = DbleServer.getInstance().getConfig().getUsers();
-        for (UserConfig u : map.values()) {
-            userConfigCache.put(++entryId + "", u);
-        }
-        return userConfigCache;
+        return tmp;
     }
 
     public static void clearUserConfigCache() {

@@ -34,9 +34,8 @@ public class DbleDdlLock extends ManagerBaseTable {
 
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
-        Map<String, String> lockTables = new TreeMap<>(ProxyMeta.getInstance().getTmManager().getLockTables());
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        lockTables.forEach((k, v) -> {
+        ProxyMeta.getInstance().getTmManager().getLockTables().forEach((k, v) -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             String[] infos = k.split("\\.");
             map.put(COLUMN_SCHEMA, infos[0]);

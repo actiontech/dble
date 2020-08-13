@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 public class XMLUserLoader {
     private final Map<UserName, UserConfig> users;
+    private final Map<String, Properties> blacklistConfig;
     private static final String DEFAULT_DTD = "/user.dtd";
     private static final String DEFAULT_XML = "/" + ConfigFileName.USER_XML;
     private ProblemReporter problemReporter;
@@ -39,12 +40,18 @@ public class XMLUserLoader {
     public XMLUserLoader(String xmlFile, ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
         this.users = new HashMap<>();
+        this.blacklistConfig = new HashMap<>();
         loadXml(DEFAULT_DTD, xmlFile == null ? DEFAULT_XML : xmlFile);
     }
 
     @SuppressWarnings("unchecked")
     public Map<UserName, UserConfig> getUsers() {
         return users;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Properties> getBlacklistConfig() {
+        return this.blacklistConfig;
     }
 
     private void loadXml(String dtdFile, String xmlFile) {
@@ -138,6 +145,8 @@ public class XMLUserLoader {
                     wallProvider = blackListMap.get(blacklist);
                     if (wallProvider == null) {
                         problemReporter.warn("blacklist[" + blacklist + "] for user [" + user + "]  is not found, it will be ignore");
+                    } else {
+                        wallProvider.setName(blacklist);
                     }
                 }
                 // load DML Privileges
@@ -172,6 +181,8 @@ public class XMLUserLoader {
                     wallProvider = blackListMap.get(blacklist);
                     if (wallProvider == null) {
                         problemReporter.warn("blacklist[" + blacklist + "] for user [" + user + "]  is not found, it will be ignore");
+                    } else {
+                        wallProvider.setName(blacklist);
                     }
                 }
 
@@ -195,6 +206,9 @@ public class XMLUserLoader {
                         throw new ConfigException("blacklist[" + name + "]  has already existed");
                     }
                     Properties props = ConfigUtil.loadElements(element);
+                    Properties props2 = new Properties();
+                    props2.putAll(props);
+                    blacklistConfig.put(name, props2);
                     ParameterMapping.mapping(wallConfig, props, problemReporter);
                     if (props.size() > 0) {
                         String[] propItem = new String[props.size()];
@@ -218,21 +232,22 @@ public class XMLUserLoader {
         if (StringUtil.isEmpty(name)) {
             throw new ConfigException("one of users' name is empty");
         }
-        String password = element.getAttribute("password");
-        if (StringUtil.isEmpty(password)) {
+        String passwordEncrypt = element.getAttribute("password");
+        if (StringUtil.isEmpty(passwordEncrypt)) {
             throw new ConfigException("password of " + name + " is empty");
         }
+        String password = passwordEncrypt;
         String usingDecryptStr = element.getAttribute("usingDecrypt");
         if (!StringUtil.isEmpty(usingDecryptStr)) {
             usingDecryptStr = ConfigUtil.checkBoolAttribute("usingDecrypt", usingDecryptStr, "false", problemReporter, xmlFile);
             boolean usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
-            password = DecryptUtil.decrypt(usingDecrypt, name, password);
+            password = DecryptUtil.decrypt(usingDecrypt, name, passwordEncrypt);
         }
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
         checkWhiteIPs(strWhiteIPs);
-        return new UserConfig(name, password, strWhiteIPs, strMaxCon);
+        return new UserConfig(name, password, passwordEncrypt, strWhiteIPs, strMaxCon);
     }
 
     private void checkWhiteIPs(String strWhiteIPs) {

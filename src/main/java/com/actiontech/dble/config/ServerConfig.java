@@ -56,6 +56,7 @@ public class ServerConfig {
     private volatile boolean changing = false;
     private final ReentrantReadWriteLock lock;
     private ConfigInitializer confInitNew;
+    private volatile Map<String, Properties> blacklistConfig;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -71,7 +72,7 @@ public class ServerConfig {
         this.reloadTime = TimeUtil.currentTimeMillis();
 
         this.lock = new ReentrantReadWriteLock();
-
+        this.blacklistConfig = confInitNew.getBlacklistConfig();
     }
 
 
@@ -88,6 +89,7 @@ public class ServerConfig {
         this.reloadTime = TimeUtil.currentTimeMillis();
 
         this.lock = new ReentrantReadWriteLock();
+        this.blacklistConfig = confInit.getBlacklistConfig();
     }
 
     private void waitIfChanging() {
@@ -117,6 +119,10 @@ public class ServerConfig {
     public Map<UserName, UserConfig> getUsers() {
         waitIfChanging();
         return users;
+    }
+
+    public Map<String, Properties> getBlacklistConfig() {
+        return blacklistConfig;
     }
 
     public Map<String, SchemaConfig> getSchemas() {

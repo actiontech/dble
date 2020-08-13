@@ -35,6 +35,7 @@ import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.information.tables.DbleEntry;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
@@ -208,6 +209,7 @@ public final class ReloadConfig {
              *  1.1 ConfigInitializer init adn check itself
              *  1.2 ShardingNode/dbGroup test connection
              */
+            DbleEntry.clearUserConfigCache();
             ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
             ConfigInitializer loader;
             try {

@@ -136,7 +136,7 @@ public class DbleTable extends ManagerBaseTable {
      */
     private static LinkedHashMap initMap(SchemaConfig schemaConfig, BaseTableConfig baseTableConfig, TableType tableType, TableMeta tableMeta, TreeMap<String, SchemaConfig> schemaMap) {
         LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-        if (null == tableMeta) {
+        if (null == tableMeta && null != baseTableConfig && null != schemaConfig) {
             //config
             map.put(COLUMN_ID, PREFIX_CONFIG + baseTableConfig.getId());
             switch (tableType == null ? TableType.NO_SHARDING : tableType) {

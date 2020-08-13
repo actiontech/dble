@@ -22,7 +22,6 @@ import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -33,6 +32,7 @@ import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.HexFormatUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import org.slf4j.Logger;
@@ -388,22 +388,33 @@ public final class RouterUtil {
     public static Set<String> ruleCalculate(String schemaName, RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, boolean ignoreNull, String clientCharset) {
         Set<String> routeNodeSet = new LinkedHashSet<>();
         if (columnRoute.getColValue() != null) {
-            String value = columnRoute.getColValue();
-            //for explain
-            if (NEED_REPLACE.equals(value) || ALL_SUB_QUERY_RESULTS.equals(value) ||
-                    MIN_SUB_QUERY_RESULTS.equals(value) || MAX_SUB_QUERY_RESULTS.equals(value)) {
-                return routeNodeSet;
-            }
-            if (!ignoreNull || !columnRoute.getColValue().equalsIgnoreCase("null")) {
+            Object originValue = columnRoute.getColValue();
+            if (originValue instanceof String) {
+                String value = (String) originValue;
+                //for explain
+                if (NEED_REPLACE.equals(value) || ALL_SUB_QUERY_RESULTS.equals(value) ||
+                        MIN_SUB_QUERY_RESULTS.equals(value) || MAX_SUB_QUERY_RESULTS.equals(value)) {
+                    return routeNodeSet;
+                }
+                if (!ignoreNull || !value.equalsIgnoreCase("null")) {
+                    String shardingNode = ruleCalculateSingleValue(schemaName, tc, value, clientCharset);
+                    routeNodeSet.add(shardingNode);
+                }
+            } else if (!ignoreNull) {
                 String shardingNode = ruleCalculateSingleValue(schemaName, tc, columnRoute.getColValue(), clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         } else if (columnRoute.getInValues() != null) {
-            for (String value : columnRoute.getInValues()) {
+            for (Object value : columnRoute.getInValues()) {
                 String shardingNode = ruleCalculateSingleValue(schemaName, tc, value, clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         }
+        ruleCalculateInValue(rrs, tc, columnRoute, routeNodeSet);
+        return routeNodeSet;
+    }
+
+    private static void ruleCalculateInValue(RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, Set<String> routeNodeSet) {
         if (columnRoute.getRangeValues() != null) {
             Set<String> rangeNodeSet = new LinkedHashSet<>();
             boolean isFirst = true;
@@ -455,12 +466,12 @@ public final class RouterUtil {
                 LOGGER.trace("all ColumnRoute " + columnRoute + " merge to these node:" + routeNodeSet);
             }
         }
-        return routeNodeSet;
     }
 
-    private static String ruleCalculateSingleValue(String schemaName, ShardingTableConfig tc, String value, String clientCharset) {
-        if (value.startsWith("0x")) {
-            TableMeta orgTbMeta = null;
+    private static String ruleCalculateSingleValue(String schemaName, ShardingTableConfig tc, Object originValue, String clientCharset) {
+        String value;
+        if (originValue instanceof SQLHexExpr) {
+            TableMeta orgTbMeta;
             try {
                 orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName,
                         tc.getName());
@@ -475,10 +486,12 @@ public final class RouterUtil {
                 }
             }
             if (FieldUtil.isNumberType(dataType)) {
-                value = Long.parseLong(value.substring(2), 16) + "";
+                value = Long.parseLong(((SQLHexExpr) originValue).getHex(), 16) + "";
             } else {
-                value = HexFormatUtil.fromHex(value.substring(2), CharsetUtil.getJavaCharset(clientCharset));
+                value = HexFormatUtil.fromHex(((SQLHexExpr) originValue).getHex(), CharsetUtil.getJavaCharset(clientCharset));
             }
+        } else {
+            value = originValue.toString();
         }
         Integer nodeIndex = tc.getFunction().calculate(value);
         if (nodeIndex == null) {

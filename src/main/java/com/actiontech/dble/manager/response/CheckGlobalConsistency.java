@@ -160,6 +160,10 @@ public final class CheckGlobalConsistency {
 
 
     private void start() {
+        if (globalCheckJobs.size() == 0) {
+            response();
+            return;
+        }
         counter = new AtomicInteger(globalCheckJobs.size());
         for (GlobalCheckJob job : globalCheckJobs) {
             job.checkGlobalTable();

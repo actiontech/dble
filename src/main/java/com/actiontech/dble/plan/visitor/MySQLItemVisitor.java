@@ -56,6 +56,7 @@ import com.alibaba.druid.sql.parser.SQLExprParser;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,6 +65,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private final int charsetIndex;
     private final ProxyMetaManager metaManager;
     private Map<String, String> usrVariables;
+    private static ThreadLocal<HashMap<SQLExpr, Item>> visitCache = new InheritableThreadLocal<>();
 
     public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
         this.currentDb = currentDb;
@@ -79,13 +81,28 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private Item getItem(SQLExpr expr) {
-        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables);
-        expr.accept(fv);
-        return fv.getItem();
+        Item result = null;
+        if (visitCache.get() != null) {
+            result = visitCache.get().get(expr);
+        } else {
+            visitCache.set(new HashMap<>());
+        }
+        if (result == null) {
+            MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables);
+            expr.accept(fv);
+            result = fv.getItem();
+            visitCache.get().put(expr, result);
+        }
+
+        return result;
     }
 
     public void setItem(Item item) {
         this.item = item;
+    }
+
+    public static void clearCache() {
+        visitCache.get().clear();
     }
 
     @Override

@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class UserConfig {
+    private int id;
     protected final String name;
     protected final String password;
     protected final String passwordEncrypt;
@@ -52,6 +53,14 @@ public class UserConfig {
             result.addAll(Arrays.asList(theWhiteIPs));
         }
         return result;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {

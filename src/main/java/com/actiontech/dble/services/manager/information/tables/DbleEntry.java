@@ -26,8 +26,6 @@ public class DbleEntry extends ManagerBaseTable {
     private static final String COLUMN_MAX_CONN_COUNT = "max_conn_count";
     private static final String COLUMN_BLACKLIST = "blacklist";
 
-    private static volatile Map<String, UserConfig> userConfigCache = null;
-
     public DbleEntry() {
         super(TABLE_NAME, 11);
     }
@@ -71,12 +69,10 @@ public class DbleEntry extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        Map<String, UserConfig> userConfigs = getUserConfig();
-        Map<String, Properties> bblist = DbleServer.getInstance().getConfig().getBlacklistConfig();
-        System.out.println(bblist);
-        userConfigs.forEach((entryId, userConfig) -> {
+        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
+            UserConfig userConfig = v.getValue();
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-            map.put(COLUMN_ID, entryId);
+            map.put(COLUMN_ID, userConfig.getId() + "");
             if (userConfig instanceof ManagerUserConfig) {
                 getManagerUserConfig(map, (ManagerUserConfig) userConfig);
             } else if (userConfig instanceof ShardingUserConfig) {
@@ -134,30 +130,4 @@ public class DbleEntry extends ManagerBaseTable {
         }
         return StringUtils.join((new ArrayList<>(whiteIps)), ",");
     }
-
-    public static Map<String, UserConfig> getUserConfig() {
-        Map<String, UserConfig> tmp = userConfigCache;
-        if (tmp == null) {
-            synchronized (DbleEntry.class) {
-                tmp = userConfigCache;
-                if (tmp == null) {
-                    tmp = Maps.newLinkedHashMap();
-                    Long entryId = 0L;
-                    Map<UserName, UserConfig> map = DbleServer.getInstance().getConfig().getUsers();
-                    for (UserConfig u : map.values()) {
-                        tmp.put(++entryId + "", u);
-                    }
-                    userConfigCache = tmp;
-                }
-            }
-        }
-        return tmp;
-    }
-
-    public static void clearUserConfigCache() {
-        if (userConfigCache != null) {
-            userConfigCache = null;
-        }
-    }
-
 }

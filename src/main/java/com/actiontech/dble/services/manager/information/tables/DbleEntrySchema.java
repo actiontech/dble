@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.manager.information.tables;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
@@ -32,12 +33,12 @@ public class DbleEntrySchema extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        Map<String, UserConfig> userConfigs = DbleEntry.getUserConfig();
-        userConfigs.forEach((entryId, userConfig) -> {
+        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
+            UserConfig userConfig = v.getValue();
             if (userConfig instanceof ShardingUserConfig) {
                 for (String schema : ((ShardingUserConfig) userConfig).getSchemas()) {
                     LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                    map.put(COLUMN_ID, entryId);
+                    map.put(COLUMN_ID, userConfig.getId() + "");
                     map.put(COLUMN_SCHEMA, schema);
                     list.add(map);
                 }

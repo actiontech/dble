@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class XMLUserLoader {
@@ -36,6 +37,7 @@ public class XMLUserLoader {
     private static final String DEFAULT_DTD = "/user.dtd";
     private static final String DEFAULT_XML = "/" + ConfigFileName.USER_XML;
     private ProblemReporter problemReporter;
+    private AtomicInteger userId = new AtomicInteger(0);
 
     public XMLUserLoader(String xmlFile, ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -108,6 +110,7 @@ public class XMLUserLoader {
                 }
 
                 ManagerUserConfig managerUser = new ManagerUserConfig(baseInfo, readOnly);
+                managerUser.setId(userId.incrementAndGet());
                 users.put(user, managerUser);
             }
         }
@@ -153,6 +156,7 @@ public class XMLUserLoader {
                 UserPrivilegesConfig privilegesConfig = loadPrivileges(element);
 
                 ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo, user.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
+                shardingUser.setId(userId.incrementAndGet());
                 users.put(user, shardingUser);
             }
         }
@@ -187,6 +191,7 @@ public class XMLUserLoader {
                 }
 
                 RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo, user.getTenant(), wallProvider, dbGroup);
+                rwSplitUser.setId(userId.incrementAndGet());
                 users.put(user, rwSplitUser);
             }
         }

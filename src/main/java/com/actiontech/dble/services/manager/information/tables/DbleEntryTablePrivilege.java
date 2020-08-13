@@ -57,8 +57,8 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        Map<String, UserConfig> userConfigs = DbleEntry.getUserConfig();
-        userConfigs.forEach((entryId, userConfig) -> {
+        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
+            UserConfig userConfig = v.getValue();
             if (userConfig instanceof ShardingUserConfig) {
                 ShardingUserConfig shardingUserConfig = ((ShardingUserConfig) userConfig);
                 UserPrivilegesConfig userPrivilegesConfig = shardingUserConfig.getPrivilegesConfig();
@@ -75,7 +75,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                     tablePrivilege.forEach((tableName, tPrivilege) -> {
                                         if ((schemaConfig.isNoSharding() && tableMetas.contains(tableName)) || (!schemaConfig.isNoSharding() && tables.contains(tableName))) {
                                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, entryId);
+                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                             map.put(COLUMN_SCHEMA, schema);
                                             map.put(COLUMN_TABLE, tableName);
                                             int[] dml0 = tPrivilege.getDml();
@@ -91,7 +91,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                         int[] dml1 = sPrivilege.getDml();
                                         tableMetas.forEach(tableName -> {
                                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, entryId);
+                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                             map.put(COLUMN_SCHEMA, schema);
                                             map.put(COLUMN_TABLE, tableName);
                                             map.put(COLUMN_INSERT, dml1[0] + "");
@@ -104,7 +104,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                         int[] dml2 = sPrivilege.getDml();
                                         tables.forEach(tableName -> {
                                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, entryId);
+                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                             map.put(COLUMN_SCHEMA, schema);
                                             map.put(COLUMN_TABLE, tableName);
                                             map.put(COLUMN_INSERT, dml2[0] + "");

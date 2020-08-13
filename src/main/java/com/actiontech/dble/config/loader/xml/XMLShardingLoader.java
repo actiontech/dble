@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT;
 import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT_CRON;
@@ -44,6 +45,7 @@ public class XMLShardingLoader {
     private final Map<String, AbstractPartitionAlgorithm> functions;
     private final boolean lowerCaseNames;
     private ProblemReporter problemReporter;
+    private AtomicInteger tableIndex = new AtomicInteger();
 
     public XMLShardingLoader(String shardingFile, boolean lowerCaseNames, ProblemReporter problemReporter) {
         this.functions = new HashMap<>();
@@ -57,6 +59,10 @@ public class XMLShardingLoader {
 
     public XMLShardingLoader(boolean lowerCaseNames, ProblemReporter problemReporter) {
         this(null, lowerCaseNames, problemReporter);
+    }
+
+    public int addTableIndex() {
+        return tableIndex.incrementAndGet();
     }
 
     public Map<String, ShardingNodeConfig> getShardingNode() {
@@ -294,6 +300,7 @@ public class XMLShardingLoader {
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
+                table.setId(addTableIndex());
                 tables.put(table.getName(), table);
             }
             // child table must know its unique father
@@ -353,6 +360,7 @@ public class XMLShardingLoader {
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
+                table.setId(addTableIndex());
                 tables.put(table.getName(), table);
             }
         }
@@ -394,6 +402,7 @@ public class XMLShardingLoader {
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
+                table.setId(addTableIndex());
                 tables.put(table.getName(), table);
             }
         }
@@ -433,6 +442,7 @@ public class XMLShardingLoader {
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");
             }
+            table.setId(addTableIndex());
             tables.put(table.getName(), table);
             //child table may also have children
             processChildTables(tables, table, lstShardingNode, childTbElement, isLowerCaseNames, schemaMaxLimit);

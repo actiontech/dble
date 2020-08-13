@@ -9,6 +9,7 @@ import java.util.List;
 
 public abstract class BaseTableConfig {
 
+    private int id;
     protected final String name;
     protected final int maxLimit;
     protected final List<String> shardingNodes;
@@ -19,6 +20,13 @@ public abstract class BaseTableConfig {
         this.shardingNodes = shardingNodes;
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public String getName() {
         return name;

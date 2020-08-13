@@ -32,6 +32,11 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleShardingNode());
         registerTable(new DbleSchema());
         registerTable(new DbleThreadUsage());
+        registerTable(new DbleTable());
+        registerTable(new DbleGlobalTable());
+        registerTable(new DbleShardingTable());
+        registerTable(new DbleChildTable());
+        registerTable(new DbleTableShardingNode());
     }
 
 

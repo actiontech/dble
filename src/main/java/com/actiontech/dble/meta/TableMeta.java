@@ -4,6 +4,8 @@ import java.util.List;
 
 public final class TableMeta {
 
+    private int id;
+    private String schemaName;
     private String tableName;
     private long version;
     private String createSql;
@@ -17,6 +19,24 @@ public final class TableMeta {
         columns = origin.getColumns();
         createSql = origin.getCreateSql();
         version = newVersion;
+    }
+
+    public TableMeta(int id, String schemaName, String tableName) {
+        this.id = id;
+        this.schemaName = schemaName;
+        this.tableName = tableName;
+    }
+
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getTableName() {
@@ -61,8 +81,8 @@ public final class TableMeta {
         }
 
         TableMeta temp = (TableMeta) other;
-        return tableName.equals(temp.getTableName()) && version == temp.getVersion() &&
-                createSql.equals(temp.getCreateSql()) && columns.equals(temp.getColumns());
+        return id == temp.getId() && schemaName.equals(temp.getSchemaName()) && tableName.equals(temp.getTableName()) &&
+                version == temp.getVersion() && createSql.equals(temp.getCreateSql()) && columns.equals(temp.getColumns());
     }
 
     @Override
@@ -71,6 +91,8 @@ public final class TableMeta {
         result = 31 * result + (int) (version ^ (version >>> 32));
         result = 31 * result + createSql.hashCode();
         result = 31 * result + columns.hashCode();
+        result = 31 * result + Integer.hashCode(id);
+        result = 31 * result + schemaName.hashCode();
 
         return result;
     }

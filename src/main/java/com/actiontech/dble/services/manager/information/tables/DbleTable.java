@@ -171,7 +171,7 @@ public class DbleTable extends ManagerBaseTable {
                 default:
                     break;
             }
-        } else {
+        } else if (null != tableMeta) {
             //metadata
             map.put(COLUMN_ID, PREFIX_METADATA + tableMeta.getId());
             map.put(COLUMN_NAME, tableMeta.getTableName());

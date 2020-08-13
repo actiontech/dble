@@ -29,6 +29,7 @@ public class GlobalCheckJob implements Job {
     private volatile String schema;
     private volatile CheckGlobalConsistency handler;
 
+    //used for Quartz job
     public GlobalCheckJob() {
     }
 
@@ -83,7 +84,7 @@ public class GlobalCheckJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        tc = (GlobalTableConfig) context.getJobDetail().getJobDataMap().get("TableConfig");
+        tc = (GlobalTableConfig) context.getJobDetail().getJobDataMap().get("tableConfig");
         schema = (String) context.getJobDetail().getJobDataMap().get("schema");
         //handler = null;
         this.checkGlobalTable();

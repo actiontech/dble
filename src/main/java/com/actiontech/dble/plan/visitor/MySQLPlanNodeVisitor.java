@@ -69,6 +69,7 @@ public class MySQLPlanNodeVisitor {
         mtv.visit(sqlSelect);
         this.tableNode = mtv.getTableNode();
         this.containSchema = mtv.isContainSchema();
+        MySQLItemVisitor.clearCache();
         return true;
     }
 

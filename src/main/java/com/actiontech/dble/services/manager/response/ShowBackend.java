@@ -15,8 +15,9 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.*;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -192,6 +193,9 @@ public final class ShowBackend {
 
     private static RowDataPacket getRow(BackendConnection c, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        if (c.getService() instanceof AuthService) {
+            return null;
+        }
         int state = c.getState();
         row.add(c.getProcessor().getName().getBytes());
         row.add(LongUtil.toBytes(c.getId()));

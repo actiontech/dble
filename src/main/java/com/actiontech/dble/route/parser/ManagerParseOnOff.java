@@ -17,6 +17,7 @@ public final class ManagerParseOnOff {
     public static final int SLOW_QUERY_LOG = 1;
     public static final int ALERT = 2;
     public static final int CUSTOM_MYSQL_HA = 3;
+    public static final int CAP_CLIENT_FOUND_ROWS = 4;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -79,9 +80,15 @@ public final class ManagerParseOnOff {
     }
 
 
-    // enable/disable @@custom_mysql_ha
     private static int cCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 14) {
+        if (stmt.length() > offset + 20) {
+            // enable/disable @@cap_client_found_rows
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("CAP_CLIENT_FOUND_ROWS") && (stmt.length() == offset + 21 || ParseUtil.isEOF(stmt, offset + 21))) {
+                return CAP_CLIENT_FOUND_ROWS;
+            }
+        } else if (stmt.length() > offset + 14) {
+            // enable/disable @@custom_mysql_ha
             String prefix = stmt.substring(offset).toUpperCase();
             if (prefix.startsWith("CUSTOM_MYSQL_HA") && (stmt.length() == offset + 15 || ParseUtil.isEOF(stmt, offset + 15))) {
                 return CUSTOM_MYSQL_HA;

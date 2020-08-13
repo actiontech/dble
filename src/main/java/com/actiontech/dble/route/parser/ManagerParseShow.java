@@ -77,6 +77,7 @@ public final class ManagerParseShow {
     public static final int SHOW_QUESTIONS = 67;
     public static final int DATADISTRIBUTION_WHERE = 68;
     public static final int CONNECTION_POOL_PROPERTY = 69;
+    public static final int CAP_CLIENT_FOUND_ROWS = 70;
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
@@ -446,11 +447,13 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@CACHE
+    // SHOW @@CACHE || SHOW @@CAP_CLIENT_FOUND_ROWS
     private static int show2CACheck(String stmt, int offset) {
         String remain = stmt.substring(offset);
         if (remain.equalsIgnoreCase("ACHE")) {
             return CACHE;
+        } else if (remain.equalsIgnoreCase("AP_CLIENT_FOUND_ROWS")) {
+            return CAP_CLIENT_FOUND_ROWS;
         }
         return OTHER;
     }

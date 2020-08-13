@@ -17,6 +17,7 @@ import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DDLChildListener;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupResponseListener;
@@ -389,6 +390,8 @@ public class ProxyMetaManager {
                 }
                 //add watcher
                 ZKUtils.addChildPathCache(ClusterPathUtil.getViewChangePath(), new ViewChildListener());
+            } else {
+                ClusterToXml.startMetaListener();
             }
             // syncMeta UNLOCK
             DistributeLockManager.releaseLock(ClusterPathUtil.getSyncMetaLockPath());

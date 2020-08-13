@@ -83,7 +83,7 @@ public final class ReloadConfig {
         try {
             DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
             if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
                 return;
             }
             LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
@@ -301,7 +301,7 @@ public final class ReloadConfig {
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, addOrChangeHosts, recycleHosts, newErRelations,
+                    result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations,
                             newSystemVariables, loader.isFullyConfigured(), loadAllMode);
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
@@ -396,7 +396,7 @@ public final class ReloadConfig {
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, newDbGroups, config.getDbGroups(), newErRelations,
+                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations,
                             newSystemVariables, loader.isFullyConfigured(), loadAllMode);
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {

@@ -65,17 +65,13 @@ public class ConfigStatusListener implements PathChildrenCacheListener {
             return; //self node
         }
         LOGGER.info("ConfigStatusListener notifyProcess zk to object  :" + status);
-        if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
-            ClusterLogic.rollbackConfigEvent(value);
-        } else {
-            for (NotifyService service : childService) {
-                try {
-                    service.notifyProcess();
-                } catch (Exception e) {
-                    LOGGER.warn("ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
-                }
+        for (NotifyService service : childService) {
+            try {
+                service.notifyProcess();
+            } catch (Exception e) {
+                LOGGER.warn("ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
             }
-            ClusterLogic.reloadConfigEvent(value, status.getParams());
         }
+        ClusterLogic.reloadConfigEvent(value, status.getParams());
     }
 }

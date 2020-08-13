@@ -56,6 +56,7 @@ public final class SystemConfig {
     private int maxCon = 0;
     //option
     private int useCompression = 0;
+    private boolean capClientFoundRows = false;
     private int usingAIO = 0;
     private int useThreadUsageStat = 0;
     private int usePerformanceMode = 0;
@@ -299,6 +300,14 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "useCompression", useCompression, this.useCompression));
         }
+    }
+
+    public boolean isCapClientFoundRows() {
+        return capClientFoundRows;
+    }
+
+    public void setCapClientFoundRows(boolean capClientFoundRows) {
+        this.capClientFoundRows = capClientFoundRows;
     }
 
     public String getCharset() {
@@ -1193,6 +1202,7 @@ public final class SystemConfig {
                 ", serverBacklog=" + serverBacklog +
                 ", maxCon=" + maxCon +
                 ", useCompression=" + useCompression +
+                ", capClientFoundRows=" + capClientFoundRows +
                 ", usingAIO=" + usingAIO +
                 ", useThreadUsageStat=" + useThreadUsageStat +
                 ", usePerformanceMode=" + usePerformanceMode +

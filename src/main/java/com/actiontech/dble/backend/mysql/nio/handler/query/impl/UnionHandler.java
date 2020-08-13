@@ -78,7 +78,7 @@ public class UnionHandler extends BaseDMLHandler {
             }
         } catch (Exception e) {
             String msg = "Union field merge error, " + e.getLocalizedMessage();
-            LOGGER.info(msg, e);
+            LOGGER.warn(msg, e);
             conFieldSend.signalAll();
             session.onQueryError(msg.getBytes());
         } finally {

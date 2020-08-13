@@ -23,7 +23,7 @@ public final class Heartbeat {
     private Heartbeat() {
     }
 
-    private static final Logger HEARTBEAT = LoggerFactory.getLogger("heartbeat");
+    private static final Logger LOGGER = LoggerFactory.getLogger(Heartbeat.class);
 
     public static void response(ShardingService service, byte[] data) {
         HeartbeatPacket hp = new HeartbeatPacket();
@@ -34,8 +34,8 @@ public final class Heartbeat {
             ok.setAffectedRows(hp.getId());
             ok.setServerStatus(2);
             ok.write(service.getConnection());
-            if (HEARTBEAT.isDebugEnabled()) {
-                HEARTBEAT.debug(responseMessage("OK", service, hp.getId()));
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug(responseMessage("OK", service, hp.getId()));
             }
         } else {
             ErrorPacket error = new ErrorPacket();
@@ -43,8 +43,8 @@ public final class Heartbeat {
             error.setErrNo(ErrorCode.ER_SERVER_SHUTDOWN);
             error.setMessage(String.valueOf(hp.getId()).getBytes());
             error.write(service.getConnection());
-            if (HEARTBEAT.isInfoEnabled()) {
-                HEARTBEAT.info(responseMessage("ERROR", service, hp.getId()));
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(responseMessage("ERROR", service, hp.getId()));
             }
         }
     }

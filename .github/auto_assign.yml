@@ -6,9 +6,10 @@ addAssignees: false
 
 # A list of reviewers to be added to pull requests (GitHub user name)
 reviewers:
-  - yanhuqing666
   - sunsun314
-  - Baofengqi
+  - PanternBao
+  - LUAgam
+  - wenyh1
 
 # A number of reviewers added to the pull request
 # Set 0 to add all the reviewers (default: 0)

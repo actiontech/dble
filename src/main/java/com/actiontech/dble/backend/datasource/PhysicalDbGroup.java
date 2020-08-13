@@ -119,6 +119,10 @@ public class PhysicalDbGroup {
         return !(writeDbInstance == ds);
     }
 
+    public int getRwSplitMode() {
+        return rwSplitMode;
+    }
+
     public PhysicalDbInstance getWriteDbInstance() {
         return writeDbInstance;
     }
@@ -134,7 +138,7 @@ public class PhysicalDbGroup {
         }
     }
 
-    public void init(String[] sourceNames, String reason, boolean isFresh) {
+    public void init(List<String> sourceNames, String reason, boolean isFresh) {
         if (rwSplitMode == 0) {
             writeDbInstance.init(reason, isFresh);
             return;
@@ -157,7 +161,7 @@ public class PhysicalDbGroup {
         }
     }
 
-    public void stop(String[] sourceNames, String reason, boolean closeFront) {
+    public void stop(List<String> sourceNames, String reason, boolean closeFront) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
                 allSourceMap.get(sourceName).stop(reason, closeFront);
@@ -170,7 +174,7 @@ public class PhysicalDbGroup {
                 PooledConnection con = iterator.next();
                 if (con instanceof BackendConnection) {
                     BackendConnection backendCon = (BackendConnection) con;
-                    if (backendCon.getPoolDestroyedTime() != 0 && Arrays.asList(sourceNames).contains(backendCon.getInstance().getConfig().getInstanceName())) {
+                    if (backendCon.getPoolDestroyedTime() != 0 && sourceNames.contains(backendCon.getInstance().getConfig().getInstanceName())) {
                         backendCon.closeWithFront("old active backend conn will be forced closed by closing front conn");
                         iterator.remove();
                     }

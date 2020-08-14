@@ -92,7 +92,9 @@ public final class TableMeta {
         result = 31 * result + createSql.hashCode();
         result = 31 * result + columns.hashCode();
         result = 31 * result + Integer.hashCode(id);
-        result = 31 * result + schemaName.hashCode();
+        if (null != schemaName) {
+            result = 31 * result + schemaName.hashCode();
+        }
 
         return result;
     }

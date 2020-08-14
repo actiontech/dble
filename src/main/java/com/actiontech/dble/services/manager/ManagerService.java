@@ -29,6 +29,7 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
 
     protected UserName user;
 
+    private volatile String executeSql;
     private volatile String schema;
 
     private final ManagerSession session;
@@ -103,7 +104,7 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
 
     @Override
     public String getExecuteSql() {
-        return "";
+        return executeSql;
     }
 
 
@@ -113,6 +114,7 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
             MySQLMessage mm = new MySQLMessage(data);
             mm.position(5);
             sql = mm.readString(charsetName.getClient());
+            executeSql = sql;
         } catch (UnsupportedEncodingException e) {
             throw e;
         }

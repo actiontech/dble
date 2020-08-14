@@ -43,6 +43,7 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile Map<String, PhysicalDbGroup> dbGroups;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile boolean fullyConfigured = false;
+    private volatile Map<String, Properties> blacklistConfig;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
@@ -62,6 +63,7 @@ public class ConfigInitializer implements ProblemReporter {
             //load user.xml
             XMLUserLoader userLoader = new XMLUserLoader(null, this);
             this.users = userLoader.getUsers();
+            this.blacklistConfig = userLoader.getBlacklistConfig();
 
             deleteRedundancyConf();
             checkWriteHost();
@@ -312,6 +314,10 @@ public class ConfigInitializer implements ProblemReporter {
 
     public Map<UserName, UserConfig> getUsers() {
         return users;
+    }
+
+    public Map<String, Properties> getBlacklistConfig() {
+        return this.blacklistConfig;
     }
 
     public Map<String, SchemaConfig> getSchemas() {

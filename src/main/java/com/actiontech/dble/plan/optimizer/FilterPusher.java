@@ -68,11 +68,11 @@ public final class FilterPusher {
     }
 
     public static PlanNode optimize(PlanNode qtn) {
-        TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-flter-push-down");
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-filter-push-down");
         try {
             mergeJoinOnFilter(qtn);
             qtn = pushJoinOnFilter(qtn);
-            qtn = pushFilter(qtn, new ArrayList<Item>());
+            qtn = pushFilter(qtn, new ArrayList<>());
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
@@ -83,8 +83,6 @@ public final class FilterPusher {
     /**
      * merge inner joi's otheron to where if we can
      *
-     * @param qtn
-     * @return
      */
     private static void mergeJoinOnFilter(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))
@@ -275,8 +273,7 @@ public final class FilterPusher {
                         Item copyedFilter = copyFilterToJoinOnColumns(filter, jn.getRightKeys(), jn.getLeftKeys());
                         if (copyedFilter != null)
                             pushToRightNode.add(copyedFilter);
-                    } else
-                        continue;
+                    }
                 }
                 if (!pushToRightNode.isEmpty()) {
                     splitedFilters.removeAll(pushToRightNode);
@@ -309,7 +306,7 @@ public final class FilterPusher {
      *
      * @param dnf          DNF filter to be copied
      * @param qnColumns    origin node's join column
-     * @param otherColumns
+     * @param otherColumns otherColumns
      */
     private static List<Item> copyFilterToJoinOnColumns(List<Item> dnf, List<Item> qnColumns, List<Item> otherColumns) {
         List<Item> newIFilterToPush = new LinkedList<>();
@@ -341,12 +338,9 @@ public final class FilterPusher {
     /**
      * replaceFunctionArg
      *
-     * @param f
-     * @param sels1
-     * @param sels2
      * @return if f also contains selectable which is not sels1 ,return null
      */
-    public static ItemFunc replaceFunctionArg(ItemFunc f, List<Item> sels1, List<Item> sels2) {
+    private static ItemFunc replaceFunctionArg(ItemFunc f, List<Item> sels1, List<Item> sels2) {
         ItemFunc ret = (ItemFunc) f.cloneStruct();
         boolean hasFieldInFunc = false;
         for (int index = 0; index < ret.getArgCount(); index++) {
@@ -366,9 +360,7 @@ public final class FilterPusher {
                     Item newArg = sels2.get(tmpIndex);
                     ret.arguments().set(index, newArg.cloneStruct());
                 }
-            } else {
-                // do nothing;
-            }
+            }  // else do nothing;
         }
         if (!hasFieldInFunc) {
             return null;

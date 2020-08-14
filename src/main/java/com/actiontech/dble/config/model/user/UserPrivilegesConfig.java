@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.config.model.user;
 
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +37,9 @@ public class UserPrivilegesConfig {
         return schemaPrivileges.get(schemaName);
     }
 
+    public Map<String, SchemaPrivilege> getSchemaPrivileges() {
+        return schemaPrivileges;
+    }
 
     public void changeMapToLowerCase() {
         Map<String, SchemaPrivilege> newSchemaPrivileges = new HashMap<>();
@@ -66,6 +68,10 @@ public class UserPrivilegesConfig {
 
         public void addTablePrivilege(String tableName, TablePrivilege privilege) {
             this.tablePrivileges.put(tableName, privilege);
+        }
+
+        public Map<String, TablePrivilege> getTablePrivileges() {
+            return tablePrivileges;
         }
 
         public void changeMapToLowerCase() {

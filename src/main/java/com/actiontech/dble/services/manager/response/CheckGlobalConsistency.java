@@ -160,6 +160,10 @@ public final class CheckGlobalConsistency {
     private void start() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("global-check-start");
         try {
+            if (globalCheckJobs.size() == 0) {
+                response();
+                return;
+            }
             counter = new AtomicInteger(globalCheckJobs.size());
             for (GlobalCheckJob job : globalCheckJobs) {
                 job.checkGlobalTable();

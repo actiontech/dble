@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -27,6 +27,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
@@ -42,6 +44,8 @@ import java.util.regex.Pattern;
  * @author zhuam
  */
 public final class SetHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SetHandler.class);
+
     private SetHandler() {
     }
 
@@ -525,6 +529,9 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleAutocommit(String stmt, ServerConnection c, SQLExpr valueExpr) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("set AutoCommit start:{}", c.toString());
+        }
         Boolean switchStatus = isSwitchOn(valueExpr);
         if (switchStatus == null) {
             c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'AUTOCOMMIT'");
@@ -542,6 +549,9 @@ public final class SetHandler {
                 TxnLogHelper.putTxnLog(c, stmt);
             }
             c.write(c.writeToBuffer(AC_OFF, c.allocate()));
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("set AutoCommit end:{}", c.toString());
         }
         return true;
     }

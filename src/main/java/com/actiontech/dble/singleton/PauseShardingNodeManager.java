@@ -45,7 +45,7 @@ public final class PauseShardingNodeManager {
     private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
-    private DistributeLock distributeLock = null;
+    private volatile DistributeLock distributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 
@@ -253,9 +253,25 @@ public final class PauseShardingNodeManager {
 
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
-            distributeLock.release();
         }
 
+    }
+
+    public void releaseDistributeLock() {
+        if (distributeLock != null) {
+            distributeLock.release();
+            distributeLock = null;
+        }
+    }
+
+
+    public boolean getDistributeLock() {
+        distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
+                SystemConfig.getInstance().getInstanceName());
+        if (!distributeLock.acquire()) {
+            return false;
+        }
+        return true;
     }
 
     public Set<String> getShardingNodes() {

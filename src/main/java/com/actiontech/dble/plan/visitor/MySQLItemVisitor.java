@@ -65,7 +65,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private final int charsetIndex;
     private final ProxyMetaManager metaManager;
     private Map<String, String> usrVariables;
-    private static ThreadLocal<HashMap<SQLExpr, Item>> visitCache = new InheritableThreadLocal<>();
+    private static ThreadLocal<HashMap<SQLExprWrapper, Item>> visitCache = new InheritableThreadLocal<>();
 
     public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
         this.currentDb = currentDb;
@@ -82,8 +82,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     private Item getItem(SQLExpr expr) {
         Item result = null;
+        SQLExprWrapper key = new SQLExprWrapper(expr);
         if (visitCache.get() != null) {
-            result = visitCache.get().get(expr);
+            result = visitCache.get().get(key);
         } else {
             visitCache.set(new HashMap<>());
         }
@@ -91,7 +92,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables);
             expr.accept(fv);
             result = fv.getItem();
-            visitCache.get().put(expr, result);
+            visitCache.get().put(key, result);
         }
 
         return result;
@@ -955,5 +956,31 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         ov.setShardingSupport(false);
         expr.accept(ov);
         item.setItemName(sb.toString());
+    }
+
+    private static class SQLExprWrapper {
+
+        private final SQLExpr expr;
+
+        SQLExprWrapper(SQLExpr expr) {
+            this.expr = expr;
+        }
+
+        public SQLExpr getExpr() {
+            return expr;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof SQLExprWrapper) {
+                return expr == ((SQLExprWrapper) obj).getExpr();
+            }
+            return false;
+        }
+
+        @Override
+        public int hashCode() {
+            return expr.hashCode();
+        }
     }
 }

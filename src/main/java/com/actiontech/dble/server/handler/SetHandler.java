@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -529,7 +529,9 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleAutocommit(String stmt, ServerConnection c, SQLExpr valueExpr) {
-        LOGGER.debug("set AutoCommit start:{}", c.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("set AutoCommit start:{}", c.toString());
+        }
         Boolean switchStatus = isSwitchOn(valueExpr);
         if (switchStatus == null) {
             c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'AUTOCOMMIT'");
@@ -548,7 +550,9 @@ public final class SetHandler {
             }
             c.write(c.writeToBuffer(AC_OFF, c.allocate()));
         }
-        LOGGER.debug("set AutoCommit end:{}", c.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("set AutoCommit end:{}", c.toString());
+        }
         return true;
     }
 

@@ -27,6 +27,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
@@ -42,6 +44,8 @@ import java.util.regex.Pattern;
  * @author zhuam
  */
 public final class SetHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SetHandler.class);
+
     private SetHandler() {
     }
 
@@ -525,6 +529,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleAutocommit(String stmt, ServerConnection c, SQLExpr valueExpr) {
+        LOGGER.debug("20200814 set AutoCommit start:{}", c.toString());
         Boolean switchStatus = isSwitchOn(valueExpr);
         if (switchStatus == null) {
             c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'AUTOCOMMIT'");
@@ -543,6 +548,7 @@ public final class SetHandler {
             }
             c.write(c.writeToBuffer(AC_OFF, c.allocate()));
         }
+        LOGGER.debug("20200814 set AutoCommit end:{}", c.toString());
         return true;
     }
 

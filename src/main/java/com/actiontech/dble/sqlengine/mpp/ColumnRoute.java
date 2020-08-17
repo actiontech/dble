@@ -10,9 +10,9 @@ import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import java.util.HashSet;
 
 public class ColumnRoute {
-    private String colValue = null;
+    private Object colValue = null;
     private HashSet<RangeValue> rangeValues = null;
-    private HashSet<String> inValues = null;
+    private HashSet<Object> inValues = null;
     private boolean alwaysFalse = false;
 
 
@@ -20,7 +20,7 @@ public class ColumnRoute {
         this.alwaysFalse = alwaysFalse;
     }
 
-    public ColumnRoute(String colValue) {
+    public ColumnRoute(Object colValue) {
         this.colValue = colValue;
     }
 
@@ -47,7 +47,7 @@ public class ColumnRoute {
     }
 
 
-    public ColumnRoute(HashSet<String> inValues) {
+    public ColumnRoute(HashSet<Object> inValues) {
         this.inValues = inValues;
     }
 
@@ -56,11 +56,11 @@ public class ColumnRoute {
         return alwaysFalse;
     }
 
-    public String getColValue() {
+    public Object getColValue() {
         return colValue;
     }
 
-    public void setColValue(String colValue) {
+    public void setColValue(Object colValue) {
         this.colValue = colValue;
     }
 
@@ -68,11 +68,11 @@ public class ColumnRoute {
         return rangeValues;
     }
 
-    public HashSet<String> getInValues() {
+    public HashSet<Object> getInValues() {
         return inValues;
     }
 
-    public void setInValues(HashSet<String> inValues) {
+    public void setInValues(HashSet<Object> inValues) {
         this.inValues = inValues;
     }
 

@@ -193,13 +193,13 @@ public class RouteCalculateUnit {
     private ColumnRoute changeValueToColumnRoute(Object value) {
         ColumnRoute columnValue = null;
         if (value instanceof Object[]) { //in
-            HashSet<String> inValues = new HashSet<>();
+            HashSet<Object> inValues = new HashSet<>();
             for (Object item : (Object[]) value) {
                 if (item == null) {
                     columnValue = new ColumnRoute(true);
                     break;
                 }
-                inValues.add(item.toString());
+                inValues.add(item);
             }
             if (columnValue == null) {
                 columnValue = new ColumnRoute(inValues);
@@ -209,7 +209,7 @@ public class RouteCalculateUnit {
         } else if (value instanceof IsValue) { //is
             columnValue = new ColumnRoute((IsValue) value);
         } else { // =
-            columnValue = new ColumnRoute(value.toString());
+            columnValue = new ColumnRoute(value);
         }
         return columnValue;
     }

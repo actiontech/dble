@@ -11,7 +11,7 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
-import com.actiontech.dble.manager.handler.WriteDynamicBootstrap;
+import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;

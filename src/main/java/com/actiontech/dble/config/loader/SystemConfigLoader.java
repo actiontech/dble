@@ -11,6 +11,7 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
+import com.actiontech.dble.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -18,11 +19,7 @@ import com.actiontech.dble.util.SystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
@@ -30,7 +27,7 @@ public final class SystemConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfigLoader.class);
     private static final String BOOT_STRAP_FILE_NAME = "/bootstrap.cnf";
     public static final String BOOT_STRAP_DYNAMIC_FILE_NAME = "/bootstrap.dynamic.cnf";
-    public static final String LOCAL_WRITE_PATH = "./";
+    private static final String LOCAL_WRITE_PATH = "./";
 
     private SystemConfigLoader() {
     }
@@ -166,7 +163,14 @@ public final class SystemConfigLoader {
             }
         }
         if (ClusterConfig.getInstance().isClusterEnable() && !systemConfig.isUseOuterHa()) {
-            StartProblemReporter.getInstance().addError("when use cluster mode, you can not use simple python ha, so please set useOuterHa=true in bootstrap.cnf");
+            systemConfig.setUseOuterHa(true);
+            LOGGER.warn("when use cluster mode, you can not use simple python ha, so dble will set useOuterHa=true to bootstrap.dynamic.cnf");
+            try {
+                WriteDynamicBootstrap.getInstance().changeValue("useOuterHa", "true");
+            } catch (IOException e) {
+                LOGGER.warn("setting useOuterHa=true to bootstrap.dynamic.cnf failed", e);
+                StartProblemReporter.getInstance().addError("setting useOuterHa=true to bootstrap.dynamic.cnf failed");
+            }
         }
     }
 

@@ -198,11 +198,12 @@ public final class PauseShardingNodeManager {
             try {
                 DistributeLock templock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
                         SystemConfig.getInstance().getInstanceName());
-                if (!templock.acquire() || this.isPausing.get()) {
+                if (!templock.acquire()) {
+                    return false;
+                } else if (this.isPausing.get()) {
                     templock.release();
                     return false;
                 }
-
                 distributeLock = templock;
                 ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(),
                         new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());

@@ -72,20 +72,19 @@ public final class PauseStart {
             }
         }
 
-
         //clusterPauseNotice
         if (!PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit)) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }
 
-
-        if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
-            return;
-        }
-
         try {
+            if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
+                //the error message can only show in single mod
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
+                return;
+            }
+
             //self pause the shardingNode
             long timeOut = Long.parseLong(ma.group(2)) * 1000;
             long beginTime = System.currentTimeMillis();
@@ -103,7 +102,6 @@ public final class PauseStart {
                 } else {
                     service.writeErrMessage(1003, "Pause resume when recycle connection ,pause revert");
                 }
-
             } else {
                 try {
                     if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {

@@ -141,6 +141,9 @@ public class SchemaConfig {
     public Map<String, BaseTableConfig> getTables() {
         return tables;
     }
+    public BaseTableConfig getTable(String tableName) {
+        return tables.get(tableName);
+    }
 
     private Map<String, BaseTableConfig> getLowerCaseTables() {
         Map<String, BaseTableConfig> newTables = new HashMap<>();

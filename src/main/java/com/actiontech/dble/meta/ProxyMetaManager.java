@@ -63,6 +63,7 @@ public class ProxyMetaManager {
     private volatile Repository repository = null;
     private AtomicInteger version = new AtomicInteger(0);
     private long timestamp;
+    private AtomicInteger tableIndex = new AtomicInteger();
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
@@ -79,6 +80,7 @@ public class ProxyMetaManager {
         this.metaCount = origin.metaCount;
         this.repository = origin.repository;
         this.version = origin.version;
+        this.tableIndex = origin.tableIndex;
         for (Map.Entry<String, SchemaMeta> entry : origin.catalogs.entrySet()) {
             catalogs.put(entry.getKey(), entry.getValue().metaCopy());
         }
@@ -198,6 +200,7 @@ public class ProxyMetaManager {
         String tbName = tm.getTableName();
         SchemaMeta schemaMeta = catalogs.get(schema);
         if (schemaMeta != null) {
+            tm.setId(tableIndex.incrementAndGet());
             schemaMeta.addTableMeta(tbName, tm);
         }
     }

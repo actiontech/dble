@@ -21,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -53,8 +52,7 @@ public abstract class PhysicalDbInstance {
     private ConnectionPool connectionPool;
     protected MySQLHeartbeat heartbeat;
     private volatile long heartbeatRecoveryTime;
-    private volatile boolean needSkipEvit = false;
-
+    private volatile boolean needSkipEvict = false;
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
         this.config = config;
@@ -115,18 +113,31 @@ public abstract class PhysicalDbInstance {
             throw new IOException("primary dbInstance switched");
         }
 
+        final BackendConnection con = connectionPool.borrowDirectly();
+        if (con != null) {
+            if (!StringUtil.equals(con.getSchema(), schema)) {
+                // need do sharding syn in before sql send
+                con.setSchema(schema);
+            }
+            con.setAttachment(attachment);
+            handler.connectionAcquired(con);
+            return;
+        }
+
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                BackendConnection con;
                 try {
-                    con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+                    final BackendConnection con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+                    if (!StringUtil.equals(con.getSchema(), schema)) {
+                        // need do sharding syn in before sql send
+                        con.setSchema(schema);
+                    }
+                    con.setAttachment(attachment);
+                    handler.connectionAcquired(con);
                 } catch (IOException e) {
                     handler.connectionError(e, attachment);
-                    return;
                 }
-                con.setAttachment(attachment);
-                handler.connectionAcquired(con);
             }
         });
     }
@@ -140,7 +151,7 @@ public abstract class PhysicalDbInstance {
 
     public BackendConnection getConnection(final String schema, final long hardTimeout) throws IOException {
         if (this.connectionPool == null) {
-            throw new IOException("connection pool isn't initalized");
+            throw new IOException("connection pool isn't initialized");
         }
 
         if (disabled.get()) {
@@ -166,11 +177,6 @@ public abstract class PhysicalDbInstance {
                         timeout = hardTimeout - (now - startTime);
                         continue;
                     }
-                }
-
-                if (!StringUtil.equals(conn.getSchema(), schema)) {
-                    // need do sharding syn in before sql send
-                    conn.setSchema(schema);
                 }
                 return conn;
 
@@ -339,7 +345,7 @@ public abstract class PhysicalDbInstance {
                     heartbeat.heartbeat();
                 }
             }
-        }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+        }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), MILLISECONDS));
     }
 
     public void start(String reason) {
@@ -356,9 +362,9 @@ public abstract class PhysicalDbInstance {
     }
 
     public void closeAllConnection(String reason) {
-        this.needSkipEvit = true;
+        this.needSkipEvict = true;
         this.connectionPool.closeAllConnections(reason);
-        this.needSkipEvit = false;
+        this.needSkipEvict = false;
     }
 
     public boolean isAlive() {
@@ -366,7 +372,7 @@ public abstract class PhysicalDbInstance {
     }
 
     public boolean skipEvit() {
-        return !isAlive() && needSkipEvit;
+        return !isAlive() && needSkipEvict;
     }
 
     public boolean isDisabled() {

@@ -19,22 +19,25 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.actiontech.dble.backend.mysql.nio.MySQLConnection.*;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 
 public class ConnectionPool extends PoolBase implements MySQLConnectionListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
 
-    private final QueuedSequenceSynchronizer synchronizer;
     private final AtomicInteger waiters;
     private final CopyOnWriteArrayList<BackendConnection> allConnections;
     private final AtomicInteger totalConnections = new AtomicInteger();
-
+    private final SynchronousQueue<BackendConnection> handoffQueue;
     // evictor
     private final WeakReference<ClassLoader> factoryClassLoader;
     private volatile Evictor evictor = null;
@@ -53,64 +56,64 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
             factoryClassLoader = new WeakReference<>(cl);
         }
 
-        this.synchronizer = new QueuedSequenceSynchronizer();
+        this.handoffQueue = new SynchronousQueue<>(true);
         this.waiters = new AtomicInteger();
         this.allConnections = new CopyOnWriteArrayList<>();
         this.poolConfig = config.getPoolConfig();
     }
 
+    public BackendConnection borrowDirectly() {
+        for (BackendConnection conn : allConnections) {
+            if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                return conn;
+            }
+        }
+        return null;
+    }
+
     public BackendConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
 
-        timeout = timeUnit.toNanos(timeout);
-        final long startScan = System.nanoTime();
-        final long originTimeout = timeout;
-        BackendConnection createEntry = null;
-        long startSeq;
+        for (BackendConnection conn : allConnections) {
+            if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                return conn;
+            }
+        }
+
         waiters.incrementAndGet();
         try {
+            newPooledEntry(schema);
+
+            timeout = timeUnit.toNanos(timeout);
             do {
-                do {
-                    startSeq = synchronizer.currentSequence();
-                    for (BackendConnection entry : allConnections) {
-                        if (entry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                            // if we might have stolen another thread's new connection, restart the add...
-                            if (waiters.get() > 1 && createEntry == null) {
-                                newPooledEntry(schema);
-                            }
-                            return entry;
-                        }
-                    }
-
-                } while (startSeq < synchronizer.currentSequence());
-
-                if (createEntry == null || createEntry.getState() != INITIAL) {
-                    createEntry = newPooledEntry(schema);
+                final long start = System.nanoTime();
+                final BackendConnection bagEntry = handoffQueue.poll(timeout, NANOSECONDS);
+                if (bagEntry == null || bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                    return bagEntry;
                 }
 
-                timeout = originTimeout - (System.nanoTime() - startScan);
-            } while (timeout > 10_000L && synchronizer.waitUntilSequenceExceeded(startSeq, timeout));
+                timeout -= (System.nanoTime() - start);
+            } while (timeout > 10_000);
+
+            return null;
         } finally {
             waiters.decrementAndGet();
         }
-
-        return null;
     }
 
     /**
      * Create a new pooled object.
      *
      * @param schema Key associated with new pooled object
-     * @return The new, wrapped pooled object
      */
-    private BackendConnection newPooledEntry(final String schema) {
+    private void newPooledEntry(final String schema) {
         if (instance.isDisabled() || isClosed.get()) {
-            return null;
+            return;
         }
 
         if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
             final BackendConnection conn = newConnection(schema, ConnectionPool.this);
             if (conn != null) {
-                return conn;
+                return;
             }
         }
 
@@ -121,8 +124,6 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
         ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
-
-        return null;
     }
 
 
@@ -134,7 +135,15 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         }
 
         conn.lazySet(STATE_NOT_IN_USE);
-        synchronizer.signal();
+        for (int i = 0; waiters.get() > 0; i++) {
+            if (conn.getState() != STATE_NOT_IN_USE || handoffQueue.offer(conn)) {
+                return;
+            } else if ((i & 0xff) == 0xff) {
+                parkNanos(MICROSECONDS.toNanos(10));
+            } else {
+                Thread.yield();
+            }
+        }
     }
 
     private void fillPool() {
@@ -150,21 +159,6 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         }
     }
 
-    /**
-     * Calculate the number of objects to test in a run of the idle object
-     * evictor.
-     *
-     * @return The number of objects to test for validity
-     */
-    private int getNumTests() {
-        final int totalIdle = getCount(STATE_NOT_IN_USE);
-        final int numTests = poolConfig.getNumTestsPerEvictionRun();
-        if (numTests >= 0) {
-            return Math.min(numTests, totalIdle);
-        }
-        return (int) (Math.ceil(totalIdle / Math.abs((double) numTests)));
-    }
-
     @Override
     public void onCreateSuccess(BackendConnection conn) {
         conn.setDbInstance(instance);
@@ -176,7 +170,10 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         }
 
         conn.lazySet(STATE_NOT_IN_USE);
-        synchronizer.signal();
+        // spin until a thread takes it or none are waiting
+        while (waiters.get() > 0 && conn.getState() == STATE_NOT_IN_USE && !handoffQueue.offer(conn)) {
+            Thread.yield();
+        }
 
         if (ToResolveContainer.CREATE_CONN_FAIL.contains(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName())) {
             Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
@@ -201,7 +198,6 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     @Override
     public void onHeartbeatSuccess(BackendConnection conn) {
         conn.lazySet(STATE_NOT_IN_USE);
-        synchronizer.signal();
     }
 
     public int getCount(final int... states) {
@@ -251,18 +247,11 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     }
 
     private boolean remove(final BackendConnection pooledEntry) {
-        //        if (!pooledEntry.compareAndSet(STATE_IN_USE, STATE_REMOVED) && !pooledEntry.compareAndSet(STATE_RESERVED, STATE_REMOVED) &&
-        //                !pooledEntry.compareAndSet(STATE_HEARTBEAT, STATE_REMOVED) && !isClosed.get()) {
-        //            LOGGER.warn("Attempt to remove an object that was not borrowed or reserved: {}", pooledEntry);
-        //            return false;
-        //        }
-
         final boolean removed = allConnections.remove(pooledEntry);
         if (!removed) {
             LOGGER.warn("Attempt to remove an object from the bag that does not exist: {}", pooledEntry);
         }
 
-        // synchronizer.signal();
         return removed;
     }
 
@@ -337,7 +326,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     }
 
     public final int getThreadsAwaitingConnection() {
-        return synchronizer.getQueueLength();
+        return waiters.get();
     }
 
     /**

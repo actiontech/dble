@@ -124,11 +124,6 @@ public class PhysicalDbGroup {
     }
 
     public void init(String reason) {
-        if (rwSplitMode == 0) {
-            writeDbInstance.init(reason);
-            return;
-        }
-
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
             entry.getValue().init(reason);
         }

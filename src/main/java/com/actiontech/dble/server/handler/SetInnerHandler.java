@@ -115,10 +115,10 @@ public final class SetInnerHandler {
             if (!c.isAutocommit() && c.getSession2().getTargetCount() > 0) {
                 c.getSession2().implicitCommit(() -> {
                     boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                    c.setAutocommit(true);
                     c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
                     c.getSession2().multiStatementNextSql(multiStatementFlag);
                 });
-                c.setAutocommit(true);
                 return true;
             }
             c.setAutocommit(true);

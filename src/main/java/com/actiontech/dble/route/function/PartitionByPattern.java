@@ -47,6 +47,9 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     public void setMapFile(String mapFile) {
         this.mapFile = mapFile;
     }
+    public String getMapFile() {
+        return mapFile;
+    }
 
 
     public void setRuleFile(String ruleFile) {

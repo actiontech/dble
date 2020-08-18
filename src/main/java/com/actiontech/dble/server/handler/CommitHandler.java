@@ -13,6 +13,6 @@ public final class CommitHandler {
 
     public static void handle(String stmt, ServerConnection c) {
         c.getSession2().transactionsCount();
-        c.commit(stmt);
+        c.commit(stmt, false);
     }
 }

@@ -403,11 +403,15 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    public void commit(String logReason) {
+    public void commit(String logReason, boolean isSetAutoCommit) {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
             TxnLogHelper.putTxnLog(this, logReason);
+            if (isSetAutoCommit) {
+                //this must not used by session.commit();
+                this.setAutocommit(true);
+            }
             session.commit();
         }
     }

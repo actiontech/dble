@@ -91,6 +91,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
         }
     }
 
+    @Override
     public void setImplicitCommitHandler(ImplicitCommitHandler implicitCommitHandler) {
         this.implicitCommitHandler = implicitCommitHandler;
     }

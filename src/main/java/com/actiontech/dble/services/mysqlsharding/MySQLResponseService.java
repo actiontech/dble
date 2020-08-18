@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -47,7 +46,6 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class MySQLResponseService extends MySQLBasedService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLResponseService.class);
-
 
     private ResponseHandler responseHandler;
 
@@ -113,8 +111,8 @@ public class MySQLResponseService extends MySQLBasedService {
             this.txIsolation = -1;
         }
         this.complexQuery = false;
-        this.usrVariables = new LinkedHashMap<>();
-        this.sysVariables = new LinkedHashMap<>();
+        this.usrVariables = new ArrayList<>();
+        this.sysVariables = new ArrayList<>();
         this.dbuser = connection.getInstance().getConfig().getUser();
     }
 
@@ -347,14 +345,14 @@ public class MySQLResponseService extends MySQLBasedService {
         metaDataSynced = false;
         statusSync = new StatusSync(connection.getSchema(),
                 clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, Collections.emptyMap(), Collections.emptyMap(), Collections.emptySet());
+                synCount, Collections.emptyList(), Collections.emptyList());
 
         return sb;
     }
 
     private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn,
                                     CharsetNames clientCharset, int clientTxIsolation,
-                                    boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
+                                    boolean expectAutocommit, List<Map<String, String>> usrVariables, List<Map<String, String>> sysVariables) {
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
@@ -365,9 +363,8 @@ public class MySQLResponseService extends MySQLBasedService {
             xaSyn = 1;
         }
 
-        Set<String> toResetSys = new HashSet<>();
-        String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
-        int setSqlFlag = setSql == null ? 0 : 1;
+        StringBuilder setSql = new StringBuilder();
+        int setSqlFlag = getSetSQL(usrVariables, sysVariables, setSql);
         int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
         int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
@@ -390,7 +387,7 @@ public class MySQLResponseService extends MySQLBasedService {
         if (autoCommitSyn == 1) {
             getAutocommitCommand(sb, expectAutocommit);
         }
-        if (setSqlFlag == 1) {
+        if (setSqlFlag > 0) {
             sb.append(setSql);
         }
         if (xaSyn == 1) {
@@ -406,7 +403,7 @@ public class MySQLResponseService extends MySQLBasedService {
         metaDataSynced = false;
         statusSync = new StatusSync(connection.getSchema(),
                 clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, usrVariables, sysVariables, toResetSys);
+                synCount, usrVariables, sysVariables);
         return sb;
     }
 
@@ -455,60 +452,60 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {
-        //new final var
-        List<Pair<String, String>> setVars = new ArrayList<>();
-        //tmp add all backend sysVariables
-        Map<String, String> tmpSysVars = new HashMap<>(sysVariables);
-        //for all front end sysVariables
-        for (Map.Entry<String, String> entry : sysVars.entrySet()) {
-            if (!tmpSysVars.containsKey(entry.getKey())) {
-                setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
-            } else {
-                String value = tmpSysVars.remove(entry.getKey());
-                //if backend is not equal frontend, need to reset
-                if (!StringUtil.equalsIgnoreCase(entry.getValue(), value)) {
+    private int getSetSQL(List<Map<String, String>> usrVars, List<Map<String, String>> sysVars, StringBuilder setSQL) {
+        int totalSize = 0;
+        Map<String, String> tmpSysVars = new HashMap<>(this.equivalentSysVarMap());
+        for (int i = 0; i < usrVars.size(); i++) {
+            //new final var for single set statement from sharding service
+            List<Pair<String, String>> setVars = new ArrayList<>();
+
+            Map<String, String> singleStatementSysVar = sysVars.get(i);
+            Map<String, String> singleStatementUsrVar = usrVars.get(i);
+            if (usrVariables.size() <= i) {
+                //if the backend service has the userVars, means that the connection is hold by the front session till now
+                //the index of the object in the usrVariables must has the same order
+                for (Map.Entry<String, String> entry : singleStatementUsrVar.entrySet()) {
                     setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
                 }
             }
-        }
-        //tmp now = backend -(backend &&frontend)
-        for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
-            String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
-            try {
-                BigDecimal vl = new BigDecimal(value);
-            } catch (NumberFormatException e) {
-                value = "`" + value + "`";
-            }
-            setVars.add(new Pair<>(entry.getKey(), value));
-            toResetSys.add(entry.getKey());
-        }
 
-        for (Map.Entry<String, String> entry : usrVars.entrySet()) {
-            if (!usrVariables.containsKey(entry.getKey())) {
-                setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
-            } else {
-                if (!StringUtil.equalsIgnoreCase(entry.getValue(), usrVariables.get(entry.getKey()))) {
-                    setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+            if (sysVariables.size() <= i || sysVariables.get(i) != singleStatementSysVar) {
+                //if the sysVariables object has the same, means that the sysVar has been Synchronized
+                //otherwise the all sysVariables should be set to the backend
+                //the benchmark is the tmpSysVars, statement-level-system-vars
+                for (Map.Entry<String, String> entry : singleStatementSysVar.entrySet()) {
+                    if (!tmpSysVars.containsKey(entry.getKey())) {
+                        setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+                        tmpSysVars.put(entry.getKey(), entry.getValue());
+                    } else {
+                        String value = tmpSysVars.get(entry.getKey());
+                        //if backend is not equal frontend, need to reset
+                        if (!StringUtil.equalsIgnoreCase(entry.getValue(), value)) {
+                            setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+                        }
+                    }
                 }
             }
-        }
 
-        if (setVars.size() == 0)
-            return null;
-        StringBuilder sb = new StringBuilder("set ");
-        int cnt = 0;
-        for (Pair<String, String> var : setVars) {
-            if (cnt > 0) {
-                sb.append(",");
+            if (setVars.size() == 0) {
+                continue;
             }
-            sb.append(var.getKey());
-            sb.append("=");
-            sb.append(var.getValue());
-            cnt++;
+
+            totalSize++;
+            setSQL.append("set ");
+            int cnt = 0;
+            for (Pair<String, String> var : setVars) {
+                if (cnt > 0) {
+                    setSQL.append(",");
+                }
+                setSQL.append(var.getKey());
+                setSQL.append("=");
+                setSQL.append(var.getValue());
+                cnt++;
+            }
+            setSQL.append(";");
         }
-        sb.append(";");
-        return sb.toString();
+        return totalSize;
     }
 
 
@@ -831,22 +828,20 @@ public class MySQLResponseService extends MySQLBasedService {
         private final Integer txtIsolation;
         private final Boolean autocommit;
         private final AtomicInteger synCmdCount;
-        private final Map<String, String> usrVariables = new LinkedHashMap<>();
-        private final Map<String, String> sysVariables = new LinkedHashMap<>();
+        private final List<Map<String, String>> usrVariables = new ArrayList<>();
+        private final List<Map<String, String>> sysVariables = new ArrayList<>();
 
         StatusSync(String schema,
                    CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
-                   int synCount, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
+                   int synCount, List<Map<String, String>> usrVariables, List<Map<String, String>> sysVariables) {
+            super();
             this.schema = schema;
             this.clientCharset = clientCharset;
             this.txtIsolation = txtIsolation;
             this.autocommit = autocommit;
             this.synCmdCount = new AtomicInteger(synCount);
-            this.usrVariables.putAll(usrVariables);
-            this.sysVariables.putAll(sysVariables);
-            for (String sysVariable : toResetSys) {
-                this.sysVariables.remove(sysVariable);
-            }
+            this.usrVariables.addAll(usrVariables);
+            this.sysVariables.addAll(sysVariables);
         }
 
         boolean synAndExecuted(MySQLResponseService service) {

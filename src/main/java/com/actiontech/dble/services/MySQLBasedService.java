@@ -10,6 +10,7 @@ import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +23,8 @@ public abstract class MySQLBasedService extends AbstractService {
 
     protected UserConfig userConfig;
 
-    protected volatile Map<String, String> usrVariables = new LinkedHashMap<>();
-    protected volatile Map<String, String> sysVariables = new LinkedHashMap<>();
+    protected volatile List<Map<String, String>> usrVariables = new ArrayList<>();
+    protected volatile List<Map<String, String>> sysVariables = new ArrayList<>();
 
     public MySQLBasedService(AbstractConnection connection) {
         super(connection);
@@ -116,14 +117,17 @@ public abstract class MySQLBasedService extends AbstractService {
         StringBuilder sbSysVariables = new StringBuilder();
         int cnt = 0;
         if (sysVariables != null) {
-            for (Map.Entry sysVariable : sysVariables.entrySet()) {
-                if (cnt > 0) {
-                    sbSysVariables.append(",");
+            for (Map<String, String> oneLineVar : sysVariables) {
+                for (Map.Entry sysVariable : oneLineVar.entrySet()) {
+                    if (cnt > 0) {
+                        sbSysVariables.append(",");
+                    }
+                    sbSysVariables.append(sysVariable.getKey());
+                    sbSysVariables.append("=");
+                    sbSysVariables.append(sysVariable.getValue());
+                    cnt++;
                 }
-                sbSysVariables.append(sysVariable.getKey());
-                sbSysVariables.append("=");
-                sbSysVariables.append(sysVariable.getValue());
-                cnt++;
+                sbSysVariables.append(";");
             }
         }
         return sbSysVariables.toString();
@@ -133,18 +137,38 @@ public abstract class MySQLBasedService extends AbstractService {
         StringBuilder sbUsrVariables = new StringBuilder();
         int cnt = 0;
         if (usrVariables != null) {
-            for (Map.Entry usrVariable : usrVariables.entrySet()) {
-                if (cnt > 0) {
-                    sbUsrVariables.append(",");
+            for (Map<String, String> oneLineVar : usrVariables) {
+                for (Map.Entry usrVariable : oneLineVar.entrySet()) {
+                    if (cnt > 0) {
+                        sbUsrVariables.append(",");
+                    }
+                    sbUsrVariables.append(usrVariable.getKey());
+                    sbUsrVariables.append("=");
+                    sbUsrVariables.append(usrVariable.getValue());
+                    cnt++;
                 }
-                sbUsrVariables.append(usrVariable.getKey());
-                sbUsrVariables.append("=");
-                sbUsrVariables.append(usrVariable.getValue());
-                cnt++;
+                sbUsrVariables.append(";");
             }
         }
         return sbUsrVariables.toString();
     }
 
+
+    public Map<String, String> equivalentUsrVarMap() {
+        Map<String, String> result = new LinkedHashMap<>();
+        for (int i = 0; i < usrVariables.size(); i++) {
+            result.putAll(usrVariables.get(i));
+        }
+        return result;
+    }
+
+
+    public Map<String, String> equivalentSysVarMap() {
+        Map<String, String> result = new LinkedHashMap<>();
+        for (int i = 0; i < sysVariables.size(); i++) {
+            result.putAll(sysVariables.get(i));
+        }
+        return result;
+    }
 
 }

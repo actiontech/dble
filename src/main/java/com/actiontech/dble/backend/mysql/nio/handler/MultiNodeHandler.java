@@ -144,7 +144,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         return false;
     }
 
-    protected void tryErrorFinished(boolean allEnd) {
+    void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
             // clear session resources,release all
             if (LOGGER.isDebugEnabled()) {

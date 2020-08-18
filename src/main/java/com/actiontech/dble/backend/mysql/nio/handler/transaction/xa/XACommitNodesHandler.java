@@ -99,7 +99,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         backgroundCommitTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
-        implictCommitHandler = null;
+        implicitCommitHandler = null;
         xaOldThreadIds.clear();
         if (closedConnSet != null) {
             closedConnSet.clear();

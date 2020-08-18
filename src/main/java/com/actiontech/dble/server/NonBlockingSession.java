@@ -15,7 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.CommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
@@ -651,9 +651,9 @@ public class NonBlockingSession implements Session {
         commitHandler.commit();
     }
 
-    public void implictCommit(ImplictCommitHandler handler) {
+    public void implictCommit(ImplicitCommitHandler handler) {
         resetCommitNodesHandler();
-        commitHandler.setImplictCommitHandler(handler);
+        commitHandler.setImplicitCommitHandler(handler);
         commit();
     }
 

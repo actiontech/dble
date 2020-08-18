@@ -540,8 +540,8 @@ public final class SetHandler {
             if (c.isAutocommit()) {
                 c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
             } else {
-                c.commit("commit[because of " + stmt + "]");
-                c.setAutocommit(true);
+                // commit and set Autocommit
+                c.commit("commit[because of " + stmt + "]", true);
             }
         } else {
             if (c.isAutocommit()) {

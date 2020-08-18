@@ -8,7 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -19,7 +19,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void commit() {
         if (session.getTargetCount() <= 0) {
-            if (implictCommitHandler == null && sendData == null) {
+            if (implicitCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
@@ -45,7 +45,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void clearResources() {
         sendData = null;
-        implictCommitHandler = null;
+        implicitCommitHandler = null;
         if (closedConnSet != null) {
             closedConnSet.clear();
         }
@@ -64,7 +64,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementToZero(conn)) {
-            if (implictCommitHandler == null && sendData == null) {
+            if (implicitCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
@@ -117,7 +117,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback() {
         byte[] send = sendData;
-        ImplictCommitHandler handler = implictCommitHandler;
+        ImplicitCommitHandler handler = implicitCommitHandler;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {

@@ -57,7 +57,7 @@ public final class ServerSptPrepare {
     /* In user variable, the string is primordial, so we have to truncate the quotes */
     private String getStmtFromUserVar() {
         String key = "@" + sptStmt;
-        String stmt = service.getUsrVariables().get(key);
+        String stmt = service.equivalentUsrVarMap().get(key);
         String rstmt = null;
 
         if (stmt != null) {

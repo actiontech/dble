@@ -145,6 +145,10 @@ public abstract class PhysicalDbInstance {
     // execute in complex executor guard by business executor
     public BackendConnection getConnection(String schema, final Object attachment) throws IOException {
         BackendConnection con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+        if (!StringUtil.equals(con.getSchema(), schema)) {
+            // need do sharding syn in before sql send
+            con.setSchema(schema);
+        }
         con.setAttachment(attachment);
         return con;
     }

@@ -108,9 +108,9 @@ public final class SetInnerHandler {
         if (setValue) {
             if (!shardingService.isAutocommit() && shardingService.getSession2().getTargetCount() > 0) {
                 shardingService.getSession2().implicitCommit(() -> {
+                    shardingService.setAutocommit(true);
                     shardingService.write(shardingService.getSession2().getOKPacket());
                 });
-                shardingService.setAutocommit(true);
                 return true;
             }
             shardingService.setAutocommit(true);

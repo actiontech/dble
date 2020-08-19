@@ -15,6 +15,7 @@ import com.google.common.collect.Maps;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DbleAlgorithm extends ManagerBaseTable {
 
@@ -53,8 +54,8 @@ public class DbleAlgorithm extends ManagerBaseTable {
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> rowList = Lists.newLinkedList();
         List<String> nameList = Lists.newArrayList();
-        DbleServer.getInstance().getConfig().getFunctions().entrySet().stream().forEach(e -> {
-            AbstractPartitionAlgorithm algorithm = e.getValue();
+        Map<String, AbstractPartitionAlgorithm> functionMap = DbleServer.getInstance().getConfig().getFunctions();
+        functionMap.forEach((key1, algorithm) -> {
             LinkedHashMap<String, String> classMap = Maps.newLinkedHashMap();
             classMap.put(COLUMN_NAME, algorithm.getName());
             classMap.put(COLUMN_KEY, KEY_CLASS);
@@ -62,9 +63,10 @@ public class DbleAlgorithm extends ManagerBaseTable {
             classMap.put(COLUMN_IS_FILE, Boolean.FALSE.toString());
             rowList.add(classMap);
             nameList.add(algorithm.getName() + "-" + KEY_CLASS);
-            algorithm.getAllProperties().entrySet().stream().filter(p -> !nameList.contains(algorithm.getName() + "-" + p.getKey())).forEach(t -> {
-                String value = t.getValue();
-                String key = t.getKey();
+            Map<String, String> allPropertiesMap = algorithm.getAllProperties();
+            allPropertiesMap.entrySet().stream().filter(properties -> !nameList.contains(algorithm.getName() + "-" + properties.getKey())).forEach(properties -> {
+                String value = properties.getValue();
+                String key = properties.getKey();
                 LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                 map.put(COLUMN_NAME, algorithm.getName());
                 map.put(COLUMN_KEY, key);
@@ -76,7 +78,7 @@ public class DbleAlgorithm extends ManagerBaseTable {
                     map.put(COLUMN_IS_FILE, Boolean.FALSE.toString());
                 }
                 rowList.add(map);
-                nameList.add(algorithm.getName() + "-" + t.getKey());
+                nameList.add(algorithm.getName() + "-" + key);
             });
         });
         return rowList;

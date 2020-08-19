@@ -37,10 +37,11 @@ def getMangagerUser(userXml):
 # Get manager port from bootstrap.cnf.
 
 def getPort(portCnf):
+    b = 9066
     with open(portCnf) as f:
         lines = f.readlines()
         for  line in lines:
-            if "DmanagerPort" in line:
+            if line.startswith("-DmanagerPort"):
                 b=line.split('=')[1].strip('\n')
         return b
                 
@@ -164,10 +165,12 @@ def switchDatahost(manageruser,towritehost):
                              user = manageruser["user"],
                              passwd = manageruser["password"],
                              cursorclass = MySQLdb.cursors.DictCursor)
+        log.info("Start Connecting to the Manager[user={0}, host={1}, port={2}]" \
+             .format(manageruser["user"],manageruser["host"],manageruser["port"]))
         cursor = db.cursor()
         cursor.execute("dbgroup @@switch name = '{0}' master = '{1}';" \
             .format(towritehost["dhname"],towritehost["name"])) 
-        cursor.execute("show @@datasource;")
+        cursor.execute("show @@dbInstance;")
         result = cursor.fetchall()
         log.info("Switch Datahost {0} master to {1}!" \
             .format(towritehost["dhname"],towritehost["name"]))

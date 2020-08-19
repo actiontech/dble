@@ -37,6 +37,7 @@ def getMangagerUser(userXml):
 # Get manager port from bootstrap.cnf.
 
 def getPort(portCnf):
+    b = 9066
     with open(portCnf) as f:
         lines = f.readlines()
         for  line in lines:
@@ -167,7 +168,7 @@ def switchDatahost(manageruser,towritehost):
         cursor = db.cursor()
         cursor.execute("dbgroup @@switch name = '{0}' master = '{1}';" \
             .format(towritehost["dhname"],towritehost["name"])) 
-        cursor.execute("show @@datasource;")
+        cursor.execute("show @@dbInstance;")
         result = cursor.fetchall()
         log.info("Switch Datahost {0} master to {1}!" \
             .format(towritehost["dhname"],towritehost["name"]))

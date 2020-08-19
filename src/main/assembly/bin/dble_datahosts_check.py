@@ -41,7 +41,7 @@ def getPort(portCnf):
     with open(portCnf) as f:
         lines = f.readlines()
         for  line in lines:
-            if "DmanagerPort" in line:
+            if line.startswith("-DmanagerPort"):
                 b=line.split('=')[1].strip('\n')
         return b
                 

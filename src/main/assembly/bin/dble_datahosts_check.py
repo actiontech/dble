@@ -165,6 +165,8 @@ def switchDatahost(manageruser,towritehost):
                              user = manageruser["user"],
                              passwd = manageruser["password"],
                              cursorclass = MySQLdb.cursors.DictCursor)
+        log.info("Start Connecting to the Manager[user={0}, host={1}, port={2}]" \
+             .format(manageruser["user"],manageruser["host"],manageruser["port"]))
         cursor = db.cursor()
         cursor.execute("dbgroup @@switch name = '{0}' master = '{1}';" \
             .format(towritehost["dhname"],towritehost["name"])) 

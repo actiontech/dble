@@ -33,8 +33,7 @@ public final class KillConnection {
             for (FrontendConnection c : list) {
                 StringBuilder s = new StringBuilder();
                 LOGGER.info(s.append(c).append("killed by manager").toString());
-                //todo frontend kill and close
-                //c.killAndClose("kill by manager");
+                c.getFrontEndService().killAndClose("kill by manager");
                 count++;
             }
         }

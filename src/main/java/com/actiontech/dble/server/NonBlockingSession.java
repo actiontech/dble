@@ -876,7 +876,7 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    protected void kill() {
+    public void kill() {
         AtomicInteger count = new AtomicInteger(0);
         Map<RouteResultsetNode, BackendConnection> toKilled = new HashMap<>();
 
@@ -980,7 +980,6 @@ public class NonBlockingSession extends Session {
                 LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
                 return true;
             }
-            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, shardingService);
             return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, rrs.getDdlType());
         } else {
             LOGGER.info("Hint ddl do not update the meta");

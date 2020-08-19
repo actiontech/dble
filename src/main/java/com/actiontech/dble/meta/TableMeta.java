@@ -16,6 +16,7 @@ public final class TableMeta {
 
     public TableMeta(TableMeta origin, long newVersion) {
         tableName = origin.getTableName();
+        this.schemaName = origin.getSchemaName();
         columns = origin.getColumns();
         createSql = origin.getCreateSql();
         version = newVersion;
@@ -29,6 +30,10 @@ public final class TableMeta {
 
     public String getSchemaName() {
         return schemaName;
+    }
+
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     public int getId() {

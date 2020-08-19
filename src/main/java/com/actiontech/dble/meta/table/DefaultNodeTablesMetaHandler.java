@@ -25,7 +25,7 @@ public class DefaultNodeTablesMetaHandler extends GetTableMetaHandler {
             ViewMeta viewMeta = MetaHelper.initViewMeta(schema, createSQL, System.currentTimeMillis(), schemaMetaHandler.getTmManager());
             schemaMetaHandler.handleViewMeta(viewMeta);
         } else {
-            TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
+            TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis(), schema);
             schemaMetaHandler.handleSingleMetaData(tableMeta);
         }
     }

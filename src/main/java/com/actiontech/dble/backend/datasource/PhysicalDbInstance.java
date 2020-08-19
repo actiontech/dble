@@ -351,7 +351,7 @@ public abstract class PhysicalDbInstance {
     }
 
     public void start(String reason) {
-        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF) {
+        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
             LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
             this.connectionPool.startEvictor();
         }
@@ -360,7 +360,7 @@ public abstract class PhysicalDbInstance {
 
     public void stop(String reason, boolean closeFront) {
         heartbeat.stop(reason);
-        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF) {
+        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
             LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
             connectionPool.stop(reason, closeFront);
         }

@@ -122,7 +122,7 @@ class InsertHandler extends DefaultHandler {
 
         ShardingTableConfig tableConfig = (ShardingTableConfig) (context.getTableConfig());
         // partition column check
-        if ((tableConfig.getShardingColumn() != null && partitionColumnIndex != -1) &&
+        if ((tableConfig.getShardingColumn() != null && partitionColumnIndex != -1) ||
                 (tableConfig.getIncrementColumn() != null && incrementColumnIndex != -1)) {
             return;
         }

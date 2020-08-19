@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
+import static com.actiontech.dble.backend.datasource.PhysicalDbGroup.RW_SPLIT_OFF;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class PhysicalDbInstance {
@@ -338,30 +339,31 @@ public abstract class PhysicalDbInstance {
         }
 
         heartbeat.start();
-        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                        return;
-                    }
-
-                    heartbeat.heartbeat();
+        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                    return;
                 }
+
+                heartbeat.heartbeat();
             }
         }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), MILLISECONDS));
     }
 
     public void start(String reason) {
-        LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
-        this.connectionPool.startEvictor();
+        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF) {
+            LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
+            this.connectionPool.startEvictor();
+        }
         startHeartbeat();
     }
 
     public void stop(String reason, boolean closeFront) {
-        LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
         heartbeat.stop(reason);
-        connectionPool.stop(reason, closeFront);
+        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF) {
+            LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
+            connectionPool.stop(reason, closeFront);
+        }
         isInitial.set(false);
     }
 

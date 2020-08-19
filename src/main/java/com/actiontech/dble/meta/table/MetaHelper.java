@@ -47,7 +47,7 @@ final class MetaHelper {
         return meta;
     }
 
-    static TableMeta initTableMeta(String table, String sql, long timeStamp) {
+    static TableMeta initTableMeta(String table, String sql, long timeStamp, String schema) {
         if (sql == null) {
             return null;
         }
@@ -55,7 +55,7 @@ final class MetaHelper {
         try {
             SQLStatementParser parser = new DbleCreateTableParser(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+            return MetaHelper.initTableMeta(table, createStatement, timeStamp, schema);
         } catch (Exception e) {
             LOGGER.warn("sql[" + sql + "] parser error:", e);
             AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
@@ -63,10 +63,11 @@ final class MetaHelper {
         }
     }
 
-    private static TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
+    private static TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp, String schema) {
         TableMeta tableMeta = new TableMeta();
         tableMeta.setTableName(table);
         tableMeta.setVersion(timeStamp);
+        tableMeta.setSchemaName(schema);
         tableMeta.setCreateSql(createStatement.toString());
 
         List<ColumnMeta> columns = new ArrayList<>(createStatement.getTableElementList().size());

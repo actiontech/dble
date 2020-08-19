@@ -198,6 +198,7 @@ public class ProxyMetaManager {
 
     public void addTable(String schema, TableMeta tm) {
         String tbName = tm.getTableName();
+        tm.setSchemaName(schema);
         SchemaMeta schemaMeta = catalogs.get(schema);
         if (schemaMeta != null) {
             tm.setId(tableIndex.incrementAndGet());

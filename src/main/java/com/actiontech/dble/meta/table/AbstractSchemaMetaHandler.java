@@ -169,7 +169,7 @@ public abstract class AbstractSchemaMetaHandler {
                     // for example: autoIncrement number
                     Set<TableMeta> tableMetas = new HashSet<>();
                     for (String sql : tableStruct.keySet()) {
-                        TableMeta tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
+                        TableMeta tableMeta = MetaHelper.initTableMeta(tableName, sql, version, schema);
                         tableMetas.add(tableMeta);
                     }
                     String tableId = schema + "." + tableName;
@@ -193,7 +193,7 @@ public abstract class AbstractSchemaMetaHandler {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId),
                                 ToResolveContainer.TABLE_LACK, tableId);
                     }
-                    TableMeta tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
+                    TableMeta tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version, schema);
                     handleSingleMetaData(tableMeta);
                 }
             }

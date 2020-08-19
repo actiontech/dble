@@ -145,7 +145,7 @@ public abstract class AbstractTableMetaHandler {
                 // for example: autoIncrement number
                 Set<TableMeta> tableMetas = new HashSet<>();
                 for (String sql : shardingNodeTableStructureSQLMap.keySet()) {
-                    tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
+                    tableMeta = MetaHelper.initTableMeta(tableName, sql, version, schema);
                     tableMetas.add(tableMeta);
                 }
                 String tableId = schema + "." + tableName;
@@ -162,7 +162,7 @@ public abstract class AbstractTableMetaHandler {
                     AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                 }
-                tableMeta = MetaHelper.initTableMeta(tableName, shardingNodeTableStructureSQLMap.keySet().iterator().next(), version);
+                tableMeta = MetaHelper.initTableMeta(tableName, shardingNodeTableStructureSQLMap.keySet().iterator().next(), version, schema);
             }
             return tableMeta;
         }

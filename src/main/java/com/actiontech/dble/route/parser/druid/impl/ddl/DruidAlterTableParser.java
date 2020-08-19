@@ -103,6 +103,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         String name = mySqlAlterTableOption.getName();
         switch (name) {
             case "COMMENT":
+            case "comment":
                 return true;
             default:
                 return false;

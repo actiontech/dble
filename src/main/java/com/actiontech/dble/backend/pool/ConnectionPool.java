@@ -72,16 +72,19 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     }
 
     public BackendConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
-
-        for (BackendConnection conn : allConnections) {
-            if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                return conn;
-            }
-        }
-
-        waiters.incrementAndGet();
+        final int waiting = waiters.incrementAndGet();
         try {
-            newPooledEntry(schema);
+            for (BackendConnection conn : allConnections) {
+                if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                    // If we may have stolen another waiter's connection, request another bag add.
+                    if (waiting > 1) {
+                        newPooledEntry(schema, waiting - 1);
+                    }
+                    return conn;
+                }
+            }
+
+            newPooledEntry(schema, waiting);
 
             timeout = timeUnit.toNanos(timeout);
             do {
@@ -105,27 +108,29 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
      *
      * @param schema Key associated with new pooled object
      */
-    private void newPooledEntry(final String schema) {
+    private void newPooledEntry(final String schema, final int waiting) {
         if (instance.isDisabled() || isClosed.get()) {
             return;
         }
 
-        if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
-            final BackendConnection conn = newConnection(schema, ConnectionPool.this);
-            if (conn != null) {
-                return;
+        if (waiting > 0) {
+            if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
+                final BackendConnection conn = newConnection(schema, ConnectionPool.this);
+                if (conn != null) {
+                    return;
+                }
             }
+
+            totalConnections.decrementAndGet();
+
+            // alert
+            String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
+            LOGGER.warn(maxConError);
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+            AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
+            ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
         }
-
-        totalConnections.decrementAndGet();
-        // alert
-        String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
-        LOGGER.warn(maxConError);
-        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
-        AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
-        ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
     }
-
 
     public void release(final BackendConnection conn) {
         if (poolConfig.getTestOnReturn()) {
@@ -155,7 +160,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         }
         for (int i = 0; i < connectionsToAdd; i++) {
             // newPooledEntry(schemas[i % schemas.length]);
-            newPooledEntry(null);
+            newPooledEntry(null, 1);
         }
     }
 

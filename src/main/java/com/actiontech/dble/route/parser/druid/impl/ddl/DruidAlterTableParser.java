@@ -24,6 +24,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableAlterColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableChangeColumn;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableModifyColumn;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlAlterTableOption;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -75,6 +76,8 @@ public class DruidAlterTableParser extends DefaultDruidParser {
                 if (!support) {
                     msg = "The columns may be sharding keys or ER keys, are not allowed to alter sql:";
                 }
+            } else if (supportTableOption(alterItem)) {
+                support = true;
             }
         }
         if (!support) {
@@ -90,6 +93,21 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         }
         RouterUtil.routeToDDLNode(schemaInfo, rrs);
         return schemaInfo.getSchemaConfig();
+    }
+
+    private boolean supportTableOption(SQLAlterTableItem alterItem) {
+        if (null == alterItem || !(alterItem instanceof MySqlAlterTableOption)) {
+            return false;
+        }
+        MySqlAlterTableOption mySqlAlterTableOption = (MySqlAlterTableOption) alterItem;
+        String name = mySqlAlterTableOption.getName();
+        switch (name) {
+            case "COMMENT":
+            case "comment":
+                return true;
+            default:
+                return false;
+        }
     }
 
 

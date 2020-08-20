@@ -42,9 +42,15 @@ public final class DumpFileReader {
             ByteBuffer buffer = ByteBuffer.allocate(0x20000);
             int byteRead = fileChannel.read(buffer);
             while (byteRead != -1) {
-                if (c.isClosed() || executor.isStop()) {
-                    LOGGER.info("finish to read dump file, tha task is interrupted.");
-                    throw new InterruptedException();
+                if (c.isClosed()) {
+                    LOGGER.info("finish to read dump file, because the connection is closed.");
+                    executor.getContext().addError("finish to read dump file, because the connection is closed.");
+                    executor.stop();
+                    return;
+                }
+                if (executor.isStop()) {
+                    LOGGER.info("finish to read dump file, because executor is stop.");
+                    return;
                 }
                 readLength += byteRead;
                 float percent = ((float) readLength / (float) fileLength) * 100;

@@ -65,15 +65,15 @@ public final class SplitDumpHandler {
             writer.start();
             // start read
             reader.start(c, dumpFileExecutor);
-        } catch (IOException e) {
-            LOGGER.info("finish to split dump file.");
+        } catch (IOException | InterruptedException e) {
+            LOGGER.info("finish to split dump file because " + e.getMessage());
             c.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());
             return;
-        } catch (InterruptedException ie) {
-            LOGGER.info("finish to split dump file, because the task is interrupted.");
-            // manager connection is closed or waiting blocking queue
-            dumpFileExecutor.stop();
-            writer.stop();
+        }
+
+        List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
+        if (!CollectionUtil.isEmpty(errors)) {
+            DumpFileError.execute(c, errors);
             return;
         }
 
@@ -82,12 +82,18 @@ public final class SplitDumpHandler {
         }
 
         if (c.isClosed()) {
+            LOGGER.info("finish to split dump file because the connection is closed.");
             dumpFileExecutor.stop();
             writer.stop();
+            c.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, "finish to split dump file due to the connection is closed.");
             return;
         }
 
-        List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
+        printMsg(errors, c);
+        LOGGER.info("finish to split dump file.");
+    }
+
+    private static void printMsg(List<ErrorMsg> errors, ManagerConnection c) {
         if (CollectionUtil.isEmpty(errors)) {
             OkPacket packet = new OkPacket();
             packet.setPacketId(1);
@@ -98,7 +104,6 @@ public final class SplitDumpHandler {
         } else {
             DumpFileError.execute(c, errors);
         }
-        LOGGER.info("finish to split dump file.");
     }
 
     private static DumpFileConfig parseOption(String options) {

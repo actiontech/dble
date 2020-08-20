@@ -619,6 +619,7 @@ public class MySQLResponseService extends MySQLBasedService {
         this.connection.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
+        this.sysVariables.put("sql_mode", null);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {

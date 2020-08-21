@@ -68,6 +68,7 @@ public class MySQLShardingSQLHandler {
 
 
     private void executeException(Exception e, String sql) {
+        sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
         if (e instanceof SQLException) {
             SQLException sqlException = (SQLException) e;
             String msg = sqlException.getMessage();

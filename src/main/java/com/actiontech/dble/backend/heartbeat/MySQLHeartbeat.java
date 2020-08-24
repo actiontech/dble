@@ -214,7 +214,7 @@ public class MySQLHeartbeat {
 
     public void recordErrorCount() {
         long currentTimeMillis = System.currentTimeMillis();
-        if (errorTimeInLast5Min == null || errorTimeInLast5Min.intValue() == 0) {
+        if (errorTimeInLast5Min.intValue() == 0) {
             errorTimeInLast5Min.set(currentTimeMillis);
         }
         if (errorTimeInLast5MinCount < errorRetryCount) {

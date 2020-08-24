@@ -926,7 +926,7 @@ public abstract class Item {
     }
 
     public final void setAlias(String alias) {
-        if (itemName != null && ((itemName.charAt(0) == '\'') || itemName.charAt(0) == '"')) {
+        if (alias != null && ((alias.charAt(0) == '\'') || alias.charAt(0) == '"')) {
             alias = alias.substring(1, alias.length() - 1);
         }
         this.aliasName = alias;

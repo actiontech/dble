@@ -62,9 +62,10 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         this.poolConfig = config.getPoolConfig();
     }
 
-    public BackendConnection borrowDirectly() {
+    public BackendConnection borrowDirectly(final String schema) {
         for (BackendConnection conn : allConnections) {
             if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                newPooledEntry(schema, waiters.get());
                 return conn;
             }
         }

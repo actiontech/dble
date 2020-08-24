@@ -124,6 +124,8 @@ public class XMLDbLoader {
             //slave delay threshold
             String delayThresholdStr = ConfigUtil.checkAndGetAttribute(element, "delayThreshold", "-1", problemReporter);
             final int delayThreshold = Integer.parseInt(delayThresholdStr);
+            String disableHAStr = ConfigUtil.checkAndGetAttribute(element, "disableHA", "false", problemReporter);
+            boolean disableHA = Boolean.parseBoolean(disableHAStr);
 
             Element heartbeat = (Element) element.getElementsByTagName("heartbeat").item(0);
             final String heartbeatSQL = heartbeat.getTextContent();
@@ -157,7 +159,7 @@ public class XMLDbLoader {
                     readDbConfList[readCnt++] = tmpDbInstanceConfig;
                 }
             }
-            DbGroupConfig dbGroupConf = new DbGroupConfig(name, writeDbConf, readDbConfList, delayThreshold);
+            DbGroupConfig dbGroupConf = new DbGroupConfig(name, writeDbConf, readDbConfList, delayThreshold, disableHA);
 
             dbGroupConf.setRwSplitMode(rwSplitMode);
             dbGroupConf.setHeartbeatSQL(heartbeatSQL);

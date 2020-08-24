@@ -12,4 +12,6 @@ public interface FrontEndService {
     UserName getUser();
 
     String getExecuteSql();
+
+    void killAndClose(String reason);
 }

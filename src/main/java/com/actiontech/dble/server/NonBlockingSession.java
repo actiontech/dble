@@ -876,7 +876,7 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    protected void kill() {
+    public void kill() {
         AtomicInteger count = new AtomicInteger(0);
         Map<RouteResultsetNode, BackendConnection> toKilled = new HashMap<>();
 
@@ -972,13 +972,6 @@ public class NonBlockingSession extends Session {
             if (!isSuccess) {
                 LOGGER.warn("DDL execute failed or Session closed, " +
                         "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
-            } else {
-                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, shardingService);
-            }
-
-            if (rrs.isOnline()) {
-                LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
-                return true;
             }
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, shardingService);
             return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, rrs.getDdlType());

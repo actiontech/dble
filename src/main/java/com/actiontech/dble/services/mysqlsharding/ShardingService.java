@@ -739,6 +739,15 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         return executeSql;
     }
 
+    @Override
+    public void killAndClose(String reason) {
+        connection.close(reason);
+        if (!isTxStart() || session.getTransactionManager().getXAStage() == null) {
+            //not a xa transaction ,close it
+            session.kill();
+        }
+    }
+
     public void setExecuteSql(String executeSql) {
         this.executeSql = executeSql;
     }

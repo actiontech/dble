@@ -107,6 +107,11 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
         return executeSql;
     }
 
+    @Override
+    public void killAndClose(String reason) {
+        connection.close(reason);
+    }
+
 
     public String getCommand(byte[] data, CharsetNames charsetName) throws UnsupportedEncodingException {
         String sql = null;

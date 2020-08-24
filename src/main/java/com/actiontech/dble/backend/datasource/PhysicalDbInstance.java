@@ -107,14 +107,14 @@ public abstract class PhysicalDbInstance {
         connectionPool.newConnection(schema, handler);
     }
 
-    public void getConnection(String schema, final ResponseHandler handler,
+    public void getConnection(final String schema, final ResponseHandler handler,
                               final Object attachment, boolean mustWrite) throws IOException {
 
         if (mustWrite && readInstance) {
             throw new IOException("primary dbInstance switched");
         }
 
-        final BackendConnection con = connectionPool.borrowDirectly();
+        final BackendConnection con = connectionPool.borrowDirectly(schema);
         if (con != null) {
             if (!StringUtil.equals(con.getSchema(), schema)) {
                 // need do sharding syn in before sql send

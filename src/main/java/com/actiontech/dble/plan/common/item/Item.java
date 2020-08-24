@@ -917,10 +917,18 @@ public abstract class Item {
     }
 
     public final String getAlias() {
+        if (this.aliasName == null) {
+            if (itemName != null && ((itemName.charAt(0) == '\'') || itemName.charAt(0) == '"')) {
+                setAlias(this.itemName);
+            }
+        }
         return this.aliasName;
     }
 
     public final void setAlias(String alias) {
+        if (alias != null && ((alias.charAt(0) == '\'') || alias.charAt(0) == '"')) {
+            alias = alias.substring(1, alias.length() - 1);
+        }
         this.aliasName = alias;
     }
 
@@ -984,6 +992,7 @@ public abstract class Item {
     public String getDbName() {
         return null;
     }
+
     /**
      * added to construct all refers in an item
      *

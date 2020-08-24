@@ -73,8 +73,8 @@ public class DbleDbGroup extends ManagerBaseTable {
             map.put(COLUMN_HEARTBEAT_TIMEOUT, null == dbGroupConfig ? null : String.valueOf(dbGroupConfig.getHeartbeatTimeout()));
             map.put(COLUMN_HEARTBEAT_RETRY, null == dbGroupConfig ? null : String.valueOf(dbGroupConfig.getErrorRetryCount()));
             map.put(COLUMN_RW_SPLIT_MODE, String.valueOf(dbGroup.getRwSplitMode()));
-            map.put(COLUMN_DELAY_THRESHOLD, String.valueOf(dbGroupConfig.getDelayThreshold()));
-            map.put(COLUMN_DISABLE_HA, String.valueOf(dbGroupConfig.isDisableHA()));
+            map.put(COLUMN_DELAY_THRESHOLD, null == dbGroupConfig ? null : String.valueOf(dbGroupConfig.getDelayThreshold()));
+            map.put(COLUMN_DISABLE_HA, null == dbGroupConfig ? null : String.valueOf(dbGroupConfig.isDisableHA()));
             return map;
         }).collect(Collectors.toList());
     }

@@ -110,7 +110,7 @@ public final class ShowHeartbeatDetail {
 
         Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
         for (PhysicalDbGroup pool : dbGroups.values()) {
-            for (PhysicalDbInstance ds : pool.getAllActiveDbInstances()) {
+            for (PhysicalDbInstance ds : pool.getDbInstances(false)) {
                 if (name.equals(ds.getName())) {
                     hb = ds.getHeartbeat();
                     ip = ds.getConfig().getIp();

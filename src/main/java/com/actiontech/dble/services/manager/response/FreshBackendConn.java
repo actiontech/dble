@@ -40,12 +40,12 @@ public final class FreshBackendConn {
             // single
             try {
                 String[] nameList = instanceNames == null ? Arrays.copyOf(dh.getAllDbInstanceMap().keySet().toArray(), dh.getAllDbInstanceMap().keySet().toArray().length, String[].class) : instanceNames.split(",");
-                List<String> sourceNames = Arrays.asList(nameList).stream().distinct().collect(Collectors.toList());
+                List<String> sourceNames = Arrays.stream(nameList).distinct().collect(Collectors.toList());
 
-                if (dh.getRwSplitMode() == PhysicalDbGroup.RW_SPLIT_OFF && (!sourceNames.contains(dh.getWriteDbInstance().getName()))) {
+                if (dh.getRwSplitMode() == 0 && (!sourceNames.contains(dh.getWriteDbInstance().getName()))) {
                     warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
                 } else {
-                    if (dh.getRwSplitMode() == PhysicalDbGroup.RW_SPLIT_OFF && sourceNames.size() > 1 && sourceNames.contains(dh.getWriteDbInstance().getName())) {
+                    if (dh.getRwSplitMode() == 0 && sourceNames.size() > 1 && sourceNames.contains(dh.getWriteDbInstance().getName())) {
                         warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
                     }
                     dh.stop(sourceNames, "fresh backend conn", isForced);

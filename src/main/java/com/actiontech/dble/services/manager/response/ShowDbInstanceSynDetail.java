@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -13,8 +13,8 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.route.parser.ManagerParseShow;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.statistic.DbInstanceSyncRecorder;
 import com.actiontech.dble.statistic.DbInstanceSyncRecorder.Record;
 import com.actiontech.dble.util.LongUtil;
@@ -115,7 +115,7 @@ public final class ShowDbInstanceSynDetail {
         for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
             String dbGroupName = entry.getKey();
             PhysicalDbGroup pool = entry.getValue();
-            for (PhysicalDbInstance ds : pool.getAllActiveDbInstances()) {
+            for (PhysicalDbInstance ds : pool.getDbInstances(false)) {
                 if (ds.isDisabled()) {
                     continue;
                 }

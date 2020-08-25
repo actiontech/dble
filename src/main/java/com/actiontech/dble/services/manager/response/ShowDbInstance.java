@@ -91,7 +91,7 @@ public final class ShowDbInstance {
 
         if (null != name) {
             ShardingNode dn = conf.getShardingNodes().get(name);
-            for (PhysicalDbInstance w : dn.getDbGroup().getAllDbInstances()) {
+            for (PhysicalDbInstance w : dn.getDbGroup().getDbInstances(true)) {
                 RowDataPacket row = getRow(w.getDbGroupConfig().getName(), w, service.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, service, true);
@@ -102,7 +102,7 @@ public final class ShowDbInstance {
             for (Map.Entry<String, PhysicalDbGroup> entry : conf.getDbGroups().entrySet()) {
                 PhysicalDbGroup dbGroup = entry.getValue();
                 String dbGroupName = entry.getKey();
-                for (PhysicalDbInstance source : dbGroup.getAllDbInstances()) {
+                for (PhysicalDbInstance source : dbGroup.getDbInstances(true)) {
                     RowDataPacket sRow = getRow(dbGroupName, source, service.getCharset().getResults());
                     sRow.setPacketId(++packetId);
                     buffer = sRow.write(buffer, service, true);

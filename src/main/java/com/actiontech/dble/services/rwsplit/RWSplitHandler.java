@@ -65,10 +65,12 @@ public class RWSplitHandler implements ResponseHandler {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             ((MySQLResponseService) service).getConnection().release();
-            if (!write2Client) {
-                data[3] -= offset;
-                frontedConnection.write(data);
-                write2Client = true;
+            synchronized (this) {
+                if (!write2Client) {
+                    data[3] -= offset;
+                    frontedConnection.write(data);
+                    write2Client = true;
+                }
             }
         }
     }

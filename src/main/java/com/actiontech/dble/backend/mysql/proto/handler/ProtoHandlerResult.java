@@ -20,6 +20,13 @@ public class ProtoHandlerResult {
         this.packetLength = 0;
     }
 
+    public ProtoHandlerResult(ProtoHandlerResultCode code, int offset, int packetLength) {
+        this.code = code;
+        this.offset = offset;
+        this.packetData = null;
+        this.packetLength = packetLength;
+    }
+
     public ProtoHandlerResultCode getCode() {
         return code;
     }

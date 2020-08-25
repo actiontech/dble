@@ -281,11 +281,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (isDistinct && !isNeedOptimizer(itemExpr)) {
                     if (itemExpr instanceof SQLIdentifierExpr) {
                         SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
-                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                        if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
                         addToAliaColumn(aliaColumns, selectItem);
                     } else if (itemExpr instanceof SQLPropertyExpr) {
                         SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
-                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                        if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
                         addToAliaColumn(aliaColumns, selectItem);
                     }
                 } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
@@ -313,10 +313,10 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return;
                 } else if (groupByItem instanceof SQLIdentifierExpr) {
                     SQLIdentifierExpr item = (SQLIdentifierExpr) groupByItem;
-                    hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                    if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
                 } else if (groupByItem instanceof SQLPropertyExpr) {
                     SQLPropertyExpr item = (SQLPropertyExpr) groupByItem;
-                    hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                    if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
                 }
             }
             if (groupBy.getItems().size() > 0 && !hasPartitionColumn) {

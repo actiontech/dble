@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
+import static com.actiontech.dble.backend.datasource.PhysicalDbGroup.RW_SPLIT_OFF;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
@@ -80,16 +81,12 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void init(String reason) {
-        init(reason, false);
-    }
-
-    public void init(String reason, boolean isFresh) {
         if (disabled.get() || fakeNode) {
             LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", name, reason);
             return;
         }
 
-        if (!isFresh && !isInitial.compareAndSet(false, true)) {
+        if (!isInitial.compareAndSet(false, true)) {
             LOGGER.info("init dbInstance[{}] because {}, but it has been initialized, skip initialization.", name, reason);
             return;
         }
@@ -117,7 +114,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         connectionPool.newConnection(schema, handler);
     }
 
-    public void getConnection(String schema, final ResponseHandler handler,
+    public void getConnection(final String schema, final ResponseHandler handler,
                               final Object attachment, boolean mustWrite) throws IOException {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-db-instance");
         AbstractService service = TraceManager.getThreadService();
@@ -126,20 +123,33 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 throw new IOException("primary dbInstance switched");
             }
 
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    BackendConnection con;
-                    try {
-                        con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
-                    } catch (IOException e) {
-                        handler.connectionError(e, attachment);
-                        return;
-                    }
-                    TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
-                    con.getBackendService().setAttachment(attachment);
-                    handler.connectionAcquired(con);
+            BackendConnection con = (BackendConnection) connectionPool.borrowDirectly(schema);
+            if (con != null) {
+                if (!StringUtil.equals(con.getSchema(), schema)) {
+                    // need do sharding syn in before sql send
+                    con.setSchema(schema);
                 }
+                TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
+                con.getBackendService().setAttachment(attachment);
+                handler.connectionAcquired(con);
+                return;
+            }
+
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                BackendConnection con1;
+                try {
+                    con1 = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+                } catch (IOException e) {
+                    handler.connectionError(e, attachment);
+                    return;
+                }
+                if (!StringUtil.equals(con1.getSchema(), schema)) {
+                    // need do sharding syn in before sql send
+                    con1.setSchema(schema);
+                }
+                TraceManager.crossThread(con1.getBackendService(), "backend-response-service", service);
+                con1.getBackendService().setAttachment(attachment);
+                handler.connectionAcquired(con1);
             });
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -149,13 +159,17 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     // execute in complex executor guard by business executor
     public BackendConnection getConnection(String schema, final Object attachment) throws IOException {
         BackendConnection con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+        if (!StringUtil.equals(con.getSchema(), schema)) {
+            // need do sharding syn in before sql send
+            con.setSchema(schema);
+        }
         ((MySQLResponseService) con.getService()).setAttachment(attachment);
         return con;
     }
 
     public BackendConnection getConnection(final String schema, final long hardTimeout) throws IOException {
         if (this.connectionPool == null) {
-            throw new IOException("connection pool isn't initalized");
+            throw new IOException("connection pool isn't initialized");
         }
 
         if (disabled.get()) {
@@ -343,30 +357,32 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         }
 
         heartbeat.start();
-        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                        return;
-                    }
-
-                    heartbeat.heartbeat();
+        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                    return;
                 }
+
+                heartbeat.heartbeat();
             }
         }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
     }
 
     public void start(String reason) {
-        LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
-        this.connectionPool.startEvictor();
+        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
+            LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
+            this.connectionPool.startEvictor();
+        }
         startHeartbeat();
     }
 
     public void stop(String reason, boolean closeFront) {
-        LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
         heartbeat.stop(reason);
-        connectionPool.stop(reason, closeFront);
+        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
+            LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
+            connectionPool.stop(reason, closeFront);
+        }
+        isInitial.set(false);
     }
 
     public void closeAllConnection(String reason) {
@@ -454,9 +470,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     @Override
     public String toString() {
         return "dbInstance[name=" + name +
-                ",disabled=" +
-                disabled.toString() + ",maxCon=" +
-                config.getMaxCon() + "]";
+                ",disabled=" + disabled.toString() +
+                ",maxCon=" + config.getMaxCon() +
+                ",minCon=" + config.getMinCon() + "]";
     }
 
 }

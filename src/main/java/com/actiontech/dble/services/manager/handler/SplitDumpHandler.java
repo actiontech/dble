@@ -4,10 +4,10 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.dump.*;
 import com.actiontech.dble.services.manager.response.DumpFileError;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -65,15 +65,15 @@ public final class SplitDumpHandler {
             writer.start();
             // start read
             reader.start(service, dumpFileExecutor);
-        } catch (IOException e) {
-            LOGGER.info("finish to split dump file.");
+        } catch (IOException | InterruptedException e) {
+            LOGGER.info("finish to split dump file because " + e.getMessage());
             service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());
             return;
-        } catch (InterruptedException ie) {
-            LOGGER.info("finish to split dump file, because the task is interrupted.");
-            // manager connection is closed or waiting blocking queue
-            dumpFileExecutor.stop();
-            writer.stop();
+        }
+
+        List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
+        if (!CollectionUtil.isEmpty(errors)) {
+            DumpFileError.execute(service, errors);
             return;
         }
 
@@ -82,12 +82,18 @@ public final class SplitDumpHandler {
         }
 
         if (service.getConnection().isClosed()) {
+            LOGGER.info("finish to split dump file because the connection is closed.");
             dumpFileExecutor.stop();
             writer.stop();
+            service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, "finish to split dump file due to the connection is closed.");
             return;
         }
 
-        List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
+        printMsg(errors, service);
+        LOGGER.info("finish to split dump file.");
+    }
+
+    private static void printMsg(List<ErrorMsg> errors, ManagerService service) {
         if (CollectionUtil.isEmpty(errors)) {
             OkPacket packet = new OkPacket();
             packet.setPacketId(1);
@@ -98,7 +104,6 @@ public final class SplitDumpHandler {
         } else {
             DumpFileError.execute(service, errors);
         }
-        LOGGER.info("finish to split dump file.");
     }
 
     private static DumpFileConfig parseOption(String options) {

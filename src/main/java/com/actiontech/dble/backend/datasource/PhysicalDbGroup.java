@@ -128,25 +128,15 @@ public class PhysicalDbGroup {
     }
 
     public void init(String reason) {
-        if (rwSplitMode == 0) {
-            writeDbInstance.init(reason);
-            return;
-        }
-
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
             entry.getValue().init(reason);
         }
     }
 
-    public void init(List<String> sourceNames, String reason, boolean isFresh) {
-        if (rwSplitMode == 0) {
-            writeDbInstance.init(reason, isFresh);
-            return;
-        }
-
+    public void init(List<String> sourceNames, String reason) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).init(reason, isFresh);
+                allSourceMap.get(sourceName).init(reason);
             }
         }
     }

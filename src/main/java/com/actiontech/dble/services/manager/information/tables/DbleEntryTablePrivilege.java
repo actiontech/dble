@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class DbleEntryTablePrivilege extends ManagerBaseTable {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DbleEntryTablePrivilege.class);
@@ -62,7 +66,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
             if (userConfig instanceof ShardingUserConfig) {
                 ShardingUserConfig shardingUserConfig = ((ShardingUserConfig) userConfig);
                 UserPrivilegesConfig userPrivilegesConfig = shardingUserConfig.getPrivilegesConfig();
-                if (userPrivilegesConfig != null && userPrivilegesConfig.isCheck()) {
+                if (!shardingUserConfig.isReadOnly() && userPrivilegesConfig != null && userPrivilegesConfig.isCheck()) {
                     Map<String, UserPrivilegesConfig.SchemaPrivilege> schemaPrivilege = userPrivilegesConfig.getSchemaPrivileges();
                     schemaPrivilege.forEach((schema, sPrivilege) -> {
                         if (shardingUserConfig.getSchemas().contains(schema)) {
@@ -73,7 +77,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                 Map<String, UserPrivilegesConfig.TablePrivilege> tablePrivilege = sPrivilege.getTablePrivileges();
                                 if (!tablePrivilege.isEmpty()) {
                                     tablePrivilege.forEach((tableName, tPrivilege) -> {
-                                        if ((schemaConfig.isNoSharding() && tableMetas.contains(tableName)) || (!schemaConfig.isNoSharding() && tables.contains(tableName))) {
+                                        if (tableMetas.contains(tableName) || tables.contains(tableName)) {
                                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                                             map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                             map.put(COLUMN_SCHEMA, schema);
@@ -87,33 +91,30 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                         }
                                     });
                                 } else {
-                                    if (schemaConfig.isNoSharding()) {
-                                        int[] dml1 = sPrivilege.getDml();
-                                        tableMetas.forEach(tableName -> {
-                                            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
-                                            map.put(COLUMN_SCHEMA, schema);
-                                            map.put(COLUMN_TABLE, tableName);
-                                            map.put(COLUMN_INSERT, dml1[0] + "");
-                                            map.put(COLUMN_UPDATE, dml1[1] + "");
-                                            map.put(COLUMN_SELECT, dml1[2] + "");
-                                            map.put(COLUMN_DELETE, dml1[3] + "");
-                                            list.add(map);
-                                        });
-                                    } else {
-                                        int[] dml2 = sPrivilege.getDml();
-                                        tables.forEach(tableName -> {
-                                            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
-                                            map.put(COLUMN_SCHEMA, schema);
-                                            map.put(COLUMN_TABLE, tableName);
-                                            map.put(COLUMN_INSERT, dml2[0] + "");
-                                            map.put(COLUMN_UPDATE, dml2[1] + "");
-                                            map.put(COLUMN_SELECT, dml2[2] + "");
-                                            map.put(COLUMN_DELETE, dml2[3] + "");
-                                            list.add(map);
-                                        });
-                                    }
+                                    int[] dml1 = sPrivilege.getDml();
+                                    tables.forEach(tableName -> {
+                                        LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                                        map.put(COLUMN_ID, shardingUserConfig.getId() + "");
+                                        map.put(COLUMN_SCHEMA, schema);
+                                        map.put(COLUMN_TABLE, tableName);
+                                        map.put(COLUMN_INSERT, dml1[0] + "");
+                                        map.put(COLUMN_UPDATE, dml1[1] + "");
+                                        map.put(COLUMN_SELECT, dml1[2] + "");
+                                        map.put(COLUMN_DELETE, dml1[3] + "");
+                                        list.add(map);
+                                    });
+
+                                    tableMetas.forEach(tableName -> {
+                                        LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                                        map.put(COLUMN_ID, shardingUserConfig.getId() + "");
+                                        map.put(COLUMN_SCHEMA, schema);
+                                        map.put(COLUMN_TABLE, tableName);
+                                        map.put(COLUMN_INSERT, dml1[0] + "");
+                                        map.put(COLUMN_UPDATE, dml1[1] + "");
+                                        map.put(COLUMN_SELECT, dml1[2] + "");
+                                        map.put(COLUMN_DELETE, dml1[3] + "");
+                                        list.add(map);
+                                    });
                                 }
                             }
                         }
@@ -121,6 +122,11 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                 }
             }
         });
-        return list;
+        return list.stream().filter(distinctByIdAndSchemaAndTable(p -> p.get(COLUMN_ID) + "_" + p.get(COLUMN_SCHEMA) + "_" + p.get(COLUMN_TABLE))).collect(Collectors.toList());
+    }
+
+    public static <T> Predicate<T> distinctByIdAndSchemaAndTable(Function<? super T, Object> keyExtractor) {
+        Map<Object, Boolean> map = new ConcurrentHashMap<>();
+        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 }

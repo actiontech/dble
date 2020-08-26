@@ -145,7 +145,7 @@ public final class ShowHeartbeat {
         return list;
     }
 
-    private static String getRdCode(int status) {
+    public static String getRdCode(int status) {
         String code = null;
         switch (status) {
             case 0:

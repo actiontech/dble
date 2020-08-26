@@ -25,14 +25,16 @@ public class DbGroupConfig {
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 1;
+    private boolean disableHA;
 
     public DbGroupConfig(String name,
-                         DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, int delayThreshold) {
+                         DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, int delayThreshold, boolean disableHA) {
         super();
         this.name = name;
         this.writeInstanceConfig = writeInstanceConfig;
         this.readInstanceConfigs = readInstanceConfigs;
         this.delayThreshold = delayThreshold;
+        this.disableHA = disableHA;
     }
 
     public int getDelayThreshold() {
@@ -104,5 +106,13 @@ public class DbGroupConfig {
             throw new ConfigException("dbGroup " + name + " errorRetryCount should be greater than 0!");
         }
         this.errorRetryCount = errorRetryCount;
+    }
+
+    public boolean isDisableHA() {
+        return disableHA;
+    }
+
+    public void setDisableHA(boolean disableHA) {
+        this.disableHA = disableHA;
     }
 }

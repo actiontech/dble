@@ -21,6 +21,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 /**
  * @author mycat
  */
@@ -29,6 +31,8 @@ public class MySQLHeartbeat {
     public static final Logger LOGGER = LoggerFactory.getLogger(MySQLHeartbeat.class);
     public static final int DB_SYN_ERROR = -1;
     public static final int DB_SYN_NORMAL = 1;
+    public static final String CHECK_STATUS_CHECKING = "checking";
+    public static final String CHECK_STATUS_IDLE = "idle";
 
     public static final int INIT_STATUS = 0;
     public static final int OK_STATUS = 1;
@@ -50,6 +54,8 @@ public class MySQLHeartbeat {
     private MySQLDetector detector;
     private volatile String message;
     private volatile ScheduledFuture scheduledFuture;
+    private AtomicLong errorTimeInLast5Min = new AtomicLong();
+    private int errorTimeInLast5MinCount = 0;
 
     public MySQLHeartbeat(PhysicalDbInstance dbInstance) {
         this.source = dbInstance;
@@ -116,6 +122,11 @@ public class MySQLHeartbeat {
                 }
             }
         }
+        //reset errorTimeInLast5Min
+        if (null != errorTimeInLast5Min && errorTimeInLast5Min.intValue() != 0 && System.currentTimeMillis() >= errorTimeInLast5Min.get() + MINUTES.toMillis(5)) {
+            errorTimeInLast5Min.set(System.currentTimeMillis());
+            errorTimeInLast5MinCount = 0;
+        }
     }
 
     // only use when heartbeat connection is closed
@@ -128,6 +139,7 @@ public class MySQLHeartbeat {
             isChecking.set(false);
             LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
             heartbeat(); // error count not enough, heart beat again
+            recordErrorCount();
             return true;
         }
         return false;
@@ -148,6 +160,7 @@ public class MySQLHeartbeat {
         if (errorRetryCount > 0 && ++errorCount <= errorRetryCount) {
             LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
             heartbeat(); // error count not enough, heart beat again
+            recordErrorCount();
         }
     }
 
@@ -198,6 +211,17 @@ public class MySQLHeartbeat {
             detector.quit();
         }
     }
+
+    public void recordErrorCount() {
+        long currentTimeMillis = System.currentTimeMillis();
+        if (errorTimeInLast5Min.intValue() == 0) {
+            errorTimeInLast5Min.set(currentTimeMillis);
+        }
+        if (errorTimeInLast5MinCount < errorRetryCount) {
+            errorTimeInLast5MinCount++;
+        }
+    }
+
 
     private void setTimeout() {
         LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
@@ -267,5 +291,9 @@ public class MySQLHeartbeat {
 
     public DbInstanceSyncRecorder getAsyncRecorder() {
         return this.asyncRecorder;
+    }
+
+    public int getErrorTimeInLast5MinCount() {
+        return errorTimeInLast5MinCount;
     }
 }

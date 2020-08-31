@@ -83,7 +83,10 @@ public class FrontendCommandHandler implements NIOHandler {
         if (source instanceof ServerConnection) {
             ((ServerConnection) source).getSession2().resetMultiStatementStatus();
         }
+
+        source.preparePushToQueue();
         DbleServer.getInstance().getFrontHandlerQueue().offer(this);
+        source.finishPushToQueue();
     }
 
     public void handle() {
@@ -147,16 +150,16 @@ public class FrontendCommandHandler implements NIOHandler {
                 break;
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
-                source.setOption(data) ;
+                source.setOption(data);
                 break;
             case MySQLPacket.COM_CHANGE_USER:
                 commands.doOther();
                 changeUserPacket = new ChangeUserPacket(source.getClientFlags(), CharsetUtil.getCollationIndex(source.getCharset().getCollation()));
-                source.changeUser(data, changeUserPacket, isAuthSwitch) ;
+                source.changeUser(data, changeUserPacket, isAuthSwitch);
                 break;
             case MySQLPacket.COM_RESET_CONNECTION:
                 commands.doOther();
-                source.resetConnection() ;
+                source.resetConnection();
                 break;
             default:
                 commands.doOther();

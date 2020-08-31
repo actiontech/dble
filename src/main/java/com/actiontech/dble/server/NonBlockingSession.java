@@ -142,6 +142,28 @@ public class NonBlockingSession implements Session {
         return source;
     }
 
+    void preparePushToQueue() {
+        if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.ready();
+            traceResult.setRouteStart(new TraceRecord(System.nanoTime()));
+        }
+        if (!timeCost) {
+            return;
+        }
+        provider.preparePushToQueue(source.getId());
+    }
+
+    void finishPushToQueue() {
+        if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.ready();
+            traceResult.setRouteStart(new TraceRecord(System.nanoTime()));
+        }
+        if (!timeCost) {
+            return;
+        }
+        provider.finishPushToQueue(source.getId());
+    }
+
     void setRequestTime() {
         sessionStage = SessionStage.Read_SQL;
         long requestTime = 0;

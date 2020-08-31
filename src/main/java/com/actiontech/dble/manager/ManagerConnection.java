@@ -40,6 +40,16 @@ public class ManagerConnection extends FrontendConnection {
     }
 
     @Override
+    public void preparePushToQueue() {
+
+    }
+
+    @Override
+    public void finishPushToQueue() {
+
+    }
+
+    @Override
     public void startProcess() {
         //do nothing
     }

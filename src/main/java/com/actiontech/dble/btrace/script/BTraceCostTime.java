@@ -32,6 +32,35 @@ public class BTraceCostTime {
 
     @OnMethod(
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "preparePushToQueue"
+    )
+    public static void preparePushToQueue(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->0.2.preparePushToQueue", duration);
+    }
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "finishPushToQueue"
+    )
+    public static void finishPushToQueue(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->0.3.finishPushToQueue", duration);
+    }
+
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
             method = "startProcess"
     )
     public static void startProcess(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {

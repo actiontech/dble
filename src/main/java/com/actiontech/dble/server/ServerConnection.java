@@ -183,6 +183,16 @@ public class ServerConnection extends FrontendConnection {
     }
 
     @Override
+    public void preparePushToQueue() {
+        session.preparePushToQueue();
+    }
+
+    @Override
+    public void finishPushToQueue() {
+        session.finishPushToQueue();
+    }
+
+    @Override
     public void startProcess() {
         session.startProcess();
     }

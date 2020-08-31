@@ -9,6 +9,14 @@ public class CostTimeProvider {
     public void beginRequest(long id) {
     }
 
+    public void preparePushToQueue(long id) {
+
+    }
+
+    public void finishPushToQueue(long id) {
+
+    }
+
     public void startProcess(long id) {
     }
 

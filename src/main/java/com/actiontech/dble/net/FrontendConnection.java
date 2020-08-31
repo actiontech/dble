@@ -232,6 +232,10 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected abstract void setRequestTime();
 
+    public abstract void preparePushToQueue();
+
+    public abstract void finishPushToQueue();
+
     public abstract void startProcess();
 
     protected abstract void markFinished();

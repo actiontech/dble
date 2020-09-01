@@ -65,8 +65,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("complexExecutor", sysConfig.getComplexExecutor() + "", "The size of fixed thread pool named of writeToBackendExecutor,the default is the number of processors available to the Java virtual machine * 2"));
         readOnlyParams.add(new ParamInfo("writeToBackendExecutor", sysConfig.getWriteToBackendExecutor() + "", "The executor for complex query.The default value is min(8, default value of processorExecutor)"));
         readOnlyParams.add(new ParamInfo("serverBacklog", sysConfig.getServerBacklog() + "", "The NIO/AIO reactor backlog,the max of create connection request at one time.The default value is 2048"));
-        readOnlyParams.add(new ParamInfo("maxCon", sysConfig.getMaxCon() + "", "The number of max connections the server allowed "));
-        readOnlyParams.add(new ParamInfo("useCompression", sysConfig.getUseCompression() + "", "Whether the Compression is enable,The default number is 0 "));
+        readOnlyParams.add(new ParamInfo("maxCon", sysConfig.getMaxCon() + "", "The number of max connections the server allowed"));
+        readOnlyParams.add(new ParamInfo("useCompression", sysConfig.getUseCompression() + "", "Whether the Compression is enable,The default number is 0"));
         readOnlyParams.add(new ParamInfo("usingAIO", sysConfig.getUsingAIO() + "", "Whether the AIO is enable, The default number is 0(use NIO instead)"));
         readOnlyParams.add(new ParamInfo("useThreadUsageStat", sysConfig.getUseThreadUsageStat() + "", "Whether the thread usage statistics function is enabled.The default value is 0"));
         readOnlyParams.add(new ParamInfo("usePerformanceMode", sysConfig.getUsePerformanceMode() + "", "Whether use the performance mode is enabled.The default value is 0"));
@@ -80,15 +80,15 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("autocommit", sysConfig.getAutocommit() + "", "The initially autocommit value.The default value is 1"));
         readOnlyParams.add(new ParamInfo("idleTimeout", sysConfig.getIdleTimeout() + " ms", "The max allowed idle time of front connection. The connection will be closed if it is timed out after last read/write/heartbeat..The default value is 10min"));
         readOnlyParams.add(new ParamInfo("checkTableConsistency", sysConfig.getCheckTableConsistency() + "", "Whether the consistency tableStructure check is enabled.The default value is 0"));
-        readOnlyParams.add(new ParamInfo("checkTableConsistencyPeriod", sysConfig.getCheckTableConsistencyPeriod() + "ms", "The period of consistency tableStructure check .The default value is 30*60*1000"));
-        readOnlyParams.add(new ParamInfo("processorCheckPeriod", sysConfig.getProcessorCheckPeriod() / 1000 + " Seconds", "The period between the jobs for cleaning the closed or overtime connections. The default is 1 second"));
+        readOnlyParams.add(new ParamInfo("checkTableConsistencyPeriod", sysConfig.getCheckTableConsistencyPeriod() + "ms", "The period of consistency tableStructure check .The default value is 1800000ms(means 30minutes=30*60*1000)"));
+        readOnlyParams.add(new ParamInfo("processorCheckPeriod", sysConfig.getProcessorCheckPeriod() + "ms", "The period between the jobs for cleaning the closed or overtime connections. The default is 1000ms"));
         readOnlyParams.add(new ParamInfo("sqlExecuteTimeout", sysConfig.getSqlExecuteTimeout() + " Seconds", "The max query executing time.If time out,the connection will be closed. The default is 300 seconds"));
         readOnlyParams.add(new ParamInfo("recordTxn", sysConfig.getRecordTxn() + "", "Whether the transaction be recorded as a file,The default value is 0"));
         readOnlyParams.add(new ParamInfo("transactionLogBaseDir", sysConfig.getTransactionLogBaseDir(), "The directory of the transaction record file,The default value is ./txlogs/"));
         readOnlyParams.add(new ParamInfo("transactionLogBaseName", sysConfig.getTransactionLogBaseName(), "The name of the transaction record file.The default value is server-tx"));
         readOnlyParams.add(new ParamInfo("transactionRotateSize", sysConfig.getTransactionRotateSize() + "M", "The max size of the transaction record file.The default value is 16M"));
         readOnlyParams.add(new ParamInfo("xaRecoveryLogBaseDir", sysConfig.getXaRecoveryLogBaseDir(), "The directory of the xa transaction record file,The default value is ./xalogs/"));
-        readOnlyParams.add(new ParamInfo("xaRecoveryLogBaseName", sysConfig.getXaRecoveryLogBaseName(), "The name of the xa transaction record file.The default value is tmlog"));
+        readOnlyParams.add(new ParamInfo("xaRecoveryLogBaseName", sysConfig.getXaRecoveryLogBaseName(), "The name of the xa transaction record file.The default value is xalog"));
         readOnlyParams.add(new ParamInfo("xaSessionCheckPeriod", sysConfig.getXaSessionCheckPeriod() + "ms", "The xa transaction status check period.The default value is 1000ms"));
         readOnlyParams.add(new ParamInfo("xaLogCleanPeriod", sysConfig.getXaLogCleanPeriod() + "ms", "The xa log clear period.The default value is 1000ms"));
         readOnlyParams.add(new ParamInfo("xaRetryCount", sysConfig.getXaRetryCount() + "", "Indicates the number of background retries if the xa failed to commit/rollback.The default value is 0, retry infinitely"));
@@ -104,14 +104,14 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("mappedFileSize", sysConfig.getMappedFileSize() + "", "The Memory linked file size,when complex query resultSet is too large the Memory will be turned to file temporary"));
         readOnlyParams.add(new ParamInfo("useSqlStat", sysConfig.getUseSqlStat() + "", "Whether the SQL statistics function is enable or not.The default value is 1"));
         readOnlyParams.add(new ParamInfo("sqlRecordCount", sysConfig.getSqlRecordCount() + "", "The slow SQL statistics limit,if the slow SQL record is large than the size,the record will be clear.The default value is 10"));
-        readOnlyParams.add(new ParamInfo("maxResultSet", sysConfig.getMaxResultSet() + "B", "The large resultSet SQL standard.The default value is 512*1024B"));
+        readOnlyParams.add(new ParamInfo("maxResultSet", sysConfig.getMaxResultSet() + "B", "The large resultSet SQL standard.The default value is 524288B(means 512*1024)"));
         readOnlyParams.add(new ParamInfo("bufferUsagePercent", sysConfig.getBufferUsagePercent() + "%", "Large result set cleanup trigger percentage.The default value is 80"));
         readOnlyParams.add(new ParamInfo("clearBigSQLResultSetMapMs", sysConfig.getClearBigSQLResultSetMapMs() + "ms", "The period for clear the large resultSet SQL statistics.The default value is 6000000ms"));
-        readOnlyParams.add(new ParamInfo("frontSocketSoRcvbuf", sysConfig.getFrontSocketSoRcvbuf() + "B", "The buffer size of frontend receive socket.The default value is 1024*1024"));
-        readOnlyParams.add(new ParamInfo("frontSocketSoSndbuf", sysConfig.getFrontSocketSoSndbuf() + "B", "The buffer size of frontend send socket.The default value is 1024*1024*4"));
+        readOnlyParams.add(new ParamInfo("frontSocketSoRcvbuf", sysConfig.getFrontSocketSoRcvbuf() + "B", "The buffer size of frontend receive socket.The default value is 1048576B(means 1024*1024)"));
+        readOnlyParams.add(new ParamInfo("frontSocketSoSndbuf", sysConfig.getFrontSocketSoSndbuf() + "B", "The buffer size of frontend send socket.The default value is 4194304B(means 1024*1024*4)"));
         readOnlyParams.add(new ParamInfo("frontSocketNoDelay", sysConfig.getFrontSocketNoDelay() + "", "The frontend nagle is disabled.The default value is 1"));
-        readOnlyParams.add(new ParamInfo("backSocketSoRcvbuf", sysConfig.getBackSocketSoRcvbuf() + "B", "The buffer size of backend receive socket.The default value is 1024*1024*4"));
-        readOnlyParams.add(new ParamInfo("backSocketSoSndbuf", sysConfig.getBackSocketSoSndbuf() + "B", "The buffer size of backend send socket.The default value is 1024*1024"));
+        readOnlyParams.add(new ParamInfo("backSocketSoRcvbuf", sysConfig.getBackSocketSoRcvbuf() + "B", "The buffer size of backend receive socket.The default value is 4194304B(means 1024*1024*4)"));
+        readOnlyParams.add(new ParamInfo("backSocketSoSndbuf", sysConfig.getBackSocketSoSndbuf() + "B", "The buffer size of backend send socket.The default value is 1048576B(means 1024*1024)"));
         readOnlyParams.add(new ParamInfo("backSocketNoDelay", sysConfig.getBackSocketNoDelay() + "", "The backend nagle is disabled.The default value is 1"));
         readOnlyParams.add(new ParamInfo("viewPersistenceConfBaseDir", sysConfig.getViewPersistenceConfBaseDir(), "The directory of the view record file,The default value is ./viewConf/"));
         readOnlyParams.add(new ParamInfo("viewPersistenceConfBaseName", sysConfig.getViewPersistenceConfBaseName(), "The name of the view record file.The default value is viewJson"));
@@ -134,7 +134,7 @@ public final class SystemParams {
         params.add(new ParamInfo("enableSlowLog", SlowQueryLog.getInstance().isEnableSlowLog() + "", "Enable Slow Query Log"));
         params.add(new ParamInfo("sqlSlowTime", SlowQueryLog.getInstance().getSlowTime() + "ms", "The threshold of Slow Query, the default is 100ms"));
         params.add(new ParamInfo("flushSlowLogPeriod", SlowQueryLog.getInstance().getFlushPeriod() + "s", "The period for flushing log to disk, the default is 1 second"));
-        params.add(new ParamInfo("flushSlowLogSize", SlowQueryLog.getInstance().getFlushSize() + "", "The max size for flushing log to disk, the default is 1000 "));
+        params.add(new ParamInfo("flushSlowLogSize", SlowQueryLog.getInstance().getFlushSize() + "", "The max size for flushing log to disk, the default is 1000"));
         params.add(new ParamInfo("enableAlert", AlertUtil.isEnable() + "", "enable or disable alert"));
         params.add(new ParamInfo("capClientFoundRows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows,The default value is false"));
 

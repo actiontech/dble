@@ -489,7 +489,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 tableName = getOwnerTableName(betweenExpr, column);
             }
             if (tableName != null && !"".equals(tableName)) {
-                checkAliasInColumn(tableName);
+                checkAliasInColumn(tableName, false);
                 return new Column(tableName, column);
             }
         }
@@ -509,42 +509,43 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private Column getColumnByExpr(SQLPropertyExpr expr) {
         SQLExpr owner = expr.getOwner();
         String column = expr.getName();
-
+        boolean containSchema = false;
         if (owner instanceof SQLIdentifierExpr || owner instanceof SQLPropertyExpr) {
             String tableName;
             if (owner instanceof SQLPropertyExpr) {
                 tableName = ((SQLPropertyExpr) owner).getName();
                 if (((SQLPropertyExpr) owner).getOwner() instanceof SQLIdentifierExpr) {
+                    containSchema = true;
                     tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) owner).getOwner()).getName() + "." + tableName;
                 }
             } else {
                 tableName = ((SQLIdentifierExpr) owner).getName();
             }
-            checkAliasInColumn(tableName);
+            checkAliasInColumn(tableName, containSchema);
             return new Column(tableName, column);
         }
 
         return null;
     }
 
-    private void checkAliasInColumn(String tableName) {
+    private void checkAliasInColumn(String tableName, boolean containSchema) {
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             tableName = tableName.toLowerCase();
         }
         if (aliasMap.containsKey(tableName)) {
             return;
         }
+        if (containSchema) {
+            putAliasToMap(tableName, tableName.replace("`", ""));
+            return;
+        }
         String tempStr;
-        if (StringUtil.isAlias(tableName)) {
+        if (StringUtil.containsApostrophe(tableName)) {
             tempStr = tableName.replace("`", "");
         } else {
             tempStr = "`" + tableName + "`";
         }
-        if (aliasMap.containsKey(tempStr)) {
-            putAliasToMap(tableName, aliasMap.get(tempStr));
-        } else {
-            putAliasToMap(tableName, tableName.replace("`", ""));
-        }
+        putAliasToMap(tableName, aliasMap.getOrDefault(tempStr, tempStr));
     }
 
     /**
@@ -926,6 +927,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (name != null) {
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 name = name.toLowerCase();
+                value = value.toLowerCase();
             }
             aliasMap.put(name, value);
         }

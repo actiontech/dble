@@ -57,7 +57,7 @@ public class ManagerQueryHandler {
                     ShowHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.DESCRIBE:
-                    Describe.execute(sql, service, rs >>> SHIFT);
+                    Describe.execute(sql, service);
                     break;
                 case ManagerParse.KILL_CONN:
                     KillConnection.response(sql, rs >>> SHIFT, service);

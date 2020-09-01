@@ -19,22 +19,25 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.actiontech.dble.net.connection.PooledConnection.*;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 
 public class ConnectionPool extends PoolBase implements PooledConnectionListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
 
-    private final QueuedSequenceSynchronizer synchronizer;
     private final AtomicInteger waiters;
     private final CopyOnWriteArrayList<PooledConnection> allConnections;
     private final AtomicInteger totalConnections = new AtomicInteger();
-
+    private final SynchronousQueue<PooledConnection> handoffQueue;
     // evictor
     private final WeakReference<ClassLoader> factoryClassLoader;
     private volatile Evictor evictor = null;
@@ -53,76 +56,77 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             factoryClassLoader = new WeakReference<>(cl);
         }
 
-        this.synchronizer = new QueuedSequenceSynchronizer();
+        this.handoffQueue = new SynchronousQueue<>(true);
         this.waiters = new AtomicInteger();
         this.allConnections = new CopyOnWriteArrayList<>();
         this.poolConfig = config.getPoolConfig();
     }
 
-    public PooledConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
-
-        timeout = timeUnit.toNanos(timeout);
-        final long startScan = System.nanoTime();
-        final long originTimeout = timeout;
-        PooledConnection createEntry = null;
-        long startSeq;
-        waiters.incrementAndGet();
-        try {
-            do {
-                do {
-                    startSeq = synchronizer.currentSequence();
-                    for (PooledConnection entry : allConnections) {
-                        if (entry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                            // if we might have stolen another thread's new connection, restart the add...
-                            if (waiters.get() > 1 && createEntry == null) {
-                                newPooledConnection(schema);
-                            }
-                            return entry;
-                        }
-                    }
-
-                } while (startSeq < synchronizer.currentSequence());
-
-                if (createEntry == null || createEntry.getState() != INITIAL) {
-                    createEntry = newPooledConnection(schema);
-                }
-
-                timeout = originTimeout - (System.nanoTime() - startScan);
-            } while (timeout > 10_000L && synchronizer.waitUntilSequenceExceeded(startSeq, timeout));
-        } finally {
-            waiters.decrementAndGet();
-        }
-
-        return null;
-    }
-
-    /**
-     * Create a new pooled object.
-     *
-     * @param schema Key associated with new pooled object
-     * @return The new, wrapped pooled object
-     */
-    private PooledConnection newPooledConnection(final String schema) {
-        if (instance.isDisabled() || isClosed.get()) {
-            return null;
-        }
-
-        if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
-            final PooledConnection conn = newConnection(schema, ConnectionPool.this);
-            if (conn != null) {
+    public PooledConnection borrowDirectly(final String schema) {
+        for (PooledConnection conn : allConnections) {
+            if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                newPooledEntry(schema, waiters.get());
                 return conn;
             }
         }
-
-        totalConnections.decrementAndGet();
-        // alert
-        String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
-        LOGGER.warn(maxConError);
-        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
-        AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
-        ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
-
         return null;
+    }
+
+    public PooledConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
+        final int waiting = waiters.incrementAndGet();
+        try {
+            for (PooledConnection conn : allConnections) {
+                if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                    // If we may have stolen another waiter's connection, request another bag add.
+                    if (waiting > 1) {
+                        newPooledEntry(schema, waiting - 1);
+                    }
+                    return conn;
+                }
+            }
+
+            newPooledEntry(schema, waiting);
+
+            timeout = timeUnit.toNanos(timeout);
+
+            do {
+                final long start = System.nanoTime();
+                final PooledConnection bagEntry = handoffQueue.poll(timeout, NANOSECONDS);
+                if (bagEntry == null || bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                    return bagEntry;
+                }
+
+                timeout -= (System.nanoTime() - start);
+            } while (timeout > 10_000);
+
+            return null;
+        } finally {
+            waiters.decrementAndGet();
+        }
+    }
+
+    private void newPooledEntry(final String schema, final int waiting) {
+        if (instance.isDisabled() || isClosed.get()) {
+            return;
+        }
+
+        if (waiting > 0) {
+            if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
+                final PooledConnection conn = newConnection(schema, ConnectionPool.this);
+                if (conn != null) {
+                    return;
+                }
+            }
+
+            totalConnections.decrementAndGet();
+
+            // alert
+            String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
+            LOGGER.warn(maxConError);
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+            AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
+            ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+        }
     }
 
 
@@ -132,7 +136,15 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
 
         conn.lazySet(STATE_NOT_IN_USE);
-        synchronizer.signal();
+        for (int i = 0; waiters.get() > 0; i++) {
+            if (conn.getState() != STATE_NOT_IN_USE || handoffQueue.offer(conn)) {
+                return;
+            } else if ((i & 0xff) == 0xff) {
+                parkNanos(MICROSECONDS.toNanos(10));
+            } else {
+                Thread.yield();
+            }
+        }
     }
 
     private void fillPool() {
@@ -143,24 +155,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             LOGGER.debug("need add {}", connectionsToAdd);
         }
         for (int i = 0; i < connectionsToAdd; i++) {
-            // newPooledConnection(schemas[i % schemas.length]);
-            newPooledConnection(null);
+            // newPooledEntry(schemas[i % schemas.length]);
+            newPooledEntry(null, 1);
         }
-    }
-
-    /**
-     * Calculate the number of objects to test in a run of the idle object
-     * evictor.
-     *
-     * @return The number of objects to test for validity
-     */
-    private int getNumTests() {
-        final int totalIdle = getCount(STATE_NOT_IN_USE);
-        final int numTests = poolConfig.getNumTestsPerEvictionRun();
-        if (numTests >= 0) {
-            return Math.min(numTests, totalIdle);
-        }
-        return (int) (Math.ceil(totalIdle / Math.abs((double) numTests)));
     }
 
     @Override
@@ -170,8 +167,12 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         if (poolConfig.getTestOnCreate()) {
             conn.synchronousTest();
         }
+
         conn.lazySet(STATE_NOT_IN_USE);
-        synchronizer.signal();
+        // spin until a thread takes it or none are waiting
+        while (waiters.get() > 0 && conn.getState() == STATE_NOT_IN_USE && !handoffQueue.offer(conn)) {
+            Thread.yield();
+        }
 
         if (ToResolveContainer.CREATE_CONN_FAIL.contains(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName())) {
             Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
@@ -196,7 +197,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     @Override
     public void onHeartbeatSuccess(PooledConnection conn) {
         conn.lazySet(STATE_NOT_IN_USE);
-        synchronizer.signal();
     }
 
     public int getCount(final int... states) {
@@ -250,13 +250,11 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     private boolean remove(final PooledConnection pooledConnection) {
-
         final boolean removed = allConnections.remove(pooledConnection);
         if (!removed) {
             LOGGER.warn("Attempt to remove an object from the bag that does not exist: {}", pooledConnection);
         }
 
-        // synchronizer.signal();
         return removed;
     }
 
@@ -275,7 +273,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
     }
 
-
     /**
      * Closes the keyed object pool. Once the pool is closed
      */
@@ -291,11 +288,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
     }
 
-
     /**
      * Closes the keyed object pool. Once the pool is closed
      */
-
     public void stop(final String closureReason) {
         stop(closureReason, false);
     }
@@ -345,14 +340,14 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     public final int getThreadsAwaitingConnection() {
-        return synchronizer.getQueueLength();
+        return waiters.get();
     }
 
     /**
      * <p>Starts the evictor with the given delay. If there is an evictor
      * running when this method is called, it is stopped and replaced with a
      * new evictor with the specified delay.</p>
-     * <p>
+     *
      * <p>This method needs to be final, since it is called from a constructor.
      * See POOL-195.</p>
      */

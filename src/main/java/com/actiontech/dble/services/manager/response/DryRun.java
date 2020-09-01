@@ -19,11 +19,11 @@ import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.meta.table.DryRunGetNodeTablesHandler;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -50,8 +50,7 @@ public final class DryRun {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("TYPE",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("TYPE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("LEVEL", Fields.FIELD_TYPE_VAR_STRING);
@@ -95,13 +94,11 @@ public final class DryRun {
             list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));
         }
 
-
         list.addAll(loader.getErrorInfos());
 
         ServerConfig serverConfig = new ServerConfig(loader);
-        SystemVariables newSystemVariables = null;
         VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDbGroups());
-        newSystemVariables = handler.execute();
+        SystemVariables newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (loader.isFullyConfigured()) {
                 list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
@@ -121,10 +118,6 @@ public final class DryRun {
             } catch (Exception e) {
                 list.add(new ErrorInfo("Xml", "ERROR", e.getMessage()));
             }
-        }
-
-        if (handler.getUsedDbInstance() != null) {
-            handler.getUsedDbInstance().closeAllConnection("dry run end");
         }
 
         userCheck(list, serverConfig);
@@ -156,7 +149,7 @@ public final class DryRun {
 
             for (SchemaConfig schema : serverConfig.getSchemas().values()) {
                 for (BaseTableConfig table : schema.getTables().values()) {
-                    StringBuilder sb = new StringBuilder("");
+                    StringBuilder sb = new StringBuilder(100);
                     for (String exDn : table.getShardingNodes()) {
                         if (tableMap.get(exDn) != null && !tableMap.get(exDn).contains(table.getName())) {
                             sb.append(exDn).append(",");

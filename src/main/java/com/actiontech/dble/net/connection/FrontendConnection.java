@@ -91,4 +91,8 @@ public class FrontendConnection extends AbstractConnection {
     public FrontEndService getFrontEndService() {
         return (FrontEndService) getService();
     }
+
+    public String toString() {
+        return "FrontendConnection[id = " + id + " port = " + port + " localport = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "]";
+    }
 }

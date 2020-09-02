@@ -13,21 +13,25 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
-import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.statistic.CommandCount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 public class RWSplitService extends MySQLBasedService implements FrontEndService {
 
+    protected static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
+
     private final CommandCount commands;
+    private final RWSplitQueryHandler queryHandler;
     private UserName user;
     private volatile String schema;
     private PhysicalDbGroup group;
@@ -39,6 +43,7 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         super(connection);
         this.commands = connection.getProcessor().getCommands();
         this.proto = new MySQLProtoHandlerImpl();
+        this.queryHandler = new RWSplitQueryHandler(this);
     }
 
     public void initFromAuthInfo(AuthResultInfo info) {
@@ -56,6 +61,15 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         if (clientCompress && usingCompress) {
             this.setSupportCompress(true);
         }
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder s = new StringBuilder();
+            s.append(this).append('\'').append(auth.getUser()).append("' login success");
+            byte[] extra = auth.getExtra();
+            if (extra != null && extra.length > 0) {
+                s.append(",extra:").append(new String(extra));
+            }
+            LOGGER.debug(s.toString());
+        }
     }
 
     @Override
@@ -70,55 +84,69 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
                 commands.doInitDB();
                 MySQLMessage mm = new MySQLMessage(data);
                 mm.position(5);
-                String db = null;
+                String switchSchema;
                 try {
-                    db = mm.readString(getCharset().getClient());
+                    switchSchema = mm.readString(getCharset().getClient());
                 } catch (UnsupportedEncodingException e) {
                     writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
                     return;
                 }
-                this.schema = db;
-                writeDirectly(OkPacket.OK);
+                this.executeSql = "use `" + switchSchema + "`";
+                execute(false, service -> service.setSchema(switchSchema));
                 break;
             }
-            case MySQLPacket.COM_QUIT:
-                commands.doQuit();
-                connection.close("quit cmd");
-                break;
             case MySQLPacket.COM_QUERY: {
                 commands.doQuery();
-                String sql;
+                MySQLMessage mm = new MySQLMessage(data);
+                mm.position(5);
                 try {
-                    MySQLMessage mm = new MySQLMessage(data);
-                    mm.position(5);
-                    sql = mm.readString(getCharset().getClient());
+                    String sql = mm.readString(getCharset().getClient());
+                    executeSql = sql;
+                    queryHandler.query(sql);
                 } catch (UnsupportedEncodingException e) {
                     writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
                     return;
                 }
-                executeSql = sql;
-                int sqlType = ServerParse.parse(sql);
-                PhysicalDbInstance instance = null;
-                if ((sqlType & 0xff) == ServerParse.SELECT || sqlType == ServerParse.SHOW) {
-                    instance = group.select(true);
-                } else if (sqlType == ServerParse.DDL) {
-                    instance = group.select(false);
-                } else {
-                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "not support");
-                    return;
-                }
-
-                try {
-                    instance.getConnection(this.schema, new RWSplitHandler(this), null, false);
-                } catch (IOException e) {
-                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
-                }
-
                 break;
             }
+            // prepared statement
+            case MySQLPacket.COM_STMT_PREPARE:
+                commands.doStmtPrepare();
+                // todo
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                break;
+            case MySQLPacket.COM_STMT_RESET:
+                commands.doStmtReset();
+                // todo
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                break;
+            case MySQLPacket.COM_STMT_EXECUTE:
+                commands.doStmtExecute();
+                // todo
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                break;
+            // connection
+            case MySQLPacket.COM_QUIT:
+                commands.doQuit();
+                connection.close("quit cmd");
+                break;
+            case MySQLPacket.COM_HEARTBEAT:
+                commands.doHeartbeat();
+                Heartbeat.response(connection, data);
+                break;
+            // other statement push down to master
             default:
                 commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                execute(false, null);
+        }
+    }
+
+    public void execute(boolean canPushDown2Slave, Callback callback) {
+        PhysicalDbInstance instance = group.select(canPushDown2Slave);
+        try {
+            instance.getConnection(this.schema, new RWSplitHandler(this, callback), null, false);
+        } catch (IOException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         }
     }
 
@@ -130,6 +158,14 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
     @Override
     public UserName getUser() {
         return user;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
     }
 
     @Override

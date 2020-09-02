@@ -41,7 +41,6 @@ public class TestSchemasTask extends Thread {
         for (Pair<String, String> node : nodeList) {
             nodes.put(node.getValue(), node.getKey()); // sharding->node
         }
-
     }
 
     public Map<String, String> getNodes() {

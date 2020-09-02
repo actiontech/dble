@@ -17,16 +17,19 @@ import java.util.List;
 
 public class RWSplitHandler implements ResponseHandler {
 
+
     private final RWSplitService rwSplitService;
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
     private byte packetId = 0;
     private volatile int offset;
     private boolean write2Client = false;
+    private final Callback callback;
 
-    public RWSplitHandler(RWSplitService service) {
+    public RWSplitHandler(RWSplitService service, Callback callback) {
         this.rwSplitService = service;
         this.frontedConnection = service.getConnection();
+        this.callback = callback;
     }
 
     @Override
@@ -68,6 +71,9 @@ public class RWSplitHandler implements ResponseHandler {
             synchronized (this) {
                 if (!write2Client) {
                     data[3] -= offset;
+                    if (callback != null) {
+                        callback.onOKResponse(rwSplitService);
+                    }
                     frontedConnection.write(data);
                     write2Client = true;
                 }

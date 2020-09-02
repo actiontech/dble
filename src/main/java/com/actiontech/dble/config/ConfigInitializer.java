@@ -159,13 +159,13 @@ public class ConfigInitializer implements ProblemReporter {
         }
         allUseShardingNode.clear();
 
-        //delete redundancy dbGroup
+        // include rwSplit dbGroup
         for (UserConfig config : this.users.values()) {
             if (config instanceof RwSplitUserConfig) {
                 allUseHost.add(((RwSplitUserConfig) config).getDbGroup());
             }
         }
-
+        // delete redundancy dbGroup
         if (allUseHost.size() < this.dbGroups.size()) {
             Iterator<String> dbGroup = this.dbGroups.keySet().iterator();
             while (dbGroup.hasNext()) {
@@ -187,31 +187,34 @@ public class ConfigInitializer implements ProblemReporter {
             Set<String> errDbInstanceNames = new HashSet<>();
             boolean isAllDbInstanceConnected = true;
             // check whether dbInstance is connected
+            String dbGroupName;
+            PhysicalDbGroup dbGroup;
             for (Map.Entry<String, PhysicalDbGroup> entry : this.dbGroups.entrySet()) {
-                PhysicalDbGroup pool = dbGroups.get(entry.getKey());
+                dbGroup = entry.getValue();
+                dbGroupName = entry.getKey();
 
+                // sharding group
                 List<Pair<String, String>> schemaList = null;
-                if (hostSchemaMap.containsKey(entry.getKey())) {
-                    // sharding group
+                if (hostSchemaMap.containsKey(dbGroupName)) {
                     schemaList = hostSchemaMap.get(entry.getKey());
-                    checkMaxCon(pool, schemaList.size());
+                    checkMaxCon(dbGroup, schemaList.size());
                 }
 
-                for (PhysicalDbInstance ds : pool.getDbInstances(true)) {
+                for (PhysicalDbInstance ds : dbGroup.getDbInstances(true)) {
                     if (ds.getConfig().isDisabled()) {
-                        errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
+                        errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + dbGroupName + "," + ds.getName() + "] is disabled"));
                         LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
                         ds.setTestConnSuccess(false);
                         continue;
                     } else if (ds.isFakeNode()) {
-                        errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is fake Node"));
+                        errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + dbGroupName + "," + ds.getName() + "] is fake Node"));
                         LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
                         ds.setTestConnSuccess(false);
                         continue;
                     }
-                    if (!testDbInstance(ds, schemaList)) {
+                    if (!testDbInstance(dbGroupName, ds, schemaList)) {
                         isAllDbInstanceConnected = false;
-                        errDbInstanceNames.add("dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getName() + "]");
+                        errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
                     }
                 }
             }
@@ -231,7 +234,6 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-
     private void checkMaxCon(PhysicalDbGroup pool, int schemasCount) {
         for (PhysicalDbInstance dbInstance : pool.getDbInstances(true)) {
             if (dbInstance.getConfig().getMaxCon() < Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())) {
@@ -246,9 +248,9 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-    private boolean testDbInstance(PhysicalDbInstance ds, List<Pair<String, String>> schemaList) {
+    private boolean testDbInstance(String dbGroupName, PhysicalDbInstance ds, List<Pair<String, String>> schemaList) {
         boolean isConnectivity = true;
-        String dbInstanceName = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getName() + "]";
+        String dbInstanceKey = "dbInstance[" + dbGroupName + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
             TestTask testDsTask = new TestTask(ds, isDSConnectedPtr);
@@ -257,26 +259,26 @@ public class ConfigInitializer implements ProblemReporter {
             boolean isDbInstanceConnected = isDSConnectedPtr.get();
             ds.setTestConnSuccess(isDbInstanceConnected);
             if (!isDbInstanceConnected) {
-                errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getDbGroupConfig().getName() + "," + ds.getName() + "]"));
-                LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceName + "]");
+                errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + dbInstanceKey + "]"));
+                LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceKey + "]");
                 isConnectivity = false;
             } else if (schemaList != null) {
                 TestSchemasTask testSchemaTask = new TestSchemasTask(ds, schemaList, !ds.isReadInstance());
                 testSchemaTask.start();
                 testSchemaTask.join(3000);
             } else {
-                LOGGER.warn("SelfCheck### connect to [" + dbInstanceName + "] successfully.");
+                LOGGER.warn("SelfCheck### connect to [" + dbInstanceKey + "] successfully.");
             }
         } catch (InterruptedException e) {
-            errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getDbGroupConfig().getName() + "," + ds.getName() + "]"));
-            LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceName + "]");
+            errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + dbInstanceKey + "]"));
+            LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceKey + "]");
             isConnectivity = false;
         }
         return isConnectivity;
     }
 
     private Map<String, List<Pair<String, String>>> genDbInstanceSchemaMap() {
-        Map<String, List<Pair<String, String>>> dbInstanceSchemaMap = new HashMap<>();
+        Map<String, List<Pair<String, String>>> dbInstanceSchemaMap = new HashMap<>(16);
         if (shardingNodes != null) {
             for (ShardingNode shardingNode : shardingNodes.values()) {
                 List<Pair<String, String>> nodes = dbInstanceSchemaMap.computeIfAbsent(shardingNode.getDbGroupName(), k -> new ArrayList<>(8));
@@ -320,7 +322,6 @@ public class ConfigInitializer implements ProblemReporter {
         }
         return nodes;
     }
-
 
     public boolean isFullyConfigured() {
         return fullyConfigured;

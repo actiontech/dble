@@ -34,7 +34,7 @@ public abstract class ManagerBaseTable {
         return isWritable;
     }
 
-    public List<RowDataPacket> getRow(List<Item> realSelects, String charset) {
+    public List<RowDataPacket> getRow(LinkedHashSet<Item> realSelects, String charset) {
         List<LinkedHashMap<String, String>> lst = getRows();
         List<RowDataPacket> rows = new ArrayList<>(lst.size());
         for (LinkedHashMap<String, String> rowForTable : lst) {

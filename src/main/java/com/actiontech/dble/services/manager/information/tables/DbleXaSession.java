@@ -36,7 +36,7 @@ public class DbleXaSession extends ManagerBaseTable {
         columns.put(COLUMN_XA_STATE, new ColumnMeta(COLUMN_XA_STATE, "varchar(20)", false));
         columnsType.put(COLUMN_XA_STATE, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(64)", false));
+        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(64)", false, true));
         columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
     }
 

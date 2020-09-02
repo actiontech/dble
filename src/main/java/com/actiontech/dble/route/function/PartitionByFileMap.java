@@ -62,6 +62,10 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
         this.mapFile = mapFile;
     }
 
+    public String getMapFile() {
+        return mapFile;
+    }
+
     public void setType(int type) {
         this.type = type;
         propertiesMap.put("type", String.valueOf(type));

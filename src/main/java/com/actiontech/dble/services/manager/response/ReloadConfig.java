@@ -31,6 +31,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
@@ -280,6 +281,7 @@ public final class ReloadConfig {
             Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
             Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
+            Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
 
             /*
              *  2 transform
@@ -302,7 +304,7 @@ public final class ReloadConfig {
                 boolean result;
                 try {
                     result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode);
+                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newFunctions);
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
                         initFailed(newDbGroups);
@@ -386,6 +388,7 @@ public final class ReloadConfig {
             Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
             Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
+            Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
 
 
             ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
@@ -397,7 +400,7 @@ public final class ReloadConfig {
                 boolean result;
                 try {
                     result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode);
+                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newFunctions);
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
                         initFailed(newDbGroups);

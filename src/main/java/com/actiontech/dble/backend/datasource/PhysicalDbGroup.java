@@ -42,7 +42,7 @@ public class PhysicalDbGroup {
     private final String groupName;
     private final DbGroupConfig dbGroupConfig;
     private volatile PhysicalDbInstance writeDbInstance;
-    private Map<String, PhysicalDbInstance> allDbInstancesMap = new HashMap<>();
+    private Map<String, PhysicalDbInstance> allSourceMap = new HashMap<>();
 
     private final int rwSplitMode;
     protected String[] schemas;
@@ -57,11 +57,11 @@ public class PhysicalDbGroup {
         writeDbInstances.setDbGroup(this);
         this.writeDbInstance = writeDbInstances;
         this.writeInstanceList = Collections.singletonList(writeDbInstance);
-        allDbInstancesMap.put(writeDbInstances.getName(), writeDbInstances);
+        allSourceMap.put(writeDbInstances.getName(), writeDbInstances);
 
         for (PhysicalDbInstance readDbInstance : readDbInstances) {
             readDbInstance.setDbGroup(this);
-            allDbInstancesMap.put(readDbInstance.getName(), readDbInstance);
+            allSourceMap.put(readDbInstance.getName(), readDbInstance);
         }
     }
 
@@ -69,10 +69,10 @@ public class PhysicalDbGroup {
         this.groupName = org.groupName;
         this.rwSplitMode = org.rwSplitMode;
         this.dbGroupConfig = org.dbGroupConfig;
-        this.allDbInstancesMap = new HashMap<>();
-        for (Map.Entry<String, PhysicalDbInstance> entry : org.allDbInstancesMap.entrySet()) {
+        this.allSourceMap = new HashMap<>();
+        for (Map.Entry<String, PhysicalDbInstance> entry : org.allSourceMap.entrySet()) {
             MySQLInstance newSource = new MySQLInstance((MySQLInstance) entry.getValue());
-            this.allDbInstancesMap.put(entry.getKey(), newSource);
+            this.allSourceMap.put(entry.getKey(), newSource);
             if (entry.getValue() == org.writeDbInstance) {
                 this.writeDbInstance = newSource;
             }
@@ -97,7 +97,7 @@ public class PhysicalDbGroup {
     }
 
     public boolean isAllFakeNode() {
-        for (PhysicalDbInstance source : allDbInstancesMap.values()) {
+        for (PhysicalDbInstance source : allSourceMap.values()) {
             if (!source.isFakeNode()) {
                 return false;
             }
@@ -107,7 +107,7 @@ public class PhysicalDbGroup {
 
     PhysicalDbInstance findDbInstance(BackendConnection exitsCon) {
         PhysicalDbInstance source = (PhysicalDbInstance) exitsCon.getPoolRelated().getInstance();
-        PhysicalDbInstance target = allDbInstancesMap.get(source.getName());
+        PhysicalDbInstance target = allSourceMap.get(source.getName());
         if (source == target) {
             return source;
         }
@@ -133,15 +133,15 @@ public class PhysicalDbGroup {
     }
 
     public void init(String reason) {
-        for (Map.Entry<String, PhysicalDbInstance> entry : allDbInstancesMap.entrySet()) {
+        for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
             entry.getValue().init(reason);
         }
     }
 
     public void init(List<String> sourceNames, String reason) {
         for (String sourceName : sourceNames) {
-            if (allDbInstancesMap.containsKey(sourceName)) {
-                allDbInstancesMap.get(sourceName).init(reason);
+            if (allSourceMap.containsKey(sourceName)) {
+                allSourceMap.get(sourceName).init(reason);
             }
         }
     }
@@ -151,15 +151,15 @@ public class PhysicalDbGroup {
     }
 
     public void stop(String reason, boolean closeFront) {
-        for (PhysicalDbInstance dbInstance : allDbInstancesMap.values()) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
             dbInstance.stop(reason, closeFront);
         }
     }
 
     public void stop(List<String> sourceNames, String reason, boolean closeFront) {
         for (String sourceName : sourceNames) {
-            if (allDbInstancesMap.containsKey(sourceName)) {
-                allDbInstancesMap.get(sourceName).stop(reason, closeFront);
+            if (allSourceMap.containsKey(sourceName)) {
+                allSourceMap.get(sourceName).stop(reason, closeFront);
             }
         }
 
@@ -182,17 +182,17 @@ public class PhysicalDbGroup {
         if (!isAll && rwSplitMode == RW_SPLIT_OFF) {
             return writeInstanceList;
         }
-        return allDbInstancesMap.values();
+        return allSourceMap.values();
     }
 
     public Map<String, PhysicalDbInstance> getAllDbInstanceMap() {
-        return allDbInstancesMap;
+        return allSourceMap;
     }
 
     public PhysicalDbInstance[] getReadDbInstances() {
-        PhysicalDbInstance[] readSources = new PhysicalDbInstance[allDbInstancesMap.size() - 1];
+        PhysicalDbInstance[] readSources = new PhysicalDbInstance[allSourceMap.size() - 1];
         int i = 0;
-        for (PhysicalDbInstance source : allDbInstancesMap.values()) {
+        for (PhysicalDbInstance source : allSourceMap.values()) {
             if (source.getName().equals(writeDbInstance.getName())) {
                 continue;
             }
@@ -202,7 +202,7 @@ public class PhysicalDbGroup {
     }
 
     public PhysicalDbInstance select(boolean canSelectSlave) {
-        if (allDbInstancesMap.size() == 1 || rwSplitMode == RW_SPLIT_OFF) {
+        if (allSourceMap.size() == 1 || rwSplitMode == RW_SPLIT_OFF) {
             return writeDbInstance;
         }
 
@@ -217,8 +217,8 @@ public class PhysicalDbGroup {
     }
 
     private List<PhysicalDbInstance> getRWDbInstances() {
-        ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allDbInstancesMap.values().size());
-        for (PhysicalDbInstance ds : allDbInstancesMap.values()) {
+        ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
+        for (PhysicalDbInstance ds : allSourceMap.values()) {
             if (rwSplitMode == RW_SPLIT_ALL && ds == writeDbInstance && writeDbInstance.isAlive()) {
                 okSources.add(ds);
                 continue;
@@ -232,14 +232,14 @@ public class PhysicalDbGroup {
     }
 
     public String disableHosts(String hostNames, boolean syncWriteConf) {
-        String[] nameList = hostNames == null ? Arrays.copyOf(allDbInstancesMap.keySet().toArray(), allDbInstancesMap.keySet().toArray().length, String[].class) : hostNames.split(",");
+        String[] nameList = hostNames == null ? Arrays.copyOf(allSourceMap.keySet().toArray(), allSourceMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
         try {
             HaConfigManager.getInstance().updateDbGroupConf(createDisableSnapshot(this, nameList), syncWriteConf);
             for (String dsName : nameList) {
-                allDbInstancesMap.get(dsName).disable("ha command disable dbInstance");
+                allSourceMap.get(dsName).disable("ha command disable dbInstance");
             }
             return this.getClusterHaJson();
         } finally {
@@ -251,14 +251,14 @@ public class PhysicalDbGroup {
     private PhysicalDbGroup createDisableSnapshot(PhysicalDbGroup org, String[] nameList) {
         PhysicalDbGroup snapshot = new PhysicalDbGroup(org);
         for (String dsName : nameList) {
-            PhysicalDbInstance dbInstance = snapshot.allDbInstancesMap.get(dsName);
+            PhysicalDbInstance dbInstance = snapshot.allSourceMap.get(dsName);
             dbInstance.setDisabled(true);
         }
         return snapshot;
     }
 
     public String enableHosts(String hostNames, boolean syncWriteConf) {
-        String[] nameList = hostNames == null ? Arrays.copyOf(allDbInstancesMap.keySet().toArray(), allDbInstancesMap.keySet().toArray().length, String[].class) : hostNames.split(",");
+        String[] nameList = hostNames == null ? Arrays.copyOf(allSourceMap.keySet().toArray(), allSourceMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
@@ -267,7 +267,7 @@ public class PhysicalDbGroup {
             HaConfigManager.getInstance().updateDbGroupConf(createEnableSnapshot(this, nameList), syncWriteConf);
 
             for (String dsName : nameList) {
-                allDbInstancesMap.get(dsName).enable();
+                allSourceMap.get(dsName).enable();
             }
             return this.getClusterHaJson();
         } finally {
@@ -279,7 +279,7 @@ public class PhysicalDbGroup {
     private PhysicalDbGroup createEnableSnapshot(PhysicalDbGroup org, String[] nameList) {
         PhysicalDbGroup snapshot = new PhysicalDbGroup(org);
         for (String dsName : nameList) {
-            PhysicalDbInstance dbInstance = snapshot.allDbInstancesMap.get(dsName);
+            PhysicalDbInstance dbInstance = snapshot.allSourceMap.get(dsName);
             dbInstance.setDisabled(false);
         }
         return snapshot;
@@ -292,7 +292,7 @@ public class PhysicalDbGroup {
         try {
             HaConfigManager.getInstance().updateDbGroupConf(createSwitchSnapshot(writeHost), syncWriteConf);
 
-            PhysicalDbInstance newWriteHost = allDbInstancesMap.get(writeHost);
+            PhysicalDbInstance newWriteHost = allSourceMap.get(writeHost);
             writeDbInstance.setReadInstance(true);
             //close all old master connection ,so that new writeDirectly query would not put into the old writeHost
             writeDbInstance.closeAllConnection("ha command switch dbInstance");
@@ -320,7 +320,7 @@ public class PhysicalDbGroup {
 
     private PhysicalDbGroup createSwitchSnapshot(String writeHost) {
         PhysicalDbGroup snapshot = new PhysicalDbGroup(this);
-        PhysicalDbInstance newWriteHost = snapshot.allDbInstancesMap.get(writeHost);
+        PhysicalDbInstance newWriteHost = snapshot.allSourceMap.get(writeHost);
         snapshot.writeDbInstance.setReadInstance(true);
         newWriteHost.setReadInstance(false);
         snapshot.writeDbInstance = newWriteHost;
@@ -339,7 +339,7 @@ public class PhysicalDbGroup {
             }.getType();
             List<DbInstanceStatus> list = base.toBeanformJson(jsonObj.get(JSON_LIST).toString(), parseType);
             for (DbInstanceStatus status : list) {
-                PhysicalDbInstance dbInstance = allDbInstancesMap.get(status.getName());
+                PhysicalDbInstance dbInstance = allSourceMap.get(status.getName());
                 if (dbInstance != null) {
                     if (status.isDisable()) {
                         //clear old resource
@@ -372,7 +372,7 @@ public class PhysicalDbGroup {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty(JSON_NAME, this.getGroupName());
         List<DbInstanceStatus> list = new ArrayList<>();
-        for (PhysicalDbInstance phys : allDbInstancesMap.values()) {
+        for (PhysicalDbInstance phys : allSourceMap.values()) {
             list.add(new DbInstanceStatus(phys.getName(), phys.isDisabled(), !phys.isReadInstance()));
         }
         Gson gson = new Gson();
@@ -385,7 +385,7 @@ public class PhysicalDbGroup {
         if (instanceName != null) {
             for (String dn : instanceName.split(",")) {
                 boolean find = false;
-                for (PhysicalDbInstance pds : this.allDbInstancesMap.values()) {
+                for (PhysicalDbInstance pds : this.allSourceMap.values()) {
                     if (pds.getName().equals(dn)) {
                         find = true;
                         break;

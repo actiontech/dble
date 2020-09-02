@@ -49,7 +49,7 @@ public final class FreshBackendConn {
                         warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
                     }
                     dh.stop(sourceNames, "fresh backend conn", isForced);
-                    dh.init(sourceNames, "fresh backend conn", true);
+                    dh.init(sourceNames, "fresh backend conn");
                 }
             } catch (Exception e) {
                 service.writeErrMessage(ErrorCode.ER_YES, "disable dbGroup with error, use show @@backend to check latest status. Error:" + e.getMessage());

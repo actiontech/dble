@@ -19,17 +19,17 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerQueryHandler.class);
 
     private final RWSplitService service;
-    private Boolean readOnly = true;
-    private boolean sessionReadOnly = true;
+    //private Boolean readOnly = true;
+    //private boolean sessionReadOnly = true;
 
     @Override
     public void setReadOnly(Boolean readOnly) {
-        this.readOnly = readOnly;
+        //this.readOnly = readOnly;
     }
 
     @Override
     public void setSessionReadOnly(boolean sessionReadOnly) {
-        this.sessionReadOnly = sessionReadOnly;
+        // this.sessionReadOnly = sessionReadOnly;
     }
 
     public RWSplitQueryHandler(AbstractService service) {

@@ -173,4 +173,9 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
         okPacket.read(OkPacket.OK);
         okPacket.write(this.getConnection());
     }
+
+    @Override
+    public String toString() {
+        return "ManagerService [user = " + user + " sql = " + executeSql + " schema = " + schema + " ] \nWith connection " + connection.toString();
+    }
 }

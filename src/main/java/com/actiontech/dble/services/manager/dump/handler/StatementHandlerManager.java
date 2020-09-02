@@ -22,7 +22,7 @@ public final class StatementHandlerManager {
     public static StatementHandler getHandler(int sqlType) {
         // parse ddl or create database
         if (ServerParse.CREATE_DATABASE == sqlType || ServerParse.USE == (0xff & sqlType)) {
-            return handlers.get("sharding");
+            return handlers.get("schema");
         }
         if (ServerParse.LOCK == sqlType || ServerParse.DDL == sqlType) {
             return handlers.get("table");

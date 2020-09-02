@@ -23,6 +23,7 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
+import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.singleton.TraceManager;
@@ -45,6 +46,7 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile boolean fullyConfigured = false;
     private volatile Map<String, Properties> blacklistConfig;
+    private volatile Map<String, AbstractPartitionAlgorithm> functions;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
@@ -60,6 +62,7 @@ public class ConfigInitializer implements ProblemReporter {
             this.schemas = shardingLoader.getSchemas();
             this.erRelations = shardingLoader.getErRelations();
             this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
+            this.functions = shardingLoader.getFunctions();
 
             //load user.xml
             XMLUserLoader userLoader = new XMLUserLoader(null, this);
@@ -299,6 +302,10 @@ public class ConfigInitializer implements ProblemReporter {
 
     public Map<String, SchemaConfig> getSchemas() {
         return schemas;
+    }
+
+    public Map<String, AbstractPartitionAlgorithm> getFunctions() {
+        return functions;
     }
 
     public Map<String, ShardingNode> getShardingNodes() {

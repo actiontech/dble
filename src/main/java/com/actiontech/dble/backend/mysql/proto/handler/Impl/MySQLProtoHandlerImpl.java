@@ -59,9 +59,9 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             // not read whole message package ,so check if buffer enough and
             // compact dataBuffer
             if (!dataBuffer.hasRemaining()) {
-                return new ProtoHandlerResult(BUFFER_NOT_BIG_ENOUGH, offset);
+                return new ProtoHandlerResult(BUFFER_NOT_BIG_ENOUGH, offset, length);
             } else {
-                return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset);
+                return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset, length);
             }
         }
     }

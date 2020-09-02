@@ -91,22 +91,26 @@ public class DbleTable extends ManagerBaseTable {
         List<String> nameList = Lists.newArrayList();
         //config
         TreeMap<String, SchemaConfig> schemaMap = new TreeMap<>(DbleServer.getInstance().getConfig().getSchemas());
-        if (null != tableType) {
-            schemaMap.entrySet().stream().forEach(e -> e.getValue().getTables().entrySet().stream().filter(p -> tableType.equals(distinguishType(p.getValue())) && !nameList.contains(e.getValue().getName() + "-" + p.getKey())).sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(t -> {
-                BaseTableConfig baseTableConfig = t.getValue();
-                SchemaConfig schemaConfig = e.getValue();
-                LinkedHashMap map = initMap(schemaConfig, baseTableConfig, tableType, null, schemaMap);
-                rowList.add(map);
-                nameList.add(schemaConfig.getName() + "-" + baseTableConfig.getName());
-            }));
-        } else {
-            schemaMap.entrySet().stream().forEach(e -> e.getValue().getTables().entrySet().stream().filter(p -> !nameList.contains(e.getValue().getName() + "-" + p.getKey())).sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(t -> {
-                SchemaConfig schemaConfig = e.getValue();
-                BaseTableConfig baseTableConfig = t.getValue();
-                LinkedHashMap map = initMap(schemaConfig, baseTableConfig, null, null, schemaMap);
-                rowList.add(map);
-                nameList.add(schemaConfig.getName() + "-" + baseTableConfig.getName());
-            }));
+
+        for (Map.Entry<String, SchemaConfig> schemaConfigEntry : schemaMap.entrySet()) {
+            SchemaConfig schemaConfig = schemaConfigEntry.getValue();
+            Map<String, BaseTableConfig> tableConfigMap = schemaConfig.getTables();
+            List<Map.Entry<String, BaseTableConfig>> tableConfigList = new ArrayList<>(tableConfigMap.entrySet());
+            tableConfigList.sort(Comparator.comparingInt(tableConfigEntry -> tableConfigEntry.getValue().getId()));
+            for (Map.Entry<String, BaseTableConfig> tableConfigEntry : tableConfigList) {
+                BaseTableConfig tableConfig = tableConfigEntry.getValue();
+                if (null != tableType && tableType.equals(distinguishType(tableConfig)) && !nameList.contains(schemaConfig.getName() + "-" + tableConfig.getName())) {
+                    // dble_global, dble_sharding, dble_child
+                    LinkedHashMap<String, String> map = initMap(schemaConfig, tableConfig, tableType, null, schemaMap);
+                    rowList.add(map);
+                    nameList.add(schemaConfig.getName() + "-" + tableConfig.getName());
+                } else if (null == tableType && !nameList.contains(schemaConfig.getName() + "-" + tableConfig.getName())) {
+                    //dble_table
+                    LinkedHashMap<String, String> map = initMap(schemaConfig, tableConfig, null, null, schemaMap);
+                    rowList.add(map);
+                    nameList.add(schemaConfig.getName() + "-" + tableConfig.getName());
+                }
+            }
         }
         if (null != tableType) {
             return rowList;
@@ -114,10 +118,21 @@ public class DbleTable extends ManagerBaseTable {
         //metadata-no sharding
         List<TableMeta> tableMetaList = Lists.newArrayList();
         Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
-        schemaMetaMap.entrySet().stream().forEach(e -> e.getValue().getTableMetas().entrySet().stream().filter(p -> !nameList.contains(e.getKey() + "-" + p.getKey())).forEach(p -> tableMetaList.add(new TableMeta(p.getValue().getId(), e.getKey(), p.getKey()))));
-        tableMetaList.stream().sorted(Comparator.comparing(TableMeta::getId)).forEach(e -> {
-            TableMeta tableMeta = e;
-            LinkedHashMap map = initMap(null, null, null, tableMeta, null);
+        for (Map.Entry<String, SchemaMeta> schemaMetaEntry : schemaMetaMap.entrySet()) {
+            String schemaName = schemaMetaEntry.getKey();
+            SchemaMeta schemaMeta = schemaMetaEntry.getValue();
+            Map<String, TableMeta> tableMetaMap = schemaMeta.getTableMetas();
+            for (Map.Entry<String, TableMeta> tableMetaEntry : tableMetaMap.entrySet()) {
+                String tableName = tableMetaEntry.getKey();
+                TableMeta tableMeta = tableMetaEntry.getValue();
+                if (!nameList.contains(schemaName + "-" + tableName)) {
+                    tableMetaList.add(new TableMeta(tableMeta.getId(), schemaName, tableName));
+                }
+            }
+        }
+        tableMetaList.sort(Comparator.comparing(TableMeta::getId));
+        tableMetaList.forEach(tableMeta -> {
+            LinkedHashMap<String, String> map = initMap(null, null, null, tableMeta, null);
             rowList.add(map);
             nameList.add(tableMeta.getSchemaName() + "-" + tableMeta.getTableName());
         });
@@ -127,14 +142,14 @@ public class DbleTable extends ManagerBaseTable {
     /**
      * Set column
      *
-     * @param schemaConfig
-     * @param baseTableConfig
-     * @param tableType
-     * @param tableMeta
-     * @param schemaMap
+     * @param schemaConfig    schema_config
+     * @param baseTableConfig table_config
+     * @param tableType       table_type
+     * @param tableMeta       table_metadata
+     * @param schemaMap       source schema data
      * @return column map
      */
-    private static LinkedHashMap initMap(SchemaConfig schemaConfig, BaseTableConfig baseTableConfig, TableType tableType, TableMeta tableMeta, TreeMap<String, SchemaConfig> schemaMap) {
+    private static LinkedHashMap<String, String> initMap(SchemaConfig schemaConfig, BaseTableConfig baseTableConfig, TableType tableType, TableMeta tableMeta, TreeMap<String, SchemaConfig> schemaMap) {
         LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
         if (null == tableMeta && null != baseTableConfig && null != schemaConfig) {
             //config
@@ -184,14 +199,17 @@ public class DbleTable extends ManagerBaseTable {
     }
 
     private static BaseTableConfig findBySchemaATable(TreeMap<String, SchemaConfig> schemaMap, String schemaName, String tableName) {
-        Map.Entry<String, SchemaConfig> schemaConfigEntry = schemaMap.entrySet().stream().filter(t -> schemaName.equals(t.getKey())).findFirst().get();
-        if (null == schemaConfigEntry) {
+        Optional<Map.Entry<String, SchemaConfig>> schemaConfigEntryOptional = schemaMap.entrySet().stream().filter(t -> schemaName.equals(t.getKey())).findFirst();
+        if (!schemaConfigEntryOptional.isPresent()) {
             return null;
         }
-        Map.Entry<String, BaseTableConfig> tableConfigEntry = schemaConfigEntry.getValue().getTables().entrySet().stream().filter(t -> tableName.equals(t.getKey())).findFirst().get();
-        if (null == tableConfigEntry) {
+        Map.Entry<String, SchemaConfig> schemaConfigEntry = schemaConfigEntryOptional.get();
+        Map<String, BaseTableConfig> tableMap = schemaConfigEntry.getValue().getTables();
+        Optional<Map.Entry<String, BaseTableConfig>> tableConfigEntryOptional = tableMap.entrySet().stream().filter(t -> tableName.equals(t.getKey())).findFirst();
+        if (!tableConfigEntryOptional.isPresent()) {
             return null;
         }
+        Map.Entry<String, BaseTableConfig> tableConfigEntry = tableConfigEntryOptional.get();
         return tableConfigEntry.getValue();
     }
 

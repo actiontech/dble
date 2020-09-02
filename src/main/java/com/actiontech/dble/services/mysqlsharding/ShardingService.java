@@ -868,7 +868,8 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         return clientFlags;
     }
 
-    public String toBriefString() {
-        return "Shardingservice";
+    public String toString() {
+        return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
+                " sessionReadOnly = " + sessionReadOnly + "] \nwith connection " + connection.toString() + " \nwith sesssion " + session.toString();
     }
 }

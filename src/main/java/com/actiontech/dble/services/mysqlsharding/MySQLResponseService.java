@@ -816,6 +816,11 @@ public class MySQLResponseService extends MySQLBasedService {
         isExecuting = executing;
     }
 
+    public String toString() {
+        return "MySQLResponseService[isExecuting = " + isExecuting + " attachment = " + attachment + " autocommitSynced = " + autocommitSynced + " isolationSynced = " + isolationSynced +
+                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with connection " + connection.toString();
+    }
+
     private static class StatusSync {
         private final String schema;
         private final CharsetNames clientCharset;

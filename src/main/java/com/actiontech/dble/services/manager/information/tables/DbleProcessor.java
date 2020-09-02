@@ -63,7 +63,7 @@ public class DbleProcessor extends ManagerBaseTable {
         for (IOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_NAME, p.getName());
-            map.put(COLUMN_TYPE, SESSION_TYPE);
+            map.put(COLUMN_TYPE, BACKEND_TYPE);
             map.put(COLUMN_CONN_COUNT, p.getBackends().size() + "");
             map.put(COLUMN_CONN_NET_IN, p.getNetInBytes() + "");
             map.put(COLUMN_CONN_NET_OUT, p.getNetOutBytes() + "");

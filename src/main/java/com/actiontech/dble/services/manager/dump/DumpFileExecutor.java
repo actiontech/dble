@@ -21,7 +21,7 @@ public final class DumpFileExecutor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     private BlockingQueue<String> queue;
     private DumpFileContext context;
-    private Thread self;
+    private volatile boolean isStop = false;
 
     public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer, DumpFileConfig config, SchemaConfig schemaConfig) {
         this.queue = queue;
@@ -32,16 +32,18 @@ public final class DumpFileExecutor implements Runnable {
     }
 
     public void start() {
-        this.self = new Thread(this, "dump-file-executor");
-        this.self.start();
+        Thread self = new Thread(this, "dump-file-executor");
+        self.start();
     }
 
     public void stop() {
-        this.self.interrupt();
+        LOGGER.info("finish to parse statement in dump file, because executor is stopped.");
+        isStop = true;
+        stopWriter(context.getWriter());
     }
 
     public boolean isStop() {
-        return this.self.isInterrupted();
+        return isStop;
     }
 
     @Override
@@ -50,7 +52,7 @@ public final class DumpFileExecutor implements Runnable {
         DumpFileWriter writer = context.getWriter();
         long startTime = TimeUtil.currentTimeMillis();
         LOGGER.info("begin to parse statement in dump file.");
-        while (!Thread.currentThread().isInterrupted()) {
+        while (!isStop) {
             try {
                 stmt = queue.take();
                 if (LOGGER.isDebugEnabled()) {
@@ -97,21 +99,24 @@ public final class DumpFileExecutor implements Runnable {
             } catch (Exception e) {
                 LOGGER.warn("dump file executor exit", e);
                 context.addError("dump file executor exit, because:" + e.getMessage());
-                try {
-                    writer.setDeleteFile(true);
-                    writer.writeAll(DumpFileReader.EOF);
-                } catch (InterruptedException ex) {
-                    // ignore
-                    LOGGER.warn("dump file executor is interrupted.");
-                } finally {
-                    stop();
-                }
+                stopWriter(writer);
+                isStop = true;
             }
         }
     }
 
     public DumpFileContext getContext() {
         return context;
+    }
+
+    private void stopWriter(DumpFileWriter writer) {
+        try {
+            writer.setDeleteFile(true);
+            writer.writeAll(DumpFileReader.EOF);
+        } catch (InterruptedException ex) {
+            // ignore
+            LOGGER.warn("dump file executor is interrupted.");
+        }
     }
 
     private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws InterruptedException, RuntimeException {

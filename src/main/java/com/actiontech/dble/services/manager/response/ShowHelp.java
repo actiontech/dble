@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
@@ -144,7 +144,7 @@ public final class ShowHelp {
         HELPS.put("show @@user.privilege", "Report privilege of all business user in this dble");
         HELPS.put("show @@questions", "Report the questions & transactions have been executed in server port");
         HELPS.put("show @@data_distribution where table ='schema.table'", "Report the data distribution in different sharding node");
-
+        HELPS.put("show @@connection_pool", "Report properties of connection pool");
 
         // kill
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");

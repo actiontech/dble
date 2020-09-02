@@ -47,6 +47,9 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleShardingTable());
         registerTable(new DbleChildTable());
         registerTable(new DbleTableShardingNode());
+        registerTable(new DbleDbGroup());
+        registerTable(new DbleDbInstance());
+        registerTable(new DbleAlgorithm());
     }
 
 

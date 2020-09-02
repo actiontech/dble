@@ -21,6 +21,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -57,6 +58,7 @@ public class ServerConfig {
     private final ReentrantReadWriteLock lock;
     private ConfigInitializer confInitNew;
     private volatile Map<String, Properties> blacklistConfig;
+    private volatile Map<String, AbstractPartitionAlgorithm> functions;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -73,6 +75,7 @@ public class ServerConfig {
 
         this.lock = new ReentrantReadWriteLock();
         this.blacklistConfig = confInitNew.getBlacklistConfig();
+        this.functions = confInitNew.getFunctions();
     }
 
 
@@ -90,6 +93,7 @@ public class ServerConfig {
 
         this.lock = new ReentrantReadWriteLock();
         this.blacklistConfig = confInit.getBlacklistConfig();
+        this.functions = confInit.getFunctions();
     }
 
     private void waitIfChanging() {
@@ -130,6 +134,11 @@ public class ServerConfig {
         return schemas;
     }
 
+    public Map<String, AbstractPartitionAlgorithm> getFunctions() {
+        waitIfChanging();
+        return functions;
+    }
+
     public Map<String, ShardingNode> getShardingNodes() {
         waitIfChanging();
         return shardingNodes;
@@ -159,9 +168,9 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
-                          final int loadAllMode) throws SQLNonTransientException {
+                          final int loadAllMode, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
         boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations,
-                newSystemVariables, isFullyConfigured, loadAllMode);
+                newSystemVariables, isFullyConfigured, loadAllMode, newFunctions);
         this.reloadTime = TimeUtil.currentTimeMillis();
         return result;
     }
@@ -274,7 +283,7 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables,
-                          boolean isFullyConfigured, final int loadAllMode) throws SQLNonTransientException {
+                          boolean isFullyConfigured, final int loadAllMode, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
@@ -321,6 +330,7 @@ public class ServerConfig {
             this.users = newUsers;
             this.schemas = newSchemas;
             this.erRelations = newErRelations;
+            this.functions = newFunctions;
             CacheService.getInstance().clearCache();
             this.changing = false;
             if (isFullyConfigured) {

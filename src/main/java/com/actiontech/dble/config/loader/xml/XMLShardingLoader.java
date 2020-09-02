@@ -48,7 +48,7 @@ public class XMLShardingLoader {
     private AtomicInteger tableIndex = new AtomicInteger();
 
     public XMLShardingLoader(String shardingFile, boolean lowerCaseNames, ProblemReporter problemReporter) {
-        this.functions = new HashMap<>();
+        this.functions = new LinkedHashMap<>();
         this.shardingNode = new HashMap<>();
         this.schemas = new HashMap<>();
         this.lowerCaseNames = lowerCaseNames;
@@ -67,6 +67,10 @@ public class XMLShardingLoader {
 
     public Map<String, ShardingNodeConfig> getShardingNode() {
         return (Map<String, ShardingNodeConfig>) (shardingNode.isEmpty() ? Collections.emptyMap() : shardingNode);
+    }
+
+    public Map<String, AbstractPartitionAlgorithm> getFunctions() {
+        return functions;
     }
 
     public Map<String, SchemaConfig> getSchemas() {

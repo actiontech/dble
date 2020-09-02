@@ -47,23 +47,17 @@ public class SpecialSqlJob extends SQLJob {
 
 
     public void run() {
-        try {
-            //create new connection and exec the sql
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        ds.getConnection(schema, sqlJob, null, false);
-                    } catch (Exception e) {
-                        sqlJob.connectionError(e, null);
-                    }
+        //create new connection and exec the sql
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    ds.createConnectionSkipPool(schema, sqlJob);
+                } catch (Exception e) {
+                    sqlJob.connectionError(e, null);
                 }
-            });
-
-        } catch (Exception e) {
-            LOGGER.warn("can't get connection", e);
-            doFinished(true);
-        }
+            }
+        });
     }
 
     @Override

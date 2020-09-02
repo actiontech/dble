@@ -20,7 +20,7 @@ public class DbleStatus extends ManagerBaseTable {
 
     private static final String COLUMN_VARIABLE_NAME = "variable_name";
     private static final String COLUMN_VARIABLE_VALUE = "variable_value";
-    private static final String COLUMN_COMMENT = "user_type";
+    private static final String COLUMN_COMMENT = "comment";
 
     public DbleStatus() {
         super(TABLE_NAME, 3);
@@ -30,7 +30,7 @@ public class DbleStatus extends ManagerBaseTable {
     protected void initColumnAndType() {
 
         columns.put(COLUMN_VARIABLE_NAME, new ColumnMeta(COLUMN_VARIABLE_NAME, "varchar(24)", false, true));
-        columnsType.put(COLUMN_VARIABLE_NAME, Fields.FIELD_TYPE_LONGLONG);
+        columnsType.put(COLUMN_VARIABLE_NAME, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_VARIABLE_VALUE, new ColumnMeta(COLUMN_VARIABLE_VALUE, "varchar(20)", false));
         columnsType.put(COLUMN_VARIABLE_VALUE, Fields.FIELD_TYPE_VAR_STRING);

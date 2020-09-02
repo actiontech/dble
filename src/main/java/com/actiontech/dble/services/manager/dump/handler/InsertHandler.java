@@ -2,10 +2,10 @@ package com.actiontech.dble.services.manager.dump.handler;
 
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.ColumnMeta;
-import com.actiontech.dble.services.manager.dump.DumpException;
-import com.actiontech.dble.services.manager.dump.DumpFileContext;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.services.manager.dump.DumpException;
+import com.actiontech.dble.services.manager.dump.DumpFileContext;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.CollectionUtil;
@@ -123,7 +123,7 @@ class InsertHandler extends DefaultHandler {
 
         ShardingTableConfig tableConfig = (ShardingTableConfig) (context.getTableConfig());
         // partition column check
-        if ((tableConfig.getShardingColumn() != null && partitionColumnIndex != -1) &&
+        if ((tableConfig.getShardingColumn() != null && partitionColumnIndex != -1) ||
                 (tableConfig.getIncrementColumn() != null && incrementColumnIndex != -1)) {
             return;
         }

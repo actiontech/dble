@@ -133,25 +133,15 @@ public class PhysicalDbGroup {
     }
 
     public void init(String reason) {
-        if (rwSplitMode == 0) {
-            writeDbInstance.init(reason);
-            return;
-        }
-
         for (Map.Entry<String, PhysicalDbInstance> entry : allDbInstancesMap.entrySet()) {
             entry.getValue().init(reason);
         }
     }
 
-    public void init(List<String> sourceNames, String reason, boolean isFresh) {
-        if (rwSplitMode == 0) {
-            writeDbInstance.init(reason, isFresh);
-            return;
-        }
-
+    public void init(List<String> sourceNames, String reason) {
         for (String sourceName : sourceNames) {
             if (allDbInstancesMap.containsKey(sourceName)) {
-                allDbInstancesMap.get(sourceName).init(reason, isFresh);
+                allDbInstancesMap.get(sourceName).init(reason);
             }
         }
     }
@@ -258,6 +248,15 @@ public class PhysicalDbGroup {
         }
     }
 
+    private PhysicalDbGroup createDisableSnapshot(PhysicalDbGroup org, String[] nameList) {
+        PhysicalDbGroup snapshot = new PhysicalDbGroup(org);
+        for (String dsName : nameList) {
+            PhysicalDbInstance dbInstance = snapshot.allDbInstancesMap.get(dsName);
+            dbInstance.setDisabled(true);
+        }
+        return snapshot;
+    }
+
     public String enableHosts(String hostNames, boolean syncWriteConf) {
         String[] nameList = hostNames == null ? Arrays.copyOf(allDbInstancesMap.keySet().toArray(), allDbInstancesMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -275,15 +274,6 @@ public class PhysicalDbGroup {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
         }
-    }
-
-    private PhysicalDbGroup createDisableSnapshot(PhysicalDbGroup org, String[] nameList) {
-        PhysicalDbGroup snapshot = new PhysicalDbGroup(org);
-        for (String dsName : nameList) {
-            PhysicalDbInstance dbInstance = snapshot.allDbInstancesMap.get(dsName);
-            dbInstance.setDisabled(true);
-        }
-        return snapshot;
     }
 
     private PhysicalDbGroup createEnableSnapshot(PhysicalDbGroup org, String[] nameList) {

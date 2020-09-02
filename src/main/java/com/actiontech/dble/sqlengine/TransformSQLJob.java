@@ -102,22 +102,22 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
-        service.writeDirectly(header);
+        managerService.writeDirectly(header);
         for (byte[] field : fields) {
-            service.writeDirectly(field);
+            managerService.writeDirectly(field);
         }
-        service.writeDirectly(eof);
+        managerService.writeDirectly(eof);
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
-        service.writeDirectly(row);
+        managerService.writeDirectly(row);
         return false;
     }
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
-        service.writeDirectly(eof);
+        managerService.writeDirectly(eof);
         connection.release();
     }
 

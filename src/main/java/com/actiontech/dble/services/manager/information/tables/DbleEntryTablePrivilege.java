@@ -154,7 +154,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
         return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 
-    final class ShowTablesHandler {
+    protected static final class ShowTablesHandler {
         private String sql = "SHOW TABLES FROM {0};";
         private String colSuffix = "Tables_in_";
         private Set<String> result;

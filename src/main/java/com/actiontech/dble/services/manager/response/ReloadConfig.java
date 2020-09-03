@@ -42,10 +42,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
@@ -281,6 +278,7 @@ public final class ReloadConfig {
             Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
             Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
+            Map<String, Properties> newBlacklistConfig = serverConfig.getBlacklistConfig();
             Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
 
             /*
@@ -304,7 +302,7 @@ public final class ReloadConfig {
                 boolean result;
                 try {
                     result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newFunctions);
+                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions);
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
                         initFailed(newDbGroups);
@@ -388,6 +386,7 @@ public final class ReloadConfig {
             Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
             Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
+            Map<String, Properties> newBlacklistConfig = serverConfig.getBlacklistConfig();
             Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
 
 
@@ -400,7 +399,7 @@ public final class ReloadConfig {
                 boolean result;
                 try {
                     result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newFunctions);
+                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions);
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
                         initFailed(newDbGroups);

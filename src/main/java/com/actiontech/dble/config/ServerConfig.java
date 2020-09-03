@@ -126,6 +126,7 @@ public class ServerConfig {
     }
 
     public Map<String, Properties> getBlacklistConfig() {
+        waitIfChanging();
         return blacklistConfig;
     }
 
@@ -168,9 +169,9 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
-                          final int loadAllMode, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
+                          final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
         boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations,
-                newSystemVariables, isFullyConfigured, loadAllMode, newFunctions);
+                newSystemVariables, isFullyConfigured, loadAllMode, newBlacklistConfig, newFunctions);
         this.reloadTime = TimeUtil.currentTimeMillis();
         return result;
     }
@@ -283,7 +284,7 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables,
-                          boolean isFullyConfigured, final int loadAllMode, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
+                          boolean isFullyConfigured, final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
@@ -330,6 +331,7 @@ public class ServerConfig {
             this.users = newUsers;
             this.schemas = newSchemas;
             this.erRelations = newErRelations;
+            this.blacklistConfig = newBlacklistConfig;
             this.functions = newFunctions;
             CacheService.getInstance().clearCache();
             this.changing = false;

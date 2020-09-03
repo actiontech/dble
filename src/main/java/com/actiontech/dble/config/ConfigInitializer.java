@@ -320,7 +320,7 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     public Map<String, Properties> getBlacklistConfig() {
-        return this.blacklistConfig;
+        return blacklistConfig;
     }
 
     public Map<String, SchemaConfig> getSchemas() {

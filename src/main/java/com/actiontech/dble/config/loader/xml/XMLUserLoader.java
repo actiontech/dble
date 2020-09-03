@@ -53,7 +53,7 @@ public class XMLUserLoader {
 
     @SuppressWarnings("unchecked")
     public Map<String, Properties> getBlacklistConfig() {
-        return this.blacklistConfig;
+        return blacklistConfig;
     }
 
     private void loadXml(String dtdFile, String xmlFile) {

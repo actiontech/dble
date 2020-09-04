@@ -237,22 +237,21 @@ public class XMLUserLoader {
         if (StringUtil.isEmpty(name)) {
             throw new ConfigException("one of users' name is empty");
         }
-        String passwordEncrypt = element.getAttribute("password");
-        if (StringUtil.isEmpty(passwordEncrypt)) {
+        String password = element.getAttribute("password");
+        if (StringUtil.isEmpty(password)) {
             throw new ConfigException("password of " + name + " is empty");
         }
-        String password = passwordEncrypt;
         String usingDecryptStr = element.getAttribute("usingDecrypt");
         if (!StringUtil.isEmpty(usingDecryptStr)) {
             usingDecryptStr = ConfigUtil.checkBoolAttribute("usingDecrypt", usingDecryptStr, "false", problemReporter, xmlFile);
             boolean usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
-            password = DecryptUtil.decrypt(usingDecrypt, name, passwordEncrypt);
+            password = DecryptUtil.decrypt(usingDecrypt, name, password);
         }
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
         checkWhiteIPs(strWhiteIPs);
-        return new UserConfig(name, password, passwordEncrypt, strWhiteIPs, strMaxCon);
+        return new UserConfig(name, password, strWhiteIPs, strMaxCon);
     }
 
     private void checkWhiteIPs(String strWhiteIPs) {

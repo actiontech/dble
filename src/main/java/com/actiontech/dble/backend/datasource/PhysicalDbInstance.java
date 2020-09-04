@@ -81,6 +81,10 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void init(String reason) {
+        init(reason, true);
+    }
+
+    public void init(String reason, boolean isInitHeartbeat) {
         if (disabled.get() || fakeNode) {
             LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", name, reason);
             return;
@@ -107,7 +111,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         }
 
         LOGGER.info("init dbInstance[{}]", name);
-        start(reason);
+        start(reason, isInitHeartbeat);
     }
 
     public void createConnectionSkipPool(String schema, ResponseHandler handler) {
@@ -369,15 +373,27 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void start(String reason) {
+        start(reason, true);
+    }
+
+    public void start(String reason, boolean isStartHeartbeat) {
         if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
             LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
             this.connectionPool.startEvictor();
         }
-        startHeartbeat();
+        if (isStartHeartbeat) {
+            startHeartbeat();
+        }
     }
 
     public void stop(String reason, boolean closeFront) {
-        heartbeat.stop(reason);
+        stop(reason, closeFront, true);
+    }
+
+    public void stop(String reason, boolean closeFront, boolean isStopHeartbeat) {
+        if (isStopHeartbeat) {
+            heartbeat.stop(reason);
+        }
         if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
             LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
             connectionPool.stop(reason, closeFront);

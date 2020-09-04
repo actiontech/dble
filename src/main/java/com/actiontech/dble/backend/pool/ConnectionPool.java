@@ -23,6 +23,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.net.connection.PooledConnection.*;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
@@ -44,6 +45,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
     private final AtomicBoolean isClosed = new AtomicBoolean(true);
     private final PoolConfig poolConfig;
+    private final ReentrantReadWriteLock freshLock;
 
     public ConnectionPool(final DbInstanceConfig config, final ReadTimeStatusInstance instance, final PooledConnectionFactory factory) {
         super(config, instance, factory);
@@ -60,19 +62,26 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         this.waiters = new AtomicInteger();
         this.allConnections = new CopyOnWriteArrayList<>();
         this.poolConfig = config.getPoolConfig();
+        this.freshLock = new ReentrantReadWriteLock();
     }
 
     public PooledConnection borrowDirectly(final String schema) {
-        for (PooledConnection conn : allConnections) {
-            if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                newPooledEntry(schema, waiters.get());
-                return conn;
+        freshLock.readLock().lock();
+        try {
+            for (PooledConnection conn : allConnections) {
+                if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                    newPooledEntry(schema, waiters.get());
+                    return conn;
+                }
             }
+            return null;
+        } finally {
+            freshLock.readLock().unlock();
         }
-        return null;
     }
 
     public PooledConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
+        freshLock.readLock().lock();
         final int waiting = waiters.incrementAndGet();
         try {
             for (PooledConnection conn : allConnections) {
@@ -102,6 +111,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             return null;
         } finally {
             waiters.decrementAndGet();
+            freshLock.readLock().unlock();
         }
     }
 
@@ -296,13 +306,18 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     public void stop(final String closureReason, boolean closeFront) {
-        if (isClosed.compareAndSet(false, true)) {
-            stopEvictor();
-            if (closeFront) {
-                forceCloseAllConnection(closureReason);
-            } else {
-                softCloseAllConnections(closureReason);
+        freshLock.writeLock().lock();
+        try {
+            if (isClosed.compareAndSet(false, true)) {
+                stopEvictor();
+                if (closeFront) {
+                    forceCloseAllConnection(closureReason);
+                } else {
+                    softCloseAllConnections(closureReason);
+                }
             }
+        } finally {
+            freshLock.writeLock().unlock();
         }
     }
 

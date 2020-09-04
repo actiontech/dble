@@ -136,7 +136,7 @@ public class PhysicalDbGroup {
     public void init(List<String> sourceNames, String reason) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).init(reason);
+                allSourceMap.get(sourceName).init(reason, false);
             }
         }
     }
@@ -154,7 +154,7 @@ public class PhysicalDbGroup {
     public void stop(List<String> sourceNames, String reason, boolean closeFront) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).stop(reason, closeFront);
+                allSourceMap.get(sourceName).stop(reason, closeFront, false);
             }
         }
 

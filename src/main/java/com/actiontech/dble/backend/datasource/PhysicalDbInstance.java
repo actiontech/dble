@@ -167,7 +167,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         return con;
     }
 
-    public BackendConnection getConnection(final String schema, final long hardTimeout) throws IOException {
+    private BackendConnection getConnection(final String schema, final long hardTimeout) throws IOException {
         if (this.connectionPool == null) {
             throw new IOException("connection pool isn't initialized");
         }

@@ -1,10 +1,7 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -16,7 +13,9 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.response.Heartbeat;
+import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.statistic.CommandCount;
@@ -30,20 +29,22 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
 
-    private final CommandCount commands;
-    private final RWSplitQueryHandler queryHandler;
-    private UserName user;
     private volatile String schema;
-    private PhysicalDbGroup group;
     private volatile int txIsolation;
     private volatile boolean autocommit;
-    protected String executeSql;
+    private volatile boolean isLocked;
+    private String executeSql;
+    private UserName user;
+
+    private final CommandCount commands;
+    private final RWSplitQueryHandler queryHandler;
+    private final RWSplitNonBlockingSession session;
 
     public RWSplitService(AbstractConnection connection) {
         super(connection);
         this.commands = connection.getProcessor().getCommands();
-        this.proto = new MySQLProtoHandlerImpl();
-        this.queryHandler = new RWSplitQueryHandler(this);
+        this.session = new RWSplitNonBlockingSession(this);
+        this.queryHandler = new RWSplitQueryHandler(session);
     }
 
     public void initFromAuthInfo(AuthResultInfo info) {
@@ -51,10 +52,9 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         this.user = new UserName(auth.getUser(), auth.getTenant());
         this.schema = info.getMysqlAuthPacket().getDatabase();
         this.userConfig = info.getUserConfig();
+        this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(((RwSplitUserConfig) userConfig).getDbGroup()));
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
-        //        this.handler.setReadOnly(((ManagerUserConfig) userConfig).isReadOnly());
-        this.group = DbleServer.getInstance().getConfig().getDbGroups().get(((RwSplitUserConfig) userConfig).getDbGroup());
         this.connection.initCharsetIndex(info.getMysqlAuthPacket().getCharsetIndex());
         boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
         boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
@@ -80,35 +80,14 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
     @Override
     protected void handleInnerData(byte[] data) {
         switch (data[4]) {
-            case MySQLPacket.COM_INIT_DB: {
+            case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();
-                MySQLMessage mm = new MySQLMessage(data);
-                mm.position(5);
-                String switchSchema;
-                try {
-                    switchSchema = mm.readString(getCharset().getClient());
-                } catch (UnsupportedEncodingException e) {
-                    writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
-                    return;
-                }
-                this.executeSql = "use `" + switchSchema + "`";
-                execute(false, service -> service.setSchema(switchSchema));
+                handleComInitDb(data);
                 break;
-            }
-            case MySQLPacket.COM_QUERY: {
+            case MySQLPacket.COM_QUERY:
                 commands.doQuery();
-                MySQLMessage mm = new MySQLMessage(data);
-                mm.position(5);
-                try {
-                    String sql = mm.readString(getCharset().getClient());
-                    executeSql = sql;
-                    queryHandler.query(sql);
-                } catch (UnsupportedEncodingException e) {
-                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
-                    return;
-                }
+                handleComQuery(data);
                 break;
-            }
             // prepared statement
             case MySQLPacket.COM_STMT_PREPARE:
                 commands.doStmtPrepare();
@@ -134,18 +113,49 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
                 commands.doHeartbeat();
                 Heartbeat.response(connection, data);
                 break;
-            // other statement push down to master
+            case MySQLPacket.COM_PING:
+                commands.doPing();
+                Ping.response(connection);
+                break;
+            case MySQLPacket.COM_FIELD_LIST:
+                commands.doOther();
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport");
+                break;
             default:
                 commands.doOther();
-                execute(false, null);
+                // other statement push down to master
+                //                try {
+                //                    session.execute(false, null);
+                //                } catch (IOException e) {
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport");
+                //                }
+                break;
         }
     }
 
-    public void execute(boolean canPushDown2Slave, Callback callback) {
-        PhysicalDbInstance instance = group.select(canPushDown2Slave);
+    private void handleComInitDb(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        String switchSchema;
         try {
-            instance.getConnection(this.schema, new RWSplitHandler(this, callback), null, false);
+            switchSchema = mm.readString(getCharset().getClient());
+            executeSql = "use `" + switchSchema + "`";
+            session.execute(false, rwSplitService -> rwSplitService.setSchema(switchSchema));
+        } catch (UnsupportedEncodingException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
         } catch (IOException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+        }
+    }
+
+    private void handleComQuery(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        try {
+            String sql = mm.readString(getCharset().getClient());
+            executeSql = sql;
+            queryHandler.query(sql);
+        } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         }
     }
@@ -164,6 +174,10 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         return schema;
     }
 
+    public RWSplitNonBlockingSession getSession() {
+        return session;
+    }
+
     public void setSchema(String schema) {
         this.schema = schema;
     }
@@ -173,12 +187,24 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         return executeSql;
     }
 
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    public void setLocked(boolean locked) {
+        isLocked = locked;
+    }
+
     public int getTxIsolation() {
         return txIsolation;
     }
 
     public boolean isAutocommit() {
         return autocommit;
+    }
+
+    public void setAutocommit(boolean autocommit) {
+        this.autocommit = autocommit;
     }
 
     @Override

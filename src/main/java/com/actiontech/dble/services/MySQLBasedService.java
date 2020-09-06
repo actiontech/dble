@@ -65,7 +65,7 @@ public abstract class MySQLBasedService extends AbstractService {
                 this.setPacketId(data[3]);
             }
             if (isSupportCompress()) {
-                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, new ConcurrentLinkedQueue<byte[]>());
+                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, new ConcurrentLinkedQueue<>());
                 for (byte[] pack : packs) {
                     if (pack.length != 0) {
                         handleInnerData(pack);
@@ -111,7 +111,6 @@ public abstract class MySQLBasedService extends AbstractService {
         err.setMessage(StringUtil.encode(msg, connection.getCharsetName().getResults()));
         err.write(connection);
     }
-
 
     public String getStringOfSysVariables() {
         StringBuilder sbSysVariables = new StringBuilder();

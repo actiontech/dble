@@ -2,6 +2,7 @@ package com.actiontech.dble.net.service;
 
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
+import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.net.connection.AbstractConnection;
@@ -20,23 +21,24 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AbstractService implements Service {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
-    protected final ConcurrentLinkedQueue<ServiceTask> taskQueue = new ConcurrentLinkedQueue<>();
-    protected ServiceTask currentTask = null;
-    protected volatile ProtoHandler proto;
 
     protected AbstractConnection connection;
+    private AtomicInteger packetId;
 
-    private AtomicInteger packetId = new AtomicInteger(0);
-
-    protected volatile boolean isSupportCompress = false;
+    protected ServiceTask currentTask = null;
+    private volatile boolean isSupportCompress = false;
+    protected volatile ProtoHandler proto;
+    protected final ConcurrentLinkedQueue<ServiceTask> taskQueue;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
+        this.proto = new MySQLProtoHandlerImpl();
+        this.taskQueue = new ConcurrentLinkedQueue<>();
+        this.packetId = new AtomicInteger(0);
     }
 
     @Override
     public void handle(ByteBuffer dataBuffer) {
-
         this.sessionStart();
         boolean hasReming = true;
         int offset = 0;

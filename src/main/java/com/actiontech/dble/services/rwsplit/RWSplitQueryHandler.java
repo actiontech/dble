@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.rwsplit;
 
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
@@ -79,7 +80,8 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     break;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("execute error", e);
+            session.getService().writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         } finally {
             TraceManager.finishSpan(traceObject);
         }

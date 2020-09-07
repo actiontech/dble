@@ -10,12 +10,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class DbleEntryTablePrivilege extends ManagerBaseTable {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DbleEntryTablePrivilege.class);
@@ -25,6 +20,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_SCHEMA = "schema";
     private static final String COLUMN_TABLE = "table";
+    private static final String COLUMN_EXIST_METAS = "exist_metas";
     private static final String COLUMN_INSERT = "insert";
     private static final String COLUMN_UPDATE = "update";
     private static final String COLUMN_SELECT = "select";
@@ -44,6 +40,9 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
 
         columns.put(COLUMN_TABLE, new ColumnMeta(COLUMN_TABLE, "varchar(64)", false, true));
         columnsType.put(COLUMN_TABLE, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_EXIST_METAS, new ColumnMeta(COLUMN_EXIST_METAS, "varchar(5)", false));
+        columnsType.put(COLUMN_EXIST_METAS, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_INSERT, new ColumnMeta(COLUMN_INSERT, "int(1)", false));
         columnsType.put(COLUMN_INSERT, Fields.FIELD_TYPE_LONG);
@@ -72,16 +71,19 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                         if (shardingUserConfig.getSchemas().contains(schema)) {
                             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
                             if (schemaConfig != null) {
-                                Set<String> tables = schemaConfig.getTables().keySet();
+                                Set<String> tables = new HashSet<>(schemaConfig.getTables().keySet());
                                 Set<String> tableMetas = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMetas().keySet();
+                                tables.addAll(tableMetas);
                                 Map<String, UserPrivilegesConfig.TablePrivilege> tablePrivilege = sPrivilege.getTablePrivileges();
+
                                 if (!tablePrivilege.isEmpty()) {
                                     tablePrivilege.forEach((tableName, tPrivilege) -> {
-                                        if (tableMetas.contains(tableName) || tables.contains(tableName)) {
+                                        if (tables.contains(tableName)) {
                                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                                             map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                             map.put(COLUMN_SCHEMA, schema);
                                             map.put(COLUMN_TABLE, tableName);
+                                            map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
                                             int[] dml0 = tPrivilege.getDml();
                                             map.put(COLUMN_INSERT, dml0[0] + "");
                                             map.put(COLUMN_UPDATE, dml0[1] + "");
@@ -97,18 +99,7 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                         map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                         map.put(COLUMN_SCHEMA, schema);
                                         map.put(COLUMN_TABLE, tableName);
-                                        map.put(COLUMN_INSERT, dml1[0] + "");
-                                        map.put(COLUMN_UPDATE, dml1[1] + "");
-                                        map.put(COLUMN_SELECT, dml1[2] + "");
-                                        map.put(COLUMN_DELETE, dml1[3] + "");
-                                        list.add(map);
-                                    });
-
-                                    tableMetas.forEach(tableName -> {
-                                        LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                        map.put(COLUMN_ID, shardingUserConfig.getId() + "");
-                                        map.put(COLUMN_SCHEMA, schema);
-                                        map.put(COLUMN_TABLE, tableName);
+                                        map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
                                         map.put(COLUMN_INSERT, dml1[0] + "");
                                         map.put(COLUMN_UPDATE, dml1[1] + "");
                                         map.put(COLUMN_SELECT, dml1[2] + "");
@@ -122,11 +113,6 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                 }
             }
         });
-        return list.stream().filter(distinctByIdAndSchemaAndTable(p -> p.get(COLUMN_ID) + "_" + p.get(COLUMN_SCHEMA) + "_" + p.get(COLUMN_TABLE))).collect(Collectors.toList());
-    }
-
-    public static <T> Predicate<T> distinctByIdAndSchemaAndTable(Function<? super T, Object> keyExtractor) {
-        Map<Object, Boolean> map = new ConcurrentHashMap<>();
-        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+        return list;
     }
 }

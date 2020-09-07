@@ -520,6 +520,8 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&
                 pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
+                pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
+                pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
                 pool.getGroupName().equals(this.groupName);
     }
 }

@@ -75,6 +75,51 @@ public final class ParameterMapping {
         }
     }
 
+    public static void mapping(Object object, Map<String, String> parameter, ProblemReporter problemReporter) throws IllegalAccessException,
+            InvocationTargetException {
+        PropertyDescriptor[] pds = getDescriptors(object.getClass());
+        for (PropertyDescriptor pd : pds) {
+            Object obj = parameter.get(pd.getName());
+            Object value = obj;
+            Class<?> cls = pd.getPropertyType();
+            if (cls == null) {
+                if (problemReporter != null) {
+                    problemReporter.warn("unknown property [ " + pd.getName() + " ]");
+                } else {
+                    LOGGER.warn("unknown property [ " + pd.getName() + " ]");
+                }
+                continue;
+            }
+
+            if (obj instanceof String) {
+                String valStr = ((String) obj).trim();
+                if (!StringUtil.isEmpty(valStr)) {
+                    valStr = ConfigUtil.filter(valStr);
+                }
+                if (isPrimitiveType(cls)) {
+                    try {
+                        value = convert(cls, valStr);
+                    } catch (NumberFormatException nfe) {
+                        if (problemReporter != null) {
+                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                        } else {
+                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                        }
+                        parameter.remove(pd.getName());
+                        continue;
+                    }
+                }
+            }
+            if (value != null) {
+                Method method = pd.getWriteMethod();
+                if (method != null) {
+                    method.invoke(object, value);
+                    parameter.remove(pd.getName());
+                }
+            }
+        }
+    }
+
 
     public static Properties mapping(Object object, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
@@ -108,7 +153,7 @@ public final class ParameterMapping {
                 try {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
-                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() ;
+                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString();
                     if (problemReporter != null) {
                         problemReporter.warn(msg);
                     } else {

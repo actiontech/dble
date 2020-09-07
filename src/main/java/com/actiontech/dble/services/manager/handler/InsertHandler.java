@@ -6,6 +6,7 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -14,6 +15,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.response.ReloadConfig;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
@@ -22,6 +24,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,7 +43,7 @@ public final class InsertHandler {
             service.writeErrMessage("42000", "You have an error in your SQL syntax", ErrorCode.ER_PARSE_ERROR);
             return;
         }
-        if (insert.isLowPriority() || insert.isDelayed() || insert.isHighPriority() || insert.isIgnore() || insert.getDuplicateKeyUpdate() != null) {
+        if (insert.isLowPriority() || insert.isDelayed() || insert.isHighPriority() || insert.isIgnore() || (insert.getDuplicateKeyUpdate() != null && !insert.getDuplicateKeyUpdate().isEmpty())) {
             service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support insert with syntax :[LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE][ON DUPLICATE KEY UPDATE assignment_list]");
             return;
         }
@@ -79,8 +82,7 @@ public final class InsertHandler {
         } else {
             columns = new ArrayList<>(insert.getColumns().size());
             // columns contains all not null
-            LinkedHashSet<String> mustSetColumns = new LinkedHashSet<>();
-            mustSetColumns.addAll(managerTable.getMustSetColumns());
+            LinkedHashSet<String> mustSetColumns = new LinkedHashSet<>(managerTable.getMustSetColumns());
             for (int i = 0; i < insert.getColumns().size(); i++) {
                 String columnName = StringUtil.removeBackQuote(insert.getColumns().get(i).toString()).toLowerCase();
                 if (managerTable.getColumnType(columnName) == null) {
@@ -94,7 +96,6 @@ public final class InsertHandler {
                 service.writeErrMessage("HY000", "Field '" + mustSetColumns + "' doesn't have a default value and cannot be null", ErrorCode.ER_NO_DEFAULT_FOR_FIELD);
                 return;
             }
-
         }
         for (int i = 0; i < insert.getValuesList().size(); i++) {
             List<SQLExpr> value = insert.getValuesList().get(i).getValues();
@@ -111,24 +112,50 @@ public final class InsertHandler {
                 }
             }
         }
-
         List<LinkedHashMap<String, String>> rows;
-
-
         managerTable.getLock().lock();
+        int rowSize;
         try {
             rows = managerTable.makeInsertRows(columns, insert.getValuesList());
             managerTable.checkPrimaryKeyDuplicate(rows);
-            managerTable.insertRows(rows);
+            rowSize = managerTable.insertRows(rows);
+            if (rowSize != 0) {
+                ReloadConfig.execute(service, 0, false);
+            }
         } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
+            return;
+        } catch (ConfigException e) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
+            return;
+        } catch (Exception e) {
+            if (e.getCause() instanceof ConfigException) {
+                //reload fail
+                handleConfigException(e, service, managerTable);
+            } else {
+                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            }
             return;
         } finally {
+            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
-        ok.setAffectedRows(rows.size());
+        ok.setAffectedRows(rowSize);
+        if (!StringUtil.isEmpty(managerTable.getMsg())) {
+            ok.setMessage(StringUtil.encode(managerTable.getMsg(), service.getCharset().getResults()));
+        }
         ok.write(service.getConnection());
+    }
+
+    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
+        try {
+            managerTable.rollbackXmlFile();
+        } catch (IOException ioException) {
+            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            return;
+        }
+        service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
     }
 }

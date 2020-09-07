@@ -2,6 +2,7 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
@@ -70,7 +71,7 @@ public class DbleEntry extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
+        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted(Comparator.comparingInt(a -> a.getValue().getId())).forEach(v -> {
             UserConfig userConfig = v.getValue();
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_ID, userConfig.getId() + "");
@@ -88,7 +89,7 @@ public class DbleEntry extends ManagerBaseTable {
 
     private void getManagerUserConfig(LinkedHashMap<String, String> map, ManagerUserConfig userConfig) {
         map.put(COLUMN_TYPE, "username");
-        map.put(COLUMN_USER_TYPE, "managerUser");
+        map.put(COLUMN_USER_TYPE, XMLUserLoader.TYPE_MANAGER_USER);
         map.put(COLUMN_USERNAME, userConfig.getName());
         map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
         map.put(COLUMN_CONN_ATTR_KEY, null);
@@ -101,7 +102,7 @@ public class DbleEntry extends ManagerBaseTable {
 
     private void getShardingUserConfig(LinkedHashMap<String, String> map, ShardingUserConfig userConfig) {
         map.put(COLUMN_TYPE, userConfig.getTenant() != null ? "conn_attr" : "username");
-        map.put(COLUMN_USER_TYPE, "shardingUser");
+        map.put(COLUMN_USER_TYPE, XMLUserLoader.TYPE_SHARDING_USER);
         map.put(COLUMN_USERNAME, userConfig.getName());
         map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
         map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
@@ -114,7 +115,7 @@ public class DbleEntry extends ManagerBaseTable {
 
     private void getRwSplitUserConfig(LinkedHashMap<String, String> map, RwSplitUserConfig userConfig) {
         map.put(COLUMN_TYPE, userConfig.getTenant() != null ? "conn_attr" : "username");
-        map.put(COLUMN_USER_TYPE, "rwSplitUser");
+        map.put(COLUMN_USER_TYPE, XMLUserLoader.TYPE_RWSPLIT_USER);
         map.put(COLUMN_USERNAME, userConfig.getName());
         map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
         map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
@@ -125,7 +126,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
 
-    private String getPasswordEncrypt(UserConfig userConfig) {
+    public static String getPasswordEncrypt(UserConfig userConfig) {
         try {
             return DecryptUtil.encrypt("0:" + userConfig.getName() + ":" + userConfig.getPassword());
         } catch (Exception e) {
@@ -133,7 +134,7 @@ public class DbleEntry extends ManagerBaseTable {
         }
     }
 
-    private String getWhiteIps(Set<String> whiteIps) {
+    public static String getWhiteIps(Set<String> whiteIps) {
         if (whiteIps.isEmpty()) {
             return null;
         }

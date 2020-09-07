@@ -31,6 +31,19 @@ public class PoolConfig {
     public PoolConfig() {
     }
 
+    public PoolConfig(long connectionTimeout, long connectionHeartbeatTimeout, boolean testOnCreate, boolean testOnBorrow, boolean testOnReturn, boolean testWhileIdle, long timeBetweenEvictionRunsMillis, long evictorShutdownTimeoutMillis, long idleTimeout, long heartbeatPeriodMillis) {
+        this.connectionTimeout = connectionTimeout;
+        this.connectionHeartbeatTimeout = connectionHeartbeatTimeout;
+        this.testOnCreate = testOnCreate;
+        this.testOnBorrow = testOnBorrow;
+        this.testOnReturn = testOnReturn;
+        this.testWhileIdle = testWhileIdle;
+        this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
+        this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
+        this.idleTimeout = idleTimeout;
+        this.heartbeatPeriodMillis = heartbeatPeriodMillis;
+    }
+
     /**
      * Returns whether objects created for the pool will be validated before
      * being returned from the <code>borrowObject()</code> method. Validation is

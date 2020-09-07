@@ -8,10 +8,7 @@ package com.actiontech.dble.backend.mysql.store.fs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -352,6 +349,26 @@ public final class FileUtils {
         do {
             channel.write(src);
         } while (src.remaining() > 0);
+    }
+
+    /**
+     * copy
+     *
+     * @param source
+     * @param dest
+     * @throws IOException
+     */
+    public static void copy(File source, File dest) throws IOException {
+        FileChannel inputChannel = null;
+        FileChannel outputChannel = null;
+        try {
+            inputChannel = new FileInputStream(source).getChannel();
+            outputChannel = new FileOutputStream(dest).getChannel();
+            outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
+        } finally {
+            inputChannel.close();
+            outputChannel.close();
+        }
     }
 
 }

@@ -76,6 +76,78 @@ public final class ReloadConfig {
         ReloadManager.reloadFinish();
     }
 
+    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag) throws Exception {
+        try {
+            if (ClusterConfig.getInstance().isClusterEnable()) {
+                reloadWithCluster(service, loadAllMode, returnFlag);
+            } else {
+                reloadWithoutCluster(service, loadAllMode, returnFlag);
+            }
+        } finally {
+            ReloadManager.reloadFinish();
+        }
+    }
+
+
+    private static void reloadWithCluster(ManagerService service, int loadAllMode, boolean returnFlag) throws Exception {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
+        try {
+            DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            if (!distributeLock.acquire()) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                return;
+            }
+            LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
+            ClusterDelayProvider.delayAfterReloadLock();
+            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+                writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
+                return;
+            }
+            //step 1 lock the local meta ,than all the query depends on meta will be hanging
+            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+            lock.writeLock().lock();
+            try {
+                //step 2 reload the local config file
+                if (!reloadAll(loadAllMode)) {
+                    writeSpecialError(service, "Reload interruputed by others,config should be reload");
+                    return;
+                }
+                ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
+                ClusterDelayProvider.delayAfterMasterLoad();
+
+                //step 3 if the reload with no error ,than write the config file into cluster center remote
+                ClusterHelper.writeConfToCluster();
+                ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
+
+                //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
+                ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
+                        ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
+                ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
+                ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
+                //step 5 start a loop to check if all the dble in cluster is reload finished
+                ReloadManager.waitingOthers();
+                ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
+                final String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
+                ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
+                ClusterDelayProvider.delayBeforeDeleteReloadLock();
+
+                if (errorMsg != null) {
+                    writeErrorResultForCluster(service, errorMsg);
+                    return;
+                }
+                if (returnFlag) {
+                    writeOKResult(service);
+                }
+            } finally {
+                lock.writeLock().unlock();
+                ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
+                distributeLock.release();
+            }
+        } finally {
+            TraceManager.finishSpan(service, traceObject);
+        }
+    }
+
     private static void reloadWithCluster(ManagerService service, int loadAllMode) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
         try {
@@ -132,6 +204,27 @@ public final class ReloadConfig {
                 distributeLock.release();
             }
         } finally {
+            TraceManager.finishSpan(service, traceObject);
+        }
+    }
+
+    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag) throws Exception {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-in-local");
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
+        try {
+            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+                writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
+                return;
+            }
+            boolean reloadFlag = reloadAll(loadAllMode);
+            if (reloadFlag && returnFlag) {
+                writeOKResult(service);
+            } else if (!reloadFlag) {
+                writeSpecialError(service, "Reload interruputed by others,metadata should be reload");
+            }
+        } finally {
+            lock.writeLock().unlock();
             TraceManager.finishSpan(service, traceObject);
         }
     }
@@ -246,14 +339,14 @@ public final class ReloadConfig {
         try {
             /* 2.1.1 get diff of dbGroups */
             ServerConfig config = DbleServer.getInstance().getConfig();
-            Map<String, PhysicalDbGroup> addOrChangeHosts = new HashMap<>();
-            Map<String, PhysicalDbGroup> noChangeHosts = new HashMap<>();
+            Map<String, PhysicalDbGroup> addOrChangeHosts = new LinkedHashMap<>();
+            Map<String, PhysicalDbGroup> noChangeHosts = new LinkedHashMap<>();
             Map<String, PhysicalDbGroup> recycleHosts = new HashMap<>();
             distinguishDbGroup(loader.getDbGroups(), config.getDbGroups(), addOrChangeHosts, noChangeHosts, recycleHosts);
 
-            Map<String, PhysicalDbGroup> mergedDbGroups = new HashMap<>();
-            mergedDbGroups.putAll(addOrChangeHosts);
+            Map<String, PhysicalDbGroup> mergedDbGroups = new LinkedHashMap<>();
             mergedDbGroups.putAll(noChangeHosts);
+            mergedDbGroups.putAll(addOrChangeHosts);
 
             ConfigUtil.getAndSyncKeyVariables(mergedDbGroups, true);
 

@@ -35,8 +35,8 @@ public class DbleChildTable extends ManagerBaseTable {
         columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "varchar(64)", false, true));
         columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_PARENT_ID, new ColumnMeta(COLUMN_PARENT_ID, "int(11)", false));
-        columnsType.put(COLUMN_PARENT_ID, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_PARENT_ID, new ColumnMeta(COLUMN_PARENT_ID, "varchar(64)", false));
+        columnsType.put(COLUMN_PARENT_ID, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_INCREMENT_COLUMN, new ColumnMeta(COLUMN_INCREMENT_COLUMN, "varchar(64)", true));
         columnsType.put(COLUMN_INCREMENT_COLUMN, Fields.FIELD_TYPE_VAR_STRING);

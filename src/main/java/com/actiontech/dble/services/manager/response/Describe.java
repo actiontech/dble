@@ -100,7 +100,7 @@ public final class Describe {
             row.add(StringUtil.encode(column.getDataType(), service.getCharset().getResults()));
             row.add(StringUtil.encode(column.isCanNull() ? "YES" : "NO", service.getCharset().getResults()));
             row.add(StringUtil.encode(column.isPrimaryKey() ? "PRI" : "", service.getCharset().getResults()));
-            row.add(null);
+            row.add(StringUtil.encode(column.getDefaultVal(), service.getCharset().getResults()));
             row.add(StringUtil.encode("", service.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, service, true);

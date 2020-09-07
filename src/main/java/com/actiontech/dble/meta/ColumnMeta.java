@@ -41,6 +41,11 @@ public class ColumnMeta {
         this.isPrimaryKey = isPrimaryKey;
     }
 
+    public ColumnMeta(String name, String dataType, boolean canNull, String defaultVal) {
+        this(name, dataType, canNull);
+        this.defaultVal = defaultVal;
+    }
+
     public String getName() {
         return name;
     }

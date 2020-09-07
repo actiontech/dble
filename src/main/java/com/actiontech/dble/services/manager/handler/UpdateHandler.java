@@ -6,6 +6,7 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -16,6 +17,7 @@ import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.response.ReloadConfig;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -23,9 +25,11 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -86,7 +90,7 @@ public final class UpdateHandler {
         }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
 
-        Map<String, String> values;
+        LinkedHashMap<String, String> values;
         try {
             values = getUpdateValues(schemaInfo, managerTable, update.getItems());
         } catch (SQLException e) {
@@ -94,19 +98,33 @@ public final class UpdateHandler {
             return;
         }
 
-        int rowSize;
+        int rowSize = 0;
         managerTable.getLock().lock();
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
-            Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows);
-            rowSize = managerTable.updateRows(affectPks, values);
+            Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
+            if (!affectPks.isEmpty()) {
+                rowSize = managerTable.updateRows(affectPks, values);
+                if (rowSize != 0) {
+                    ReloadConfig.execute(service, 0, false);
+                }
+            }
         } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
+            return;
+        } catch (ConfigException e) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
             return;
         } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            if (e.getCause() instanceof ConfigException) {
+                //reload fail
+                handleConfigException(e, service, managerTable);
+            } else {
+                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            }
             return;
         } finally {
+            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();
@@ -115,9 +133,9 @@ public final class UpdateHandler {
         ok.write(service.getConnection());
     }
 
-    private Map<String, String> getUpdateValues(SchemaUtil.SchemaInfo schemaInfo,
-                                                ManagerWritableTable managerTable, List<SQLUpdateSetItem> updateItems) throws SQLException {
-        Map<String, String> values = new HashMap<>(updateItems.size());
+    private LinkedHashMap<String, String> getUpdateValues(SchemaUtil.SchemaInfo schemaInfo,
+                                                          ManagerWritableTable managerTable, List<SQLUpdateSetItem> updateItems) throws SQLException {
+        LinkedHashMap<String, String> values = new LinkedHashMap<>(updateItems.size());
         for (SQLUpdateSetItem item : updateItems) {
             String columnName = getColumnName(item.getColumn().toString().toLowerCase(), schemaInfo.getTable());
             if (managerTable.getColumnType(columnName) == null) {
@@ -128,6 +146,12 @@ public final class UpdateHandler {
             }
             if (item.getValue() instanceof SQLNullExpr && managerTable.getNotNullColumns().contains(columnName)) {
                 throw new SQLException("Column '" + columnName + "' cannot be null ", "23000", ErrorCode.ER_BAD_NULL_ERROR);
+            }
+            if (managerTable.getNotWritableColumnSet().contains(columnName)) {
+                throw new SQLException("Column '" + columnName + "' is not writable", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
+            }
+            if (managerTable.getLogicalPrimaryKeySet().contains(columnName)) {
+                throw new SQLException("Column '" + columnName + "' is not writable.Because of the logical primary key " + new Gson().toJson(managerTable.getLogicalPrimaryKeySet()), "42S22", ErrorCode.ER_ERROR_ON_WRITE);
             }
             values.put(columnName, ManagerTableUtil.valueToString(item.getValue()));
         }
@@ -156,5 +180,15 @@ public final class UpdateHandler {
         }
         columnName = StringUtil.removeBackQuote(columnName);
         return columnName;
+    }
+
+    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
+        try {
+            managerTable.rollbackXmlFile();
+        } catch (IOException ioException) {
+            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            return;
+        }
+        service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
     }
 }

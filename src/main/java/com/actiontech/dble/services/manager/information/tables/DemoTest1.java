@@ -57,12 +57,13 @@ public final class DemoTest1 extends ManagerWritableTable {
     }
 
     @Override
-    public void insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
+    public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
         lst.addAll(rows);
+        return 0;
     }
 
     @Override
-    public int updateRows(Set<LinkedHashMap<String, String>> affectPks, Map<String, String> values) throws SQLException {
+    public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
         for (LinkedHashMap<String, String> row : lst) {
             LinkedHashMap<String, String> pk = new LinkedHashMap<>(getPrimaryKeyColumns().size());
             for (String pkColumn : getPrimaryKeyColumns()) {

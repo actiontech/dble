@@ -33,6 +33,22 @@ public class DbInstanceConfig {
         this.primary = primary;
     }
 
+    public DbInstanceConfig(String instanceName, String ip, int port, String url, String user, String password, int readWeight, String id, boolean disabled, boolean primary, int maxCon, int minCon, PoolConfig poolConfig) {
+        this.instanceName = instanceName;
+        this.ip = ip;
+        this.port = port;
+        this.url = url;
+        this.user = user;
+        this.password = password;
+        this.readWeight = readWeight;
+        this.id = id;
+        this.disabled = disabled;
+        this.primary = primary;
+        this.maxCon = maxCon;
+        this.minCon = minCon;
+        this.poolConfig = poolConfig;
+    }
+
     public String getInstanceName() {
         return instanceName;
     }

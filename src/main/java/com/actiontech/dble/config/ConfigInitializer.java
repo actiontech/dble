@@ -143,36 +143,18 @@ public class ConfigInitializer implements ProblemReporter {
             allUseShardingNode.addAll(redundancy.getShardingNodes());
         }
 
-        Set<String> allUseHost = new HashSet<>();
         //delete redundancy shardingNode
         Iterator<Map.Entry<String, ShardingNode>> iterator = this.shardingNodes.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, ShardingNode> entry = iterator.next();
             String shardingNodeName = entry.getKey();
-            if (allUseShardingNode.contains(shardingNodeName)) {
-                if (entry.getValue().getDbGroup() != null) {
-                    allUseHost.add(entry.getValue().getDbGroup().getGroupName());
-                }
-            } else {
+            if (!allUseShardingNode.contains(shardingNodeName)) {
                 LOGGER.info("shardingNode " + shardingNodeName + " is useless,server will ignore it");
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));
                 iterator.remove();
             }
         }
         allUseShardingNode.clear();
-        //delete redundancy dbGroup
-        if (allUseHost.size() < this.dbGroups.size()) {
-            Iterator<String> dbGroup = this.dbGroups.keySet().iterator();
-            while (dbGroup.hasNext()) {
-                String dbGroupName = dbGroup.next();
-                if (!allUseHost.contains(dbGroupName)) {
-                    LOGGER.info("dbGroup " + dbGroupName + " is useless,server will ignore it");
-                    errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupName + " is useless"));
-                    dbGroup.remove();
-                }
-            }
-        }
-        allUseHost.clear();
     }
 
     public void testConnection() {

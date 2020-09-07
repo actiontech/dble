@@ -6,6 +6,7 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -16,6 +17,7 @@ import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.response.ReloadConfig;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
@@ -23,6 +25,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,20 +90,42 @@ public final class DeleteHandler {
         managerTable.getLock().lock();
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
-            Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows);
+            Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
             rowSize = managerTable.deleteRows(affectPks);
+            if (rowSize != 0) {
+                ReloadConfig.execute(service, 0, false);
+            }
         } catch (SQLException e) {
             service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
+        } catch (ConfigException e) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
+            return;
         } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            if (e.getCause() instanceof ConfigException) {
+                //reload fail
+                handleConfigException(e, service, managerTable);
+            } else {
+                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            }
             return;
         } finally {
+            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(rowSize);
         ok.write(service.getConnection());
+    }
+
+    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
+        try {
+            managerTable.rollbackXmlFile();
+        } catch (IOException ioException) {
+            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            return;
+        }
+        service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
     }
 }

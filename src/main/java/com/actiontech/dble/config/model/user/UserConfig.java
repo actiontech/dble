@@ -18,22 +18,19 @@ public class UserConfig {
     private int id;
     protected final String name;
     protected final String password;
-    protected final String passwordEncrypt;
     protected final Set<String> whiteIPs;
     protected final int maxCon;
 
     public UserConfig(UserConfig user) {
         this.name = user.name;
         this.password = user.password;
-        this.passwordEncrypt = user.passwordEncrypt;
         this.whiteIPs = user.whiteIPs;
         this.maxCon = user.maxCon;
     }
 
-    public UserConfig(String name, String password, String passwordEncrypt, String strWhiteIPs, String strMaxCon) {
+    public UserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
         this.name = name;
         this.password = password;
-        this.passwordEncrypt = passwordEncrypt;
         this.whiteIPs = genWhiteIPs(strWhiteIPs);
 
         int maxConn = -1;
@@ -70,10 +67,6 @@ public class UserConfig {
 
     public String getPassword() {
         return password;
-    }
-
-    public String getPasswordEncrypt() {
-        return passwordEncrypt;
     }
 
     public Set<String> getWhiteIPs() {

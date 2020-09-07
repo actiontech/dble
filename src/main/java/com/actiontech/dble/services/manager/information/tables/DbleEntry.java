@@ -5,6 +5,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
+import com.actiontech.dble.util.DecryptUtil;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 
@@ -89,7 +90,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_TYPE, "username");
         map.put(COLUMN_USER_TYPE, "managerUser");
         map.put(COLUMN_USERNAME, userConfig.getName());
-        map.put(COLUMN_PASSWORD_ENCRYPT, userConfig.getPasswordEncrypt());
+        map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
         map.put(COLUMN_CONN_ATTR_KEY, null);
         map.put(COLUMN_CONN_ATTR_VALUE, null);
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
@@ -102,9 +103,9 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_TYPE, userConfig.getTenant() != null ? "conn_attr" : "username");
         map.put(COLUMN_USER_TYPE, "shardingUser");
         map.put(COLUMN_USERNAME, userConfig.getName());
-        map.put(COLUMN_PASSWORD_ENCRYPT, userConfig.getPasswordEncrypt());
+        map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
         map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
-        map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant() != null ? userConfig.getTenant() : null);
+        map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, userConfig.isReadOnly() + "");
         map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
@@ -115,13 +116,21 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_TYPE, userConfig.getTenant() != null ? "conn_attr" : "username");
         map.put(COLUMN_USER_TYPE, "rwSplitUser");
         map.put(COLUMN_USERNAME, userConfig.getName());
-        map.put(COLUMN_PASSWORD_ENCRYPT, userConfig.getPasswordEncrypt());
+        map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
         map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
-        map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant() != null ? userConfig.getTenant() : null);
+        map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, "-");
         map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
+    }
+
+    private String getPasswordEncrypt(UserConfig userConfig) {
+        try {
+            return DecryptUtil.encrypt("0:" + userConfig.getName() + ":" + userConfig.getPassword());
+        } catch (Exception e) {
+            return "******";
+        }
     }
 
     private String getWhiteIps(Set<String> whiteIps) {

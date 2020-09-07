@@ -5,6 +5,8 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 public final class FreshBackendConn {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FreshBackendConn.class);
 
     private FreshBackendConn() {
     }
@@ -21,9 +24,8 @@ public final class FreshBackendConn {
         String groupName = matcher.group(1);
         String instanceNames = matcher.group(3);
 
-        //check the dbGroup is exists
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.readLock().lock();
+        lock.writeLock().lock();
         try {
             PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(groupName);
             if (dh == null) {
@@ -52,8 +54,8 @@ public final class FreshBackendConn {
                     dh.init(sourceNames, "fresh backend conn");
                 }
             } catch (Exception e) {
-                service.writeErrMessage(ErrorCode.ER_YES, "disable dbGroup with error, use show @@backend to check latest status. Error:" + e.getMessage());
-                e.printStackTrace();
+                service.writeErrMessage(ErrorCode.ER_YES, "fresh conn with error, use show @@backend to check latest status. Error:" + e.getMessage());
+                LOGGER.warn("fresh conn with error", e);
                 return;
             }
 
@@ -66,7 +68,7 @@ public final class FreshBackendConn {
             packet.setServerStatus(2);
             packet.write(service.getConnection());
         } finally {
-            lock.readLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 }

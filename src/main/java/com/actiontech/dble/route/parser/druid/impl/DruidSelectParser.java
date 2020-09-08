@@ -282,11 +282,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (isDistinct && !isNeedOptimizer(itemExpr)) {
                     if (itemExpr instanceof SQLIdentifierExpr) {
                         SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
-                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                        if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
                         addToAliaColumn(aliaColumns, selectItem);
                     } else if (itemExpr instanceof SQLPropertyExpr) {
                         SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
-                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                        if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
                         addToAliaColumn(aliaColumns, selectItem);
                     }
                 } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
@@ -479,6 +479,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         return groupByCols;
     }
+
     private SchemaConfig executeComplexSQL(
             String schemaName, SchemaConfig schema, RouteResultset rrs,
             SQLSelectStatement selectStmt, ShardingService service, int tableSize, boolean containsInnerFunction)
@@ -626,7 +627,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private int needAddLimitSize(SchemaConfig schema, RouteResultset rrs,
-                                     MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions) {
+                                 MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions) {
         if (rrs.getLimitSize() > -1) {
             return -1;
         } else if (mysqlSelectQuery.getLimit() != null) { // has already limit

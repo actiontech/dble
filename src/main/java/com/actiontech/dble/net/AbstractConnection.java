@@ -281,7 +281,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
         lastReadTime.set(TimeUtil.currentTimeMillis());
         if (lastReadTime == lastWriteTime) {
-            lastReadTime.getAndDecrement();
+            lastWriteTime.getAndDecrement();
         }
         if (got < 0) {
             if (this instanceof MySQLConnection) {

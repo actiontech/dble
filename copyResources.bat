@@ -1,1 +1,1 @@
-copy src\main\resources\* target\classes\ /Y
+cp src/main/resources/* target/classes/

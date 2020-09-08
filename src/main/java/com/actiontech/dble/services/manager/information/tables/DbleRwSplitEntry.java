@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 public class DbleRwSplitEntry extends ManagerWritableTable {
 
-    private static final String TABLE_NAME = "dble_rw_split_entry";
+    public static final String TABLE_NAME = "dble_rw_split_entry";
 
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_TYPE = "type";
@@ -35,7 +35,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
     private static final String COLUMN_WHITE_IPS = "white_ips";
     private static final String COLUMN_MAX_CONN_COUNT = "max_conn_count";
     private static final String COLUMN_BLACKLIST = "blacklist";
-    private static final String COLUMN_DB_GROUP = "db_group";
+    public static final String COLUMN_DB_GROUP = "db_group";
 
     public DbleRwSplitEntry() {
         super(TABLE_NAME, 10);

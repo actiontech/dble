@@ -13,6 +13,7 @@ import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
@@ -130,6 +131,8 @@ public class DbleDbGroup extends ManagerWritableTable {
 
     @Override
     public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException {
+        //check
+        checkDeleteRule(affectPks);
         //temp
         List<LinkedHashMap<String, String>> dbGroupRows = Lists.newArrayList();
         for (LinkedHashMap<String, String> affectPk : affectPks) {
@@ -152,6 +155,29 @@ public class DbleDbGroup extends ManagerWritableTable {
 
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return affectPks.size();
+    }
+
+    private void checkDeleteRule(Set<LinkedHashMap<String, String>> affectPks) {
+        for (LinkedHashMap<String, String> affectPk : affectPks) {
+            //check user-group
+            DbleRwSplitEntry dbleRwSplitEntry = (DbleRwSplitEntry) ManagerSchemaInfo.getInstance().getTables().get(DbleRwSplitEntry.TABLE_NAME);
+            boolean existUser = dbleRwSplitEntry.getRows().stream().anyMatch(entry -> entry.get(DbleRwSplitEntry.COLUMN_DB_GROUP).equals(affectPk.get(COLUMN_NAME)));
+            if (existUser) {
+                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_db_user`(`db_group`) REFERENCES `dble_db_group`(`name`)");
+            }
+            //check instance-group
+            DbleDbInstance dbleDbInstance = (DbleDbInstance) ManagerSchemaInfo.getInstance().getTables().get(DbleDbInstance.TABLE_NAME);
+            boolean existInstance = dbleDbInstance.getRows().stream().anyMatch(entry -> entry.get(DbleDbInstance.COLUMN_DB_GROUP).equals(affectPk.get(COLUMN_NAME)));
+            if (existInstance) {
+                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_db_instance`(`db_group`) REFERENCES `dble_db_group`(`name`)");
+            }
+            //check sharding_node-group
+            DbleShardingNode dbleShardingNode = (DbleShardingNode) ManagerSchemaInfo.getInstance().getTables().get(DbleShardingNode.TABLE_NAME);
+            boolean existShardingNode = dbleShardingNode.getRows().stream().anyMatch(entry -> entry.get(DbleShardingNode.COLUMN_DB_GROUP).equals(affectPk.get(COLUMN_NAME)));
+            if (existShardingNode) {
+                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_sharding_node`(`db_group`) REFERENCES `dble_db_group`(`name`)");
+            }
+        }
     }
 
     public List<LinkedHashMap<String, String>> getTempRowList() {

@@ -50,7 +50,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     private static final String COLUMN_NAME = "name";
 
-    private static final String COLUMN_DB_GROUP = "db_group";
+    public static final String COLUMN_DB_GROUP = "db_group";
 
     private static final String COLUMN_ADDR = "addr";
 
@@ -308,13 +308,35 @@ public class DbleDbInstance extends ManagerWritableTable {
         }
         for (DBGroup dbGroup : dbGroups.getDbGroup()) {
             boolean existPrimary = dbGroup.getDbInstance().stream().anyMatch(DBInstance::getPrimary);
-            if (!existPrimary) {
+            if (!existPrimary && !dbGroup.getDbInstance().isEmpty()) {
                 throw new SQLException("Table dble_db_group[" + dbGroup.getName() + "] needs to retain a primary dbInstance", "42S22", ErrorCode.ER_YES);
             }
         }
+        Set<DBGroup> removeDBGroupSet = dbGroups.getDbGroup().stream().filter(dbGroup -> dbGroup.getDbInstance().isEmpty()).collect(Collectors.toSet());
+        //check remove empty instance
+        checkDeleteRule(removeDBGroupSet);
+        //remove empty instance
+        dbGroups.getDbGroup().removeIf(dbGroup -> dbGroup.getDbInstance().isEmpty());
         //write to configuration
         xmlProcess.writeObjToXml(dbGroups, getXmlFilePath(), "db");
         return affectPks.size();
+    }
+
+    private void checkDeleteRule(Set<DBGroup> removeDBGroupSet) {
+        for (DBGroup dbGroup : removeDBGroupSet) {
+            //check user-group
+            DbleRwSplitEntry dbleRwSplitEntry = (DbleRwSplitEntry) ManagerSchemaInfo.getInstance().getTables().get(DbleRwSplitEntry.TABLE_NAME);
+            boolean existUser = dbleRwSplitEntry.getRows().stream().anyMatch(entry -> entry.get(DbleRwSplitEntry.COLUMN_DB_GROUP).equals(dbGroup.getName()));
+            if (existUser) {
+                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_db_user`(`db_group`) REFERENCES `dble_db_group`(`name`)");
+            }
+            //check sharding_node-group
+            DbleShardingNode dbleShardingNode = (DbleShardingNode) ManagerSchemaInfo.getInstance().getTables().get(DbleShardingNode.TABLE_NAME);
+            boolean existShardingNode = dbleShardingNode.getRows().stream().anyMatch(entry -> entry.get(DbleShardingNode.COLUMN_DB_GROUP).equals(dbGroup.getName()));
+            if (existShardingNode) {
+                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_sharding_node`(`db_group`) REFERENCES `dble_db_group`(`name`)");
+            }
+        }
     }
 
 

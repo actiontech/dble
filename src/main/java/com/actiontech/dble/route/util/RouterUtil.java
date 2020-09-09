@@ -400,8 +400,8 @@ public final class RouterUtil {
                     String shardingNode = ruleCalculateSingleValue(schemaName, tc, value, clientCharset);
                     routeNodeSet.add(shardingNode);
                 }
-            } else if (!ignoreNull) {
-                String shardingNode = ruleCalculateSingleValue(schemaName, tc, columnRoute.getColValue(), clientCharset);
+            } else if (!ignoreNull || originValue instanceof Number) {
+                String shardingNode = ruleCalculateSingleValue(schemaName, tc, originValue, clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         } else if (columnRoute.getInValues() != null) {
@@ -410,11 +410,11 @@ public final class RouterUtil {
                 routeNodeSet.add(shardingNode);
             }
         }
-        ruleCalculateInValue(rrs, tc, columnRoute, routeNodeSet);
+        ruleCalculateRangeValue(rrs, tc, columnRoute, routeNodeSet);
         return routeNodeSet;
     }
 
-    private static void ruleCalculateInValue(RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, Set<String> routeNodeSet) {
+    private static void ruleCalculateRangeValue(RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, Set<String> routeNodeSet) {
         if (columnRoute.getRangeValues() != null) {
             Set<String> rangeNodeSet = new LinkedHashSet<>();
             boolean isFirst = true;

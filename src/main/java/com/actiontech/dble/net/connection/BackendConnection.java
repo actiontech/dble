@@ -179,7 +179,7 @@ public class BackendConnection extends PooledConnection {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("").append(this.getClass()).
-                append(" Connection  with").append(" id = " + id).append(" port = " + localPort).append(" mysqlId = " + threadId).append(" db config = " + instance);
+                append(" Connection  with").append(" host = " + host).append(" id = " + id).append(" port = " + localPort).append(" mysqlId = " + threadId).append(" db config = " + instance);
         return sb.toString();
     }
 }

@@ -74,19 +74,22 @@ public class DbleEntry extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
-            UserConfig userConfig = v.getValue();
-            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-            map.put(COLUMN_ID, userConfig.getId() + "");
-            if (userConfig instanceof ManagerUserConfig) {
-                getManagerUserConfig(map, (ManagerUserConfig) userConfig);
-            } else if (userConfig instanceof ShardingUserConfig) {
-                getShardingUserConfig(map, (ShardingUserConfig) userConfig);
-            } else if (userConfig instanceof RwSplitUserConfig) {
-                getRwSplitUserConfig(map, (RwSplitUserConfig) userConfig);
-            }
-            list.add(map);
-        });
+        DbleServer.getInstance().getConfig().getUsers().entrySet().
+                stream().
+                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                forEach(v -> {
+                    UserConfig userConfig = v.getValue();
+                    LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                    map.put(COLUMN_ID, userConfig.getId() + "");
+                    if (userConfig instanceof ManagerUserConfig) {
+                        getManagerUserConfig(map, (ManagerUserConfig) userConfig);
+                    } else if (userConfig instanceof ShardingUserConfig) {
+                        getShardingUserConfig(map, (ShardingUserConfig) userConfig);
+                    } else if (userConfig instanceof RwSplitUserConfig) {
+                        getRwSplitUserConfig(map, (RwSplitUserConfig) userConfig);
+                    }
+                    list.add(map);
+                });
         return list;
     }
 

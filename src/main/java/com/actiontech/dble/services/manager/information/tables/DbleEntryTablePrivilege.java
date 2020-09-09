@@ -66,62 +66,65 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
-            UserConfig userConfig = v.getValue();
-            if (userConfig instanceof ShardingUserConfig) {
-                ShardingUserConfig shardingUserConfig = ((ShardingUserConfig) userConfig);
-                UserPrivilegesConfig userPrivilegesConfig = shardingUserConfig.getPrivilegesConfig();
-                if (userPrivilegesConfig != null) {
-                    boolean noEffective = (shardingUserConfig.isReadOnly() || !userPrivilegesConfig.isCheck());
-                    Map<String, UserPrivilegesConfig.SchemaPrivilege> schemaPrivilege = userPrivilegesConfig.getSchemaPrivileges();
-                    if (!CollectionUtil.isEmpty(schemaPrivilege)) {
-                        schemaPrivilege.forEach((schema, sPrivilege) -> {
-                            if (shardingUserConfig.getSchemas().contains(schema)) {
-                                SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
-                                if (schemaConfig != null) {
-                                    Set<String> tables = new HashSet<>(schemaConfig.getTables().keySet());
-                                    Set<String> tableMetas = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMetas().keySet();
-                                    tables.addAll(tableMetas);
-                                    Map<String, UserPrivilegesConfig.TablePrivilege> tablePrivilege = sPrivilege.getTablePrivileges();
+        DbleServer.getInstance().getConfig().getUsers().entrySet().
+                stream().
+                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                forEach(v -> {
+                    UserConfig userConfig = v.getValue();
+                    if (userConfig instanceof ShardingUserConfig) {
+                        ShardingUserConfig shardingUserConfig = ((ShardingUserConfig) userConfig);
+                        UserPrivilegesConfig userPrivilegesConfig = shardingUserConfig.getPrivilegesConfig();
+                        if (userPrivilegesConfig != null) {
+                            boolean noEffective = (shardingUserConfig.isReadOnly() || !userPrivilegesConfig.isCheck());
+                            Map<String, UserPrivilegesConfig.SchemaPrivilege> schemaPrivilege = userPrivilegesConfig.getSchemaPrivileges();
+                            if (!CollectionUtil.isEmpty(schemaPrivilege)) {
+                                schemaPrivilege.forEach((schema, sPrivilege) -> {
+                                    if (shardingUserConfig.getSchemas().contains(schema)) {
+                                        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
+                                        if (schemaConfig != null) {
+                                            Set<String> tables = new HashSet<>(schemaConfig.getTables().keySet());
+                                            Set<String> tableMetas = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMetas().keySet();
+                                            tables.addAll(tableMetas);
+                                            Map<String, UserPrivilegesConfig.TablePrivilege> tablePrivilege = sPrivilege.getTablePrivileges();
 
-                                    if (!CollectionUtil.isEmpty(tablePrivilege)) {
-                                        tablePrivilege.forEach((tableName, tPrivilege) -> {
-                                            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
-                                            map.put(COLUMN_SCHEMA, schema);
-                                            map.put(COLUMN_TABLE, tableName);
-                                            map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
-                                            int[] dml0 = tPrivilege.getDml();
-                                            map.put(COLUMN_INSERT, dml0[0] + "");
-                                            map.put(COLUMN_UPDATE, dml0[1] + "");
-                                            map.put(COLUMN_SELECT, dml0[2] + "");
-                                            map.put(COLUMN_DELETE, dml0[3] + "");
-                                            map.put(COLUMN_IS_EFFECTIVE, (noEffective ? false : tables.contains(tableName)) + "");
-                                            list.add(map);
-                                        });
-                                    } else {
-                                        int[] dml1 = sPrivilege.getDml();
-                                        tables.forEach(tableName -> {
-                                            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                                            map.put(COLUMN_ID, shardingUserConfig.getId() + "");
-                                            map.put(COLUMN_SCHEMA, schema);
-                                            map.put(COLUMN_TABLE, tableName);
-                                            map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
-                                            map.put(COLUMN_INSERT, dml1[0] + "");
-                                            map.put(COLUMN_UPDATE, dml1[1] + "");
-                                            map.put(COLUMN_SELECT, dml1[2] + "");
-                                            map.put(COLUMN_DELETE, dml1[3] + "");
-                                            map.put(COLUMN_IS_EFFECTIVE, (noEffective ? false : tableMetas.contains(tableName)) + "");
-                                            list.add(map);
-                                        });
+                                            if (!CollectionUtil.isEmpty(tablePrivilege)) {
+                                                tablePrivilege.forEach((tableName, tPrivilege) -> {
+                                                    LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                                                    map.put(COLUMN_ID, shardingUserConfig.getId() + "");
+                                                    map.put(COLUMN_SCHEMA, schema);
+                                                    map.put(COLUMN_TABLE, tableName);
+                                                    map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
+                                                    int[] dml0 = tPrivilege.getDml();
+                                                    map.put(COLUMN_INSERT, dml0[0] + "");
+                                                    map.put(COLUMN_UPDATE, dml0[1] + "");
+                                                    map.put(COLUMN_SELECT, dml0[2] + "");
+                                                    map.put(COLUMN_DELETE, dml0[3] + "");
+                                                    map.put(COLUMN_IS_EFFECTIVE, (noEffective ? false : tables.contains(tableName)) + "");
+                                                    list.add(map);
+                                                });
+                                            } else {
+                                                int[] dml1 = sPrivilege.getDml();
+                                                tables.forEach(tableName -> {
+                                                    LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                                                    map.put(COLUMN_ID, shardingUserConfig.getId() + "");
+                                                    map.put(COLUMN_SCHEMA, schema);
+                                                    map.put(COLUMN_TABLE, tableName);
+                                                    map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
+                                                    map.put(COLUMN_INSERT, dml1[0] + "");
+                                                    map.put(COLUMN_UPDATE, dml1[1] + "");
+                                                    map.put(COLUMN_SELECT, dml1[2] + "");
+                                                    map.put(COLUMN_DELETE, dml1[3] + "");
+                                                    map.put(COLUMN_IS_EFFECTIVE, (noEffective ? false : tableMetas.contains(tableName)) + "");
+                                                    list.add(map);
+                                                });
+                                            }
+                                        }
                                     }
-                                }
+                                });
                             }
-                        });
+                        }
                     }
-                }
-            }
-        });
+                });
         return list;
     }
 }

@@ -94,7 +94,7 @@ public class ManagerService extends MySQLBasedService implements FrontEndService
 
     @Override
     public void userConnectionCount() {
-        FrontendUserManager.getInstance().countDown(user, false);
+        FrontendUserManager.getInstance().countDown(user, true);
     }
 
     @Override

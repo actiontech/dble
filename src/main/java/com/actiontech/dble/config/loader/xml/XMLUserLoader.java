@@ -155,7 +155,7 @@ public class XMLUserLoader {
                     }
                 }
                 // load DML Privileges
-                UserPrivilegesConfig privilegesConfig = loadPrivileges(element);
+                UserPrivilegesConfig privilegesConfig = loadPrivileges(element, user);
 
                 ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo, user.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
                 shardingUser.setId(userId.incrementAndGet());
@@ -285,7 +285,7 @@ public class XMLUserLoader {
         }
     }
 
-    private UserPrivilegesConfig loadPrivileges(Element node) {
+    private UserPrivilegesConfig loadPrivileges(Element node, UserName user) {
 
         NodeList privilegesNodes = node.getElementsByTagName("privileges");
         int privilegesNodesLength = privilegesNodes.getLength();
@@ -307,7 +307,7 @@ public class XMLUserLoader {
 
                 String dml1 = schemaNode.getAttribute("dml");
                 if (!DML_PATTERN.matcher(dml1).matches())
-                    throw new ConfigException("privileges's dml format is not standard");
+                    throw new ConfigException("the dml privilege for the shema [" + name1 + "] configuration under the user [" + user + "] is not standard");
                 int[] dml1Array = new int[dml1.length()];
                 for (int offset1 = 0; offset1 < dml1.length(); offset1++) {
                     dml1Array[offset1] = Character.getNumericValue(dml1.charAt(offset1));
@@ -325,7 +325,7 @@ public class XMLUserLoader {
 
                     String dml2 = tableNode.getAttribute("dml");
                     if (!DML_PATTERN.matcher(dml2).matches())
-                        throw new ConfigException("privileges's dml format is not standard");
+                        throw new ConfigException("the dml privilege for the table [" + name2 + "] configuration under the shema [" + name1 + "] under the user [" + user + "] is not standard");
                     int[] dml2Array = new int[dml2.length()];
                     for (int offset2 = 0; offset2 < dml2.length(); offset2++) {
                         dml2Array[offset2] = Character.getNumericValue(dml2.charAt(offset2));

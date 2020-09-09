@@ -30,6 +30,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
     private static final String COLUMN_TYPE = "type";
     public static final String COLUMN_USERNAME = "username";
     private static final String COLUMN_PASSWORD_ENCRYPT = "password_encrypt";
+    private static final String COLUMN_ENCRYPT_CONFIGURED = "encrypt_configured";
     public static final String COLUMN_CONN_ATTR_KEY = "conn_attr_key";
     public static final String COLUMN_CONN_ATTR_VALUE = "conn_attr_value";
     private static final String COLUMN_WHITE_IPS = "white_ips";
@@ -59,6 +60,9 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
 
         columns.put(COLUMN_PASSWORD_ENCRYPT, new ColumnMeta(COLUMN_PASSWORD_ENCRYPT, "varchar(200)", false));
         columnsType.put(COLUMN_PASSWORD_ENCRYPT, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_ENCRYPT_CONFIGURED, new ColumnMeta(COLUMN_ENCRYPT_CONFIGURED, "varchar(5)", true, "true"));
+        columnsType.put(COLUMN_ENCRYPT_CONFIGURED, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_CONN_ATTR_KEY, new ColumnMeta(COLUMN_CONN_ATTR_KEY, "varchar(6)", true));
         columnsType.put(COLUMN_CONN_ATTR_KEY, Fields.FIELD_TYPE_VAR_STRING);
@@ -94,6 +98,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                     map.put(COLUMN_TYPE, rwSplitUserConfig.getTenant() != null ? "conn_attr" : "username");
                     map.put(COLUMN_USERNAME, rwSplitUserConfig.getName());
                     map.put(COLUMN_PASSWORD_ENCRYPT, DbleEntry.getPasswordEncrypt(rwSplitUserConfig));
+                    map.put(COLUMN_ENCRYPT_CONFIGURED, String.valueOf(rwSplitUserConfig.isUsingDecrypt()));
                     map.put(COLUMN_CONN_ATTR_KEY, rwSplitUserConfig.getTenant() != null ? "tenant" : null);
                     map.put(COLUMN_CONN_ATTR_VALUE, rwSplitUserConfig.getTenant());
                     map.put(COLUMN_WHITE_IPS, DbleEntry.getWhiteIps(rwSplitUserConfig.getWhiteIPs()));
@@ -144,15 +149,8 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         checkWhiteIPs(tempRowMap);
         //check db_group
         checkDbGroup(tempRowMap);
-        //check password_encrypt
-        checkPassword(tempRowMap);
     }
 
-    private void checkPassword(LinkedHashMap<String, String> tempRowMap) {
-        String passwordEncrypt = tempRowMap.get(COLUMN_PASSWORD_ENCRYPT);
-        String username = tempRowMap.get(COLUMN_USERNAME);
-        DecryptUtil.decrypt(true, username, passwordEncrypt);
-    }
 
     private void checkWhiteIPs(LinkedHashMap<String, String> tempRowMap) {
         if (tempRowMap.containsKey(COLUMN_WHITE_IPS) && !StringUtil.isEmpty(tempRowMap.get(COLUMN_WHITE_IPS))) {
@@ -192,6 +190,9 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         }
         if (null != map.get(COLUMN_DB_GROUP)) {
             xmlMap.put("dbGroup", map.get(COLUMN_DB_GROUP));
+        }
+        if (null != map.get(COLUMN_ENCRYPT_CONFIGURED)) {
+            xmlMap.put("usingDecrypt", map.get(COLUMN_ENCRYPT_CONFIGURED));
         }
         return xmlMap;
     }

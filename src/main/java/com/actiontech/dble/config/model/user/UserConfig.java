@@ -20,15 +20,17 @@ public class UserConfig {
     protected final String password;
     protected final Set<String> whiteIPs;
     protected final int maxCon;
+    protected final boolean usingDecrypt;
 
     public UserConfig(UserConfig user) {
         this.name = user.name;
         this.password = user.password;
         this.whiteIPs = user.whiteIPs;
         this.maxCon = user.maxCon;
+        this.usingDecrypt = user.usingDecrypt;
     }
 
-    public UserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
+    public UserConfig(String name, String password, String strWhiteIPs, String strMaxCon, boolean usingDecrypt) {
         this.name = name;
         this.password = password;
         this.whiteIPs = genWhiteIPs(strWhiteIPs);
@@ -41,6 +43,7 @@ public class UserConfig {
             }
         }
         this.maxCon = maxConn;
+        this.usingDecrypt = usingDecrypt;
     }
 
     private Set<String> genWhiteIPs(String strWhiteIPs) {
@@ -76,6 +79,10 @@ public class UserConfig {
 
     public int getMaxCon() {
         return maxCon;
+    }
+
+    public boolean isUsingDecrypt() {
+        return usingDecrypt;
     }
 
     public void isValidSchemaInfo(UserName user, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {

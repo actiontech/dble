@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -33,6 +34,7 @@ import java.util.Set;
 
 public final class DeleteHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteHandler.class);
+
     public void handle(String stmt, ManagerService service) {
         MySqlDeleteStatement delete;
         try {
@@ -93,7 +95,7 @@ public final class DeleteHandler {
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
             rowSize = managerTable.deleteRows(affectPks);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false);
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
             }
         } catch (SQLException e) {
             service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());

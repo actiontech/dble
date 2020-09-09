@@ -196,7 +196,7 @@ public class XMLDbLoader {
         String primaryStr = ConfigUtil.checkAndGetAttribute(node, "primary", "false", problemReporter);
         boolean primary = Boolean.parseBoolean(primaryStr);
 
-        DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary);
+        DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary, usingDecrypt);
         // maxCon
         int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
         conf.setMaxCon(maxCon);

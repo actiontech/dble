@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
@@ -120,7 +121,7 @@ public final class InsertHandler {
             managerTable.checkPrimaryKeyDuplicate(rows);
             rowSize = managerTable.insertRows(rows);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false);
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
             }
         } catch (SQLException e) {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());

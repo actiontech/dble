@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -106,7 +107,7 @@ public final class UpdateHandler {
             if (!affectPks.isEmpty()) {
                 rowSize = managerTable.updateRows(affectPks, values);
                 if (rowSize != 0) {
-                    ReloadConfig.execute(service, 0, false);
+                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()));
                 }
             }
         } catch (SQLException e) {

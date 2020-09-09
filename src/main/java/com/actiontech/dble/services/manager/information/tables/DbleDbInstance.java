@@ -29,6 +29,7 @@ import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
 import com.actiontech.dble.services.manager.response.ShowHeartbeat;
+import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
@@ -59,6 +60,8 @@ public class DbleDbInstance extends ManagerWritableTable {
     private static final String COLUMN_USER = "user";
 
     private static final String COLUMN_PASSWORD_ENCRYPT = "password_encrypt";
+
+    private static final String COLUMN_ENCRYPT_CONFIGURED = "encrypt_configured";
 
     private static final String COLUMN_PRIMARY = "primary";
 
@@ -138,6 +141,9 @@ public class DbleDbInstance extends ManagerWritableTable {
 
         columns.put(COLUMN_PASSWORD_ENCRYPT, new ColumnMeta(COLUMN_PASSWORD_ENCRYPT, "varchar(256)", false));
         columnsType.put(COLUMN_PASSWORD_ENCRYPT, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_ENCRYPT_CONFIGURED, new ColumnMeta(COLUMN_ENCRYPT_CONFIGURED, "varchar(5)", true, "true"));
+        columnsType.put(COLUMN_ENCRYPT_CONFIGURED, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_PRIMARY, new ColumnMeta(COLUMN_PRIMARY, "varchar(5)", false));
         columnsType.put(COLUMN_PRIMARY, Fields.FIELD_TYPE_VAR_STRING);
@@ -228,7 +234,8 @@ public class DbleDbInstance extends ManagerWritableTable {
                 map.put(COLUMN_ADDR, dbInstanceConfig.getIp());
                 map.put(COLUMN_PORT, String.valueOf(dbInstanceConfig.getPort()));
                 map.put(COLUMN_USER, dbInstanceConfig.getUser());
-                map.put(COLUMN_PASSWORD_ENCRYPT, dbInstanceConfig.getPassword());
+                map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(dbInstanceConfig.getInstanceName(), dbInstanceConfig.getUser(), dbInstanceConfig.getPassword()));
+                map.put(COLUMN_ENCRYPT_CONFIGURED, String.valueOf(dbInstanceConfig.isUsingDecrypt()));
                 map.put(COLUMN_PRIMARY, String.valueOf(dbInstanceConfig.isPrimary()));
                 map.put(COLUMN_ACTIVE_CONN_COUNT, String.valueOf(dbInstance.getActiveConnections()));
                 map.put(COLUMN_IDLE_CONN_COUNT, String.valueOf(dbInstance.getIdleConnections()));
@@ -262,6 +269,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     @Override
     public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
+        decryptPassword(rows);
         final int size = rows.size();
         XmlProcessBase xmlProcess = new XmlProcessBase();
         DbGroups dbs = transformRow(xmlProcess, null, rows);
@@ -285,9 +293,28 @@ public class DbleDbInstance extends ManagerWritableTable {
         for (DBGroup dbGroup : dbs.getDbGroup()) {
             dbleDbGroup.getTempRowList().removeIf(group -> StringUtil.equals(group.get(DbleDbGroup.COLUMN_NAME), dbGroup.getName()));
         }
+        encryptPassword(dbs);
         //write to configuration
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return size;
+    }
+
+    private void encryptPassword(DbGroups dbs) {
+        for (DBGroup dbGroup : dbs.getDbGroup()) {
+            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
+                String usingDecrypt = dbInstance.getUsingDecrypt();
+                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.valueOf(usingDecrypt)) {
+                    dbInstance.setPassword(getPasswordEncrypt(dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
+                }
+            }
+        }
+    }
+
+    private void decryptPassword(List<LinkedHashMap<String, String>> rows) {
+        for (LinkedHashMap<String, String> row : rows) {
+            row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(Boolean.valueOf(row.get(COLUMN_ENCRYPT_CONFIGURED)), row.get(COLUMN_NAME),
+                    row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
+        }
     }
 
 
@@ -317,6 +344,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         checkDeleteRule(removeDBGroupSet);
         //remove empty instance
         dbGroups.getDbGroup().removeIf(dbGroup -> dbGroup.getDbInstance().isEmpty());
+        encryptPassword(dbGroups);
         //write to configuration
         xmlProcess.writeObjToXml(dbGroups, getXmlFilePath(), "db");
         return affectPks.size();
@@ -353,6 +381,14 @@ public class DbleDbInstance extends ManagerWritableTable {
             dbs = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML);
         } catch (JAXBException | XMLStreamException e) {
             e.printStackTrace();
+        }
+        for (DBGroup dbGroup : dbs.getDbGroup()) {
+            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
+                String usingDecrypt = dbInstance.getUsingDecrypt();
+                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.valueOf(usingDecrypt)) {
+                    dbInstance.setPassword(DecryptUtil.dbHostDecrypt(true, dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
+                }
+            }
         }
         if (null == dbs) {
             throw new ConfigException("configuration is empty");
@@ -419,7 +455,7 @@ public class DbleDbInstance extends ManagerWritableTable {
                 Boolean primary = StringUtil.isEmpty(instanceRowMap.get(COLUMN_PRIMARY)) ? null : Boolean.valueOf(instanceRowMap.get(COLUMN_PRIMARY));
                 DBInstance dbInstance = new DBInstance(instanceRowMap.get(COLUMN_NAME), instanceRowMap.get(COLUMN_ADDR) + ":" + instanceRowMap.get(COLUMN_PORT),
                         instanceRowMap.get(COLUMN_PASSWORD_ENCRYPT), instanceRowMap.get(COLUMN_USER), maxCon, minCon, instanceRowMap.get(COLUMN_DISABLED),
-                        instanceRowMap.get(COLUMN_ID), instanceRowMap.get(COLUMN_READ_WEIGHT), primary, propertyList);
+                        instanceRowMap.get(COLUMN_ID), instanceRowMap.get(COLUMN_READ_WEIGHT), primary, propertyList, instanceRowMap.get(COLUMN_ENCRYPT_CONFIGURED));
                 if (dbGroup.getDbInstance().stream().anyMatch(instance -> StringUtil.equals(instance.getName(), dbInstance.getName()))) {
                     dbGroup.getDbInstance().removeIf(instance -> StringUtil.equals(instance.getName(), dbInstance.getName()));
                 }
@@ -464,6 +500,7 @@ public class DbleDbInstance extends ManagerWritableTable {
                     int port = Integer.parseInt(url.substring(colonIndex + 1).trim());
                     boolean disabled = !StringUtil.isEmpty(dbInstance.getDisabled()) && Boolean.parseBoolean(dbInstance.getDisabled());
                     int readWeight = StringUtil.isEmpty(dbInstance.getReadWeight()) ? 0 : Integer.parseInt(dbInstance.getReadWeight());
+                    boolean usingDecrypt = !StringUtil.isEmpty(dbInstance.getUsingDecrypt()) && Boolean.parseBoolean(dbInstance.getUsingDecrypt());
                     List<Property> propertyList = dbInstance.getProperty();
                     PoolConfig poolConfig = null;
                     if (!propertyList.isEmpty()) {
@@ -471,12 +508,13 @@ public class DbleDbInstance extends ManagerWritableTable {
                         poolConfig = new PoolConfig();
                         ParameterMapping.mapping(poolConfig, propertyMap, null);
                     }
+                    String password = dbInstance.getPassword();
                     if (dbInstance.getPrimary()) {
-                        tmpDbInstanceConfig = new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), dbInstance.getPassword(), readWeight, dbInstance.getId(),
-                                disabled, dbInstance.getPrimary(), dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig);
+                        tmpDbInstanceConfig = new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), password, readWeight, dbInstance.getId(),
+                                disabled, dbInstance.getPrimary(), dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt);
                     } else {
-                        dbInstanceConfigList.add(new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), dbInstance.getPassword(), readWeight, dbInstance.getId(),
-                                disabled, dbInstance.getPrimary(), dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig));
+                        dbInstanceConfigList.add(new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), password, readWeight, dbInstance.getId(),
+                                disabled, dbInstance.getPrimary(), dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt));
                     }
                 }
                 boolean disableHA = !StringUtil.isEmpty(dbGroup.getDisableHA()) && Boolean.parseBoolean(dbGroup.getDisableHA());
@@ -498,6 +536,15 @@ public class DbleDbInstance extends ManagerWritableTable {
             }
         } catch (IllegalAccessException | InvocationTargetException | IOException e) {
             throw new ConfigException(e);
+        }
+    }
+
+
+    public static String getPasswordEncrypt(String instanceName, String name, String password) {
+        try {
+            return DecryptUtil.encrypt("1:" + instanceName + ":" + name + ":" + password);
+        } catch (Exception e) {
+            return "******";
         }
     }
 

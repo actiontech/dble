@@ -270,7 +270,6 @@ public class XMLUserLoader {
                         rwSplitUserElement.setAttribute(key, value);
                     }
                 });
-                rwSplitUserElement.setAttribute("usingDecrypt", "true");
                 Element root = this.document.getDocumentElement();
                 NodeList refNode = this.document.getElementsByTagName("blacklist");
                 if (null == refNode || refNode.getLength() == 0) {
@@ -310,7 +309,6 @@ public class XMLUserLoader {
                         for (Map.Entry<String, String> entry : values.entrySet()) {
                             itemElement.setAttribute(entry.getKey(), entry.getValue());
                         }
-                        itemElement.setAttribute("usingDecrypt", "true");
                     }
                 }
             }
@@ -409,16 +407,17 @@ public class XMLUserLoader {
             throw new ConfigException("password of " + name + " is empty");
         }
         String usingDecryptStr = element.getAttribute("usingDecrypt");
+        boolean usingDecrypt = false;
         if (!StringUtil.isEmpty(usingDecryptStr)) {
             usingDecryptStr = ConfigUtil.checkBoolAttribute("usingDecrypt", usingDecryptStr, "false", problemReporter, xmlFile);
-            boolean usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
+            usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
             password = DecryptUtil.decrypt(usingDecrypt, name, password);
         }
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
         IPAddressUtil.checkWhiteIPs(strWhiteIPs);
-        return new UserConfig(name, password, strWhiteIPs, strMaxCon);
+        return new UserConfig(name, password, strWhiteIPs, strMaxCon, usingDecrypt);
     }
 
 

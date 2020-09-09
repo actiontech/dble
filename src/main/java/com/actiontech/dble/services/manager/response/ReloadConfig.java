@@ -55,33 +55,30 @@ public final class ReloadConfig {
     }
 
     public static void execute(ManagerService service, String stmt, int offset) {
-        ManagerParseConfig parser = new ManagerParseConfig();
-        int rs = parser.parse(stmt, offset);
-        switch (rs) {
-            case ManagerParseConfig.CONFIG:
-            case ManagerParseConfig.CONFIG_ALL:
-                ReloadConfig.execute(service, parser.getMode());
-                break;
-            default:
-                service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+        try {
+            ManagerParseConfig parser = new ManagerParseConfig();
+            int rs = parser.parse(stmt, offset);
+            switch (rs) {
+                case ManagerParseConfig.CONFIG:
+                case ManagerParseConfig.CONFIG_ALL:
+                    ReloadConfig.execute(service, parser.getMode(), true, new ConfStatus(ConfStatus.Status.RELOAD_ALL));
+                    break;
+                default:
+                    service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+            }
+        } catch (Exception e) {
+            LOGGER.info("reload error", e);
+            writeErrorResult(service, e.getMessage() == null ? e.toString() : e.getMessage());
         }
     }
 
-    private static void execute(ManagerService service, final int loadAllMode) {
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            reloadWithCluster(service, loadAllMode);
-        } else {
-            reloadWithoutCluster(service, loadAllMode);
-        }
-        ReloadManager.reloadFinish();
-    }
 
-    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag) throws Exception {
+    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
         try {
             if (ClusterConfig.getInstance().isClusterEnable()) {
-                reloadWithCluster(service, loadAllMode, returnFlag);
+                reloadWithCluster(service, loadAllMode, returnFlag, confStatus);
             } else {
-                reloadWithoutCluster(service, loadAllMode, returnFlag);
+                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus);
             }
         } finally {
             ReloadManager.reloadFinish();
@@ -89,7 +86,7 @@ public final class ReloadConfig {
     }
 
 
-    private static void reloadWithCluster(ManagerService service, int loadAllMode, boolean returnFlag) throws Exception {
+    private static void reloadWithCluster(ManagerService service, int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
         try {
             DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
@@ -99,7 +96,7 @@ public final class ReloadConfig {
             }
             LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
             ClusterDelayProvider.delayAfterReloadLock();
-            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
                 writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
                 return;
             }
@@ -148,72 +145,13 @@ public final class ReloadConfig {
         }
     }
 
-    private static void reloadWithCluster(ManagerService service, int loadAllMode) {
-        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
-        try {
-            DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
-                return;
-            }
-            LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
-            ClusterDelayProvider.delayAfterReloadLock();
-            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
-                writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
-                return;
-            }
-            //step 1 lock the local meta ,than all the query depends on meta will be hanging
-            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-            lock.writeLock().lock();
-            try {
-                //step 2 reload the local config file
-                if (!reloadAll(loadAllMode)) {
-                    writeSpecialError(service, "Reload interruputed by others,config should be reload");
-                    return;
-                }
-                ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
-                ClusterDelayProvider.delayAfterMasterLoad();
 
-                //step 3 if the reload with no error ,than write the config file into cluster center remote
-                ClusterHelper.writeConfToCluster();
-                ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
-
-                //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
-                ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
-                        ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
-                ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
-                ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
-                //step 5 start a loop to check if all the dble in cluster is reload finished
-                ReloadManager.waitingOthers();
-                ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
-                final String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
-                ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
-                ClusterDelayProvider.delayBeforeDeleteReloadLock();
-
-                if (errorMsg != null) {
-                    writeErrorResultForCluster(service, errorMsg);
-                    return;
-                }
-                writeOKResult(service);
-            } catch (Exception e) {
-                LOGGER.warn("reload config failure", e);
-                writeErrorResult(service, e.getMessage() == null ? e.toString() : e.getMessage());
-            } finally {
-                lock.writeLock().unlock();
-                ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
-                distributeLock.release();
-            }
-        } finally {
-            TraceManager.finishSpan(service, traceObject);
-        }
-    }
-
-    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag) throws Exception {
+    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-in-local");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.writeLock().lock();
         try {
-            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
                 writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
                 return;
             }
@@ -227,32 +165,6 @@ public final class ReloadConfig {
             lock.writeLock().unlock();
             TraceManager.finishSpan(service, traceObject);
         }
-    }
-
-    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode) {
-        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-in-local");
-        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.writeLock().lock();
-        try {
-            try {
-                if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
-                    writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
-                    return;
-                }
-                if (reloadAll(loadAllMode)) {
-                    writeOKResult(service);
-                } else {
-                    writeSpecialError(service, "Reload interruputed by others,metadata should be reload");
-                }
-            } catch (Exception e) {
-                LOGGER.info("reload error", e);
-                writeErrorResult(service, e.getMessage() == null ? e.toString() : e.getMessage());
-            }
-        } finally {
-            lock.writeLock().unlock();
-            TraceManager.finishSpan(service, traceObject);
-        }
-        return;
     }
 
 

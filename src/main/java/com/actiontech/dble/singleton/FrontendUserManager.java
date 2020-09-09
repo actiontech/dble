@@ -73,6 +73,9 @@ public final class FrontendUserManager {
         maxConLock.lock();
         try {
             int userConnection = userConnectionMap.get(user);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("user:" + user + ",userLimit=" + userLimit + ",userConnection=" + userConnection);
+            }
             if (userLimit > 0) {
                 if (userConnection >= userLimit) {
                     return USER_MAX;

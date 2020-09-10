@@ -262,7 +262,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.getSource().write(byteBuffer);
                 }
                 //just for normal error
-                handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
+                ErrorPacket errorPacket = createErrPkg(this.error);
+                handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         } finally {
             lock.unlock();
@@ -299,7 +300,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (!decrementToZero((MySQLResponseService) service))
                     return;
                 if (isFail()) {
-                    handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
+                    ErrorPacket errorPacket = createErrPkg(this.error);
+                    handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
                     return;
                 }
                 ok.setPacketId(session.getShardingService().nextPacketId()); // OK_PACKET
@@ -505,12 +507,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
         if (canResponse()) {
             if (byteBuffer == null) {
-                handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
+                ErrorPacket errorPacket = createErrPkg(this.error);
+                handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             } else if (session.closed()) {
                 cleanBuffer();
             } else {
+                ErrorPacket errorPacket = createErrPkg(this.error);
                 session.getSource().write(byteBuffer);
-                handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
+                handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         }
     }

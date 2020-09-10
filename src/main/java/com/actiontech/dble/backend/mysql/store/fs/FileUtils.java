@@ -369,9 +369,6 @@ public final class FileUtils {
         try {
             fileInputStream = new FileInputStream(source);
             fileOutputStream = new FileOutputStream(dest);
-            if (null == fileInputStream || null == fileOutputStream) {
-                return;
-            }
             inputChannel = fileInputStream.getChannel();
             outputChannel = fileOutputStream.getChannel();
             if (null == inputChannel || null == outputChannel) {

@@ -364,14 +364,27 @@ public final class FileUtils {
         }
         FileChannel inputChannel = null;
         FileChannel outputChannel = null;
+        FileInputStream fileInputStream = null;
+        FileOutputStream fileOutputStream = null;
         try {
-            inputChannel = new FileInputStream(source).getChannel();
-            outputChannel = new FileOutputStream(dest).getChannel();
+            fileInputStream = new FileInputStream(source);
+            fileOutputStream = new FileOutputStream(dest);
+            if (null == fileInputStream || null == fileOutputStream) {
+                return;
+            }
+            inputChannel = fileInputStream.getChannel();
+            outputChannel = fileOutputStream.getChannel();
             if (null == inputChannel || null == outputChannel) {
                 return;
             }
             outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
         } finally {
+            if (null != fileInputStream) {
+                fileInputStream.close();
+            }
+            if (null != fileOutputStream) {
+                fileOutputStream.close();
+            }
             if (null != inputChannel) {
                 inputChannel.close();
             }

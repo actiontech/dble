@@ -151,10 +151,8 @@ public class XmlProcessBase {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
 
-            if (null != name) {
-                marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
-            }
+            marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
+                    String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
             Result outputTarget = new StreamResult(new File(inputPath));
 
             marshaller.marshal(obj, outputTarget);

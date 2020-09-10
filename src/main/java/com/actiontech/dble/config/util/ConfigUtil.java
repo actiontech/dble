@@ -80,7 +80,6 @@ public final class ConfigUtil {
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, Boolean.TRUE);
         factory.setValidating(true);
         factory.setNamespaceAware(false);
-        factory.setIgnoringElementContentWhitespace(true);
         DocumentBuilder builder = factory.newDocumentBuilder();
         builder.setEntityResolver(new EntityResolver() {
             @Override

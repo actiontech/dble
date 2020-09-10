@@ -359,15 +359,25 @@ public final class FileUtils {
      * @throws IOException
      */
     public static void copy(File source, File dest) throws IOException {
+        if (null == source || null == dest) {
+            return;
+        }
         FileChannel inputChannel = null;
         FileChannel outputChannel = null;
         try {
             inputChannel = new FileInputStream(source).getChannel();
             outputChannel = new FileOutputStream(dest).getChannel();
+            if (null == inputChannel || null == outputChannel) {
+                return;
+            }
             outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
         } finally {
-            inputChannel.close();
-            outputChannel.close();
+            if (null != inputChannel) {
+                inputChannel.close();
+            }
+            if (null != outputChannel) {
+                outputChannel.close();
+            }
         }
     }
 

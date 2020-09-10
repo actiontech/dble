@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.config.ProblemReporter;
@@ -79,8 +79,8 @@ public final class ParameterMapping {
             InvocationTargetException {
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
-            Object obj = parameter.get(pd.getName());
-            Object value = obj;
+            String valStr = parameter.get(pd.getName());
+            Object value = valStr;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
                 if (problemReporter != null) {
@@ -91,11 +91,8 @@ public final class ParameterMapping {
                 continue;
             }
 
-            if (obj instanceof String) {
-                String valStr = ((String) obj).trim();
-                if (!StringUtil.isEmpty(valStr)) {
-                    valStr = ConfigUtil.filter(valStr);
-                }
+            if (!StringUtil.isEmpty(valStr)) {
+                valStr = ConfigUtil.filter(valStr);
                 if (isPrimitiveType(cls)) {
                     try {
                         value = convert(cls, valStr);

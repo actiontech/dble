@@ -269,7 +269,11 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     @Override
     public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
-        decryptPassword(rows);
+        return insertOrUpdate(rows, true);
+    }
+
+    private int insertOrUpdate(List<LinkedHashMap<String, String>> rows, boolean insertFlag) throws SQLException {
+        decryptPassword(rows, insertFlag);
         final int size = rows.size();
         XmlProcessBase xmlProcess = new XmlProcessBase();
         DbGroups dbs = transformRow(xmlProcess, null, rows);
@@ -299,29 +303,11 @@ public class DbleDbInstance extends ManagerWritableTable {
         return size;
     }
 
-    private void encryptPassword(DbGroups dbs) {
-        for (DBGroup dbGroup : dbs.getDbGroup()) {
-            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
-                String usingDecrypt = dbInstance.getUsingDecrypt();
-                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.valueOf(usingDecrypt)) {
-                    dbInstance.setPassword(getPasswordEncrypt(dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
-                }
-            }
-        }
-    }
-
-    private void decryptPassword(List<LinkedHashMap<String, String>> rows) {
-        for (LinkedHashMap<String, String> row : rows) {
-            row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(Boolean.valueOf(row.get(COLUMN_ENCRYPT_CONFIGURED)), row.get(COLUMN_NAME),
-                    row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
-        }
-    }
-
 
     @Override
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
         affectPks.forEach(affectPk -> affectPk.putAll(values));
-        return insertRows(Lists.newArrayList(affectPks));
+        return insertOrUpdate(Lists.newArrayList(affectPks), false);
     }
 
     @Override
@@ -367,14 +353,32 @@ public class DbleDbInstance extends ManagerWritableTable {
         }
     }
 
+    private void encryptPassword(DbGroups dbs) {
+        for (DBGroup dbGroup : dbs.getDbGroup()) {
+            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
+                String usingDecrypt = dbInstance.getUsingDecrypt();
+                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.parseBoolean(usingDecrypt)) {
+                    dbInstance.setPassword(getPasswordEncrypt(dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
+                }
+            }
+        }
+    }
+
+    private void decryptPassword(List<LinkedHashMap<String, String>> rows, boolean insertFlag) {
+        for (LinkedHashMap<String, String> row : rows) {
+            if ((insertFlag && Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED))) || !insertFlag) {
+                row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED)), row.get(COLUMN_NAME),
+                        row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
+            }
+        }
+    }
+
 
     public DbGroups transformRow(XmlProcessBase xmlProcess, List<LinkedHashMap<String, String>> changeDbGroupRows, List<LinkedHashMap<String, String>> changeDbInstanceRows) {
         if (null == xmlProcess) {
             return null;
         }
-        DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
         DbGroups dbs = null;
-        List<LinkedHashMap<String, String>> dbGroupRowList = dbleDbGroup.getRows();
         try {
             xmlProcess.addParseClass(DbGroups.class);
             xmlProcess.initJaxbClass();
@@ -382,17 +386,19 @@ public class DbleDbInstance extends ManagerWritableTable {
         } catch (JAXBException | XMLStreamException e) {
             e.printStackTrace();
         }
+        if (null == dbs) {
+            throw new ConfigException("configuration is empty");
+        }
         for (DBGroup dbGroup : dbs.getDbGroup()) {
             for (DBInstance dbInstance : dbGroup.getDbInstance()) {
                 String usingDecrypt = dbInstance.getUsingDecrypt();
-                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.valueOf(usingDecrypt)) {
+                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.parseBoolean(usingDecrypt)) {
                     dbInstance.setPassword(DecryptUtil.dbHostDecrypt(true, dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
                 }
             }
         }
-        if (null == dbs) {
-            throw new ConfigException("configuration is empty");
-        }
+        DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
+        List<LinkedHashMap<String, String>> dbGroupRowList = dbleDbGroup.getRows();
         for (LinkedHashMap<String, String> dbGroupRow : dbGroupRowList) {
             DBGroup dbGroup = initDBGroup(dbGroupRow, changeDbGroupRows, dbs);
             initDBInstance(dbGroupRow, changeDbInstanceRows, dbGroup);

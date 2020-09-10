@@ -11,7 +11,6 @@ import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
-import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.IPAddressUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;

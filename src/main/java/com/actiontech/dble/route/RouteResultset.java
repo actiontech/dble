@@ -29,6 +29,7 @@ public final class RouteResultset implements Serializable {
     private final int sqlType;
     private boolean online;
     private RouteResultsetNode[] nodes;
+    private RouteResultsetNode[] dbInstances;
     private transient SQLStatement sqlStatement;
     private DDLInfo.DDLType ddlType = DDLInfo.DDLType.UNKNOWN;
 
@@ -199,6 +200,14 @@ public final class RouteResultset implements Serializable {
         } else {
             this.nodes = nodes;
         }
+    }
+
+    public RouteResultsetNode[] getDbInstances() {
+        return dbInstances;
+    }
+
+    public void setDbInstances(RouteResultsetNode[] dbInstances) {
+        this.dbInstances = dbInstances;
     }
 
     /**

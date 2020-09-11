@@ -461,7 +461,10 @@ public class NonBlockingSession extends Session {
 
             // complex query
             RouteResultsetNode[] nodes = rrs.getNodes();
-            if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
+            RouteResultsetNode[] dbInstances = rrs.getDbInstances();
+            boolean existNodes = nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("");
+            boolean existDbInstances = dbInstances == null || dbInstances.length == 0 || dbInstances[0].getName() == null || dbInstances[0].getName().equals("");
+            if (existNodes && existDbInstances) {
                 if (rrs.isNeedOptimizer()) {
                     try {
                         this.complexRrs = rrs;
@@ -485,7 +488,7 @@ public class NonBlockingSession extends Session {
                 setRouteResultToTrace(nodes);
                 executeDDL(rrs);
             } else {
-                setRouteResultToTrace(nodes);
+                setRouteResultToTrace(nodes, dbInstances);
                 // dml or simple select
                 executeOther(rrs);
             }
@@ -497,6 +500,13 @@ public class NonBlockingSession extends Session {
     public void setRouteResultToTrace(RouteResultsetNode[] nodes) {
         if (SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setShardingNodes(nodes);
+        }
+    }
+
+    public void setRouteResultToTrace(RouteResultsetNode[] nodes, RouteResultsetNode[] dbInstances) {
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setShardingNodes(nodes);
+            traceResult.setDbInstances(dbInstances);
         }
     }
 
@@ -542,12 +552,16 @@ public class NonBlockingSession extends Session {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "execute-for-dml");
         ExecutableHandler executableHandler = null;
         try {
-            if (rrs.getNodes().length == 1) {
+            RouteResultsetNode[] dbInstances = rrs.getDbInstances();
+            RouteResultsetNode[] nodes = rrs.getNodes();
+            if (null != nodes && nodes.length == 1 && null == dbInstances) {
                 executableHandler = new SingleNodeHandler(rrs, this);
-            } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
+            } else if (null != nodes && ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null && null == dbInstances) {
                 executableHandler = new MultiNodeSelectHandler(rrs, this);
-            } else {
+            } else if (null != nodes && null == dbInstances) {
                 executableHandler = new MultiNodeQueryHandler(rrs, this);
+            } else {
+                executableHandler = new SingleDbInstanceHandler(rrs, this);
             }
 
             setTraceSimpleHandler((ResponseHandler) executableHandler);

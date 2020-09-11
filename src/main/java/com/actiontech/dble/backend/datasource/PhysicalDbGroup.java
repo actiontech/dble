@@ -55,6 +55,8 @@ public class PhysicalDbGroup {
 
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
+    private boolean useless = false;
+
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
         this.rwSplitMode = rwSplitMode;
@@ -121,6 +123,14 @@ public class PhysicalDbGroup {
 
     public int getRwSplitMode() {
         return rwSplitMode;
+    }
+
+    public boolean isUseless() {
+        return useless;
+    }
+
+    public void setUseless(boolean useless) {
+        this.useless = useless;
     }
 
     public PhysicalDbInstance getWriteDbInstance() {
@@ -522,6 +532,6 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
                 pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
                 pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
-                pool.getGroupName().equals(this.groupName);
+                pool.getGroupName().equals(this.groupName) && pool.isUseless() == this.isUseless();
     }
 }

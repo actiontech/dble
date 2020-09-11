@@ -18,6 +18,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
@@ -143,18 +144,41 @@ public class ConfigInitializer implements ProblemReporter {
             allUseShardingNode.addAll(redundancy.getShardingNodes());
         }
 
+        Set<String> allUseHost = new HashSet<>();
         //delete redundancy shardingNode
         Iterator<Map.Entry<String, ShardingNode>> iterator = this.shardingNodes.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, ShardingNode> entry = iterator.next();
             String shardingNodeName = entry.getKey();
-            if (!allUseShardingNode.contains(shardingNodeName)) {
+            if (allUseShardingNode.contains(shardingNodeName)) {
+                if (entry.getValue().getDbGroup() != null) {
+                    allUseHost.add(entry.getValue().getDbGroup().getGroupName());
+                }
+            } else {
                 LOGGER.info("shardingNode " + shardingNodeName + " is useless,server will ignore it");
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));
                 iterator.remove();
             }
         }
         allUseShardingNode.clear();
+
+        // include rwSplit dbGroup
+        for (UserConfig config : this.users.values()) {
+            if (config instanceof RwSplitUserConfig) {
+                allUseHost.add(((RwSplitUserConfig) config).getDbGroup());
+            }
+        }
+
+        //mark useless db_group: have heartbeat/ have not pool init
+        for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : this.dbGroups.entrySet()) {
+            dbGroupEntry.getValue().setUseless(false);
+            if (allUseHost.size() < this.dbGroups.size() && !allUseHost.contains(dbGroupEntry.getKey())) {
+                LOGGER.info("dbGroup " + dbGroupEntry.getKey() + " is useless,server will create heartbeat,not create pool");
+                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupEntry.getKey() + " is useless"));
+                dbGroupEntry.getValue().setUseless(true);
+            }
+        }
+        allUseHost.clear();
     }
 
     public void testConnection() {

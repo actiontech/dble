@@ -6,9 +6,9 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
+import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
@@ -17,7 +17,6 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
-
 import com.actiontech.dble.server.response.PackageBufINf;
 import com.actiontech.dble.server.response.ShowTables;
 import com.actiontech.dble.server.response.ShowTablesStmtInfo;
@@ -25,9 +24,7 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by huqing.yan on 2017/7/20.
@@ -38,6 +35,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     private Item whereItem;
     private List<Field> sourceFields;
     private ShowTablesStmtInfo info;
+    private Set<String> metaTablesSet = new HashSet<>();
 
     public ShowTablesHandler(RouteResultset rrs, NonBlockingSession session, ShowTablesStmtInfo info) {
         super(rrs, session);
@@ -49,6 +47,10 @@ public class ShowTablesHandler extends SingleNodeHandler {
             showSchema = showSchema.toLowerCase();
         }
         showTableSchema = showSchema == null ? shardingService.getSchema() : showSchema;
+        SchemaMeta schemata = ProxyMeta.getInstance().getTmManager().getCatalogs().get(showTableSchema);
+        if (schemata != null) {
+            metaTablesSet.addAll(schemata.getTableMetas().keySet());
+        }
         shardingTablesMap = ShowTables.getTableSet(showTableSchema, info);
     }
 
@@ -99,7 +101,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
         if (shardingTablesMap.containsKey(table)) {
             this.netOutBytes += row.length;
             this.selectRows++;
-        } else {
+        } else if (metaTablesSet.contains(table)) { // only show table in meta
             if (whereItem != null) {
                 RowDataPacket rowDataPk = new RowDataPacket(sourceFields.size());
                 rowDataPk.read(row);

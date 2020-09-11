@@ -188,10 +188,12 @@ public class DbleTable extends ManagerBaseTable {
             }
         } else if (null != tableMeta) {
             //metadata
+            SchemaConfig metadataSchema = DbleServer.getInstance().getConfig().getSchemas().get(tableMeta.getSchemaName());
+            BaseTableConfig tableConfig = metadataSchema.getTable(tableMeta.getTableName());
             map.put(COLUMN_ID, PREFIX_METADATA + tableMeta.getId());
             map.put(COLUMN_NAME, tableMeta.getTableName());
             map.put(COLUMN_SCHEMA, tableMeta.getSchemaName());
-            BaseTableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(tableMeta.getSchemaName()).getTable(tableMeta.getTableName());
+            map.put(COLUMN_MAX_LIMIT, String.valueOf(metadataSchema.getDefaultMaxLimit()));
             map.put(COLUMN_TYPE, String.valueOf(distinguishType(tableConfig)));
         }
         return map;

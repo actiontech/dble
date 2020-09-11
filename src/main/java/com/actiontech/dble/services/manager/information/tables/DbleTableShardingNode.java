@@ -38,7 +38,7 @@ public class DbleTableShardingNode extends ManagerBaseTable {
         columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "varchar(64)", false, true));
         columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(32)", false));
+        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(32)", false, true));
         columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_ORDER, new ColumnMeta(COLUMN_ORDER, "int(11)", false));

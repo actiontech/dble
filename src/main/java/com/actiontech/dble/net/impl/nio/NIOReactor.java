@@ -122,9 +122,6 @@ public final class NIOReactor {
                         if (key.isValid() && key.isReadable()) {
                             try {
                                 con.asyncRead();
-                            } catch (IOException e) {
-                                con.close("program err:" + e.toString());
-                                continue;
                             } catch (Exception e) {
                                 LOGGER.warn("caught err:", e);
                                 con.close("program err:" + e.toString());

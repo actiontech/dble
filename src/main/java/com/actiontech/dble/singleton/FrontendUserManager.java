@@ -43,8 +43,21 @@ public final class FrontendUserManager {
             if (!isManager) {
                 serverConnection--;
             }
-            int userCount = userConnectionMap.get(user);
-            userConnectionMap.put(user, --userCount);
+            int userCount = userConnectionMap.get(user) - 1;
+            userConnectionMap.put(user, userCount);
+            if (isManager && LOGGER.isDebugEnabled()) {
+                StackTraceElement[] st = Thread.currentThread().getStackTrace();
+                StringBuilder sbf = new StringBuilder();
+                for (StackTraceElement e : st) {
+                    if (sbf.length() > 0) {
+                        sbf.append(" <- ");
+                        sbf.append(System.getProperty("line.separator"));
+                    }
+                    sbf.append(java.text.MessageFormat.format("{0}.{1}() {2}", e.getClassName(), e.getMethodName(), e.getLineNumber()));
+                }
+                sbf.append("==============================================");
+                LOGGER.debug("user:" + user + ",userCount=" + userCount + ", " + sbf.toString());
+            }
         } catch (Throwable e) {
             //error ignore
             LOGGER.warn("Frontend lose", e);

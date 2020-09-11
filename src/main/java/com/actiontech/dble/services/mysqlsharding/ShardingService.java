@@ -478,6 +478,7 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
+            this.setTxStarted(true);
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }

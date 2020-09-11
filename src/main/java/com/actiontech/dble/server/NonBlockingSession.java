@@ -559,7 +559,7 @@ public class NonBlockingSession extends Session {
                 discard = true;
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(shardingService) + rrs, e);
-                executableHandler.writeRemingBuffer();
+                executableHandler.writeRemainBuffer();
                 executableHandler.clearAfterFailExecute();
                 setResponseTime(false);
                 shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());

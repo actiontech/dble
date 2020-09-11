@@ -193,8 +193,17 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
                     prepareHandler.prepare(prepareSql);
                 }
                 break;
+            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
+                commands.doStmtSendLongData();
+                blobDataQueue.offer(data);
+                break;
+            case MySQLPacket.COM_STMT_CLOSE:
+                commands.doStmtClose();
+                stmtClose(data);
+                break;
             case MySQLPacket.COM_STMT_RESET:
                 commands.doStmtReset();
+                blobDataQueue.clear();
                 prepareHandler.reset(data);
                 break;
             case MySQLPacket.COM_STMT_EXECUTE:
@@ -282,6 +291,14 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
     public void stmtSendLongData(byte[] data) {
         if (prepareHandler != null) {
             prepareHandler.sendLongData(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtClose(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.close(data);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
         }
@@ -461,6 +478,7 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
+            this.setTxStarted(true);
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }

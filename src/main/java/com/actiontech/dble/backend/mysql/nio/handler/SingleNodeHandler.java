@@ -140,7 +140,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void writeRemingBuffer() {
+    public void writeRemainBuffer() {
 
     }
 

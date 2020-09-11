@@ -22,5 +22,5 @@ public interface ExecutableHandler {
     void clearAfterFailExecute();
 
 
-    void writeRemingBuffer();
+    void writeRemainBuffer();
 }

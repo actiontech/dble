@@ -114,7 +114,6 @@ public final class ShowConnectionPoolProperty {
         // write last eof
         EOFRowPacket lastEof = new EOFRowPacket();
         lastEof.setPacketId(++packetId);
-        buffer = lastEof.write(buffer, service, true);
 
         // write buffer
         lastEof.write(buffer, service);

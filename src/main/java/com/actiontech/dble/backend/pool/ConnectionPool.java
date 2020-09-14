@@ -5,6 +5,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
+import com.actiontech.dble.btrace.provider.ConnectionPoolProvider;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.net.IOProcessor;
@@ -66,8 +67,12 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     public PooledConnection borrowDirectly(final String schema) {
-        freshLock.readLock().lock();
+        if (!freshLock.readLock().tryLock()) {
+            LOGGER.warn("the current thread is blocked, because currently at freshing conn");
+            freshLock.readLock().lock();
+        }
         try {
+            ConnectionPoolProvider.getConnGetFrenshLocekAfter();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     newPooledEntry(schema, waiters.get());
@@ -81,9 +86,13 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     }
 
     public PooledConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
-        freshLock.readLock().lock();
-        final int waiting = waiters.incrementAndGet();
+        if (!freshLock.readLock().tryLock()) {
+            LOGGER.warn("the current thread is blocked, because currently at freshing conn");
+            freshLock.readLock().lock();
+        }
         try {
+            final int waiting = waiters.incrementAndGet();
+            ConnectionPoolProvider.getConnGetFrenshLocekAfter();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     // If we may have stolen another waiter's connection, request another bag add.
@@ -308,6 +317,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     public void stop(final String closureReason, boolean closeFront) {
         freshLock.writeLock().lock();
         try {
+            ConnectionPoolProvider.stopConnGetFrenshLocekAfter();
             if (isClosed.compareAndSet(false, true)) {
                 stopEvictor();
                 if (closeFront) {

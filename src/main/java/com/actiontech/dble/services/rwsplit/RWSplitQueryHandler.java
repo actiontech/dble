@@ -10,7 +10,6 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.singleton.TraceManager;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -53,30 +52,42 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             switch (sqlType) {
                 case ServerParse.USE:
                     String schema = UseHandler.getSchemaName(sql, rs >>> 8);
-                    session.execute(false, rwSplitService -> rwSplitService.setSchema(schema));
+                    session.execute(true, rwSplitService -> rwSplitService.setSchema(schema));
                     break;
                 case ServerParse.SHOW:
-                    session.execute(true, null);
-                    break;
                 case ServerParse.SELECT:
-                    session.execute(parseSelectQuery(sql), null);
+                    session.execute(false, null);
                     break;
                 case ServerParse.SET:
                     parseSet(sql);
                     break;
                 case ServerParse.LOCK:
-                    session.execute(false, rwSplitService -> rwSplitService.setLocked(true));
+                    session.execute(true, rwSplitService -> rwSplitService.setLocked(true));
                     break;
                 case ServerParse.UNLOCK:
-                    session.execute(false, rwSplitService -> rwSplitService.setLocked(false));
+                    session.execute(true, rwSplitService -> rwSplitService.setLocked(false));
+                    break;
+                case ServerParse.START:
+                case ServerParse.BEGIN:
+                    session.execute(true, rwSplitService -> rwSplitService.setTxStart(true));
                     break;
                 case ServerParse.COMMIT:
                 case ServerParse.ROLLBACK:
-                    session.execute(false, rwSplitService -> rwSplitService.getSession().unbindIfSafe());
+                    session.execute(true, rwSplitService -> {
+                        rwSplitService.getSession().unbindIfSafe();
+                        rwSplitService.setTxStart(false);
+                    });
+                    break;
+                case ServerParse.LOAD_DATA_INFILE_SQL:
+                    session.getService().setInLoadData(true);
+                    session.execute(true, rwSplitService -> rwSplitService.setInLoadData(false));
                     break;
                 default:
                     // 1. DDL
-                    session.execute(false, null);
+                    // 2. DML
+                    // 3. procedure
+                    // 4. function
+                    session.execute(true, null);
                     break;
             }
         } catch (Exception e) {
@@ -87,21 +98,21 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         }
     }
 
-    private boolean parseSelectQuery(String sql) {
-        boolean canSelectSlave = false;
-        SQLStatementParser parser = new MySqlStatementParser(sql);
-        SQLStatement statement = parser.parseStatement(true);
-        if (statement instanceof SQLSelectStatement) {
-            if (!((SQLSelectStatement) statement).getSelect().getQueryBlock().isForUpdate()) {
-                canSelectSlave = true;
-            }
-        } else {
-            LOGGER.warn("unknown select");
-            throw new UnsupportedOperationException("unknown");
-        }
-
-        return canSelectSlave;
-    }
+    // private boolean parseSelectQuery(String sql) {
+    //        boolean canSelectSlave = true;
+    //        SQLStatementParser parser = new MySqlStatementParser(sql);
+    //        SQLStatement statement = parser.parseStatement(true);
+    //        if (statement instanceof SQLSelectStatement) {
+    //            if (!((SQLSelectStatement) statement).getSelect().getQueryBlock().isForUpdate()) {
+    //                canSelectSlave = true;
+    //            }
+    //        } else {
+    //            LOGGER.warn("unknown select");
+    //            throw new UnsupportedOperationException("unknown");
+    //        }
+    //
+    //        return canSelectSlave;
+    //    }
 
     private void parseSet(String sql) throws IOException {
         SQLStatementParser parser = new MySqlStatementParser(sql);
@@ -119,11 +130,13 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(false, rwSplitService -> rwSplitService.setAutocommit(true));
                     }
                 }
+                session.execute(true, null);
             } else {
-                throw new UnsupportedOperationException("unknown");
+//                throw new UnsupportedOperationException("unknown");
+                session.execute(true, null);
             }
         } else {
-            throw new UnsupportedOperationException("unknown");
+            session.execute(true, null);
         }
     }
 

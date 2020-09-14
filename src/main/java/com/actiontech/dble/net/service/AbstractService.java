@@ -70,7 +70,7 @@ public abstract class AbstractService implements Service {
                     offset = result.getOffset();
                     continue;
                 default:
-                    throw new RuntimeException("unknow error when read data");
+                    throw new RuntimeException("unknown error when read data");
             }
         }
     }

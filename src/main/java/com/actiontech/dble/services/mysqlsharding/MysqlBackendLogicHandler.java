@@ -29,7 +29,6 @@ public class MysqlBackendLogicHandler {
         this.service = service;
     }
 
-
     protected void handleInnerData(byte[] data) {
         if (service.getConnection().isClosed()) {
             return;

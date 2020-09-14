@@ -23,23 +23,22 @@ public class RWSplitNonBlockingSession {
         this.rwSplitService = service;
     }
 
-    public void execute(boolean canPushDown2Slave, Callback callback) throws IOException {
-        if (conn != null && !conn.isClosed()) {
-            new RWSplitHandler(rwSplitService, null, callback).connectionAcquired(conn);
-            return;
-        }
-        PhysicalDbInstance instance = rwGroup.select(canPushDown2Slave);
-        instance.getConnection(rwSplitService.getSchema(), new RWSplitHandler(rwSplitService, null, callback), null, false);
+    public void execute(boolean master, Callback callback) throws IOException {
+        execute(master, null, callback);
     }
 
-    //    public void execute(boolean canPushDown2Slave, Callback callback, byte[] originPacket) throws IOException {
-    //        if (conn != null && !conn.isClosed()) {
-    //            new RWSplitHandler(rwSplitService, originPacket, callback).connectionAcquired(conn);
-    //            return;
-    //        }
-    //        PhysicalDbInstance instance = rwGroup.select(canPushDown2Slave);
-    //        instance.getConnection(rwSplitService.getSchema(), new RWSplitHandler(rwSplitService, originPacket, callback), null, false);
-    //    }
+    public void execute(boolean master, byte[] originPacket, Callback callback) throws IOException {
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback);
+        if (conn != null && !conn.isClosed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            handler.execute(conn);
+            return;
+        }
+        PhysicalDbInstance instance = rwGroup.select(master);
+        instance.getConnection(rwSplitService.getSchema(), handler, null, false);
+    }
 
     public void setRwGroup(PhysicalDbGroup rwGroup) {
         this.rwGroup = rwGroup;
@@ -47,13 +46,16 @@ public class RWSplitNonBlockingSession {
 
     public void bind(BackendConnection bindConn) {
         if (conn != null) {
-            LOGGER.warn("");
+            LOGGER.warn("last conn is remaining");
         }
         this.conn = bindConn;
     }
 
     public void unbindIfSafe() {
-        if (this.rwSplitService.isAutocommit() && !rwSplitService.isLocked()) {
+        if (rwSplitService.isAutocommit() && !rwSplitService.isLocked() &&
+                !rwSplitService.isTxStart() &&
+                !rwSplitService.isInLoadData() &&
+                !rwSplitService.isInPrepare()) {
             this.conn.release();
             this.conn = null;
         }
@@ -61,6 +63,12 @@ public class RWSplitNonBlockingSession {
 
     public void unbind() {
         this.conn = null;
+    }
+
+    public void close(String reason) {
+        if (conn != null) {
+            conn.close(reason);
+        }
     }
 
     public RWSplitService getService() {

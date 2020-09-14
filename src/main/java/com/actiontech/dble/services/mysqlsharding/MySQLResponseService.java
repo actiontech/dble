@@ -281,14 +281,6 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    public int getSynOffset() {
-        if (statusSync == null) {
-            return 0;
-        } else {
-            return statusSync.getOffset();
-        }
-    }
-
     public void query(String query) {
         query(query, this.autocommit);
     }
@@ -328,35 +320,8 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    //    private void synAndDoExecute(StringBuilder synSQL, byte[] originData, CharsetNames clientCharset) {
-    //        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "syn&do-execute-sql");
-    //        if (synSQL != null && traceObject != null) {
-    //            TraceManager.log(ImmutableMap.of("synSQL", synSQL), traceObject);
-    //        }
-    //        try {
-    //            if (synSQL == null) {
-    //                // not need syn connection
-    //                if (session != null) {
-    //                    session.setBackendRequestTime(this.getConnection().getId());
-    //                }
-    //                writeDirectly(originData);
-    //                return;
-    //            }
-    //
-    //            sendQueryCmd(synSQL.toString(), clientCharset);
-    //            // syn and execute others
-    //            if (session != null) {
-    //                session.setBackendRequestTime(this.getConnection().getId());
-    //            }
-    //            writeDirectly(originData);
-    //            // waiting syn result...
-    //        } finally {
-    //            TraceManager.finishSpan(this, traceObject);
-    //        }
-    //    }
-
-    private StringBuilder getSynSql(boolean isOrigin, CharsetNames clientCharset, int clientTxIsolation, boolean expectAutocommit) {
-        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
+    private StringBuilder getSynSql(CharsetNames clientCharset, int clientTxIsolation, boolean expectAutocommit) {
+        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) ? 0 : 1;
         int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
@@ -382,7 +347,7 @@ public class MySQLResponseService extends MySQLBasedService {
         metaDataSynced = false;
         statusSync = new StatusSync(connection.getSchema(),
                 clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, isOrigin ? 0 : synCount, Collections.emptyMap(), Collections.emptyMap(), Collections.emptySet());
+                synCount, Collections.emptyMap(), Collections.emptyMap(), Collections.emptySet());
 
         return sb;
     }
@@ -647,14 +612,19 @@ public class MySQLResponseService extends MySQLBasedService {
     }
 
     public void execute(RWSplitService service) {
-        StringBuilder synSQL = getSynSql(false, service.getCharset(), service.getTxIsolation(), service.isAutocommit());
+        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
         synAndDoExecute(synSQL, service.getExecuteSql(), service.getCharset());
     }
 
-    //    public void execute(RWSplitService service, byte[] originByte) {
-    //        StringBuilder synSQL = getSynSql(true, service.getCharset(), service.getTxIsolation(), service.isAutocommit());
-    //        synAndDoExecute(synSQL, originByte, service.getCharset());
-    //    }
+    public void execute(RWSplitService service, byte[] originPacket) {
+        if (service != null) {
+            StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
+            if (synSQL != null) {
+                sendQueryCmd(synSQL.toString(), service.getCharset());
+            }
+        }
+        writeDirectly(originPacket);
+    }
 
     private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
         if (LOGGER.isDebugEnabled()) {
@@ -860,7 +830,6 @@ public class MySQLResponseService extends MySQLBasedService {
         private final CharsetNames clientCharset;
         private final Integer txtIsolation;
         private final Boolean autocommit;
-        private final int offset;
         private final AtomicInteger synCmdCount;
         private final Map<String, String> usrVariables = new LinkedHashMap<>();
         private final Map<String, String> sysVariables = new LinkedHashMap<>();
@@ -868,27 +837,16 @@ public class MySQLResponseService extends MySQLBasedService {
         StatusSync(String schema,
                    CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
                    int synCount, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
-            this(schema, clientCharset, txtIsolation, autocommit, synCount, synCount, usrVariables, sysVariables, toResetSys);
-        }
-
-        StatusSync(String schema,
-                   CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
-                   int synCount, int offset, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
             this.schema = schema;
             this.clientCharset = clientCharset;
             this.txtIsolation = txtIsolation;
             this.autocommit = autocommit;
-            this.offset = offset;
             this.synCmdCount = new AtomicInteger(synCount);
             this.usrVariables.putAll(usrVariables);
             this.sysVariables.putAll(sysVariables);
             for (String sysVariable : toResetSys) {
                 this.sysVariables.remove(sysVariable);
             }
-        }
-
-        public int getOffset() {
-            return offset;
         }
 
         boolean synAndExecuted(MySQLResponseService service) {

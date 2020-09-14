@@ -14,6 +14,7 @@ import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.services.MySQLBasedService;
@@ -33,7 +34,11 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
     private volatile int txIsolation;
     private volatile boolean autocommit;
     private volatile boolean isLocked;
-    private String executeSql;
+    private volatile boolean txStart;
+    private volatile boolean inLoadData;
+    private volatile boolean inPrepare;
+
+    private volatile String executeSql;
     private UserName user;
 
     private final CommandCount commands;
@@ -79,6 +84,16 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
 
     @Override
     protected void handleInnerData(byte[] data) {
+        // if the statement is load data, directly push down
+        if (inLoadData) {
+            try {
+                session.execute(true, data, null);
+            } catch (IOException e) {
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
+            }
+            return;
+        }
+
         switch (data[4]) {
             case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();
@@ -91,18 +106,27 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
             // prepared statement
             case MySQLPacket.COM_STMT_PREPARE:
                 commands.doStmtPrepare();
-                // todo
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                handleComStmtPrepare(data);
                 break;
             case MySQLPacket.COM_STMT_RESET:
                 commands.doStmtReset();
-                // todo
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                execute(data);
                 break;
             case MySQLPacket.COM_STMT_EXECUTE:
                 commands.doStmtExecute();
-                // todo
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                execute(data);
+                break;
+            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
+                commands.doStmtSendLongData();
+                execute(data);
+                break;
+            case MySQLPacket.COM_STMT_CLOSE:
+                commands.doStmtClose();
+                try {
+                    session.execute(true, data, rwSplitService -> rwSplitService.setInPrepare(false));
+                } catch (IOException e) {
+                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
+                }
                 break;
             // connection
             case MySQLPacket.COM_QUIT:
@@ -119,16 +143,12 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
                 break;
             case MySQLPacket.COM_FIELD_LIST:
                 commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport");
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport statement");
                 break;
             default:
                 commands.doOther();
                 // other statement push down to master
-                //                try {
-                //                    session.execute(false, null);
-                //                } catch (IOException e) {
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport");
-                //                }
+                execute(data);
                 break;
         }
     }
@@ -139,8 +159,7 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         String switchSchema;
         try {
             switchSchema = mm.readString(getCharset().getClient());
-            executeSql = "use `" + switchSchema + "`";
-            session.execute(false, rwSplitService -> rwSplitService.setSchema(switchSchema));
+            session.execute(true, data, rwSplitService -> rwSplitService.setSchema(switchSchema));
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
         } catch (IOException e) {
@@ -156,6 +175,35 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
             executeSql = sql;
             queryHandler.query(sql);
         } catch (UnsupportedEncodingException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
+        }
+    }
+
+    private void handleComStmtPrepare(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        mm.position(5);
+        try {
+            inPrepare = true;
+            String sql = mm.readString(getCharset().getClient());
+            int rs = ServerParse.parse(sql);
+            int sqlType = rs & 0xff;
+            switch (sqlType) {
+                case ServerParse.SELECT:
+                    session.execute(false, data, null);
+                    break;
+                default:
+                    session.execute(true, data, null);
+                    break;
+            }
+        } catch (IOException e) {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
+        }
+    }
+
+    private void execute(byte[] data) {
+        try {
+            session.execute(true, data, null);
+        } catch (IOException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         }
     }
@@ -207,8 +255,33 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         this.autocommit = autocommit;
     }
 
+    public boolean isTxStart() {
+        return txStart;
+    }
+
+    public void setTxStart(boolean txStart) {
+        this.txStart = txStart;
+    }
+
+    public boolean isInLoadData() {
+        return inLoadData;
+    }
+
+    public void setInLoadData(boolean inLoadData) {
+        this.inLoadData = inLoadData;
+    }
+
+    public boolean isInPrepare() {
+        return inPrepare;
+    }
+
+    public void setInPrepare(boolean inPrepare) {
+        this.inPrepare = inPrepare;
+    }
+
     @Override
     public void killAndClose(String reason) {
+        session.close(reason);
         connection.close(reason);
     }
 }

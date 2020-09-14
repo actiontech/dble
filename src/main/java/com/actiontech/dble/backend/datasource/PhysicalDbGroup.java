@@ -201,12 +201,19 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    public PhysicalDbInstance select(boolean canSelectSlave) {
-        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || !canSelectSlave) {
+    public PhysicalDbInstance select(boolean master) {
+        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || master) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select write {}", writeDbInstance);
+            }
             return writeDbInstance;
         }
 
-        return loadBalancer.select(getRWDbInstances());
+        PhysicalDbInstance selectInstance = loadBalancer.select(getRWDbInstances());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("select {}", selectInstance);
+        }
+        return selectInstance;
     }
 
     private List<PhysicalDbInstance> getRWDbInstances() {

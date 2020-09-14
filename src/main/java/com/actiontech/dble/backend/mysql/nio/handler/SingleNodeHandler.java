@@ -392,10 +392,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getShardingService(), true);
                 } else {
-                    LOGGER.info("WRITE OUT EHT SINGLE PACKET WITH ID " + rowDataPk.getPacketId());
-                    if (rowDataPk.getPacketId() < 0) {
-                        LOGGER.info("WRITE OUT EHT SINGLE PACKET WITH ID " + rowDataPk.getPacketId());
-                    }
                     buffer = rowDataPk.write(buffer, session.getShardingService(), true);
                 }
             }

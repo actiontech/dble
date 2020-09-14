@@ -132,7 +132,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 }
                 session.execute(true, null);
             } else {
-//                throw new UnsupportedOperationException("unknown");
+                // throw new UnsupportedOperationException("unknown");
                 session.execute(true, null);
             }
         } else {

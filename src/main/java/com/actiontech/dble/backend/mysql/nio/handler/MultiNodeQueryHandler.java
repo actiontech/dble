@@ -268,7 +268,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.getSource().write(byteBuffer);
                 }
                 //just for normal error
-                ErrorPacket errorPacket = createErrPkg(this.error);
+                ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         } finally {
@@ -306,7 +306,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (!decrementToZero((MySQLResponseService) service))
                     return;
                 if (isFail()) {
-                    ErrorPacket errorPacket = createErrPkg(this.error);
+                    ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                     handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
                     return;
                 }
@@ -411,7 +411,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                         } else if (byteBuffer != null) {
                             session.getSource().write(byteBuffer);
                         }
-                        ErrorPacket errorPacket = createErrPkg(this.error);
+                        ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                         handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
                         return;
                     }
@@ -513,12 +513,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
         if (canResponse()) {
             if (byteBuffer == null) {
-                ErrorPacket errorPacket = createErrPkg(this.error);
+                ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             } else if (session.closed()) {
                 cleanBuffer();
             } else {
-                ErrorPacket errorPacket = createErrPkg(this.error);
+                ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                 session.getSource().write(byteBuffer);
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }

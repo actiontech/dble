@@ -1205,4 +1205,14 @@ public class NonBlockingSession extends Session {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("");
+        sb.append("NonBlockSession with target ");
+        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
+            sb.append("\n rrs = [" + entry.getKey()).append("] with connection [" + entry.getValue() + "]");
+        }
+        return sb.toString();
+    }
+
 }

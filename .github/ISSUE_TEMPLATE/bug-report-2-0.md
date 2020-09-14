@@ -1,9 +1,9 @@
 ---
-name: Bug report
+name: Bug report 2.0
 about: Create a report to help us improve
-title: 
-labels: 
-assignees: 
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
@@ -12,35 +12,21 @@ assignees:
 no
 * **configs：** 
 
-**cluster.cnf**  
+**schema.xml**  
 
 ```
 
 
 ```
 
-**bootstrap.cnf**  
-
-```
-
-
-```
-**db.xml**  
+**rule.xml**  
 
 ```
 
 
 ```
 
-**user.xml**  
-
-```
-
-
-```
-
-
-**sharding.xml**  
+**server.xml**  
 
 ```
 

@@ -83,23 +83,25 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
                                         if (schemaConfig != null) {
                                             Set<String> tables = new HashSet<>(schemaConfig.getTables().keySet());
-                                            Set<String> tableMetas = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMetas().keySet();
-                                            tables.addAll(tableMetas);
-                                            Map<String, UserPrivilegesConfig.TablePrivilege> tablePrivilege = sPrivilege.getTablePrivileges();
+                                            Set<String> metas = new HashSet<>(ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMetas().keySet());
+                                            Set<String> viewMetas = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().keySet();
+                                            metas.addAll(viewMetas);
+                                            tables.addAll(metas);
 
+                                            Map<String, UserPrivilegesConfig.TablePrivilege> tablePrivilege = sPrivilege.getTablePrivileges();
                                             if (!CollectionUtil.isEmpty(tablePrivilege)) {
                                                 tablePrivilege.forEach((tableName, tPrivilege) -> {
                                                     LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                                                     map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                                     map.put(COLUMN_SCHEMA, schema);
                                                     map.put(COLUMN_TABLE, tableName);
-                                                    map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
+                                                    map.put(COLUMN_EXIST_METAS, metas.contains(tableName) + "");
                                                     int[] dml0 = tPrivilege.getDml();
                                                     map.put(COLUMN_INSERT, dml0[0] + "");
                                                     map.put(COLUMN_UPDATE, dml0[1] + "");
                                                     map.put(COLUMN_SELECT, dml0[2] + "");
                                                     map.put(COLUMN_DELETE, dml0[3] + "");
-                                                    map.put(COLUMN_IS_EFFECTIVE, (noEffective ? false : tables.contains(tableName)) + "");
+                                                    map.put(COLUMN_IS_EFFECTIVE, ((viewMetas.contains(tableName) && !schemaConfig.isNoSharding()) ? false : (noEffective ? false : tables.contains(tableName))) + "");
                                                     list.add(map);
                                                 });
                                             } else {
@@ -109,12 +111,12 @@ public class DbleEntryTablePrivilege extends ManagerBaseTable {
                                                     map.put(COLUMN_ID, shardingUserConfig.getId() + "");
                                                     map.put(COLUMN_SCHEMA, schema);
                                                     map.put(COLUMN_TABLE, tableName);
-                                                    map.put(COLUMN_EXIST_METAS, tableMetas.contains(tableName) + "");
+                                                    map.put(COLUMN_EXIST_METAS, metas.contains(tableName) + "");
                                                     map.put(COLUMN_INSERT, dml1[0] + "");
                                                     map.put(COLUMN_UPDATE, dml1[1] + "");
                                                     map.put(COLUMN_SELECT, dml1[2] + "");
                                                     map.put(COLUMN_DELETE, dml1[3] + "");
-                                                    map.put(COLUMN_IS_EFFECTIVE, (noEffective ? false : tableMetas.contains(tableName)) + "");
+                                                    map.put(COLUMN_IS_EFFECTIVE, ((viewMetas.contains(tableName) && !schemaConfig.isNoSharding()) ? false : (noEffective ? false : metas.contains(tableName))) + "");
                                                     list.add(map);
                                                 });
                                             }

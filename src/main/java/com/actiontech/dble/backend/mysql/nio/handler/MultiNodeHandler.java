@@ -119,7 +119,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         error = null;
     }
 
-    protected ErrorPacket createErrPkg(String errMsg) {
+    protected ErrorPacket createErrPkg(String errMsg, int errorCode) {
         ErrorPacket err = new ErrorPacket();
         lock.lock();
         try {
@@ -127,7 +127,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         } finally {
             lock.unlock();
         }
-        err.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
+        err.setErrNo(errorCode == 0 ? ErrorCode.ER_UNKNOWN_ERROR : errorCode);
         err.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
         return err;
     }
@@ -151,7 +151,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
             }
             clearSessionResources();
             if (errorResponse.compareAndSet(false, true)) {
-                createErrPkg(this.error).write(session.getSource());
+                createErrPkg(this.error, 0).write(session.getSource());
             }
         }
     }

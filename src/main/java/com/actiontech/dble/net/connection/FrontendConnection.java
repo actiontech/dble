@@ -14,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by szf on 2020/6/23.
@@ -24,6 +25,7 @@ public class FrontendConnection extends AbstractConnection {
     private final boolean isManager;
 
     protected final long idleTimeout = PoolConfig.DEFAULT_IDLE_TIMEOUT;
+    private AtomicBoolean isCleanUp = new AtomicBoolean(false);
 
     public FrontendConnection(NetworkChannel channel, SocketWR socketWR, boolean isManager) throws IOException {
         super(channel, socketWR);
@@ -62,10 +64,12 @@ public class FrontendConnection extends AbstractConnection {
         ((ShardingService) this.getService()).getSession2().stopFlowControl();
     }
 
-    public synchronized void cleanup() {
-        super.cleanup();
-        if (getService() instanceof FrontEndService) {
-            ((FrontEndService) getService()).userConnectionCount();
+    public void cleanup() {
+        if (isCleanUp.compareAndSet(false, true)) {
+            super.cleanup();
+            if (getService() instanceof FrontEndService) {
+                ((FrontEndService) getService()).userConnectionCount();
+            }
         }
     }
 

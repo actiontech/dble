@@ -107,7 +107,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     private TransactionStage next() {
         MySQLPacket data = null;
         if (isFail()) {
-            data = createErrPkg(error);
+            data = createErrPkg(error, 0);
         } else if (sendData != null) {
             data = sendData;
         }

@@ -133,7 +133,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
 
-
     @Override
     public void clearAfterFailExecute() {
         recycleBuffer();
@@ -393,7 +392,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getShardingService(), true);
                 } else {
-                    rowDataPk.write(buffer, session.getShardingService(), true);
+                    buffer = rowDataPk.write(buffer, session.getShardingService(), true);
                 }
             }
         } finally {

@@ -27,15 +27,15 @@ import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
  * @author mycat
@@ -98,21 +98,6 @@ public class SingleDbInstanceHandler implements ResponseHandler, LoadDataRespons
         }
     }
 
-    private PhysicalDbInstance findDbInstance(String dbInstanceUrl) {
-        if (StringUtil.isEmpty(dbInstanceUrl)) {
-            return null;
-        }
-        Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
-        for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : dbGroupMap.entrySet()) {
-            PhysicalDbInstance physicalDbInstance = dbGroupEntry.getValue()
-                    .getAllActiveDbInstances().stream()
-                    .filter(dbInstanceNode -> StringUtil.equals(dbInstanceNode.getConfig().getUrl().trim(), dbInstanceUrl.trim()))
-                    .findFirst().get();
-            return physicalDbInstance;
-        }
-        return null;
-    }
-
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(true);
@@ -126,6 +111,27 @@ public class SingleDbInstanceHandler implements ResponseHandler, LoadDataRespons
             TxnLogHelper.putTxnLog(session.getShardingService(), dbInstanceNode.getStatement());
         }
         conn.getBackendService().execute(dbInstanceNode, session.getShardingService(), isAutocommit);
+    }
+
+    private PhysicalDbInstance findDbInstance(String dbInstanceUrl) {
+        if (StringUtil.isEmpty(dbInstanceUrl)) {
+            return null;
+        }
+        Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
+        Set<PhysicalDbInstance> instanceSet = Sets.newHashSet();
+        for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : dbGroupMap.entrySet()) {
+            Set<PhysicalDbInstance> dbInstanceSet = dbGroupEntry.getValue().
+                    getAllActiveDbInstances().stream().
+                    filter(dbInstance -> StringUtil.equals(dbInstance.getConfig().getUrl().trim(), dbInstanceUrl.trim())).
+                    collect(Collectors.toSet());
+            instanceSet.addAll(dbInstanceSet);
+        }
+        Optional<PhysicalDbInstance> slaveInstance = instanceSet.stream().filter(instance -> !instance.getConfig().isPrimary()).findFirst();
+        if (slaveInstance.isPresent()) {
+            return slaveInstance.get();
+        } else {
+            return instanceSet.stream().filter(instance -> instance.getConfig().isPrimary()).findFirst().get();
+        }
     }
 
     protected void executeInExistsConnection(BackendConnection conn) {

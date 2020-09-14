@@ -64,9 +64,11 @@ public class HintDbInstanceHandler implements HintHandler {
         }
         Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
         for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : dbGroupMap.entrySet()) {
-            boolean isExist = dbGroupEntry.getValue()
-                    .getAllActiveDbInstances().stream()
-                    .anyMatch(dbInstance -> StringUtil.equals(dbInstance.getConfig().getUrl().trim(), hintSQLValue.trim()));
+            boolean isExist = dbGroupEntry.
+                    getValue().
+                    getAllActiveDbInstances().
+                    stream().
+                    anyMatch(dbInstance -> StringUtil.equals(dbInstance.getConfig().getUrl().trim(), hintSQLValue.trim()));
             if (isExist) {
                 return true;
             }

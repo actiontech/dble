@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.config.Versions;
@@ -14,15 +14,14 @@ import com.actiontech.dble.route.handler.HintHandlerFactory;
 import com.actiontech.dble.route.handler.HintSQLHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public final class RouteService {
@@ -57,7 +56,7 @@ public final class RouteService {
 
             int hintLength = RouteService.isHintSql(stmt);
             if (hintLength != -1) {
-                int endPos = stmt.indexOf("*/");
+                int endPos = stmt.substring(hintLength).indexOf("*/") + hintLength;
                 if (endPos > 0) {
                     rrs = routeHint(stmt, hintLength, endPos, schema, sqlType, service);
                 } else {
@@ -91,7 +90,9 @@ public final class RouteService {
             rrs = routeDbleHint(schema, sqlType, realSQL, service, stmt, hint);
         } else {
             //master/uproxy_dest:
-            hint = stmt.substring(2, endPos).trim();
+            String left = stmt.substring(0, hintLength - 2);
+            String right = stmt.substring(endPos + 2);
+            realSQL = left + right;
             rrs = routeUproxyHint(schema, sqlType, realSQL, service, stmt, hint);
         }
         return rrs;
@@ -166,34 +167,22 @@ public final class RouteService {
     }
 
     private static int isUproxyHintSql(String sql) {
-        List<char[]> annotationList = Lists.newArrayList("master".toCharArray(), "slave".toCharArray(), "uproxy_dest".toCharArray());
-        for (char[] annotation : annotationList) {
-            int j = 0;
-            int len = sql.length();
-            if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
-                char c = sql.charAt(j);
-                // support: "/*master */" for mybatis and "/*master */"  for mysql
-                while (c == ' ') {
-                    c = sql.charAt(++j);
-                }
-                if (sql.charAt(j) == annotation[0]) {
-                    j--;
-                }
-                if (j + 6 >= len) { // prevent the following sql.charAt overflow
-                    return -1;        // false
-                }
-
-                for (int i = 0; i < annotation.length; i++) {
-                    if (sql.charAt(++j) != annotation[i]) {
-                        break;
-                    }
-                    if (i == annotation.length - 1) {
-                        return j + 1;
-                    }
-                }
-            }
+        int index;
+        if (StringUtil.isEmpty(sql) || (index = sql.indexOf("/*")) < 0) {
+            return -1;
         }
-        return -1;    // false
+        String[] leftSplit = sql.split("/\\*");
+        if (leftSplit.length != 2 || !leftSplit[1].contains("*/")) {
+            return -1;
+        }
+        String[] rightSplit = leftSplit[1].split("\\*/");
+        String content = rightSplit[0].trim();
+        if (StringUtil.equalsIgnoreCase(content, "master")) {
+            return index + 2;
+        } else if (content.length() > 12 && content.substring(0, 12).equalsIgnoreCase("uproxy_dest:")) {
+            return index + 2;
+        }
+        return -1;
     }
 
     private static int isDbleHintSql(String sql) {

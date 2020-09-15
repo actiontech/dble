@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -122,7 +122,7 @@ public final class ShowDbInstanceSyn {
         for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
             String dbGroupName = entry.getKey();
             PhysicalDbGroup pool = entry.getValue();
-            for (PhysicalDbInstance ds : pool.getAllActiveDbInstances()) {
+            for (PhysicalDbInstance ds : pool.getDbInstances(false)) {
                 if (ds.isDisabled()) {
                     continue;
                 }

@@ -17,7 +17,6 @@ import org.junit.Test;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -118,9 +117,6 @@ public class ConfigTest {
         }
     }
 
-    
-
-
     /**
      * testReadHostWeight
      *
@@ -133,11 +129,8 @@ public class ConfigTest {
         Map<String, PhysicalDbGroup> dbGroups = dbLoader.getDbGroups();
         PhysicalDbGroup pool = dbGroups.get("localhost2");
 
-        ArrayList<PhysicalDbInstance> okSources = new ArrayList<PhysicalDbInstance>();
-        okSources.addAll(pool.getAllActiveDbInstances());
-        PhysicalDbInstance source = pool.randomSelect(okSources, true);
-
-        Assert.assertTrue(source != null);
+        PhysicalDbInstance source = pool.select(true);
+        Assert.assertNotNull(source);
     }
 
 }

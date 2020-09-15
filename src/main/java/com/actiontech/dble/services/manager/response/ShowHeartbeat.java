@@ -110,7 +110,7 @@ public final class ShowHeartbeat {
         // host nodes
         Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
         for (PhysicalDbGroup pool : dbGroups.values()) {
-            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
+            for (PhysicalDbInstance ds : pool.getDbInstances(true)) {
                 MySQLHeartbeat hb = ds.getHeartbeat();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(ds.getName().getBytes());

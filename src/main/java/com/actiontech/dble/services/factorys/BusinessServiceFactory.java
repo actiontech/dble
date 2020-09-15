@@ -2,6 +2,7 @@ package com.actiontech.dble.services.factorys;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
@@ -11,6 +12,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.MySQLCurrentResponseService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 
 /**
  * Created by szf on 2020/6/28.
@@ -28,6 +30,10 @@ public final class BusinessServiceFactory {
             return service;
         } else if (userConfig instanceof ManagerUserConfig) {
             ManagerService service = new ManagerService(connection);
+            service.initFromAuthInfo(info);
+            return service;
+        } else if (userConfig instanceof RwSplitUserConfig) {
+            RWSplitService service = new RWSplitService(connection);
             service.initFromAuthInfo(info);
             return service;
         }

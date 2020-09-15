@@ -3,13 +3,13 @@ package com.actiontech.dble.services.manager.information.tables;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.TimeUtil;
-import com.google.common.collect.Maps;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -45,79 +45,36 @@ public class DbleStatus extends ManagerBaseTable {
         long startupTime = server.getStartupTime();
         long now = TimeUtil.currentTimeMillis();
         long upTime = now - startupTime;
-
-        LinkedHashMap<String, String> uptime = Maps.newLinkedHashMap();
-        uptime.put(COLUMN_VARIABLE_NAME, "uptime");
-        uptime.put(COLUMN_VARIABLE_VALUE, (double) upTime / 1000 + "s");
-        uptime.put(COLUMN_COMMENT, "length of time to start dble(s).");
-
-        LinkedHashMap<String, String> currentTimestamp = Maps.newLinkedHashMap();
-        currentTimestamp.put(COLUMN_VARIABLE_NAME, "current_timestamp");
-        currentTimestamp.put(COLUMN_VARIABLE_VALUE, FormatUtil.formatDate(now));
-        currentTimestamp.put(COLUMN_COMMENT, "the current time of the dble system.");
-
-        LinkedHashMap<String, String> startupTimestamp = Maps.newLinkedHashMap();
-        startupTimestamp.put(COLUMN_VARIABLE_NAME, "startup_timestamp");
-        startupTimestamp.put(COLUMN_VARIABLE_VALUE, FormatUtil.formatDate(server.getStartupTime()));
-        startupTimestamp.put(COLUMN_COMMENT, "dble system startup time.");
-
         Runtime rt = Runtime.getRuntime();
+        long memoryMax = rt.maxMemory();
         long memoryTotal = rt.totalMemory();
         long memoryUsed = (memoryTotal - rt.freeMemory());
-
-        LinkedHashMap<String, String> heapMemoryUsed = Maps.newLinkedHashMap();
-        heapMemoryUsed.put(COLUMN_VARIABLE_NAME, "heap_memory_used");
-        heapMemoryUsed.put(COLUMN_VARIABLE_VALUE, memoryUsed + "mb");
-        heapMemoryUsed.put(COLUMN_COMMENT, "heap memory usage(mb)");
-
-        LinkedHashMap<String, String> heapMemoryTotal = Maps.newLinkedHashMap();
-        heapMemoryTotal.put(COLUMN_VARIABLE_NAME, "heap_memory_total");
-        heapMemoryTotal.put(COLUMN_VARIABLE_VALUE, memoryTotal + "mb");
-        heapMemoryTotal.put(COLUMN_COMMENT, "the amount of heap memory(mb)");
-
-        LinkedHashMap<String, String> configReloadTimestamp = Maps.newLinkedHashMap();
-        configReloadTimestamp.put(COLUMN_VARIABLE_NAME, "config_reload_timestamp");
-        configReloadTimestamp.put(COLUMN_VARIABLE_VALUE, FormatUtil.formatDate(server.getConfig().getReloadTime()));
-        configReloadTimestamp.put(COLUMN_COMMENT, "last config load time.");
-
         BufferPool pool = BufferPoolManager.getBufferPool();
         long poolSize = pool.capacity();
-
-        LinkedHashMap<String, String> directMemoryPoolSize = Maps.newLinkedHashMap();
-        directMemoryPoolSize.put(COLUMN_VARIABLE_NAME, "direct_memory_pool_size");
-        directMemoryPoolSize.put(COLUMN_VARIABLE_VALUE, poolSize + "");
-        directMemoryPoolSize.put(COLUMN_COMMENT, "size of the memory pool, is equal to the product of BufferPoolPagesize and BufferPoolPagenumber.");
-
         long poolUsed = poolSize - pool.size();
-
-        LinkedHashMap<String, String> directMemoryPoolUsed = Maps.newLinkedHashMap();
-        directMemoryPoolUsed.put(COLUMN_VARIABLE_NAME, "direct_memory_pool_used");
-        directMemoryPoolUsed.put(COLUMN_VARIABLE_VALUE, poolUsed + "");
-        directMemoryPoolUsed.put(COLUMN_COMMENT, "directmemory memory in the memory pool that has been used.");
-
         TsQueriesCounter.CalculateResult result = TsQueriesCounter.getInstance().calculate();
 
-        LinkedHashMap<String, String> questions = Maps.newLinkedHashMap();
-        questions.put(COLUMN_VARIABLE_NAME, "questions");
-        questions.put(COLUMN_VARIABLE_VALUE, result.queries + "");
-        questions.put(COLUMN_COMMENT, "number of requests.");
-
-        LinkedHashMap<String, String> transactions = Maps.newLinkedHashMap();
-        transactions.put(COLUMN_VARIABLE_NAME, "transactions");
-        transactions.put(COLUMN_VARIABLE_VALUE, result.transactions + "");
-        transactions.put(COLUMN_COMMENT, "the transaction number.");
-
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        list.add(uptime);
-        list.add(currentTimestamp);
-        list.add(startupTimestamp);
-        list.add(heapMemoryUsed);
-        list.add(heapMemoryTotal);
-        list.add(configReloadTimestamp);
-        list.add(directMemoryPoolSize);
-        list.add(directMemoryPoolUsed);
-        list.add(questions);
-        list.add(transactions);
+        list.add(genRow("uptime", ((double) upTime / 1000) + "s", "length of time to start dble"));
+        list.add(genRow("current_timestamp", FormatUtil.formatDate(now), "the current time of the dble system"));
+        list.add(genRow("startup_timestamp", FormatUtil.formatDate(startupTime), "dble system startup time"));
+        list.add(genRow("config_reload_timestamp", FormatUtil.formatDate(server.getConfig().getReloadTime()), "last config load time"));
+        list.add(genRow("heap_memory_max", memoryMax + "", "the maximum amount of memory that the virtual machine will attempt to use, measured in bytes"));
+        list.add(genRow("heap_memory_used", memoryUsed + "", "heap memory usage, measured in bytes"));
+        list.add(genRow("heap_memory_total", memoryTotal + "", "the total of heap memory, measured in bytes"));
+        list.add(genRow("direct_memory_max", Platform.getMaxDirectMemory() + "", "max direct memory, measured in bytes"));
+        list.add(genRow("direct_memory_pool_size", poolSize + "", "size of the memory pool, is equal to the product of BufferPoolPagesize and BufferPoolPagenumber, measured in bytes"));
+        list.add(genRow("direct_memory_pool_used", poolUsed + "", "directmemory memory in the memory pool that has been used, measured in bytes"));
+        list.add(genRow("questions", result.queries + "", "number of requests"));
+        list.add(genRow("transactions", result.transactions + "", "number of transactions"));
         return list;
+    }
+
+    private LinkedHashMap<String, String> genRow(String name, String value, String comment) {
+        LinkedHashMap<String, String> row = new LinkedHashMap<>();
+        row.put(COLUMN_VARIABLE_NAME, name);
+        row.put(COLUMN_VARIABLE_VALUE, value);
+        row.put(COLUMN_COMMENT, comment);
+        return row;
     }
 }

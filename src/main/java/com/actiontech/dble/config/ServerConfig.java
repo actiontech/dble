@@ -476,6 +476,14 @@ public class ServerConfig {
                             throw new ConfigException(errMsg);
                         }
                     }
+
+                    if (shardingUser.getPrivilegesConfig() != null) {
+                        for (String schema : shardingUser.getPrivilegesConfig().getSchemaPrivileges().keySet()) {
+                            if (!authSchemas.contains(schema)) {
+                                throw new ConfigException("SelfCheck### privileges's schema[" + schema + "] was not found in the user [name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schemas");
+                            }
+                        }
+                    }
                 }
             }
         }

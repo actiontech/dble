@@ -70,7 +70,7 @@ public final class ShowConnectionPoolProperty {
 
         PoolConfig poolConfig;
         for (PhysicalDbGroup group : DbleServer.getInstance().getConfig().getDbGroups().values()) {
-            for (PhysicalDbInstance instance : group.getAllDbInstances()) {
+            for (PhysicalDbInstance instance : group.getDbInstances(true)) {
                 poolConfig = instance.getConfig().getPoolConfig();
                 RowDataPacket row = getRow(group.getGroupName(), instance.getName(), "minCon", instance.getConfig().getMinCon() + "", service.getCharset().getClient());
                 row.setPacketId(++packetId);

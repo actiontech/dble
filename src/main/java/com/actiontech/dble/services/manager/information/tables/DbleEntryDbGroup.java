@@ -34,18 +34,21 @@ public class DbleEntryDbGroup extends ManagerBaseTable {
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
         Set<String> dbGroups = DbleServer.getInstance().getConfig().getDbGroups().keySet();
-        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
-            UserConfig userConfig = v.getValue();
-            if (userConfig instanceof RwSplitUserConfig) {
-                String dbGroupName = ((RwSplitUserConfig) userConfig).getDbGroup();
-                if (dbGroups.contains(dbGroupName)) {
-                    LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                    map.put(COLUMN_ID, userConfig.getId() + "");
-                    map.put(COLUMN_DB_GROUP, dbGroupName);
-                    list.add(map);
-                }
-            }
-        });
+        DbleServer.getInstance().getConfig().getUsers().entrySet().
+                stream().
+                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                forEach(v -> {
+                    UserConfig userConfig = v.getValue();
+                    if (userConfig instanceof RwSplitUserConfig) {
+                        String dbGroupName = ((RwSplitUserConfig) userConfig).getDbGroup();
+                        if (dbGroups.contains(dbGroupName)) {
+                            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                            map.put(COLUMN_ID, userConfig.getId() + "");
+                            map.put(COLUMN_DB_GROUP, dbGroupName);
+                            list.add(map);
+                        }
+                    }
+                });
         return list;
     }
 }

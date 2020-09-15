@@ -2,6 +2,7 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.btrace.provider.ConnectionPoolProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -25,50 +26,53 @@ public final class FreshBackendConn {
         String instanceNames = matcher.group(3);
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.writeLock().lock();
-        try {
-            PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(groupName);
-            if (dh == null) {
-                service.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + groupName + " do not exists");
-                return;
-            }
-
-            if (!dh.checkInstanceExist(instanceNames)) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
-                return;
-            }
-
-            String warnMsg = null;
-            // single
+        if (lock.writeLock().tryLock()) {
             try {
-                String[] nameList = instanceNames == null ? Arrays.copyOf(dh.getAllDbInstanceMap().keySet().toArray(), dh.getAllDbInstanceMap().keySet().toArray().length, String[].class) : instanceNames.split(",");
-                List<String> sourceNames = Arrays.stream(nameList).distinct().collect(Collectors.toList());
-
-                if (dh.getRwSplitMode() == 0 && (!sourceNames.contains(dh.getWriteDbInstance().getName()))) {
-                    warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
-                } else {
-                    if (dh.getRwSplitMode() == 0 && sourceNames.size() > 1 && sourceNames.contains(dh.getWriteDbInstance().getName())) {
-                        warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
-                    }
-                    dh.stop(sourceNames, "fresh backend conn", isForced);
-                    dh.init(sourceNames, "fresh backend conn");
+                ConnectionPoolProvider.freshConnGetRealodLocekAfter();
+                PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(groupName);
+                if (dh == null) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + groupName + " do not exists");
+                    return;
                 }
-            } catch (Exception e) {
-                service.writeErrMessage(ErrorCode.ER_YES, "fresh conn with error, use show @@backend to check latest status. Error:" + e.getMessage());
-                LOGGER.warn("fresh conn with error", e);
-                return;
-            }
 
-            OkPacket packet = new OkPacket();
-            packet.setPacketId(1);
-            packet.setAffectedRows(0);
-            if (warnMsg != null) {
-                packet.setMessage(warnMsg.getBytes());
+                if (!dh.checkInstanceExist(instanceNames)) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
+                    return;
+                }
+
+                String warnMsg = null;
+                try {
+                    String[] nameList = instanceNames == null ? Arrays.copyOf(dh.getAllDbInstanceMap().keySet().toArray(), dh.getAllDbInstanceMap().keySet().toArray().length, String[].class) : instanceNames.split(",");
+                    List<String> sourceNames = Arrays.stream(nameList).distinct().collect(Collectors.toList());
+
+                    if (dh.getRwSplitMode() == PhysicalDbGroup.RW_SPLIT_OFF && (!sourceNames.contains(dh.getWriteDbInstance().getName()))) {
+                        warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
+                    } else {
+                        if (dh.getRwSplitMode() == PhysicalDbGroup.RW_SPLIT_OFF && sourceNames.size() > 1 && sourceNames.contains(dh.getWriteDbInstance().getName())) {
+                            warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
+                        }
+                        dh.stop(sourceNames, "fresh backend conn", isForced);
+                        dh.init(sourceNames, "fresh backend conn");
+                    }
+                } catch (Exception e) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "fresh conn with error, use show @@backend to check latest status. Error:" + e.getMessage());
+                    LOGGER.warn("fresh conn with error", e);
+                    return;
+                }
+
+                OkPacket packet = new OkPacket();
+                packet.setPacketId(1);
+                packet.setAffectedRows(0);
+                if (warnMsg != null) {
+                    packet.setMessage(warnMsg.getBytes());
+                }
+                packet.setServerStatus(2);
+                packet.write(service.getConnection());
+            } finally {
+                lock.writeLock().unlock();
             }
-            packet.setServerStatus(2);
-            packet.write(service.getConnection());
-        } finally {
-            lock.writeLock().unlock();
+        } else {
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "reloadLock occupied, try again later");
         }
     }
 }

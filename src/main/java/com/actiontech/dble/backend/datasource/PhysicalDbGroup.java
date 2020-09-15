@@ -219,7 +219,12 @@ public class PhysicalDbGroup {
             return writeDbInstance;
         }
 
-        PhysicalDbInstance selectInstance = loadBalancer.select(getRWDbInstances());
+        List<PhysicalDbInstance> instances = getRWDbInstances();
+        if (instances.size() == 0) {
+            return writeDbInstance;
+        }
+
+        PhysicalDbInstance selectInstance = loadBalancer.select(instances);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("select {}", selectInstance);
         }
@@ -234,6 +239,7 @@ public class PhysicalDbGroup {
                 continue;
             }
             if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
+                LOGGER.warn("can't select dbInstance[{}] as read node", ds);
                 okSources.add(ds);
             }
         }

@@ -39,7 +39,7 @@ public final class FreshBackendConn {
                     service.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
                     return;
                 }
-                
+
                 String warnMsg = null;
                 try {
                     String[] nameList = instanceNames == null ? Arrays.copyOf(dh.getAllDbInstanceMap().keySet().toArray(), dh.getAllDbInstanceMap().keySet().toArray().length, String[].class) : instanceNames.split(",");

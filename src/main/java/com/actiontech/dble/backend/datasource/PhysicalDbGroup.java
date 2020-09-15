@@ -234,13 +234,14 @@ public class PhysicalDbGroup {
     private List<PhysicalDbInstance> getRWDbInstances() {
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
         for (PhysicalDbInstance ds : allSourceMap.values()) {
-            if (rwSplitMode == RW_SPLIT_ALL && ds == writeDbInstance && writeDbInstance.isAlive()) {
+            if (ds == writeDbInstance) {
+                if (rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
+                    okSources.add(ds);
+                }
+            } else if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
                 okSources.add(ds);
-                continue;
-            }
-            if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
+            } else {
                 LOGGER.warn("can't select dbInstance[{}] as read node", ds);
-                okSources.add(ds);
             }
         }
 

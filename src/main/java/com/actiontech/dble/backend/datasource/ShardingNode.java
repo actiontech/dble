@@ -102,11 +102,11 @@ public class ShardingNode {
         return instance.getConnection(schema, attachment);
     }
 
-    private boolean canRunOnMaster(RouteResultsetNode rrs, boolean autoCommit) {
-        boolean master = true;
+    private Boolean canRunOnMaster(RouteResultsetNode rrs, boolean autoCommit) {
+        Boolean master = null;
         if (rrs.getRunOnSlave() == null) {
-            if (rrs.canRunINReadDB(autoCommit)) {
-                master = false;
+            if (!rrs.canRunINReadDB(autoCommit)) {
+                master = true;
             }
         } else {
             if (!rrs.getRunOnSlave()) {

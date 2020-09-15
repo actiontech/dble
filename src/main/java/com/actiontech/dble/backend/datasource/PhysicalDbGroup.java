@@ -211,15 +211,15 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    public PhysicalDbInstance select(boolean master) {
-        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || master) {
+    public PhysicalDbInstance select(Boolean includeMaster) {
+        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select write {}", writeDbInstance);
             }
             return writeDbInstance;
         }
 
-        List<PhysicalDbInstance> instances = getRWDbInstances();
+        List<PhysicalDbInstance> instances = getRWDbInstances(includeMaster == null || includeMaster);
         if (instances.size() == 0) {
             return writeDbInstance;
         }
@@ -231,10 +231,10 @@ public class PhysicalDbGroup {
         return selectInstance;
     }
 
-    private List<PhysicalDbInstance> getRWDbInstances() {
+    private List<PhysicalDbInstance> getRWDbInstances(boolean includeWrite) {
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
         for (PhysicalDbInstance ds : allSourceMap.values()) {
-            if (ds == writeDbInstance) {
+            if (ds == writeDbInstance && includeWrite) {
                 if (rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
                     okSources.add(ds);
                 }

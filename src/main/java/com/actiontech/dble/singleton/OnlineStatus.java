@@ -145,7 +145,7 @@ public final class OnlineStatus {
             ProxyMeta.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
             return true;
         }
-        return false;
+        return true;
     }
 
     public void shutdownClear() {

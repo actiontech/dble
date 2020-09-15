@@ -49,7 +49,7 @@ public final class ManagerTableUtil {
 
 
     public static List<RowDataPacket> getFoundRows(ManagerService service, ManagerWritableTable managerTable, SQLExpr whereExpr) {
-        List<Item> realSelects = new ArrayList<>();
+        LinkedHashSet<Item> realSelects = new LinkedHashSet<>();
         for (ColumnMeta cm : managerTable.getColumnsMeta()) {
             ItemField col = new ItemField(null, null, cm.getName());
             realSelects.add(col);
@@ -72,7 +72,7 @@ public final class ManagerTableUtil {
         return foundRows;
     }
 
-    private static List<FieldPacket> makeField(List<Item> realSelects, String tableName) {
+    private static List<FieldPacket> makeField(LinkedHashSet<Item> realSelects, String tableName) {
         List<FieldPacket> totalResult = new ArrayList<>();
         for (Item select : realSelects) {
             int type = Fields.FIELD_TYPE_VAR_STRING;

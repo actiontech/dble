@@ -14,6 +14,7 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
@@ -28,19 +29,20 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 public class ManagerBaseSelectHandler extends BaseDMLHandler {
     private static Logger logger = LoggerFactory.getLogger(ManagerBaseSelectHandler.class);
     private ManagerTableNode tableNode;
     private boolean needSendMaker = false;
-    private List<Item> realSelects;
+    private LinkedHashSet<Item> realSelects;
 
     public ManagerBaseSelectHandler(long id, Session session, ManagerTableNode tableNode) {
         super(id, session);
         this.tableNode = tableNode;
         this.merges.add(this);
-        this.realSelects = getBaseItems(tableNode.getColumnsSelected());
+        this.realSelects = getBaseItems();
     }
 
     public void execute() {
@@ -87,58 +89,90 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
         return totalResult;
     }
 
-    private List<Item> getBaseItems(List<Item> selects) {
-        List<Item> realSelectItem = new ArrayList<>(selects.size());
-        for (Item select : selects) {
-            realSelectItem.addAll(getBaseItem(select));
+    private LinkedHashSet<Item> getBaseItems() {
+        LinkedHashSet<Item> realSelectItem = new LinkedHashSet<>(tableNode.getColumnsSelected().size());
+        for (Item select : tableNode.getColumnsSelected()) {
+            realSelectItem.addAll(getBaseItem(select, true));
+        }
+        for (Order orderItem : tableNode.getOrderBys()) {
+            int size = realSelectItem.size();
+            realSelectItem.addAll(getBaseItem(orderItem.getItem(), false));
+            if (!needSendMaker && realSelectItem.size() > size) {
+                needSendMaker = true;
+            }
+        }
+        for (Order groupByItem : tableNode.getGroupBys()) {
+            int size = realSelectItem.size();
+            realSelectItem.addAll(getBaseItem(groupByItem.getItem(), false));
+            if (!needSendMaker && realSelectItem.size() > size) {
+                needSendMaker = true;
+            }
+        }
+        if (tableNode.getWhereFilter() != null) {
+            int size = realSelectItem.size();
+            realSelectItem.addAll(getBaseItem(tableNode.getWhereFilter(), false));
+            if (!needSendMaker && realSelectItem.size() > size) {
+                needSendMaker = true;
+            }
+        }
+        if (tableNode.getHavingFilter() != null) {
+            int size = realSelectItem.size();
+            realSelectItem.addAll(getBaseItem(tableNode.getHavingFilter(), false));
+            if (!needSendMaker && realSelectItem.size() > size) {
+                needSendMaker = true;
+            }
         }
         return realSelectItem;
     }
 
-    private List<Item> getBaseItem(Item select) {
+    private List<Item> getBaseItem(Item select, boolean isRealSelect) {
         if (select.isWithSubQuery()) {
-            return getBaseItem(PlanUtil.rebuildSubQueryItem(select));
+            return getBaseItem(PlanUtil.rebuildSubQueryItem(select), isRealSelect);
         }
-        if (select.basicConstItem())
-            return Collections.singletonList(select);
+        if (select.basicConstItem()) {
+            return isRealSelect ? Collections.singletonList(select) : Collections.emptyList();
+        }
         Item.ItemType i = select.type();
-        if ((i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM)) {
+        if ((i == Item.ItemType.FUNC_ITEM) || (i == Item.ItemType.COND_ITEM)) {
             ItemFunc func = (ItemFunc) select;
-            needSendMaker = true;
-            return createFunctionItem(func);
+            if (isRealSelect) {
+                needSendMaker = true;
+            }
+            return createFunctionItem(func, isRealSelect);
 
         } else if (i == Item.ItemType.SUM_FUNC_ITEM) {
             ItemSum sumFunc = (ItemSum) select;
-            needSendMaker = true;
-            return createSumItem(sumFunc);
-
+            if (isRealSelect) {
+                needSendMaker = true;
+            }
+            return createSumItem(sumFunc, isRealSelect);
         } else {
             return Collections.singletonList(select);
         }
     }
 
-    private List<Item> createFunctionItem(ItemFunc f) {
+    private List<Item> createFunctionItem(ItemFunc f, boolean isRealSelect) {
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
             if (arg.isWild()) {
                 args.add(new ItemInt(0));
             } else {
-                args.addAll(getBaseItem(arg));
+                args.addAll(getBaseItem(arg, isRealSelect));
             }
 
         }
         return args;
     }
 
-    private List<Item> createSumItem(ItemSum f) {
+    private List<Item> createSumItem(ItemSum f, boolean isRealSelect) {
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
             if (arg.isWild()) {
                 args.add(new ItemInt(0));
             } else {
-                args.addAll(getBaseItem(arg));
+                args.addAll(getBaseItem(arg, isRealSelect));
             }
         }
         return args;

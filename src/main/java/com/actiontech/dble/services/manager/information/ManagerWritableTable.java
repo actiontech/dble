@@ -169,7 +169,7 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
     public abstract int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException;
 
     @Override
-    public List<RowDataPacket> getRow(List<Item> realSelects, String charset) {
+    public List<RowDataPacket> getRow(LinkedHashSet<Item> realSelects, String charset) {
         lock.lock();
         try {
             return super.getRow(realSelects, charset);

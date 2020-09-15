@@ -70,7 +70,7 @@ public class VarsExtractorHandler {
         }
         if (ds == null) {
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getAllActiveDbInstances()) {
+                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;

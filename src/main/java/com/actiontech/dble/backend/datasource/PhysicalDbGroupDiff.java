@@ -48,10 +48,10 @@ public class PhysicalDbGroupDiff {
 
         //add or not change
         PhysicalDbInstance newWriteHost = newDbGroup.getWriteDbInstance();
-        PhysicalDbInstance[] newReadHost = newDbGroup.getReadSources();
+        PhysicalDbInstance[] newReadHost = newDbGroup.getReadDbInstances();
 
         PhysicalDbInstance oldHost = orgDbGroup.getWriteDbInstance();
-        PhysicalDbInstance[] oldRHost = orgDbGroup.getReadSources();
+        PhysicalDbInstance[] oldRHost = orgDbGroup.getReadDbInstances();
 
         boolean sameFlag = false;
         if (oldHost.equals(newWriteHost) && oldRHost.length == newReadHost.length) {

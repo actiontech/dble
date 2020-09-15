@@ -20,6 +20,7 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.CompressUtil;
@@ -280,7 +281,6 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-
     public void query(String query) {
         query(query, this.autocommit);
     }
@@ -289,10 +289,10 @@ public class MySQLResponseService extends MySQLBasedService {
         RouteResultsetNode rrn = new RouteResultsetNode("default", ServerParse.SELECT, query);
         StringBuilder synSQL = getSynSql(null, rrn, this.getConnection().getCharsetName(), this.txIsolation, isAutoCommit, usrVariables, sysVariables);
         LOGGER.info("try to send command of " + rrn);
-        synAndDoExecute(synSQL, rrn, this.getConnection().getCharsetName());
+        synAndDoExecute(synSQL, rrn.getStatement(), this.getConnection().getCharsetName());
     }
 
-    private void synAndDoExecute(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+    private void synAndDoExecute(StringBuilder synSQL, String sql, CharsetNames clientCharset) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "syn&do-execute-sql");
         if (synSQL != null && traceObject != null) {
             TraceManager.log(ImmutableMap.of("synSQL", synSQL), traceObject);
@@ -303,12 +303,12 @@ public class MySQLResponseService extends MySQLBasedService {
                 if (session != null) {
                     session.setBackendRequestTime(this.getConnection().getId());
                 }
-                sendQueryCmd(rrn.getStatement(), clientCharset);
+                sendQueryCmd(sql, clientCharset);
                 return;
             }
 
             // and our query sql to multi command at last
-            synSQL.append(rrn.getStatement()).append(";");
+            synSQL.append(sql).append(";");
             // syn and execute others
             if (session != null) {
                 session.setBackendRequestTime(this.getConnection().getId());
@@ -318,6 +318,38 @@ public class MySQLResponseService extends MySQLBasedService {
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
+    }
+
+    private StringBuilder getSynSql(CharsetNames clientCharset, int clientTxIsolation, boolean expectAutocommit) {
+        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) ? 0 : 1;
+        int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
+        int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
+        int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
+        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn;
+        if (synCount == 0) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (schemaSyn == 1) {
+            getChangeSchemaCommand(sb, connection.getSchema());
+        }
+        if (charsetSyn == 1) {
+            getCharsetCommand(sb, clientCharset);
+        }
+        if (txIsolationSyn == 1) {
+            getTxIsolationCommand(sb, clientTxIsolation);
+        }
+        if (autoCommitSyn == 1) {
+            getAutocommitCommand(sb, expectAutocommit);
+        }
+
+        metaDataSynced = false;
+        statusSync = new StatusSync(connection.getSchema(),
+                clientCharset, clientTxIsolation, expectAutocommit,
+                synCount, Collections.emptyMap(), Collections.emptyMap(), Collections.emptySet());
+
+        return sb;
     }
 
     private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn,
@@ -564,8 +596,7 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    public void execute(RouteResultsetNode rrn, ShardingService service,
-                        boolean isAutoCommit) {
+    public void execute(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn, "service-detail", this.compactInfo()), traceObject);
         try {
@@ -574,12 +605,26 @@ public class MySQLResponseService extends MySQLBasedService {
                 service.setTxStarted(true);
             }
             StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
-            synAndDoExecute(synSQL, rrn, service.getCharset());
+            synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
     }
 
+    public void execute(RWSplitService service) {
+        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
+        synAndDoExecute(synSQL, service.getExecuteSql(), service.getCharset());
+    }
+
+    public void execute(RWSplitService service, byte[] originPacket) {
+        if (service != null) {
+            StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
+            if (synSQL != null) {
+                sendQueryCmd(synSQL.toString(), service.getCharset());
+            }
+        }
+        writeDirectly(originPacket);
+    }
 
     private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
         if (LOGGER.isDebugEnabled()) {
@@ -792,7 +837,6 @@ public class MySQLResponseService extends MySQLBasedService {
         StatusSync(String schema,
                    CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
                    int synCount, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
-            super();
             this.schema = schema;
             this.clientCharset = clientCharset;
             this.txtIsolation = txtIsolation;

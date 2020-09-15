@@ -8,7 +8,10 @@ package com.actiontech.dble.services.mysqlauthenticate.util;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.user.*;
+import com.actiontech.dble.config.model.user.ManagerUserConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
@@ -32,9 +35,6 @@ public final class AuthUtil {
             UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
             if (userConfig == null) {
                 return "Access denied for user '" + user + "' with host '" + connection.getHost() + "'";
-            }
-            if (userConfig instanceof RwSplitUserConfig) {
-                return "this version does not support rwSplitUser";
             }
 
             FrontendConnection fcon = (FrontendConnection) connection;

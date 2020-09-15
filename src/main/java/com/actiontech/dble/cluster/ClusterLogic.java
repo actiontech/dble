@@ -357,7 +357,7 @@ public final class ClusterLogic {
         }
         lock.lock();
         try {
-            if (waitThread.isAlive()) {
+            if (waitThread != null && waitThread.isAlive()) {
                 waitThread.interrupt();
             }
         } finally {

@@ -5,9 +5,6 @@
  */
 package com.actiontech.dble.backend.datasource;
 
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -16,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class ShardingNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingNode.class);
@@ -25,7 +21,7 @@ public class ShardingNode {
     private final String dbGroupName;
     protected String database;
     protected volatile PhysicalDbGroup dbGroup;
-    private volatile boolean isSchemaExists = true;
+    private volatile boolean isSchemaExists = false;
 
     public ShardingNode(String dbGroupName, String hostName, String database, PhysicalDbGroup dbGroup) {
         this.dbGroupName = dbGroupName;
@@ -89,76 +85,36 @@ public class ShardingNode {
 
     public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
                               ResponseHandler handler, Object attachment) throws Exception {
+
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
-            if (isMustWrite) {
-                getWriteNodeConnection(schema, handler, attachment);
-                return;
-            }
-            if (rrs.getRunOnSlave() == null) {
-                if (rrs.canRunINReadDB(autoCommit)) {
-                    dbGroup.getRWSplitCon(schema, handler, attachment);
-                } else {
-                    getWriteNodeConnection(schema, handler, attachment);
-                }
-            } else {
-                if (rrs.getRunOnSlave()) {
-                    if (!dbGroup.getReadCon(schema, handler, attachment)) {
-                        throw new IllegalArgumentException("no valid read dbInstance in dbGroup:" + dbGroup.getGroupName());
-                    }
-                } else {
-                    rrs.setCanRunInReadDB(false);
-                    getWriteNodeConnection(schema, handler, attachment);
-                }
-            }
+            checkRequest(schema);
+            PhysicalDbInstance instance = dbGroup.select(canRunOnSlave((RouteResultsetNode) attachment, isMustWrite || autoCommit));
+            instance.getConnection(schema, handler, rrs, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);
         }
     }
 
-    public BackendConnection getConnection(String schema, Boolean runOnSlave, Object attachment) throws IOException {
-        if (runOnSlave == null) {
-            PhysicalDbInstance readSource = dbGroup.getRWSplitNode();
-            if (!readSource.isAlive()) {
-                String heartbeatError = "the dbInstance[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dbInstance status";
-                if (dbGroup.getDbGroupConfig().isShowSlaveSql()) {
-                    heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
-                }
-                LOGGER.warn(heartbeatError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", readSource.getDbGroupConfig().getName() + "-" + readSource.getConfig().getInstanceName());
-                AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
-                throw new IOException(heartbeatError);
-            }
-            return readSource.getConnection(schema, attachment);
-        } else if (runOnSlave) {
-            PhysicalDbInstance source = dbGroup.getRandomAliveReadNode();
-            if (source == null) {
-                throw new IllegalArgumentException("no valid dbInstance in dbGroup:" + dbGroup.getGroupName());
-            }
-            return source.getConnection(schema, attachment);
-        } else {
-            checkRequest(schema);
-            PhysicalDbInstance writeSource = dbGroup.getWriteDbInstance();
-            if (writeSource.isReadOnly()) {
-                throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
-            }
-            writeSource.incrementWriteCount();
-            return writeSource.getConnection(schema, attachment);
-        }
+    public BackendConnection getConnection(String schema, boolean autocommit, Object attachment) throws IOException {
+        checkRequest(schema);
+        PhysicalDbInstance instance = dbGroup.select(canRunOnSlave((RouteResultsetNode) attachment, autocommit));
+        return instance.getConnection(schema, attachment);
     }
 
-    private void getWriteNodeConnection(String schema, ResponseHandler handler, Object attachment) throws IOException {
-        checkRequest(schema);
-        PhysicalDbInstance writeSource = dbGroup.getWriteDbInstance();
-        if (writeSource.isDisabled()) {
-            throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is disabled");
-        } else if (writeSource.isFakeNode()) {
-            throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is fake node");
+    private boolean canRunOnSlave(RouteResultsetNode rrs, boolean autoCommit) {
+        boolean canRunInSlave = false;
+        if (rrs.getRunOnSlave() == null) {
+            if (rrs.canRunINReadDB(autoCommit)) {
+                canRunInSlave = true;
+            }
+        } else {
+            if (!rrs.getRunOnSlave()) {
+                rrs.setCanRunInReadDB(false);
+            } else {
+                canRunInSlave = true;
+            }
         }
-        if (writeSource.isReadOnly()) {
-            throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
-        }
-        writeSource.incrementWriteCount();
-        writeSource.getConnection(schema, handler, attachment, true);
+        return canRunInSlave;
     }
 }

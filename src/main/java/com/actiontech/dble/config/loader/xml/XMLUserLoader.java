@@ -30,6 +30,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.actiontech.dble.services.manager.information.tables.DbleRwSplitEntry.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class XMLUserLoader {
     public static final String TYPE_MANAGER_USER = "managerUser";
@@ -42,6 +44,7 @@ public class XMLUserLoader {
     private static final String DEFAULT_XML = "/" + ConfigFileName.USER_XML;
     private ProblemReporter problemReporter;
     private AtomicInteger userId = new AtomicInteger(0);
+    private static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
     private Document document;
 
     public XMLUserLoader() {
@@ -196,7 +199,7 @@ public class XMLUserLoader {
                     }
                 }
                 // load DML Privileges
-                UserPrivilegesConfig privilegesConfig = loadPrivileges(element);
+                UserPrivilegesConfig privilegesConfig = loadPrivileges(element, user);
 
                 ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo, user.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
                 shardingUser.setId(userId.incrementAndGet());
@@ -406,8 +409,8 @@ public class XMLUserLoader {
         if (StringUtil.isEmpty(password)) {
             throw new ConfigException("password of " + name + " is empty");
         }
-        String usingDecryptStr = element.getAttribute("usingDecrypt");
         boolean usingDecrypt = false;
+        String usingDecryptStr = element.getAttribute("usingDecrypt");
         if (!StringUtil.isEmpty(usingDecryptStr)) {
             usingDecryptStr = ConfigUtil.checkBoolAttribute("usingDecrypt", usingDecryptStr, "false", problemReporter, xmlFile);
             usingDecrypt = Boolean.parseBoolean(usingDecryptStr);
@@ -416,8 +419,8 @@ public class XMLUserLoader {
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
-        IPAddressUtil.checkWhiteIPs(strWhiteIPs);
-        return new UserConfig(name, password, strWhiteIPs, strMaxCon, usingDecrypt);
+        checkWhiteIPs(strWhiteIPs);
+        return new UserConfig(name, password, usingDecrypt, strWhiteIPs, strMaxCon);
     }
 
 
@@ -439,7 +442,8 @@ public class XMLUserLoader {
         }
     }
 
-    private UserPrivilegesConfig loadPrivileges(Element node) {
+    private UserPrivilegesConfig loadPrivileges(Element node, UserName user) {
+
         NodeList privilegesNodes = node.getElementsByTagName("privileges");
         int privilegesNodesLength = privilegesNodes.getLength();
         if (privilegesNodesLength == 0) {
@@ -459,6 +463,8 @@ public class XMLUserLoader {
                 final String name1 = schemaNode.getAttribute("name");
 
                 String dml1 = schemaNode.getAttribute("dml");
+                if (!DML_PATTERN.matcher(dml1).matches())
+                    throw new ConfigException("the dml privilege for the shema [" + name1 + "] configuration under the user [" + user + "] is not standard");
                 int[] dml1Array = new int[dml1.length()];
                 for (int offset1 = 0; offset1 < dml1.length(); offset1++) {
                     dml1Array[offset1] = Character.getNumericValue(dml1.charAt(offset1));
@@ -472,9 +478,11 @@ public class XMLUserLoader {
                 for (int z = 0; z < tableNodeLength; z++) {
                     UserPrivilegesConfig.TablePrivilege tablePrivilege = new UserPrivilegesConfig.TablePrivilege();
                     Element tableNode = (Element) tableNodes.item(z);
-                    String name2 = tableNode.getAttribute("name");
+                    final String name2 = tableNode.getAttribute("name");
 
                     String dml2 = tableNode.getAttribute("dml");
+                    if (!DML_PATTERN.matcher(dml2).matches())
+                        throw new ConfigException("the dml privilege for the table [" + name2 + "] configuration under the shema [" + name1 + "] under the user [" + user + "] is not standard");
                     int[] dml2Array = new int[dml2.length()];
                     for (int offset2 = 0; offset2 < dml2.length(); offset2++) {
                         dml2Array[offset2] = Character.getNumericValue(dml2.charAt(offset2));

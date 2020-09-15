@@ -38,7 +38,7 @@ public class DbleTableShardingNode extends ManagerBaseTable {
         columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "varchar(64)", false, true));
         columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(32)", false));
+        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(32)", false, true));
         columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_ORDER, new ColumnMeta(COLUMN_ORDER, "int(11)", false));
@@ -50,20 +50,28 @@ public class DbleTableShardingNode extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> rowList = Lists.newLinkedList();
         List<String> nameList = Lists.newArrayList();
         TreeMap<String, SchemaConfig> schemaMap = new TreeMap<>(DbleServer.getInstance().getConfig().getSchemas());
-        schemaMap.entrySet().stream().forEach(e -> e.getValue().getTables().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(t -> {
-            BaseTableConfig baseTableConfig = t.getValue();
-            List<String> shardingNodes = baseTableConfig.getShardingNodes();
-            AtomicInteger index = new AtomicInteger();
-            String id = DbleTable.PREFIX_CONFIG + baseTableConfig.getId();
-            shardingNodes.stream().filter(q -> !nameList.contains(id + "-" + q)).forEach(p -> {
-                LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                map.put(COLUMN_ID, id);
-                map.put(COLUMN_SHARDING_NODE, p);
-                map.put(COLUMN_ORDER, String.valueOf(index.getAndIncrement()));
-                rowList.add(map);
-                nameList.add(id + "-" + p);
-            });
-        }));
+        schemaMap.entrySet().
+                stream().
+                forEach(e -> e.getValue().getTables().entrySet().
+                        stream().
+                        sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                        forEach(t -> {
+                            BaseTableConfig baseTableConfig = t.getValue();
+                            List<String> shardingNodes = baseTableConfig.getShardingNodes();
+                            AtomicInteger index = new AtomicInteger();
+                            String id = DbleTable.PREFIX_CONFIG + baseTableConfig.getId();
+                            shardingNodes.
+                                    stream().
+                                    filter(q -> !nameList.contains(id + "-" + q)).
+                                    forEach(p -> {
+                                        LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                                        map.put(COLUMN_ID, id);
+                                        map.put(COLUMN_SHARDING_NODE, p);
+                                        map.put(COLUMN_ORDER, String.valueOf(index.getAndIncrement()));
+                                        rowList.add(map);
+                                        nameList.add(id + "-" + p);
+                                    });
+                        }));
         return rowList;
     }
 }

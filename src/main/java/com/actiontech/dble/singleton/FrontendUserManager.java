@@ -43,8 +43,8 @@ public final class FrontendUserManager {
             if (!isManager) {
                 serverConnection--;
             }
-            int userCount = userConnectionMap.get(user);
-            userConnectionMap.put(user, --userCount);
+            int userCount = userConnectionMap.get(user) - 1;
+            userConnectionMap.put(user, userCount);
         } catch (Throwable e) {
             //error ignore
             LOGGER.warn("Frontend lose", e);

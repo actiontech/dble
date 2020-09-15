@@ -9,8 +9,7 @@ package com.actiontech.dble.backend.datasource;
  * Created by szf on 2018/7/23.
  */
 public class PhysicalDbInstanceDiff {
-    private String writeHostChangeType = null;
-
+    private String writeHostChangeType;
 
     private PhysicalDbInstance selfInstance;
 
@@ -21,7 +20,6 @@ public class PhysicalDbInstanceDiff {
         this.selfInstance = selfInstance;
         this.relatedInstance = relatedInstance;
     }
-
 
     public String getWriteHostChangeType() {
         return writeHostChangeType;

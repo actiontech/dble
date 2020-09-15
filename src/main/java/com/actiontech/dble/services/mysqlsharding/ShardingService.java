@@ -29,7 +29,9 @@ import com.actiontech.dble.server.handler.ServerPrepareHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.SetInnerHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
+import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
@@ -174,15 +176,15 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
                 break;
             case MySQLPacket.COM_PING:
                 commands.doPing();
-                protoLogicHandler.ping();
+                Ping.response(connection);
+                break;
+            case MySQLPacket.COM_HEARTBEAT:
+                commands.doHeartbeat();
+                Heartbeat.response(connection, data);
                 break;
             case MySQLPacket.COM_QUIT:
                 commands.doQuit();
                 connection.close("quit cmd");
-                break;
-            case MySQLPacket.COM_PROCESS_KILL:
-                commands.doKill();
-                protoLogicHandler.kill(data);
                 break;
             case MySQLPacket.COM_STMT_PREPARE:
                 commands.doStmtPrepare();
@@ -193,17 +195,22 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
                     prepareHandler.prepare(prepareSql);
                 }
                 break;
+            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
+                commands.doStmtSendLongData();
+                blobDataQueue.offer(data);
+                break;
+            case MySQLPacket.COM_STMT_CLOSE:
+                commands.doStmtClose();
+                stmtClose(data);
+                break;
             case MySQLPacket.COM_STMT_RESET:
                 commands.doStmtReset();
+                blobDataQueue.clear();
                 prepareHandler.reset(data);
                 break;
             case MySQLPacket.COM_STMT_EXECUTE:
                 commands.doStmtExecute();
                 this.stmtExecute(data, blobDataQueue);
-                break;
-            case MySQLPacket.COM_HEARTBEAT:
-                commands.doHeartbeat();
-                protoLogicHandler.heartbeat(data);
                 break;
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
@@ -221,6 +228,10 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
             case MySQLPacket.COM_FIELD_LIST:
                 commands.doOther();
                 protoLogicHandler.fieldList(data);
+                break;
+            case MySQLPacket.COM_PROCESS_KILL:
+                commands.doKill();
+                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
                 break;
             default:
                 commands.doOther();
@@ -266,11 +277,11 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
     }
 
 
-    public void stmtExecute(byte[] data, Queue<byte[]> dataqueue) {
-        byte[] sendData = dataqueue.poll();
+    public void stmtExecute(byte[] data, Queue<byte[]> dataQueue) {
+        byte[] sendData = dataQueue.poll();
         while (sendData != null) {
             this.stmtSendLongData(sendData);
-            sendData = dataqueue.poll();
+            sendData = dataQueue.poll();
         }
         if (prepareHandler != null) {
             prepareHandler.execute(data);
@@ -282,6 +293,14 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
     public void stmtSendLongData(byte[] data) {
         if (prepareHandler != null) {
             prepareHandler.sendLongData(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtClose(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.close(data);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
         }
@@ -461,6 +480,7 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
+            this.setTxStarted(true);
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }

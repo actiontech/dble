@@ -209,7 +209,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         }
 
-        shardingService.setTxInterrupt(errMsg);
+        if (errPkg.getErrNo() != ErrorCode.ER_DUP_ENTRY) {
+            shardingService.setTxInterrupt(errMsg);
+        }
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {

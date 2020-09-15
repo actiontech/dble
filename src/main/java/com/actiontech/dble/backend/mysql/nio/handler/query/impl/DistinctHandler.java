@@ -97,7 +97,7 @@ public class DistinctHandler extends BaseDMLHandler {
             return;
         sendDistinctRowPacket(service);
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(null, isLeft, service);
+        nextHandler.rowEofResponse(null, this.isLeft, service);
     }
 
     private void sendDistinctRowPacket(AbstractService service) {

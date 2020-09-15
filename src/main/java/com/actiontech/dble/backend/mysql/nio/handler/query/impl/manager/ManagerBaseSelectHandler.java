@@ -46,17 +46,18 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
     public void execute() {
 
         final BaseDMLHandler nextHandler = this.nextHandler;
+        final boolean left = this.isLeft;
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
                 try {
                     List<FieldPacket> fields = makeField();
-                    nextHandler.fieldEofResponse(null, null, fields, null, false, null);
+                    nextHandler.fieldEofResponse(null, null, fields, null, left, null);
                     List<RowDataPacket> data = makeRowData();
                     for (RowDataPacket row : data) {
-                        nextHandler.rowResponse(null, row, false, null);
+                        nextHandler.rowResponse(null, row, left, null);
                     }
-                    nextHandler.rowEofResponse(null, false, null);
+                    nextHandler.rowEofResponse(null, left, null);
                 } catch (Exception e) {
                     logger.warn("execute error", e);
                     ((ManagerService) session.getSource().getService()).writeErrMessage((byte) 1, ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());

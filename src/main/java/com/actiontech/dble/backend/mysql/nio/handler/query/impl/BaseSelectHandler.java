@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -17,7 +18,6 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
@@ -58,7 +58,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else {
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(rrss.getName());
             //autocommit is serverSession.getWriteSource().isAutocommit() && !serverSession.getWriteSource().isTxStart()
-            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), rrss.getRunOnSlave(), rrss);
+            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, rrss);
             serverSession.bindConnection(rrss, newConn);
             newConn.getBackendService().setResponseHandler(this);
             newConn.getBackendService().setRowDataFlowing(true);
@@ -154,8 +154,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else {
             RouteResultsetNode node = (RouteResultsetNode) attachment;
             errMsg = "can't connect to shardingNode[" + node.getName() + "],due to " + e.getMessage();
-            LOGGER.warn(errMsg);
         }
+        LOGGER.warn(errMsg, e);
         serverSession.onQueryError(errMsg.getBytes());
     }
 

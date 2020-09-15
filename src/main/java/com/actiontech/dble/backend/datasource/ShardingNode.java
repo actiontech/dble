@@ -89,7 +89,7 @@ public class ShardingNode {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
             checkRequest(schema);
-            PhysicalDbInstance instance = dbGroup.select(canRunOnSlave((RouteResultsetNode) attachment, isMustWrite || autoCommit));
+            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster((RouteResultsetNode) attachment, isMustWrite || autoCommit));
             instance.getConnection(schema, handler, rrs, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -98,23 +98,23 @@ public class ShardingNode {
 
     public BackendConnection getConnection(String schema, boolean autocommit, Object attachment) throws IOException {
         checkRequest(schema);
-        PhysicalDbInstance instance = dbGroup.select(canRunOnSlave((RouteResultsetNode) attachment, autocommit));
+        PhysicalDbInstance instance = dbGroup.select(canRunOnMaster((RouteResultsetNode) attachment, autocommit));
         return instance.getConnection(schema, attachment);
     }
 
-    private boolean canRunOnSlave(RouteResultsetNode rrs, boolean autoCommit) {
-        boolean canRunInSlave = false;
+    private boolean canRunOnMaster(RouteResultsetNode rrs, boolean autoCommit) {
+        boolean master = true;
         if (rrs.getRunOnSlave() == null) {
             if (rrs.canRunINReadDB(autoCommit)) {
-                canRunInSlave = true;
+                master = false;
             }
         } else {
             if (!rrs.getRunOnSlave()) {
                 rrs.setCanRunInReadDB(false);
             } else {
-                canRunInSlave = true;
+                master = false;
             }
         }
-        return canRunInSlave;
+        return master;
     }
 }

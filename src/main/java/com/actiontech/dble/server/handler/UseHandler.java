@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -19,20 +19,9 @@ public final class UseHandler {
     }
 
     public static void handle(String sql, ShardingService service, int offset) {
-        String schema = sql.substring(offset).trim();
-        int length = schema.length();
-        if (length > 0) {
-            if (schema.endsWith(";")) {
-                schema = schema.substring(0, schema.length() - 1);
-            }
-            schema = StringUtil.replaceChars(schema, "`", null);
-            length = schema.length();
-            if (schema.charAt(0) == '\'' && schema.charAt(length - 1) == '\'') {
-                schema = schema.substring(1, length - 1);
-            }
-            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                schema = schema.toLowerCase();
-            }
+        String schema = getSchemaName(sql, offset);
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            schema = schema.toLowerCase();
         }
         if (!DbleServer.getInstance().getConfig().getSchemas().containsKey(schema)) {
             service.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
@@ -48,6 +37,17 @@ public final class UseHandler {
         service.getSession2().setRowCount(0);
 
         service.write(service.getSession2().getOKPacket());
+    }
+
+    public static String getSchemaName(String sql, int offset) {
+        String schema = sql.substring(offset).trim();
+        if (schema.length() == 0) {
+            return "";
+        }
+        if (schema.endsWith(";")) {
+            schema = schema.substring(0, schema.length() - 1);
+        }
+        return StringUtil.removeApostropheOrBackQuote(schema);
     }
 
 }

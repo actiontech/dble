@@ -6,8 +6,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.response.FieldList;
-import com.actiontech.dble.server.response.Heartbeat;
-import com.actiontech.dble.server.response.Ping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,14 +70,6 @@ public class MySQLProtoLogicHandler {
         service.query(sql);
     }
 
-    public void ping() {
-        Ping.response(service.getConnection());
-    }
-
-    public void kill(byte[] data) {
-        service.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-    }
-
     public String stmtPrepare(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
@@ -97,11 +87,6 @@ public class MySQLProtoLogicHandler {
         }
         return sql;
     }
-
-    public void heartbeat(byte[] data) {
-        Heartbeat.response(service, data);
-    }
-
 
     public void setOption(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data); //see sql\protocol_classic.cc parse_packet

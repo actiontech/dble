@@ -7,27 +7,6 @@
 
     <!-- protocol:ignore -->
     <Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$ColumnMeta"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$IndexMeta"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$ColumnMeta$Builder"/>
-    </Match>
-    <Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$IndexMeta$Builder"/>
-    </Match>
-	<Match>
-        <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta$Builder"/>
-    </Match>
-    <Match>
         <Package name="com.actiontech.dble.cluster.general.impl.ushard"/>
     </Match>
     <Match>
@@ -38,14 +17,10 @@
     </Match>
     <!-- protocol:ignore -->
 
-    <Match>
-        <Package name="com.actiontech.dble.util.dataMigrator.dataIOImpl"/>
-    </Match>
     <!--MALICIOUS_CODE ,need refactor?  -->
     <Match>
         <Bug category="MALICIOUS_CODE"/>
     </Match>
-
 
     <!-- I18N new String(byte[])  UTF-8 OR EVENT SET? -->
     <Match>
@@ -93,17 +68,6 @@
         <Class name="com.actiontech.dble.server.parser.ServerParseSelect"/>
     </Match>
 
-    <!-- use enum? -->
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
-        <Class name="com.actiontech.dble.backend.heartbeat.MySQLHeartbeat"/>
-    </Match>
-    <Match>
-        <Bug category="STYLE"/>
-        <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
-        <Class name="com.actiontech.dble.server.response.SessionIsolation"/>
-    </Match>
     <!-- always throw new exception-->
     <Match>
         <Bug category="STYLE"/>
@@ -164,12 +128,6 @@
         <Class name="com.actiontech.dble.plan.common.typelib.TypeLib"/>
         <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
-    <!-- need refactor -->
-    <Match>
-        <Bug category="PERFORMANCE"/>
-        <Class name="com.actiontech.dble.route.sequence.handler.SequenceVal"/>
-        <Bug pattern="URF_UNREAD_FIELD"/>
-    </Match>
     <!-- PERFORMANCE end -->
 
     <!-- CORRECTNESS start -->
@@ -204,23 +162,10 @@
         <Class name="com.actiontech.dble.server.handler.ServerLoadDataInfileHandler"/>
         <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
-	<Match>
-        <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler"/>
-		<Method name="getBackConn"/>
-        <Bug pattern="WA_AWAIT_NOT_IN_LOOP"/>
-    </Match>
-	<Match>
-        <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler"/>
-		<Method name="waitUntilSendFinish"/>
-        <Bug pattern="WA_AWAIT_NOT_IN_LOOP"/>
-    </Match>
     <Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler"/>
-        <Method name="waitUntilSendFinish"/>
-        <Bug pattern="WA_AWAIT_NOT_IN_LOOP"/>
+        <Class name="com.actiontech.dble.services.rwsplit.RWSplitHandler"/>
+        <Bug pattern="IS2_INCONSISTENT_SYNC"/>
     </Match>
     <!-- MT_CORRECTNESS end -->
 
@@ -229,7 +174,7 @@
         <Bug category="BAD_PRACTICE"/>
         <Bug pattern="RR_NOT_CHECKED,RV_RETURN_VALUE_IGNORED_BAD_PRACTICE"/>
     </Match>
-	<Match>
+    <Match>
         <Bug category="BAD_PRACTICE"/>
         <Class name="com.actiontech.dble.server.handler.SetInnerHandler"/>
         <Method name="isSwitchOn"/>

@@ -63,9 +63,7 @@ public class HintMasterDBHandler implements HintHandler {
 
         if (isRouteToMaster) {
             rrs.setRunOnSlave(false);
-        }
-
-        if (!isRouteToMaster) {
+        } else {
             rrs.setRunOnSlave(true);
         }
 

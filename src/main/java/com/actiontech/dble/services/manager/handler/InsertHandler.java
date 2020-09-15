@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -14,6 +16,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.services.manager.response.ReloadConfig;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
@@ -22,6 +25,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,36 +44,47 @@ public final class InsertHandler {
             service.writeErrMessage("42000", "You have an error in your SQL syntax", ErrorCode.ER_PARSE_ERROR);
             return;
         }
-        if (insert.isLowPriority() || insert.isDelayed() || insert.isHighPriority() || insert.isIgnore() || insert.getDuplicateKeyUpdate() != null) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support insert with syntax :[LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE][ON DUPLICATE KEY UPDATE assignment_list]");
+
+        ManagerWritableTable managerTable = getWritableTable(insert, service);
+        if (null == managerTable) {
             return;
         }
-        if (insert.getQuery() != null) {
-            service.writeErrMessage("42000", "Insert syntax error,not support insert ... select", ErrorCode.ER_PARSE_ERROR);
+        List<String> columns = getColumn(insert, managerTable, service);
+        if (null == columns) {
             return;
         }
-        if (insert.getValuesList().isEmpty()) {
-            service.writeErrMessage("42000", "Insert syntax error,no values in sql", ErrorCode.ER_PARSE_ERROR);
-            return;
-        }
-        SQLExprTableSource tableSource = insert.getTableSource();
-        if (tableSource.getPartitionSize() != 0) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support insert with syntax :[PARTITION (partition_name [, partition_name] ...)]");
-            return;
-        }
-        SchemaUtil.SchemaInfo schemaInfo;
+        List<LinkedHashMap<String, String>> rows;
+        managerTable.getLock().lock();
+        int rowSize;
         try {
-            schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), tableSource);
+            rows = managerTable.makeInsertRows(columns, insert.getValuesList());
+            managerTable.checkPrimaryKeyDuplicate(rows);
+            rowSize = managerTable.insertRows(rows);
+            if (rowSize != 0) {
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
+            }
         } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
-        }
-        ManagerBaseTable managerBaseTable = ManagerSchemaInfo.getInstance().getTables().get(schemaInfo.getTable());
-        if (!managerBaseTable.isWritable()) {
-            service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
+        } catch (ConfigException e) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
             return;
+        } catch (Exception e) {
+            if (e.getCause() instanceof ConfigException) {
+                //reload fail
+                handleConfigException(e, service, managerTable);
+            } else {
+                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            }
+            return;
+        } finally {
+            managerTable.deleteBackupFile();
+            managerTable.getLock().unlock();
         }
-        ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
+        writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+    }
+
+    private List<String> getColumn(MySqlInsertStatement insert, ManagerWritableTable managerTable, ManagerService service) {
         List<String> columns;
         if (insert.getColumns() == null || insert.getColumns().size() == 0) {
             columns = new ArrayList<>(managerTable.getColumnsMeta().size());
@@ -79,56 +94,90 @@ public final class InsertHandler {
         } else {
             columns = new ArrayList<>(insert.getColumns().size());
             // columns contains all not null
-            LinkedHashSet<String> mustSetColumns = new LinkedHashSet<>();
-            mustSetColumns.addAll(managerTable.getMustSetColumns());
+            LinkedHashSet<String> mustSetColumns = new LinkedHashSet<>(managerTable.getMustSetColumns());
             for (int i = 0; i < insert.getColumns().size(); i++) {
                 String columnName = StringUtil.removeBackQuote(insert.getColumns().get(i).toString()).toLowerCase();
                 if (managerTable.getColumnType(columnName) == null) {
                     service.writeErrMessage("42S22", "Unknown column '" + columnName + "' in 'field list'", ErrorCode.ER_BAD_FIELD_ERROR);
-                    return;
+                    return null;
                 }
                 mustSetColumns.remove(columnName);
                 columns.add(columnName);
             }
             if (mustSetColumns.size() != 0) {
                 service.writeErrMessage("HY000", "Field '" + mustSetColumns + "' doesn't have a default value and cannot be null", ErrorCode.ER_NO_DEFAULT_FOR_FIELD);
-                return;
+                return null;
             }
-
         }
         for (int i = 0; i < insert.getValuesList().size(); i++) {
             List<SQLExpr> value = insert.getValuesList().get(i).getValues();
             // checkout value size
             if (value.size() != columns.size()) {
                 service.writeErrMessage("21S01", "Column count doesn't match value count at row " + (i + 1), ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW);
-                return;
+                return null;
             }
             for (int j = 0; j < value.size(); j++) {
                 // value is null
                 if (value.get(j) instanceof SQLNullExpr && managerTable.getNotNullColumns().contains(columns.get(j))) {
                     service.writeErrMessage("23000", "Column '" + columns.get(j) + "' cannot be null", ErrorCode.ER_BAD_NULL_ERROR);
-                    return;
+                    return null;
                 }
             }
         }
+        return columns;
+    }
 
-        List<LinkedHashMap<String, String>> rows;
+    private void writeOkPacket(int i, int rowSize, String msg, ManagerService service) {
+        OkPacket ok = new OkPacket();
+        ok.setPacketId(i);
+        ok.setAffectedRows(rowSize);
+        if (!StringUtil.isEmpty(msg)) {
+            ok.setMessage(StringUtil.encode(msg, service.getCharset().getResults()));
+        }
+        ok.write(service.getConnection());
+    }
 
+    private ManagerWritableTable getWritableTable(MySqlInsertStatement insert, ManagerService service) {
+        if (insert.isLowPriority() || insert.isDelayed() || insert.isHighPriority() || insert.isIgnore() || (insert.getDuplicateKeyUpdate() != null && !insert.getDuplicateKeyUpdate().isEmpty())) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support insert with syntax :[LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE][ON DUPLICATE KEY UPDATE assignment_list]");
+            return null;
+        }
+        if (insert.getQuery() != null) {
+            service.writeErrMessage("42000", "Insert syntax error,not support insert ... select", ErrorCode.ER_PARSE_ERROR);
+            return null;
+        }
+        if (insert.getValuesList().isEmpty()) {
+            service.writeErrMessage("42000", "Insert syntax error,no values in sql", ErrorCode.ER_PARSE_ERROR);
+            return null;
+        }
 
-        managerTable.getLock().lock();
+        SQLExprTableSource tableSource = insert.getTableSource();
+        if (tableSource.getPartitionSize() != 0) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support insert with syntax :[PARTITION (partition_name [, partition_name] ...)]");
+            return null;
+        }
+        SchemaUtil.SchemaInfo schemaInfo;
         try {
-            rows = managerTable.makeInsertRows(columns, insert.getValuesList());
-            managerTable.checkPrimaryKeyDuplicate(rows);
-            managerTable.insertRows(rows);
+            schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), tableSource);
         } catch (SQLException e) {
             service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
-        } finally {
-            managerTable.getLock().unlock();
+            return null;
         }
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(rows.size());
-        ok.write(service.getConnection());
+        ManagerBaseTable managerBaseTable = ManagerSchemaInfo.getInstance().getTables().get(schemaInfo.getTable());
+        if (!managerBaseTable.isWritable()) {
+            service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
+            return null;
+        }
+        return (ManagerWritableTable) managerBaseTable;
+    }
+
+    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
+        try {
+            managerTable.rollbackXmlFile();
+        } catch (IOException ioException) {
+            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+            return;
+        }
+        service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
     }
 }

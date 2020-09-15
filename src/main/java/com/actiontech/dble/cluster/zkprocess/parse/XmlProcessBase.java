@@ -5,8 +5,10 @@
 
 package com.actiontech.dble.cluster.zkprocess.parse;
 
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.util.ResourceUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,8 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Result;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.nio.file.Files;
@@ -133,6 +137,31 @@ public class XmlProcessBase {
     }
 
 
+    public void writeObjToXml(Object obj, String inputPath, String name) {
+        if (null == obj || StringUtil.isEmpty(inputPath) || StringUtil.isEmpty(name)) {
+            return;
+        }
+        try {
+            //backup
+            File tempFile = new File(inputPath + ".tmp");
+            File file = new File(inputPath);
+            FileUtils.copy(file, tempFile);
+
+            Marshaller marshaller = this.jaxContext.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+
+            marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
+                    String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
+            Result outputTarget = new StreamResult(new File(inputPath));
+
+            marshaller.marshal(obj, outputTarget);
+
+        } catch (JAXBException | IOException e) {
+            LOGGER.error("parseToXml  error:Exception info:", e);
+        }
+    }
+
     public String baseParseToString(Object obj, String name) {
         try {
             Marshaller marshaller = this.jaxContext.createMarshaller();
@@ -153,7 +182,6 @@ public class XmlProcessBase {
             return null;
         }
     }
-
 
 
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {

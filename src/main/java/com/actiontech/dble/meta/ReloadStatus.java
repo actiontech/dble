@@ -35,16 +35,16 @@ public class ReloadStatus {
     private final AtomicBoolean interruputed = new AtomicBoolean(false);
     private volatile ServerMetaHandler reloadHandler;
 
-    private final ConfStatus.Status reloadType;
+    private final ConfStatus confStatus;
 
-    public ReloadStatus(String triggerType, ConfStatus.Status reloadType) {
+    public ReloadStatus(String triggerType, ConfStatus confStatus) {
         clusterType = ClusterGeneralConfig.getInstance().getClusterType();
         id = ReloadManager.getReloadInstance().nextId();
         this.triggerType = triggerType;
         status = RELOAD_STATUS_SELF_RELOAD;
         lastReloadStart = System.currentTimeMillis();
-        this.reloadType = reloadType;
-        LOGGER.info(this.getLogStage() + "_____________________reload start________" + id + "__" + reloadType);
+        this.confStatus = confStatus;
+        LOGGER.info(this.getLogStage() + "_____________________reload start________" + id + "__" + confStatus.getStatusAExtraInfo());
     }
 
     public void register(ServerMetaHandler handler) {
@@ -53,18 +53,18 @@ public class ReloadStatus {
 
     public void metaReload() {
         this.status = RELOAD_STATUS_META_RELOAD;
-        LOGGER.info(this.getLogStage() + "_____________________meta reload start________" + id + "__" + reloadType);
+        LOGGER.info(this.getLogStage() + "_____________________meta reload start________" + id + "__" + confStatus.getStatus());
     }
 
     public void waitingOthers() {
         this.status = RELOAD_STATUS_WAITING_OTHERS;
-        LOGGER.info(this.getLogStage() + "_____________________waiting others___________" + id + "__" + reloadType);
+        LOGGER.info(this.getLogStage() + "_____________________waiting others___________" + id + "__" + confStatus.getStatus());
     }
 
     public void reloadFinish() {
         this.status = RELOAD_STATUS_NONE;
         this.lastReloadEnd = System.currentTimeMillis();
-        LOGGER.info(this.getLogStage() + "_____________________reload finished___________" + id + "__" + reloadType);
+        LOGGER.info(this.getLogStage() + "_____________________reload finished___________" + id + "__" + confStatus.getStatusAExtraInfo());
     }
 
     public boolean isFinished() {
@@ -116,6 +116,6 @@ public class ReloadStatus {
     }
 
     public ConfStatus.Status getReloadType() {
-        return reloadType;
+        return confStatus.getStatus();
     }
 }

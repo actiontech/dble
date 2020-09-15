@@ -20,9 +20,10 @@ public class DbInstanceConfig {
     private volatile int maxCon = -1;
     private volatile int minCon = -1;
     private volatile PoolConfig poolConfig;
+    private final boolean usingDecrypt;
 
     public DbInstanceConfig(String instanceName, String ip, int port, String url,
-                            String user, String password, boolean disabled, boolean primary) {
+                            String user, String password, boolean disabled, boolean primary, boolean usingDecrypt) {
         this.instanceName = instanceName;
         this.ip = ip;
         this.port = port;
@@ -31,6 +32,25 @@ public class DbInstanceConfig {
         this.password = password;
         this.disabled = disabled;
         this.primary = primary;
+        this.usingDecrypt = usingDecrypt;
+    }
+
+    public DbInstanceConfig(String instanceName, String ip, int port, String url, String user, String password, int readWeight, String id, boolean disabled,
+                            boolean primary, int maxCon, int minCon, PoolConfig poolConfig, boolean usingDecrypt) {
+        this.instanceName = instanceName;
+        this.ip = ip;
+        this.port = port;
+        this.url = url;
+        this.user = user;
+        this.password = password;
+        this.readWeight = readWeight;
+        this.id = id;
+        this.disabled = disabled;
+        this.primary = primary;
+        this.maxCon = maxCon;
+        this.minCon = minCon;
+        this.poolConfig = poolConfig;
+        this.usingDecrypt = usingDecrypt;
     }
 
     public String getInstanceName() {
@@ -107,6 +127,10 @@ public class DbInstanceConfig {
 
     public void setPoolConfig(PoolConfig poolConfig) {
         this.poolConfig = poolConfig;
+    }
+
+    public boolean isUsingDecrypt() {
+        return usingDecrypt;
     }
 
     @Override

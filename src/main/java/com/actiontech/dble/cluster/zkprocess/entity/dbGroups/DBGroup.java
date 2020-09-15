@@ -30,6 +30,17 @@ public class DBGroup implements Named {
     protected HeartBeat heartbeat;
     protected List<DBInstance> dbInstance;
 
+    public DBGroup() {
+    }
+
+    public DBGroup(Integer rwSplitMode, String name, Integer delayThreshold, String disableHA, HeartBeat heartbeat) {
+        this.rwSplitMode = rwSplitMode;
+        this.name = name;
+        this.delayThreshold = delayThreshold;
+        this.disableHA = disableHA;
+        this.heartbeat = heartbeat;
+    }
+
     public HeartBeat getHeartbeat() {
         return heartbeat;
     }
@@ -39,12 +50,19 @@ public class DBGroup implements Named {
     }
 
 
-
     public List<DBInstance> getDbInstance() {
         if (this.dbInstance == null) {
             dbInstance = new ArrayList<>();
         }
         return dbInstance;
+    }
+
+    public void addDbInstance(DBInstance instance) {
+        getDbInstance().add(instance);
+    }
+
+    public void addAllDbInstance(List<DBInstance> instance) {
+        getDbInstance().addAll(instance);
     }
 
     public void setDbInstance(List<DBInstance> dbInstance) {
@@ -58,6 +76,7 @@ public class DBGroup implements Named {
     public void setName(String name) {
         this.name = name;
     }
+
     public Integer getRwSplitMode() {
         return rwSplitMode;
     }

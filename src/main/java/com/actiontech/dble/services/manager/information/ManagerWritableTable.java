@@ -5,13 +5,19 @@
 
 package com.actiontech.dble.services.manager.information;
 
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.google.common.collect.Sets;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -22,6 +28,12 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
     private LinkedHashSet<String> mustSetColumns = new LinkedHashSet<>();
     private LinkedHashSet<String> notNullColumns = new LinkedHashSet<>();
     private LinkedHashSet<String> primaryKeyColumns = new LinkedHashSet<>();
+
+    private Set<String> notWritableColumnSet = Sets.newHashSet();
+    private Set<String> logicalPrimaryKeySet = Sets.newHashSet();
+    private String xmlFilePath;
+
+    private String msg;
 
     protected ManagerWritableTable(String tableName, int filedSize) {
         super(tableName, filedSize);
@@ -41,8 +53,32 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
         }
     }
 
+    public void setNotWritableColumnSet(String... columns) {
+        Collections.addAll(this.notWritableColumnSet, columns);
+    }
+
+    public void setLogicalPrimaryKeySet(String... columns) {
+        Collections.addAll(this.logicalPrimaryKeySet, columns);
+    }
+
+    public Set<String> getNotWritableColumnSet() {
+        return notWritableColumnSet;
+    }
+
+    public Set<String> getLogicalPrimaryKeySet() {
+        return logicalPrimaryKeySet;
+    }
+
     public ReentrantLock getLock() {
         return lock;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
     }
 
     public LinkedHashSet<String> getNotNullColumns() {
@@ -57,6 +93,13 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
         return primaryKeyColumns;
     }
 
+    public String getXmlFilePath() {
+        return xmlFilePath;
+    }
+
+    public void setXmlFilePath(String xmlFilePath) {
+        this.xmlFilePath = xmlFilePath;
+    }
 
     public List<LinkedHashMap<String, String>> makeInsertRows(List<String> insertColumns, List<SQLInsertStatement.ValuesClause> values) throws SQLException {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(values.size());
@@ -66,8 +109,13 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
             int index = 0;
             for (Map.Entry<String, ColumnMeta> column : columns.entrySet()) {
                 String columnName = column.getKey();
-                if (insertColumns.size() > index && columnName.equals(insertColumns.get(index))) {
-                    row.put(columnName, ManagerTableUtil.valueToString(value.get(index)));
+                String insertColumn;
+                if (insertColumns.size() > index && columnName.equals(insertColumn = insertColumns.get(index))) {
+                    String insertColumnVal = ManagerTableUtil.valueToString(value.get(index));
+                    if (this.notWritableColumnSet.contains(columnName) && !StringUtil.isEmpty(insertColumnVal)) {
+                        throw new SQLException("Column '" + insertColumn + "' is not writable", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
+                    }
+                    row.put(columnName, insertColumnVal);
                     index++;
                 } else {
                     row.put(columnName, column.getValue().getDefaultVal());
@@ -77,7 +125,6 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
         }
         return lst;
     }
-
 
 
     public void checkPrimaryKeyDuplicate(List<LinkedHashMap<String, String>> rows) throws SQLException {
@@ -115,9 +162,9 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
      * @param rows rows wanted to be insert
      * @throws SQLException eg.: new SQLException("Access denied for table '" + tableName + "'", "42000", ErrorCode.ER_ACCESS_DENIED_ERROR);
      */
-    public abstract void insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException;
+    public abstract int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException;
 
-    public abstract int updateRows(Set<LinkedHashMap<String, String>> affectPks, Map<String, String> values) throws SQLException;
+    public abstract int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException;
 
     public abstract int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException;
 
@@ -128,6 +175,25 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
             return super.getRow(realSelects, charset);
         } finally {
             lock.unlock();
+        }
+    }
+
+    public void rollbackXmlFile() throws IOException {
+        //rollback
+        File tempFile = new File(this.xmlFilePath + ".tmp");
+        File file = new File(this.xmlFilePath);
+        if (tempFile.exists()) {
+            FileUtils.copy(tempFile, file);
+        } else {
+            throw new FileNotFoundException(tempFile.getPath());
+        }
+    }
+
+    public void deleteBackupFile() {
+        //delete
+        File tempFile = new File(this.xmlFilePath + ".tmp");
+        if (tempFile.exists()) {
+            tempFile.delete();
         }
     }
 }

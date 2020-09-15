@@ -45,10 +45,30 @@ public class DBInstance implements Propertied {
 
     protected List<Property> property;
 
+    public DBInstance() {
+    }
+
+    public DBInstance(String name, String url, String password, String user, Integer maxCon, Integer minCon, String disabled, String id, String readWeight,
+                      Boolean primary, List<Property> property, String usingDecrypt) {
+        this.name = name;
+        this.url = url;
+        this.password = password;
+        this.user = user;
+        this.maxCon = maxCon;
+        this.minCon = minCon;
+        this.disabled = disabled;
+        this.id = id;
+        this.readWeight = readWeight;
+        this.primary = primary;
+        this.property = property;
+        this.usingDecrypt = usingDecrypt;
+    }
+
     @Override
     public void addProperty(Property prop) {
         this.getProperty().add(prop);
     }
+
     public String getName() {
         return name;
     }

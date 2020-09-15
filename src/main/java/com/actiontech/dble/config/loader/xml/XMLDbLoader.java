@@ -41,7 +41,7 @@ public class XMLDbLoader {
     private static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
 
     public XMLDbLoader(String dbFile, ProblemReporter problemReporter) {
-        this.dbGroupConfigs = new HashMap<>();
+        this.dbGroupConfigs = new LinkedHashMap<>();
         this.problemReporter = problemReporter;
         load(DEFAULT_DTD, dbFile == null ? DEFAULT_XML : dbFile);
         this.dbGroups = initDbGroups(dbGroupConfigs);
@@ -196,7 +196,7 @@ public class XMLDbLoader {
         String primaryStr = ConfigUtil.checkAndGetAttribute(node, "primary", "false", problemReporter);
         boolean primary = Boolean.parseBoolean(primaryStr);
 
-        DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary);
+        DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary, usingDecrypt);
         // maxCon
         int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
         conf.setMaxCon(maxCon);
@@ -232,7 +232,7 @@ public class XMLDbLoader {
 
     private Map<String, PhysicalDbGroup> initDbGroups(Map<String, DbGroupConfig> nodeConf) {
         //create PhysicalDBPool according to dbGroup
-        Map<String, PhysicalDbGroup> nodes = new HashMap<>(nodeConf.size());
+        Map<String, PhysicalDbGroup> nodes = new LinkedHashMap<>(nodeConf.size());
         for (DbGroupConfig conf : nodeConf.values()) {
             PhysicalDbGroup pool = getPhysicalDBPoolSingleWH(conf);
             nodes.put(pool.getGroupName(), pool);

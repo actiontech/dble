@@ -168,16 +168,14 @@ public class ConfigInitializer implements ProblemReporter {
                 allUseHost.add(((RwSplitUserConfig) config).getDbGroup());
             }
         }
-        // delete redundancy dbGroup
-        if (allUseHost.size() < this.dbGroups.size()) {
-            Iterator<String> dbGroup = this.dbGroups.keySet().iterator();
-            while (dbGroup.hasNext()) {
-                String dbGroupName = dbGroup.next();
-                if (!allUseHost.contains(dbGroupName)) {
-                    LOGGER.info("dbGroup " + dbGroupName + " is useless,server will ignore it");
-                    errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupName + " is useless"));
-                    dbGroup.remove();
-                }
+
+        //mark useless db_group: have heartbeat/ have not pool init
+        for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : this.dbGroups.entrySet()) {
+            dbGroupEntry.getValue().setUseless(false);
+            if (allUseHost.size() < this.dbGroups.size() && !allUseHost.contains(dbGroupEntry.getKey())) {
+                LOGGER.info("dbGroup " + dbGroupEntry.getKey() + " is useless,server will create heartbeat,not create pool");
+                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupEntry.getKey() + " is useless"));
+                dbGroupEntry.getValue().setUseless(true);
             }
         }
         allUseHost.clear();

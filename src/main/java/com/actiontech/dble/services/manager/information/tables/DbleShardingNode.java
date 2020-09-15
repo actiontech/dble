@@ -18,11 +18,11 @@ import java.util.stream.Collectors;
 
 public class DbleShardingNode extends ManagerBaseTable {
 
-    private static final String TABLE_NAME = "dble_sharding_node";
+    public static final String TABLE_NAME = "dble_sharding_node";
 
     private static final String COLUMN_NAME = "name";
 
-    private static final String COLUMN_DB_GROUP = "db_group";
+    public static final String COLUMN_DB_GROUP = "db_group";
 
     private static final String COLUMN_DB_SCHEMA = "db_schema";
 

@@ -11,7 +11,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.plan.common.ptr.BoolPtr;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
@@ -23,30 +23,24 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class TestSchemasTask extends Thread {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemasTask.class);
     private PhysicalDbInstance ds;
-    private BoolPtr boolPtr;
-    private Set<String> errKeys;
     private Map<String, String> nodes = new HashMap<>();
     private boolean needAlert;
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
 
-    public TestSchemasTask(PhysicalDbInstance ds, List<Pair<String, String>> nodeList, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
+    public TestSchemasTask(PhysicalDbInstance ds, List<Pair<String, String>> nodeList, boolean needAlert) {
         this.ds = ds;
-        this.errKeys = errKeys;
-        this.boolPtr = boolPtr;
         this.needAlert = needAlert;
         for (Pair<String, String> node : nodeList) {
             nodes.put(node.getValue(), node.getKey()); // sharding->node
         }
-
     }
 
     public Map<String, String> getNodes() {
@@ -80,6 +74,7 @@ public class TestSchemasTask extends Thread {
 
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
+            Map<String, ShardingNode> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes();
             if (result.isSuccess()) {
                 List<Map<String, String>> rows = result.getResult();
                 for (Map<String, String> row : rows) {
@@ -89,6 +84,7 @@ public class TestSchemasTask extends Thread {
                     }
                     String nodeName = nodes.remove(schema);
                     if (nodeName != null) {
+                        shardingNodes.get(nodeName).setSchemaExists(true);
                         String key = "dbGroup[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],shardingNode[" + nodeName + "],schema[" + schema + "]";
                         LOGGER.info("SelfCheck### test " + key + " database connection success ");
                     }
@@ -100,11 +96,9 @@ public class TestSchemasTask extends Thread {
 
         private void reportSchemaNotFound() {
             for (Map.Entry<String, String> node : nodes.entrySet()) {
-                boolPtr.set(false);
                 String nodeName = node.getValue();
                 String key = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + nodeName + "],schema[" + node.getKey() + "]";
-                errKeys.add(key);
-                LOGGER.warn("test conn " + key + " error");
+                LOGGER.warn("SelfCheck### test " + key + " database connection fail ");
                 if (needAlert) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
                     labels.put("sharding_node", nodeName);

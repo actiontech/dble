@@ -83,7 +83,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         columnsType.put("conn_estab_time", Fields.FIELD_TYPE_LONG);
 
         columns.put("borrowed_from_pool", new ColumnMeta("borrowed_from_pool", "int(11)", false));
-        columnsType.put("borrowed_from_pool", Fields.FIELD_TYPE_LONG);
+        columnsType.put("borrowed_from_pool", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("conn_recv_buffer", new ColumnMeta("conn_recv_buffer", "int(11)", false));
         columnsType.put("conn_recv_buffer", Fields.FIELD_TYPE_LONG);

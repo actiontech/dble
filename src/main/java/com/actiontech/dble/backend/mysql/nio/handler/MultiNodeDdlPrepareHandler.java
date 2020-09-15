@@ -326,7 +326,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     }
 
     @Override
-    public void writeRemingBuffer() {
+    public void writeRemainBuffer() {
 
     }
 

@@ -68,7 +68,7 @@ public class WhereHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         session.setHandlerEnd(this);
-        nextHandler.rowEofResponse(data, isLeft, service);
+        nextHandler.rowEofResponse(data, this.isLeft, service);
     }
 
     @Override

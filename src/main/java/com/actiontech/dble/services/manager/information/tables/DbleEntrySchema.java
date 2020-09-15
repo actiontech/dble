@@ -33,17 +33,20 @@ public class DbleEntrySchema extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
-            UserConfig userConfig = v.getValue();
-            if (userConfig instanceof ShardingUserConfig) {
-                for (String schema : ((ShardingUserConfig) userConfig).getSchemas()) {
-                    LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-                    map.put(COLUMN_ID, userConfig.getId() + "");
-                    map.put(COLUMN_SCHEMA, schema);
-                    list.add(map);
-                }
-            }
-        });
+        DbleServer.getInstance().getConfig().getUsers().entrySet().
+                stream().
+                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                forEach(v -> {
+                    UserConfig userConfig = v.getValue();
+                    if (userConfig instanceof ShardingUserConfig) {
+                        for (String schema : ((ShardingUserConfig) userConfig).getSchemas()) {
+                            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                            map.put(COLUMN_ID, userConfig.getId() + "");
+                            map.put(COLUMN_SCHEMA, schema);
+                            list.add(map);
+                        }
+                    }
+                });
         return list;
     }
 }

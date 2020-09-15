@@ -21,6 +21,7 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by szf on 2020/6/15.
@@ -33,7 +34,7 @@ public abstract class AbstractConnection implements Connection {
 
     protected final SocketWR socketWR;
 
-    protected volatile boolean isClosed = false;
+    protected AtomicBoolean isClosed = new AtomicBoolean(false);
 
 
     private volatile AbstractService service;
@@ -78,7 +79,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     public void onReadData(int got) throws IOException {
-        if (isClosed) {
+        if (isClosed.get()) {
             return;
         }
 
@@ -99,10 +100,9 @@ public abstract class AbstractConnection implements Connection {
 
 
     public void close(String reason) {
-        if (!isClosed) {
+        if (isClosed.compareAndSet(false, true)) {
             closeSocket();
             LOGGER.info("connection id close for reason " + reason + " with connection " + toString());
-            isClosed = true;
             if (processor != null) {
                 processor.removeConnection(this);
             }
@@ -323,7 +323,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void write(ByteBuffer buffer) {
-        if (isClosed) {
+        if (isClosed.get()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("it will not writeDirectly because of closed " + this + " " + isClosed);
             }
@@ -354,7 +354,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     public boolean isClosed() {
-        return isClosed;
+        return isClosed.get();
     }
 
     public ByteBuffer findReadBuffer() {

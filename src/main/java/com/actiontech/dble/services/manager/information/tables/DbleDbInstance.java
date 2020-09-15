@@ -183,7 +183,7 @@ public class DbleDbInstance extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> rowList = Lists.newLinkedList();
         dbGroups.entrySet().forEach(dbGroupEntry -> {
             PhysicalDbGroup dbGroup = dbGroupEntry.getValue();
-            dbGroup.getAllDbInstances().forEach(dbInstance -> {
+            dbGroup.getDbInstances(true).forEach(dbInstance -> {
                 if (nameSet.add(dbInstance.getName() + "-" + dbGroup.getGroupName())) {
                     LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                     DbInstanceConfig dbInstanceConfig = dbInstance.getConfig();

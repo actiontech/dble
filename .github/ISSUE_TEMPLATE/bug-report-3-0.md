@@ -1,6 +1,9 @@
 ---
-name: Bug report
+name: Bug report 3.0
 about: Create a report to help us improve
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
@@ -9,21 +12,35 @@ about: Create a report to help us improve
 no
 * **configs：** 
 
-**schema.xml**  
+**cluster.cnf**  
 
 ```
 
 
 ```
 
-**rule.xml**  
+**bootstrap.cnf**  
+
+```
+
+
+```
+**db.xml**  
 
 ```
 
 
 ```
 
-**server.xml**  
+**user.xml**  
+
+```
+
+
+```
+
+
+**sharding.xml**  
 
 ```
 

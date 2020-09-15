@@ -107,18 +107,17 @@ public class JoinHandler extends OwnThreadDMLHandler {
             newFieldPacket.addAll(leftFieldPackets);
             newFieldPacket.addAll(rightFieldPackets);
             nextHandler.fieldEofResponse(null, null, newFieldPacket, null, this.isLeft, service);
-            otherJoinOnItem = makeOtherJoinOnItem(newFieldPacket, service);
+            otherJoinOnItem = makeOtherJoinOnItem(newFieldPacket);
             // logger.debug("all ready");
             startOwnThread(service);
         }
     }
 
-    private Item makeOtherJoinOnItem(List<FieldPacket> rowPackets, AbstractService service) {
+    private Item makeOtherJoinOnItem(List<FieldPacket> rowPackets) {
         this.joinRowFields = HandlerTool.createFields(rowPackets);
         if (otherJoinOn == null)
             return null;
-        Item ret = HandlerTool.createItem(this.otherJoinOn, this.joinRowFields, 0, this.isAllPushDown(), this.type());
-        return ret;
+        return HandlerTool.createItem(this.otherJoinOn, this.joinRowFields, 0, this.isAllPushDown(), this.type());
     }
 
     @Override

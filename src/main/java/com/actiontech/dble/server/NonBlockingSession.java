@@ -573,7 +573,7 @@ public class NonBlockingSession extends Session {
                 discard = true;
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(shardingService) + rrs, e);
-                executableHandler.writeRemingBuffer();
+                executableHandler.writeRemainBuffer();
                 executableHandler.clearAfterFailExecute();
                 setResponseTime(false);
                 shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
@@ -1217,6 +1217,16 @@ public class NonBlockingSession extends Session {
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("");
+        sb.append("NonBlockSession with target ");
+        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
+            sb.append("\n rrs = [" + entry.getKey()).append("] with connection [" + entry.getValue() + "]");
+        }
+        return sb.toString();
     }
 
 }

@@ -2,7 +2,10 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint;
 
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -221,7 +224,7 @@ public class SavePointHandler extends MultiNodeHandler {
             return;
         }
         if (this.isFail()) {
-            createErrPkg(error).write(session.getSource());
+            createErrPkg(error, 0).write(session.getSource());
         } else {
             switch (this.type) {
                 case SAVE:

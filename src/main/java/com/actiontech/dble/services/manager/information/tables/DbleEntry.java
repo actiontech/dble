@@ -20,6 +20,7 @@ public class DbleEntry extends ManagerBaseTable {
     private static final String COLUMN_USER_TYPE = "user_type";
     private static final String COLUMN_USERNAME = "username";
     private static final String COLUMN_PASSWORD_ENCRYPT = "password_encrypt";
+    private static final String COLUMN_ENCRYPT_CONFIGURED = "encrypt_configured";
     private static final String COLUMN_CONN_ATTR_KEY = "conn_attr_key";
     private static final String COLUMN_CONN_ATTR_VALUE = "conn_attr_value";
     private static final String COLUMN_WHITE_IPS = "white_ips";
@@ -28,7 +29,7 @@ public class DbleEntry extends ManagerBaseTable {
     private static final String COLUMN_BLACKLIST = "blacklist";
 
     public DbleEntry() {
-        super(TABLE_NAME, 11);
+        super(TABLE_NAME, 12);
     }
 
     @Override
@@ -47,6 +48,9 @@ public class DbleEntry extends ManagerBaseTable {
 
         columns.put(COLUMN_PASSWORD_ENCRYPT, new ColumnMeta(COLUMN_PASSWORD_ENCRYPT, "varchar(200)", false));
         columnsType.put(COLUMN_PASSWORD_ENCRYPT, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_ENCRYPT_CONFIGURED, new ColumnMeta(COLUMN_ENCRYPT_CONFIGURED, "varchar(5)", false));
+        columnsType.put(COLUMN_ENCRYPT_CONFIGURED, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_CONN_ATTR_KEY, new ColumnMeta(COLUMN_CONN_ATTR_KEY, "varchar(6)", true));
         columnsType.put(COLUMN_CONN_ATTR_KEY, Fields.FIELD_TYPE_VAR_STRING);
@@ -70,19 +74,22 @@ public class DbleEntry extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        DbleServer.getInstance().getConfig().getUsers().entrySet().stream().sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).forEach(v -> {
-            UserConfig userConfig = v.getValue();
-            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-            map.put(COLUMN_ID, userConfig.getId() + "");
-            if (userConfig instanceof ManagerUserConfig) {
-                getManagerUserConfig(map, (ManagerUserConfig) userConfig);
-            } else if (userConfig instanceof ShardingUserConfig) {
-                getShardingUserConfig(map, (ShardingUserConfig) userConfig);
-            } else if (userConfig instanceof RwSplitUserConfig) {
-                getRwSplitUserConfig(map, (RwSplitUserConfig) userConfig);
-            }
-            list.add(map);
-        });
+        DbleServer.getInstance().getConfig().getUsers().entrySet().
+                stream().
+                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                forEach(v -> {
+                    UserConfig userConfig = v.getValue();
+                    LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
+                    map.put(COLUMN_ID, userConfig.getId() + "");
+                    if (userConfig instanceof ManagerUserConfig) {
+                        getManagerUserConfig(map, (ManagerUserConfig) userConfig);
+                    } else if (userConfig instanceof ShardingUserConfig) {
+                        getShardingUserConfig(map, (ShardingUserConfig) userConfig);
+                    } else if (userConfig instanceof RwSplitUserConfig) {
+                        getRwSplitUserConfig(map, (RwSplitUserConfig) userConfig);
+                    }
+                    list.add(map);
+                });
         return list;
     }
 
@@ -91,6 +98,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_USER_TYPE, "managerUser");
         map.put(COLUMN_USERNAME, userConfig.getName());
         map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
+        map.put(COLUMN_ENCRYPT_CONFIGURED, userConfig.isEncrypt() + "");
         map.put(COLUMN_CONN_ATTR_KEY, null);
         map.put(COLUMN_CONN_ATTR_VALUE, null);
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
@@ -104,6 +112,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_USER_TYPE, "shardingUser");
         map.put(COLUMN_USERNAME, userConfig.getName());
         map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
+        map.put(COLUMN_ENCRYPT_CONFIGURED, userConfig.isEncrypt() + "");
         map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
         map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
@@ -117,6 +126,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_USER_TYPE, "rwSplitUser");
         map.put(COLUMN_USERNAME, userConfig.getName());
         map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(userConfig));
+        map.put(COLUMN_ENCRYPT_CONFIGURED, userConfig.isEncrypt() + "");
         map.put(COLUMN_CONN_ATTR_KEY, userConfig.getTenant() != null ? "tenant" : null);
         map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
@@ -125,7 +135,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
 
-    private String getPasswordEncrypt(UserConfig userConfig) {
+    protected String getPasswordEncrypt(UserConfig userConfig) {
         try {
             return DecryptUtil.encrypt("0:" + userConfig.getName() + ":" + userConfig.getPassword());
         } catch (Exception e) {

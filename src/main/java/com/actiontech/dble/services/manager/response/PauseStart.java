@@ -9,9 +9,9 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
@@ -72,46 +72,48 @@ public final class PauseStart {
             }
         }
 
-
         //clusterPauseNotice
         if (!PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit)) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }
 
+        try {
+            if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
+                //the error message can only show in single mod
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
+                return;
+            }
 
-        if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
-            return;
-        }
+            //self pause the shardingNode
+            long timeOut = Long.parseLong(ma.group(2)) * 1000;
+            long beginTime = System.currentTimeMillis();
+            boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
 
-        //self pause the shardingNode
-        long timeOut = Long.parseLong(ma.group(2)) * 1000;
-        long beginTime = System.currentTimeMillis();
-        boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
-
-        LOGGER.info("wait finished " + recycleFinish);
-        if (!recycleFinish) {
-            if (PauseShardingNodeManager.getInstance().tryResume()) {
+            LOGGER.info("wait finished " + recycleFinish);
+            if (!recycleFinish) {
+                if (PauseShardingNodeManager.getInstance().tryResume()) {
+                    try {
+                        PauseShardingNodeManager.getInstance().resumeCluster();
+                    } catch (Exception e) {
+                        LOGGER.warn(e.getMessage());
+                    }
+                    service.writeErrMessage(1003, "The backend connection recycle failure,try it later");
+                } else {
+                    service.writeErrMessage(1003, "Pause resume when recycle connection ,pause revert");
+                }
+            } else {
                 try {
-                    PauseShardingNodeManager.getInstance().resumeCluster();
+                    if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
+                        OK.write(service.getConnection());
+                    }
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage());
+                    service.writeErrMessage(1003, e.getMessage());
                 }
-                service.writeErrMessage(1003, "The backend connection recycle failure,try it later");
-            } else {
-                service.writeErrMessage(1003, "Pause resume when recycle connection ,pause revert");
             }
-
-        } else {
-            try {
-                if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
-                    OK.write(service.getConnection());
-                }
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
-                service.writeErrMessage(1003, e.getMessage());
-            }
+        } finally {
+            PauseShardingNodeManager.getInstance().releaseDistributeLock();
         }
     }
 

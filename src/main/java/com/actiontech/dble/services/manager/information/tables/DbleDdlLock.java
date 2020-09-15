@@ -40,7 +40,7 @@ public class DbleDdlLock extends ManagerBaseTable {
             String[] infos = k.split("\\.");
             map.put(COLUMN_SCHEMA, infos[0]);
             map.put(COLUMN_TABLE, infos[1]);
-            map.put(COLUMN_SQL, v);
+            map.put(COLUMN_SQL, v.length() <= 1024 ? v : v.substring(0, 1024));
             list.add(map);
         });
         return list;

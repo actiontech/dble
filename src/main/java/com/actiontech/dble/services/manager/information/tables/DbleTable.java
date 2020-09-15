@@ -141,6 +141,7 @@ public class DbleTable extends ManagerBaseTable {
 
     /**
      * Set column
+     * tableMeta is null,use config. if not use tableMeta
      *
      * @param schemaConfig    schema_config
      * @param baseTableConfig table_config

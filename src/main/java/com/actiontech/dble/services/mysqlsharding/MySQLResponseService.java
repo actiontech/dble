@@ -660,8 +660,11 @@ public class MySQLResponseService extends MySQLBasedService {
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.connection.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
+        this.usrVariables.add(new LinkedHashMap<>());
         this.sysVariables.clear();
-        this.sysVariables.put("sql_mode", null);
+        Map<String, String> sysRest = new LinkedHashMap<>();
+        sysRest.put("sql_mode", null);
+        this.sysVariables.add(sysRest);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {

@@ -30,8 +30,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.actiontech.dble.services.manager.information.tables.DbleRwSplitEntry.*;
+
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class XMLUserLoader {
     public static final String TYPE_MANAGER_USER = "managerUser";
@@ -419,7 +419,7 @@ public class XMLUserLoader {
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
-        checkWhiteIPs(strWhiteIPs);
+        IPAddressUtil.checkWhiteIPs(strWhiteIPs);
         return new UserConfig(name, password, usingDecrypt, strWhiteIPs, strMaxCon);
     }
 

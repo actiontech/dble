@@ -97,7 +97,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                     map.put(COLUMN_TYPE, rwSplitUserConfig.getTenant() != null ? "conn_attr" : "username");
                     map.put(COLUMN_USERNAME, rwSplitUserConfig.getName());
                     map.put(COLUMN_PASSWORD_ENCRYPT, DbleEntry.getPasswordEncrypt(rwSplitUserConfig));
-                    map.put(COLUMN_ENCRYPT_CONFIGURED, String.valueOf(rwSplitUserConfig.isUsingDecrypt()));
+                    map.put(COLUMN_ENCRYPT_CONFIGURED, String.valueOf(rwSplitUserConfig.isEncrypt()));
                     map.put(COLUMN_CONN_ATTR_KEY, rwSplitUserConfig.getTenant() != null ? "tenant" : null);
                     map.put(COLUMN_CONN_ATTR_VALUE, rwSplitUserConfig.getTenant());
                     map.put(COLUMN_WHITE_IPS, DbleEntry.getWhiteIps(rwSplitUserConfig.getWhiteIPs()));

@@ -223,7 +223,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         Set<String> nameSet = Sets.newHashSet();
         Map<String, PhysicalDbGroup> dbGroups = DbleServer.getInstance().getConfig().getDbGroups();
         List<LinkedHashMap<String, String>> rowList = Lists.newLinkedList();
-        dbGroups.forEach((key, dbGroup) -> dbGroup.getAllDbInstances().forEach(dbInstance -> {
+        dbGroups.forEach((key, dbGroup) -> dbGroup.getDbInstances(true).forEach(dbInstance -> {
             if (nameSet.add(dbInstance.getName() + "-" + dbGroup.getGroupName())) {
                 LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                 DbInstanceConfig dbInstanceConfig = dbInstance.getConfig();

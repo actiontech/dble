@@ -7,6 +7,7 @@ package com.actiontech.dble.config.model.db;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,6 +35,18 @@ public class DbGroupConfig {
         this.writeInstanceConfig = writeInstanceConfig;
         this.readInstanceConfigs = readInstanceConfigs;
         this.delayThreshold = delayThreshold;
+        this.disableHA = disableHA;
+    }
+
+    public DbGroupConfig(String name, int rwSplitMode, DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, String heartbeatSQL, int delayThreshold, int heartbeatTimeout, int errorRetryCount, boolean disableHA) {
+        this.name = name;
+        this.rwSplitMode = rwSplitMode;
+        this.writeInstanceConfig = writeInstanceConfig;
+        this.readInstanceConfigs = readInstanceConfigs;
+        this.heartbeatSQL = heartbeatSQL;
+        this.delayThreshold = delayThreshold;
+        this.heartbeatTimeout = heartbeatTimeout;
+        this.errorRetryCount = errorRetryCount;
         this.disableHA = disableHA;
     }
 
@@ -75,6 +88,9 @@ public class DbGroupConfig {
 
     public void setHeartbeatSQL(String heartbeatSQL) {
         this.heartbeatSQL = heartbeatSQL;
+        if (StringUtil.isEmpty(heartbeatSQL)) {
+            return;
+        }
         Matcher matcher = HP_PATTERN_SHOW_SLAVE_STATUS.matcher(heartbeatSQL);
         if (matcher.find()) {
             isShowSlaveSql = true;

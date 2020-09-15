@@ -377,7 +377,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     }
 
     public void start(String reason, boolean isStartHeartbeat) {
-        if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
+        if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
             LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
             this.connectionPool.startEvictor();
         }
@@ -475,7 +475,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 otherConfig.getMaxCon() == thisConfig.getMaxCon() && otherConfig.getMinCon() == thisConfig.getMinCon() &&
                 otherConfig.getPassword().equals(thisConfig.getPassword()) && otherConfig.getInstanceName().equals(thisConfig.getInstanceName()) &&
                 dbInstance.isDisabled() == this.isDisabled() && otherConfig.getReadWeight() == thisConfig.getReadWeight() &&
-                otherConfig.getPoolConfig().equals(thisConfig.getPoolConfig());
+                otherConfig.getPoolConfig().equals(thisConfig.getPoolConfig()) && otherConfig.isUsingDecrypt() == thisConfig.isUsingDecrypt();
     }
 
     @Override

@@ -11,13 +11,17 @@ package com.actiontech.dble.cluster.values;
 public class ConfStatus {
     public enum Status {
         RELOAD_ALL,
-        RELOAD_META
+        RELOAD_META,
+        MANAGER_INSERT,
+        MANAGER_UPDATE,
+        MANAGER_DELETE
     }
 
     private String split = ";";
     private String from;
     private String params;
-    private Status status;
+    private final Status status;
+    private String extraInfo;
 
     public ConfStatus(String from, Status statusFlag, String params) {
         this.from = from;
@@ -35,6 +39,15 @@ public class ConfStatus {
             this.params = null;
     }
 
+    public ConfStatus(Status status, String extraInfo) {
+        this.status = status;
+        this.extraInfo = extraInfo;
+    }
+
+    public ConfStatus(Status status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
         StringBuilder ss = new StringBuilder(from);
@@ -45,6 +58,15 @@ public class ConfStatus {
             ss.append(params);
         }
 
+        return ss.toString();
+    }
+
+    public String getStatusAExtraInfo() {
+        StringBuilder ss = new StringBuilder();
+        ss.append(this.status);
+        if (this.extraInfo != null) {
+            ss.append(":" + this.extraInfo);
+        }
         return ss.toString();
     }
 
@@ -59,5 +81,9 @@ public class ConfStatus {
 
     public String getParams() {
         return params;
+    }
+
+    public String getExtraInfo() {
+        return extraInfo;
     }
 }

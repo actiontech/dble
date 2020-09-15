@@ -19,6 +19,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
@@ -48,7 +49,7 @@ public final class ManagerTableUtil {
 
 
     public static List<RowDataPacket> getFoundRows(ManagerService service, ManagerWritableTable managerTable, SQLExpr whereExpr) {
-        List<Item> realSelects = new ArrayList<>();
+        LinkedHashSet<Item> realSelects = new LinkedHashSet<>();
         for (ColumnMeta cm : managerTable.getColumnsMeta()) {
             ItemField col = new ItemField(null, null, cm.getName());
             realSelects.add(col);
@@ -71,7 +72,7 @@ public final class ManagerTableUtil {
         return foundRows;
     }
 
-    private static List<FieldPacket> makeField(List<Item> realSelects, String tableName) {
+    private static List<FieldPacket> makeField(LinkedHashSet<Item> realSelects, String tableName) {
         List<FieldPacket> totalResult = new ArrayList<>();
         for (Item select : realSelects) {
             int type = Fields.FIELD_TYPE_VAR_STRING;
@@ -85,22 +86,31 @@ public final class ManagerTableUtil {
     }
 
 
-    public static Set<LinkedHashMap<String, String>> getAffectPks(ManagerService managerService, ManagerWritableTable managerTable, List<RowDataPacket> foundRows) throws SQLException {
+    public static Set<LinkedHashMap<String, String>> getAffectPks(ManagerService managerService, ManagerWritableTable managerTable, List<RowDataPacket> foundRows, LinkedHashMap<String, String> values) throws SQLException {
         Set<LinkedHashMap<String, String>> affectPks = new HashSet<>(foundRows.size());
         for (RowDataPacket row : foundRows) {
             LinkedHashMap<String, String> affectPk = new LinkedHashMap<>();
             int i = 0;
+            boolean breakFlag = false;
             for (String columnName : managerTable.getColumnNames()) {
-                if (managerTable.getPrimaryKeyColumns().contains(columnName)) {
-                    String charset = CharsetUtil.getJavaCharset(managerService.getCharset().getResultsIndex());
-                    try {
-                        String value = new String(row.getValue(i), charset);
-                        affectPk.put(columnName, value);
-                    } catch (UnsupportedEncodingException e) {
-                        throw new SQLException("Unknown charset '" + managerService.getCharset().getResults() + "'", "HY000", ErrorCode.ER_UNKNOWN_CHARACTER_SET);
+                String charset = CharsetUtil.getJavaCharset(managerService.getCharset().getResultsIndex());
+                try {
+                    String value = null == row.getValue(i) ? null : new String(row.getValue(i), charset);
+                    affectPk.put(columnName, value);
+                    if (null != values) {
+                        boolean match = values.entrySet().stream().anyMatch(valueEntry -> !StringUtil.equals(affectPk.get(valueEntry.getKey()), valueEntry.getValue()));
+                        if (!match) {
+                            breakFlag = true;
+                            break;
+                        }
                     }
+                } catch (UnsupportedEncodingException e) {
+                    throw new SQLException("Unknown charset '" + managerService.getCharset().getResults() + "'", "HY000", ErrorCode.ER_UNKNOWN_CHARACTER_SET);
                 }
                 i++;
+            }
+            if (breakFlag) {
+                continue;
             }
             affectPks.add(affectPk);
         }

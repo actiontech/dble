@@ -51,12 +51,25 @@ public final class ReloadManager {
     public static boolean startReload(String triggerType, ConfStatus.Status reloadType) {
         if (RELOAD_INSTANCE.status != null) {
             if (RELOAD_INSTANCE.status.isFinished()) {
-                RELOAD_INSTANCE.status = new ReloadStatus(triggerType, reloadType);
+                RELOAD_INSTANCE.status = new ReloadStatus(triggerType, new ConfStatus(reloadType, null));
             } else {
                 return false;
             }
         } else {
-            RELOAD_INSTANCE.status = new ReloadStatus(triggerType, reloadType);
+            RELOAD_INSTANCE.status = new ReloadStatus(triggerType, new ConfStatus(reloadType, null));
+        }
+        return true;
+    }
+
+    public static boolean startReload(String triggerType, ConfStatus confStatus) {
+        if (RELOAD_INSTANCE.status != null) {
+            if (RELOAD_INSTANCE.status.isFinished()) {
+                RELOAD_INSTANCE.status = new ReloadStatus(triggerType, confStatus);
+            } else {
+                return false;
+            }
+        } else {
+            RELOAD_INSTANCE.status = new ReloadStatus(triggerType, confStatus);
         }
         return true;
     }

@@ -4,42 +4,55 @@
  */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
-import com.actiontech.dble.util.DecryptUtil;
-import com.actiontech.dble.util.ResourceUtil;
-import com.actiontech.dble.util.SplitUtil;
-import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.IPAddressUtil;
+import com.actiontech.dble.util.*;
 import com.alibaba.druid.wall.WallConfig;
 import com.alibaba.druid.wall.WallProvider;
 import com.alibaba.druid.wall.spi.MySqlWallProvider;
-import com.google.gson.Gson;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import com.google.common.collect.Maps;
+import org.w3c.dom.*;
 
+import javax.xml.transform.TransformerException;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.actiontech.dble.services.manager.information.tables.DbleRwSplitEntry.*;
+
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class XMLUserLoader {
+    public static final String TYPE_MANAGER_USER = "managerUser";
+    public static final String TYPE_SHARDING_USER = "shardingUser";
+    public static final String TYPE_RWSPLIT_USER = "rwSplitUser";
     private final Map<UserName, UserConfig> users;
     private final Map<String, Properties> blacklistConfig;
     private static final String DEFAULT_DTD = "/user.dtd";
+    private static final String DEFAULT_DTD_NAME = "user.dtd";
     private static final String DEFAULT_XML = "/" + ConfigFileName.USER_XML;
     private ProblemReporter problemReporter;
     private AtomicInteger userId = new AtomicInteger(0);
     private static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
+    private Document document;
+
+    public XMLUserLoader() {
+        this.users = Maps.newHashMap();
+        this.blacklistConfig = Maps.newHashMap();
+        this.problemReporter = null;
+        loadXmlDocument(DEFAULT_DTD, DEFAULT_XML);
+    }
 
     public XMLUserLoader(String xmlFile, ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -93,8 +106,39 @@ public class XMLUserLoader {
         }
     }
 
+    private void loadXmlDocument(String dtdFile, String xmlFile) {
+        //read user.xml
+        InputStream dtd = null;
+        InputStream xml = null;
+        try {
+            dtd = ResourceUtil.getResourceAsStream(dtdFile);
+            xml = ResourceUtil.getResourceAsStream(xmlFile);
+            this.document = ConfigUtil.getDocument(dtd, xml);
+        } catch (ConfigException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ConfigException(e);
+        } finally {
+            if (dtd != null) {
+                try {
+                    dtd.close();
+                } catch (IOException e) {
+                    //ignore error
+                }
+            }
+            if (xml != null) {
+                try {
+                    xml.close();
+                } catch (IOException e) {
+                    //ignore error
+                }
+            }
+        }
+    }
+
+
     private void loadManagerUser(Element root, String xmlFile) {
-        NodeList list = root.getElementsByTagName("managerUser");
+        NodeList list = root.getElementsByTagName(TYPE_MANAGER_USER);
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
@@ -119,7 +163,7 @@ public class XMLUserLoader {
     }
 
     private void loadShardingUser(Element root, String xmlFile, Map<String, WallProvider> blackListMap) {
-        NodeList list = root.getElementsByTagName("shardingUser");
+        NodeList list = root.getElementsByTagName(TYPE_SHARDING_USER);
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
@@ -165,7 +209,7 @@ public class XMLUserLoader {
     }
 
     private void loadRwSplitUser(Element root, String xmlFile, Map<String, WallProvider> blackListMap) {
-        NodeList list = root.getElementsByTagName("rwSplitUser");
+        NodeList list = root.getElementsByTagName(TYPE_RWSPLIT_USER);
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
@@ -198,6 +242,128 @@ public class XMLUserLoader {
             }
         }
     }
+
+    public void insertRwSplitUser(List<LinkedHashMap<String, String>> userConfigList, String xmlFilePath) throws SQLException {
+        if (null == userConfigList || userConfigList.isEmpty()) {
+            return;
+        }
+        try {
+            for (LinkedHashMap<String, String> userConfigMap : userConfigList) {
+                //check unique
+                NodeList rwSplitUserNodeList = this.document.getElementsByTagName(TYPE_RWSPLIT_USER);
+                String nameKey = "name";
+                String tenantKey = "tenant";
+                for (int i = 0; i < rwSplitUserNodeList.getLength(); i++) {
+                    Node item = rwSplitUserNodeList.item(i);
+                    NamedNodeMap attributes = item.getAttributes();
+                    Node name = attributes.getNamedItem(nameKey);
+                    Node tenant = attributes.getNamedItem(tenantKey);
+                    String nameVal = null == name ? null : name.getNodeValue();
+                    String tenantVal = null == tenant ? null : tenant.getNodeValue();
+                    if (StringUtil.equals(nameVal, userConfigMap.get(nameKey)) && StringUtil.equals(tenantVal, userConfigMap.get(tenantKey))) {
+                        String msg = String.format("Duplicate entry '%s-%s-%s'for logical unique '%s-%s-%s'", nameVal,
+                                StringUtil.isEmpty(tenantVal) ? null : tenantKey, tenantVal, COLUMN_USERNAME, COLUMN_CONN_ATTR_KEY, COLUMN_CONN_ATTR_VALUE);
+                        throw new SQLException(msg, "42S22", ErrorCode.ER_DUP_ENTRY);
+                    }
+                }
+                //insert
+                Element rwSplitUserElement = this.document.createElement(TYPE_RWSPLIT_USER);
+                userConfigMap.forEach((key, value) -> {
+                    if (null != value && !value.isEmpty() && !value.equals("0")) {
+                        rwSplitUserElement.setAttribute(key, value);
+                    }
+                });
+                Element root = this.document.getDocumentElement();
+                NodeList refNode = this.document.getElementsByTagName("blacklist");
+                if (null == refNode || refNode.getLength() == 0) {
+                    root.appendChild(rwSplitUserElement);
+                } else {
+                    root.insertBefore(rwSplitUserElement, refNode.item(refNode.getLength() - 1));
+                }
+            }
+            //backup
+            File tempFile = new File(xmlFilePath + ".tmp");
+            File file = new File(xmlFilePath);
+            FileUtils.copy(file, tempFile);
+            XmlUtil.saveDocument(this.document, xmlFilePath, DEFAULT_DTD_NAME, true);
+        } catch (TransformerException | IOException e) {
+            throw new ConfigException(e);
+        }
+    }
+
+    public void updateRwSplitUser(List<LinkedHashMap<String, String>> userConfigList, Map<String, String> values, String xmlFilePath) {
+        if (null == userConfigList || userConfigList.isEmpty() || null == values || values.isEmpty()) {
+            return;
+        }
+        boolean isExist = false;
+        try {
+            for (LinkedHashMap<String, String> userConfigMap : userConfigList) {
+                NodeList rwSplitUserNodeList = this.document.getElementsByTagName(TYPE_RWSPLIT_USER);
+                for (int i = 0; i < rwSplitUserNodeList.getLength(); i++) {
+                    Node item = rwSplitUserNodeList.item(i);
+                    NamedNodeMap attributes = item.getAttributes();
+                    Node name = attributes.getNamedItem("name");
+                    Node tenant = attributes.getNamedItem("tenant");
+                    String nameVal = null == name ? null : name.getNodeValue();
+                    String tenantVal = null == tenant ? null : tenant.getNodeValue();
+                    if (StringUtil.equals(nameVal, userConfigMap.get("name")) && StringUtil.equals(tenantVal, userConfigMap.get("tenant"))) {
+                        isExist = true;
+                        Element itemElement = (Element) item;
+                        for (Map.Entry<String, String> entry : values.entrySet()) {
+                            itemElement.setAttribute(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+            }
+            if (!isExist) {
+                return;
+            }
+            //backup
+            File tempFile = new File(xmlFilePath + ".tmp");
+            File file = new File(xmlFilePath);
+            FileUtils.copy(file, tempFile);
+            XmlUtil.saveDocument(this.document, xmlFilePath, DEFAULT_DTD_NAME, true);
+        } catch (TransformerException | IOException e) {
+            throw new ConfigException(e);
+        }
+    }
+
+    public void deleteRwSplitUser(List<LinkedHashMap<String, String>> userConfigList, String xmlFilePath) {
+        if (null == userConfigList || userConfigList.isEmpty()) {
+            return;
+        }
+        boolean isExist = false;
+        try {
+            for (LinkedHashMap<String, String> userConfigMap : userConfigList) {
+                NodeList rwSplitUserNodeList = this.document.getElementsByTagName(TYPE_RWSPLIT_USER);
+                String nameKey = "name";
+                String tenantKey = "tenant";
+                for (int i = 0; i < rwSplitUserNodeList.getLength(); i++) {
+                    Node item = rwSplitUserNodeList.item(i);
+                    NamedNodeMap attributes = item.getAttributes();
+                    Node name = attributes.getNamedItem(nameKey);
+                    Node tenant = attributes.getNamedItem(tenantKey);
+                    String nameVal = null == name ? null : name.getNodeValue();
+                    String tenantVal = null == tenant ? null : tenant.getNodeValue();
+                    if (StringUtil.equals(nameVal, userConfigMap.get(nameKey)) && StringUtil.equals(tenantVal, userConfigMap.get(tenantKey))) {
+                        isExist = true;
+                        item.getParentNode().removeChild(item);
+                    }
+                }
+            }
+            if (!isExist) {
+                return;
+            }
+            //backup
+            File tempFile = new File(xmlFilePath + ".tmp");
+            File file = new File(xmlFilePath);
+            FileUtils.copy(file, tempFile);
+            XmlUtil.saveDocument(this.document, xmlFilePath, DEFAULT_DTD_NAME, true);
+        } catch (TransformerException | IOException e) {
+            throw new ConfigException(e);
+        }
+    }
+
 
     private Map<String, WallProvider> loadBlackList(Element root) throws InvocationTargetException, IllegalAccessException {
         NodeList blacklist = root.getElementsByTagName("blacklist");
@@ -253,19 +419,10 @@ public class XMLUserLoader {
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
-        checkWhiteIPs(strWhiteIPs);
+        IPAddressUtil.checkWhiteIPs(strWhiteIPs);
         return new UserConfig(name, password, usingDecrypt, strWhiteIPs, strMaxCon);
     }
 
-    private void checkWhiteIPs(String strWhiteIPs) {
-        if (!StringUtil.isEmpty(strWhiteIPs)) {
-            String[] theWhiteIPs = SplitUtil.split(strWhiteIPs, ',');
-            Set<String> incorrectIPs = Arrays.stream(theWhiteIPs).filter(e -> !IPAddressUtil.check(e)).collect(Collectors.toSet());
-            if (null != incorrectIPs && incorrectIPs.size() > 0) {
-                throw new ConfigException("The configuration contains incorrect IP" + new Gson().toJson(incorrectIPs));
-            }
-        }
-    }
 
     private void checkVersion(Element root) {
         String version = null;

@@ -43,6 +43,9 @@ public class DbGroups {
         this.version = version;
     }
 
+    public void addDbGroup(DBGroup group) {
+        getDbGroup().add(group);
+    }
 
     @Override
     public String toString() {

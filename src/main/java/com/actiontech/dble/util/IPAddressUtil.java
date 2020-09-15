@@ -6,6 +6,8 @@
 package com.actiontech.dble.util;
 
 
+import com.actiontech.dble.config.util.ConfigException;
+import com.google.gson.Gson;
 import io.netty.handler.ipfilter.IpFilterRuleType;
 import io.netty.handler.ipfilter.IpSubnetFilterRule;
 
@@ -13,7 +15,10 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class IPAddressUtil {
 
@@ -52,7 +57,7 @@ public final class IPAddressUtil {
         if (target.contains(SEPARATOR_1)) {
             //rule ip1-ip2
             String[] sourceSplit = target.split(SEPARATOR_1);
-            if (null != sourceSplit && sourceSplit.length == 2) {
+            if (sourceSplit.length == 2) {
                 return Pattern.matches(PATTERN_IP, sourceSplit[0]) && Pattern.matches(PATTERN_IP, sourceSplit[1]);
             }
         } else if (target.contains(SEPARATOR_2) && !target.contains(IPV6_LOCAL_PREFIX)) {
@@ -62,7 +67,7 @@ public final class IPAddressUtil {
         } else if (target.contains(SEPARATOR_3)) {
             //rule CIDR
             String[] sourceSplit = target.split(SEPARATOR_3);
-            if (null != sourceSplit && sourceSplit.length == 2 && isIPCidr(sourceSplit[0], Integer.parseInt(sourceSplit[1]))) {
+            if (sourceSplit.length == 2 && isIPCidr(sourceSplit[0], Integer.parseInt(sourceSplit[1]))) {
                 return Pattern.matches(PATTERN_IP, sourceSplit[0]);
             }
         } else {
@@ -106,7 +111,7 @@ public final class IPAddressUtil {
         if (source.contains(SEPARATOR_1)) {
             //rule ip1-ip2
             String[] sourceSplit = source.split(SEPARATOR_1);
-            if (null != sourceSplit && sourceSplit.length == 2) {
+            if (sourceSplit.length == 2) {
                 return between(target, sourceSplit[0], sourceSplit[1]);
             }
         } else if (source.contains(SEPARATOR_2) && !source.contains(IPV6_LOCAL_PREFIX)) {
@@ -122,7 +127,7 @@ public final class IPAddressUtil {
         } else if (source.contains(SEPARATOR_3)) {
             //rule CIDR
             String[] sourceSplit = source.split(SEPARATOR_3);
-            if (null != sourceSplit && sourceSplit.length == 2) {
+            if (sourceSplit.length == 2) {
                 IpSubnetFilterRule rule = new IpSubnetFilterRule(sourceSplit[0], Integer.parseInt(sourceSplit[1]), IpFilterRuleType.ACCEPT);
                 return rule.matches(newSockAddress(target));
             }
@@ -146,5 +151,15 @@ public final class IPAddressUtil {
         InetAddress target = InetAddress.getByName(targetStr);
         return ipAddressToBigInteger(start).compareTo(ipAddressToBigInteger(target)) <= 0 &&
                 ipAddressToBigInteger(target).compareTo(ipAddressToBigInteger(end)) <= 0;
+    }
+
+    public static void checkWhiteIPs(String strWhiteIPs) {
+        if (!StringUtil.isEmpty(strWhiteIPs)) {
+            String[] theWhiteIPs = SplitUtil.split(strWhiteIPs, ',');
+            Set<String> incorrectIPs = Arrays.stream(theWhiteIPs).filter(e -> !IPAddressUtil.check(e)).collect(Collectors.toSet());
+            if (incorrectIPs.size() > 0) {
+                throw new ConfigException("The configuration contains incorrect IP" + new Gson().toJson(incorrectIPs));
+            }
+        }
     }
 }

@@ -33,7 +33,6 @@ public class ManagerOutputHandler extends BaseDMLHandler {
     public ManagerOutputHandler(long id, Session session) {
         super(id, session);
         managerSession = (ManagerSession) session;
-        managerSession.setOutputHandler(this);
         this.lock = new ReentrantLock();
         this.buffer = managerSession.getSource().allocate();
     }

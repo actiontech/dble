@@ -6,7 +6,6 @@
 package com.actiontech.dble.services.manager;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.manager.ManagerOutputHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -28,18 +27,10 @@ public class ManagerSession extends Session {
     private ManagerService managerService;
 
 
-    private ManagerOutputHandler outputHandler;
     public ManagerSession(ManagerService managerService) {
         this.managerService = managerService;
     }
 
-    public ManagerOutputHandler getOutputHandler() {
-        return outputHandler;
-    }
-
-    public void setOutputHandler(ManagerOutputHandler outputHandler) {
-        this.outputHandler = outputHandler;
-    }
     @Override
     public FrontendConnection getSource() {
         return managerService.getConnection();
@@ -71,7 +62,6 @@ public class ManagerSession extends Session {
     }
 
     private void executeMultiResultSet(PlanNode node) {
-        outputHandler = null;
         ManagerHandlerBuilder builder = new ManagerHandlerBuilder(node, this);
         try {
             builder.build();

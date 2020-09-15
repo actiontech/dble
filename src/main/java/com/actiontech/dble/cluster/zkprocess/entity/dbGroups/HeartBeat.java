@@ -17,6 +17,15 @@ public class HeartBeat {
     @XmlAttribute
     protected Integer errorRetryCount;
 
+    public HeartBeat() {
+    }
+
+    public HeartBeat(String value, Integer timeout, Integer errorRetryCount) {
+        this.value = value;
+        this.timeout = timeout;
+        this.errorRetryCount = errorRetryCount;
+    }
+
     public Integer getTimeout() {
         return timeout;
     }

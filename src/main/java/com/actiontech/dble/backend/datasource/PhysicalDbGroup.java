@@ -49,6 +49,8 @@ public class PhysicalDbGroup {
     private final LoadBalancer loadBalancer = new RandomLoadBalancer();
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
+    private boolean useless = false;
+
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
         this.rwSplitMode = rwSplitMode;
@@ -121,6 +123,14 @@ public class PhysicalDbGroup {
 
     public int getRwSplitMode() {
         return rwSplitMode;
+    }
+
+    public boolean isUseless() {
+        return useless;
+    }
+
+    public void setUseless(boolean useless) {
+        this.useless = useless;
     }
 
     private boolean checkSlaveSynStatus() {
@@ -209,7 +219,12 @@ public class PhysicalDbGroup {
             return writeDbInstance;
         }
 
-        PhysicalDbInstance selectInstance = loadBalancer.select(getRWDbInstances());
+        List<PhysicalDbInstance> instances = getRWDbInstances();
+        if (instances.size() == 0) {
+            return writeDbInstance;
+        }
+
+        PhysicalDbInstance selectInstance = loadBalancer.select(instances);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("select {}", selectInstance);
         }
@@ -219,12 +234,14 @@ public class PhysicalDbGroup {
     private List<PhysicalDbInstance> getRWDbInstances() {
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
         for (PhysicalDbInstance ds : allSourceMap.values()) {
-            if (rwSplitMode == RW_SPLIT_ALL && ds == writeDbInstance && writeDbInstance.isAlive()) {
+            if (ds == writeDbInstance) {
+                if (rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
+                    okSources.add(ds);
+                }
+            } else if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
                 okSources.add(ds);
-                continue;
-            }
-            if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
-                okSources.add(ds);
+            } else {
+                LOGGER.warn("can't select dbInstance[{}] as read node", ds);
             }
         }
 
@@ -405,6 +422,8 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&
                 pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
-                pool.getGroupName().equals(this.groupName);
+                pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
+                pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
+                pool.getGroupName().equals(this.groupName) && pool.isUseless() == this.isUseless();
     }
 }

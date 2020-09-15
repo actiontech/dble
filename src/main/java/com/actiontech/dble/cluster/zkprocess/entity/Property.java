@@ -21,6 +21,14 @@ public class Property implements Named {
     @XmlAttribute(name = "name")
     protected String name;
 
+    public Property() {
+    }
+
+    public Property(String value, String name) {
+        this.value = value;
+        this.name = name;
+    }
+
     public String getValue() {
         return value;
     }

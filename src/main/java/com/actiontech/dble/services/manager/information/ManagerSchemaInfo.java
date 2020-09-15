@@ -35,6 +35,7 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleEntry());
         registerTable(new DbleEntrySchema());
         registerTable(new DbleEntryDbGroup());
+        registerTable(new DbleRwSplitEntry());
         registerTable(new DbleEntryTablePrivilege());
         registerTable(new DbleStatus());
         registerTable(new DbleProcessor());

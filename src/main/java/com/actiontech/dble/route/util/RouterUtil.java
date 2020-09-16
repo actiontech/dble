@@ -520,18 +520,20 @@ public final class RouterUtil {
         Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
         for (Pair<String, String> table : ctx.getTables()) {
             String schemaName = table.getKey();
+            String tableName = table.getValue();
             SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
             if (null == schema) {
                 throw new SQLException("Unknown database '" + schemaName + "'");
             }
             schemaList.add(schemaName);
-            BaseTableConfig tableConfig = schema.getTables().get(table.getValue());
-            if (tableConfig == null && tryRouteNoShardingTablesToOneNode(tmpResultNodes, tablesSet, table, schemaName, table.getValue(), schema)) {
-                return null;
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig == null) {
+                if (tryRouteNoShardingTablesToOneNode(tmpResultNodes, tablesSet, table, schemaName, tableName, schema))
+                    return null;
             } else if (tableConfig instanceof GlobalTableConfig) {
                 globalTables.add(new Pair<>(schemaName, tableConfig));
             } else if (tableConfig instanceof SingleTableConfig) {
-                tmpResultNodes.add(schema.getTables().get(table.getValue()).getShardingNodes().get(0));
+                tmpResultNodes.add(schema.getTables().get(tableName).getShardingNodes().get(0));
                 tablesSet.remove(table);
                 if (tmpResultNodes.size() != 1) {
                     return null;
@@ -544,7 +546,10 @@ public final class RouterUtil {
         if (tablesSet.size() != 0) {
             return tryRouteShardingTablesToOneNode(ctx, rrs, tmpResultNodes, tablesSet, globalTables, clientCharset);
         } else {
-            return tmpResultNodes.size() != 1 ? null : tmpResultNodes.iterator().next();
+            if (tmpResultNodes.size() != 1) {
+                return null;
+            }
+            return tmpResultNodes.iterator().next();
         }
 
     }
@@ -584,7 +589,10 @@ public final class RouterUtil {
                 return null;
             }
         }
-        return resultNodes.size() != 1 ? null : resultNodes.iterator().next();
+        if (resultNodes.size() != 1) {
+            return null;
+        }
+        return resultNodes.iterator().next();
     }
 
     private static String tryRouteGlobalTablesToOneNode(Set<String> tmpResultNodes, Set<Pair<String, BaseTableConfig>> globalTables) {

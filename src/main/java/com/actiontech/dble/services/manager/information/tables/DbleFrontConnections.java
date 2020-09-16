@@ -83,7 +83,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         columns.put("conn_send_task_queue", new ColumnMeta("conn_send_task_queue", "int(11)", false));
         columnsType.put("conn_send_task_queue", Fields.FIELD_TYPE_LONG);
 
-        columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(4)", false));
+        columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(5)", false));
         columnsType.put("in_transaction", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("entry_id", new ColumnMeta("entry_id", "int(11)", false));

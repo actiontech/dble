@@ -82,7 +82,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         columns.put("conn_estab_time", new ColumnMeta("conn_estab_time", "int(11)", false));
         columnsType.put("conn_estab_time", Fields.FIELD_TYPE_LONG);
 
-        columns.put("borrowed_from_pool", new ColumnMeta("borrowed_from_pool", "varchar(4)", false));
+        columns.put("borrowed_from_pool", new ColumnMeta("borrowed_from_pool", "varchar(5)", false));
         columnsType.put("borrowed_from_pool", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("conn_recv_buffer", new ColumnMeta("conn_recv_buffer", "int(11)", false));
@@ -91,16 +91,16 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         columns.put("conn_send_task_queue", new ColumnMeta("conn_send_task_queue", "int(11)", false));
         columnsType.put("conn_send_task_queue", Fields.FIELD_TYPE_LONG);
 
-        columns.put("used_for_heartbeat", new ColumnMeta("used_for_heartbeat", "varchar(4)", false));
+        columns.put("used_for_heartbeat", new ColumnMeta("used_for_heartbeat", "varchar(5)", false));
         columnsType.put("used_for_heartbeat", Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put("conn_closing", new ColumnMeta("conn_closing", "varchar(4)", false));
+        columns.put("conn_closing", new ColumnMeta("conn_closing", "varchar(5)", false));
         columnsType.put("conn_closing", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("xa_status", new ColumnMeta("xa_status", "varchar(64)", false));
         columnsType.put("xa_status", Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(4)", false));
+        columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(5)", false));
         columnsType.put("in_transaction", Fields.FIELD_TYPE_VAR_STRING);
     }
 

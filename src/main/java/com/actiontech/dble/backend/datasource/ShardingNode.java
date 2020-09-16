@@ -102,6 +102,8 @@ public class ShardingNode {
         return instance.getConnection(schema, attachment);
     }
 
+    // if force master,set canRunInReadDB=false
+    // if force slave set runOnSlave,default null means not effect
     private Boolean canRunOnMaster(RouteResultsetNode rrs, boolean autoCommit) {
         Boolean master = null;
         if (rrs.getRunOnSlave() == null) {
@@ -109,10 +111,12 @@ public class ShardingNode {
                 master = true;
             }
         } else {
-            if (!rrs.getRunOnSlave()) {
-                rrs.setCanRunInReadDB(false);
-            } else {
+            // force slave
+            if (rrs.getRunOnSlave()) {
                 master = false;
+            } else {
+                rrs.setCanRunInReadDB(false);
+                master = true;
             }
         }
         return master;

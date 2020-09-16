@@ -13,6 +13,8 @@ import com.actiontech.dble.services.manager.response.ShowSingleString;
 import com.actiontech.dble.route.parser.ManagerParseSelect;
 import com.actiontech.dble.server.response.SelectVersionComment;
 
+import java.sql.SQLNonTransientException;
+
 import static com.actiontech.dble.route.parser.ManagerParseSelect.*;
 
 
@@ -20,7 +22,7 @@ public final class SelectHandler {
     private SelectHandler() {
     }
 
-    public static void handle(String stmt, ManagerService service, int offset) {
+    public static void handle(String stmt, ManagerService service, int offset) throws SQLNonTransientException {
         int rs = ManagerParseSelect.parse(stmt, offset);
         switch (rs & 0xff) {
             case VERSION_COMMENT:

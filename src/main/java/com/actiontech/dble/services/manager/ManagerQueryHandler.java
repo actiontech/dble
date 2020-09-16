@@ -148,7 +148,7 @@ public class ManagerQueryHandler {
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             }
         } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command " + e.getMessage());
+            service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command: " + e.getMessage());
         }
     }
 

@@ -69,21 +69,24 @@ public class DefaultDruidParser implements DruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schemaConfig, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
-        stmt.accept(visitor);
-        if (visitor.getNotSupportMsg() != null) {
-            throw new SQLNonTransientException(visitor.getNotSupportMsg());
-        }
         String schemaName = null;
         if (schemaConfig != null) {
             schemaName = schemaConfig.getName();
         }
-        Map<String, String> tableAliasMap = getTableAliasMap(schemaName, visitor.getAliasMap());
-        ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schemaName));
-
+        visitorParse(schemaName, stmt, visitor);
         return schemaConfig;
     }
 
-    protected Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
+    public void visitorParse(String schemaName, SQLStatement stmt, ServerSchemaStatVisitor visitor) throws SQLNonTransientException {
+        stmt.accept(visitor);
+        if (visitor.getNotSupportMsg() != null) {
+            throw new SQLNonTransientException(visitor.getNotSupportMsg());
+        }
+        Map<String, String> tableAliasMap = getTableAliasMap(schemaName, visitor.getAliasMap());
+        ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schemaName));
+    }
+
+    public Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
         if (originTableAliasMap == null) {
             return null;
         }

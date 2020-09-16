@@ -509,9 +509,8 @@ public final class RouterUtil {
         return tc.getShardingNodes().get(nodeIndex);
     }
 
-    public static String tryRouteTablesToOneNodeForComplex(
-            RouteResultset rrs, DruidShardingParseInfo ctx,
-            Set<String> schemaList, int tableSize, String clientCharset) throws SQLException {
+    public static String tryRouteTablesToOneNodeForComplex(RouteResultset rrs, DruidShardingParseInfo ctx,
+                                                           Set<String> schemaList, int tableSize, String clientCharset) throws SQLException {
         if (ctx.getTables().size() != tableSize) {
             return null;
         }
@@ -521,17 +520,18 @@ public final class RouterUtil {
         Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
         for (Pair<String, String> table : ctx.getTables()) {
             String schemaName = table.getKey();
-            String tableName = table.getValue();
             SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+            if (null == schema) {
+                throw new SQLException("Unknown database '" + schemaName + "'");
+            }
             schemaList.add(schemaName);
-            BaseTableConfig tableConfig = schema.getTables().get(tableName);
-            if (tableConfig == null) {
-                if (tryRouteNoShardingTablesToOneNode(tmpResultNodes, tablesSet, table, schemaName, tableName, schema))
-                    return null;
+            BaseTableConfig tableConfig = schema.getTables().get(table.getValue());
+            if (tableConfig == null && tryRouteNoShardingTablesToOneNode(tmpResultNodes, tablesSet, table, schemaName, table.getValue(), schema)) {
+                return null;
             } else if (tableConfig instanceof GlobalTableConfig) {
                 globalTables.add(new Pair<>(schemaName, tableConfig));
             } else if (tableConfig instanceof SingleTableConfig) {
-                tmpResultNodes.add(schema.getTables().get(tableName).getShardingNodes().get(0));
+                tmpResultNodes.add(schema.getTables().get(table.getValue()).getShardingNodes().get(0));
                 tablesSet.remove(table);
                 if (tmpResultNodes.size() != 1) {
                     return null;
@@ -542,48 +542,49 @@ public final class RouterUtil {
             return tryRouteGlobalTablesToOneNode(tmpResultNodes, globalTables);
         }
         if (tablesSet.size() != 0) {
-            Set<String> resultNodes = new HashSet<>();
-            for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
-                if (routeUnit.isAlwaysFalse()) {
-                    rrs.setAlwaysFalse(true);
-                }
-                Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
-                if (tablesAndConditions != null) {
-                    for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
-                        Pair<String, String> table = entry.getKey();
-                        String schemaName = table.getKey();
-                        String tableName = table.getValue();
-                        SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
-                        BaseTableConfig tableConfig = schema.getTables().get(tableName);
-                        if (!tryCalcNodeForShardingColumn(schemaName, rrs, tmpResultNodes, tablesSet, entry, table, tableConfig, clientCharset)) {
-                            return null;
-                        }
+            return tryRouteShardingTablesToOneNode(ctx, rrs, tmpResultNodes, tablesSet, globalTables, clientCharset);
+        } else {
+            return tmpResultNodes.size() != 1 ? null : tmpResultNodes.iterator().next();
+        }
+
+    }
+
+    private static String tryRouteShardingTablesToOneNode(
+            DruidShardingParseInfo ctx, RouteResultset rrs, Set<String> tmpResultNodes,
+            Set<Pair<String, String>> tablesSet, Set<Pair<String, BaseTableConfig>> globalTables,
+            String clientCharset) throws SQLNonTransientException {
+        Set<String> resultNodes = new HashSet<>();
+        for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
+            if (routeUnit.isAlwaysFalse()) {
+                rrs.setAlwaysFalse(true);
+            }
+            Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
+            if (tablesAndConditions != null) {
+                for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
+                    Pair<String, String> table = entry.getKey();
+                    String schemaName = table.getKey();
+                    String tableName = table.getValue();
+                    SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+                    BaseTableConfig tableConfig = schema.getTables().get(tableName);
+                    if (!tryCalcNodeForShardingColumn(schemaName, rrs, tmpResultNodes, tablesSet, entry, table, tableConfig, clientCharset)) {
+                        return null;
                     }
                 }
-                for (Pair<String, BaseTableConfig> table : globalTables) {
-                    BaseTableConfig tb = table.getValue();
-                    tmpResultNodes.retainAll(tb.getShardingNodes());
-                    tablesSet.remove(new Pair<>(table.getKey(), tb.getName()));
-                }
-                if (tmpResultNodes.size() != 1 || tablesSet.size() != 0) {
-                    return null;
-                }
-                resultNodes.add(tmpResultNodes.iterator().next());
-                if (resultNodes.size() != 1) {
-                    return null;
-                }
             }
+            for (Pair<String, BaseTableConfig> table : globalTables) {
+                BaseTableConfig tb = table.getValue();
+                tmpResultNodes.retainAll(tb.getShardingNodes());
+                tablesSet.remove(new Pair<>(table.getKey(), tb.getName()));
+            }
+            if (tmpResultNodes.size() != 1 || tablesSet.size() != 0) {
+                return null;
+            }
+            resultNodes.add(tmpResultNodes.iterator().next());
             if (resultNodes.size() != 1) {
                 return null;
             }
-            return resultNodes.iterator().next();
-        } else {
-            if (tmpResultNodes.size() != 1) {
-                return null;
-            }
-            return tmpResultNodes.iterator().next();
         }
-
+        return resultNodes.size() != 1 ? null : resultNodes.iterator().next();
     }
 
     private static String tryRouteGlobalTablesToOneNode(Set<String> tmpResultNodes, Set<Pair<String, BaseTableConfig>> globalTables) {

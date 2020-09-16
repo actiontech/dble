@@ -240,8 +240,8 @@ public class PhysicalDbGroup {
     private List<PhysicalDbInstance> getRWDbInstances(boolean includeWrite) {
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
         for (PhysicalDbInstance ds : allSourceMap.values()) {
-            if (ds == writeDbInstance && includeWrite) {
-                if (rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
+            if (ds == writeDbInstance) {
+                if (includeWrite && rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
                     okSources.add(ds);
                 }
                 continue;

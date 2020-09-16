@@ -10,7 +10,7 @@ public class PoolConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(PoolConfig.class);
     private static final String WARNING_FORMAT = "Property [ %s ] '%d' in db.xml is illegal, use the default value %d replaced";
 
-    private static final long CONNECTION_TIMEOUT = SECONDS.toMillis(300);
+    private static final long CONNECTION_TIMEOUT = SECONDS.toMillis(30);
     private static final long CON_HEARTBEAT_TIMEOUT = MILLISECONDS.toMillis(20);
     public static final long DEFAULT_IDLE_TIMEOUT = MINUTES.toMillis(10);
     private static final long HOUSEKEEPING_PERIOD_MS = SECONDS.toMillis(30);

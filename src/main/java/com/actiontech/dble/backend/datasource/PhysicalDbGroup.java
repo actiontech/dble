@@ -23,6 +23,7 @@ import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -211,17 +212,22 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    public PhysicalDbInstance select(boolean master) {
-        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || master) {
+    public PhysicalDbInstance select(Boolean master) throws IOException {
+        if (rwSplitMode == RW_SPLIT_OFF && (master != null && !master)) {
+            LOGGER.warn("force slave,but the dbGroup[{}] doesn't contains active slave dbInstance", groupName);
+            throw new IOException("force slave,but the dbGroup[" + groupName + "] doesn't contain active slave dbInstance");
+        }
+
+        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || (master != null && master)) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select write {}", writeDbInstance);
             }
             return writeDbInstance;
         }
 
-        List<PhysicalDbInstance> instances = getRWDbInstances();
+        List<PhysicalDbInstance> instances = getRWDbInstances(master == null);
         if (instances.size() == 0) {
-            return writeDbInstance;
+            throw new IOException("the dbGroup[" + groupName + "] doesn't contain active dbInstance.");
         }
 
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
@@ -231,14 +237,17 @@ public class PhysicalDbGroup {
         return selectInstance;
     }
 
-    private List<PhysicalDbInstance> getRWDbInstances() {
+    private List<PhysicalDbInstance> getRWDbInstances(boolean includeWrite) {
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
         for (PhysicalDbInstance ds : allSourceMap.values()) {
             if (ds == writeDbInstance) {
-                if (rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
+                if (includeWrite && rwSplitMode == RW_SPLIT_ALL && writeDbInstance.isAlive()) {
                     okSources.add(ds);
                 }
-            } else if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
+                continue;
+            }
+
+            if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
                 okSources.add(ds);
             } else {
                 LOGGER.warn("can't select dbInstance[{}] as read node", ds);

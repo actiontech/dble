@@ -3,14 +3,17 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.services.factorys.information.tables;
+package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.service.FrontEndService;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
@@ -19,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class DbleFrontConnections extends ManagerBaseTable {
     public DbleFrontConnections() {
@@ -35,7 +39,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         columnsType.put("remote_addr", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("remote_port", new ColumnMeta("remote_port", "int(11)", false));
-        columnsType.put("remote_port", Fields.FIELD_TYPE_VAR_STRING);
+        columnsType.put("remote_port", Fields.FIELD_TYPE_LONG);
 
         columns.put("local_port", new ColumnMeta("local_port", "int(11)", false));
         columnsType.put("local_port", Fields.FIELD_TYPE_LONG);
@@ -61,7 +65,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         columns.put("sql_start_timestamp", new ColumnMeta("sql_start_timestamp", "int(11)", false));
         columnsType.put("sql_start_timestamp", Fields.FIELD_TYPE_LONG);
 
-        columns.put("sql_stage", new ColumnMeta("sql_stage", "int(11)", false));
+        columns.put("sql_stage", new ColumnMeta("sql_stage", "varchar(64)", false));
         columnsType.put("sql_stage", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("conn_net_in", new ColumnMeta("conn_net_in", "int(11)", false));
@@ -79,7 +83,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         columns.put("conn_send_task_queue", new ColumnMeta("conn_send_task_queue", "int(11)", false));
         columnsType.put("conn_send_task_queue", Fields.FIELD_TYPE_LONG);
 
-        columns.put("in_transaction", new ColumnMeta("in_transaction", "int(11)", false));
+        columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(4)", false));
         columnsType.put("in_transaction", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("entry_id", new ColumnMeta("entry_id", "int(11)", false));
@@ -89,17 +93,18 @@ public final class DbleFrontConnections extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(100);
+        Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (!fc.isClosed()) {
-                    lst.add(getRow(fc));
+                    lst.add(getRow(fc, users));
                 }
             }
         }
         return lst;
     }
 
-    private LinkedHashMap<String, String> getRow(FrontendConnection c) {
+    private LinkedHashMap<String, String> getRow(FrontendConnection c, Map<UserName, UserConfig> users) {
         LinkedHashMap<String, String> row = new LinkedHashMap<>();
 
         row.put("session_conn_id", c.getId() + "");
@@ -125,6 +130,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         if (c.isManager()) {
             row.put("sql_stage", "Manager connection");
             row.put("in_transaction", "Manager connection");
+            row.put("schema", ((ManagerService) service).getSchema() == null ? "NULL" : ((ManagerService) service).getSchema());
         } else {
             row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
             row.put("in_transaction", !((ShardingService) service).isAutocommit() + "");
@@ -136,7 +142,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         ByteBuffer bb = c.getReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");
         row.put("conn_send_task_queue", c.getWriteQueue().size() + "");
-        row.put("entry_id", "NULL");
+        row.put("entry_id", users.get(service.getUser()).getId() + "");
         return row;
     }
 

@@ -36,7 +36,6 @@ public abstract class AbstractConnection implements Connection {
 
     protected AtomicBoolean isClosed = new AtomicBoolean(false);
 
-
     private volatile AbstractService service;
     protected volatile IOProcessor processor;
 
@@ -58,15 +57,12 @@ public abstract class AbstractConnection implements Connection {
     protected int maxPacketSize;
     protected volatile CharsetNames charsetName = new CharsetNames();
 
-
     protected long startupTime;
     protected volatile long lastReadTime;
     protected volatile long lastWriteTime;
     protected long netInBytes;
     protected long netOutBytes;
-
     protected long lastLargeMessageTime;
-
 
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
@@ -74,19 +70,15 @@ public abstract class AbstractConnection implements Connection {
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;
-        this.startupTime = TimeUtil.currentTimeMillis();
     }
 
 
-    public void onReadData(int got) throws IOException {
+    public void onReadData(int got) {
         if (isClosed.get()) {
             return;
         }
 
         lastReadTime = TimeUtil.currentTimeMillis();
-        if (lastReadTime == lastWriteTime) {
-            lastWriteTime = lastReadTime - 1;
-        }
         if (got < 0) {
             this.close("stream closed");
             return;
@@ -144,7 +136,6 @@ public abstract class AbstractConnection implements Connection {
             }
         }
     }
-
 
     public void compactReadBuffer(ByteBuffer buffer, int offset) {
         if (buffer == null) {

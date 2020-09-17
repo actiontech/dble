@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-class InsertHandler extends DefaultHandler {
+public class InsertHandler extends DefaultHandler {
 
-    private static final Pattern INSERT_STMT = Pattern.compile("insert\\s+into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INSERT_STMT = Pattern.compile("insert\\s+(ignore\\s+)?into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
     private final ShardingValuesHandler shardingValuesHandler = new ShardingValuesHandler();
     private final DefaultValuesHandler defaultValuesHandler = new DefaultValuesHandler();
     private DefaultValuesHandler valuesHandler;
@@ -36,7 +36,7 @@ class InsertHandler extends DefaultHandler {
         String table = null;
         Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
         if (matcher.find()) {
-            table = matcher.group(1);
+            table = matcher.group(2);
         }
         context.setTable(table);
         if (table != null && table.equalsIgnoreCase(currentTable)) {
@@ -56,7 +56,12 @@ class InsertHandler extends DefaultHandler {
         // check columns from insert columns
         checkColumns(context, insert.getColumns());
         // add
-        StringBuilder insertHeader = new StringBuilder("INSERT INTO ");
+        StringBuilder insertHeader = new StringBuilder("INSERT ");
+        if (insert.isIgnore() || context.getConfig().isIgnore()) {
+            insert.setIgnore(true);
+            insertHeader.append("IGNORE ");
+        }
+        insertHeader.append("INTO ");
         insertHeader.append("`");
         insertHeader.append(context.getTable());
         insertHeader.append("`");
@@ -90,6 +95,17 @@ class InsertHandler extends DefaultHandler {
             }
         }
         valuesHandler.postProcess(context);
+    }
+
+    @Override
+    public void handle(DumpFileContext context, String stmt) throws InterruptedException {
+        if (context.getConfig().isIgnore()) {
+            Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
+            if (matcher.find() && matcher.group(1) == null) {
+                stmt = stmt.replaceFirst("(?i)(insert\\s+into)", "INSERT IGNORE INTO");
+            }
+        }
+        super.handle(context, stmt);
     }
 
     private void processIncrementColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {

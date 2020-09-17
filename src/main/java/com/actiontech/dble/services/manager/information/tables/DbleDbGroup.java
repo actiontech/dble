@@ -62,13 +62,13 @@ public class DbleDbGroup extends ManagerWritableTable {
         columns.put(COLUMN_HEARTBEAT_TIMEOUT, new ColumnMeta(COLUMN_HEARTBEAT_TIMEOUT, "int(11)", true, "0"));
         columnsType.put(COLUMN_HEARTBEAT_TIMEOUT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_HEARTBEAT_RETRY, new ColumnMeta(COLUMN_HEARTBEAT_RETRY, "int(11)", true, "0"));
+        columns.put(COLUMN_HEARTBEAT_RETRY, new ColumnMeta(COLUMN_HEARTBEAT_RETRY, "int(11)", true, "1"));
         columnsType.put(COLUMN_HEARTBEAT_RETRY, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_RW_SPLIT_MODE, new ColumnMeta(COLUMN_RW_SPLIT_MODE, "int(11)", false));
         columnsType.put(COLUMN_RW_SPLIT_MODE, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_DELAY_THRESHOLD, new ColumnMeta(COLUMN_DELAY_THRESHOLD, "int(11)", true, "0"));
+        columns.put(COLUMN_DELAY_THRESHOLD, new ColumnMeta(COLUMN_DELAY_THRESHOLD, "int(11)", true, "-1"));
         columnsType.put(COLUMN_DELAY_THRESHOLD, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_DISABLE_HA, new ColumnMeta(COLUMN_DISABLE_HA, "varchar(5)", true, "false"));
@@ -125,6 +125,7 @@ public class DbleDbGroup extends ManagerWritableTable {
         DbleDbInstance dbleDbInstance = (DbleDbInstance) ManagerSchemaInfo.getInstance().getTables().get(DbleDbInstance.TABLE_NAME);
         DbGroups dbs = dbleDbInstance.transformRow(xmlProcess, dbGroupRows, null);
 
+        dbleDbInstance.encryptPassword(dbs);
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return affectPks.size();
     }
@@ -152,7 +153,7 @@ public class DbleDbGroup extends ManagerWritableTable {
             dbs.getDbGroup().removeIf(dbGroup -> StringUtil.equals(dbGroup.getName(), affectPk.get(COLUMN_NAME)));
         }
 
-
+        dbleDbInstance.encryptPassword(dbs);
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return affectPks.size();
     }
@@ -215,7 +216,7 @@ public class DbleDbGroup extends ManagerWritableTable {
         LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
         map.put(COLUMN_NAME, dbGroupConfig.getName());
         map.put(COLUMN_HEARTBEAT_STMT, dbGroupConfig.getHeartbeatSQL());
-        map.put(COLUMN_HEARTBEAT_TIMEOUT, String.valueOf(dbGroupConfig.getHeartbeatTimeout()));
+        map.put(COLUMN_HEARTBEAT_TIMEOUT, String.valueOf(dbGroupConfig.getHeartbeatTimeout() / 1000));
         map.put(COLUMN_HEARTBEAT_RETRY, String.valueOf(dbGroupConfig.getErrorRetryCount()));
         map.put(COLUMN_RW_SPLIT_MODE, String.valueOf(dbGroupConfig.getRwSplitMode()));
         map.put(COLUMN_DELAY_THRESHOLD, String.valueOf(dbGroupConfig.getDelayThreshold()));

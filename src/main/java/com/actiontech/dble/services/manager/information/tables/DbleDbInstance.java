@@ -187,7 +187,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "varchar(64)", true));
         columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_CONNECTION_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_TIMEOUT, "int(11)", true, "300000"));
+        columns.put(COLUMN_CONNECTION_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_TIMEOUT, "int(11)", true, "30000"));
         columnsType.put(COLUMN_CONNECTION_TIMEOUT, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, "int(11)", true, "20"));
@@ -353,7 +353,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         }
     }
 
-    private void encryptPassword(DbGroups dbs) {
+    public void encryptPassword(DbGroups dbs) {
         for (DBGroup dbGroup : dbs.getDbGroup()) {
             for (DBInstance dbInstance : dbGroup.getDbInstance()) {
                 String usingDecrypt = dbInstance.getUsingDecrypt();
@@ -367,7 +367,7 @@ public class DbleDbInstance extends ManagerWritableTable {
     private void decryptPassword(List<LinkedHashMap<String, String>> rows, boolean insertFlag) {
         for (LinkedHashMap<String, String> row : rows) {
             if ((insertFlag && Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED))) || !insertFlag) {
-                row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED)), row.get(COLUMN_NAME),
+                row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(true, row.get(COLUMN_NAME),
                         row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
             }
         }

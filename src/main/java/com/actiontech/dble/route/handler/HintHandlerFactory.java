@@ -13,7 +13,7 @@ public final class HintHandlerFactory {
     private static volatile boolean isInit = false;
 
     private static Map<String, HintHandler> dbleHintHandlerMap = new HashMap<>();
-    private static Map<String, HintHandler> uproxyHintHandlerMap = new HashMap<>();
+    private static Map<String, HintHandler> rwSplitHintHandlerMap = new HashMap<>();
 
     private HintHandlerFactory() {
     }
@@ -23,10 +23,11 @@ public final class HintHandlerFactory {
         dbleHintHandlerMap.put("shardingnode", new HintShardingNodeHandler());
         // force master or force slave
         dbleHintHandlerMap.put("db_type", new HintMasterDBHandler());
-        dbleHintHandlerMap.put("db_instance_url", new HintDbInstanceHandler());
 
-        uproxyHintHandlerMap.put("master", new HintMasterDBHandler());
-        uproxyHintHandlerMap.put("uproxy_dest", new HintDbInstanceHandler());
+        rwSplitHintHandlerMap.put("db_instance_url", new HintDbInstanceHandler());
+        rwSplitHintHandlerMap.put("uproxy_dest", new HintDbInstanceHandler());
+        rwSplitHintHandlerMap.put("master", new HintMasterDBHandler());
+        rwSplitHintHandlerMap.put("db_type", new HintMasterDBHandler());
         isInit = true;
     }
 
@@ -42,7 +43,7 @@ public final class HintHandlerFactory {
     }
 
 
-    public static HintHandler getUproxyHintHandler(String hintType) {
+    public static HintHandler getRwSplitHintHandler(String hintType) {
         if (!isInit) {
             synchronized (HintHandlerFactory.class) {
                 if (!isInit) {
@@ -50,7 +51,7 @@ public final class HintHandlerFactory {
                 }
             }
         }
-        return uproxyHintHandlerMap.get(hintType);
+        return rwSplitHintHandlerMap.get(hintType);
     }
 
 }

@@ -321,7 +321,7 @@ public class MySQLResponseService extends MySQLBasedService {
     }
 
     private StringBuilder getSynSql(CharsetNames clientCharset, int clientTxIsolation, boolean expectAutocommit) {
-        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) ? 0 : 1;
+        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
         int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;

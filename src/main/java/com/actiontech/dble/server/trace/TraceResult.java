@@ -33,7 +33,6 @@ public class TraceResult implements Cloneable {
     private TraceRecord routeStart; //parseEnd
     private TraceRecord preExecuteStart; //routeEnd
     private RouteResultsetNode[] shardingNodes;
-    private RouteResultsetNode[] dbInstances;
     private TraceRecord preExecuteEnd;
 
     private TraceRecord adtCommitBegin; //auto Distributed Transaction commit begin
@@ -80,9 +79,6 @@ public class TraceResult implements Cloneable {
     }
 
     public void setShardingNodes(RouteResultsetNode[] shardingNodes) {
-        if (null == shardingNodes) {
-            return;
-        }
         if (this.shardingNodes == null) {
             this.shardingNodes = shardingNodes;
         } else {
@@ -90,24 +86,6 @@ public class TraceResult implements Cloneable {
             System.arraycopy(this.shardingNodes, 0, tempShardingNodes, 0, this.shardingNodes.length);
             System.arraycopy(shardingNodes, 0, tempShardingNodes, this.shardingNodes.length, shardingNodes.length);
             this.shardingNodes = tempShardingNodes;
-        }
-    }
-
-    public RouteResultsetNode[] getDbInstances() {
-        return dbInstances;
-    }
-
-    public void setDbInstances(RouteResultsetNode[] dbInstances) {
-        if (null == dbInstances) {
-            return;
-        }
-        if (this.dbInstances == null) {
-            this.dbInstances = dbInstances;
-        } else {
-            RouteResultsetNode[] tempDbInstances = new RouteResultsetNode[this.dbInstances.length + dbInstances.length];
-            System.arraycopy(this.dbInstances, 0, tempDbInstances, 0, this.dbInstances.length);
-            System.arraycopy(dbInstances, 0, tempDbInstances, this.dbInstances.length, dbInstances.length);
-            this.dbInstances = tempDbInstances;
         }
     }
 

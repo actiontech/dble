@@ -239,25 +239,6 @@ public final class RouterUtil {
         RouterUtil.routeToSingleNode(rrs, shardingNode);
     }
 
-
-    public static RouteResultset routeToSingleDbInstance(RouteResultset rrs, String dbInstantceName) {
-        if (dbInstantceName == null) {
-            return rrs;
-        }
-        RouteResultsetNode[] dbInstances = new RouteResultsetNode[1];
-        dbInstances[0] = new RouteResultsetNode(dbInstantceName, rrs.getSqlType(), rrs.getStatement());
-        rrs.setDbInstances(dbInstances);
-        rrs.setFinishedRoute(true);
-        if (rrs.getCanRunInReadDB() != null) {
-            dbInstances[0].setCanRunInReadDB(rrs.getCanRunInReadDB());
-        }
-        if (rrs.getRunOnSlave() != null) {
-            dbInstances[0].setRunOnSlave(rrs.getRunOnSlave());
-        }
-
-        return rrs;
-    }
-
     public static void routeNoNameTableToSingleNode(RouteResultset rrs, SchemaConfig schema) throws SQLNonTransientException {
         if (schema == null) {
             String db = SchemaUtil.getRandomDb();

@@ -5,8 +5,10 @@
  */
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.route.handler.HintHandler;
@@ -14,6 +16,7 @@ import com.actiontech.dble.route.handler.HintHandlerFactory;
 import com.actiontech.dble.route.handler.HintSQLHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -81,84 +84,110 @@ public final class RouteService {
         }
     }
 
-    private RouteResultset routeHint(String stmt, int hintLength, int endPos, SchemaConfig schema, int sqlType, ShardingService service) throws SQLException {
-        String hint = stmt.substring(hintLength, endPos).trim();
-        String realSQL = stmt.substring(endPos + "*/".length()).trim();
-        RouteResultset rrs;
-        if (hint.indexOf("=") > 0) {
-            //sql/sharddingNode/db_type/db_instance_url=*****
-            rrs = routeDbleHint(schema, sqlType, realSQL, service, stmt, hint);
-        } else {
-            //master/uproxy_dest:
-            String left = stmt.substring(0, hintLength - 2);
-            String right = stmt.substring(endPos + 2);
-            realSQL = left + right;
-            rrs = routeUproxyHint(schema, sqlType, realSQL, service, stmt, hint);
+    public PhysicalDbInstance routeRwSplit(int sqlType, String stmt, RWSplitService service) throws SQLException {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "rw-split-hint-simple-route");
+        PhysicalDbInstance dbInstance = null;
+        try {
+            String cacheKey = null;
+
+            if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
+                RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) service.getUserConfig();
+                String dbGroup = rwSplitUserConfig.getDbGroup();
+                cacheKey = dbGroup + "_" + service.getUser() + "_" + stmt;
+                dbInstance = (PhysicalDbInstance) CacheService.getSqlRouteCache().get(cacheKey);
+                if (dbInstance != null) {
+                    return dbInstance;
+                }
+            }
+
+            int hintLength = RouteService.isHintSql(stmt);
+            if (hintLength != -1) {
+                int endPos = stmt.substring(hintLength).indexOf("*/") + hintLength;
+                if (endPos > 0) {
+                    dbInstance = routeRwSplitHint(stmt, hintLength, endPos, sqlType, service);
+                }
+            }
+
+            if (dbInstance != null && sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
+                CacheService.getSqlRouteCache().putIfAbsent(cacheKey, dbInstance);
+            }
+            return dbInstance;
+        } finally {
+            if (dbInstance != null) {
+                TraceManager.log(ImmutableMap.of("rw-split-hint-route-result-set", dbInstance), traceObject);
+            }
+            TraceManager.finishSpan(service, traceObject);
         }
-        return rrs;
     }
 
-    private RouteResultset routeUproxyHint(SchemaConfig schema, int sqlType, String realSQL, ShardingService service, String stmt, String hint) throws SQLException {
+    private RouteResultset routeHint(String stmt, int hintLength, int endPos, SchemaConfig schema, int sqlType, ShardingService service) throws SQLException {
         RouteResultset rrs;
-        String hintSql;
-        HintHandler hintHandler;
-        String hintType;
-        Map hintMap = null;
-        if (hint.indexOf(":") > 0) {
-            //uproxy_dest:
-            hintMap = parseKeyValue(hint, ':');
-            hintType = (String) hintMap.get(HINT_TYPE);
-            hintSql = (String) hintMap.get(hintType);
-            if (hintSql.length() == 0) {
-                String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
-                LOGGER.info(msg);
-                throw new SQLSyntaxErrorException(msg);
-            }
-        } else {
-            //master
-            hintType = hint;
-            hintSql = hintType;
-        }
-        hintHandler = HintHandlerFactory.getUproxyHintHandler(hintType);
-        if (hintHandler != null) {
-            rrs = hintHandler.route(schema, sqlType, realSQL, service, hintSql, sqlType, hintMap);
-        } else {
-            String msg = "Not supported hint sql type : " + hintType;
+        HintInfo hintInfo = parseHintSql(stmt, hintLength, endPos);
+        HintHandler hintHandler = HintHandlerFactory.getDbleHintHandler(hintInfo.getHintType());
+        if (hintHandler == null) {
+            String msg = "Not supported hint sql type : " + hintInfo.getHintType();
             LOGGER.info(msg);
             throw new SQLSyntaxErrorException(msg);
         }
+        if (hintHandler instanceof HintSQLHandler) {
+            int hintSqlType = ServerParse.parse(hintInfo.getHintSQL()) & 0xff;
+            rrs = hintHandler.route(schema, sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), hintSqlType, hintInfo.getHintMap());
+            // HintSQLHandler will always send to master
+            rrs.setRunOnSlave(false);
+        } else {
+            rrs = hintHandler.route(schema, sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), sqlType, hintInfo.getHintMap());
+        }
         return rrs;
     }
 
-    private RouteResultset routeDbleHint(SchemaConfig schema, int sqlType, String realSQL, ShardingService service, String stmt, String hint) throws SQLException {
-        RouteResultset rrs;
-        Map hintMap = parseKeyValue(hint, '=');
-        String hintType = (String) hintMap.get(HINT_TYPE);
-        String hintSql = (String) hintMap.get(hintType);
+    private PhysicalDbInstance routeRwSplitHint(String stmt, int hintLength, int endPos, int sqlType, RWSplitService service) throws SQLException {
+        HintInfo hintInfo = parseHintSql(stmt, hintLength, endPos);
+        HintHandler hintHandler = HintHandlerFactory.getRwSplitHintHandler(hintInfo.getHintType());
+        if (hintHandler == null) {
+            String msg = "Not supported hint sql type : " + hintInfo.getHintType();
+            LOGGER.info(msg);
+            throw new SQLSyntaxErrorException(msg);
+        }
+        PhysicalDbInstance dbInstance = hintHandler.routeRwSplit(sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), sqlType, hintInfo.getHintMap());
+        return dbInstance;
+    }
+
+    private HintInfo parseHintSql(String stmt, int hintLength, int endPos) throws SQLSyntaxErrorException {
+        String hint = stmt.substring(hintLength, endPos).trim();
+        String realSQL = stmt.substring(endPos + "*/".length()).trim();
+        String hintSql;
+        Map hintMap = null;
+        String hintType = null;
+        if (hint.indexOf("=") >= 0) {
+            //sql/sharddingNode/db_type/db_instance_url=*****
+            hintMap = parseKeyValue(hint, '=');
+            hintType = (String) hintMap.get(HINT_TYPE);
+            hintSql = (String) hintMap.get(hintType);
+        } else if (hint.indexOf(":") >= 0) {
+            //uproxy_dest:
+            String left = stmt.substring(0, hintLength - 2);
+            String right = stmt.substring(endPos + 2);
+            realSQL = left + right;
+            hintMap = parseKeyValue(hint, ':');
+            hintType = (String) hintMap.get(HINT_TYPE);
+            hintSql = (String) hintMap.get(hintType);
+        } else {
+            //master
+            String left = stmt.substring(0, hintLength - 2);
+            String right = stmt.substring(endPos + 2);
+            realSQL = left + right;
+            hintType = hint;
+            hintSql = hint;
+        }
         if (hintSql.length() == 0) {
             String msg = "comment in sql must meet :/*!" + Versions.ANNOTATION_NAME + "type=value*/ or /*#" + Versions.ANNOTATION_NAME + "type=value*/ or /*" + Versions.ANNOTATION_NAME + "type=value*/: " + stmt;
             LOGGER.info(msg);
             throw new SQLSyntaxErrorException(msg);
         }
-        HintHandler hintHandler = HintHandlerFactory.getDbleHintHandler(hintType);
-        if (hintHandler != null) {
-            if (hintHandler instanceof HintSQLHandler) {
-                int hintSqlType = ServerParse.parse(hintSql) & 0xff;
-                rrs = hintHandler.route(schema, sqlType, realSQL, service, hintSql, hintSqlType, hintMap);
-                // HintSQLHandler will always send to master
-                rrs.setRunOnSlave(false);
-            } else {
-                rrs = hintHandler.route(schema, sqlType, realSQL, service, hintSql, sqlType, hintMap);
-            }
-        } else {
-            String msg = "Not supported hint sql type : " + hintType;
-            LOGGER.info(msg);
-            throw new SQLSyntaxErrorException(msg);
-        }
-        return rrs;
+        return new HintInfo(hint, hintMap, hintType, hintSql, realSQL);
     }
 
-    private static int isHintSql(String stmt) {
+    public static int isHintSql(String stmt) {
         int hintIndex = isDbleHintSql(stmt);
         if (hintIndex == -1) {
             hintIndex = isUproxyHintSql(stmt);
@@ -238,6 +267,62 @@ public final class RouteService {
 
     public static RouteService getInstance() {
         return INSTANCE;
+    }
+
+    static class HintInfo {
+        private String hint;
+        private Map hintMap;
+        private String hintType;
+        private String hintSQL;
+        private String realSQL;
+
+        HintInfo(String hint, Map hintMap, String hintType, String hintSQL, String realSQL) {
+            this.hint = hint;
+            this.hintMap = hintMap;
+            this.hintType = hintType;
+            this.hintSQL = hintSQL;
+            this.realSQL = realSQL;
+        }
+
+        public String getHint() {
+            return hint;
+        }
+
+        public void setHint(String hint) {
+            this.hint = hint;
+        }
+
+        public Map getHintMap() {
+            return hintMap;
+        }
+
+        public void setHintMap(Map hintMap) {
+            this.hintMap = hintMap;
+        }
+
+        public String getHintType() {
+            return hintType;
+        }
+
+        public void setHintType(String hintType) {
+            this.hintType = hintType;
+        }
+
+        public String getHintSQL() {
+            return hintSQL;
+        }
+
+        public void setHintSQL(String hintSQL) {
+            this.hintSQL = hintSQL;
+        }
+
+        public String getRealSQL() {
+            return realSQL;
+        }
+
+        public void setRealSQL(String realSQL) {
+            this.realSQL = realSQL;
+        }
     }
 
 }

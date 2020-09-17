@@ -240,7 +240,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         String tableName = schemaInfo.getTable();
         String schemaName = schema == null ? null : schema.getName();
 
-        MySQLPlanNodeVisitor pvisitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables());
+        MySQLPlanNodeVisitor pvisitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.equivalentUsrVarMap());
         pvisitor.visit(select);
         PlanNode node = pvisitor.getTableNode();
         node.setSql(rrs.getStatement());

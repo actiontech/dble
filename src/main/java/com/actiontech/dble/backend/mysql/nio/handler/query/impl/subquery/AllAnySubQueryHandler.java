@@ -18,6 +18,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.plan.node.ManagerTableNode;
+import com.actiontech.dble.plan.node.PlanNode;
 
 import java.util.Collections;
 import java.util.List;
@@ -51,7 +52,8 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
                 this.fieldPackets = fieldPackets;
                 sourceField = HandlerTool.createField(this.fieldPackets.get(0));
                 Item select = itemSubQuery.getSelect();
-                if (!(itemSubQuery.getPlanNode() instanceof ManagerTableNode)) {
+                PlanNode planNode = itemSubQuery.getPlanNode();
+                if (!(planNode instanceof ManagerTableNode) || ((ManagerTableNode) planNode).isNeedSendMaker()) {
                     select.setPushDownName(select.getAlias());
                 }
                 Item tmpItem = HandlerTool.createItem(select, Collections.singletonList(this.sourceField), 0, isAllPushDown(), type());

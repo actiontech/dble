@@ -8,6 +8,7 @@ package com.actiontech.dble.services.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterLogic;
@@ -33,14 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 public final class ShowBinlogStatus {
     private ShowBinlogStatus() {
@@ -240,10 +239,11 @@ public final class ShowBinlogStatus {
      * @param charset
      */
     private static void getQueryResult(final String charset) {
-        Collection<PhysicalDbGroup> allPools = DbleServer.getInstance().getConfig().getDbGroups().values();
-        sourceCount = new AtomicInteger(allPools.size());
+        Map<String, ShardingNode> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes();
+        Set<PhysicalDbGroup> dbGroupSet = shardingNodes.values().stream().map(ShardingNode::getDbGroup).collect(Collectors.toSet());
+        sourceCount = new AtomicInteger(dbGroupSet.size());
         rows = new CopyOnWriteArrayList<>();
-        for (PhysicalDbGroup pool : allPools) {
+        for (PhysicalDbGroup pool : dbGroupSet) {
             //if WRITE_RANDOM_NODE ,may the binlog is not ready.
             final PhysicalDbInstance source = pool.getWriteDbInstance();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(FIELDS,

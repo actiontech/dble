@@ -175,7 +175,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     private MySQLPacket makeErrorPacket(String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
         errPacket.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
         return errPacket;

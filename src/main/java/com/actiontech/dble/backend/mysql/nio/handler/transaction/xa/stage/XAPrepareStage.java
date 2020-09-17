@@ -29,6 +29,7 @@ public class XAPrepareStage extends XAStage {
                 xaHandler.setPacketIfSuccess(errPacket);
             } else if (xaHandler.isInterruptTx()) {
                 session.getShardingService().setTxInterrupt(errMsg);
+                errPacket.setPacketId(session.getShardingService().nextPacketId());
                 errPacket.write(session.getSource());
                 return null;
             }

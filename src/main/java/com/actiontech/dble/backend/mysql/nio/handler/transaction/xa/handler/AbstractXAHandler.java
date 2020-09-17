@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
@@ -74,6 +75,25 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
             changeStageTo(next());
         }
     }
+
+    public void fakedResponse(RouteResultsetNode rrsn) {
+        if (decrementToZero(rrsn)) {
+            changeStageTo(next());
+        }
+    }
+
+    protected boolean decrementToZero(RouteResultsetNode rrsn) {
+        boolean zeroReached;
+        lock.lock();
+        try {
+            unResponseRrns.remove(rrsn);
+            zeroReached = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        return zeroReached;
+    }
+
 
     @Override
     public void errorResponse(byte[] err, AbstractService service) {

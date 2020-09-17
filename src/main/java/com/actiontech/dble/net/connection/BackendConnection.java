@@ -111,7 +111,7 @@ public class BackendConnection extends PooledConnection {
         LOGGER.info("connection id " + threadId + " close for reason " + reason);
         boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
-            if (isAuthed && channel.isOpen() && closeReason != null) {
+            if ((isAuthed || this.getService() == null) && channel.isOpen() && closeReason == null) {
                 try {
                     gracefulClose(reason);
                 } catch (Throwable e) {

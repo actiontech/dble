@@ -7,8 +7,11 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class XAStage implements TransactionStage {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(XAStage.class);
 
     public static final String END_STAGE = "XA END STAGE";
     public static final String PREPARE_STAGE = "XA PREPARE STAGE";
@@ -31,7 +34,12 @@ public abstract class XAStage implements TransactionStage {
     public void onEnterStage() {
         xaHandler.setUnResponseRrns();
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
-            onEnterStage(session.getTarget(rrn).getBackendService());
+            if (session.getTarget(rrn).getBackendService() != null) {
+                onEnterStage(session.getTarget(rrn).getBackendService());
+            } else {
+                xaHandler.fakedResponse(rrn);
+                session.releaseConnection(rrn, LOGGER.isDebugEnabled(), false);
+            }
         }
     }
 

@@ -286,7 +286,6 @@ public class MySQLResponseService extends MySQLBasedService {
     public void query(String query, boolean isAutoCommit) {
         RouteResultsetNode rrn = new RouteResultsetNode("default", ServerParse.SELECT, query);
         StringBuilder synSQL = getSynSql(null, rrn, this.getConnection().getCharsetName(), this.txIsolation, isAutoCommit, usrVariables, sysVariables);
-        LOGGER.info("try to send command of " + rrn);
         synAndDoExecute(synSQL, rrn.getStatement(), this.getConnection().getCharsetName());
     }
 

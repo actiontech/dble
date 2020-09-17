@@ -37,12 +37,6 @@ public class HintDbInstanceHandler implements HintHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route dbInstance sql hint from " + realSQL);
         }
-        UserConfig userConfig = service.getUserConfig();
-        if (!(userConfig instanceof RwSplitUserConfig)) {
-            String msg = "Unsupported " + new Gson().toJson(hintMap.values()) + " for userType:" + userConfig.getClass().getSimpleName() + " username:" + userConfig.getName();
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
-        }
 
         RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) service.getUserConfig();
         hintSQLValue = hintSQLValue.trim();

@@ -9,10 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.StringUtil;
-import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

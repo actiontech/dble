@@ -26,6 +26,7 @@ public class XAPrepareStage extends XAStage {
     public TransactionStage next(boolean isFail, String errMsg, MySQLPacket errPacket) {
         if (isFail) {
             if (prepareUnconnect) {
+                errPacket.setPacketId(session.getShardingService().nextPacketId());
                 xaHandler.setPacketIfSuccess(errPacket);
             } else if (xaHandler.isInterruptTx()) {
                 session.getShardingService().setTxInterrupt(errMsg);

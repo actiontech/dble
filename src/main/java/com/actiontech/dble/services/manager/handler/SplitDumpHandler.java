@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 
 public final class SplitDumpHandler {
 
-    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-s([^\\s]+))?\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-s([^\\s]+))?\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?\\s*(--ignore)?", Pattern.CASE_INSENSITIVE);
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
     private SplitDumpHandler() {
@@ -124,6 +124,9 @@ public final class SplitDumpHandler {
             }
             if (m.group(10) != null) {
                 config.setMaxValues(Integer.parseInt(m.group(10)));
+            }
+            if (m.group(11) != null) {
+                config.setIgnore(true);
             }
         }
         return config;

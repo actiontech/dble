@@ -187,10 +187,10 @@ public class DbleDbInstance extends ManagerWritableTable {
         columns.put(COLUMN_ID, new ColumnMeta(COLUMN_ID, "varchar(64)", true));
         columnsType.put(COLUMN_ID, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_CONNECTION_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_TIMEOUT, "int(11)", true, "30000"));
+        columns.put(COLUMN_CONNECTION_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_TIMEOUT, "int(11)", true, String.valueOf(PoolConfig.CONNECTION_TIMEOUT)));
         columnsType.put(COLUMN_CONNECTION_TIMEOUT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, "int(11)", true, "20"));
+        columns.put(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, "int(11)", true, String.valueOf(PoolConfig.CON_HEARTBEAT_TIMEOUT)));
         columnsType.put(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_TEST_ON_CREATE, new ColumnMeta(COLUMN_TEST_ON_CREATE, "varchar(64)", true, "false"));
@@ -205,16 +205,16 @@ public class DbleDbInstance extends ManagerWritableTable {
         columns.put(COLUMN_TEST_WHILE_IDLE, new ColumnMeta(COLUMN_TEST_WHILE_IDLE, "varchar(64)", true, "false"));
         columnsType.put(COLUMN_TEST_WHILE_IDLE, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, new ColumnMeta(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, "int(11)", true, "30000"));
+        columns.put(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, new ColumnMeta(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, "int(11)", true, String.valueOf(PoolConfig.HOUSEKEEPING_PERIOD_MS)));
         columnsType.put(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS, new ColumnMeta(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS, "int(11)", true, "10000"));
+        columns.put(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS, new ColumnMeta(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS, "int(11)", true, String.valueOf(PoolConfig.DEFAULT_SHUTDOWN_TIMEOUT)));
         columnsType.put(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_IDLE_TIMEOUT, new ColumnMeta(COLUMN_IDLE_TIMEOUT, "int(11)", true, "600000"));
+        columns.put(COLUMN_IDLE_TIMEOUT, new ColumnMeta(COLUMN_IDLE_TIMEOUT, "int(11)", true, String.valueOf(PoolConfig.DEFAULT_IDLE_TIMEOUT)));
         columnsType.put(COLUMN_IDLE_TIMEOUT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_HEARTBEAT_PERIOD_MILLIS, new ColumnMeta(COLUMN_HEARTBEAT_PERIOD_MILLIS, "int(11)", true, "10000"));
+        columns.put(COLUMN_HEARTBEAT_PERIOD_MILLIS, new ColumnMeta(COLUMN_HEARTBEAT_PERIOD_MILLIS, "int(11)", true, String.valueOf(PoolConfig.DEFAULT_HEARTBEAT_PERIOD)));
         columnsType.put(COLUMN_HEARTBEAT_PERIOD_MILLIS, Fields.FIELD_TYPE_LONG);
     }
 
@@ -297,7 +297,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         for (DBGroup dbGroup : dbs.getDbGroup()) {
             dbleDbGroup.getTempRowList().removeIf(group -> StringUtil.equals(group.get(DbleDbGroup.COLUMN_NAME), dbGroup.getName()));
         }
-        encryptPassword(dbs);
+        dbs.encryptPassword();
         //write to configuration
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return size;
@@ -330,7 +330,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         checkDeleteRule(removeDBGroupSet);
         //remove empty instance
         dbGroups.getDbGroup().removeIf(dbGroup -> dbGroup.getDbInstance().isEmpty());
-        encryptPassword(dbGroups);
+        dbGroups.encryptPassword();
         //write to configuration
         xmlProcess.writeObjToXml(dbGroups, getXmlFilePath(), "db");
         return affectPks.size();
@@ -349,17 +349,6 @@ public class DbleDbInstance extends ManagerWritableTable {
             boolean existShardingNode = dbleShardingNode.getRows().stream().anyMatch(entry -> entry.get(DbleShardingNode.COLUMN_DB_GROUP).equals(dbGroup.getName()));
             if (existShardingNode) {
                 throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_sharding_node`(`db_group`) REFERENCES `dble_db_group`(`name`)");
-            }
-        }
-    }
-
-    public void encryptPassword(DbGroups dbs) {
-        for (DBGroup dbGroup : dbs.getDbGroup()) {
-            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
-                String usingDecrypt = dbInstance.getUsingDecrypt();
-                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.parseBoolean(usingDecrypt)) {
-                    dbInstance.setPassword(getPasswordEncrypt(dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
-                }
             }
         }
     }

@@ -125,7 +125,7 @@ public class DbleDbGroup extends ManagerWritableTable {
         DbleDbInstance dbleDbInstance = (DbleDbInstance) ManagerSchemaInfo.getInstance().getTables().get(DbleDbInstance.TABLE_NAME);
         DbGroups dbs = dbleDbInstance.transformRow(xmlProcess, dbGroupRows, null);
 
-        dbleDbInstance.encryptPassword(dbs);
+        dbs.encryptPassword();
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return affectPks.size();
     }
@@ -153,7 +153,7 @@ public class DbleDbGroup extends ManagerWritableTable {
             dbs.getDbGroup().removeIf(dbGroup -> StringUtil.equals(dbGroup.getName(), affectPk.get(COLUMN_NAME)));
         }
 
-        dbleDbInstance.encryptPassword(dbs);
+        dbs.encryptPassword();
         xmlProcess.writeObjToXml(dbs, getXmlFilePath(), "db");
         return affectPks.size();
     }

@@ -482,6 +482,7 @@ public class MySQLResponseService extends MySQLBasedService {
                         if (!StringUtil.equalsIgnoreCase(entry.getValue(), value)) {
                             setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
                         }
+                        tmpSysVars.put(entry.getKey(), entry.getValue());
                     }
                 }
             }

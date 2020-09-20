@@ -51,6 +51,7 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleDbGroup());
         registerTable(new DbleDbInstance());
         registerTable(new DbleAlgorithm());
+        registerTable(new ProcessList());
     }
 
 

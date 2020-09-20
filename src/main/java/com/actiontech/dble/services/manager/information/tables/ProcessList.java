@@ -31,15 +31,15 @@ public class ProcessList extends ManagerBaseTable {
     private static final String COLUMN_INFO = "info";
 
     public ProcessList() {
-        super(TABLE_NAME, 9);
+        super(TABLE_NAME, 11);
     }
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_FRONT_ID, new ColumnMeta(COLUMN_FRONT_ID, "int(11)", false, true));
+        columns.put(COLUMN_FRONT_ID, new ColumnMeta(COLUMN_FRONT_ID, "int(11)", false));
         columnsType.put(COLUMN_FRONT_ID, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(9)", false));
+        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(12)", false));
         columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_DB_INSTANCE, new ColumnMeta(COLUMN_DB_INSTANCE, "varchar(12)", false));
@@ -48,7 +48,7 @@ public class ProcessList extends ManagerBaseTable {
         columns.put(COLUMN_MYSQL_ID, new ColumnMeta(COLUMN_MYSQL_ID, "int(11)", false));
         columnsType.put(COLUMN_MYSQL_ID, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_USER, new ColumnMeta(COLUMN_USER, "varchar(64)", false));
+        columns.put(COLUMN_USER, new ColumnMeta(COLUMN_USER, "varchar(12)", false));
         columnsType.put(COLUMN_USER, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_FRONT_HOST, new ColumnMeta(COLUMN_FRONT_HOST, "varchar(16)", false));
@@ -63,7 +63,7 @@ public class ProcessList extends ManagerBaseTable {
         columns.put(COLUMN_TIME, new ColumnMeta(COLUMN_TIME, "int(11)", true));
         columnsType.put(COLUMN_TIME, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_STATE, new ColumnMeta(COLUMN_STATE, "varchar(200)", true));
+        columns.put(COLUMN_STATE, new ColumnMeta(COLUMN_STATE, "varchar(64)", true));
         columnsType.put(COLUMN_STATE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_INFO, new ColumnMeta(COLUMN_INFO, "varchar(64)", true));
@@ -79,21 +79,24 @@ public class ProcessList extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> rows = new ArrayList<>();
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
-            p.getFrontends().values().
+            p.getFrontends().
+                    values().
                     forEach(fc -> {
                         Map<RouteResultsetNode, BackendConnection> backendConns = null;
                         if (!fc.isManager()) {
                             backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
                         }
-                        LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
+
                         if (!CollectionUtil.isEmpty(backendConns)) {
                             for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
                                 String shardingNode = entry.getKey().getName();
                                 long threadId = entry.getValue().getThreadId();
+
+                                LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                                 // Front_Id
                                 row.put(COLUMN_FRONT_ID, fc.getId() + "");
                                 // shardingNode
-                                row.put(COLUMN_SHARDING_NODE, shardingNode == null ? "NULL" : shardingNode);
+                                row.put(COLUMN_SHARDING_NODE, shardingNode);
                                 // dbInstance
                                 row.put(COLUMN_DB_INSTANCE, entry.getValue().getInstance().getConfig().getInstanceName());
                                 // BconnID
@@ -102,7 +105,7 @@ public class ProcessList extends ManagerBaseTable {
                                 row.put(COLUMN_USER, fc.getFrontEndService().getUser().toString());
                                 // Front_Host
                                 row.put(COLUMN_FRONT_HOST, fc.getHost() + ":" + fc.getLocalPort());
-
+                                rows.add(row);
                                 // index
                                 indexs.put(shardingNode + "." + threadId, rows.size() - 1);
                                 // sharding node map
@@ -115,14 +118,20 @@ public class ProcessList extends ManagerBaseTable {
                                 }
                             }
                         } else {
+                            LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                             // Front_Id
                             row.put(COLUMN_FRONT_ID, fc.getId() + "");
+                            // User
+                            row.put(COLUMN_USER, fc.getFrontEndService().getUser().toString());
+                            // Front_Host
+                            row.put(COLUMN_FRONT_HOST, fc.getHost() + ":" + fc.getLocalPort());
+                            rows.add(row);
                         }
-
-                        rows.add(row);
                     });
+        }
 
-            // set 'show processlist' content
+        // set 'show processlist' content
+        if (!shardingNodeMap.isEmpty()) {
             Map<String, Map<String, String>> backendRes = showProcessList(shardingNodeMap);
             for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
                 Map<String, String> res = backendRes.get(entry.getKey());
@@ -136,6 +145,7 @@ public class ProcessList extends ManagerBaseTable {
                 }
             }
         }
+
         return rows;
     }
 

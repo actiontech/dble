@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
@@ -16,7 +17,7 @@ import com.actiontech.dble.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler {
+public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler {
 
     private final RWSplitService rwSplitService;
     private final byte[] originPacket;
@@ -112,6 +113,21 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler 
         }
     }
 
+    // this for prepared statement ok
+    @Override
+    public void fieldEofResponse(List<byte[]> fields, byte[] eof, MySQLResponseService service) {
+        synchronized (this) {
+            for (byte[] field : fields) {
+                field[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(field, buffer);
+            }
+            eof[3] = (byte) rwSplitService.nextPacketId();
+            buffer = frontedConnection.writeToBuffer(eof, buffer);
+            frontedConnection.write(buffer);
+        }
+    }
+
+
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         synchronized (this) {
@@ -157,6 +173,35 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler 
                     buffer = null;
                 }
             }
+        }
+    }
+
+    @Override
+    public void preparedOkResponse(byte[] ok, MySQLResponseService service) {
+        boolean executeResponse = service.syncAndExecute();
+        if (executeResponse) {
+            synchronized (this) {
+                if (buffer == null) {
+                    buffer = frontedConnection.allocate();
+                }
+                if (!write2Client) {
+                    ok[3] = (byte) rwSplitService.nextPacketId();
+                    frontedConnection.write(ok);
+                    write2Client = true;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void paramEofResponse(List<byte[]> params, byte[] eof, MySQLResponseService service) {
+        synchronized (this) {
+            for (byte[] field : params) {
+                field[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(field, buffer);
+            }
+            eof[3] = (byte) rwSplitService.nextPacketId();
+            buffer = frontedConnection.writeToBuffer(eof, buffer);
         }
     }
 

@@ -123,7 +123,8 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
                 try {
-                    session.execute(true, data, rwSplitService -> rwSplitService.setInPrepare(false));
+                    session.getService().setInPrepare(false);
+                    session.execute(true, data, null);
                 } catch (IOException e) {
                     writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
                 }

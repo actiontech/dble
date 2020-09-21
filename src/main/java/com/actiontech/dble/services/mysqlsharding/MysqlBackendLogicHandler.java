@@ -16,16 +16,20 @@ import java.util.List;
 public class MysqlBackendLogicHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MysqlBackendLogicHandler.class);
 
-    private volatile int resultStatus = RESULT_STATUS_INIT;
-    private static final int RESULT_STATUS_INIT = 0;
-    private static final int RESULT_STATUS_HEADER = 1;
-    private static final int RESULT_STATUS_FIELD_EOF = 2;
+    protected volatile int resultStatus = RESULT_STATUS_INIT;
+    protected static final int RESULT_STATUS_INIT = 0;
+    protected static final int RESULT_STATUS_HEADER = 1;
+    protected static final int RESULT_STATUS_FIELD_EOF = 2;
+    // prepared statement
+    protected static final int PREPARED_OK = 3;
+    protected static final int PREPARED_PARAM = 4;
+    protected static final int PREPARED_FIELD = 5;
 
-    private final MySQLResponseService service;
-    private volatile byte[] header;
-    private volatile List<byte[]> fields;
+    protected final MySQLResponseService service;
+    protected volatile byte[] header;
+    protected volatile List<byte[]> fields;
 
-    MysqlBackendLogicHandler(MySQLResponseService service) {
+    public MysqlBackendLogicHandler(MySQLResponseService service) {
         this.service = service;
     }
 
@@ -57,7 +61,7 @@ public class MysqlBackendLogicHandler {
             case RESULT_STATUS_HEADER:
                 switch (data[4]) {
                     case ErrorPacket.FIELD_COUNT:
-                        resultStatus = RESULT_STATUS_INIT;
+                        reset();
                         handleErrorPacket(data);
                         break;
                     case EOFPacket.FIELD_COUNT:
@@ -71,14 +75,14 @@ public class MysqlBackendLogicHandler {
             case RESULT_STATUS_FIELD_EOF:
                 switch (data[4]) {
                     case ErrorPacket.FIELD_COUNT:
-                        resultStatus = RESULT_STATUS_INIT;
+                        reset();
                         handleErrorPacket(data);
                         break;
                     case EOFPacket.FIELD_COUNT:
                         if (data.length > MySQLPacket.MAX_EOF_SIZE) {
                             handleRowPacket(data);
                         } else {
-                            resultStatus = RESULT_STATUS_INIT;
+                            reset();
                             handleRowEofPacket(data);
                         }
                         break;
@@ -120,7 +124,7 @@ public class MysqlBackendLogicHandler {
 
     private void handleRequestPacket(byte[] data) {
         ResponseHandler respHand = service.getResponseHandler();
-        if (respHand != null && respHand instanceof LoadDataResponseHandler) {
+        if (respHand instanceof LoadDataResponseHandler) {
             ((LoadDataResponseHandler) respHand).requestDataResponse(data, service);
         } else {
             closeNoHandler();
@@ -163,7 +167,7 @@ public class MysqlBackendLogicHandler {
         }
     }
 
-    void reset() {
+    protected void reset() {
         resultStatus = RESULT_STATUS_INIT;
     }
 }

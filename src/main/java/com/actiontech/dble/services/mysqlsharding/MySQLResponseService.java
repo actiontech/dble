@@ -20,6 +20,7 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -62,6 +63,7 @@ public class MySQLResponseService extends MySQLBasedService {
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean complexQuery;
     private volatile boolean isDDL = false;
+    private volatile boolean prepareOK = false;
     private volatile boolean testing = false;
     private volatile StatusSync statusSync;
     private volatile boolean autocommit;
@@ -73,13 +75,11 @@ public class MySQLResponseService extends MySQLBasedService {
     private boolean isolationSynced;
     private volatile String dbuser;
 
-    private MysqlBackendLogicHandler logicHandler;
+    private MysqlBackendLogicHandler baseLogicHandler;
+    private MysqlPrepareLogicHandler prepareLogicHandler;
 
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
-
-    private volatile int totalCommand = 0;
-    private volatile int taskCommand = 0;
 
     protected BackendConnection connection;
 
@@ -97,7 +97,8 @@ public class MySQLResponseService extends MySQLBasedService {
         this.connection = (BackendConnection) connection;
         initFromConfig();
         this.proto = new MySQLProtoHandlerImpl();
-        this.logicHandler = new MysqlBackendLogicHandler(this);
+        this.baseLogicHandler = new MysqlBackendLogicHandler(this);
+        this.prepareLogicHandler = new MysqlPrepareLogicHandler(this);
     }
 
     private void initFromConfig() {
@@ -138,7 +139,12 @@ public class MySQLResponseService extends MySQLBasedService {
             if (connection.isClosed()) {
                 return;
             }
-            logicHandler.handleInnerData(data);
+            if (prepareOK) {
+                prepareLogicHandler.handleInnerData(data);
+            } else {
+                baseLogicHandler.handleInnerData(data);
+            }
+
         } finally {
             synchronized (this) {
                 currentTask = null;
@@ -221,7 +227,11 @@ public class MySQLResponseService extends MySQLBasedService {
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
-        logicHandler.reset();
+        if (prepareOK) {
+            prepareLogicHandler.reset();
+        } else {
+            baseLogicHandler.reset();
+        }
         connection.close("handle data error:" + e.getMessage());
     }
 
@@ -619,6 +629,11 @@ public class MySQLResponseService extends MySQLBasedService {
             if (synSQL != null) {
                 sendQueryCmd(synSQL.toString(), service.getCharset());
             }
+        }
+        if (originPacket[4] == MySQLPacket.COM_STMT_PREPARE) {
+            prepareOK = true;
+        } else {
+            prepareOK = false;
         }
         writeDirectly(originPacket);
     }

@@ -822,7 +822,8 @@ public class MySQLResponseService extends MySQLBasedService {
 
     public String toString() {
         return "MySQLResponseService[isExecuting = " + isExecuting + " attachment = " + attachment + " autocommitSynced = " + autocommitSynced + " isolationSynced = " + isolationSynced +
-                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with connection " + connection.toString();
+                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] \nwith response handler [" + responseHandler + "] \nwith rrs = [" +
+                attachment + "] \nwith connection " + connection.toString();
     }
 
     private static class StatusSync {

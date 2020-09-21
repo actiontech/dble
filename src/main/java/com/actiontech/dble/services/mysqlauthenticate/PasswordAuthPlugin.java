@@ -72,7 +72,7 @@ public final class PasswordAuthPlugin {
     }
 
 
-    public static byte[] passwdSha256(String pass,  byte[] authPluginData) throws NoSuchAlgorithmException {
+    public static byte[] passwdSha256(String pass, byte[] authPluginData) throws NoSuchAlgorithmException {
         if (pass == null || pass.length() == 0) {
             return null;
         }
@@ -106,7 +106,6 @@ public final class PasswordAuthPlugin {
         }
         return passwd;
     }
-
 
 
     public static byte[] passwdSha256(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {

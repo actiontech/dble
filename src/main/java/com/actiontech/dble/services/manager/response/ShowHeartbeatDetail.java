@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -15,8 +15,6 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.route.parser.ManagerParseHeartbeat;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
@@ -25,12 +23,16 @@ import com.actiontech.dble.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
  * @author songwie
  */
 public final class ShowHeartbeatDetail {
+    public static final Pattern HEARTBEAT_DETAIL_STMT = Pattern.compile("show\\s+@@heartbeat.detail\\s+where\\s+(name)\\s*=\\s*([^\\s]+)\\s*(;)?", Pattern.CASE_INSENSITIVE);
+
     private ShowHeartbeatDetail() {
     }
 
@@ -63,15 +65,13 @@ public final class ShowHeartbeatDetail {
     }
 
     public static void response(ManagerService service, String stmt) {
-
-
-        Pair<String, String> pair = ManagerParseHeartbeat.getPair(stmt);
-        String name = pair.getValue();
-        if (name.length() == 0) {
+        Matcher matcher = HEARTBEAT_DETAIL_STMT.matcher(stmt);
+        String name;
+        if (!matcher.matches() || (name = matcher.group(2)) == null) {
             service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             return;
         }
-
+        name = StringUtil.removeAllApostrophe(name);
         ByteBuffer buffer = service.allocate();
 
         // write header

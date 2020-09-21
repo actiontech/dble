@@ -83,7 +83,7 @@ public class ProcessList extends ManagerBaseTable {
                     values().
                     forEach(fc -> {
                         Map<RouteResultsetNode, BackendConnection> backendConns = null;
-                        if (!fc.isManager()) {
+                        if (!fc.isManager() && fc.getService() instanceof ShardingService) {
                             backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
                         }
 

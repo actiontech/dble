@@ -259,4 +259,7 @@ public class ViewMeta {
         return schema;
     }
 
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
 }

@@ -14,7 +14,7 @@ import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
 
 import java.security.NoSuchAlgorithmException;
 
-import static com.actiontech.dble.services.mysqlauthenticate.PasswordAuthPlugin.*;
+import static com.actiontech.dble.services.mysqlauthenticate.PasswordAuthPlugin.AUTH_SWITCH_MORE;
 import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
 import static com.actiontech.dble.services.mysqlauthenticate.PluginName.plugin_same_with_default;
 
@@ -56,7 +56,11 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
             seed = new byte[sl1 + sl2];
             System.arraycopy(handshakePacket.getSeed(), 0, seed, 0, sl1);
             System.arraycopy(handshakePacket.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
-            sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(passwordInput, handshakePacket), pluginName.name(), schema);
+            if (authPluginData == null) {
+                sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(passwordInput, handshakePacket), pluginName.name(), schema);
+            } else {
+                sendAuthPacket(new AuthSwitchResponsePackage(), PasswordAuthPlugin.passwdSha256(passwordInput, authPluginData), packetId);
+            }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -99,11 +103,12 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
             case AUTH_SWITCH_MORE:
                 //need full auth of the caching_sha2_password
                 this.clientAuthStage = WATI_FOR_PUBLIC_KEY;
-                /*
-                BinaryPacket binaryPacket = new BinaryPacket();
-                binaryPacket.setData(new byte[]{2});
-                binaryPacket.setPacketId(++data[3]);
-                binaryPacket.bufferWrite(connection);*/
+                if (authPluginData != null) {
+                    BinaryPacket binaryPacket = new BinaryPacket();
+                    binaryPacket.setData(new byte[]{2});
+                    binaryPacket.setPacketId(++data[3]);
+                    binaryPacket.bufferWrite(connection);
+                }
                 return plugin_same_with_default;
             case OkPacket.FIELD_COUNT:
                 // get ok from mysql,login success

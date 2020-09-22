@@ -222,7 +222,7 @@ public class XMLUserLoader {
                 }
                 String dbGroup = element.getAttribute("dbGroup").trim();
                 if (StringUtil.isEmpty(dbGroup)) {
-                    throw new ConfigException("User[" + user + "]'s dbGroup is empty");
+                    throw new ConfigException("User [" + user + "]'s dbGroup is empty");
                 }
 
                 String blacklist = element.getAttribute("blacklist");
@@ -464,7 +464,7 @@ public class XMLUserLoader {
 
                 String dml1 = schemaNode.getAttribute("dml");
                 if (!DML_PATTERN.matcher(dml1).matches())
-                    throw new ConfigException("the dml privilege for the shema [" + name1 + "] configuration under the user [" + user + "] is not standard");
+                    throw new ConfigException("User [" + user + "]'s schema [" + name1 + "]'s privilege's dml is not correct");
                 int[] dml1Array = new int[dml1.length()];
                 for (int offset1 = 0; offset1 < dml1.length(); offset1++) {
                     dml1Array[offset1] = Character.getNumericValue(dml1.charAt(offset1));
@@ -482,7 +482,7 @@ public class XMLUserLoader {
 
                     String dml2 = tableNode.getAttribute("dml");
                     if (!DML_PATTERN.matcher(dml2).matches())
-                        throw new ConfigException("the dml privilege for the table [" + name2 + "] configuration under the shema [" + name1 + "] under the user [" + user + "] is not standard");
+                        throw new ConfigException("User [" + user + "]'s schema [" + name1 + "]'s table [" + name2 + "]'s privilege's dml is not correct");
                     int[] dml2Array = new int[dml2.length()];
                     for (int offset2 = 0; offset2 < dml2.length(); offset2++) {
                         dml2Array[offset2] = Character.getNumericValue(dml2.charAt(offset2));

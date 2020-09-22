@@ -72,7 +72,7 @@ public final class FreshBackendConn {
                 lock.writeLock().unlock();
             }
         } else {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "reloadLock occupied, try again later");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "may be other mutex events that cause interrupt, try again later");
         }
     }
 }

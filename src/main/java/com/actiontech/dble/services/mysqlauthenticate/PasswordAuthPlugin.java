@@ -71,6 +71,43 @@ public final class PasswordAuthPlugin {
         return passwd;
     }
 
+
+    public static byte[] passwdSha256(String pass, byte[] authPluginData) throws NoSuchAlgorithmException {
+        if (pass == null || pass.length() == 0) {
+            return null;
+        }
+        MessageDigest md = null;
+        int cachingSha2DigestLength = 32;
+
+        byte[] passwd = pass.getBytes();
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+            byte[] dig1 = new byte[cachingSha2DigestLength];
+            byte[] dig2 = new byte[cachingSha2DigestLength];
+            md.update(passwd, 0, passwd.length);
+            md.digest(dig1, 0, cachingSha2DigestLength);
+            md.reset();
+            md.update(dig1, 0, dig1.length);
+            md.digest(dig2, 0, cachingSha2DigestLength);
+            md.reset();
+
+            md.update(dig2, 0, dig1.length);
+            md.update(authPluginData, 0, authPluginData.length);
+            byte[] scramble1 = new byte[cachingSha2DigestLength];
+            md.digest(scramble1, 0, cachingSha2DigestLength);
+
+            byte[] mysqlScrambleBuff = new byte[cachingSha2DigestLength];
+            xorString(dig1, mysqlScrambleBuff, scramble1, cachingSha2DigestLength);
+            seedTotal = authPluginData;
+
+            return mysqlScrambleBuff;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return passwd;
+    }
+
+
     public static byte[] passwdSha256(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
         if (pass == null || pass.length() == 0) {
             return null;

@@ -13,6 +13,7 @@ import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -81,19 +82,21 @@ public final class SetHandler {
                     key = handleSetKey(sqlAssignItem.getTarget());
                     SetItem item = newSetItem(key, sqlAssignItem.getValue());
                     if (item.getType() == KeyType.USER_VARIABLES) {
-                        if (userVariableSize != 0) {
+                        if (setSQL.length() > 4) {
                             setSQL.append(",");
+                        }
+                        if (selectSQL.length() > 7) {
                             selectSQL.append(",");
                         }
-                        setSQL.append(sqlAssignItem.toString());
+                        setSQL.append(SQLUtils.toMySqlString(sqlAssignItem));
                         selectSQL.append(item.getName());
 
                         items[userVariableSize++] = item;
                     } else if (item.getType() == KeyType.SYSTEM_VARIABLES) {
-                        if (userVariableSize != 0) {
+                        if (setSQL.length() > 4) {
                             setSQL.append(",");
                         }
-                        setSQL.append(sqlAssignItem.toString());
+                        setSQL.append(SQLUtils.toMySqlString(sqlAssignItem));
                         items[systemVariableIndex--] = item;
                     } else if (item.getType() == KeyType.XA) {
                         if (frontService instanceof ShardingService) {

@@ -161,8 +161,12 @@ public class SetTestJob implements ResponseHandler, Runnable {
         RowDataPacket rowDataPk = new RowDataPacket(fieldPackets.size());
         rowDataPk.read(row);
         for (int i = 0; i < userVariableSize; i++) {
+            if (rowDataPk.getValue(i) == null) {
+                continue;
+            }
             int type = fieldPackets.get(i).getType();
-            if (type == Fields.FIELD_TYPE_LONG || type == Fields.FIELD_TYPE_LONGLONG || type == Fields.FIELD_TYPE_NEW_DECIMAL) {
+            if (type == Fields.FIELD_TYPE_LONG || type == Fields.FIELD_TYPE_LONGLONG || type == Fields.FIELD_TYPE_NEW_DECIMAL ||
+                    type == Fields.FIELD_TYPE_FLOAT | type == Fields.FIELD_TYPE_DOUBLE) {
                 setItems[i].setValue(new String(rowDataPk.getValue(i)));
             } else {
                 setItems[i].setValue("'" + new String(rowDataPk.getValue(i)) + "'");

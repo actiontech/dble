@@ -50,7 +50,9 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
                     this.sysVariables.put(setItem.getName(), setItem.getValue());
                     break;
                 case USER_VARIABLES:
-                    this.usrVariables.put(setItem.getName(), setItem.getValue());
+                    if (setItem.getValue() != null) {
+                        this.usrVariables.put(setItem.getName(), setItem.getValue());
+                    }
                     break;
                 case CHARSET:
                     this.setCharacterSet(setItem.getValue());

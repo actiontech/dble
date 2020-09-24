@@ -21,6 +21,7 @@ import com.actiontech.dble.route.util.RouteResultCopy;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
@@ -279,7 +280,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
                     DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.CONN_TEST_END, shardingService);
                     finishedTest = true;
                     session.setTraceSimpleHandler(handler);
-                    session.setPreExecuteEnd(false);
+                    session.setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
                     if (!session.isKilled()) {
                         handler.execute();
                     } else {

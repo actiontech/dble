@@ -32,7 +32,7 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
                 implicitCommitHandler.next();
                 return;
             }
-            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
+            session.getShardingService().writeOkPacket();
             return;
         }
 
@@ -55,7 +55,7 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     @Override
     public void rollback() {
         if (session.getTargetCount() <= 0) {
-            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
+            session.getShardingService().writeOkPacket();
             return;
         }
 

@@ -36,7 +36,7 @@ public final class UseHandler {
         service.setSchema(schema);
         service.getSession2().setRowCount(0);
 
-        service.write(service.getSession2().getOKPacket());
+        service.writeOkPacket();
     }
 
     public static String getSchemaName(String sql, int offset) {

@@ -5,32 +5,27 @@
 
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 
 import java.util.Map;
 
 public class SetCallBack implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
-    private ShardingService service;
-    private boolean backToOtherThread;
+    private final MySQLVariablesService service;
+    private final SetHandler.SetItem[] items;
 
-    SetCallBack(ShardingService service) {
+    SetCallBack(MySQLVariablesService service, SetHandler.SetItem[] items) {
         this.service = service;
+        this.items = items;
+
     }
 
     @Override
     public void onResult(SQLQueryResult<Map<String, String>> result) {
         if (result.isSuccess()) {
-            service.executeContextSetTask();
-            backToOtherThread = service.executeInnerSetTask();
-        } else {
-            service.getContextTask().clear();
-            service.getInnerSetTask().clear();
+            service.executeContextSetTask(items);
         }
     }
 
-    public boolean isBackToOtherThread() {
-        return backToOtherThread;
-    }
 }

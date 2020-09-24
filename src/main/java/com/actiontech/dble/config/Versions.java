@@ -14,12 +14,12 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-xxxxxx-yyyyMMddHHmmss".getBytes();
+    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-c2188f300b9f027ce9dedea1cef01b49360bbb37-20200924004232".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";
     public static final String DOMAIN = "http://dble.cloud/";
-    public static final String CONFIG_VERSION = "3.0"; // will be replaced
+    public static final String CONFIG_VERSION = "4.0";
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d{1,})\\.(\\d{1,})$", Pattern.CASE_INSENSITIVE);
 
     public static void setServerVersion(String version) {

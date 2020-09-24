@@ -18,8 +18,9 @@ import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -45,7 +47,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Created by szf on 2020/6/29.
  */
-public class MySQLResponseService extends MySQLBasedService {
+public class MySQLResponseService extends MySQLVariablesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLResponseService.class);
 
     private ResponseHandler responseHandler;
@@ -66,8 +68,6 @@ public class MySQLResponseService extends MySQLBasedService {
     private volatile boolean prepareOK = false;
     private volatile boolean testing = false;
     private volatile StatusSync statusSync;
-    private volatile boolean autocommit;
-    private volatile int txIsolation;
     private volatile boolean isRowDataFlowing = false;
     private volatile BackEndCleaner recycler = null;
     private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
@@ -101,6 +101,10 @@ public class MySQLResponseService extends MySQLBasedService {
         this.prepareLogicHandler = new MysqlPrepareLogicHandler(this);
     }
 
+    @Override
+    public void handleSetItem(SetHandler.SetItem setItem) {
+    }
+
     private void initFromConfig() {
         this.autocommitSynced = connection.getInstance().isAutocommitSynced();
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
@@ -112,8 +116,8 @@ public class MySQLResponseService extends MySQLBasedService {
             this.txIsolation = -1;
         }
         this.complexQuery = false;
-        this.usrVariables = new ArrayList<>();
-        this.sysVariables = new ArrayList<>();
+        this.usrVariables = new LinkedHashMap<>();
+        this.sysVariables = new LinkedHashMap<>();
         this.dbuser = connection.getInstance().getConfig().getUser();
     }
 
@@ -327,44 +331,8 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    private StringBuilder getSynSql(CharsetNames clientCharset, int clientTxIsolation, boolean expectAutocommit) {
-        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) ? 0 : 1;
-        int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
-        int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
-        int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
-        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn;
-        if (synCount == 0) {
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        if (schemaSyn == 1) {
-            getChangeSchemaCommand(sb, connection.getSchema());
-        }
-        if (charsetSyn == 1) {
-            getCharsetCommand(sb, clientCharset);
-        }
-        if (txIsolationSyn == 1) {
-            getTxIsolationCommand(sb, clientTxIsolation);
-        }
-        if (autoCommitSyn == 1) {
-            getAutocommitCommand(sb, expectAutocommit);
-        }
-
-        metaDataSynced = false;
-        statusSync = new StatusSync(connection.getSchema(),
-                clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, Collections.emptyList(), Collections.emptyList());
-
-        return sb;
-    }
-
-    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn,
-                                    CharsetNames clientCharset, int clientTxIsolation,
-                                    boolean expectAutocommit, List<Map<String, String>> usrVariables, List<Map<String, String>> sysVariables) {
-        if (rrn.getSqlType() == ServerParse.DDL) {
-            isDDL = true;
-        }
+    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, CharsetNames clientCharset, int clientTxIsolation,
+                                    boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
 
         int xaSyn = 0;
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
@@ -372,10 +340,11 @@ public class MySQLResponseService extends MySQLBasedService {
             xaSyn = 1;
         }
 
-        StringBuilder setSql = new StringBuilder();
-        int setSqlFlag = getSetSQL(usrVariables, sysVariables, setSql);
+        Set<String> toResetSys = new HashSet<>();
+        String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
+        int setSqlFlag = setSql == null ? 0 : 1;
         int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
-        int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
+        int charsetSyn = this.getConnection().getCharsetName().equals(clientCharset) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
@@ -396,7 +365,7 @@ public class MySQLResponseService extends MySQLBasedService {
         if (autoCommitSyn == 1) {
             getAutocommitCommand(sb, expectAutocommit);
         }
-        if (setSqlFlag > 0) {
+        if (setSqlFlag == 1) {
             sb.append(setSql);
         }
         if (xaSyn == 1) {
@@ -412,7 +381,7 @@ public class MySQLResponseService extends MySQLBasedService {
         metaDataSynced = false;
         statusSync = new StatusSync(connection.getSchema(),
                 clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, usrVariables, sysVariables);
+                synCount, usrVariables, sysVariables, toResetSys);
         return sb;
     }
 
@@ -461,61 +430,60 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    private int getSetSQL(List<Map<String, String>> usrVars, List<Map<String, String>> sysVars, StringBuilder setSQL) {
-        int totalSize = 0;
-        Map<String, String> tmpSysVars = new HashMap<>(this.equivalentSysVarMap());
-        for (int i = 0; i < usrVars.size(); i++) {
-            //new final var for single set statement from sharding service
-            List<Pair<String, String>> setVars = new ArrayList<>();
-
-            Map<String, String> singleStatementSysVar = sysVars.get(i);
-            Map<String, String> singleStatementUsrVar = usrVars.get(i);
-            if (usrVariables.size() <= i) {
-                //if the backend service has the userVars, means that the connection is hold by the front session till now
-                //the index of the object in the usrVariables must has the same order
-                for (Map.Entry<String, String> entry : singleStatementUsrVar.entrySet()) {
+    private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {
+        //new final var
+        List<Pair<String, String>> setVars = new ArrayList<>();
+        //tmp add all backend sysVariables
+        Map<String, String> tmpSysVars = new HashMap<>(sysVariables);
+        //for all front end sysVariables
+        for (Map.Entry<String, String> entry : sysVars.entrySet()) {
+            if (!tmpSysVars.containsKey(entry.getKey())) {
+                setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+            } else {
+                String value = tmpSysVars.remove(entry.getKey());
+                //if backend is not equal frontend, need to reset
+                if (!StringUtil.equalsIgnoreCase(entry.getValue(), value)) {
                     setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
                 }
             }
-
-            if (sysVariables.size() <= i || sysVariables.get(i) != singleStatementSysVar) {
-                //if the sysVariables object has the same, means that the sysVar has been Synchronized
-                //otherwise the all sysVariables should be set to the backend
-                //the benchmark is the tmpSysVars, statement-level-system-vars
-                for (Map.Entry<String, String> entry : singleStatementSysVar.entrySet()) {
-                    if (!tmpSysVars.containsKey(entry.getKey())) {
-                        setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
-                        tmpSysVars.put(entry.getKey(), entry.getValue());
-                    } else {
-                        String value = tmpSysVars.get(entry.getKey());
-                        //if backend is not equal frontend, need to reset
-                        if (!StringUtil.equalsIgnoreCase(entry.getValue(), value)) {
-                            setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
-                        }
-                        tmpSysVars.put(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
-
-            if (setVars.size() == 0) {
-                continue;
-            }
-
-            totalSize++;
-            setSQL.append("set ");
-            int cnt = 0;
-            for (Pair<String, String> var : setVars) {
-                if (cnt > 0) {
-                    setSQL.append(",");
-                }
-                setSQL.append(var.getKey());
-                setSQL.append("=");
-                setSQL.append(var.getValue());
-                cnt++;
-            }
-            setSQL.append(";");
         }
-        return totalSize;
+        //tmp now = backend -(backend &&frontend)
+        for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
+            String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
+            try {
+                BigDecimal vl = new BigDecimal(value);
+            } catch (NumberFormatException e) {
+                value = "`" + value + "`";
+            }
+            setVars.add(new Pair<>(entry.getKey(), value));
+            toResetSys.add(entry.getKey());
+        }
+
+        for (Map.Entry<String, String> entry : usrVars.entrySet()) {
+            if (!usrVariables.containsKey(entry.getKey())) {
+                setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+            } else {
+                if (!StringUtil.equalsIgnoreCase(entry.getValue(), usrVariables.get(entry.getKey()))) {
+                    setVars.add(new Pair<>(entry.getKey(), entry.getValue()));
+                }
+            }
+        }
+
+        if (setVars.size() == 0)
+            return null;
+        StringBuilder sb = new StringBuilder("set ");
+        int cnt = 0;
+        for (Pair<String, String> var : setVars) {
+            if (cnt > 0) {
+                sb.append(",");
+            }
+            sb.append(var.getKey());
+            sb.append("=");
+            sb.append(var.getValue());
+            cnt++;
+        }
+        sb.append(";");
+        return sb.toString();
     }
 
 
@@ -587,8 +555,7 @@ public class MySQLResponseService extends MySQLBasedService {
         return "MySQLConnection host=" + connection.getHost() + ", port=" + connection.getPort() + ", schema=" + connection.getSchema();
     }
 
-    public void executeMultiNode(RouteResultsetNode rrn, ShardingService service,
-                                 boolean isAutoCommit) {
+    public void executeMultiNode(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
@@ -596,7 +563,11 @@ public class MySQLResponseService extends MySQLBasedService {
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStarted(true);
             }
-            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.DDL) {
+                isDDL = true;
+            }
+            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
+                    service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
             synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
@@ -611,30 +582,31 @@ public class MySQLResponseService extends MySQLBasedService {
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStarted(true);
             }
-            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.DDL) {
+                isDDL = true;
+            }
+            StringBuilder synSQL = getSynSql(xaTxId, rrn,
+                    service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
             synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
     }
 
-    public void execute(RWSplitService service) {
-        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
-        synAndDoExecute(synSQL, service.getExecuteSql(), service.getCharset());
+    public void execute(MySQLVariablesService service, String sql) {
+        StringBuilder synSQL = getSynSql(null, null,
+                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+        synAndDoExecute(synSQL, sql, service.getCharset());
     }
 
     public void execute(RWSplitService service, byte[] originPacket) {
-        if (service != null) {
-            StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
-            if (synSQL != null) {
-                sendQueryCmd(synSQL.toString(), service.getCharset());
-            }
+        StringBuilder synSQL = getSynSql(null, null,
+                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+        if (synSQL != null) {
+            sendQueryCmd(synSQL.toString(), service.getCharset());
         }
-        if (originPacket[4] == MySQLPacket.COM_STMT_PREPARE) {
-            prepareOK = true;
-        } else {
-            prepareOK = false;
-        }
+
+        prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
         writeDirectly(originPacket);
     }
 
@@ -675,11 +647,8 @@ public class MySQLResponseService extends MySQLBasedService {
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.connection.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
-        this.usrVariables.add(new LinkedHashMap<>());
         this.sysVariables.clear();
-        Map<String, String> sysRest = new LinkedHashMap<>();
-        sysRest.put("sql_mode", null);
-        this.sysVariables.add(sysRest);
+        this.sysVariables.put("sql_mode", null);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
@@ -711,13 +680,12 @@ public class MySQLResponseService extends MySQLBasedService {
     }
 
     public BackendConnection getConnection() {
-        return (BackendConnection) connection;
+        return connection;
     }
 
     public void setResponseHandler(ResponseHandler handler) {
         this.responseHandler = handler;
     }
-
 
     public Object getAttachment() {
         return attachment;
@@ -727,7 +695,6 @@ public class MySQLResponseService extends MySQLBasedService {
         this.attachment = attachment;
     }
 
-
     public NonBlockingSession getSession() {
         return session;
     }
@@ -736,11 +703,9 @@ public class MySQLResponseService extends MySQLBasedService {
         this.session = session;
     }
 
-
     public ResponseHandler getResponseHandler() {
         return responseHandler;
     }
-
 
     public boolean isRowDataFlowing() {
         return isRowDataFlowing;
@@ -790,22 +755,6 @@ public class MySQLResponseService extends MySQLBasedService {
         this.statusSync = statusSync;
     }
 
-    public boolean isAutocommit() {
-        return autocommit;
-    }
-
-    public void setAutocommit(boolean autocommit) {
-        this.autocommit = autocommit;
-    }
-
-    public int getTxIsolation() {
-        return txIsolation;
-    }
-
-    public void setTxIsolation(int txIsolation) {
-        this.txIsolation = txIsolation;
-    }
-
     public void setRecycler(BackEndCleaner recycler) {
         this.recycler = recycler;
     }
@@ -847,20 +796,22 @@ public class MySQLResponseService extends MySQLBasedService {
         private final Integer txtIsolation;
         private final Boolean autocommit;
         private final AtomicInteger synCmdCount;
-        private final List<Map<String, String>> usrVariables = new ArrayList<>();
-        private final List<Map<String, String>> sysVariables = new ArrayList<>();
+        private final Map<String, String> usrVariables = new LinkedHashMap<>();
+        private final Map<String, String> sysVariables = new LinkedHashMap<>();
 
         StatusSync(String schema,
                    CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
-                   int synCount, List<Map<String, String>> usrVariables, List<Map<String, String>> sysVariables) {
-            super();
+                   int synCount, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
             this.schema = schema;
             this.clientCharset = clientCharset;
             this.txtIsolation = txtIsolation;
             this.autocommit = autocommit;
             this.synCmdCount = new AtomicInteger(synCount);
-            this.usrVariables.addAll(usrVariables);
-            this.sysVariables.addAll(sysVariables);
+            this.usrVariables.putAll(usrVariables);
+            this.sysVariables.putAll(sysVariables);
+            for (String sysVariable : toResetSys) {
+                this.sysVariables.remove(sysVariable);
+            }
         }
 
         boolean synAndExecuted(MySQLResponseService service) {

@@ -18,7 +18,7 @@ public class ShowVariablesHandler extends SingleNodeHandler {
 
     public ShowVariablesHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
-        shadowVars = session.getShardingService().equivalentSysVarMap();
+        shadowVars = session.getShardingService().getSysVariables();
     }
 
     @Override

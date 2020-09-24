@@ -2,6 +2,7 @@ package com.actiontech.dble.rwsplit;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLSyntaxErrorException;
 
 public class RWSplitNonBlockingSession {
 
@@ -23,21 +25,49 @@ public class RWSplitNonBlockingSession {
         this.rwSplitService = service;
     }
 
-    public void execute(boolean master, Callback callback) throws IOException {
+    public void execute(boolean master, Callback callback) {
         execute(master, null, callback);
     }
 
-    public void execute(boolean master, byte[] originPacket, Callback callback) throws IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback);
-        if (conn != null && !conn.isClosed()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("select bind conn[id={}]", conn.getId());
+    public void execute(boolean master, byte[] originPacket, Callback callback) {
+        try {
+            RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback);
+            if (conn != null && !conn.isClosed()) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("select bind conn[id={}]", conn.getId());
+                }
+                checkDest(!conn.getInstance().isReadInstance());
+                handler.execute(conn);
+                return;
             }
-            handler.execute(conn);
+
+            PhysicalDbInstance instance = rwGroup.select(master);
+            checkDest(!instance.isReadInstance());
+            instance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (IOException e) {
+            LOGGER.warn("select conn error", e);
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+        } catch (SQLSyntaxErrorException se) {
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        }
+    }
+
+    private void checkDest(boolean isMaster) throws SQLSyntaxErrorException {
+        String dest = rwSplitService.getExpectedDest();
+        if (dest == null) {
             return;
         }
-        PhysicalDbInstance instance = rwGroup.select(master);
-        instance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        if (dest.equalsIgnoreCase("M") && isMaster) {
+            return;
+        }
+        if (dest.equalsIgnoreCase("S") && !isMaster) {
+            return;
+        }
+        throw new SQLSyntaxErrorException("unexpected dble_dest_expect,real[" + (isMaster ? "M" : "S") + "],expect[" + dest + "]");
+    }
+
+    public PhysicalDbGroup getRwGroup() {
+        return rwGroup;
     }
 
     public void setRwGroup(PhysicalDbGroup rwGroup) {
@@ -51,8 +81,17 @@ public class RWSplitNonBlockingSession {
         this.conn = bindConn;
     }
 
+    public void unbindIfSafe(boolean safe) {
+        if (safe) {
+            this.conn.release();
+            this.conn = null;
+        } else {
+            unbindIfSafe();
+        }
+    }
+
     public void unbindIfSafe() {
-        if (rwSplitService.isAutocommit() && !rwSplitService.isLocked() &&
+        if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
                 !rwSplitService.isTxStart() &&
                 !rwSplitService.isInLoadData() &&
                 !rwSplitService.isInPrepare()) {

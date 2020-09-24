@@ -12,10 +12,9 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.MySQLBasedService;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-
+import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
@@ -247,8 +246,8 @@ public final class ShowConnection {
         }
         row.add(txLevel.getBytes());
         row.add(autocommit.getBytes());
-        row.add(StringUtil.encode(((MySQLBasedService) c.getService()).getStringOfSysVariables(), charset));
-        row.add(StringUtil.encode(((MySQLBasedService) c.getService()).getStringOfUsrVariables(), charset));
+        row.add(StringUtil.encode(((MySQLVariablesService) c.getService()).getStringOfSysVariables(), charset));
+        row.add(StringUtil.encode(((MySQLVariablesService) c.getService()).getStringOfUsrVariables(), charset));
         return row;
     }
 

@@ -52,7 +52,7 @@ public class RollbackStage implements TransactionStage {
         if (sendData != null) {
             sendData.write(session.getSource());
         } else {
-            session.getShardingService().write(session.getShardingService().getSession2().getOKPacket());
+            session.getShardingService().writeOkPacket();
         }
         session.clearSavepoint();
         return null;

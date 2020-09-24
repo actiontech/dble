@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.config.ErrorCode;
@@ -27,12 +27,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     private Boolean readOnly = true;
     private boolean sessionReadOnly = true;
 
-    @Override
     public void setReadOnly(Boolean readOnly) {
         this.readOnly = readOnly;
     }
 
-    @Override
     public void setSessionReadOnly(boolean sessionReadOnly) {
         this.sessionReadOnly = sessionReadOnly;
     }
@@ -143,10 +141,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         service.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
                         break;
                     case ServerParse.MYSQL_CMD_COMMENT:
-                        service.write(service.getSession2().getOKPacket());
-                        break;
                     case ServerParse.MYSQL_COMMENT:
-                        service.write(service.getSession2().getOKPacket());
+                        service.writeOkPacket();
                         break;
                     case ServerParse.LOAD_DATA_INFILE_SQL:
                         service.loadDataInfileStart(sql);

@@ -17,7 +17,7 @@ public final class SptExecute {
 
     public static String queryUserVar(String name, ShardingService service) {
         String key = "@" + name;
-        return service.equivalentUsrVarMap().get(key);
+        return service.getUsrVariables().get(key);
     }
 
     public static void response(ShardingService service) {

@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.services.factorys.information.tables;
+package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;

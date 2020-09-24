@@ -5,9 +5,6 @@
 
 package com.actiontech.dble.services.manager.information;
 
-import com.actiontech.dble.services.factorys.information.tables.DbleBackendConnections;
-import com.actiontech.dble.services.factorys.information.tables.DbleFrontConnections;
-import com.actiontech.dble.services.factorys.information.tables.DbleThreadPool;
 import com.actiontech.dble.services.manager.information.tables.*;
 
 import java.util.Map;

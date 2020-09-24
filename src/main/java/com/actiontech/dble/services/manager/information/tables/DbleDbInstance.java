@@ -355,9 +355,23 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     private void decryptPassword(List<LinkedHashMap<String, String>> rows, boolean insertFlag) {
         for (LinkedHashMap<String, String> row : rows) {
+            checkBooleanVal(row);
             if ((insertFlag && Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED))) || !insertFlag) {
                 row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(true, row.get(COLUMN_NAME),
                         row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
+            }
+        }
+    }
+
+    private void checkBooleanVal(LinkedHashMap<String, String> row) {
+        Set<String> keySet = Sets.newHashSet(COLUMN_ENCRYPT_CONFIGURED, COLUMN_PRIMARY, COLUMN_DISABLED, COLUMN_TEST_ON_CREATE, COLUMN_TEST_ON_BORROW, COLUMN_TEST_ON_RETURN,
+                COLUMN_TEST_WHILE_IDLE);
+        for (String key : keySet) {
+            if (row.containsKey(key) && !StringUtil.isEmpty(row.get(key))) {
+                String value = row.get(key);
+                if (!StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
+                    throw new ConfigException("Column '" + key + "' values only support 'false' or 'true'.");
+                }
             }
         }
     }

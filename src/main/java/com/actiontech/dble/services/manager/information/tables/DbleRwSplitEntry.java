@@ -9,6 +9,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
 import com.actiontech.dble.util.IPAddressUtil;
@@ -148,6 +149,17 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         checkWhiteIPs(tempRowMap);
         //check db_group
         checkDbGroup(tempRowMap);
+        //check boolean
+        checkBooleanVal(tempRowMap);
+    }
+
+    private void checkBooleanVal(LinkedHashMap<String, String> tempRowMap) {
+        if (tempRowMap.containsKey(COLUMN_ENCRYPT_CONFIGURED) && !StringUtil.isEmpty(tempRowMap.get(COLUMN_ENCRYPT_CONFIGURED))) {
+            String encryptConfigured = tempRowMap.get(COLUMN_ENCRYPT_CONFIGURED);
+            if (!StringUtil.equalsIgnoreCase(encryptConfigured, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(encryptConfigured, Boolean.TRUE.toString())) {
+                throw new ConfigException("Column 'encrypt_configured' values only support 'false' or 'true'.");
+            }
+        }
     }
 
 

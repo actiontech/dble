@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 GitVersion xxxxxx
 BuildTime  yyyyMMddHHmmss
-=======
-GitVersion 1d36a5b3fc33294e3318343411bb9d2517733a1d
-BuildTime  20200724174006
->>>>>>>  #1880 fix packetId usage in show tables
 MavenVersion 9.9.9.9
 GitUrl https://github.com/actiontech/dble
 WebSite https://opensource.actionsky.com/

@@ -2,7 +2,7 @@
  * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
-package com.actiontech.dble.services.factorys.information.tables;
+package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
@@ -82,7 +82,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         columns.put("conn_estab_time", new ColumnMeta("conn_estab_time", "int(11)", false));
         columnsType.put("conn_estab_time", Fields.FIELD_TYPE_LONG);
 
-        columns.put("borrowed_from_pool", new ColumnMeta("borrowed_from_pool", "int(11)", false));
+        columns.put("borrowed_from_pool", new ColumnMeta("borrowed_from_pool", "varchar(5)", false));
         columnsType.put("borrowed_from_pool", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("conn_recv_buffer", new ColumnMeta("conn_recv_buffer", "int(11)", false));

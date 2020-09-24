@@ -55,8 +55,8 @@ public class DbleXaSession extends ManagerBaseTable {
     }
 
     private void getRows(List<LinkedHashMap<String, String>> list, NonBlockingSession session) {
-        LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
         for (RouteResultsetNode node : session.getTargetKeys()) {
+            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_FRONT_ID, session.getShardingService().getConnection().getId() + "");
             map.put(COLUMN_XA_ID, session.getSessionXaID() + "");
             map.put(COLUMN_XA_STATE, session.getTransactionManager().getXAStage());

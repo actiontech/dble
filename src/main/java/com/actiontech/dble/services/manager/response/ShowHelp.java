@@ -162,8 +162,6 @@ public final class ShowHelp {
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.conditiont");
         HELPS.put("release @@reload_metadata", "Release reload process , unlock the config meta lock");
-        // rollback
-        HELPS.put("rollback @@config", "Rollback all config from memory");
 
         // offline/online
         HELPS.put("offline", "Change Server status to OFF");

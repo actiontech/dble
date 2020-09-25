@@ -94,6 +94,7 @@ public abstract class ManagerBaseHandlerBuilder {
             ManagerTableNode tbNode = (ManagerTableNode) node;
             schema = tbNode.getSchema();
             table = tbNode.getTableName();
+            tbNode.setNeedSendMaker(needSendMaker);
         }
         if (needSendMaker || node.isWithSubQuery() || !(node instanceof ManagerTableNode)) {
             ManagerSendMakeHandler sh = new ManagerSendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);

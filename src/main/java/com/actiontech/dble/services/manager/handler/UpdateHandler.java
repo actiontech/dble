@@ -95,7 +95,7 @@ public final class UpdateHandler {
         try {
             values = getUpdateValues(schemaInfo, managerTable, update.getItems());
         } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
 

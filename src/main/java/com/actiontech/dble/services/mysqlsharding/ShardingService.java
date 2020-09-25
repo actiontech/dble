@@ -20,20 +20,18 @@ import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.ServerSptPrepare;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
 import com.actiontech.dble.server.handler.ServerPrepareHandler;
 import com.actiontech.dble.server.handler.SetHandler;
-import com.actiontech.dble.server.handler.SetInnerHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.CommandCount;
@@ -47,7 +45,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
-import java.util.*;
+import java.sql.SQLSyntaxErrorException;
+import java.util.Iterator;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by szf on 2020/6/18.
  */
-public class ShardingService extends MySQLBasedService implements FrontEndService {
+public class ShardingService extends MySQLVariablesService implements FrontEndService {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingService.class);
 
@@ -76,33 +76,19 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
     protected String executeSql;
     protected UserName user;
     private long clientFlags;
-    private volatile boolean autocommit;
     private volatile boolean txStarted;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
     protected long lastReadTime;
-
-    private volatile int txIsolation;
-
     private AtomicLong txID = new AtomicLong(1);
-
     private volatile boolean isLocked = false;
-
     private long lastInsertId;
-
     protected String schema;
-
     private volatile boolean multiStatementAllow = false;
-
     private final NonBlockingSession session;
-
     private boolean sessionReadOnly = false;
-
-    private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
-    private List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
-
     private ServerSptPrepare sptprepare;
 
     public ShardingService(AbstractConnection connection) {
@@ -118,6 +104,54 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
         this.proto = new MySQLProtoHandlerImpl();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+    }
+
+    @Override
+    public void handleSetItem(SetHandler.SetItem setItem) {
+        String val = setItem.getValue();
+        switch (setItem.getType()) {
+            case XA:
+                session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
+                break;
+            case TRACE:
+                session.setTrace(Boolean.parseBoolean(val));
+                break;
+            case TX_READ_ONLY:
+                sessionReadOnly = Boolean.parseBoolean(val);
+                break;
+            case AUTOCOMMIT:
+                if (Boolean.parseBoolean(val)) {
+                    if (!autocommit && session.getTargetCount() > 0) {
+                        session.implicitCommit(() -> {
+                            autocommit = true;
+                            writeOkPacket();
+                        });
+                        return;
+                    }
+                    autocommit = true;
+                } else {
+                    if (autocommit) {
+                        autocommit = false;
+                        TxnLogHelper.putTxnLog(this, executeSql);
+                    }
+                }
+                writeOkPacket();
+                break;
+            default:
+                // IGNORE
+        }
+    }
+
+    public void checkXaStatus(boolean val) throws SQLSyntaxErrorException {
+        if (val) {
+            if (session.getTargetMap().size() > 0 && session.getSessionXaID() == null) {
+                throw new SQLSyntaxErrorException("you can't set xa cmd on when there are unfinished operation in the session.");
+            }
+        } else {
+            if (session.getTargetMap().size() > 0 && session.getSessionXaID() != null) {
+                throw new SQLSyntaxErrorException("you can't set xa cmd off when a transaction is in progress.");
+            }
+        }
     }
 
     public void query(String sql) {
@@ -144,7 +178,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         if (userConfig instanceof ShardingUserConfig) {
             readOnly = ((ShardingUserConfig) userConfig).isReadOnly();
         }
-
 
         this.handler.setReadOnly(readOnly);
         this.handler.setSessionReadOnly(sessionReadOnly);
@@ -391,7 +424,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         }
     }
 
-
     @Override
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         markFinished();
@@ -402,75 +434,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         if (session != null) {
             session.setStageFinished();
         }
-    }
-
-    public void executeContextSetTask() {
-        for (Pair<SetHandler.KeyType, Pair<String, String>> task : contextTask) {
-            switch (task.getKey()) {
-                case CHARACTER_SET_CLIENT:
-                    String charsetClient = task.getValue().getKey();
-                    this.setCharacterClient(charsetClient);
-                    break;
-                case CHARACTER_SET_CONNECTION:
-                    String collationName = task.getValue().getKey();
-                    this.setCharacterConnection(collationName);
-                    break;
-                case CHARACTER_SET_RESULTS:
-                    String charsetResult = task.getValue().getKey();
-                    this.setCharacterResults(charsetResult);
-                    break;
-                case COLLATION_CONNECTION:
-                    String collation = task.getValue().getKey();
-                    this.setCollationConnection(collation);
-                    break;
-                case TX_ISOLATION:
-                    String isolationLevel = task.getValue().getKey();
-                    this.setTxIsolation(Integer.parseInt(isolationLevel));
-                    break;
-                case TX_READ_ONLY:
-                    String enable = task.getValue().getKey();
-                    this.setSessionReadOnly(Boolean.parseBoolean(enable));
-                    break;
-                case SYSTEM_VARIABLES:
-                    this.sysVariables.put(task.getValue().getKey(), task.getValue().getValue());
-                    break;
-                case USER_VARIABLES:
-                    this.usrVariables.put(task.getValue().getKey(), task.getValue().getValue());
-                    break;
-                case CHARSET:
-                    this.setCharacterSet(task.getValue().getKey());
-                    break;
-                case NAMES:
-                    this.setNames(task.getValue().getKey(), task.getValue().getValue());
-                    break;
-                default:
-                    //can't happen
-                    break;
-            }
-        }
-    }
-
-    public boolean executeInnerSetTask() {
-        Pair<SetHandler.KeyType, Pair<String, String>> autoCommitTask = null;
-        for (Pair<SetHandler.KeyType, Pair<String, String>> task : innerSetTask) {
-            switch (task.getKey()) {
-                case XA:
-                    session.getTransactionManager().setXaTxEnabled(Boolean.valueOf(task.getValue().getKey()), this);
-                    break;
-                case AUTOCOMMIT:
-                    autoCommitTask = task;
-                    break;
-                case TRACE:
-                    session.setTrace(Boolean.valueOf(task.getValue().getKey()));
-                    break;
-                default:
-            }
-        }
-
-        if (autoCommitTask != null) {
-            return SetInnerHandler.execSetAutoCommit(executeSql, this, Boolean.valueOf(autoCommitTask.getValue().getKey()));
-        }
-        return false;
     }
 
     public void beginInTx(String stmt) {
@@ -595,7 +558,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         }
     }
 
-
     @Override
     public void write(MySQLPacket packet) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
@@ -678,35 +640,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         TraceManager.sessionStart(this, "sharding-server-start");
     }
 
-
-    public void setCollationConnection(String collation) {
-        connection.getCharsetName().setCollation(collation);
-    }
-
-    public void setCharacterResults(String name) {
-        connection.getCharsetName().setResults(name);
-    }
-
-    public void setCharacterConnection(String collationName) {
-        connection.getCharsetName().setCollation(collationName);
-    }
-
-    public void setNames(String name, String collationName) {
-        connection.getCharsetName().setNames(name, collationName);
-    }
-
-    public void setCharacterClient(String name) {
-        connection.getCharsetName().setClient(name);
-    }
-
-    public int getTxIsolation() {
-        return txIsolation;
-    }
-
-    public void setTxIsolation(int txIsolation) {
-        this.txIsolation = txIsolation;
-    }
-
     public boolean isTxStarted() {
         return txStarted;
     }
@@ -737,14 +670,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
 
     public void setTxInterruptMsg(String txInterruptMsg) {
         this.txInterruptMsg = txInterruptMsg;
-    }
-
-    public boolean isAutocommit() {
-        return autocommit;
-    }
-
-    public void setAutocommit(boolean autocommit) {
-        this.autocommit = autocommit;
     }
 
     public boolean isTxStart() {
@@ -788,7 +713,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         return (ShardingUserConfig) userConfig;
     }
 
-
     public String getSchema() {
         return schema;
     }
@@ -796,11 +720,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
     public void setSchema(String schema) {
         this.schema = schema;
     }
-
-    public void setCharacterSet(String name) {
-        connection.setCharacterSet(name);
-    }
-
 
     public boolean isLocked() {
         return isLocked;
@@ -816,11 +735,6 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
 
     public long getXid() {
         return txID.get();
-    }
-
-
-    public Map<String, String> getUsrVariables() {
-        return usrVariables;
     }
 
     public long getLastInsertId() {
@@ -843,30 +757,8 @@ public class ShardingService extends MySQLBasedService implements FrontEndServic
         return sessionReadOnly;
     }
 
-
     public ServerLoadDataInfileHandler getLoadDataInfileHandler() {
         return loadDataInfileHandler;
-    }
-
-    public Map<String, String> getSysVariables() {
-        return sysVariables;
-    }
-
-
-    public List<Pair<SetHandler.KeyType, Pair<String, String>>> getContextTask() {
-        return contextTask;
-    }
-
-    public void setContextTask(List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask) {
-        this.contextTask = contextTask;
-    }
-
-    public List<Pair<SetHandler.KeyType, Pair<String, String>>> getInnerSetTask() {
-        return innerSetTask;
-    }
-
-    public void setInnerSetTask(List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask) {
-        this.innerSetTask = innerSetTask;
     }
 
     public ServerSptPrepare getSptPrepare() {

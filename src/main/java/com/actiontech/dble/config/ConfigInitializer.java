@@ -264,11 +264,11 @@ public class ConfigInitializer implements ProblemReporter {
                 LOGGER.warn("SelfCheck### can't connect to [" + dbInstanceKey + "]");
                 isConnectivity = false;
             } else if (schemaList != null) {
-                TestSchemasTask testSchemaTask = new TestSchemasTask(ds, schemaList, !ds.isReadInstance());
+                TestSchemasTask testSchemaTask = new TestSchemasTask(shardingNodes, ds, schemaList, !ds.isReadInstance());
                 testSchemaTask.start();
                 testSchemaTask.join(3000);
             } else {
-                LOGGER.warn("SelfCheck### connect to [" + dbInstanceKey + "] successfully.");
+                LOGGER.info("SelfCheck### connect to [" + dbInstanceKey + "] successfully.");
             }
         } catch (InterruptedException e) {
             errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + dbInstanceKey + "]"));

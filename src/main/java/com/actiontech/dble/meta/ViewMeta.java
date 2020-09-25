@@ -91,8 +91,8 @@ public class ViewMeta {
             viewQuery = new TableNode(schema, viewName, viewColumnMeta);
         } else {
             if (selNode instanceof MergeNode) {
-                this.setFieldsAlias(selNode, true);
                 selNode.setUpFields();
+                this.setFieldsAlias(selNode, true);
             } else {
                 selNode.setUpFields();
                 this.setFieldsAlias(selNode, false);

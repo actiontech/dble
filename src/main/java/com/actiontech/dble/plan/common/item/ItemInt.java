@@ -24,6 +24,13 @@ public class ItemInt extends ItemNum {
         maxLength = String.valueOf(value).length();
     }
 
+    public ItemInt(long value, int charsetIndex) {
+        this.value = BigInteger.valueOf(value);
+        fixed = true;
+        maxLength = String.valueOf(value).length();
+        this.charsetIndex = charsetIndex;
+    }
+
     @Override
     public ItemType type() {
         return ItemType.INT_ITEM;

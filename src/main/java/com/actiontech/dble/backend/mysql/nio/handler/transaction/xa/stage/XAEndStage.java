@@ -35,6 +35,7 @@ public class XAEndStage extends XAStage {
         if (isFail) {
             if (xaHandler.isInterruptTx()) {
                 session.getShardingService().setTxInterrupt(errMsg);
+                errPacket.setPacketId(session.getShardingService().nextPacketId());
                 errPacket.write(session.getSource());
                 return null;
             } else {

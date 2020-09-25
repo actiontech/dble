@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.sqlengine.TransformSQLJob;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -24,7 +23,6 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -56,15 +54,7 @@ public final class ManagerSelectHandler {
             if (mysqlFrom == null) {
                 noTableSelect(service, stmt, selectQueryBlock.getSelectList());
             } else {
-                SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-                SchemaUtil.SchemaInfo schemaInfo;
-                try {
-                    schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), fromSource);
-                } catch (SQLException e) {
-                    service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-                    return;
-                }
-                service.getSession2().execute(schemaInfo.getSchema(), selectStatement);
+                service.getSession2().execute(service.getSchema(), selectStatement);
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             service.getSession2().execute(service.getSchema(), selectStatement);

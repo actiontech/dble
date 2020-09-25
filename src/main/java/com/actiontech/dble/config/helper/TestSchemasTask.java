@@ -28,16 +28,19 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TestSchemasTask extends Thread {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemasTask.class);
-    private PhysicalDbInstance ds;
-    private Map<String, String> nodes = new HashMap<>();
-    private boolean needAlert;
-    private ReentrantLock lock = new ReentrantLock();
-    private volatile boolean isFinish = false;
-    private Condition finishCond = lock.newCondition();
+    private final PhysicalDbInstance ds;
+    private final Map<String, String> nodes = new HashMap<>();
+    private final Map<String, ShardingNode> shardingNodes;
+    private final boolean needAlert;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition finishCond = lock.newCondition();
+    private boolean isFinish = false;
 
-    public TestSchemasTask(PhysicalDbInstance ds, List<Pair<String, String>> nodeList, boolean needAlert) {
+    public TestSchemasTask(Map<String, ShardingNode> shardingNodes, PhysicalDbInstance ds,
+                           List<Pair<String, String>> nodeList, boolean needAlert) {
         this.ds = ds;
         this.needAlert = needAlert;
+        this.shardingNodes = shardingNodes;
         for (Pair<String, String> node : nodeList) {
             nodes.put(node.getValue(), node.getKey()); // sharding->node
         }
@@ -74,7 +77,6 @@ public class TestSchemasTask extends Thread {
 
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
-            Map<String, ShardingNode> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes();
             if (result.isSuccess()) {
                 List<Map<String, String>> rows = result.getResult();
                 for (Map<String, String> row : rows) {

@@ -86,12 +86,12 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void init(String reason, boolean isInitHeartbeat) {
         if (disabled.get() || fakeNode) {
-            LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", name, reason);
+            LOGGER.info("init dbInstance[{}] because {}, but it is disabled or a fakeNode, skip initialization.", this.dbGroup.getGroupName() + "." + name, reason);
             return;
         }
 
         if (!isInitial.compareAndSet(false, true)) {
-            LOGGER.info("init dbInstance[{}] because {}, but it has been initialized, skip initialization.", name, reason);
+            LOGGER.info("init dbInstance[{}] because {}, but it has been initialized, skip initialization.", this.dbGroup.getGroupName() + "." + name, reason);
             return;
         }
 
@@ -100,17 +100,17 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         int initSize = physicalSchemas.length;
         if (size < initSize) {
             LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema), so dble will create at least 1 conn for every schema, " +
-                    "minCon size before:{}, now:{}", name, size, initSize);
+                    "minCon size before:{}, now:{}", this.dbGroup.getGroupName() + "." + name, size, initSize);
             config.setMinCon(initSize);
         }
 
         size = config.getMaxCon();
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", name, size, initSize);
+            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", this.dbGroup.getGroupName() + "." + name, size, initSize);
             config.setMaxCon(initSize);
         }
 
-        LOGGER.info("init dbInstance[{}]", name);
+        LOGGER.info("init dbInstance[{}]", this.dbGroup.getGroupName() + "." + name);
         start(reason, isInitHeartbeat);
     }
 
@@ -177,7 +177,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         }
 
         if (disabled.get()) {
-            throw new IOException("the dbInstance[" + name + "] is disabled.");
+            throw new IOException("the dbInstance[" + this.dbGroup.getGroupName() + "." + name + "] is disabled.");
         }
 
         final long startTime = System.currentTimeMillis();
@@ -209,10 +209,10 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
             } while (timeout > 0L);
         } catch (InterruptedException e) {
-            throw new IOException(name + " - Interrupted during connection acquisition", e);
+            throw new IOException(this.dbGroup.getGroupName() + "." + name + " - Interrupted during connection acquisition", e);
         }
 
-        throw new IOException(name + " - Connection is not available, request timed out after " + (System.currentTimeMillis() - startTime) + "ms.");
+        throw new IOException(this.dbGroup.getGroupName() + "." + name + " - Connection is not available, request timed out after " + (System.currentTimeMillis() - startTime) + "ms.");
     }
 
     public void release(BackendConnection connection) {
@@ -356,7 +356,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     private void startHeartbeat() {
         if (this.isDisabled() || this.isFakeNode()) {
-            LOGGER.info("the instance[{}] is disabled or fake node, skip to start heartbeat.", name);
+            LOGGER.info("the instance[{}] is disabled or fake node, skip to start heartbeat.", this.dbGroup.getGroupName() + "." + name);
             return;
         }
 
@@ -378,7 +378,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void start(String reason, boolean isStartHeartbeat) {
         if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
-            LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
+            LOGGER.info("start connection pool of physical db instance[{}], due to {}", this.dbGroup.getGroupName() + "." + name, reason);
             this.connectionPool.startEvictor();
         }
         if (isStartHeartbeat) {
@@ -395,7 +395,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             heartbeat.stop(reason);
         }
         if (dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) {
-            LOGGER.info("stop connection pool of physical db instance[{}], due to {}", name, reason);
+            LOGGER.info("stop connection pool of physical db instance[{}], due to {}", this.dbGroup.getGroupName() + "." + name, reason);
             connectionPool.stop(reason, closeFront);
         }
         isInitial.set(false);

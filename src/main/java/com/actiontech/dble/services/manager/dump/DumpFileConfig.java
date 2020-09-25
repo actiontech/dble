@@ -11,6 +11,8 @@ public class DumpFileConfig {
     private int writeQueueSize = 500;
     private int maxValues = 4000;
 
+    private boolean isIgnore = false;
+
     public String getDefaultSchema() {
         return defaultSchema;
     }
@@ -60,5 +62,13 @@ public class DumpFileConfig {
 
     public void setMaxValues(int maxValues) {
         this.maxValues = maxValues;
+    }
+
+    public boolean isIgnore() {
+        return isIgnore;
+    }
+
+    public void setIgnore(boolean ignore) {
+        isIgnore = ignore;
     }
 }

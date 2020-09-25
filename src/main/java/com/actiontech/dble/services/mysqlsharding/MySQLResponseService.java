@@ -18,8 +18,10 @@ import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -45,9 +47,8 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Created by szf on 2020/6/29.
  */
-public class MySQLResponseService extends MySQLBasedService {
+public class MySQLResponseService extends MySQLVariablesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLResponseService.class);
-
 
     private ResponseHandler responseHandler;
 
@@ -64,10 +65,9 @@ public class MySQLResponseService extends MySQLBasedService {
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean complexQuery;
     private volatile boolean isDDL = false;
+    private volatile boolean prepareOK = false;
     private volatile boolean testing = false;
     private volatile StatusSync statusSync;
-    private volatile boolean autocommit;
-    private volatile int txIsolation;
     private volatile boolean isRowDataFlowing = false;
     private volatile BackEndCleaner recycler = null;
     private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
@@ -75,13 +75,11 @@ public class MySQLResponseService extends MySQLBasedService {
     private boolean isolationSynced;
     private volatile String dbuser;
 
-    private MysqlBackendLogicHandler logicHandler;
+    private MysqlBackendLogicHandler baseLogicHandler;
+    private MysqlPrepareLogicHandler prepareLogicHandler;
 
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
-
-    private volatile int totalCommand = 0;
-    private volatile int taskCommand = 0;
 
     protected BackendConnection connection;
 
@@ -99,7 +97,12 @@ public class MySQLResponseService extends MySQLBasedService {
         this.connection = (BackendConnection) connection;
         initFromConfig();
         this.proto = new MySQLProtoHandlerImpl();
-        this.logicHandler = new MysqlBackendLogicHandler(this);
+        this.baseLogicHandler = new MysqlBackendLogicHandler(this);
+        this.prepareLogicHandler = new MysqlPrepareLogicHandler(this);
+    }
+
+    @Override
+    public void handleSetItem(SetHandler.SetItem setItem) {
     }
 
     private void initFromConfig() {
@@ -140,7 +143,12 @@ public class MySQLResponseService extends MySQLBasedService {
             if (connection.isClosed()) {
                 return;
             }
-            logicHandler.handleInnerData(data);
+            if (prepareOK) {
+                prepareLogicHandler.handleInnerData(data);
+            } else {
+                baseLogicHandler.handleInnerData(data);
+            }
+
         } finally {
             synchronized (this) {
                 currentTask = null;
@@ -223,7 +231,11 @@ public class MySQLResponseService extends MySQLBasedService {
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
-        logicHandler.reset();
+        if (prepareOK) {
+            prepareLogicHandler.reset();
+        } else {
+            baseLogicHandler.reset();
+        }
         connection.close("handle data error:" + e.getMessage());
     }
 
@@ -288,7 +300,6 @@ public class MySQLResponseService extends MySQLBasedService {
     public void query(String query, boolean isAutoCommit) {
         RouteResultsetNode rrn = new RouteResultsetNode("default", ServerParse.SELECT, query);
         StringBuilder synSQL = getSynSql(null, rrn, this.getConnection().getCharsetName(), this.txIsolation, isAutoCommit, usrVariables, sysVariables);
-        LOGGER.info("try to send command of " + rrn);
         synAndDoExecute(synSQL, rrn.getStatement(), this.getConnection().getCharsetName());
     }
 
@@ -320,44 +331,8 @@ public class MySQLResponseService extends MySQLBasedService {
         }
     }
 
-    private StringBuilder getSynSql(CharsetNames clientCharset, int clientTxIsolation, boolean expectAutocommit) {
-        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
-        int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
-        int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
-        int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
-        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn;
-        if (synCount == 0) {
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        if (schemaSyn == 1) {
-            getChangeSchemaCommand(sb, connection.getSchema());
-        }
-        if (charsetSyn == 1) {
-            getCharsetCommand(sb, clientCharset);
-        }
-        if (txIsolationSyn == 1) {
-            getTxIsolationCommand(sb, clientTxIsolation);
-        }
-        if (autoCommitSyn == 1) {
-            getAutocommitCommand(sb, expectAutocommit);
-        }
-
-        metaDataSynced = false;
-        statusSync = new StatusSync(connection.getSchema(),
-                clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, Collections.emptyMap(), Collections.emptyMap(), Collections.emptySet());
-
-        return sb;
-    }
-
-    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn,
-                                    CharsetNames clientCharset, int clientTxIsolation,
+    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, CharsetNames clientCharset, int clientTxIsolation,
                                     boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
-        if (rrn.getSqlType() == ServerParse.DDL) {
-            isDDL = true;
-        }
 
         int xaSyn = 0;
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
@@ -369,7 +344,7 @@ public class MySQLResponseService extends MySQLBasedService {
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
         int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
-        int charsetSyn = (this.getConnection().getCharsetName().equals(clientCharset)) ? 0 : 1;
+        int charsetSyn = this.getConnection().getCharsetName().equals(clientCharset) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
@@ -580,8 +555,7 @@ public class MySQLResponseService extends MySQLBasedService {
         return "MySQLConnection host=" + connection.getHost() + ", port=" + connection.getPort() + ", schema=" + connection.getSchema();
     }
 
-    public void executeMultiNode(RouteResultsetNode rrn, ShardingService service,
-                                 boolean isAutoCommit) {
+    public void executeMultiNode(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
@@ -589,7 +563,11 @@ public class MySQLResponseService extends MySQLBasedService {
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStarted(true);
             }
-            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.DDL) {
+                isDDL = true;
+            }
+            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
+                    service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
             synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
@@ -604,25 +582,31 @@ public class MySQLResponseService extends MySQLBasedService {
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStarted(true);
             }
-            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.DDL) {
+                isDDL = true;
+            }
+            StringBuilder synSQL = getSynSql(xaTxId, rrn,
+                    service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
             synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
     }
 
-    public void execute(RWSplitService service) {
-        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
-        synAndDoExecute(synSQL, service.getExecuteSql(), service.getCharset());
+    public void execute(MySQLVariablesService service, String sql) {
+        StringBuilder synSQL = getSynSql(null, null,
+                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+        synAndDoExecute(synSQL, sql, service.getCharset());
     }
 
     public void execute(RWSplitService service, byte[] originPacket) {
-        if (service != null) {
-            StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit());
-            if (synSQL != null) {
-                sendQueryCmd(synSQL.toString(), service.getCharset());
-            }
+        StringBuilder synSQL = getSynSql(null, null,
+                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+        if (synSQL != null) {
+            sendQueryCmd(synSQL.toString(), service.getCharset());
         }
+
+        prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
         writeDirectly(originPacket);
     }
 
@@ -696,13 +680,12 @@ public class MySQLResponseService extends MySQLBasedService {
     }
 
     public BackendConnection getConnection() {
-        return (BackendConnection) connection;
+        return connection;
     }
 
     public void setResponseHandler(ResponseHandler handler) {
         this.responseHandler = handler;
     }
-
 
     public Object getAttachment() {
         return attachment;
@@ -712,7 +695,6 @@ public class MySQLResponseService extends MySQLBasedService {
         this.attachment = attachment;
     }
 
-
     public NonBlockingSession getSession() {
         return session;
     }
@@ -721,11 +703,9 @@ public class MySQLResponseService extends MySQLBasedService {
         this.session = session;
     }
 
-
     public ResponseHandler getResponseHandler() {
         return responseHandler;
     }
-
 
     public boolean isRowDataFlowing() {
         return isRowDataFlowing;
@@ -775,22 +755,6 @@ public class MySQLResponseService extends MySQLBasedService {
         this.statusSync = statusSync;
     }
 
-    public boolean isAutocommit() {
-        return autocommit;
-    }
-
-    public void setAutocommit(boolean autocommit) {
-        this.autocommit = autocommit;
-    }
-
-    public int getTxIsolation() {
-        return txIsolation;
-    }
-
-    public void setTxIsolation(int txIsolation) {
-        this.txIsolation = txIsolation;
-    }
-
     public void setRecycler(BackEndCleaner recycler) {
         this.recycler = recycler;
     }
@@ -822,7 +786,8 @@ public class MySQLResponseService extends MySQLBasedService {
 
     public String toString() {
         return "MySQLResponseService[isExecuting = " + isExecuting + " attachment = " + attachment + " autocommitSynced = " + autocommitSynced + " isolationSynced = " + isolationSynced +
-                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with connection " + connection.toString();
+                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler + "] with rrs = [" +
+                attachment + "]  with connection " + connection.toString();
     }
 
     private static class StatusSync {

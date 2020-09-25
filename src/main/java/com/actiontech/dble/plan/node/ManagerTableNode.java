@@ -23,6 +23,7 @@ import static com.actiontech.dble.plan.node.PlanNode.PlanNodeType.MANAGER_TABLE;
 public class ManagerTableNode extends PlanNode {
     private String schema;
     private String tableName;
+    private boolean needSendMaker;
     private ManagerBaseTable table;
 
     private ManagerTableNode() {
@@ -138,6 +139,15 @@ public class ManagerTableNode extends PlanNode {
 
     public String getTableName() {
         return tableName;
+    }
+
+
+    public boolean isNeedSendMaker() {
+        return needSendMaker;
+    }
+
+    public void setNeedSendMaker(boolean needSendMaker) {
+        this.needSendMaker = needSendMaker;
     }
 
 }

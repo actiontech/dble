@@ -27,7 +27,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.StatusFlags;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -225,10 +224,10 @@ public class NonBlockingSession extends Session {
         provider.readyToDeliver(shardingService.getConnection().getId());
     }
 
-    public void setPreExecuteEnd(boolean isComplexQuery) {
+    public void setPreExecuteEnd(TraceResult.SqlTraceType type) {
         sessionStage = SessionStage.Execute_SQL;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
-            traceResult.setComplexQuery(isComplexQuery);
+            traceResult.setType(type);
             traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
             traceResult.clearConnReceivedMap();
             traceResult.clearConnFlagMap();
@@ -515,6 +514,7 @@ public class NonBlockingSession extends Session {
 
             if (rrs.getNodes().length == 1) {
                 executableHandler = new SingleNodeDDLHandler(rrs, this);
+                setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
             } else {
                 /*
                  * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
@@ -522,10 +522,11 @@ public class NonBlockingSession extends Session {
                  */
                 checkBackupStatus();
                 executableHandler = new MultiNodeDdlPrepareHandler(rrs, this);
+                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
             }
 
             setTraceSimpleHandler((ResponseHandler) executableHandler);
-            setPreExecuteEnd(false);
+
             readyToDeliver();
             executableHandler.execute();
             discard = true;
@@ -544,14 +545,17 @@ public class NonBlockingSession extends Session {
         try {
             if (rrs.getNodes().length == 1) {
                 executableHandler = new SingleNodeHandler(rrs, this);
+                setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
             } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
                 executableHandler = new MultiNodeSelectHandler(rrs, this);
+                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP);
             } else {
                 executableHandler = new MultiNodeQueryHandler(rrs, this);
+                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
             }
 
             setTraceSimpleHandler((ResponseHandler) executableHandler);
-            setPreExecuteEnd(false);
+
             readyToDeliver();
 
             try {
@@ -621,7 +625,7 @@ public class NonBlockingSession extends Session {
                     return;
                 }
             }
-            setPreExecuteEnd(true);
+            setPreExecuteEnd(TraceResult.SqlTraceType.COMPLEX_QUERY);
             if (PlanUtil.containsSubQuery(node)) {
                 setSubQuery();
                 final PlanNode finalNode = node;
@@ -1024,15 +1028,6 @@ public class NonBlockingSession extends Session {
         }
         return false;
     }
-
-    public OkPacket getOKPacket() {
-        OkPacket ok = new OkPacket();
-        byte packet = (byte) this.getPacketId().incrementAndGet();
-        ok.read(OkPacket.OK);
-        ok.setPacketId(packet);
-        return ok;
-    }
-
 
     public void queryCount() {
         queriesCounter.incrementAndGet();

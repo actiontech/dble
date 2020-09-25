@@ -162,8 +162,6 @@ public final class ShowHelp {
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.conditiont");
         HELPS.put("release @@reload_metadata", "Release reload process , unlock the config meta lock");
-        // rollback
-        HELPS.put("rollback @@config", "Rollback all config from memory");
 
         // offline/online
         HELPS.put("offline", "Change Server status to OFF");
@@ -223,7 +221,7 @@ public final class ShowHelp {
         HELPS.put("dbGroup @@events ", "show all the dbGroup ha event which not finished yet ");
 
         //dump file
-        HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to shardingNode");
+        HELPS.put("split src dest -sschema -r500 -w500 -l10000 --ignore", "split dump file into multi dump files according to shardingNode");
 
         // fresh con
         HELPS.put("fresh conn [forced] where dbGroup ='?' [and dbInstance ='?']", "fresh conn some dbGroup/dbInstance");

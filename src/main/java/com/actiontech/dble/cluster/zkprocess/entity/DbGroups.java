@@ -6,7 +6,10 @@
 package com.actiontech.dble.cluster.zkprocess.entity;
 
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
+import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.config.Versions;
+import com.actiontech.dble.util.DecryptUtil;
+import com.actiontech.dble.util.StringUtil;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -52,6 +55,26 @@ public class DbGroups {
         return "dbGroups [" +
                 dbGroup +
                 "]";
+    }
+
+    public void encryptPassword() {
+        for (DBGroup group : getDbGroup()) {
+            for (DBInstance dbInstance : group.getDbInstance()) {
+                String usingDecrypt = dbInstance.getUsingDecrypt();
+                if (!StringUtil.isEmpty(usingDecrypt) && Boolean.parseBoolean(usingDecrypt)) {
+                    dbInstance.setPassword(getPasswordEncrypt(dbInstance.getName(), dbInstance.getUser(), dbInstance.getPassword()));
+                }
+            }
+        }
+    }
+
+
+    private static String getPasswordEncrypt(String instanceName, String name, String password) {
+        try {
+            return DecryptUtil.encrypt("1:" + instanceName + ":" + name + ":" + password);
+        } catch (Exception e) {
+            return "******";
+        }
     }
 
 

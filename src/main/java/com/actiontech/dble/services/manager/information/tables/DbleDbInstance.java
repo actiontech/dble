@@ -193,16 +193,16 @@ public class DbleDbInstance extends ManagerWritableTable {
         columns.put(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, new ColumnMeta(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, "int(11)", true, String.valueOf(PoolConfig.CON_HEARTBEAT_TIMEOUT)));
         columnsType.put(COLUMN_CONNECTION_HEARTBEAT_TIMEOUT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_TEST_ON_CREATE, new ColumnMeta(COLUMN_TEST_ON_CREATE, "varchar(64)", true, "false"));
+        columns.put(COLUMN_TEST_ON_CREATE, new ColumnMeta(COLUMN_TEST_ON_CREATE, "varchar(5)", true, "false"));
         columnsType.put(COLUMN_TEST_ON_CREATE, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_TEST_ON_BORROW, new ColumnMeta(COLUMN_TEST_ON_BORROW, "varchar(64)", true, "false"));
+        columns.put(COLUMN_TEST_ON_BORROW, new ColumnMeta(COLUMN_TEST_ON_BORROW, "varchar(5)", true, "false"));
         columnsType.put(COLUMN_TEST_ON_BORROW, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_TEST_ON_RETURN, new ColumnMeta(COLUMN_TEST_ON_RETURN, "varchar(64)", true, "false"));
+        columns.put(COLUMN_TEST_ON_RETURN, new ColumnMeta(COLUMN_TEST_ON_RETURN, "varchar(5)", true, "false"));
         columnsType.put(COLUMN_TEST_ON_RETURN, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_TEST_WHILE_IDLE, new ColumnMeta(COLUMN_TEST_WHILE_IDLE, "varchar(64)", true, "false"));
+        columns.put(COLUMN_TEST_WHILE_IDLE, new ColumnMeta(COLUMN_TEST_WHILE_IDLE, "varchar(5)", true, "false"));
         columnsType.put(COLUMN_TEST_WHILE_IDLE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, new ColumnMeta(COLUMN_TIME_BETWEEN_EVICTION_RUNS_MILLIS, "int(11)", true, String.valueOf(PoolConfig.HOUSEKEEPING_PERIOD_MS)));
@@ -355,9 +355,23 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     private void decryptPassword(List<LinkedHashMap<String, String>> rows, boolean insertFlag) {
         for (LinkedHashMap<String, String> row : rows) {
+            checkBooleanVal(row);
             if ((insertFlag && Boolean.parseBoolean(row.get(COLUMN_ENCRYPT_CONFIGURED))) || !insertFlag) {
                 row.put(COLUMN_PASSWORD_ENCRYPT, DecryptUtil.dbHostDecrypt(true, row.get(COLUMN_NAME),
                         row.get(COLUMN_USER), row.get(COLUMN_PASSWORD_ENCRYPT)));
+            }
+        }
+    }
+
+    private void checkBooleanVal(LinkedHashMap<String, String> row) {
+        Set<String> keySet = Sets.newHashSet(COLUMN_ENCRYPT_CONFIGURED, COLUMN_PRIMARY, COLUMN_DISABLED, COLUMN_TEST_ON_CREATE, COLUMN_TEST_ON_BORROW, COLUMN_TEST_ON_RETURN,
+                COLUMN_TEST_WHILE_IDLE);
+        for (String key : keySet) {
+            if (row.containsKey(key) && !StringUtil.isEmpty(row.get(key))) {
+                String value = row.get(key);
+                if (!StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
+                    throw new ConfigException("Column '" + key + "' values only support 'false' or 'true'.");
+                }
             }
         }
     }

@@ -190,6 +190,10 @@ public class DbleDbGroup extends ManagerWritableTable {
             String delayThresholdStr = row.get(COLUMN_DELAY_THRESHOLD);
             int delayThreshold = StringUtil.isEmpty(delayThresholdStr) ? 0 : Integer.parseInt(delayThresholdStr);
             String disableHaStr = row.get(COLUMN_DISABLE_HA);
+            if (!StringUtil.isEmpty(disableHaStr) && !StringUtil.equalsIgnoreCase(disableHaStr, Boolean.FALSE.toString()) &&
+                    !StringUtil.equalsIgnoreCase(disableHaStr, Boolean.TRUE.toString())) {
+                throw new ConfigException("Column 'disable_ha' values only support 'false' or 'true'.");
+            }
             boolean disableHa = !StringUtil.isEmpty(disableHaStr) && Boolean.parseBoolean(disableHaStr);
             String rwSplitModeStr = row.get(COLUMN_RW_SPLIT_MODE);
             int rwSplitMode = StringUtil.isEmpty(rwSplitModeStr) ? 0 : Integer.parseInt(rwSplitModeStr);

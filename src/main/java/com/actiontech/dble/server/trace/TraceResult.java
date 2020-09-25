@@ -22,6 +22,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class TraceResult implements Cloneable {
+
+
+    public enum SqlTraceType {
+        SINGLE_NODE_QUERY, MULTI_NODE_QUERY, MULTI_NODE_GROUP, COMPLEX_QUERY;
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceResult.class);
     private boolean prepareFinished = false;
     private long veryStartPrepare;
@@ -46,7 +52,7 @@ public class TraceResult implements Cloneable {
     private ConcurrentMap<DMLResponseHandler, TraceRecord> recordStartMap = new ConcurrentHashMap<>();
     private ConcurrentMap<DMLResponseHandler, TraceRecord> recordEndMap = new ConcurrentHashMap<>();
     private long veryEnd;
-    private boolean complexQuery = false;
+    private SqlTraceType type;
     private boolean subQuery = false;
 
     public void setVeryStartPrepare(long veryStartPrepare) {
@@ -105,8 +111,8 @@ public class TraceResult implements Cloneable {
         this.adtCommitEnd = adtCommitEnd;
     }
 
-    public void setComplexQuery(boolean complexQuery) {
-        this.complexQuery = complexQuery;
+    public void setType(SqlTraceType type) {
+        this.type = type;
     }
 
     public void setSubQuery(boolean subQuery) {
@@ -172,7 +178,7 @@ public class TraceResult implements Cloneable {
         shardingNodes = null;
         adtCommitBegin = null;
         adtCommitEnd = null;
-        complexQuery = false;
+        this.type = null;
         subQuery = false;
         simpleHandler = null;
         builder = null; //for complex query
@@ -240,7 +246,7 @@ public class TraceResult implements Cloneable {
         } else if (subQuery) {
             lst.add(genTraceRecord("Doing_SubQuery", preExecuteEnd.getTimestamp()));
             return lst;
-        } else if (shardingNodes == null || complexQuery) {
+        } else if (shardingNodes == null || (this.type == SqlTraceType.COMPLEX_QUERY)) {
             lst.add(genTraceRecord("Generate_Query_Explain", preExecuteEnd.getTimestamp()));
             return lst;
         } else {
@@ -532,6 +538,7 @@ public class TraceResult implements Cloneable {
         return readQuery;
     }
 
+
     private String[] genTraceRecord(String operation, String shardingNode, String ref) {
         String[] readQuery = new String[6];
         readQuery[0] = operation;
@@ -569,6 +576,10 @@ public class TraceResult implements Cloneable {
 
     public boolean isCompleted() {
         return veryStart != 0 && veryEnd != 0 && connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size();
+    }
+
+    public SqlTraceType getType() {
+        return this.type;
     }
 
     public List<String[]> genLogResult() {

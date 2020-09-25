@@ -61,6 +61,7 @@ public class SlowQueryLogEntry {
                 sb.append(result[1]);
             }
         }
+        sb.append("  ").append(this.trace.getType());
         sb.append("\n");
 
         sb.append("SET timestamp=");

@@ -453,7 +453,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLIntegerExpr x) {
         Number number = x.getNumber();
-        item = new ItemInt(number.longValue());
+        item = new ItemInt(number.longValue(), this.charsetIndex);
         initName(x);
     }
 

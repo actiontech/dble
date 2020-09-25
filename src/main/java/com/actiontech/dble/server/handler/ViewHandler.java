@@ -40,11 +40,6 @@ public final class ViewHandler {
 
     public static void handle(int type, String sql, ServerConnection c) {
         String schema = c.getSchema();
-        if (StringUtil.isEmpty(schema)) {
-            c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
-            return;
-        }
-
         try {
             handleView(type, schema, sql, c);
         } catch (SQLException e) {
@@ -66,7 +61,7 @@ public final class ViewHandler {
                 replaceView(schema, sql, sqlType, c);
                 break;
             case ServerParse.DROP_VIEW:
-                deleteView(schema, sql, c);
+                dropView(schema, sql, c);
                 break;
             default:
                 break;
@@ -77,6 +72,7 @@ public final class ViewHandler {
         //create a new object of the view
         ViewMeta vm = new ViewMeta(schema, sql, ProxyMeta.getInstance().getTmManager());
         vm.init();
+        checkSchema(vm.getSchema());
         // if the sql can push down nosharding sharding
         if (vm.getViewQuery() instanceof TableNode) {
             RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, vm.getSchema()), sqlType);
@@ -94,6 +90,7 @@ public final class ViewHandler {
         //create a new object of the view
         ViewMeta vm = new ViewMeta(schema, sql, ProxyMeta.getInstance().getTmManager());
         vm.init();
+        checkSchema(vm.getSchema());
         // if exist
         PlanNode oldViewNode = ProxyMeta.getInstance().getTmManager().getSyncView(vm.getSchema(), vm.getViewName());
         if (oldViewNode instanceof TableNode && vm.getViewQuery() instanceof QueryNode) {
@@ -118,7 +115,7 @@ public final class ViewHandler {
         writeOkPackage(c);
     }
 
-    private static void deleteView(String currentSchema, String sql, ServerConnection c) throws Exception {
+    private static void dropView(String currentSchema, String sql, ServerConnection c) throws Exception {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLDropViewStatement viewStatement = (SQLDropViewStatement) parser.parseStatement(true);
         if (viewStatement.getTableSources() == null || viewStatement.getTableSources().size() == 0) {
@@ -129,23 +126,27 @@ public final class ViewHandler {
         ProxyMetaManager proxyManger = ProxyMeta.getInstance().getTmManager();
 
         List<String> deleteMysqlViews = new ArrayList<>(5);
-        String schema = null;
+        String vSchema = null;
         for (SQLExprTableSource table : viewStatement.getTableSources()) {
-            schema = table.getSchema() == null ? currentSchema : StringUtil.removeBackQuote(table.getSchema());
+            vSchema = table.getSchema() == null ? currentSchema : StringUtil.removeBackQuote(table.getSchema());
+            checkSchema(vSchema);
             String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
-            if (!proxyManger.getCatalogs().get(schema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
+            if (proxyManger.getCatalogs().get(vSchema) == null) {
+                throw new SQLException("Unknown database " + vSchema, "42000", ErrorCode.ER_BAD_DB_ERROR);
+            }
+            if (!proxyManger.getCatalogs().get(vSchema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
                 throw new SQLException("Unknown view '" + viewName + "'", "HY000", ErrorCode.ER_NO_TABLES_USED);
             }
 
-            proxyManger.addMetaLock(table.getSchema(), viewName, sql);
+            proxyManger.addMetaLock(vSchema, viewName, sql);
             try {
-                proxyManger.getRepository().delete(schema, viewName);
-                ViewMeta vm = proxyManger.getCatalogs().get(schema).getViewMetas().remove(viewName);
+                proxyManger.getRepository().delete(vSchema, viewName);
+                ViewMeta vm = proxyManger.getCatalogs().get(vSchema).getViewMetas().remove(viewName);
                 if (vm != null && vm.getViewQuery() instanceof TableNode) {
                     deleteMysqlViews.add(viewName);
                 }
             } finally {
-                proxyManger.removeMetaLock(table.getSchema(), viewName);
+                proxyManger.removeMetaLock(vSchema, viewName);
             }
         }
 
@@ -161,7 +162,7 @@ public final class ViewHandler {
             }
             dropStmt.deleteCharAt(dropStmt.length() - 1);
             RouteResultset rrs = new RouteResultset(dropStmt.toString(), ServerParse.DROP_VIEW);
-            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getShardingNode());
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vSchema).getShardingNode());
             MysqlDropViewHandler handler = new MysqlDropViewHandler(c.getSession2(), rrs, deleteMysqlViews.size());
             handler.execute();
             return;
@@ -179,6 +180,12 @@ public final class ViewHandler {
         ok.write(c);
         boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         c.getSession2().multiStatementNextSql(multiStatementFlag);
+    }
+
+    private static void checkSchema(String schema) throws SQLException {
+        if (StringUtil.isEmpty(schema)) {
+            throw new SQLException("No database selected", "3D000", ErrorCode.ER_NO_DB_ERROR);
+        }
     }
 
 }

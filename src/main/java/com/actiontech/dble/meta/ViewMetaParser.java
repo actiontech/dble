@@ -38,18 +38,21 @@ public class ViewMetaParser {
             viewName = viewName.toLowerCase();
         }
 
+        String vSchema = null;
         //delete the schema if exists
         if (viewName.indexOf('.') != -1) {
             String[] viewNameInfo = viewName.split("\\.");
-            String schema = StringUtil.removeBackQuote(viewNameInfo[0]);
-            if (DbleServer.getInstance().getConfig().getSchemas().get(schema) == null) {
-                throw new SQLException("Unknown database '" + schema + "'", "42000", ErrorCode.ER_BAD_DB_ERROR);
+            vSchema = StringUtil.removeBackQuote(viewNameInfo[0]);
+            if (DbleServer.getInstance().getConfig().getSchemas().get(vSchema) == null) {
+                throw new SQLException("Unknown database '" + vSchema + "'", "42000", ErrorCode.ER_BAD_DB_ERROR);
             }
 
             viewName = viewNameInfo[1];
         }
         viewName = StringUtil.removeBackQuote(viewName);
 
+        if (!StringUtil.isEmpty(vSchema))
+            viewMeta.setSchema(vSchema);
         //get the name of view
         viewMeta.setViewName(viewName);
         //get the list of column name

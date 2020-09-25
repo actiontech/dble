@@ -58,7 +58,7 @@ public class SavePointHandler extends MultiNodeHandler {
         SavePoint newSp = new SavePoint(spName);
         if (session.getTargetCount() <= 0) {
             addSavePoint(newSp);
-            session.getSource().write(OkPacket.OK);
+            session.getShardingService().writeOkPacket();
             return;
         }
 
@@ -94,7 +94,7 @@ public class SavePointHandler extends MultiNodeHandler {
 
         if (session.getTargetCount() <= 0) {
             rollbackToSavepoint(sp);
-            session.getSource().write(OkPacket.OK);
+            session.getShardingService().writeOkPacket();
             return;
         }
 
@@ -132,7 +132,7 @@ public class SavePointHandler extends MultiNodeHandler {
             savepoints.setPrev(sp.getPrev());
             sp.setPrev(null);
         }
-        session.getSource().write(OkPacket.OK);
+        session.getShardingService().writeOkPacket();
     }
 
     // find savepoint after named savepoint

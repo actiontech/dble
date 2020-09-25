@@ -126,7 +126,7 @@ public final class ShowTables {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             bufInf = writeFullTablesHeader(buffer, shardingService, schemaColumn, fieldPackets);
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), shardingService.equivalentUsrVarMap());
+                MySQLItemVisitor mev = new MySQLItemVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), shardingService.getUsrVariables());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
                 Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);

@@ -2,41 +2,21 @@ package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
+import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.singleton.TraceManager;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
-import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.List;
 
 public class RWSplitQueryHandler implements FrontendQueryHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerQueryHandler.class);
 
     private final RWSplitNonBlockingSession session;
-    //private Boolean readOnly = true;
-    //private boolean sessionReadOnly = true;
-
-    @Override
-    public void setReadOnly(Boolean readOnly) {
-        //this.readOnly = readOnly;
-    }
-
-    @Override
-    public void setSessionReadOnly(boolean sessionReadOnly) {
-        // this.sessionReadOnly = sessionReadOnly;
-    }
 
     public RWSplitQueryHandler(RWSplitNonBlockingSession session) {
         this.session = session;
@@ -59,7 +39,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     session.execute(false, null);
                     break;
                 case ServerParse.SET:
-                    parseSet(sql);
+                    SetHandler.handle(sql, session.getService(), rs >>> 8);
                     break;
                 case ServerParse.LOCK:
                     session.execute(true, rwSplitService -> rwSplitService.setLocked(true));
@@ -74,8 +54,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 case ServerParse.COMMIT:
                 case ServerParse.ROLLBACK:
                     session.execute(true, rwSplitService -> {
-                        rwSplitService.getSession().unbindIfSafe();
-                        rwSplitService.setTxStart(false);
+                        rwSplitService.getSession().unbindIfSafe(true);
                     });
                     break;
                 case ServerParse.LOAD_DATA_INFILE_SQL:
@@ -95,48 +74,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             session.getService().writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         } finally {
             TraceManager.finishSpan(traceObject);
-        }
-    }
-
-    // private boolean parseSelectQuery(String sql) {
-    //        boolean canSelectSlave = true;
-    //        SQLStatementParser parser = new MySqlStatementParser(sql);
-    //        SQLStatement statement = parser.parseStatement(true);
-    //        if (statement instanceof SQLSelectStatement) {
-    //            if (!((SQLSelectStatement) statement).getSelect().getQueryBlock().isForUpdate()) {
-    //                canSelectSlave = true;
-    //            }
-    //        } else {
-    //            LOGGER.warn("unknown select");
-    //            throw new UnsupportedOperationException("unknown");
-    //        }
-    //
-    //        return canSelectSlave;
-    //    }
-
-    private void parseSet(String sql) throws IOException {
-        SQLStatementParser parser = new MySqlStatementParser(sql);
-        SQLStatement statement = parser.parseStatement(true);
-        if (statement instanceof SQLSetStatement) {
-            List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
-            if (assignItems.size() == 1) {
-                SQLAssignItem item = assignItems.get(0);
-                if (item.getTarget().toString().equalsIgnoreCase("autocommit")) {
-                    if (session.getService().isAutocommit() && item.getValue().toString().equalsIgnoreCase("0")) {
-                        session.getService().setAutocommit(false);
-                        session.getService().writeDirectly(OkPacket.OK);
-                    }
-                    if (!session.getService().isAutocommit() && item.getValue().toString().equalsIgnoreCase("1")) {
-                        session.execute(false, rwSplitService -> rwSplitService.setAutocommit(true));
-                    }
-                }
-                session.execute(true, null);
-            } else {
-                // throw new UnsupportedOperationException("unknown");
-                session.execute(true, null);
-            }
-        } else {
-            session.execute(true, null);
         }
     }
 

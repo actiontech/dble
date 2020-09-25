@@ -14,10 +14,11 @@ import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
+import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
-import com.actiontech.dble.services.MySQLBasedService;
+import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.statistic.CommandCount;
 import org.slf4j.Logger;
@@ -25,20 +26,23 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class RWSplitService extends MySQLBasedService implements FrontEndService {
+public class RWSplitService extends MySQLVariablesService implements FrontEndService {
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
+    private static final Pattern HINT_DEST = Pattern.compile(".*/\\*\\s*dble_dest_expect\\s*:\\s*([M|S])\\s*\\*/", Pattern.CASE_INSENSITIVE);
 
     private volatile String schema;
-    private volatile int txIsolation;
-    private volatile boolean autocommit;
     private volatile boolean isLocked;
     private volatile boolean txStart;
     private volatile boolean inLoadData;
     private volatile boolean inPrepare;
 
     private volatile String executeSql;
+    // only for test
+    private volatile String expectedDest;
     private UserName user;
 
     private final CommandCount commands;
@@ -50,6 +54,26 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         this.commands = connection.getProcessor().getCommands();
         this.session = new RWSplitNonBlockingSession(this);
         this.queryHandler = new RWSplitQueryHandler(session);
+    }
+
+    @Override
+    public void handleSetItem(SetHandler.SetItem setItem) {
+        switch (setItem.getType()) {
+            case AUTOCOMMIT:
+                String ac = setItem.getValue();
+                if (autocommit && !Boolean.parseBoolean(ac)) {
+                    autocommit = false;
+                    writeOkPacket();
+                }
+                if (!autocommit && Boolean.parseBoolean(ac)) {
+                    session.execute(false, rwSplitService -> {
+                        rwSplitService.setAutocommit(true);
+                    });
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     public void initFromAuthInfo(AuthResultInfo info) {
@@ -86,11 +110,7 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
     protected void handleInnerData(byte[] data) {
         // if the statement is load data, directly push down
         if (inLoadData) {
-            try {
-                session.execute(true, data, null);
-            } catch (IOException e) {
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
-            }
+            session.execute(true, data, null);
             return;
         }
 
@@ -122,12 +142,7 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
-                try {
-                    session.getService().setInPrepare(false);
-                    session.execute(true, data, null);
-                } catch (IOException e) {
-                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
-                }
+                session.execute(true, data, rwSplitService -> rwSplitService.setInPrepare(false));
                 break;
             // connection
             case MySQLPacket.COM_QUIT:
@@ -163,8 +178,6 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
             session.execute(true, data, rwSplitService -> rwSplitService.setSchema(switchSchema));
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
-        } catch (IOException e) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
         }
     }
 
@@ -173,6 +186,14 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         mm.position(5);
         try {
             String sql = mm.readString(getCharset().getClient());
+            if (LOGGER.isDebugEnabled()) {
+                Matcher match = HINT_DEST.matcher(sql);
+                if (match.matches()) {
+                    expectedDest = match.group(1);
+                } else {
+                    expectedDest = null;
+                }
+            }
             executeSql = sql;
             queryHandler.query(sql);
         } catch (UnsupportedEncodingException e) {
@@ -202,11 +223,7 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
     }
 
     private void execute(byte[] data) {
-        try {
-            session.execute(true, data, null);
-        } catch (IOException e) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
-        }
+        session.execute(true, data, null);
     }
 
     @Override
@@ -244,18 +261,6 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
         isLocked = locked;
     }
 
-    public int getTxIsolation() {
-        return txIsolation;
-    }
-
-    public boolean isAutocommit() {
-        return autocommit;
-    }
-
-    public void setAutocommit(boolean autocommit) {
-        this.autocommit = autocommit;
-    }
-
     public boolean isTxStart() {
         return txStart;
     }
@@ -278,6 +283,10 @@ public class RWSplitService extends MySQLBasedService implements FrontEndService
 
     public void setInPrepare(boolean inPrepare) {
         this.inPrepare = inPrepare;
+    }
+
+    public String getExpectedDest() {
+        return expectedDest;
     }
 
     @Override

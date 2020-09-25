@@ -27,7 +27,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.StatusFlags;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -608,7 +607,7 @@ public class NonBlockingSession extends Session {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "try-complex-query");
         try {
             SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-            MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, shardingService.equivalentUsrVarMap());
+            MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, shardingService.getUsrVariables());
             visitor.visit(ast);
             PlanNode node = visitor.getTableNode();
             if (node.isCorrelatedSubQuery()) {
@@ -1029,15 +1028,6 @@ public class NonBlockingSession extends Session {
         }
         return false;
     }
-
-    public OkPacket getOKPacket() {
-        OkPacket ok = new OkPacket();
-        byte packet = (byte) this.getPacketId().incrementAndGet();
-        ok.read(OkPacket.OK);
-        ok.setPacketId(packet);
-        return ok;
-    }
-
 
     public void queryCount() {
         queriesCounter.incrementAndGet();

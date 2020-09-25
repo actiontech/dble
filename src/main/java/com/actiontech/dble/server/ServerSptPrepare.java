@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -57,7 +57,7 @@ public final class ServerSptPrepare {
     /* In user variable, the string is primordial, so we have to truncate the quotes */
     private String getStmtFromUserVar() {
         String key = "@" + sptStmt;
-        String stmt = service.equivalentUsrVarMap().get(key);
+        String stmt = service.getUsrVariables().get(key);
         String rstmt = null;
 
         if (stmt != null) {

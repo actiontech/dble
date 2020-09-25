@@ -22,24 +22,24 @@ public class SetHandlerTest {
         Assert.assertEquals("SET names utf8,character set UTF8,character set gbk,@@tx_readonly=1", convertCharsetKeyWord.invoke(null, "SET names utf8,CHARSET UTF8,CHARSET gbk,@@tx_readonly=1"));
     }
 
-    @Test
-    public void testCheckSetNamesSyntax() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        Method checkSetNamesSyntax = SetHandler.class.getDeclaredMethod("checkSetNamesSyntax", String.class);
-        checkSetNamesSyntax.setAccessible(true);
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "SET NAMES utf8"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names 'utf8'"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names `utf8`"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names DEFAULT"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE utf8_bin"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE default"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names 'utf8' COLLATE utf8_bin"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names `utf8` COLLATE default"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE 'utf8_bin'"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE `utf8_bin`"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names 'utf8' COLLATE 'utf8_bin'"));
-        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names `utf8` COLLATE `utf8_bin`"));
-        Assert.assertEquals(false, checkSetNamesSyntax.invoke(null, "set names utf8 2"));
-        Assert.assertEquals(false, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATION utf8_bin"));
-    }
+//    @Test
+    //    public void testCheckSetNamesSyntax() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    //        Method checkSetNamesSyntax = SetHandler.class.getDeclaredMethod("checkSetNamesSyntax", String.class);
+    //        checkSetNamesSyntax.setAccessible(true);
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "SET NAMES utf8"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names 'utf8'"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names `utf8`"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names DEFAULT"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE utf8_bin"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE default"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names 'utf8' COLLATE utf8_bin"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names `utf8` COLLATE default"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE 'utf8_bin'"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATE `utf8_bin`"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names 'utf8' COLLATE 'utf8_bin'"));
+    //        Assert.assertEquals(true, checkSetNamesSyntax.invoke(null, "set names `utf8` COLLATE `utf8_bin`"));
+    //        Assert.assertEquals(false, checkSetNamesSyntax.invoke(null, "set names utf8 2"));
+    //        Assert.assertEquals(false, checkSetNamesSyntax.invoke(null, "set names utf8 COLLATION utf8_bin"));
+    //    }
 }

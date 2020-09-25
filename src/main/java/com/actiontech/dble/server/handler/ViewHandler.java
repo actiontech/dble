@@ -132,6 +132,9 @@ public final class ViewHandler {
             vSchema = table.getSchema() == null ? currentSchema : StringUtil.removeBackQuote(table.getSchema());
             checkSchema(vSchema);
             String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
+            if (proxyManger.getCatalogs().get(vSchema) == null) {
+                throw new SQLException("Unknown database " + vSchema, "42000", ErrorCode.ER_BAD_DB_ERROR);
+            }
             if (!proxyManger.getCatalogs().get(vSchema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
                 throw new SQLException("Unknown view '" + viewName + "'", "HY000", ErrorCode.ER_NO_TABLES_USED);
             }

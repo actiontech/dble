@@ -229,7 +229,6 @@ public class PhysicalDbGroup {
         if (instances.size() == 0) {
             throw new IOException("the dbGroup[" + groupName + "] doesn't contain active dbInstance.");
         }
-
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("select {}", selectInstance);

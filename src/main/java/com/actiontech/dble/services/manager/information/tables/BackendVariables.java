@@ -19,7 +19,7 @@ public class BackendVariables extends ManagerBaseTable {
 
     private static final String TABLE_NAME = "backend_variables";
 
-    private static final String COLUMN_FRONT_ID = "backend_conn_id";
+    private static final String COLUMN_BACKED_ID = "backend_conn_id";
     private static final String COLUMN_VAR_NAME = "variable_name";
     private static final String COLUMN_VAR_VALUE = "variable_value";
     private static final String COLUMN_VAR_TYPE = "variable_type";
@@ -30,8 +30,8 @@ public class BackendVariables extends ManagerBaseTable {
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_FRONT_ID, new ColumnMeta(COLUMN_FRONT_ID, "int(11)", false));
-        columnsType.put(COLUMN_FRONT_ID, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_BACKED_ID, new ColumnMeta(COLUMN_BACKED_ID, "int(11)", false));
+        columnsType.put(COLUMN_BACKED_ID, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_VAR_NAME, new ColumnMeta(COLUMN_VAR_NAME, "varchar(12)", false));
         columnsType.put(COLUMN_VAR_NAME, Fields.FIELD_TYPE_VAR_STRING);
@@ -54,7 +54,7 @@ public class BackendVariables extends ManagerBaseTable {
                         if (service != null) {
                             for (MysqlVariable var : ((MySQLVariablesService) service).getAllVars()) {
                                 LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
-                                row.put(COLUMN_FRONT_ID, bc.getId() + "");
+                                row.put(COLUMN_BACKED_ID, bc.getId() + "");
                                 row.put(COLUMN_VAR_NAME, var.getName());
                                 row.put(COLUMN_VAR_VALUE, var.getValue());
                                 row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");

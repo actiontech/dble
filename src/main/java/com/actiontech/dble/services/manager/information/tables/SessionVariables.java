@@ -4,6 +4,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.MySQLVariablesService;
@@ -49,13 +50,16 @@ public class SessionVariables extends ManagerBaseTable {
             p.getFrontends().
                     values().
                     forEach(fc -> {
-                        for (MysqlVariable var : ((MySQLVariablesService) fc.getService()).getAllVars()) {
-                            LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
-                            row.put(COLUMN_FRONT_ID, fc.getId() + "");
-                            row.put(COLUMN_VAR_NAME, var.getName());
-                            row.put(COLUMN_VAR_VALUE, var.getValue());
-                            row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");
-                            rows.add(row);
+                        AbstractService service = fc.getService();
+                        if (service != null) {
+                            for (MysqlVariable var : ((MySQLVariablesService) fc.getService()).getAllVars()) {
+                                LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
+                                row.put(COLUMN_FRONT_ID, fc.getId() + "");
+                                row.put(COLUMN_VAR_NAME, var.getName());
+                                row.put(COLUMN_VAR_VALUE, var.getValue());
+                                row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");
+                                rows.add(row);
+                            }
                         }
                     });
         }

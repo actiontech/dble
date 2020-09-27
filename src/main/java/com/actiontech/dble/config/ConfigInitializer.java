@@ -165,7 +165,12 @@ public class ConfigInitializer implements ProblemReporter {
         // include rwSplit dbGroup
         for (UserConfig config : this.users.values()) {
             if (config instanceof RwSplitUserConfig) {
-                allUseHost.add(((RwSplitUserConfig) config).getDbGroup());
+                String group = ((RwSplitUserConfig) config).getDbGroup();
+                if (allUseHost.contains(group)) {
+                    throw new ConfigException("The group[" + group + "] has been used by sharding node, can't be used by rwSplit.");
+                } else {
+                    allUseHost.add(group);
+                }
             }
         }
 
@@ -335,6 +340,5 @@ public class ConfigInitializer implements ProblemReporter {
     public List<ErrorInfo> getErrorInfos() {
         return errorInfos;
     }
-
 
 }

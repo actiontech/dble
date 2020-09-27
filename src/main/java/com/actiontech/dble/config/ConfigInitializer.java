@@ -99,10 +99,10 @@ public class ConfigInitializer implements ProblemReporter {
         }
         //Mark all dbInstance whether they are fake or not
         for (PhysicalDbGroup dbGroup : this.dbGroups.values()) {
-            for (PhysicalDbInstance source : dbGroup.getDbInstances(true)) {
-                if (checkSourceFake(source)) {
-                    source.setFakeNode(true);
-                } else if (!source.isDisabled()) {
+            for (PhysicalDbInstance dbInstance : dbGroup.getDbInstances(true)) {
+                if (checkDbInstanceFake(dbInstance)) {
+                    dbInstance.setFakeNode(true);
+                } else if (!dbInstance.isDisabled()) {
                     this.fullyConfigured = true;
                 }
             }
@@ -115,7 +115,7 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-    private boolean checkSourceFake(PhysicalDbInstance source) {
+    private boolean checkDbInstanceFake(PhysicalDbInstance source) {
         if (("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equals(source.getConfig().getIp()) ||
                 "0:0:0:0:0:0:0:1".equals(source.getConfig().getIp()) || "::1".equals(source.getConfig().getIp())) &&
                 (source.getConfig().getPort() == SystemConfig.getInstance().getServerPort() || source.getConfig().getPort() == SystemConfig.getInstance().getManagerPort())) {
@@ -163,9 +163,19 @@ public class ConfigInitializer implements ProblemReporter {
         allUseShardingNode.clear();
 
         // include rwSplit dbGroup
+        RwSplitUserConfig rwSplitUserConfig = null;
         for (UserConfig config : this.users.values()) {
             if (config instanceof RwSplitUserConfig) {
-                allUseHost.add(((RwSplitUserConfig) config).getDbGroup());
+                rwSplitUserConfig = (RwSplitUserConfig) config;
+                String group = rwSplitUserConfig.getDbGroup();
+                if (!this.dbGroups.containsKey(group)) {
+                    throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + group + "] for rwSplit isn't configured in db.xml.");
+                }
+                if (allUseHost.contains(group)) {
+                    throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + group + "] has been used by sharding node, can't be used by rwSplit.");
+                } else {
+                    allUseHost.add(group);
+                }
             }
         }
 
@@ -335,6 +345,5 @@ public class ConfigInitializer implements ProblemReporter {
     public List<ErrorInfo> getErrorInfos() {
         return errorInfos;
     }
-
 
 }

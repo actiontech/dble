@@ -149,7 +149,7 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
     public List<MysqlVariable> getAllVars() {
         List<MysqlVariable> variables = super.getAllVars();
         variables.add(new MysqlVariable("xa", session.getTransactionManager().getSessionXaID() == null ? "false" : "true", VariableType.SYSTEM_VARIABLES));
-        variables.add(new MysqlVariable("trace", autocommit + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("trace", session.isTrace() + "", VariableType.SYSTEM_VARIABLES));
         variables.add(new MysqlVariable(VersionUtil.TRANSACTION_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
         variables.add(new MysqlVariable(VersionUtil.TX_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
         return variables;

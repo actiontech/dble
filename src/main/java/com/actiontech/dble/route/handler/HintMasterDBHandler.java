@@ -7,7 +7,6 @@ package com.actiontech.dble.route.handler;
 
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
@@ -21,10 +20,10 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * sql hint: dble:db_type=master/slave<br/>
@@ -66,23 +65,28 @@ public class HintMasterDBHandler implements HintHandler {
         UserConfig userConfig = service.getUserConfig();
         if (!(userConfig instanceof RwSplitUserConfig)) {
             String msg = "Unsupported " + new Gson().toJson(hintMap.values()) + " for userType:" + userConfig.getClass().getSimpleName() + " username:" + userConfig.getName();
-            LOGGER.info(msg);
+            LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
-        Boolean isRouteToMaster;
+        boolean isRouteToMaster;
         try {
             isRouteToMaster = isMaster(hintSQLValue, sqlType);
         } catch (UnsupportedOperationException e) {
-            LOGGER.info(" sql hint 'db_type' error, ignore this hint.");
+            LOGGER.warn(" sql hint 'db_type' error, ignore this hint.");
             isRouteToMaster = true;
         }
 
         RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) service.getUserConfig();
-        hintSQLValue = hintSQLValue.trim();
-        PhysicalDbInstance dbInstance = findMasterDbInstance(rwSplitUserConfig, isRouteToMaster);
+        String dbGroup = rwSplitUserConfig.getDbGroup();
+        PhysicalDbInstance dbInstance;
+        try {
+            dbInstance = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroup).select(isRouteToMaster);
+        } catch (IOException e) {
+            throw new SQLNonTransientException(e);
+        }
         if (null == dbInstance) {
             String msg = "can't find hint dbInstance:" + hintSQLValue;
-            LOGGER.info(msg);
+            LOGGER.warn(msg);
             throw new SQLNonTransientException(msg);
         }
         return dbInstance;
@@ -104,15 +108,5 @@ public class HintMasterDBHandler implements HintHandler {
             }
         }
         return false;
-    }
-
-
-    private PhysicalDbInstance findMasterDbInstance(RwSplitUserConfig userConfig, boolean isMaster) {
-        PhysicalDbGroup dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups().get(userConfig.getDbGroup());
-        Optional<PhysicalDbInstance> dbInstanceOptional = dbGroupMap.
-                getDbInstances(true).stream().
-                filter(dbInstance -> dbInstance.getConfig().isPrimary() == isMaster).
-                findFirst();
-        return dbInstanceOptional.orElse(null);
     }
 }

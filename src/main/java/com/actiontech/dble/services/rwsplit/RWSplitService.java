@@ -253,6 +253,11 @@ public class RWSplitService extends MySQLVariablesService implements FrontEndSer
         return executeSql;
     }
 
+    public void setExecuteSql(String executeSql) {
+        this.executeSql = executeSql;
+    }
+
+
     public boolean isLocked() {
         return isLocked;
     }

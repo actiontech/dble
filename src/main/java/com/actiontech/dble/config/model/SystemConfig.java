@@ -1057,7 +1057,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSqlSlowTime(int sqlSlowTime) {
-        if (sqlSlowTime > 0) {
+        if (sqlSlowTime >= 0) {
             this.sqlSlowTime = sqlSlowTime;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "sqlSlowTime", sqlSlowTime, this.sqlSlowTime));

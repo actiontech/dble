@@ -2,6 +2,7 @@ package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.Capabilities;
@@ -149,6 +150,8 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
         List<MysqlVariable> variables = super.getAllVars();
         variables.add(new MysqlVariable("xa", session.getTransactionManager().getSessionXaID() == null ? "false" : "true", VariableType.SYSTEM_VARIABLES));
         variables.add(new MysqlVariable("trace", autocommit + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TRANSACTION_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TX_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
         return variables;
     }
 

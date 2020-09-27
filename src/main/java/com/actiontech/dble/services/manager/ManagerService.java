@@ -12,7 +12,7 @@ import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
-import com.actiontech.dble.server.handler.SetHandler;
+import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.FrontendUserManager;
@@ -46,8 +46,7 @@ public class ManagerService extends MySQLVariablesService implements FrontEndSer
     }
 
     @Override
-    public void handleSetItem(SetHandler.SetItem setItem) {
-        return;
+    public void handleVariable(MysqlVariable setItem) {
     }
 
     public void initFromAuthInfo(AuthResultInfo info) {

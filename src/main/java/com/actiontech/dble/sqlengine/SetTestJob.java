@@ -17,7 +17,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.server.handler.SetHandler;
+import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -36,12 +36,12 @@ public class SetTestJob implements ResponseHandler, Runnable {
     private final String sql;
     private final SQLJobHandler jobHandler;
     private final MySQLVariablesService frontService;
-    private final SetHandler.SetItem[] setItems;
+    private final MysqlVariable[] setItems;
     private volatile List<FieldPacket> fieldPackets;
     private final int userVariableSize;
     private final AtomicBoolean hasReturn;
 
-    public SetTestJob(String sql, SQLJobHandler jobHandler, SetHandler.SetItem[] setItems, int userVariableSize, MySQLVariablesService frontService) {
+    public SetTestJob(String sql, SQLJobHandler jobHandler, MysqlVariable[] setItems, int userVariableSize, MySQLVariablesService frontService) {
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.frontService = frontService;

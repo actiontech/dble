@@ -1,10 +1,15 @@
 package com.actiontech.dble.services;
 
+import com.actiontech.dble.backend.mysql.VersionUtil;
+import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.CharsetNames;
-import com.actiontech.dble.server.handler.SetHandler;
+import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.server.variables.VariableType;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,9 +27,9 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
         super(connection);
     }
 
-    public void executeContextSetTask(SetHandler.SetItem[] contextTask) {
-        SetHandler.SetItem autocommitItem = null;
-        for (SetHandler.SetItem setItem : contextTask) {
+    public void executeContextSetTask(MysqlVariable[] contextTask) {
+        MysqlVariable autocommitItem = null;
+        for (MysqlVariable setItem : contextTask) {
             switch (setItem.getType()) {
                 case CHARACTER_SET_CLIENT:
                     String charsetClient = setItem.getValue();
@@ -65,7 +70,7 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
                     autocommitItem = setItem;
                     break;
                 default:
-                    handleSetItem(setItem);
+                    handleVariable(setItem);
                     break;
             }
         }
@@ -73,11 +78,11 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
         if (autocommitItem == null) {
             writeOkPacket();
         } else {
-            handleSetItem(autocommitItem);
+            handleVariable(autocommitItem);
         }
     }
 
-    public abstract void handleSetItem(SetHandler.SetItem setItem);
+    public abstract void handleVariable(MysqlVariable setItem);
 
     public void setCollationConnection(String collation) {
         connection.getCharsetName().setCollation(collation);
@@ -131,6 +136,31 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
         return usrVariables;
     }
 
+    public List<MysqlVariable> getAllVars() {
+        List<MysqlVariable> variables = new ArrayList<>();
+
+        variables.add(new MysqlVariable("autocommit", autocommit + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("character_set_client", connection.getCharsetName().getClient(), VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("collation_connection", connection.getCharsetName().getCollation(), VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("character_set_results", connection.getCharsetName().getResults(), VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("character_set_connection", connection.getCharsetName().getCollation(), VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TRANSACTION_ISOLATION, Isolations.getIsolation(txIsolation), VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TRANSACTION_READ_ONLY, autocommit + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TX_READ_ONLY, autocommit + "", VariableType.SYSTEM_VARIABLES));
+
+        if (sysVariables != null) {
+            for (Map.Entry<String, String> entry : sysVariables.entrySet()) {
+                variables.add(new MysqlVariable(entry.getKey(), entry.getValue(), VariableType.SYSTEM_VARIABLES));
+            }
+        }
+        if (usrVariables != null) {
+            for (Map.Entry<String, String> entry : usrVariables.entrySet()) {
+                variables.add(new MysqlVariable(entry.getKey(), entry.getValue(), VariableType.USER_VARIABLES));
+            }
+        }
+        return variables;
+    }
+
     public String getStringOfSysVariables() {
         StringBuilder sbSysVariables = new StringBuilder();
         int cnt = 0;
@@ -165,6 +195,5 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
         }
         return sbUsrVariables.toString();
     }
-
 
 }

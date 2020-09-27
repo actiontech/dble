@@ -18,8 +18,8 @@ import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -102,7 +102,7 @@ public class MySQLResponseService extends MySQLVariablesService {
     }
 
     @Override
-    public void handleSetItem(SetHandler.SetItem setItem) {
+    public void handleVariable(MysqlVariable var) {
     }
 
     private void initFromConfig() {

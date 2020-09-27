@@ -9,6 +9,8 @@ import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.util.SetItemUtil;
+import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -36,25 +38,8 @@ import java.util.List;
 public final class SetHandler {
 
     private SetHandler() {
-
     }
 
-    public enum KeyType {
-        SYNTAX_ERROR,
-        XA,
-        AUTOCOMMIT,
-        NAMES,
-        CHARSET,
-        CHARACTER_SET_CLIENT,
-        CHARACTER_SET_CONNECTION,
-        CHARACTER_SET_RESULTS,
-        COLLATION_CONNECTION,
-        SYSTEM_VARIABLES,
-        USER_VARIABLES,
-        TX_READ_ONLY,
-        TX_ISOLATION,
-        TRACE
-    }
 
     public static void handle(String stmt, MySQLVariablesService frontService, int offset) {
         if (!ParseUtil.isSpace(stmt.charAt(offset))) {
@@ -65,7 +50,7 @@ public final class SetHandler {
         stmt = convertCharsetKeyWord(stmt);
 
         try {
-            SetItem[] items;
+            MysqlVariable[] items;
             StringBuilder setSQL = new StringBuilder("set ");
             StringBuilder selectSQL = new StringBuilder("select ");
             int userVariableSize = 0;
@@ -75,13 +60,13 @@ public final class SetHandler {
                 List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
                 String key;
                 int systemVariableIndex = assignItems.size() - 1;
-                items = new SetItem[assignItems.size()];
+                items = new MysqlVariable[assignItems.size()];
 
                 for (SQLAssignItem sqlAssignItem : assignItems) {
                     // new set item
                     key = handleSetKey(sqlAssignItem.getTarget());
-                    SetItem item = newSetItem(key, sqlAssignItem.getValue());
-                    if (item.getType() == KeyType.USER_VARIABLES) {
+                    MysqlVariable item = newSetItem(key, sqlAssignItem.getValue());
+                    if (item.getType() == VariableType.USER_VARIABLES) {
                         if (setSQL.length() > 4) {
                             setSQL.append(",");
                         }
@@ -92,13 +77,13 @@ public final class SetHandler {
                         selectSQL.append(item.getName());
 
                         items[userVariableSize++] = item;
-                    } else if (item.getType() == KeyType.SYSTEM_VARIABLES) {
+                    } else if (item.getType() == VariableType.SYSTEM_VARIABLES) {
                         if (setSQL.length() > 4) {
                             setSQL.append(",");
                         }
                         setSQL.append(SQLUtils.toMySqlString(sqlAssignItem));
                         items[systemVariableIndex--] = item;
-                    } else if (item.getType() == KeyType.XA) {
+                    } else if (item.getType() == VariableType.XA) {
                         if (frontService instanceof ShardingService) {
                             boolean val = Boolean.parseBoolean(item.getValue());
                             ((ShardingService) frontService).checkXaStatus(val);
@@ -111,7 +96,7 @@ public final class SetHandler {
                     }
                 }
             } else if (statement instanceof MySqlSetTransactionStatement) {
-                items = new SetItem[1];
+                items = new MysqlVariable[1];
                 items[0] = handleTransaction((MySqlSetTransactionStatement) statement);
             } else {
                 frontService.writeErrMessage(ErrorCode.ERR_WRONG_USED, stmt + " is not supported");
@@ -133,9 +118,9 @@ public final class SetHandler {
         }
     }
 
-    private static SetItem handleTransaction(MySqlSetTransactionStatement setStatement) throws SQLSyntaxErrorException {
+    private static MysqlVariable handleTransaction(MySqlSetTransactionStatement setStatement) throws SQLSyntaxErrorException {
         //always single
-        SetItem item;
+        MysqlVariable item;
         if (setStatement.getGlobal() == null) {
             throw new SQLSyntaxErrorException("setting transaction without any SESSION or GLOBAL keyword is not supported now");
         } else if (setStatement.getGlobal()) {
@@ -153,7 +138,7 @@ public final class SetHandler {
     }
 
     //execute multiStmt and callback to reset conn
-    private static void checkVariables(MySQLVariablesService service, String setSql, SetItem[] items, int userVariableSize) {
+    private static void checkVariables(MySQLVariablesService service, String setSql, MysqlVariable[] items, int userVariableSize) {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SetCallBack(service, items));
         SetTestJob sqlJob = new SetTestJob(setSql, resultHandler, items, userVariableSize, service);
         sqlJob.run();
@@ -183,39 +168,39 @@ public final class SetHandler {
         throw new SQLSyntaxErrorException("unknown key type");
     }
 
-    private static SetItem newSetItem(String key, SQLExpr valueExpr) throws SQLSyntaxErrorException {
+    private static MysqlVariable newSetItem(String key, SQLExpr valueExpr) throws SQLSyntaxErrorException {
         switch (key.toLowerCase()) {
             case "xa":
-                return new SetItem("xa", SetItemUtil.getBooleanVal(valueExpr), SetHandler.KeyType.XA);
+                return new MysqlVariable("xa", SetItemUtil.getBooleanVal(valueExpr), VariableType.XA);
             case "trace":
-                return new SetItem("trace", SetItemUtil.getBooleanVal(valueExpr), SetHandler.KeyType.TRACE);
+                return new MysqlVariable("trace", SetItemUtil.getBooleanVal(valueExpr), VariableType.TRACE);
             case "autocommit":
-                return new SetItem("autocommit", SetItemUtil.getBooleanVal(valueExpr), SetHandler.KeyType.AUTOCOMMIT);
+                return new MysqlVariable("autocommit", SetItemUtil.getBooleanVal(valueExpr), VariableType.AUTOCOMMIT);
             case "collation_connection":
-                return new SetItem("collation_connection", SetItemUtil.getCollationVal(valueExpr), SetHandler.KeyType.COLLATION_CONNECTION);
+                return new MysqlVariable("collation_connection", SetItemUtil.getCollationVal(valueExpr), VariableType.COLLATION_CONNECTION);
             case "character_set_client":
-                return new SetItem("character_set_client", SetItemUtil.getCharsetClientVal(valueExpr), SetHandler.KeyType.CHARACTER_SET_CLIENT);
+                return new MysqlVariable("character_set_client", SetItemUtil.getCharsetClientVal(valueExpr), VariableType.CHARACTER_SET_CLIENT);
             case "character_set_results":
-                return new SetItem("character_set_results", SetItemUtil.getCharsetResultsVal(valueExpr), SetHandler.KeyType.CHARACTER_SET_RESULTS);
+                return new MysqlVariable("character_set_results", SetItemUtil.getCharsetResultsVal(valueExpr), VariableType.CHARACTER_SET_RESULTS);
             case "character_set_connection":
-                return new SetItem("character_set_connection", SetItemUtil.getCharsetConnectionVal(valueExpr), SetHandler.KeyType.CHARACTER_SET_CONNECTION);
+                return new MysqlVariable("character_set_connection", SetItemUtil.getCharsetConnectionVal(valueExpr), VariableType.CHARACTER_SET_CONNECTION);
             case "character set":
-                return new SetItem(key, SetItemUtil.getCharsetVal(valueExpr), SetHandler.KeyType.CHARSET);
+                return new MysqlVariable(key, SetItemUtil.getCharsetVal(valueExpr), VariableType.CHARSET);
             case "names":
-                return new SetItem(key, SetItemUtil.getNamesVal(valueExpr), SetHandler.KeyType.NAMES);
+                return new MysqlVariable(key, SetItemUtil.getNamesVal(valueExpr), VariableType.NAMES);
             case VersionUtil.TRANSACTION_ISOLATION:
             case VersionUtil.TX_ISOLATION:
-                return new SetItem(key, SetItemUtil.getIsolationVal(valueExpr), SetHandler.KeyType.TX_ISOLATION);
+                return new MysqlVariable(key, SetItemUtil.getIsolationVal(valueExpr), VariableType.TX_ISOLATION);
             case VersionUtil.TRANSACTION_READ_ONLY:
             case VersionUtil.TX_READ_ONLY:
-                return new SetItem(key, SetItemUtil.getBooleanVal(valueExpr), SetHandler.KeyType.TX_READ_ONLY);
+                return new MysqlVariable(key, SetItemUtil.getBooleanVal(valueExpr), VariableType.TX_READ_ONLY);
             default:
                 if (key.startsWith("@@")) {
-                    return new SetItem(key.substring(2), SetItemUtil.parseVariablesValue(valueExpr), KeyType.SYSTEM_VARIABLES);
+                    return newSetItem(key.substring(2), valueExpr);
                 } else if (key.startsWith("@")) {
-                    return new SetItem(key.toUpperCase(), null, KeyType.USER_VARIABLES);
+                    return new MysqlVariable(key.toUpperCase(), null, VariableType.USER_VARIABLES);
                 }
-                return new SetItem(key, SetItemUtil.parseVariablesValue(valueExpr), KeyType.SYSTEM_VARIABLES);
+                return new MysqlVariable(key, SetItemUtil.parseVariablesValue(valueExpr), VariableType.SYSTEM_VARIABLES);
         }
     }
 
@@ -249,42 +234,6 @@ public final class SetHandler {
             return result.toString();
         }
         return stmt;
-    }
-
-    public static class SetItem {
-        private String name;
-        private String value;
-        private SetHandler.KeyType type;
-
-        public SetItem(String name, String value, SetHandler.KeyType type) {
-            this.name = name;
-            this.value = value;
-            this.type = type;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public void setValue(String value) {
-            this.value = value;
-        }
-
-        public KeyType getType() {
-            return type;
-        }
-
-        public void setType(KeyType type) {
-            this.type = type;
-        }
     }
 
 }

@@ -26,7 +26,6 @@ public class SetCallBack implements SQLQueryResultListener<SQLQueryResult<Map<St
     public void onResult(SQLQueryResult<Map<String, String>> result) {
         if (result.isSuccess()) {
             service.executeContextSetTask(items);
-            service.executeContextSetTask(items);
         }
     }
 

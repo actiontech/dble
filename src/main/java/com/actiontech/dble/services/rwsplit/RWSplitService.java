@@ -14,10 +14,10 @@ import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
-import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
+import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.statistic.CommandCount;
@@ -57,10 +57,10 @@ public class RWSplitService extends MySQLVariablesService implements FrontEndSer
     }
 
     @Override
-    public void handleSetItem(SetHandler.SetItem setItem) {
-        switch (setItem.getType()) {
+    public void handleVariable(MysqlVariable var) {
+        switch (var.getType()) {
             case AUTOCOMMIT:
-                String ac = setItem.getValue();
+                String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
                     autocommit = false;
                     writeOkPacket();

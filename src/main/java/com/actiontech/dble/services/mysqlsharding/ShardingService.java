@@ -2,6 +2,7 @@ package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.Capabilities;
@@ -25,12 +26,13 @@ import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.ServerSptPrepare;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
 import com.actiontech.dble.server.handler.ServerPrepareHandler;
-import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.MySQLVariablesService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.*;
@@ -47,6 +49,7 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -107,9 +110,9 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
     }
 
     @Override
-    public void handleSetItem(SetHandler.SetItem setItem) {
-        String val = setItem.getValue();
-        switch (setItem.getType()) {
+    public void handleVariable(MysqlVariable var) {
+        String val = var.getValue();
+        switch (var.getType()) {
             case XA:
                 session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
                 break;
@@ -140,6 +143,16 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
             default:
                 // IGNORE
         }
+    }
+
+    @Override
+    public List<MysqlVariable> getAllVars() {
+        List<MysqlVariable> variables = super.getAllVars();
+        variables.add(new MysqlVariable("xa", session.getTransactionManager().getSessionXaID() == null ? "false" : "true", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable("trace", session.isTrace() + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TRANSACTION_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TX_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
+        return variables;
     }
 
     public void checkXaStatus(boolean val) throws SQLSyntaxErrorException {

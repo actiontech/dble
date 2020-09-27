@@ -89,7 +89,7 @@ public class ShardingNode {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
             checkRequest(schema);
-            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, isMustWrite || autoCommit));
+            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit));
             instance.getConnection(schema, handler, attachment, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);

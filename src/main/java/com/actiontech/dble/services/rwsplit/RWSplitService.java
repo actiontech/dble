@@ -64,12 +64,15 @@ public class RWSplitService extends MySQLVariablesService implements FrontEndSer
                 if (autocommit && !Boolean.parseBoolean(ac)) {
                     autocommit = false;
                     writeOkPacket();
+                    return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
-                    session.execute(false, rwSplitService -> {
+                    session.execute(true, rwSplitService -> {
                         rwSplitService.setAutocommit(true);
                     });
+                    return;
                 }
+                writeOkPacket();
                 break;
             default:
                 break;

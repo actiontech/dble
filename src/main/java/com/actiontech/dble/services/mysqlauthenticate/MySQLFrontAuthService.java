@@ -8,7 +8,6 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.MySQLAuthPlugin;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.NativePwd;
@@ -24,7 +23,7 @@ import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_na
 /**
  * Created by szf on 2020/6/18.
  */
-public class MySQLFrontAuthService extends MySQLBasedService implements AuthService {
+public class MySQLFrontAuthService extends AbstractService implements AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLFrontAuthService.class);
 

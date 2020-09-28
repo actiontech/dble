@@ -16,7 +16,7 @@ public final class BeginHandler {
         if (service.isTxStart() || !service.isAutocommit()) {
             service.beginInTx(stmt);
         } else {
-            service.setTxStarted(true);
+            service.setTxStart(true);
             TxnLogHelper.putTxnLog(service, stmt);
             service.writeOkPacket();
         }

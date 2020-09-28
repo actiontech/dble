@@ -11,7 +11,7 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.util.SetItemUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
-import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SetTestJob;
@@ -40,8 +40,7 @@ public final class SetHandler {
     private SetHandler() {
     }
 
-
-    public static void handle(String stmt, MySQLVariablesService frontService, int offset) {
+    public static void handle(String stmt, BusinessService frontService, int offset) {
         if (!ParseUtil.isSpace(stmt.charAt(offset))) {
             frontService.writeErrMessage(ErrorCode.ERR_WRONG_USED, stmt + " is not supported");
             return;
@@ -138,7 +137,7 @@ public final class SetHandler {
     }
 
     //execute multiStmt and callback to reset conn
-    private static void checkVariables(MySQLVariablesService service, String setSql, MysqlVariable[] items, int userVariableSize) {
+    private static void checkVariables(BusinessService service, String setSql, MysqlVariable[] items, int userVariableSize) {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SetCallBack(service, items));
         SetTestJob sqlJob = new SetTestJob(setSql, resultHandler, items, userVariableSize, service);
         sqlJob.run();

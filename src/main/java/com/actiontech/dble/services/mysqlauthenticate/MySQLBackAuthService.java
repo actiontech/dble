@@ -10,9 +10,9 @@ import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.net.service.ServiceTask;
-import com.actiontech.dble.services.MySQLBasedService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.BackendDefaulPlugin;
 import com.actiontech.dble.services.mysqlauthenticate.plugin.CachingSHA2Pwd;
@@ -32,7 +32,7 @@ import static com.actiontech.dble.config.ErrorCode.ER_ACCESS_DENIED_ERROR;
 /**
  * Created by szf on 2020/6/19.
  */
-public class MySQLBackAuthService extends MySQLBasedService implements AuthService {
+public class MySQLBackAuthService extends AbstractService implements AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLBackAuthService.class);
 

@@ -11,15 +11,15 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
-import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.singleton.FrontendUserManager;
+import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.CommandCount;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,14 +29,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RWSplitService extends MySQLVariablesService implements FrontEndService {
+public class RWSplitService extends BusinessService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
     private static final Pattern HINT_DEST = Pattern.compile(".*/\\*\\s*dble_dest_expect\\s*:\\s*([M|S])\\s*\\*/", Pattern.CASE_INSENSITIVE);
 
     private volatile String schema;
     private volatile boolean isLocked;
-    private volatile boolean txStart;
     private volatile boolean inLoadData;
     private volatile boolean inPrepare;
 
@@ -63,15 +62,20 @@ public class RWSplitService extends MySQLVariablesService implements FrontEndSer
                 String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
                     autocommit = false;
+                    txStarted = false;
+                    this.singleTransactionsCount();
                     writeOkPacket();
                     return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
                     session.execute(true, rwSplitService -> {
                         rwSplitService.setAutocommit(true);
+                        txStarted = false;
+                        this.singleTransactionsCount();
                     });
                     return;
                 }
+                this.singleTransactionsCount();
                 writeOkPacket();
                 break;
             default:
@@ -269,14 +273,6 @@ public class RWSplitService extends MySQLVariablesService implements FrontEndSer
         isLocked = locked;
     }
 
-    public boolean isTxStart() {
-        return txStart;
-    }
-
-    public void setTxStart(boolean txStart) {
-        this.txStart = txStart;
-    }
-
     public boolean isInLoadData() {
         return inLoadData;
     }
@@ -301,5 +297,11 @@ public class RWSplitService extends MySQLVariablesService implements FrontEndSer
     public void killAndClose(String reason) {
         session.close(reason);
         connection.close(reason);
+    }
+    public void cleanup() {
+        super.cleanup();
+        if (session != null) {
+            TsQueriesCounter.getInstance().addToHistory(this);
+        }
     }
 }

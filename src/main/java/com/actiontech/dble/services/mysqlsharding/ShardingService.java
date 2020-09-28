@@ -18,7 +18,6 @@ import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.FrontEndService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -33,7 +32,7 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
-import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.CommandCount;
@@ -58,7 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by szf on 2020/6/18.
  */
-public class ShardingService extends MySQLVariablesService implements FrontEndService {
+public class ShardingService extends BusinessService {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingService.class);
 
@@ -79,7 +78,6 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
     protected String executeSql;
     protected UserName user;
     private long clientFlags;
-    private volatile boolean txStarted;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
@@ -115,18 +113,23 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
         switch (var.getType()) {
             case XA:
                 session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
+                this.singleTransactionsCount();
                 break;
             case TRACE:
                 session.setTrace(Boolean.parseBoolean(val));
+                this.singleTransactionsCount();
                 break;
             case TX_READ_ONLY:
                 sessionReadOnly = Boolean.parseBoolean(val);
+                this.singleTransactionsCount();
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit && session.getTargetCount() > 0) {
                         session.implicitCommit(() -> {
                             autocommit = true;
+                            txStarted = false;
+                            this.singleTransactionsCount();
                             writeOkPacket();
                         });
                         return;
@@ -135,9 +138,11 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
                 } else {
                     if (autocommit) {
                         autocommit = false;
+                        txStarted = true;
                         TxnLogHelper.putTxnLog(this, executeSql);
                     }
                 }
+                this.singleTransactionsCount();
                 writeOkPacket();
                 break;
             default:
@@ -456,7 +461,7 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
-            this.setTxStarted(true);
+            txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }
@@ -641,7 +646,7 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
     public void cleanup() {
         super.cleanup();
         if (session != null) {
-            TsQueriesCounter.getInstance().addToHistory(session);
+            TsQueriesCounter.getInstance().addToHistory(this);
             session.terminate();
         }
         if (getLoadDataInfileHandler() != null) {
@@ -651,14 +656,6 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
 
     protected void sessionStart() {
         TraceManager.sessionStart(this, "sharding-server-start");
-    }
-
-    public boolean isTxStarted() {
-        return txStarted;
-    }
-
-    public void setTxStarted(boolean txStarted) {
-        this.txStarted = txStarted;
     }
 
     public boolean isTxChainBegin() {
@@ -685,9 +682,6 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
         this.txInterruptMsg = txInterruptMsg;
     }
 
-    public boolean isTxStart() {
-        return txStarted;
-    }
 
     public UserName getUser() {
         return user;
@@ -794,5 +788,20 @@ public class ShardingService extends MySQLVariablesService implements FrontEndSe
     public String toString() {
         return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] \nwith connection " + connection.toString() + " \nwith sesssion " + session.toString();
+    }
+
+    @Override
+    public void queryCount() {
+        queriesCounter.incrementAndGet();
+    }
+    @Override
+    public void transactionsCount() {
+        transactionsCounter.incrementAndGet();
+    }
+    @Override
+    public void singleTransactionsCount() {
+        if (!this.isTxStart()) {
+            transactionsCounter.incrementAndGet();
+        }
     }
 }

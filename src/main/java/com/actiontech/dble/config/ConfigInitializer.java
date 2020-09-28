@@ -144,7 +144,7 @@ public class ConfigInitializer implements ProblemReporter {
             allUseShardingNode.addAll(redundancy.getShardingNodes());
         }
 
-        Set<String> allUseHost = new HashSet<>();
+        Set<String> allUseDbGroups = new HashSet<>();
         //delete redundancy shardingNode
         Iterator<Map.Entry<String, ShardingNode>> iterator = this.shardingNodes.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -152,7 +152,7 @@ public class ConfigInitializer implements ProblemReporter {
             String shardingNodeName = entry.getKey();
             if (allUseShardingNode.contains(shardingNodeName)) {
                 if (entry.getValue().getDbGroup() != null) {
-                    allUseHost.add(entry.getValue().getDbGroup().getGroupName());
+                    allUseDbGroups.add(entry.getValue().getDbGroup().getGroupName());
                 }
             } else {
                 LOGGER.info("shardingNode " + shardingNodeName + " is useless,server will ignore it");
@@ -163,7 +163,8 @@ public class ConfigInitializer implements ProblemReporter {
         allUseShardingNode.clear();
 
         // include rwSplit dbGroup
-        RwSplitUserConfig rwSplitUserConfig = null;
+        RwSplitUserConfig rwSplitUserConfig;
+        HashSet<String> rwGroups = new HashSet<>();
         for (UserConfig config : this.users.values()) {
             if (config instanceof RwSplitUserConfig) {
                 rwSplitUserConfig = (RwSplitUserConfig) config;
@@ -171,24 +172,25 @@ public class ConfigInitializer implements ProblemReporter {
                 if (!this.dbGroups.containsKey(group)) {
                     throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + group + "] for rwSplit isn't configured in db.xml.");
                 }
-                if (allUseHost.contains(group)) {
+                if (allUseDbGroups.contains(group)) {
                     throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + group + "] has been used by sharding node, can't be used by rwSplit.");
                 } else {
-                    allUseHost.add(group);
+                    rwGroups.add(group);
                 }
             }
         }
+        allUseDbGroups.addAll(rwGroups);
 
         //mark useless db_group: have heartbeat/ have not pool init
         for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : this.dbGroups.entrySet()) {
             dbGroupEntry.getValue().setUseless(false);
-            if (allUseHost.size() < this.dbGroups.size() && !allUseHost.contains(dbGroupEntry.getKey())) {
+            if (allUseDbGroups.size() < this.dbGroups.size() && !allUseDbGroups.contains(dbGroupEntry.getKey())) {
                 LOGGER.info("dbGroup " + dbGroupEntry.getKey() + " is useless,server will create heartbeat,not create pool");
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupEntry.getKey() + " is useless"));
                 dbGroupEntry.getValue().setUseless(true);
             }
         }
-        allUseHost.clear();
+        allUseDbGroups.clear();
     }
 
     public void testConnection() {

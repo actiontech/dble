@@ -205,6 +205,9 @@ public final class ConditionUtil {
         routeUnits.addAll(conditionsToRouteUnits(whereUnit.getOrConditionList()));
 
         if (whereUnit.getOutAndConditions().size() > 0) {
+            if (routeUnits.size() == 0) {
+                routeUnits.add(new RouteCalculateUnit());
+            }
             for (RouteCalculateUnit routeUnit : routeUnits) {
                 conditionToRouteUnit(routeUnit, whereUnit.getOutAndConditions());
             }

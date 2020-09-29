@@ -307,6 +307,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 if (!inSelect && !inOuterJoin) {
                     handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
                     handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
+                }
+                if (!inSelect) {
                     handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
                 }
                 break;
@@ -317,6 +319,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                     WhereUnit whereUnit;
                     whereUnit = new WhereUnit(x);
                     whereUnit.addOutConditions(getConditions());
+                    whereUnit.addOutRelationships(getRelationships());
+                    whereUnits.add(whereUnit);
+                } else if (!RouterUtil.isConditionAlwaysTrue(x) && !inSelect) {
+                    WhereUnit whereUnit;
+                    whereUnit = new WhereUnit(x);
                     whereUnit.addOutRelationships(getRelationships());
                     whereUnits.add(whereUnit);
                 }

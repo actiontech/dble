@@ -90,7 +90,7 @@ public final class SetItemUtil {
         if (collationName == null) {
             throw new SQLSyntaxErrorException("Unknown character set '" + charsetConnection + "'");
         }
-        return charsetConnection;
+        return collationName;
     }
 
     public static String getCharsetVal(SQLExpr valueExpr) throws SQLSyntaxErrorException {

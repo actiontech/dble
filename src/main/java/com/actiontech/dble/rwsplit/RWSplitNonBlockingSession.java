@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.SQLSyntaxErrorException;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 
 public class RWSplitNonBlockingSession {
 
@@ -46,9 +46,6 @@ public class RWSplitNonBlockingSession {
 
             PhysicalDbInstance instance = rwGroup.select(master);
             checkDest(!instance.isReadInstance());
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("route dbInstance{}", instance);
-            }
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
             LOGGER.warn("select conn error", e);

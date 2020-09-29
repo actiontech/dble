@@ -62,8 +62,7 @@ public class RWSplitService extends BusinessService {
                 String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
                     autocommit = false;
-                    txStarted = false;
-                    this.singleTransactionsCount();
+                    txStarted = true;
                     writeOkPacket();
                     return;
                 }

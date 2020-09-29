@@ -789,19 +789,4 @@ public class ShardingService extends BusinessService {
         return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] \nwith connection " + connection.toString() + " \nwith sesssion " + session.toString();
     }
-
-    @Override
-    public void queryCount() {
-        queriesCounter.incrementAndGet();
-    }
-    @Override
-    public void transactionsCount() {
-        transactionsCounter.incrementAndGet();
-    }
-    @Override
-    public void singleTransactionsCount() {
-        if (!this.isTxStart()) {
-            transactionsCounter.incrementAndGet();
-        }
-    }
 }

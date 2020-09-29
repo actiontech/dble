@@ -3,8 +3,7 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.BusinessService;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -28,9 +27,9 @@ public final class TsQueriesCounter {
         try {
             for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (FrontendConnection fc : processor.getFrontends().values()) {
-                    if (!fc.isManager() && fc.getFrontEndService() instanceof ShardingService) {
-                        long query = ((ShardingService) fc.getFrontEndService()).getSession2().getQueriesCounter();
-                        long transaction = ((ShardingService) fc.getFrontEndService()).getSession2().getTransactionsCounter();
+                    if (!fc.isManager()) {
+                        long query = ((BusinessService) (fc.getService())).getQueriesCounter();
+                        long transaction = ((BusinessService) (fc.getService())).getTransactionsCounter();
                         queries += query > 0 ? query : 0;
                         transactions += transaction > 0 ? transaction : transaction;
                     }
@@ -44,13 +43,13 @@ public final class TsQueriesCounter {
         return new CalculateResult(queries, transactions);
     }
 
-    public void addToHistory(NonBlockingSession session) {
+    public void addToHistory(BusinessService service) {
         lock.writeLock().lock();
         try {
-            if (session.getQueriesCounter() > 0) {
-                hisQueriesCount += session.getQueriesCounter();
-                hisTransCount += session.getTransactionsCounter();
-                session.resetCounter();
+            if (service.getQueriesCounter() > 0) {
+                hisQueriesCount += service.getQueriesCounter();
+                hisTransCount += service.getTransactionsCounter();
+                service.resetCounter();
             }
         } finally {
             lock.writeLock().unlock();

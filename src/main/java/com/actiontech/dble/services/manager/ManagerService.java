@@ -11,9 +11,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.FrontEndService;
-import com.actiontech.dble.server.variables.MysqlVariable;
-import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
@@ -24,7 +22,7 @@ import java.io.UnsupportedEncodingException;
 /**
  * Created by szf on 2020/6/28.
  */
-public class ManagerService extends MySQLVariablesService implements FrontEndService {
+public class ManagerService extends FrontEndService {
 
     private final ManagerQueryHandler handler;
 
@@ -43,10 +41,6 @@ public class ManagerService extends MySQLVariablesService implements FrontEndSer
         this.proto = new MySQLProtoHandlerImpl();
         this.session = new ManagerSession(this);
         this.commands = connection.getProcessor().getCommands();
-    }
-
-    @Override
-    public void handleVariable(MysqlVariable setItem) {
     }
 
     public void initFromAuthInfo(AuthResultInfo info) {
@@ -183,4 +177,5 @@ public class ManagerService extends MySQLVariablesService implements FrontEndSer
     public String toString() {
         return "ManagerService [user = " + user + " sql = " + executeSql + " schema = " + schema + " ] \nWith connection " + connection.toString();
     }
+
 }

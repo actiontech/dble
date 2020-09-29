@@ -19,8 +19,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.server.variables.MysqlVariable;
-import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -43,11 +42,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-
 /**
  * Created by szf on 2020/6/29.
  */
-public class MySQLResponseService extends MySQLVariablesService {
+public class MySQLResponseService extends VariablesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLResponseService.class);
 
     private ResponseHandler responseHandler;
@@ -101,9 +99,6 @@ public class MySQLResponseService extends MySQLVariablesService {
         this.prepareLogicHandler = new MysqlPrepareLogicHandler(this);
     }
 
-    @Override
-    public void handleVariable(MysqlVariable var) {
-    }
 
     private void initFromConfig() {
         this.autocommitSynced = connection.getInstance().isAutocommitSynced();
@@ -561,7 +556,7 @@ public class MySQLResponseService extends MySQLVariablesService {
         try {
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
-                service.setTxStarted(true);
+                service.setTxStart(true);
             }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
@@ -580,7 +575,7 @@ public class MySQLResponseService extends MySQLVariablesService {
         try {
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
-                service.setTxStarted(true);
+                service.setTxStart(true);
             }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
@@ -593,7 +588,7 @@ public class MySQLResponseService extends MySQLVariablesService {
         }
     }
 
-    public void execute(MySQLVariablesService service, String sql) {
+    public void execute(VariablesService service, String sql) {
         StringBuilder synSQL = getSynSql(null, null,
                 service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
         synAndDoExecute(synSQL, sql, service.getCharset());

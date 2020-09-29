@@ -63,7 +63,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
@@ -80,8 +79,6 @@ public class NonBlockingSession extends Session {
     private long queryStartTime = 0;
     private final ShardingService shardingService;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
-    private final AtomicLong queriesCounter = new AtomicLong(0);
-    private final AtomicLong transactionsCounter = new AtomicLong(0);
 
     private SavePointHandler savePointHandler;
     private TransactionHandlerManager transactionManager;
@@ -916,7 +913,7 @@ public class NonBlockingSession extends Session {
             transactionManager.setRetryXa(true);
         }
         needWaitFinished = false;
-        shardingService.setTxStarted(false);
+        shardingService.setTxStart(false);
         shardingService.getAndIncrementXid();
     }
 
@@ -966,7 +963,7 @@ public class NonBlockingSession extends Session {
         if (rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (shardingService.isTxStart()) {
-                shardingService.setTxStarted(false);
+                shardingService.setTxStart(false);
                 shardingService.getAndIncrementXid();
             }
             if (rrs.isOnline()) {
@@ -1029,19 +1026,6 @@ public class NonBlockingSession extends Session {
         return false;
     }
 
-    public void queryCount() {
-        queriesCounter.incrementAndGet();
-    }
-
-    public void transactionsCount() {
-        transactionsCounter.incrementAndGet();
-    }
-
-    public void singleTransactionsCount() {
-        if (!shardingService.isTxStart()) {
-            transactionsCounter.incrementAndGet();
-        }
-    }
 
     public void rowCountRolling() {
         rowCountLastSQL = rowCountCurrentSQL;
@@ -1136,18 +1120,6 @@ public class NonBlockingSession extends Session {
         return transactionManager.isRetryXa();
     }
 
-    public long getQueriesCounter() {
-        return queriesCounter.get();
-    }
-
-    public long getTransactionsCounter() {
-        return transactionsCounter.get();
-    }
-
-    public void resetCounter() {
-        queriesCounter.set(Long.MIN_VALUE);
-        transactionsCounter.set(Long.MIN_VALUE);
-    }
 
     public boolean isKilled() {
         return killed;

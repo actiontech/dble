@@ -1,18 +1,23 @@
 package com.actiontech.dble.net.service;
 
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.TraceManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.actiontech.dble.util.CompressUtil;
+import com.actiontech.dble.util.StringUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -20,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by szf on 2020/6/16.
  */
 public abstract class AbstractService implements Service {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
 
     protected AbstractConnection connection;
     private AtomicInteger packetId;
@@ -30,6 +34,7 @@ public abstract class AbstractService implements Service {
     protected volatile ProtoHandler proto;
     protected final ConcurrentLinkedQueue<ServiceTask> taskQueue;
 
+    protected UserConfig userConfig;
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
         this.proto = new MySQLProtoHandlerImpl();
@@ -87,7 +92,6 @@ public abstract class AbstractService implements Service {
         taskToTotalQueue(task);
     }
 
-    protected abstract void taskToTotalQueue(ServiceTask task);
 
     protected void sessionStart() {
         //
@@ -115,7 +119,6 @@ public abstract class AbstractService implements Service {
         throw new RuntimeException("function not support");
     }
 
-    public abstract void handleData(ServiceTask task);
 
     public int nextPacketId() {
         return packetId.incrementAndGet();
@@ -228,5 +231,89 @@ public abstract class AbstractService implements Service {
 
     public String toBriefString() {
         return "Service " + this.getClass() + " " + connection.getId();
+    }
+
+    protected void taskToPriorityQueue(ServiceTask task) {
+        DbleServer.getInstance().getFrontPriorityQueue().offer(task);
+        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null));
+    }
+
+    protected void taskToTotalQueue(ServiceTask task) {
+        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
+    }
+
+    public void handleData(ServiceTask task) {
+        ServiceTask executeTask = null;
+        if (connection.isClosed()) {
+            return;
+        }
+
+        synchronized (this) {
+            if (currentTask == null) {
+                executeTask = taskQueue.poll();
+                if (executeTask != null) {
+                    currentTask = executeTask;
+                }
+            }
+            if (currentTask != task) {
+                taskToPriorityQueue(task);
+            }
+        }
+
+        if (executeTask != null) {
+            byte[] data = executeTask.getOrgData();
+            if (data != null && !executeTask.isReuse()) {
+                this.setPacketId(data[3]);
+            }
+            if (isSupportCompress()) {
+                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, new ConcurrentLinkedQueue<>());
+                for (byte[] pack : packs) {
+                    if (pack.length != 0) {
+                        handleInnerData(pack);
+                    }
+                }
+            } else {
+                this.handleInnerData(data);
+                synchronized (this) {
+                    currentTask = null;
+                }
+            }
+        }
+    }
+
+    protected abstract void handleInnerData(byte[] data);
+
+    public UserConfig getUserConfig() {
+        return userConfig;
+    }
+
+    public void writeOkPacket() {
+        OkPacket ok = new OkPacket();
+        byte packet = (byte) this.getPacketId().incrementAndGet();
+        ok.read(OkPacket.OK);
+        ok.setPacketId(packet);
+        write(ok);
+    }
+
+    public void writeErrMessage(String code, String msg, int vendorCode) {
+        writeErrMessage((byte) this.nextPacketId(), vendorCode, code, msg);
+    }
+
+    public void writeErrMessage(int vendorCode, String msg) {
+        writeErrMessage((byte) this.nextPacketId(), vendorCode, msg);
+    }
+
+    public void writeErrMessage(byte id, int vendorCode, String msg) {
+        writeErrMessage(id, vendorCode, "HY000", msg);
+    }
+
+
+    protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        ErrorPacket err = new ErrorPacket();
+        err.setPacketId(id);
+        err.setErrNo(vendorCode);
+        err.setSqlState(StringUtil.encode(sqlState, connection.getCharsetName().getResults()));
+        err.setMessage(StringUtil.encode(msg, connection.getCharsetName().getResults()));
+        err.write(connection);
     }
 }

@@ -15,7 +15,7 @@ public final class RollBackHandler {
 
     public static void handle(String stmt, ShardingService service) {
         TxnLogHelper.putTxnLog(service, stmt);
-        service.getSession2().transactionsCount();
+        service.transactionsCount();
         service.rollback();
     }
 }

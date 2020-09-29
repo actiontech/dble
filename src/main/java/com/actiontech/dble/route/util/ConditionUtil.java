@@ -367,7 +367,7 @@ public final class ConditionUtil {
 
     private static boolean checkConditionValues(List<Object> values) {
         for (Object value : values) {
-            if (value != null && !value.toString().equals("")) {
+            if (value != null) {
                 return true;
             }
         }

@@ -14,8 +14,8 @@ import java.util.regex.Pattern;
 /**
  * @author mycat
  */
-public final class ServerParse {
-    private ServerParse() {
+public class ServerParse {
+    protected ServerParse() {
     }
 
     public static final int OTHER = -1;
@@ -197,7 +197,7 @@ public final class ServerParse {
         return rt;
     }
 
-    private static int eCheck(String stmt, int offset) {
+    protected static int eCheck(String stmt, int offset) {
         int sqlType = OTHER;
         if (stmt.length() > offset + 1) {
             char c1 = stmt.charAt(++offset);
@@ -220,7 +220,7 @@ public final class ServerParse {
         return sqlType;
     }
 
-    private static int flushCheck(String stmt, int offset) {
+    protected static int flushCheck(String stmt, int offset) {
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -235,7 +235,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int lCheck(String stmt, int offset) {
+    protected static int lCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             if (c1 == 'o' || c1 == 'O') {
@@ -300,7 +300,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int migrateCheck(String stmt, int offset) {
+    protected static int migrateCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -321,7 +321,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int optimizeCheck(String stmt, int offset) {
+    protected static int optimizeCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -340,7 +340,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int prepareCheck(String stmt, int offset) {
+    protected static int prepareCheck(String stmt, int offset) {
         if (isPrepare(stmt, offset)) return SCRIPT_PREPARE;
         return OTHER;
     }
@@ -364,7 +364,7 @@ public final class ServerParse {
     }
 
     //truncate
-    private static int tCheck(String stmt, int offset) {
+    protected static int tCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -385,7 +385,7 @@ public final class ServerParse {
     }
 
     //alter table/view/... and analyze
-    private static int aCheck(String stmt, int offset) {
+    protected static int aCheck(String stmt, int offset) {
         if (stmt.length() > offset + 1) {
             switch (stmt.charAt(++offset)) {
                 case 'l':
@@ -620,7 +620,7 @@ public final class ServerParse {
     }
 
     // delete or drop
-    private static int deleteOrdCheck(String stmt, int offset) {
+    protected static int deleteOrdCheck(String stmt, int offset) {
         int sqlType = OTHER;
         switch (stmt.charAt((offset + 1))) {
             case 'E':
@@ -638,7 +638,7 @@ public final class ServerParse {
     }
 
     // HELP' '
-    private static int helpCheck(String stmt, int offset) {
+    protected static int helpCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ELP ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -689,7 +689,7 @@ public final class ServerParse {
     }
 
     // KILL' '
-    private static int killCheck(String stmt, int offset) {
+    protected static int killCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ILL ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -747,7 +747,7 @@ public final class ServerParse {
     }
 
     // BEGIN
-    private static int beginCheck(String stmt, int offset) {
+    protected static int beginCheck(String stmt, int offset) {
         if (stmt.length() > offset + 4) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -819,7 +819,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int cCheck(String stmt, int offset) {
+    protected static int cCheck(String stmt, int offset) {
         int sqlType = OTHER;
         switch (stmt.charAt((offset + 1))) {
             case 'A':
@@ -930,7 +930,7 @@ public final class ServerParse {
     }
 
     // INSERT' '
-    private static int insertCheck(String stmt, int offset) {
+    protected static int insertCheck(String stmt, int offset) {
         if (stmt.length() > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -948,7 +948,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int rCheck(String stmt, int offset) {
+    protected static int rCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'E':
@@ -983,7 +983,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int release(String stmt, int offset) {
+    protected static int release(String stmt, int offset) {
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -998,7 +998,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int repCheck(String stmt, int offset) {
+    protected static int repCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'A':
@@ -1014,7 +1014,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int rename(String stmt, int offset) {
+    protected static int rename(String stmt, int offset) {
         if (stmt.length() > offset + 4) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1057,7 +1057,7 @@ public final class ServerParse {
     }
 
     // ROLLBACK
-    private static int rollbackCheck(String stmt, int offset) {
+    protected static int rollbackCheck(String stmt, int offset) {
         if (stmt.length() > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1078,7 +1078,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int sCheck(String stmt, int offset) {
+    protected static int sCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'A':
@@ -1101,7 +1101,7 @@ public final class ServerParse {
     }
 
     // SAVEPOINT
-    private static int savepointCheck(String stmt, int offset) {
+    protected static int savepointCheck(String stmt, int offset) {
         if (stmt.length() > offset + 8) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1122,7 +1122,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    private static int seCheck(String stmt, int offset) {
+    protected static int seCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'L':
@@ -1173,7 +1173,7 @@ public final class ServerParse {
     }
 
     // SHOW' '
-    private static int showCheck(String stmt, int offset) {
+    protected static int showCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1203,7 +1203,7 @@ public final class ServerParse {
     }
 
     // UPDATE' ' | USE' '
-    private static int uCheck(String stmt, int offset) {
+    protected static int uCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'P':

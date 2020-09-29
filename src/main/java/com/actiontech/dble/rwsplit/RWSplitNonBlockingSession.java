@@ -140,9 +140,8 @@ public class RWSplitNonBlockingSession {
 
     public void unbindIfSafe() {
         if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
-                !rwSplitService.isTxStart() &&
                 !rwSplitService.isInLoadData() &&
-                !rwSplitService.isInPrepare()) {
+                !rwSplitService.isInPrepare() && this.conn != null) {
             this.conn.release();
             this.conn = null;
         }

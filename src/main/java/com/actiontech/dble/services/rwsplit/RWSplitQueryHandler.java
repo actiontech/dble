@@ -2,11 +2,12 @@ package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
+import com.actiontech.dble.net.mysql.extra.CommitPacket;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
-import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
@@ -28,41 +29,42 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
-            int rs = ServerParse.parse(sql);
+            int rs = RwSplitServerParse.parse(sql);
             int hintLength = RouteService.isHintSql(sql);
             int sqlType = rs & 0xff;
             if (hintLength >= 0) {
                 session.executeHint(sqlType, sql, null);
             } else {
                 switch (sqlType) {
-                    case ServerParse.USE:
+                    case RwSplitServerParse.USE:
                         String schema = UseHandler.getSchemaName(sql, rs >>> 8);
                         session.execute(true, rwSplitService -> rwSplitService.setSchema(schema));
                         break;
-                    case ServerParse.SHOW:
-                    case ServerParse.SELECT:
+                    case RwSplitServerParse.SHOW:
+                    case RwSplitServerParse.SELECT:
                         session.execute(false, null);
                         break;
-                    case ServerParse.SET:
+                    case RwSplitServerParse.SET:
                         SetHandler.handle(sql, session.getService(), rs >>> 8);
                         break;
-                    case ServerParse.LOCK:
-                        session.execute(true, rwSplitService -> rwSplitService.setLocked(true));
+                    case RwSplitServerParse.LOCK:
+                        handlerLock();
                         break;
-                    case ServerParse.UNLOCK:
+                    case RwSplitServerParse.UNLOCK:
                         session.execute(true, rwSplitService -> rwSplitService.setLocked(false));
                         break;
-                    case ServerParse.START:
-                    case ServerParse.BEGIN:
+                    case RwSplitServerParse.START_TRANSACTION:
+                    case RwSplitServerParse.BEGIN:
                         session.execute(true, rwSplitService -> rwSplitService.setTxStart(true));
                         break;
-                    case ServerParse.COMMIT:
-                    case ServerParse.ROLLBACK:
+                    case RwSplitServerParse.COMMIT:
+                    case RwSplitServerParse.ROLLBACK:
                         session.execute(true, rwSplitService -> {
+                            rwSplitService.setTxStart(false);
                             rwSplitService.getSession().unbindIfSafe(true);
                         });
                         break;
-                    case ServerParse.LOAD_DATA_INFILE_SQL:
+                    case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
                         session.getService().setInLoadData(true);
                         session.execute(true, rwSplitService -> rwSplitService.setInLoadData(false));
                         break;
@@ -71,7 +73,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         // 2. DML
                         // 3. procedure
                         // 4. function
-                        session.execute(true, null);
+                        session.execute(true, handleCallback(sqlType));
                         break;
                 }
             }
@@ -81,6 +83,42 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         } finally {
             TraceManager.finishSpan(traceObject);
         }
+    }
+
+    private void handlerLock() {
+        if (session.getService().isTxStart()) {
+            session.execute(true, CommitPacket.initCommit().toBytes(), null);
+            session.execute(true, rwSplitService -> {
+                rwSplitService.setTxStart(false);
+                rwSplitService.setLocked(true);
+            });
+        } else {
+            session.execute(true, rwSplitService -> rwSplitService.setLocked(true));
+        }
+    }
+
+    private Callback handleCallback(int sqlType) {
+        switch (sqlType) {
+            case RwSplitServerParse.DDL:
+            case RwSplitServerParse.ALTER_VIEW:
+            case RwSplitServerParse.CREATE_DATABASE:
+            case RwSplitServerParse.CREATE_VIEW:
+            case RwSplitServerParse.DROP_VIEW:
+            case RwSplitServerParse.INSTALL:
+            case RwSplitServerParse.RENAME:
+            case RwSplitServerParse.UNINSTALL:
+            case RwSplitServerParse.GRANT:
+            case RwSplitServerParse.REVOKE:
+                return rwSplitService -> {
+                    if (session.getService().isTxStart()) {
+                        rwSplitService.setTxStart(false);
+                        rwSplitService.getSession().unbindIfSafe(true);
+                    }
+                };
+            default:
+                return null;
+        }
+
     }
 
 }

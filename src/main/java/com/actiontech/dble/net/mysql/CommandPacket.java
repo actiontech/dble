@@ -10,8 +10,6 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -75,9 +73,8 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public class CommandPacket extends MySQLPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthSwitchRequestPackage.class);
-    private byte command;
-    private byte[] arg;
+    protected byte command;
+    protected byte[] arg;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);

@@ -52,7 +52,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 service.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
                 return;
             }
-            this.service.getSession2().queryCount();
+            this.service.queryCount();
             this.service.getSession2().rowCountRolling();
 
             if (this.service.getSession2().getRemingSql() != null) {
@@ -79,8 +79,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 service.execute(sql, rs & 0xff);
             } else {
                 if (sqlType != ServerParse.START && sqlType != ServerParse.BEGIN &&
-                        sqlType != ServerParse.COMMIT && sqlType != ServerParse.ROLLBACK) {
-                    this.service.getSession2().singleTransactionsCount();
+                        sqlType != ServerParse.COMMIT && sqlType != ServerParse.ROLLBACK && sqlType != ServerParse.SET) {
+                    this.service.singleTransactionsCount();
                 }
                 switch (sqlType) {
                     //explain sql

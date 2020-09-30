@@ -12,7 +12,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.net.service.FrontEndService;
+import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -113,7 +113,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         row.put("local_port", c.getLocalPort() + "");
         row.put("processor_id", c.getProcessor().getName());
 
-        FrontEndService service = c.getFrontEndService();
+        FrontEndService service = (FrontEndService) (c.getService());
         row.put("user", service.getUser().getName());
         row.put("tenant", service.getUser().getTenant() == null ? "NULL" : service.getUser().getTenant());
 
@@ -133,7 +133,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
             row.put("schema", ((ManagerService) service).getSchema() == null ? "NULL" : ((ManagerService) service).getSchema());
         } else {
             row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
-            row.put("in_transaction", !((ShardingService) service).isAutocommit() + "");
+            row.put("in_transaction", !service.isAutocommit() + "");
             row.put("schema", ((ShardingService) service).getSchema() == null ? "NULL" : ((ShardingService) service).getSchema());
         }
         row.put("conn_net_in", c.getNetInBytes() + "");

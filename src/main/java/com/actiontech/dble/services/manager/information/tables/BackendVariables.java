@@ -7,7 +7,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
-import com.actiontech.dble.services.MySQLVariablesService;
+import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.google.common.collect.Maps;
 
@@ -52,7 +52,7 @@ public class BackendVariables extends ManagerBaseTable {
                     forEach(bc -> {
                         AbstractService service = bc.getService();
                         if (service != null) {
-                            for (MysqlVariable var : ((MySQLVariablesService) service).getAllVars()) {
+                            for (MysqlVariable var : ((VariablesService) service).getAllVars()) {
                                 LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                                 row.put(COLUMN_BACKED_ID, bc.getId() + "");
                                 row.put(COLUMN_VAR_NAME, var.getName());

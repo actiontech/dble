@@ -5,6 +5,7 @@ import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.variables.VariableType;
 
 import java.util.ArrayList;
@@ -15,7 +16,7 @@ import java.util.Map;
 /**
  * Created by szf on 2020/6/28.
  */
-public abstract class MySQLVariablesService extends MySQLBasedService {
+public abstract class VariablesService extends AbstractService {
 
     protected volatile Map<String, String> usrVariables = new LinkedHashMap<>();
     protected volatile Map<String, String> sysVariables = new LinkedHashMap<>();
@@ -23,66 +24,9 @@ public abstract class MySQLVariablesService extends MySQLBasedService {
     protected volatile int txIsolation;
     protected volatile boolean autocommit;
 
-    public MySQLVariablesService(AbstractConnection connection) {
+    public VariablesService(AbstractConnection connection) {
         super(connection);
     }
-
-    public void executeContextSetTask(MysqlVariable[] contextTask) {
-        MysqlVariable autocommitVariable = null;
-        for (MysqlVariable variable : contextTask) {
-            switch (variable.getType()) {
-                case CHARACTER_SET_CLIENT:
-                    String charsetClient = variable.getValue();
-                    this.setCharacterClient(charsetClient);
-                    break;
-                case CHARACTER_SET_CONNECTION:
-                    String collationName = variable.getValue();
-                    this.setCharacterConnection(collationName);
-                    break;
-                case CHARACTER_SET_RESULTS:
-                    String charsetResult = variable.getValue();
-                    this.setCharacterResults(charsetResult);
-                    break;
-                case COLLATION_CONNECTION:
-                    String collation = variable.getValue();
-                    this.setCollationConnection(collation);
-                    break;
-                case TX_ISOLATION:
-                    String isolationLevel = variable.getValue();
-                    this.setTxIsolation(Integer.parseInt(isolationLevel));
-                    break;
-                case SYSTEM_VARIABLES:
-                    this.sysVariables.put(variable.getName(), variable.getValue());
-                    break;
-                case USER_VARIABLES:
-                    if (variable.getValue() != null) {
-                        this.usrVariables.put(variable.getName(), variable.getValue());
-                    }
-                    break;
-                case CHARSET:
-                    this.setCharacterSet(variable.getValue());
-                    break;
-                case NAMES:
-                    String[] charsetAndCollate = variable.getValue().split(":");
-                    this.setNames(charsetAndCollate[0], charsetAndCollate[1]);
-                    break;
-                case AUTOCOMMIT:
-                    autocommitVariable = variable;
-                    break;
-                default:
-                    handleVariable(variable);
-                    break;
-            }
-        }
-
-        if (autocommitVariable == null) {
-            writeOkPacket();
-        } else {
-            handleVariable(autocommitVariable);
-        }
-    }
-
-    public abstract void handleVariable(MysqlVariable variable);
 
     public void setCollationConnection(String collation) {
         connection.getCharsetName().setCollation(collation);

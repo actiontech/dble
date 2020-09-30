@@ -29,12 +29,17 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
+            session.getService().queryCount();
             int rs = RwSplitServerParse.parse(sql);
             int hintLength = RouteService.isHintSql(sql);
             int sqlType = rs & 0xff;
             if (hintLength >= 0) {
                 session.executeHint(sqlType, sql, null);
             } else {
+                if (sqlType != RwSplitServerParse.START && sqlType != RwSplitServerParse.BEGIN &&
+                        sqlType != RwSplitServerParse.COMMIT && sqlType != RwSplitServerParse.ROLLBACK && sqlType != RwSplitServerParse.SET) {
+                    session.getService().singleTransactionsCount();
+                }
                 switch (sqlType) {
                     case RwSplitServerParse.USE:
                         String schema = UseHandler.getSchemaName(sql, rs >>> 8);
@@ -62,6 +67,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, rwSplitService -> {
                             rwSplitService.setTxStart(false);
                             rwSplitService.getSession().unbindIfSafe(true);
+                            session.getService().singleTransactionsCount();
                         });
                         break;
                     case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
@@ -90,6 +96,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             session.execute(true, CommitPacket.initCommit().toBytes(), null);
             session.execute(true, rwSplitService -> {
                 rwSplitService.setTxStart(false);
+                session.getService().singleTransactionsCount();
                 rwSplitService.setLocked(true);
             });
         } else {
@@ -113,6 +120,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     if (session.getService().isTxStart()) {
                         rwSplitService.setTxStart(false);
                         rwSplitService.getSession().unbindIfSafe(true);
+                        session.getService().singleTransactionsCount();
                     }
                 };
             default:

@@ -175,7 +175,7 @@ public class ManagerService extends FrontEndService {
 
     @Override
     public String toString() {
-        return "ManagerService [user = " + user + " sql = " + executeSql + " schema = " + schema + " ] \nWith connection " + connection.toString();
+        return "ManagerService [user = " + user + " sql = " + executeSql + " schema = " + schema + " ] With connection " + connection.toString();
     }
 
 }

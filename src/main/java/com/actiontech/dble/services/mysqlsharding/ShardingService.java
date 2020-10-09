@@ -787,6 +787,6 @@ public class ShardingService extends BusinessService {
 
     public String toString() {
         return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
-                " sessionReadOnly = " + sessionReadOnly + "] \nwith connection " + connection.toString() + " \nwith sesssion " + session.toString();
+                " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
     }
 }

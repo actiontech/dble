@@ -113,6 +113,7 @@ hs_err_pid*
 /target/
 /tmlogs/
 /txlogs/
+/xalogs/
 /slowlogs/
 /viewConf/
 /test-output/

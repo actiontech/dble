@@ -1,10 +1,11 @@
 From centos:centos7
 RUN yum install -y wget java mysql
 
-RUN version=$(curl "https://github.com/actiontech/dble/releases/latest"|awk -F "/" '{print $8}') && \
-    wget -P /opt https://github.com/actiontech/dble/releases/download/$version%2Ftag/actiontech-dble-$version.tar.gz && \
-    tar zxvf /opt/actiontech-dble-$version.tar.gz -C /opt && \
-    rm -f /opt/actiontech-dble-$version.tar.gz
+# to https://github.com/actiontech/dble/releases get latest package download locally
+COPY dble-3.20.07.0-20200831034733-linux.tar.gz /opt/
+
+RUN tar zxvf opt/dble-3.20.07.0-20200831034733-linux.tar.gz -C /opt && \
+        rm -f opt/dble-3.20.07.0-20200831034733-linux.tar.gz
 
 COPY quick-start/*.xml /opt/dble/conf/
 

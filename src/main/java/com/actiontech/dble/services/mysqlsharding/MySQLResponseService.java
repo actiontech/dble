@@ -187,7 +187,7 @@ public class MySQLResponseService extends VariablesService {
 
 
     @Override
-    public void taskToTotalQueue(ServiceTask task) {
+    public synchronized void taskToTotalQueue(ServiceTask task) {
         Executor executor;
         if (this.isComplexQuery()) {
             executor = DbleServer.getInstance().getComplexQueryExecutor();
@@ -298,7 +298,7 @@ public class MySQLResponseService extends VariablesService {
         synAndDoExecute(synSQL, rrn.getStatement(), this.getConnection().getCharsetName());
     }
 
-    private void synAndDoExecute(StringBuilder synSQL, String sql, CharsetNames clientCharset) {
+    private synchronized void synAndDoExecute(StringBuilder synSQL, String sql, CharsetNames clientCharset) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "syn&do-execute-sql");
         if (synSQL != null && traceObject != null) {
             TraceManager.log(ImmutableMap.of("synSQL", synSQL), traceObject);
@@ -605,7 +605,7 @@ public class MySQLResponseService extends VariablesService {
         writeDirectly(originPacket);
     }
 
-    private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+    private synchronized void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("send cmd by WriteToBackendExecutor to conn[" + this + "]");
         }

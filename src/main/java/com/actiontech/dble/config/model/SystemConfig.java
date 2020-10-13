@@ -162,7 +162,7 @@ public final class SystemConfig {
     private int flowControlStopThreshold = 256;
     private boolean useOuterHa = true;
     private String traceEndPoint = null;
-    private String fakeMySQLVersion = "5.7";
+    private String fakeMySQLVersion = "5.7.21";
 
     public int getTransactionRotateSize() {
         return transactionRotateSize;

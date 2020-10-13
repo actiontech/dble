@@ -122,7 +122,7 @@ public final class UpdateHandler {
                 handleConfigException(e, service, managerTable);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-                LOGGER.error("unknown error:", e);
+                LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {

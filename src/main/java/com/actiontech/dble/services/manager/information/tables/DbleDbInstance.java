@@ -284,7 +284,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         }
         //check primary
         for (DBGroup group : dbs.getDbGroup()) {
-            long primaryCount = group.getDbInstance().stream().filter(DBInstance::getPrimary).count();
+            long primaryCount = group.getDbInstance().stream().filter(dbInstance -> null != dbInstance.getPrimary() && dbInstance.getPrimary()).count();
             if (primaryCount != 1) {
                 String msg = String.format("dbGroup[%s] has one and only one primary instance", group.getName());
                 throw new ConfigException(msg);
@@ -320,7 +320,7 @@ public class DbleDbInstance extends ManagerWritableTable {
             }
         }
         for (DBGroup dbGroup : dbGroups.getDbGroup()) {
-            boolean existPrimary = dbGroup.getDbInstance().stream().anyMatch(DBInstance::getPrimary);
+            boolean existPrimary = dbGroup.getDbInstance().stream().anyMatch(dbInstance -> null != dbInstance.getPrimary() && dbInstance.getPrimary());
             if (!existPrimary && !dbGroup.getDbInstance().isEmpty()) {
                 throw new SQLException("Table dble_db_group[" + dbGroup.getName() + "] needs to retain a primary dbInstance", "42S22", ErrorCode.ER_YES);
             }
@@ -518,12 +518,13 @@ public class DbleDbInstance extends ManagerWritableTable {
                         ParameterMapping.mapping(poolConfig, propertyMap, null);
                     }
                     String password = dbInstance.getPassword();
-                    if (dbInstance.getPrimary()) {
+                    boolean primary = (null == dbInstance.getPrimary() ? false : dbInstance.getPrimary());
+                    if (primary) {
                         tmpDbInstanceConfig = new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), password, readWeight, dbInstance.getId(),
-                                disabled, dbInstance.getPrimary(), dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt);
+                                disabled, true, dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt);
                     } else {
                         dbInstanceConfigList.add(new DbInstanceConfig(dbInstance.getName(), ip, port, url, dbInstance.getUser(), password, readWeight, dbInstance.getId(),
-                                disabled, dbInstance.getPrimary(), dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt));
+                                disabled, false, dbInstance.getMaxCon(), dbInstance.getMinCon(), poolConfig, usingDecrypt));
                     }
                 }
                 boolean disableHA = !StringUtil.isEmpty(dbGroup.getDisableHA()) && Boolean.parseBoolean(dbGroup.getDisableHA());

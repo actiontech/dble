@@ -83,7 +83,7 @@ public final class DumpFileReader {
     private void readSQLByEOF(byte[] linesByte, int byteRead) throws InterruptedException {
         String stmts = new String(linesByte, 0, byteRead, StandardCharsets.UTF_8);
         boolean endWithEOF = stmts.endsWith(";");
-        String[] lines = stmts.split(";");
+        String[] lines = stmts.split(";\\r?\\n");
         int len = lines.length - 1;
 
         int i = 0;

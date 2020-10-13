@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.mysql.VersionUtil;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.HashMap;
@@ -211,7 +212,11 @@ public final class SystemVariables {
 
         String key = variable.toLowerCase();
         if (sessionVariables.containsKey(key)) {
-            sessionVariables.put(key, value);
+            if (key.startsWith("collation") && value.equalsIgnoreCase("utf8mb4_0900_ai_ci") && SystemConfig.getInstance().getFakeMySQLVersion().startsWith("5")) {
+                sessionVariables.put(key, "utf8mb4_general_ci");
+            } else {
+                sessionVariables.put(key, value);
+            }
         } else if ("lower_case_table_names".equals(key)) {
             lowerCase = !value.equals("0");
         } else {

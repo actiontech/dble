@@ -34,16 +34,15 @@ public class DataHostHaResponse implements ClusterXmlLoader {
         }
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         if (configValue.getKey().contains(DATA_HOST_STATUS)) {
-            KvBean reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
+            KvBean reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
             while (reloadStatus != null) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
-                continue;
             }
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
-            PhysicalDataHost dataHost = (PhysicalDataHost) DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
+            PhysicalDataHost dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
             dataHost.changeIntoLatestStatus(configValue.getValue());
             HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
@@ -55,10 +54,10 @@ public class DataHostHaResponse implements ClusterXmlLoader {
                 try {
                     //start the log
                     int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-                    //try to get the lastest status of the dataHost
+                    //try to get the latest status of the dataHost
                     KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
                     //find out the target dataHost and change it into latest status
-                    PhysicalDataHost dataHost = (PhysicalDataHost) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
+                    PhysicalDataHost dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
                     dataHost.changeIntoLatestStatus(lastestStatus.getValue());
                     //response the event ,only disable event has response
                     ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);

@@ -198,7 +198,7 @@ public class MySQLResponseService extends VariablesService {
         if (session != null) {
             if (session.isKilled()) return;
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("taskToTotalQueue:" + task.getService());
+                LOGGER.debug("taskToTotalQueue:" + (task == null ? "null" : task.getService()));
             }
             session.setBackendResponseTime(this);
         }

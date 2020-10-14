@@ -109,6 +109,7 @@ public final class DeleteHandler {
                 handleConfigException(e, service, managerTable);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+                LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {

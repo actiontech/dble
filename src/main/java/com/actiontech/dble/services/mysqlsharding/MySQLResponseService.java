@@ -197,6 +197,9 @@ public class MySQLResponseService extends VariablesService {
 
         if (session != null) {
             if (session.isKilled()) return;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("taskToTotalQueue:" + task.getService());
+            }
             session.setBackendResponseTime(this);
         }
 
@@ -483,6 +486,9 @@ public class MySQLResponseService extends VariablesService {
 
 
     public void release() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("service release:" + this);
+        }
         if (!metaDataSynced) { // indicate connection not normal finished
             LOGGER.info("can't sure connection syn result,so close it " + this);
             this.responseHandler = null;
@@ -781,7 +787,7 @@ public class MySQLResponseService extends VariablesService {
 
     public String toString() {
         return "MySQLResponseService[isExecuting = " + isExecuting + " attachment = " + attachment + " autocommitSynced = " + autocommitSynced + " isolationSynced = " + isolationSynced +
-                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler + "] with rrs = [" +
+                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " session = " + session + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler + "] with rrs = [" +
                 attachment + "]  with connection " + connection.toString();
     }
 

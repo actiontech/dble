@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.field.TypeConversionStatus;
+import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncCase;
 import com.actiontech.dble.plan.common.time.*;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -1019,7 +1020,7 @@ public abstract class Item {
 
     public final Item reStruct(List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         Item clone = cloneStruct(true, calArgs, isPushDown, fields);
-        if (calArgs.size() > 0) {
+        if (calArgs.size() > 0 && !(clone instanceof ItemFuncCase)) {
             clone.setCharsetIndex(calArgs.get(0).getCharsetIndex());
         }
         return clone;

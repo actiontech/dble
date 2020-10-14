@@ -396,7 +396,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             elseExprNum = args.size();
             args.add(getItem(elseExpr));
         }
-        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum);
+        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum, this.charsetIndex);
     }
 
     @Override

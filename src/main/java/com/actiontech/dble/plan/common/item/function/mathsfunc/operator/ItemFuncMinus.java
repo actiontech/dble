@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncMinus extends ItemFuncAdditiveOp {
 
-    public ItemFuncMinus(Item a, Item b) {
-        super(a, b);
+    public ItemFuncMinus(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class ItemFuncMinus extends ItemFuncAdditiveOp {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncMinus(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncMinus(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 
 }

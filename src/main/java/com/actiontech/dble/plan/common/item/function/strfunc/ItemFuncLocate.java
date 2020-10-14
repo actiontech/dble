@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncLocate extends ItemIntFunc {
 
-    public ItemFuncLocate(List<Item> args) {
-        super(args);
+    public ItemFuncLocate(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class ItemFuncLocate extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncLocate(realArgs);
+        return new ItemFuncLocate(realArgs, charsetIndex);
     }
 
 }

@@ -17,8 +17,8 @@ import java.util.List;
 public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
     boolean truncate = false;
 
-    public ItemFuncRoundOrTruncate(List<Item> args, boolean truncate) {
-        super(args);
+    public ItemFuncRoundOrTruncate(List<Item> args, boolean truncate, int charsetIndex) {
+        super(args, charsetIndex);
         if (this.args != null && this.args.size() == 1) {
             this.args.add(new ItemInt(0));
         }

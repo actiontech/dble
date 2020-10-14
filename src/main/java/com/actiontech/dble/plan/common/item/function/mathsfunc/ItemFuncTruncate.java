@@ -12,12 +12,12 @@ import java.util.List;
 
 public class ItemFuncTruncate extends ItemFuncRoundOrTruncate {
 
-    public ItemFuncTruncate(List<Item> args) {
-        super(args, true);
+    public ItemFuncTruncate(List<Item> args, int charsetIndex) {
+        super(args, true, charsetIndex);
     }
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncTruncate(realArgs);
+        return new ItemFuncTruncate(realArgs, charsetIndex);
     }
 }

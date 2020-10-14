@@ -17,8 +17,8 @@ import java.util.List;
  */
 public abstract class ItemTemporalFunc extends ItemFunc {
 
-    public ItemTemporalFunc(List<Item> args) {
-        super(args);
+    public ItemTemporalFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

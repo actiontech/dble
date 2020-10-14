@@ -12,8 +12,8 @@ import java.util.List;
 
 public class ItemFuncSpace extends ItemStrFunc {
 
-    public ItemFuncSpace(List<Item> args) {
-        super(args);
+    public ItemFuncSpace(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -37,6 +37,6 @@ public class ItemFuncSpace extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSpace(realArgs);
+        return new ItemFuncSpace(realArgs, charsetIndex);
     }
 }

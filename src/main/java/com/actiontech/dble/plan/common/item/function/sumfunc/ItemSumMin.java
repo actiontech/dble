@@ -17,8 +17,8 @@ import java.util.List;
 
 public class ItemSumMin extends ItemSumHybrid {
 
-    public ItemSumMin(List<Item> args, boolean isPushDown, List<Field> fields) {
-        super(args, 1, isPushDown, fields);
+    public ItemSumMin(List<Item> args, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, 1, isPushDown, fields, charsetIndex);
     }
 
     @Override
@@ -84,9 +84,9 @@ public class ItemSumMin extends ItemSumHybrid {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumMin(newArgs, false, null);
+            return new ItemSumMin(newArgs, false, null, charsetIndex);
         } else {
-            return new ItemSumMin(calArgs, isPushDown, fields);
+            return new ItemSumMin(calArgs, isPushDown, fields, charsetIndex);
         }
     }
 

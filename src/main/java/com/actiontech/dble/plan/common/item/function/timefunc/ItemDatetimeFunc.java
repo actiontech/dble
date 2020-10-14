@@ -17,8 +17,8 @@ import java.util.List;
 
 public abstract class ItemDatetimeFunc extends ItemTemporalFunc {
 
-    public ItemDatetimeFunc(List<Item> args) {
-        super(args);
+    public ItemDatetimeFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

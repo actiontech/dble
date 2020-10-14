@@ -20,8 +20,8 @@ import java.util.List;
 public class ItemFuncBinaryCast extends ItemStrFunc {
     private int castLength;
 
-    public ItemFuncBinaryCast(Item a, int lengthArg) {
-        super(new ArrayList<Item>());
+    public ItemFuncBinaryCast(Item a, int lengthArg, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         this.castLength = lengthArg;
     }
@@ -69,6 +69,6 @@ public class ItemFuncBinaryCast extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBinaryCast(newArgs.get(0), castLength);
+        return new ItemFuncBinaryCast(newArgs.get(0), castLength, charsetIndex);
     }
 }

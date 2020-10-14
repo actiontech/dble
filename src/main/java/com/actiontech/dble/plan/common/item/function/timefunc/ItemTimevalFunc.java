@@ -19,8 +19,8 @@ import java.util.List;
  */
 public abstract class ItemTimevalFunc extends ItemFunc {
 
-    public ItemTimevalFunc(List<Item> args) {
-        super(args);
+    public ItemTimevalFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     /**

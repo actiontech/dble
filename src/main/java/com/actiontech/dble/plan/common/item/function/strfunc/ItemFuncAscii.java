@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncAscii extends ItemIntFunc {
 
-    public ItemFuncAscii(List<Item> args) {
-        super(args);
+    public ItemFuncAscii(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -41,6 +41,6 @@ public class ItemFuncAscii extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncAscii(realArgs);
+        return new ItemFuncAscii(realArgs, charsetIndex);
     }
 }

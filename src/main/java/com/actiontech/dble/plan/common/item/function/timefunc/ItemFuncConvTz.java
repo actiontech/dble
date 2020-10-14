@@ -21,8 +21,8 @@ import java.util.List;
  */
 public class ItemFuncConvTz extends ItemDatetimeFunc {
 
-    public ItemFuncConvTz(List<Item> args) {
-        super(args);
+    public ItemFuncConvTz(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ItemFuncConvTz extends ItemDatetimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncConvTz(realArgs);
+        return new ItemFuncConvTz(realArgs, charsetIndex);
     }
 
 }

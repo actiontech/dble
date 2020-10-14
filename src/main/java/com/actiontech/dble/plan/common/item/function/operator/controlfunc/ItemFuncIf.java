@@ -23,8 +23,8 @@ public class ItemFuncIf extends ItemFunc {
     Item.ItemResult cachedResultType;
     FieldTypes cachedFieldType;
 
-    public ItemFuncIf(List<Item> args) {
-        super(args);
+    public ItemFuncIf(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -153,6 +153,6 @@ public class ItemFuncIf extends ItemFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIf(newArgs);
+        return new ItemFuncIf(newArgs, charsetIndex);
     }
 }

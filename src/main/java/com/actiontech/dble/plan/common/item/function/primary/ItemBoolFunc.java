@@ -13,19 +13,19 @@ import java.util.List;
 
 public abstract class ItemBoolFunc extends ItemIntFunc {
 
-    public ItemBoolFunc(Item a) {
-        this(new ArrayList<Item>());
+    public ItemBoolFunc(Item a, int charsetIndex) {
+        this(new ArrayList<>(), charsetIndex);
         args.add(a);
     }
 
-    public ItemBoolFunc(Item a, Item b) {
-        this(new ArrayList<Item>());
+    public ItemBoolFunc(Item a, Item b, int charsetIndex) {
+        this(new ArrayList<>(), charsetIndex);
         args.add(a);
         args.add(b);
     }
 
-    public ItemBoolFunc(List<Item> args) {
-        super(args);
+    public ItemBoolFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

@@ -27,12 +27,11 @@ public class ItemFuncIn extends ItemFuncOptNeg {
      * @param args
      */
     public ItemFuncIn(List<Item> args, boolean isNegation, int charsetIndex) {
-        super(args, isNegation);
+        super(args, isNegation, charsetIndex);
         Item arg0 = args.get(0);
         if (arg0 instanceof ItemBasicConstant) {
             leftResultType = arg0.resultType();
         }
-        this.charsetIndex = charsetIndex;
     }
 
     @Override

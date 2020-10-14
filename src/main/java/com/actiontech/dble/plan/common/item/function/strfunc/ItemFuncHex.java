@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncHex extends ItemStrFunc {
 
-    public ItemFuncHex(List<Item> args) {
-        super(args);
+    public ItemFuncHex(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class ItemFuncHex extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncHex(realArgs);
+        return new ItemFuncHex(realArgs, charsetIndex);
     }
 
 }

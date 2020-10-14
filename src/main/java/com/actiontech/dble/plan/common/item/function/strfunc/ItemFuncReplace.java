@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncReplace extends ItemStrFunc {
 
-    public ItemFuncReplace(List<Item> args) {
-        super(args);
+    public ItemFuncReplace(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -36,6 +36,6 @@ public class ItemFuncReplace extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncReplace(realArgs);
+        return new ItemFuncReplace(realArgs, charsetIndex);
     }
 }

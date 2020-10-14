@@ -12,8 +12,8 @@ import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import java.util.List;
 
 public class ItemFuncGetFormat extends ItemStrFunc {
-    public ItemFuncGetFormat(List<Item> args) {
-        super(args);
+    public ItemFuncGetFormat(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -59,6 +59,6 @@ public class ItemFuncGetFormat extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncGetFormat(realArgs);
+        return new ItemFuncGetFormat(realArgs, charsetIndex);
     }
 }

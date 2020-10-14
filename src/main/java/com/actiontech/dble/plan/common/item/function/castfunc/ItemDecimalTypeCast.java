@@ -26,8 +26,8 @@ public class ItemDecimalTypeCast extends ItemFunc {
     private int precision;
     private int dec;
 
-    public ItemDecimalTypeCast(Item a, int precision, int dec) {
-        super(new ArrayList<Item>());
+    public ItemDecimalTypeCast(Item a, int precision, int dec, int charsetIndex) {
+        super(new ArrayList<>(), charsetIndex);
         args.add(a);
         this.precision = precision;
         this.dec = dec;
@@ -118,7 +118,7 @@ public class ItemDecimalTypeCast extends ItemFunc {
         } else {
             newArgs = calArgs;
         }
-        return new ItemDecimalTypeCast(newArgs.get(0), precision, dec);
+        return new ItemDecimalTypeCast(newArgs.get(0), precision, dec, charsetIndex);
     }
 
 }

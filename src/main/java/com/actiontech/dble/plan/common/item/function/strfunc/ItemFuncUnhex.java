@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncUnhex extends ItemStrFunc {
 
-    public ItemFuncUnhex(Item a) {
-        super(a);
+    public ItemFuncUnhex(Item a, int charsetIndex) {
+        super(a, charsetIndex);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ItemFuncUnhex extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncUnhex(realArgs.get(0));
+        return new ItemFuncUnhex(realArgs.get(0), charsetIndex);
     }
 
 }

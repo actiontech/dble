@@ -21,8 +21,8 @@ import java.util.List;
 public abstract class ItemFuncNumhybrid extends ItemFunc {
     protected ItemResult hybridType;
 
-    public ItemFuncNumhybrid(List<Item> args) {
-        super(args);
+    public ItemFuncNumhybrid(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
         hybridType = ItemResult.REAL_RESULT;
     }
 

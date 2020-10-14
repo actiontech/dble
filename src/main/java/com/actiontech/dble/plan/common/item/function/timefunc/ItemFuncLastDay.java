@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncLastDay extends ItemDateFunc {
 
-    public ItemFuncLastDay(List<Item> args) {
-        super(args);
+    public ItemFuncLastDay(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class ItemFuncLastDay extends ItemDateFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncLastDay(realArgs);
+        return new ItemFuncLastDay(realArgs, charsetIndex);
     }
 
 }

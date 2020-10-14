@@ -17,8 +17,8 @@ public abstract class ItemSumBit extends ItemSumInt {
 
     protected BigInteger resetBits, bits;
 
-    public ItemSumBit(List<Item> itemPar, long resetArg, boolean isPushDown, List<Field> fields) {
-        super(itemPar, isPushDown, fields);
+    public ItemSumBit(List<Item> itemPar, long resetArg, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(itemPar, isPushDown, fields, charsetIndex);
         resetBits = BigInteger.valueOf(resetArg);
         bits = BigInteger.valueOf(resetArg);
     }

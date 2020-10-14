@@ -151,33 +151,33 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
         switch (itemSubQuery.getOperator()) {
             case Equality:
                 if (itemSubQuery.isAll()) {
-                    itemSubQuery.getValue().add(new ItemString(ALL_SUB_QUERY_RESULTS));
+                    itemSubQuery.getValue().add(new ItemString(ALL_SUB_QUERY_RESULTS, itemSubQuery.getCharsetIndex()));
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (!itemSubQuery.isAll()) {
-                    itemSubQuery.getValue().add(new ItemString(ALL_SUB_QUERY_RESULTS));
+                    itemSubQuery.getValue().add(new ItemString(ALL_SUB_QUERY_RESULTS, itemSubQuery.getCharsetIndex()));
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
                 if (itemSubQuery.isAll()) {
                     //row < tmpRow
-                    itemSubQuery.getValue().add(new ItemString(MIN_SUB_QUERY_RESULTS));
+                    itemSubQuery.getValue().add(new ItemString(MIN_SUB_QUERY_RESULTS, itemSubQuery.getCharsetIndex()));
                 } else if (!itemSubQuery.isAll()) {
                     //row > tmpRow
-                    itemSubQuery.getValue().add(new ItemString(MAX_SUB_QUERY_RESULTS));
+                    itemSubQuery.getValue().add(new ItemString(MAX_SUB_QUERY_RESULTS, itemSubQuery.getCharsetIndex()));
                 }
                 break;
             case GreaterThan:
             case GreaterThanOrEqual:
                 if (itemSubQuery.isAll()) {
                     //row > tmpRow
-                    itemSubQuery.getValue().add(new ItemString(MAX_SUB_QUERY_RESULTS));
+                    itemSubQuery.getValue().add(new ItemString(MAX_SUB_QUERY_RESULTS, itemSubQuery.getCharsetIndex()));
                 } else if (!itemSubQuery.isAll()) {
                     //row < tmpRow
-                    itemSubQuery.getValue().add(new ItemString(MIN_SUB_QUERY_RESULTS));
+                    itemSubQuery.getValue().add(new ItemString(MIN_SUB_QUERY_RESULTS, itemSubQuery.getCharsetIndex()));
                 }
                 break;
             default:

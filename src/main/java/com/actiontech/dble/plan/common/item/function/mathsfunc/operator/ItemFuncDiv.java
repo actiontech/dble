@@ -25,8 +25,8 @@ public class ItemFuncDiv extends ItemNumOp {
      */
     private int precIncrement = 4;
 
-    public ItemFuncDiv(Item a, Item b) {
-        super(a, b);
+    public ItemFuncDiv(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -111,7 +111,7 @@ public class ItemFuncDiv extends ItemNumOp {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncDiv(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncDiv(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 
 }

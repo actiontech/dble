@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncConcat extends ItemStrFunc {
 
-    public ItemFuncConcat(List<Item> args) {
-        super(args);
+    public ItemFuncConcat(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncConcat extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncConcat(realArgs);
+        return new ItemFuncConcat(realArgs, charsetIndex);
     }
 }

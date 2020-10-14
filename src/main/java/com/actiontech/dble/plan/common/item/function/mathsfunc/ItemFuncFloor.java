@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncFloor extends ItemFuncIntVal {
 
-    public ItemFuncFloor(List<Item> args) {
-        super(args);
+    public ItemFuncFloor(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -62,6 +62,6 @@ public class ItemFuncFloor extends ItemFuncIntVal {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncFloor(realArgs);
+        return new ItemFuncFloor(realArgs, charsetIndex);
     }
 }

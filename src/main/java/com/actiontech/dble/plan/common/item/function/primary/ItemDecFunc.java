@@ -12,8 +12,8 @@ import java.util.List;
 
 public abstract class ItemDecFunc extends ItemRealFunc {
 
-    public ItemDecFunc(List<Item> args) {
-        super(args);
+    public ItemDecFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

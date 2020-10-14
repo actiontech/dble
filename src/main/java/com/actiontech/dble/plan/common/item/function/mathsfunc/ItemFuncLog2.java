@@ -16,8 +16,8 @@ import java.util.List;
 public class ItemFuncLog2 extends ItemDecFunc {
     private static final double M_LN2 = Math.log(2);
 
-    public ItemFuncLog2(List<Item> args) {
-        super(args);
+    public ItemFuncLog2(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -39,6 +39,6 @@ public class ItemFuncLog2 extends ItemDecFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncLog2(realArgs);
+        return new ItemFuncLog2(realArgs, charsetIndex);
     }
 }

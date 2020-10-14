@@ -17,8 +17,8 @@ import java.util.Locale;
 
 public class ItemFuncFormat extends ItemStrFunc {
 
-    public ItemFuncFormat(List<Item> args) {
-        super(args);
+    public ItemFuncFormat(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -47,6 +47,6 @@ public class ItemFuncFormat extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncFormat(realArgs);
+        return new ItemFuncFormat(realArgs, charsetIndex);
     }
 }

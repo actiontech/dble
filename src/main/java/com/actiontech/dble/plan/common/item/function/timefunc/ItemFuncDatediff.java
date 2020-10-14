@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncDatediff extends ItemIntFunc {
 
-    public ItemFuncDatediff(List<Item> args) {
-        super(args);
+    public ItemFuncDatediff(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -44,7 +44,6 @@ public class ItemFuncDatediff extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncDatediff(realArgs);
+        return new ItemFuncDatediff(realArgs, charsetIndex);
     }
-
 }

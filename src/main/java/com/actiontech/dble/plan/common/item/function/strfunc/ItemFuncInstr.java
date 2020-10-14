@@ -18,8 +18,8 @@ public class ItemFuncInstr extends ItemFuncLocate {
     /**
      * @param args
      */
-    public ItemFuncInstr(List<Item> args) {
-        super(args);
+    public ItemFuncInstr(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -29,6 +29,6 @@ public class ItemFuncInstr extends ItemFuncLocate {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncInstr(realArgs);
+        return new ItemFuncInstr(realArgs, charsetIndex);
     }
 }

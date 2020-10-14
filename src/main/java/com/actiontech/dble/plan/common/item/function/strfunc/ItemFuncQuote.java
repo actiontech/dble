@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncQuote extends ItemStrFunc {
 
-    public ItemFuncQuote(List<Item> args) {
-        super(args);
+    public ItemFuncQuote(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -48,6 +48,6 @@ public class ItemFuncQuote extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncQuote(realArgs);
+        return new ItemFuncQuote(realArgs, charsetIndex);
     }
 }

@@ -25,8 +25,8 @@ public abstract class ItemSumHybrid extends ItemSum {
     protected boolean wasValues; // Set if we have found at least one row (for
     // max/min only)
 
-    public ItemSumHybrid(List<Item> args, int sign, boolean isPushDown, List<Field> fields) {
-        super(args, isPushDown, fields);
+    public ItemSumHybrid(List<Item> args, int sign, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, isPushDown, fields, charsetIndex);
         hybridFieldType = FieldTypes.MYSQL_TYPE_LONGLONG;
         hybridType = ItemResult.INT_RESULT;
         cmpSign = sign;

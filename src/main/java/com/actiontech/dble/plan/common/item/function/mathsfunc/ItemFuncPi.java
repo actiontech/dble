@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncPi extends ItemRealFunc {
 
-    public ItemFuncPi(List<Item> args) {
-        super(args);
+    public ItemFuncPi(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -31,6 +31,6 @@ public class ItemFuncPi extends ItemRealFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncPi(realArgs);
+        return new ItemFuncPi(realArgs, charsetIndex);
     }
 }

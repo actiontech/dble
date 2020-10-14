@@ -13,8 +13,8 @@ import java.util.List;
 
 public abstract class ItemFuncIntVal extends ItemFuncNum1 {
 
-    public ItemFuncIntVal(List<Item> args) {
-        super(args);
+    public ItemFuncIntVal(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

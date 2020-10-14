@@ -21,8 +21,8 @@ import java.util.List;
  */
 public class ItemFuncBitCount extends ItemIntFunc {
 
-    public ItemFuncBitCount(List<Item> args) {
-        super(args);
+    public ItemFuncBitCount(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -45,6 +45,6 @@ public class ItemFuncBitCount extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncBitCount(realArgs);
+        return new ItemFuncBitCount(realArgs, charsetIndex);
     }
 }

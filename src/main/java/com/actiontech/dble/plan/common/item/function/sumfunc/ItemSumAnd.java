@@ -16,8 +16,8 @@ import java.util.List;
 
 
 public class ItemSumAnd extends ItemSumBit {
-    public ItemSumAnd(List<Item> itemPar, boolean isPushDown, List<Field> fields) {
-        super(itemPar, -1, isPushDown, fields);
+    public ItemSumAnd(List<Item> itemPar, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(itemPar, -1, isPushDown, fields, charsetIndex);
     }
 
     @Override
@@ -63,9 +63,9 @@ public class ItemSumAnd extends ItemSumBit {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumAnd(newArgs, false, null);
+            return new ItemSumAnd(newArgs, false, null, charsetIndex);
         } else {
-            return new ItemSumAnd(calArgs, isPushDown, fields);
+            return new ItemSumAnd(calArgs, isPushDown, fields, charsetIndex);
         }
     }
 

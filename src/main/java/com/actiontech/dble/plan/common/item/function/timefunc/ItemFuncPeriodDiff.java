@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncPeriodDiff extends ItemIntFunc {
 
-    public ItemFuncPeriodDiff(List<Item> args) {
-        super(args);
+    public ItemFuncPeriodDiff(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class ItemFuncPeriodDiff extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncPeriodDiff(realArgs);
+        return new ItemFuncPeriodDiff(realArgs, charsetIndex);
     }
 
 }

@@ -17,8 +17,7 @@ public abstract class ItemBoolFunc2 extends ItemBoolFunc {
     protected ArgComparator cmp;
 
     public ItemBoolFunc2(Item a, Item b, int charsetIndex) {
-        super(a, b);
-        this.charsetIndex = charsetIndex;
+        super(a, b, charsetIndex);
         cmp = new ArgComparator(a, b, charsetIndex);
     }
 

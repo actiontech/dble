@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncFromUnixtime extends ItemDatetimeFunc {
 
-    public ItemFuncFromUnixtime(List<Item> args) {
-        super(args);
+    public ItemFuncFromUnixtime(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -42,6 +42,6 @@ public class ItemFuncFromUnixtime extends ItemDatetimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncFromUnixtime(realArgs);
+        return new ItemFuncFromUnixtime(realArgs, charsetIndex);
     }
 }

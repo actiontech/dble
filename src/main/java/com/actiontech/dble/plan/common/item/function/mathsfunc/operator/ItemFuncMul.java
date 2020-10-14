@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncMul extends ItemNumOp {
 
-    public ItemFuncMul(Item a, Item b) {
-        super(a, b);
+    public ItemFuncMul(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -72,6 +72,6 @@ public class ItemFuncMul extends ItemNumOp {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncMul(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncMul(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 }

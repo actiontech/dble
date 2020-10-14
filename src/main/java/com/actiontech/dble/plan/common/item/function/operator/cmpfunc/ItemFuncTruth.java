@@ -24,8 +24,8 @@ public abstract class ItemFuncTruth extends ItemBoolFunc {
      */
     final boolean affirmative;
 
-    public ItemFuncTruth(Item a, boolean avalue, boolean aaffirmative) {
-        super(a);
+    public ItemFuncTruth(Item a, boolean avalue, boolean aaffirmative, int charsetIndex) {
+        super(a, charsetIndex);
         this.value = avalue;
         this.affirmative = aaffirmative;
     }

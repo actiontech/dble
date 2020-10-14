@@ -26,8 +26,8 @@ public class ItemDecimalTypeConvert extends ItemFunc {
     private int precision;
     private int dec;
 
-    public ItemDecimalTypeConvert(Item a, int precision, int dec) {
-        super(new ArrayList<Item>());
+    public ItemDecimalTypeConvert(Item a, int precision, int dec, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         this.precision = precision;
         this.dec = dec;
@@ -124,7 +124,7 @@ public class ItemDecimalTypeConvert extends ItemFunc {
         } else {
             newArgs = calArgs;
         }
-        return new ItemDecimalTypeConvert(newArgs.get(0), precision, dec);
+        return new ItemDecimalTypeConvert(newArgs.get(0), precision, dec, charsetIndex);
     }
 
 }

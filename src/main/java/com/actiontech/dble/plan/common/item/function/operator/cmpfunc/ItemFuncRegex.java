@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncRegex extends ItemBoolFunc {
 
-    public ItemFuncRegex(Item a, Item b) {
-        super(a, b);
+    public ItemFuncRegex(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -50,6 +50,6 @@ public class ItemFuncRegex extends ItemBoolFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncRegex(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncRegex(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 }

@@ -19,6 +19,7 @@ public class ItemDecimal extends ItemNum {
     private BigDecimal value;
 
     public ItemDecimal(BigDecimal value) {
+        super();
         this.value = value;
         fixed = true;
         decimals = this.value.scale() > 0 ? this.value.scale() : 0;

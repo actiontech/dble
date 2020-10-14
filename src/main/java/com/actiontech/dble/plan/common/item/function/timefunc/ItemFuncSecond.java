@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncSecond extends ItemIntFunc {
 
-    public ItemFuncSecond(List<Item> args) {
-        super(args);
+    public ItemFuncSecond(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncSecond extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSecond(realArgs);
+        return new ItemFuncSecond(realArgs, charsetIndex);
     }
 }

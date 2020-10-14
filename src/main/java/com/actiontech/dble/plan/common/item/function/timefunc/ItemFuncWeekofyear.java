@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncWeekofyear extends ItemIntFunc {
 
-    public ItemFuncWeekofyear(List<Item> args) {
-        super(args);
+    public ItemFuncWeekofyear(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -36,6 +36,6 @@ public class ItemFuncWeekofyear extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncWeekofyear(realArgs);
+        return new ItemFuncWeekofyear(realArgs, charsetIndex);
     }
 }

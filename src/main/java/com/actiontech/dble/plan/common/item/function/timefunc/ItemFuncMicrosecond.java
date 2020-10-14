@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncMicrosecond extends ItemIntFunc {
 
-    public ItemFuncMicrosecond(List<Item> args) {
-        super(args);
+    public ItemFuncMicrosecond(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -37,6 +37,6 @@ public class ItemFuncMicrosecond extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncMicrosecond(realArgs);
+        return new ItemFuncMicrosecond(realArgs, charsetIndex);
     }
 }

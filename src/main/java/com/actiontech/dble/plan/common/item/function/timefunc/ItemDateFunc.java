@@ -20,8 +20,8 @@ import java.util.List;
  */
 public abstract class ItemDateFunc extends ItemTemporalFunc {
 
-    public ItemDateFunc(List<Item> args) {
-        super(args);
+    public ItemDateFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

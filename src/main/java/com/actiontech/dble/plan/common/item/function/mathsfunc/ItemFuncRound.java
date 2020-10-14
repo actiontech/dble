@@ -14,8 +14,8 @@ import java.util.List;
 
 public class ItemFuncRound extends ItemFuncRoundOrTruncate {
 
-    public ItemFuncRound(List<Item> args) {
-        super(args, false);
+    public ItemFuncRound(List<Item> args, int charsetIndex) {
+        super(args, false, charsetIndex);
     }
 
     @Override
@@ -23,7 +23,7 @@ public class ItemFuncRound extends ItemFuncRoundOrTruncate {
         if (realArgs != null && realArgs.size() == 1) {
             realArgs.add(new ItemInt(0));
         }
-        return new ItemFuncRound(realArgs);
+        return new ItemFuncRound(realArgs, charsetIndex);
     }
 
 }

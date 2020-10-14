@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncFindInSet extends ItemIntFunc {
 
-    public ItemFuncFindInSet(List<Item> args) {
-        super(args);
+    public ItemFuncFindInSet(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -47,6 +47,6 @@ public class ItemFuncFindInSet extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncFindInSet(realArgs);
+        return new ItemFuncFindInSet(realArgs, charsetIndex);
     }
 }

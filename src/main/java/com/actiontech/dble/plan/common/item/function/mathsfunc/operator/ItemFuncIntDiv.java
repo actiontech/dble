@@ -19,8 +19,8 @@ import java.util.List;
 
 public class ItemFuncIntDiv extends ItemIntFunc {
 
-    public ItemFuncIntDiv(Item a, Item b) {
-        super(a, b);
+    public ItemFuncIntDiv(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class ItemFuncIntDiv extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIntDiv(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncIntDiv(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 
 }

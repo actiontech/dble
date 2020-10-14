@@ -63,13 +63,41 @@ public final class DataHostDisable {
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
-            if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                if (!disableWithCluster(id, dh, subHostName, mc)) {
-                    return;
+            if (ClusterGeneralConfig.isUseGeneralCluster()) {
+                if (useCluster) {
+                    if (!disableWithCluster(id, dh, subHostName, mc)) {
+                        return;
+                    }
+                } else {
+                    try {
+                        //local set disable
+                        final String result = dh.disableHosts(subHostName, true);
+                        //update total dataSources status
+                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), dh.getClusterHaJson());
+                        HaConfigManager.getInstance().haFinish(id, null, result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        mc.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
+                    }
                 }
-            } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                if (!disableWithZK(id, dh, subHostName, mc)) {
-                    return;
+            } else if (ClusterGeneralConfig.isUseZK()) {
+                if (useCluster) {
+                    if (!disableWithZK(id, dh, subHostName, mc)) {
+                        return;
+                    }
+                } else {
+                    try {
+                        //local set disable
+                        final String result = dh.disableHosts(subHostName, true);
+                        //update total dataSources status
+                        setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), ZKUtils.getConnection(), dh.getClusterHaJson());
+                        HaConfigManager.getInstance().haFinish(id, null, result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        mc.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
+                    }
                 }
             } else {
                 try {
@@ -145,7 +173,7 @@ public final class DataHostDisable {
     }
 
 
-    public static boolean disableWithCluster(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
+    private static boolean disableWithCluster(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
         DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getHostName()),
                 new HaInfo(dh.getHostName(),
@@ -195,8 +223,7 @@ public final class DataHostDisable {
         return true;
     }
 
-
-    public static void setStatusToZK(String nodePath, CuratorFramework curator, String value) throws Exception {
+    static void setStatusToZK(String nodePath, CuratorFramework curator, String value) throws Exception {
         Stat stat = curator.checkExists().forPath(nodePath);
         if (null == stat) {
             ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), nodePath);
@@ -206,7 +233,7 @@ public final class DataHostDisable {
     }
 
 
-    public static String isZKfinished(CuratorFramework zkConn, String preparePath) {
+    private static String isZKfinished(CuratorFramework zkConn, String preparePath) {
         try {
             List<String> preparedList = zkConn.getChildren().forPath(preparePath);
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());

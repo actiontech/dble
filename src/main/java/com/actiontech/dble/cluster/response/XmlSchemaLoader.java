@@ -5,9 +5,6 @@
 
 package com.actiontech.dble.cluster.response;
 
-import com.actiontech.dble.config.loader.zkprocess.parse.JsonProcessBase;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -17,6 +14,7 @@ import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datanode.DataNode;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.schema.Schema;
+import com.actiontech.dble.config.loader.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
@@ -24,6 +22,8 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.DataNodeJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.SchemaJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.reflect.TypeToken;
@@ -79,21 +79,19 @@ public class XmlSchemaLoader implements ClusterXmlLoader {
 
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(jsonObj.getJSONArray(ClusterPathUtil.DATA_HOST).toJSONString());
         schema.setDataHost(dataHostList);
-        if (ClusterHelper.useClusterHa()) {
-            List<KvBean> statusKVList = ClusterHelper.getKVPath(ClusterPathUtil.getHaStatusPath());
-            if (statusKVList != null && statusKVList.size() > 0) {
-                for (KvBean kv : statusKVList) {
-                    String[] path = kv.getKey().split("/");
-                    String dataHostName = path[path.length - 1];
-                    for (DataHost dataHost : dataHostList) {
-                        if (dataHost.getName().equals(dataHostName)) {
-                            JSONObject obj = JSONObject.parseObject(kv.getValue());
-                            JsonProcessBase base = new JsonProcessBase();
-                            Type parseType = new TypeToken<List<DataSourceStatus>>() {
-                            }.getType();
-                            List<DataSourceStatus> list = base.toBeanformJson(obj.getJSONArray(JSON_LIST).toJSONString(), parseType);
-                            ClusterHelper.changeDataHostByStatus(dataHost, list);
-                        }
+        List<KvBean> statusKVList = ClusterHelper.getKVPath(ClusterPathUtil.getHaStatusPath());
+        if (statusKVList != null && statusKVList.size() > 0) {
+            for (KvBean kv : statusKVList) {
+                String[] path = kv.getKey().split("/");
+                String dataHostName = path[path.length - 1];
+                for (DataHost dataHost : dataHostList) {
+                    if (dataHost.getName().equals(dataHostName)) {
+                        JSONObject obj = JSONObject.parseObject(kv.getValue());
+                        JsonProcessBase base = new JsonProcessBase();
+                        Type parseType = new TypeToken<List<DataSourceStatus>>() {
+                        }.getType();
+                        List<DataSourceStatus> list = base.toBeanformJson(obj.getJSONArray(JSON_LIST).toJSONString(), parseType);
+                        ClusterHelper.changeDataHostByStatus(dataHost, list);
                     }
                 }
             }

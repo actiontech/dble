@@ -42,8 +42,7 @@ public class DataHostStatusListener implements PathChildrenCacheListener {
                 String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
                 String data = new String(childData.getData(), StandardCharsets.UTF_8);
                 int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
-                PhysicalDataHost physicalDBPool = DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
-                PhysicalDataHost dataHost = (PhysicalDataHost) physicalDBPool;
+                PhysicalDataHost dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
                 dataHost.changeIntoLatestStatus(data);
                 HaConfigManager.getInstance().haFinish(id, null, data);
             }

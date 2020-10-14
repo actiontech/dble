@@ -114,21 +114,19 @@ public class SchemaszkToxmlLoader extends ZkMultiLoader implements NotifyService
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(dataHostZkDirectory.getDataValue());
         schema.setDataHost(dataHostList);
         try {
-            if (ClusterHelper.useClusterHa()) {
-                List<String> chindrenList = getCurator().getChildren().forPath(KVPathUtil.getHaStatusPath());
-                if (chindrenList != null && chindrenList.size() > 0) {
-                    for (String child : chindrenList) {
-                        String data = new String(getCurator().getData().forPath(ZKPaths.makePath(KVPathUtil.getHaStatusPath() + ZKPaths.PATH_SEPARATOR, child)), "UTF-8");
-                        JSONObject jsonObj = JSONObject.parseObject(data);
-                        JsonProcessBase base = new JsonProcessBase();
-                        Type parseType = new TypeToken<List<DataSourceStatus>>() {
-                        }.getType();
-                        String dataHostName = jsonObj.getString(JSON_NAME);
-                        List<DataSourceStatus> list = base.toBeanformJson(jsonObj.getJSONArray(JSON_LIST).toJSONString(), parseType);
-                        for (DataHost dataHost : dataHostList) {
-                            if (dataHost.getName().equals(dataHostName)) {
-                                ClusterHelper.changeDataHostByStatus(dataHost, list);
-                            }
+            List<String> chindrenList = getCurator().getChildren().forPath(KVPathUtil.getHaStatusPath());
+            if (chindrenList != null && chindrenList.size() > 0) {
+                for (String child : chindrenList) {
+                    String data = new String(getCurator().getData().forPath(ZKPaths.makePath(KVPathUtil.getHaStatusPath() + ZKPaths.PATH_SEPARATOR, child)), "UTF-8");
+                    JSONObject jsonObj = JSONObject.parseObject(data);
+                    JsonProcessBase base = new JsonProcessBase();
+                    Type parseType = new TypeToken<List<DataSourceStatus>>() {
+                    }.getType();
+                    String dataHostName = jsonObj.getString(JSON_NAME);
+                    List<DataSourceStatus> list = base.toBeanformJson(jsonObj.getJSONArray(JSON_LIST).toJSONString(), parseType);
+                    for (DataHost dataHost : dataHostList) {
+                        if (dataHost.getName().equals(dataHostName)) {
+                            ClusterHelper.changeDataHostByStatus(dataHost, list);
                         }
                     }
                 }

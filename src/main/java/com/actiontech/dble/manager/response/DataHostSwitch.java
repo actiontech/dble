@@ -54,39 +54,17 @@ public final class DataHostSwitch {
                 mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
                 return;
             }
+            // no cluster mod need not to write status to cluster
+            if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
+                if (!switchWithCluster(id, dh, masterName, mc)) {
+                    return;
+                }
 
-            if (ClusterGeneralConfig.isUseGeneralCluster()) {
-                if (useCluster) {
-                    if (!switchWithCluster(id, dh, masterName, mc)) {
-                        return;
-                    }
-                } else {
-                    try {
-                        String result = dh.switchMaster(masterName, true);
-                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), result);
-                        HaConfigManager.getInstance().haFinish(id, null, result);
-                    } catch (Exception e) {
-                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        mc.writeErrMessage(ErrorCode.ER_YES, "swtich dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
-                        return;
-                    }
+            } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
+                if (!switchWithZK(id, dh, masterName, mc)) {
+                    return;
                 }
-            } else if (ClusterGeneralConfig.isUseZK()) {
-                if (useCluster) {
-                    if (!switchWithZK(id, dh, masterName, mc)) {
-                        return;
-                    }
-                } else {
-                    try {
-                        String result = dh.switchMaster(masterName, true);
-                        DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), ZKUtils.getConnection(), result);
-                        HaConfigManager.getInstance().haFinish(id, null, result);
-                    } catch (Exception e) {
-                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        mc.writeErrMessage(ErrorCode.ER_YES, "swtich dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
-                        return;
-                    }
-                }
+
             } else {
                 try {
                     //dble start in single mode

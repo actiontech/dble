@@ -121,7 +121,7 @@ public final class DataHostDisable {
         }
     }
 
-    public static boolean disableWithZK(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
+    private static boolean disableWithZK(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
         InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getHostName()));
         try {

@@ -81,15 +81,19 @@ public abstract class AbstractService implements Service {
     }
 
     protected void taskCreate(byte[] packetData) {
-        ServiceTask task = new ServiceTask(packetData, this);
-        taskQueue.offer(task);
-        taskToTotalQueue(task);
+        if (beforeHandlingTask()) {
+            ServiceTask task = new ServiceTask(packetData, this);
+            taskQueue.offer(task);
+            taskToTotalQueue(task);
+        }
     }
 
     protected void taskMultiQueryCreate(byte[] packetData) {
-        ServiceTask task = new ServiceTask(packetData, this, true);
-        taskQueue.offer(task);
-        taskToTotalQueue(task);
+        if (beforeHandlingTask()) {
+            ServiceTask task = new ServiceTask(packetData, this, true);
+            taskQueue.offer(task);
+            taskToTotalQueue(task);
+        }
     }
 
 
@@ -240,6 +244,10 @@ public abstract class AbstractService implements Service {
 
     protected void taskToTotalQueue(ServiceTask task) {
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
+    }
+
+    protected boolean beforeHandlingTask() {
+        return true;
     }
 
     public void handleData(ServiceTask task) {

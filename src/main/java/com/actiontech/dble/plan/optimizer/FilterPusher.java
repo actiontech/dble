@@ -9,11 +9,9 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
-import com.actiontech.dble.plan.node.JoinNode;
-import com.actiontech.dble.plan.node.MergeNode;
-import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
+import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
-import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 
@@ -69,6 +67,12 @@ public final class FilterPusher {
         mergeJoinOnFilter(qtn);
         qtn = pushJoinOnFilter(qtn);
         qtn = pushFilter(qtn, new ArrayList<Item>());
+        if (qtn instanceof NoNameNode && qtn.isContainsSubQuery()) {
+            for (ItemSubQuery subQuery : qtn.getSubQueries()) {
+                PlanNode subQtn = optimize(subQuery.getPlanNode());
+                subQuery.setPlanNode(subQtn);
+            }
+        }
         return qtn;
     }
 

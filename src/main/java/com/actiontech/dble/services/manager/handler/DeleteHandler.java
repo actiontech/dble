@@ -89,7 +89,10 @@ public final class DeleteHandler {
         }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         int rowSize;
-        managerTable.getLock().lock();
+        boolean lockFlag = managerTable.getLock().tryLock();
+        if (!lockFlag) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+        }
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);

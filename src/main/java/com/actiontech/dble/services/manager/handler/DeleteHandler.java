@@ -92,6 +92,7 @@ public final class DeleteHandler {
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            return;
         }
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());

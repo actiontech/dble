@@ -57,6 +57,7 @@ public final class InsertHandler {
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            return;
         }
         int rowSize;
         try {

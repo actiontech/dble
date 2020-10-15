@@ -23,9 +23,7 @@ public class DefaultHandler implements StatementHandler {
     @Override
     public void handle(DumpFileContext context, String stmt) throws InterruptedException {
         if (context.getTable() == null) {
-            for (String shardingNode : context.getAllShardingNodes()) {
-                context.getWriter().write(shardingNode, stmt);
-            }
+            context.getWriter().writeAll(stmt);
         } else if (context.getTableConfig() == null) {
             context.getWriter().write(context.getDefaultShardingNode(), stmt);
         } else {

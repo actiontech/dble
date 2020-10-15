@@ -62,8 +62,9 @@ public final class XmltoZkMain {
                 new DataHostStatusTozkLoader(zkListen, zkConn);
             } else {
                 Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
+                ZkMultiLoader zkLoader = new ZkMultiLoader();
                 for (Map.Entry<String, String> entry : map.entrySet()) {
-                    (new ZkMultiLoader()).checkAndWriteString(KVPathUtil.getHaStatusPath() + SEPARATOR, entry.getKey(), entry.getValue());
+                    zkLoader.checkAndWriteString(KVPathUtil.getHaStatusPath() + SEPARATOR, entry.getKey(), entry.getValue());
                 }
             }
         }

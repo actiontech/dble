@@ -14,11 +14,16 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
+import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import static com.actiontech.dble.util.KVPathUtil.SEPARATOR;
 
 public final class XmltoZkMain {
     private XmltoZkMain() {
@@ -52,8 +57,15 @@ public final class XmltoZkMain {
         // xmltozk for rule
         new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
-        if (ClusterHelper.useClusterHa() && DbleServer.getInstance().isUseOuterHa()) {
-            new DataHostStatusTozkLoader(zkListen, zkConn);
+        if (DbleServer.getInstance().isUseOuterHa()) {
+            if (ClusterHelper.useClusterHa()) {
+                new DataHostStatusTozkLoader(zkListen, zkConn);
+            } else {
+                Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
+                for (Map.Entry<String, String> entry : map.entrySet()) {
+                    (new ZkMultiLoader()).checkAndWriteString(KVPathUtil.getHaStatusPath() + SEPARATOR, entry.getKey(), entry.getValue());
+                }
+            }
         }
 
         xmlProcess.initJaxbClass();

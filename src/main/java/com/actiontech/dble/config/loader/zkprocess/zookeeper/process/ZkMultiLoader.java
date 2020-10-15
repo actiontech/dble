@@ -103,7 +103,7 @@ public class ZkMultiLoader {
         return curator.getChildren().forPath(path);
     }
 
-    protected void checkAndWriteString(String parentPath, String currPath, String value) throws Exception {
+    public void checkAndWriteString(String parentPath, String currPath, String value) throws Exception {
         checkNotNull(parentPath, "data of path" + parentPath + " must be not null!");
         checkNotNull(currPath, "data of path" + currPath + " must be not null!");
         checkNotNull(value, "data of value:" + value + " must be not null!");

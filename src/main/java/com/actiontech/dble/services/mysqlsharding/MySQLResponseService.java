@@ -185,6 +185,17 @@ public class MySQLResponseService extends VariablesService {
         }
     }
 
+    @Override
+    protected boolean beforeHandlingTask() {
+        if (session != null) {
+            if (session.isKilled()) {
+                return false;
+            }
+            session.setBackendResponseTime(this);
+        }
+        return true;
+    }
+
 
     @Override
     public void taskToTotalQueue(ServiceTask task) {
@@ -193,14 +204,6 @@ public class MySQLResponseService extends VariablesService {
             executor = DbleServer.getInstance().getComplexQueryExecutor();
         } else {
             executor = DbleServer.getInstance().getBackendBusinessExecutor();
-        }
-
-        if (session != null) {
-            if (session.isKilled()) return;
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("taskToTotalQueue:" + (task == null ? "null" : task.getService()));
-            }
-            session.setBackendResponseTime(this);
         }
 
         if (isHandling.compareAndSet(false, true)) {
@@ -486,9 +489,6 @@ public class MySQLResponseService extends VariablesService {
 
 
     public void release() {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("service release:" + this);
-        }
         if (!metaDataSynced) { // indicate connection not normal finished
             LOGGER.info("can't sure connection syn result,so close it " + this);
             this.responseHandler = null;
@@ -787,7 +787,7 @@ public class MySQLResponseService extends VariablesService {
 
     public String toString() {
         return "MySQLResponseService[isExecuting = " + isExecuting + " attachment = " + attachment + " autocommitSynced = " + autocommitSynced + " isolationSynced = " + isolationSynced +
-                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " session = " + session + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler + "] with rrs = [" +
+                " xaStatus = " + xaStatus + " isDDL = " + isDDL + " complexQuery = " + complexQuery + "] with response handler [" + responseHandler + "] with rrs = [" +
                 attachment + "]  with connection " + connection.toString();
     }
 

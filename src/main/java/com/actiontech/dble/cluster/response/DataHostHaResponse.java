@@ -74,11 +74,9 @@ public class DataHostHaResponse implements ClusterXmlLoader {
     @Override
     public void notifyCluster() throws Exception {
         HaConfigManager.getInstance().init();
-        if (ClusterHelper.useClusterHa()) {
-            Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
-            }
+        Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
         }
     }
 }

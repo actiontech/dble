@@ -6,14 +6,9 @@
 package com.actiontech.dble.cluster.xmltoKv;
 
 import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.response.*;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.singleton.HaConfigManager;
-
-import java.util.Map;
 
 
 /**
@@ -51,14 +46,7 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        if (ClusterHelper.useClusterHa()) {
-            new DataHostHaResponse().notifyCluster();
-        } else {
-            Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
-            for (Map.Entry<String, String> entry : map.entrySet()) {
-                ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(entry.getKey()), entry.getValue());
-            }
-        }
+        new DataHostHaResponse().notifyCluster();
     }
 
 }

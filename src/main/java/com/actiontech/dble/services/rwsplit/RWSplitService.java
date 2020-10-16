@@ -57,7 +57,7 @@ public class RWSplitService extends BusinessService {
                     return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
-                    session.execute(true, rwSplitService -> {
+                    session.execute(true, (isSuccess, rwSplitService) -> {
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
                         this.singleTransactionsCount();
@@ -119,7 +119,9 @@ public class RWSplitService extends BusinessService {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
-                session.execute(true, data, rwSplitService -> rwSplitService.setInPrepare(false));
+                session.execute(true, data, (isSuccess, rwSplitService) -> {
+                    rwSplitService.setInPrepare(false);
+                });
                 break;
             // connection
             case MySQLPacket.COM_QUIT:
@@ -153,7 +155,9 @@ public class RWSplitService extends BusinessService {
         String switchSchema;
         try {
             switchSchema = mm.readString(getCharset().getClient());
-            session.execute(true, data, rwSplitService -> rwSplitService.setSchema(switchSchema));
+            session.execute(true, data, (isSuccess, rwSplitService) -> {
+                if (isSuccess) rwSplitService.setSchema(switchSchema);
+            });
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
         }

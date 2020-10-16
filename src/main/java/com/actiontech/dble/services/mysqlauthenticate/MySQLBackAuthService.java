@@ -212,6 +212,7 @@ public class MySQLBackAuthService extends AuthService {
         }
         if (info.isSuccess()) {
             connection.setService(BusinessServiceFactory.getBackendBusinessService(info, connection));
+            ((BackendConnection) connection).getBackendService().setResponseHandler(handler);
             boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & serverCapabilities);
             boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
             if (clientCompress && usingCompress) {

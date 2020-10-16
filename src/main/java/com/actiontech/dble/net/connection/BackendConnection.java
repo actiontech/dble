@@ -9,7 +9,6 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.QuitPacket;
-import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -59,12 +58,6 @@ public class BackendConnection extends PooledConnection {
         this.close(reason);
     }
 
-
-    @Override
-    public void setConnProperties(AuthResultInfo info) {
-
-    }
-
     @Override
     public void setProcessor(IOProcessor processor) {
         this.processor = processor;
@@ -98,12 +91,6 @@ public class BackendConnection extends PooledConnection {
     @Override
     public void synchronousTest() {
 
-    }
-
-    @Override
-    public void closePooldestroyed(String reason) {
-        this.getBackendService().getConnection().close(reason);
-        this.close(reason);
     }
 
     @Override
@@ -159,7 +146,6 @@ public class BackendConnection extends PooledConnection {
         }
     }
 
-
     public long getThreadId() {
         return threadId;
     }
@@ -178,8 +164,7 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("").append(this.getClass()).
-                append(" Connection  with").append(" host = " + host).append(" id = " + id).append(" port = " + localPort).append(" mysqlId = " + threadId).append(" db config = " + instance);
-        return sb.toString();
+        return this.getClass() +
+                " Connection  with" + " host = " + host + " id = " + id + " port = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
     }
 }

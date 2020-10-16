@@ -2,10 +2,11 @@ package com.actiontech.dble.services;
 
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.CharsetNames;
-import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 
 import java.util.ArrayList;
@@ -26,6 +27,8 @@ public abstract class VariablesService extends AbstractService {
 
     public VariablesService(AbstractConnection connection) {
         super(connection);
+        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+        this.txIsolation = SystemConfig.getInstance().getTxIsolation();
     }
 
     public void setCollationConnection(String collation) {

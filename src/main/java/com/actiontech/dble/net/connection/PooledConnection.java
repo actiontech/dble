@@ -1,13 +1,11 @@
 package com.actiontech.dble.net.connection;
 
-
 import com.actiontech.dble.backend.pool.ConnectionPool;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AuthService;
 
 import java.nio.channels.NetworkChannel;
 import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class PooledConnection extends AbstractConnection {
@@ -18,7 +16,6 @@ public abstract class PooledConnection extends AbstractConnection {
     private volatile String oldSchema;
     private volatile ConnectionPool poolRelated;
 
-    private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private AtomicInteger state = new AtomicInteger(INITIAL);
 
     public static final int STATE_REMOVED = -4;
@@ -75,8 +72,6 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public abstract void synchronousTest();
 
-    public abstract void closePooldestroyed(String reason);
-
     public long getLastTime() {
         return lastTime;
     }
@@ -92,7 +87,6 @@ public abstract class PooledConnection extends AbstractConnection {
     public void setPoolDestroyedTime(long poolDestroyedTime) {
         this.poolDestroyedTime = poolDestroyedTime;
     }
-
 
     public String getSchema() {
         return schema;

@@ -26,53 +26,45 @@ import java.util.Base64;
 public final class PasswordAuthPlugin {
     private static final Logger LOGGER = LoggerFactory.getLogger(PasswordAuthPlugin.class);
 
-
     private PasswordAuthPlugin() {
     }
 
-
     public static final byte[] GETPUBLICKEY = new byte[]{1, 0, 0, 3, 2};
-
     public static final byte[] PASS_WITH_PUBLICKEY = new byte[]{0, 1, 0};
-
     public static final byte[] GETPUBLICKEY_NATIVE_FIRST = new byte[]{1, 0, 0, 5, 2};
-
     public static final byte[] PASS_WITH_PUBLICKEY_TEST = new byte[]{0, 1, 0, 5};
-
     public static final byte[] PASS_WITH_PUBLICKEY_NATIVE_FIRST = new byte[]{0, 1, 0, 7};
-
     public static final byte[] WRITECACHINGPASSWORD = new byte[]{0x20, 0, 0, 3};
-
     public static final byte[] NATIVE_PASSWORD_WITH_PLUGINDATA = new byte[]{0x14, 0, 0, 3};
 
-
     public static final byte AUTH_SWITCH_MORE = 0x01;
-
     public static final byte AUTHSTAGE_FAST_COMPLETE = 0x03;
-
     public static final byte AUTHSTAGE_FULL = 0x04;
-
     public static final byte AUTH_SWITCH_PACKET = 0x01;
-
-
     private static byte[] seedTotal = null;
 
-    public static byte[] passwd(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
+    public static byte[] passwd(String pass, byte[] seed, PluginName pluginName) throws NoSuchAlgorithmException {
+        switch (pluginName) {
+            case mysql_native_password:
+                return passwd(pass, seed);
+            case caching_sha2_password:
+                return passwdSha256(pass, seed);
+            default:
+                return null;
+        }
+    }
+
+
+    public static byte[] passwd(String pass, byte[] seed) throws NoSuchAlgorithmException {
         if (pass == null || pass.length() == 0) {
             return null;
         }
         byte[] passwd = pass.getBytes();
-        int sl1 = hs.getSeed().length;
-        int sl2 = hs.getRestOfScrambleBuff().length;
-        byte[] seed = new byte[sl1 + sl2];
-        System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
-        System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
         passwd = SecurityUtil.scramble411(passwd, seed);
         return passwd;
     }
 
-
-    public static byte[] passwdSha256(String pass, byte[] authPluginData) throws NoSuchAlgorithmException {
+    public static byte[] passwdSha256(String pass, byte[] seed) {
         if (pass == null || pass.length() == 0) {
             return null;
         }
@@ -91,47 +83,6 @@ public final class PasswordAuthPlugin {
             md.digest(dig2, 0, cachingSha2DigestLength);
             md.reset();
 
-            md.update(dig2, 0, dig1.length);
-            md.update(authPluginData, 0, authPluginData.length);
-            byte[] scramble1 = new byte[cachingSha2DigestLength];
-            md.digest(scramble1, 0, cachingSha2DigestLength);
-
-            byte[] mysqlScrambleBuff = new byte[cachingSha2DigestLength];
-            xorString(dig1, mysqlScrambleBuff, scramble1, cachingSha2DigestLength);
-            seedTotal = authPluginData;
-
-            return mysqlScrambleBuff;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return passwd;
-    }
-
-
-    public static byte[] passwdSha256(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
-        if (pass == null || pass.length() == 0) {
-            return null;
-        }
-        MessageDigest md = null;
-        int cachingSha2DigestLength = 32;
-
-        byte[] passwd = pass.getBytes();
-        try {
-            md = MessageDigest.getInstance("SHA-256");
-            byte[] dig1 = new byte[cachingSha2DigestLength];
-            byte[] dig2 = new byte[cachingSha2DigestLength];
-            md.update(passwd, 0, passwd.length);
-            md.digest(dig1, 0, cachingSha2DigestLength);
-            md.reset();
-            md.update(dig1, 0, dig1.length);
-            md.digest(dig2, 0, cachingSha2DigestLength);
-            md.reset();
-
-            int sl1 = hs.getSeed().length;
-            int sl2 = hs.getRestOfScrambleBuff().length;
-            byte[] seed = new byte[sl1 + sl2];
-            System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
-            System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
             md.update(dig2, 0, dig1.length);
             md.update(seed, 0, seed.length);
             byte[] scramble1 = new byte[cachingSha2DigestLength];
@@ -147,7 +98,6 @@ public final class PasswordAuthPlugin {
         }
         return passwd;
     }
-
 
     public static void xorString(byte[] from, byte[] to, byte[] scramble, int length) {
         int pos = 0;
@@ -201,7 +151,7 @@ public final class PasswordAuthPlugin {
         BinaryPacket binKey = new BinaryPacket();
         binKey.readKey(in);
         byte[] publicKey = binKey.getPublicKey();
-        byte[] input = password != null ? getBytesNullTerminated(password, "UTF-8") : new byte[]{0};
+        byte[] input = password != null ? getBytesNullTerminated(password) : new byte[]{0};
         byte[] mysqlScrambleBuff = new byte[input.length];
         if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
             Security.xorString(input, mysqlScrambleBuff, authPluginData, input.length);
@@ -236,7 +186,7 @@ public final class PasswordAuthPlugin {
 
 
     public static byte[] sendEnPasswordWithPublicKey(byte[] authPluginData, byte[] publicKey, String password, byte packetId) throws Exception {
-        byte[] input = password != null ? getBytesNullTerminated(password, "UTF-8") : new byte[]{0};
+        byte[] input = password != null ? getBytesNullTerminated(password) : new byte[]{0};
         byte[] mysqlScrambleBuff = new byte[input.length];
         Security.xorString(input, mysqlScrambleBuff, authPluginData, input.length);
 
@@ -246,7 +196,7 @@ public final class PasswordAuthPlugin {
     }
 
 
-    public static byte[] getBytesNullTerminated(String value, String encoding) {
+    public static byte[] getBytesNullTerminated(String value) {
         // Charset cs = findCharset(encoding);
         Charset cs = StandardCharsets.UTF_8;
         ByteBuffer buf = cs.encode(value);
@@ -300,6 +250,10 @@ public final class PasswordAuthPlugin {
 
     public static byte[] cachingSha2Password(byte[] cs2p) {
         return combineHeaderAndPassword(WRITECACHINGPASSWORD, cs2p);
+    }
+
+    public static boolean checkPubicKey(byte[] data) {
+        return data[0] == (byte) 0xc4 && data[1] == (byte) 1;
     }
 
 }

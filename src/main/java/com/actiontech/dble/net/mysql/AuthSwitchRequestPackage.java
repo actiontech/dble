@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
+import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.nio.ByteBuffer;
@@ -31,12 +32,22 @@ public class AuthSwitchRequestPackage extends MySQLPacket {
     private byte[] authPluginName;
     private byte[] authPluginData;
 
+    public AuthSwitchRequestPackage() {
+    }
+
     public AuthSwitchRequestPackage(byte[] authPluginName, byte[] authPluginData) {
         this.authPluginName = authPluginName;
         this.authPluginData = authPluginData;
     }
 
-
+    public void read(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        packetLength = mm.readUB3();
+        packetId = mm.read();
+        mm.position(5);
+        authPluginName = mm.readBytesWithNull();
+        authPluginData = mm.readBytesWithNull();
+    }
 
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = c.allocate();

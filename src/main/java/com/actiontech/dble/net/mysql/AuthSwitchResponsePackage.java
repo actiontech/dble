@@ -26,8 +26,6 @@ import java.nio.ByteBuffer;
  */
 public class AuthSwitchResponsePackage extends MySQLPacket {
 
-
-
     private byte[] authPluginData;
 
     public void read(byte[] data) {
@@ -52,7 +50,7 @@ public class AuthSwitchResponsePackage extends MySQLPacket {
 
     @Override
     public int calcPacketSize() {
-        return authPluginData == null ? 0 : BufferUtil.getLength(authPluginData) - 1;
+        return authPluginData == null ? 0 : authPluginData.length;
     }
 
     @Override

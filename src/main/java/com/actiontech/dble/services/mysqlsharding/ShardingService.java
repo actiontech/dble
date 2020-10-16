@@ -1,21 +1,17 @@
 package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
-import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.ServiceTask;
@@ -34,8 +30,10 @@ import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
-import com.actiontech.dble.singleton.*;
-import com.actiontech.dble.statistic.CommandCount;
+import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.singleton.SerializableLock;
+import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -73,11 +71,7 @@ public class ShardingService extends BusinessService {
 
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    protected final CommandCount commands;
-
     protected String executeSql;
-    protected UserName user;
-    private long clientFlags;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
@@ -86,7 +80,6 @@ public class ShardingService extends BusinessService {
     private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
-    protected String schema;
     private volatile boolean multiStatementAllow = false;
     private final NonBlockingSession session;
     private boolean sessionReadOnly = false;
@@ -100,11 +93,9 @@ public class ShardingService extends BusinessService {
         this.prepareHandler = new ServerPrepareHandler(this);
         this.session = new NonBlockingSession(this);
         session.setRowCount(0);
-        this.commands = connection.getProcessor().getCommands();
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
         this.proto = new MySQLProtoHandlerImpl();
-        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
     }
 
     @Override
@@ -392,45 +383,14 @@ public class ShardingService extends BusinessService {
         }
     }
 
-    public void initCharsetIndex(int ci) {
-        String name = CharsetUtil.getCharset(ci);
-        if (name != null) {
-            connection.setCharacterSet(name);
-        }
-    }
-
     public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
         this.shardingSQLHandler.routeSystemInfoAndExecuteSQL(stmt, schemaInfo, sqlType);
     }
 
+    @Override
     public void initFromAuthInfo(AuthResultInfo info) {
-
-        AuthPacket auth = info.getMysqlAuthPacket();
-        this.schema = auth.getDatabase();
-        this.userConfig = info.getUserConfig();
-        this.user = new UserName(auth.getUser(), auth.getTenant());
-
-        SystemConfig sys = SystemConfig.getInstance();
-        txIsolation = sys.getTxIsolation();
-
-        this.initCharsetIndex(auth.getCharsetIndex());
-        multiStatementAllow = auth.isMultStatementAllow();
-        clientFlags = auth.getClientFlags();
-
-        boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
-        boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
-        if (clientCompress && usingCompress) {
-            this.setSupportCompress(true);
-        }
-        if (LOGGER.isDebugEnabled()) {
-            StringBuilder s = new StringBuilder();
-            s.append(this).append('\'').append(auth.getUser()).append("' login success");
-            byte[] extra = auth.getExtra();
-            if (extra != null && extra.length > 0) {
-                s.append(",extra:").append(new String(extra));
-            }
-            LOGGER.debug(s.toString());
-        }
+        super.initFromAuthInfo(info);
+        this.multiStatementAllow = info.getMysqlAuthPacket().isMultStatementAllow();
     }
 
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
@@ -682,11 +642,6 @@ public class ShardingService extends BusinessService {
         this.txInterruptMsg = txInterruptMsg;
     }
 
-
-    public UserName getUser() {
-        return user;
-    }
-
     public String getExecuteSql() {
         return executeSql;
     }
@@ -718,14 +673,6 @@ public class ShardingService extends BusinessService {
 
     public ShardingUserConfig getUserConfig() {
         return (ShardingUserConfig) userConfig;
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
     }
 
     public boolean isLocked() {
@@ -772,17 +719,8 @@ public class ShardingService extends BusinessService {
         return sptprepare;
     }
 
-    @Override
-    public void userConnectionCount() {
-        FrontendUserManager.getInstance().countDown(user, false);
-    }
-
     public void resetProto() {
         this.proto = new MySQLProtoHandlerImpl();
-    }
-
-    public long getClientFlags() {
-        return clientFlags;
     }
 
     public String toString() {

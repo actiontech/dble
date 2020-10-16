@@ -111,11 +111,10 @@ public final class MySQLcom {
      * @return
      */
     public static BigInteger myStrtoll10(char[] cs, int start, int end, BoolPtr error) {
-        String tmp = new String(cs, start, end - start + 1);
+        String tmp = new String(cs, start, end - start);
         error.set(false);
         try {
-            BigInteger bi = new BigInteger(tmp);
-            return bi;
+            return new BigInteger(tmp);
         } catch (Exception e) {
             error.set(true);
             return BigInteger.ZERO;

@@ -28,7 +28,7 @@ public class BackendDefaulPlugin extends MySQLAuthPlugin {
     }
 
     @Override
-    public PluginName handleBackData(byte[] data) {
+    public String handleBackData(byte[] data) {
         handshakePacket = new HandshakeV10Packet();
         handshakePacket.read(data);
 
@@ -36,12 +36,7 @@ public class BackendDefaulPlugin extends MySQLAuthPlugin {
         connection.initCharacterSet(SystemConfig.getInstance().getCharset());
 
         String authPluginName = new String(handshakePacket.getAuthPluginName());
-        try {
-            PluginName name = PluginName.valueOf(authPluginName);
-            return name;
-        } catch (IllegalArgumentException e) {
-            return unsupport_plugin;
-        }
+        return authPluginName;
     }
 
 

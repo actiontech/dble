@@ -52,30 +52,25 @@ public class NativePwd extends MySQLAuthPlugin {
     }
 
     @Override
-    public PluginName handleBackData(byte[] data) throws Exception {
+    public String handleBackData(byte[] data) throws Exception {
         switch (data[4]) {
             case AuthSwitchRequestPackage.STATUS:
                 BinaryPacket bin2 = new BinaryPacket();
                 String authPluginName = bin2.getAuthPluginName(data);
                 authPluginData = bin2.getAuthPluginData(data);
-                try {
-                    PluginName name = PluginName.valueOf(authPluginName);
-                    return name;
-                } catch (IllegalArgumentException e) {
-                    return PluginName.unsupport_plugin;
-                }
+                return authPluginName;
             case OkPacket.FIELD_COUNT:
                 // execute auth response
                 info = new AuthResultInfo(null);
-                return PluginName.plugin_same_with_default;
+                return PluginName.plugin_same_with_default.toString();
             case ErrorPacket.FIELD_COUNT:
                 ErrorPacket err = new ErrorPacket();
                 err.read(data);
                 String errMsg = new String(err.getMessage());
                 info = new AuthResultInfo(errMsg);
-                return PluginName.plugin_same_with_default;
+                return PluginName.plugin_same_with_default.toString();
             default:
-                return PluginName.unsupport_plugin;
+                return PluginName.unsupport_plugin.toString();
         }
     }
 

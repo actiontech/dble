@@ -47,7 +47,7 @@ public abstract class MySQLAuthPlugin {
 
     public abstract PluginName handleData(byte[] data);
 
-    public abstract PluginName handleBackData(byte[] data) throws Exception;
+    public abstract String handleBackData(byte[] data) throws Exception;
 
     public abstract void handleSwitchData(byte[] data);
 

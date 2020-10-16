@@ -87,7 +87,7 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
     }
 
     @Override
-    public PluginName handleBackData(byte[] data) throws Exception {
+    public String handleBackData(byte[] data) throws Exception {
         if (clientAuthStage == WATI_FOR_PUBLIC_KEY) {
             if (checkPubicKey(data)) {
                 // get the public from the mysql, use the public key to send the new auth pass
@@ -96,7 +96,7 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
                 byte[] authResponse = PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData == null ? seed : authPluginData, publicKey, password, ++data[3]);
                 connection.write(authResponse);
                 this.clientAuthStage = WATI_FOR_PUBLIC_KEY;
-                return plugin_same_with_default;
+                return plugin_same_with_default.toString();
             }
         }
         switch (data[4]) {
@@ -109,31 +109,26 @@ public class CachingSHA2Pwd extends MySQLAuthPlugin {
                     binaryPacket.setPacketId(++data[3]);
                     binaryPacket.bufferWrite(connection);
                 }
-                return plugin_same_with_default;
+                return plugin_same_with_default.toString();
             case OkPacket.FIELD_COUNT:
                 // get ok from mysql,login success
                 info = new AuthResultInfo(null);
-                return plugin_same_with_default;
+                return plugin_same_with_default.toString();
             case ErrorPacket.FIELD_COUNT:
                 // get error response from the mysql,login be rejected
                 ErrorPacket err = new ErrorPacket();
                 err.read(data);
                 String errMsg = new String(err.getMessage());
                 info = new AuthResultInfo(errMsg);
-                return plugin_same_with_default;
+                return plugin_same_with_default.toString();
             case AuthSwitchRequestPackage.STATUS:
                 //need auth swith for other plugin
                 BinaryPacket bin2 = new BinaryPacket();
                 String authPluginName = bin2.getAuthPluginName(data);
                 authPluginData = bin2.getAuthPluginData(data);
-                try {
-                    PluginName name = PluginName.valueOf(authPluginName);
-                    return name;
-                } catch (IllegalArgumentException e) {
-                    return PluginName.unsupport_plugin;
-                }
+                return authPluginName;
             default:
-                return PluginName.unsupport_plugin;
+                return PluginName.unsupport_plugin.toString();
         }
 
     }

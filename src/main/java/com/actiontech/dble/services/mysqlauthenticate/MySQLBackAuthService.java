@@ -59,9 +59,10 @@ public class MySQLBackAuthService extends AbstractService implements AuthService
 
     @Override
     protected void handleInnerData(byte[] data) {
+        String name = PluginName.unsupport_plugin.toString();
         try {
-            PluginName name = plugin.handleBackData(data);
-            switch (name) {
+            name = plugin.handleBackData(data);
+            switch (PluginName.valueOf(name)) {
                 case caching_sha2_password:
                     this.plugin = new CachingSHA2Pwd(plugin);
                     plugin.authenticate(user, passwd, schema, ++data[3]);
@@ -74,10 +75,12 @@ public class MySQLBackAuthService extends AbstractService implements AuthService
                     checkForResult();
                     break;
                 default:
-                    String authPluginErrorMessage = "Client don't support the password plugin " + name + ",please check the default auth Plugin";
-                    LOGGER.warn(authPluginErrorMessage);
-                    throw new RuntimeException(authPluginErrorMessage);
+                    throw new IllegalArgumentException();
             }
+        } catch (IllegalArgumentException e) {
+            String authPluginErrorMessage = "Client don't support the password plugin " + name + ",please check the default auth Plugin";
+            LOGGER.warn(authPluginErrorMessage);
+            onConnectFailed(e);
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());
             onConnectFailed(e);

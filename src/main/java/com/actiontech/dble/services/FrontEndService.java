@@ -61,6 +61,10 @@ public abstract class FrontEndService extends VariablesService {
         return user;
     }
 
+    public UserConfig getUserConfig() {
+        return userConfig;
+    }
+
     public abstract String getExecuteSql();
 
     public abstract void killAndClose(String reason);

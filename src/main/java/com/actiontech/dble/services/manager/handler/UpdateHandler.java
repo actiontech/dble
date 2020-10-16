@@ -99,17 +99,16 @@ public final class UpdateHandler {
             return;
         }
 
-        int rowSize = 0;
-        managerTable.getLock().lock();
+        int rowSize;
+        boolean lockFlag = managerTable.getLock().tryLock();
+        if (!lockFlag) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            return;
+        }
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
-            if (!affectPks.isEmpty()) {
-                rowSize = managerTable.updateRows(affectPks, values);
-                if (rowSize != 0) {
-                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()));
-                }
-            }
+            rowSize = updateRows(service, managerTable, affectPks, values);
         } catch (SQLException e) {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
@@ -133,6 +132,17 @@ public final class UpdateHandler {
         ok.setPacketId(1);
         ok.setAffectedRows(rowSize);
         ok.write(service.getConnection());
+    }
+
+    private int updateRows(ManagerService service, ManagerWritableTable managerTable, Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws Exception {
+        int rowSize = 0;
+        if (!affectPks.isEmpty()) {
+            rowSize = managerTable.updateRows(affectPks, values);
+            if (rowSize != 0) {
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()));
+            }
+        }
+        return rowSize;
     }
 
     private LinkedHashMap<String, String> getUpdateValues(SchemaUtil.SchemaInfo schemaInfo,

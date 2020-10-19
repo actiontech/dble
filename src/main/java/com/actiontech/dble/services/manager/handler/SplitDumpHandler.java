@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 
 public final class SplitDumpHandler {
 
-    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-s([^\\s]+))?\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?\\s*(--ignore)?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)(((\\s*(-s([^\\s]+))?)|(\\s+(-r(\\d+))?)|(\\s+(-w(\\d+))?)|(\\s+(-l(\\d+))?)|(\\s+(--ignore)?))+)", Pattern.CASE_INSENSITIVE);
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
     private SplitDumpHandler() {
@@ -113,19 +113,19 @@ public final class SplitDumpHandler {
             config = new DumpFileConfig();
             config.setReadFile(m.group(1));
             config.setWritePath(m.group(2));
-            if (m.group(4) != null) {
-                config.setDefaultSchema(m.group(4));
-            }
-            if (m.group(6) != null) {
-                config.setReadQueueSize(Integer.parseInt(m.group(6)));
-            }
-            if (m.group(8) != null) {
-                config.setWriteQueueSize(Integer.parseInt(m.group(8)));
+            if (m.group(7) != null) {
+                config.setDefaultSchema(m.group(7));
             }
             if (m.group(10) != null) {
-                config.setMaxValues(Integer.parseInt(m.group(10)));
+                config.setReadQueueSize(Integer.parseInt(m.group(10)));
             }
-            if (m.group(11) != null) {
+            if (m.group(13) != null) {
+                config.setWriteQueueSize(Integer.parseInt(m.group(13)));
+            }
+            if (m.group(16) != null) {
+                config.setMaxValues(Integer.parseInt(m.group(16)));
+            }
+            if (m.group(17) != null) {
                 config.setIgnore(true);
             }
         }

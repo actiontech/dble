@@ -33,6 +33,9 @@ public final class SetItemUtil {
     }
 
     public static String getIsolationVal(SQLExpr valueExpr) throws SQLSyntaxErrorException {
+        if (valueExpr instanceof SQLBinaryOpExpr) {
+            throw new SQLSyntaxErrorException("You have an error in your SQL syntax;");
+        }
         String value = parseStringValue(valueExpr);
         switch (value) {
             case "read-uncommitted":

@@ -62,9 +62,8 @@ public final class FilterUtils {
                         x.setWithUnValAble(true);
                         filterList.add(x);
                     }
-                } else {
-                    filterList.add(cond);
                 }
+                filterList.add(cond);
             } else {
                 filterList.add(cond);
             }

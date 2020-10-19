@@ -46,6 +46,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     private List<SQLSelect> firstClassSubQueryList = new ArrayList();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
+    private Set<String> tableTables = new HashSet<>();
     private List<String> selectTableList = new ArrayList<>();
     private List<SQLExprTableSource> motifyTableSourceList = new ArrayList<>();
     private String currentTable;
@@ -612,9 +613,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * get table name of field in between expr
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (aliasMap.size() == 1) { //only has 1 table
-            return aliasMap.keySet().iterator().next();
-        } else if (aliasMap.size() == 0) { //no table
+        if (tableTables.size() == 1) { //only has 1 table
+            return tableTables.iterator().next();
+        } else if (tableTables.size() == 0) { //no table
             return "";
         } else { // multi tables
             for (Column col : columns.values()) {
@@ -858,6 +859,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 value = value.toLowerCase();
             }
             aliasMap.put(name, value);
+            tableTables.add(value);
         }
     }
 

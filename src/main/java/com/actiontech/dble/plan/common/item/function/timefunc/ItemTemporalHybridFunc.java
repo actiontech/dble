@@ -98,7 +98,7 @@ public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
                 tm.getTimeType() == MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
             MyTime.timeToDatetime(tm, ltime);
         else
-            ltime = tm;
+            MyTime.copy(tm, ltime);
         return false;
     }
 

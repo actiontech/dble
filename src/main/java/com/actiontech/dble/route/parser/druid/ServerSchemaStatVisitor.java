@@ -41,6 +41,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private boolean inOuterJoin = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
+    private Set<String> tableTables = new HashSet<>();
     private List<String> selectTableList = new ArrayList<>();
     private String currentTable;
     private boolean firstSelectBlock = true;
@@ -564,9 +565,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      *
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (aliasMap.size() == 1) { //only has 1 table
-            return aliasMap.keySet().iterator().next();
-        } else if (aliasMap.size() == 0) { //no table
+        if (tableTables.size() == 1) { //only has 1 table
+            return tableTables.iterator().next();
+        } else if (tableTables.size() == 0) { //no table
             return "";
         } else { // multi tables
             for (Column col : columns.values()) {
@@ -812,6 +813,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 value = value.toLowerCase();
             }
             aliasMap.put(name, value);
+            tableTables.add(value);
         }
     }
 

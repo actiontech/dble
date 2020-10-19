@@ -1404,21 +1404,31 @@ public final class MyTime {
      * <p>
      * The time value is added to the current datetime value.
      *
-     * @param ltime  Time value to convert from.
-     * @param ltime2 Datetime value to convert to.
+     * @param tm  Time value to convert from.
+     * @param ltime Datetime value to convert to.
      */
-    public static void timeToDatetime(final MySQLTime ltime, MySQLTime ltime2) {
-        java.util.Calendar cal1 = ltime.toCalendar();
+    public static void timeToDatetime(final MySQLTime tm, MySQLTime ltime) {
+        java.util.Calendar cal1 = tm.toCalendar();
         java.util.Calendar cal2 = java.util.Calendar.getInstance();
-        cal2.clear();
-        cal2.setTimeInMillis(cal1.getTimeInMillis());
-        ltime2.setYear(cal2.get(java.util.Calendar.YEAR));
-        ltime2.setMonth(cal2.get(java.util.Calendar.MONTH) + 1);
+        ltime.setYear(cal2.get(java.util.Calendar.YEAR));
+        ltime.setMonth(cal2.get(java.util.Calendar.MONTH));
         ltime.setDay(cal2.get(java.util.Calendar.DAY_OF_MONTH));
-        ltime2.setHour(cal2.get(java.util.Calendar.HOUR_OF_DAY));
-        ltime2.setMinute(cal2.get(java.util.Calendar.MINUTE));
-        ltime2.setSecond(cal2.get(java.util.Calendar.SECOND));
-        ltime2.setSecondPart(cal2.get(java.util.Calendar.MILLISECOND) * 1000L);
+        ltime.setHour(cal1.get(java.util.Calendar.HOUR_OF_DAY));
+        ltime.setMinute(cal1.get(java.util.Calendar.MINUTE));
+        ltime.setSecond(cal1.get(java.util.Calendar.SECOND));
+        ltime.setSecondPart(cal1.get(java.util.Calendar.MILLISECOND) * 1000L);
+    }
+
+    public static void copy(final MySQLTime tm, MySQLTime ltime) {
+        ltime.setYear(tm.getYear());
+        ltime.setMonth(tm.getMonth());
+        ltime.setDay(tm.getDay());
+        ltime.setHour(tm.getHour());
+        ltime.setMinute(tm.getMinute());
+        ltime.setSecond(tm.getSecond());
+        ltime.setSecondPart(tm.getSecondPart());
+        ltime.setNeg(tm.isNeg());
+        ltime.setTimeType(tm.getTimeType());
     }
 
     public static void datetimeToTime(MySQLTime ltime) {

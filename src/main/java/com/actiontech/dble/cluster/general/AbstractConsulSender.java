@@ -18,7 +18,6 @@ import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -111,9 +110,7 @@ public abstract class AbstractConsulSender implements ClusterSender {
         new SequencePropertiesLoader(ucoreListen);
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        if (ClusterConfig.getInstance().isNeedSyncHa()) {
-            new DbGroupHaResponse().notifyCluster();
-        }
+        new DbGroupHaResponse().notifyCluster();
     }
 
     @Override

@@ -11,7 +11,6 @@ import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.config.model.ClusterConfig;
 
 
 /**
@@ -53,9 +52,7 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        if (ClusterConfig.getInstance().isNeedSyncHa()) {
-            new DbGroupHaResponse().notifyCluster();
-        }
+        new DbGroupHaResponse().notifyCluster();
     }
 
 }

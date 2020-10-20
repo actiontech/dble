@@ -13,7 +13,6 @@ import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
-import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.zookeeper.KeeperException;
@@ -125,9 +124,7 @@ public class ZkSender implements ClusterSender {
         new UserXmlToZkLoader(zkListen, xmlProcess);
         new SequenceToZkLoader(zkListen);
 
-        if (ClusterConfig.getInstance().isNeedSyncHa()) {
-            new DbGroupStatusToZkLoader(zkListen);
-        }
+        new DbGroupStatusToZkLoader(zkListen);
 
         xmlProcess.initJaxbClass();
         zkListen.initAllNode();

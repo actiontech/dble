@@ -53,7 +53,7 @@ public final class DbGroupHaSwitch {
                 mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
                 return;
             }
-            if (ClusterConfig.getInstance().isNeedSyncHa()) {
+            if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isNeedSyncHa()) {
                 if (!switchWithCluster(id, dh, masterName, mc)) {
                     return;
                 }

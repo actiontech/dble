@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemDateTypeCast extends ItemDateFunc {
-    public ItemDateTypeCast(Item a) {
-        super(new ArrayList<Item>());
+    public ItemDateTypeCast(Item a, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         maybeNull = true;
     }
@@ -57,7 +57,7 @@ public class ItemDateTypeCast extends ItemDateFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemDateTypeCast(newArgs.get(0));
+        return new ItemDateTypeCast(newArgs.get(0), charsetIndex);
     }
 
 }

@@ -21,13 +21,13 @@ import java.util.List;
 
 
 public class ItemDatetimeTypeConvert extends ItemDatetimeFunc {
-    public ItemDatetimeTypeConvert(Item a) {
-        super(new ArrayList<Item>());
+    public ItemDatetimeTypeConvert(Item a, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
     }
 
-    public ItemDatetimeTypeConvert(Item a, int decArg) {
-        super(new ArrayList<Item>());
+    public ItemDatetimeTypeConvert(Item a, int decArg, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         this.decimals = decArg;
     }

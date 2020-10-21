@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncMaketime extends ItemTimeFunc {
 
-    public ItemFuncMaketime(List<Item> args) {
-        super(args);
+    public ItemFuncMaketime(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncMaketime(realArgs);
+        return new ItemFuncMaketime(realArgs, charsetIndex);
     }
 
 }

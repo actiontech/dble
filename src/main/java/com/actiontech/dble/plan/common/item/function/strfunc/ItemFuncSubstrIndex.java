@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncSubstrIndex extends ItemStrFunc {
 
-    public ItemFuncSubstrIndex(List<Item> args) {
-        super(args);
+    public ItemFuncSubstrIndex(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -67,6 +67,6 @@ public class ItemFuncSubstrIndex extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSubstrIndex(realArgs);
+        return new ItemFuncSubstrIndex(realArgs, charsetIndex);
     }
 }

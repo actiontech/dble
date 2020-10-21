@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncLpad extends ItemStrFunc {
 
-    public ItemFuncLpad(List<Item> args) {
-        super(args);
+    public ItemFuncLpad(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -54,6 +54,6 @@ public class ItemFuncLpad extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncLpad(realArgs);
+        return new ItemFuncLpad(realArgs, charsetIndex);
     }
 }

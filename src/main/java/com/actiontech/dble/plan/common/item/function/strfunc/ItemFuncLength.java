@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncLength extends ItemIntFunc {
 
-    public ItemFuncLength(List<Item> args) {
-        super(args);
+    public ItemFuncLength(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -37,6 +37,6 @@ public class ItemFuncLength extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncLength(realArgs);
+        return new ItemFuncLength(realArgs, charsetIndex);
     }
 }

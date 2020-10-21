@@ -26,8 +26,8 @@ import java.util.Map;
 public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
     private boolean isAll;
     private SQLBinaryOperator operator;
-    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
-        super(currentDb, query, metaManager, usrVariables);
+    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+        super(currentDb, query, metaManager, usrVariables, charsetIndex);
         this.isAll = isAll;
         this.operator = operator;
         if (this.planNode.getColumnsSelected().size() > 1) {
@@ -54,7 +54,7 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager, this.usrVariables);
+        return new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager, this.usrVariables, this.charsetIndex);
     }
 
     public boolean isAll() {

@@ -17,8 +17,8 @@ public class ItemFuncRand extends ItemRealFunc {
     //every conn should have a seed,we just a global seed
     // boolean first_eval; // TRUE if val_real() is called 1st time
 
-    public ItemFuncRand(List<Item> args) {
-        super(args);
+    public ItemFuncRand(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class ItemFuncRand extends ItemRealFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncRand(realArgs);
+        return new ItemFuncRand(realArgs, charsetIndex);
     }
 
 }

@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncCharLength extends ItemIntFunc {
 
-    public ItemFuncCharLength(List<Item> args) {
-        super(args);
+    public ItemFuncCharLength(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncCharLength extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncCharLength(realArgs);
+        return new ItemFuncCharLength(realArgs, charsetIndex);
     }
 }

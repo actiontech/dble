@@ -16,8 +16,8 @@ import java.util.List;
 
 
 public class ItemSumMax extends ItemSumHybrid {
-    public ItemSumMax(List<Item> args, boolean isPushDown, List<Field> fields) {
-        super(args, -1, isPushDown, fields);
+    public ItemSumMax(List<Item> args, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, -1, isPushDown, fields, charsetIndex);
     }
 
     @Override
@@ -83,9 +83,9 @@ public class ItemSumMax extends ItemSumHybrid {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumMax(newArgs, false, null);
+            return new ItemSumMax(newArgs, false, null, charsetIndex);
         } else {
-            return new ItemSumMax(calArgs, isPushDown, fields);
+            return new ItemSumMax(calArgs, isPushDown, fields, charsetIndex);
         }
     }
 

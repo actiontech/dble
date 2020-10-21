@@ -108,6 +108,6 @@ public class InSubQueryHandler extends SubQueryHandler {
 
     @Override
     public void setForExplain() {
-        itemSubQuery.getValue().add(new ItemString(NEED_REPLACE));
+        itemSubQuery.getValue().add(new ItemString(NEED_REPLACE, itemSubQuery.getCharsetIndex()));
     }
 }

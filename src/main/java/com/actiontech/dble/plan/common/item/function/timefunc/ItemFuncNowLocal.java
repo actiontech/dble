@@ -14,8 +14,8 @@ import java.util.List;
 
 public class ItemFuncNowLocal extends ItemDatetimeFunc {
 
-    public ItemFuncNowLocal(List<Item> args) {
-        super(args);
+    public ItemFuncNowLocal(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -43,6 +43,6 @@ public class ItemFuncNowLocal extends ItemDatetimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncNowLocal(realArgs);
+        return new ItemFuncNowLocal(realArgs, charsetIndex);
     }
 }

@@ -31,8 +31,8 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
     ArgComparator geCmp = new ArgComparator();
     ArgComparator leCmp = new ArgComparator();
 
-    public ItemFuncBetweenAnd(Item a, Item b, Item c, boolean isNegation) {
-        super(new ArrayList<Item>(), isNegation);
+    public ItemFuncBetweenAnd(Item a, Item b, Item c, boolean isNegation, int charsetIndex) {
+        super(new ArrayList<Item>(), isNegation, charsetIndex);
         args.add(a);
         args.add(b);
         args.add(c);
@@ -267,6 +267,6 @@ public class ItemFuncBetweenAnd extends ItemFuncOptNeg {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBetweenAnd(newArgs.get(0), newArgs.get(1), newArgs.get(2), this.negated);
+        return new ItemFuncBetweenAnd(newArgs.get(0), newArgs.get(1), newArgs.get(2), this.negated, charsetIndex);
     }
 }

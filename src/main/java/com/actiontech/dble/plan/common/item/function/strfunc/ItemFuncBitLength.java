@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncBitLength extends ItemIntFunc {
 
-    public ItemFuncBitLength(List<Item> args) {
-        super(args);
+    public ItemFuncBitLength(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -37,6 +37,6 @@ public class ItemFuncBitLength extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncBitLength(realArgs);
+        return new ItemFuncBitLength(realArgs, charsetIndex);
     }
 }

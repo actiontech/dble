@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncSign extends ItemIntFunc {
 
-    public ItemFuncSign(List<Item> args) {
-        super(args);
+    public ItemFuncSign(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -33,6 +33,6 @@ public class ItemFuncSign extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSign(realArgs);
+        return new ItemFuncSign(realArgs, charsetIndex);
     }
 }

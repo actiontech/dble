@@ -33,8 +33,8 @@ import java.util.List;
  */
 public class ItemFuncUnsignedConvert extends ItemIntFunc {
 
-    public ItemFuncUnsignedConvert(Item a) {
-        super(new ArrayList<Item>());
+    public ItemFuncUnsignedConvert(Item a, int charsetIndex) {
+        super(new ArrayList<>(), charsetIndex);
         args.add(a);
     }
 
@@ -106,7 +106,7 @@ public class ItemFuncUnsignedConvert extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncUnsignedConvert(newArgs.get(0));
+        return new ItemFuncUnsignedConvert(newArgs.get(0), charsetIndex);
     }
 
 }

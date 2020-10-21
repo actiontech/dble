@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncAtan extends ItemDecFunc {
 
-    public ItemFuncAtan(List<Item> args) {
-        super(args);
+    public ItemFuncAtan(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -39,6 +39,6 @@ public class ItemFuncAtan extends ItemDecFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncAtan(realArgs);
+        return new ItemFuncAtan(realArgs, charsetIndex);
     }
 }

@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncPeriodAdd extends ItemIntFunc {
 
-    public ItemFuncPeriodAdd(List<Item> args) {
-        super(args);
+    public ItemFuncPeriodAdd(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -41,6 +41,6 @@ public class ItemFuncPeriodAdd extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncPeriodAdd(realArgs);
+        return new ItemFuncPeriodAdd(realArgs, charsetIndex);
     }
 }

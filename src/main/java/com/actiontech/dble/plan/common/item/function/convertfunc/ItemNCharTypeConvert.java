@@ -20,8 +20,8 @@ import java.util.List;
 public class ItemNCharTypeConvert extends ItemStrFunc {
     private int castLength;
 
-    public ItemNCharTypeConvert(Item a, int lengthArg) {
-        super(new ArrayList<Item>());
+    public ItemNCharTypeConvert(Item a, int lengthArg, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         this.castLength = lengthArg;
     }
@@ -74,6 +74,6 @@ public class ItemNCharTypeConvert extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemNCharTypeConvert(newArgs.get(0), castLength);
+        return new ItemNCharTypeConvert(newArgs.get(0), castLength, charsetIndex);
     }
 }

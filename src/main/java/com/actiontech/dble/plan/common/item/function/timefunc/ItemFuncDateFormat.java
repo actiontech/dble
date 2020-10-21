@@ -20,8 +20,8 @@ import java.util.List;
 public class ItemFuncDateFormat extends ItemStrFunc {
     private boolean isTimeFormat;
 
-    public ItemFuncDateFormat(List<Item> args, boolean isTimeFormat) {
-        super(args);
+    public ItemFuncDateFormat(List<Item> args, boolean isTimeFormat, int charsetIndex) {
+        super(args, charsetIndex);
         this.isTimeFormat = isTimeFormat;
     }
 
@@ -149,6 +149,6 @@ public class ItemFuncDateFormat extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncDateFormat(realArgs, isTimeFormat);
+        return new ItemFuncDateFormat(realArgs, isTimeFormat, charsetIndex);
     }
 }

@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
-    public ItemScalarSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
-        super(currentDb, query, false, metaManager, usrVariables);
+    public ItemScalarSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+        super(currentDb, query, false, metaManager, usrVariables, charsetIndex);
+        this.charsetIndex = charsetIndex;
         if (this.planNode.getColumnsSelected().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPERAND_COLUMNS, "", "Operand should contain 1 column(s)");
         }
@@ -52,7 +53,7 @@ public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
-        return new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager, this.usrVariables);
+        return new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager, this.usrVariables, charsetIndex);
     }
 
 }

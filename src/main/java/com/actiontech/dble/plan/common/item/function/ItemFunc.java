@@ -32,8 +32,9 @@ public abstract class ItemFunc extends Item {
 
     protected final List<Item> args;
 
-    public ItemFunc(List<Item> args) {
+    public ItemFunc(List<Item> args, int charsetIndex) {
         this.args = args;
+        this.charsetIndex = charsetIndex;
     }
 
     @Override

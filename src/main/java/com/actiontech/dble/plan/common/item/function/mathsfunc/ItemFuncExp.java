@@ -20,8 +20,8 @@ public class ItemFuncExp extends ItemDecFunc {
     /**
      * @param args
      */
-    public ItemFuncExp(List<Item> args) {
-        super(args);
+    public ItemFuncExp(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -40,6 +40,6 @@ public class ItemFuncExp extends ItemDecFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncExp(realArgs);
+        return new ItemFuncExp(realArgs, charsetIndex);
     }
 }

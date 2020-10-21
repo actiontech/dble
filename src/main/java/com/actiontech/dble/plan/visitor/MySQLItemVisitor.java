@@ -111,14 +111,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(MySqlCharExpr x) {
         String value = x.toString();
-        item = new ItemString(value);
+        item = new ItemString(value, this.charsetIndex);
         item.setItemName(value);
     }
 
     @Override
     public void endVisit(SQLQueryExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -128,7 +128,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         Item itemTest = getItem(x.getTestExpr());
         Item itemBegin = getItem(x.getBeginExpr());
         Item itemEnd = getItem(x.getEndExpr());
-        item = new ItemFuncBetweenAnd(itemTest, itemBegin, itemEnd, x.isNot());
+        item = new ItemFuncBetweenAnd(itemTest, itemBegin, itemEnd, x.isNot(), this.charsetIndex);
         item.setWithSubQuery(itemTest.isWithSubQuery() || itemBegin.isWithSubQuery() || itemEnd.isWithSubQuery());
         item.setCorrelatedSubQuery(itemTest.isCorrelatedSubQuery() || itemBegin.isCorrelatedSubQuery() || itemEnd.isCorrelatedSubQuery());
         initName(x);
@@ -138,7 +138,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables, charsetIndex);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables, this.charsetIndex);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -168,13 +168,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             case Is:
                 // is null, or is unknown
                 if (itemRight instanceof ItemNull || itemRight instanceof ItemString) {
-                    item = new ItemFuncIsnull(itemLeft);
+                    item = new ItemFuncIsnull(itemLeft, this.charsetIndex);
                 } else if (itemRight instanceof ItemInt) {
                     ItemInt itemBool = (ItemInt) itemRight;
                     if (itemBool.valInt().longValue() == 1) { // is true
-                        item = new ItemFuncIstrue(itemLeft);
+                        item = new ItemFuncIstrue(itemLeft, this.charsetIndex);
                     } else {
-                        item = new ItemFuncIsfalse(itemLeft);
+                        item = new ItemFuncIsfalse(itemLeft, this.charsetIndex);
                     }
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support type:" + x.getRight());
@@ -183,13 +183,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             case IsNot:
                 // is not null, or is not unknown
                 if (itemRight instanceof ItemNull || itemRight instanceof ItemString) {
-                    item = new ItemFuncIsnotnull(itemLeft);
+                    item = new ItemFuncIsnotnull(itemLeft, this.charsetIndex);
                 } else if (itemRight instanceof ItemInt) {
                     ItemInt itemBool = (ItemInt) itemRight;
                     if (itemBool.valInt().longValue() == 1) { // is true
-                        item = new ItemFuncIsnottrue(itemLeft);
+                        item = new ItemFuncIsnottrue(itemLeft, this.charsetIndex);
                     } else {
-                        item = new ItemFuncIsnotfalse(itemLeft);
+                        item = new ItemFuncIsnotfalse(itemLeft, this.charsetIndex);
                     }
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support type:" + x.getRight());
@@ -202,39 +202,39 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     Item itemLikeLeft = getItem(like.getLeft());
                     Item itemLikeRight = getItem(like.getRight());
                     boolean isNot = (like.getOperator() == SQLBinaryOperator.NotLike);
-                    item = new ItemFuncLike(itemLikeLeft, itemLikeRight, itemRight, isNot, charsetIndex);
+                    item = new ItemFuncLike(itemLikeLeft, itemLikeRight, itemRight, isNot, this.charsetIndex);
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                             "not supported kind expression:" + x.getOperator());
                 }
                 break;
             case NotLike:
-                item = new ItemFuncLike(itemLeft, itemRight, null, true, charsetIndex);
+                item = new ItemFuncLike(itemLeft, itemRight, null, true, this.charsetIndex);
                 break;
             case Like:
-                item = new ItemFuncLike(itemLeft, itemRight, null, false, charsetIndex);
+                item = new ItemFuncLike(itemLeft, itemRight, null, false, this.charsetIndex);
                 break;
             case Equality:
-                item = new ItemFuncEqual(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncEqual(itemLeft, itemRight, this.charsetIndex);
                 break;
             case Add:
-                item = new ItemFuncPlus(itemLeft, itemRight);
+                item = new ItemFuncPlus(itemLeft, itemRight, this.charsetIndex);
                 break;
             case Divide:
-                item = new ItemFuncDiv(itemLeft, itemRight);
+                item = new ItemFuncDiv(itemLeft, itemRight, this.charsetIndex);
                 break;
             case DIV:
-                item = new ItemFuncIntDiv(itemLeft, itemRight);
+                item = new ItemFuncIntDiv(itemLeft, itemRight, this.charsetIndex);
                 break;
             case Mod:
             case Modulus:
-                item = new ItemFuncMod(itemLeft, itemRight);
+                item = new ItemFuncMod(itemLeft, itemRight, this.charsetIndex);
                 break;
             case Multiply:
-                item = new ItemFuncMul(itemLeft, itemRight);
+                item = new ItemFuncMul(itemLeft, itemRight, this.charsetIndex);
                 break;
             case Subtract:
-                item = new ItemFuncMinus(itemLeft, itemRight);
+                item = new ItemFuncMinus(itemLeft, itemRight, this.charsetIndex);
                 break;
             case PG_And:
             case BooleanAnd:
@@ -251,48 +251,47 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = new ItemCondOr(argsOr);
                 break;
             case BooleanXor:
-                item = new ItemFuncXor(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncXor(itemLeft, itemRight, this.charsetIndex);
                 break;
             case BitwiseAnd:
-                item = new ItemFuncBitAnd(itemLeft, itemRight);
+                item = new ItemFuncBitAnd(itemLeft, itemRight, this.charsetIndex);
                 break;
             case BitwiseOr:
-                item = new ItemFuncBitOr(itemLeft, itemRight);
+                item = new ItemFuncBitOr(itemLeft, itemRight, this.charsetIndex);
                 break;
             case BitwiseXor:
-                item = new ItemFuncBitXor(itemLeft, itemRight);
+                item = new ItemFuncBitXor(itemLeft, itemRight, this.charsetIndex);
                 break;
             case LeftShift:
-                item = new ItemFuncLeftShift(itemLeft, itemRight);
+                item = new ItemFuncLeftShift(itemLeft, itemRight, this.charsetIndex);
                 break;
             case RightShift:
-                item = new ItemFuncRightShift(itemLeft, itemRight);
+                item = new ItemFuncRightShift(itemLeft, itemRight, this.charsetIndex);
                 break;
             case GreaterThan:
-                item = new ItemFuncGt(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncGt(itemLeft, itemRight, this.charsetIndex);
                 break;
             case GreaterThanOrEqual:
-                item = new ItemFuncGe(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncGe(itemLeft, itemRight, this.charsetIndex);
                 break;
             case NotEqual:
             case LessThanOrGreater:
-                item = new ItemFuncNe(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncNe(itemLeft, itemRight, this.charsetIndex);
                 break;
             case LessThan:
-                item = new ItemFuncLt(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncLt(itemLeft, itemRight, this.charsetIndex);
                 break;
             case LessThanOrEqual:
-                item = new ItemFuncLe(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncLe(itemLeft, itemRight, this.charsetIndex);
                 break;
             case LessThanOrEqualOrGreaterThan:
-                item = new ItemFuncStrictEqual(itemLeft, itemRight, charsetIndex);
+                item = new ItemFuncStrictEqual(itemLeft, itemRight, this.charsetIndex);
                 break;
             case RegExp:
-                item = new ItemFuncRegex(itemLeft, itemRight);
+                item = new ItemFuncRegex(itemLeft, itemRight, this.charsetIndex);
                 break;
             case NotRegExp:
-                item = new ItemFuncRegex(itemLeft, itemRight);
-                item = new ItemFuncNot(item);
+                item = new ItemFuncNot(new ItemFuncRegex(itemLeft, itemRight, this.charsetIndex), this.charsetIndex);
                 break;
             case Assignment:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support assignment");
@@ -310,20 +309,20 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         Item a = getItem(x.getExpr());
         switch (x.getOperator()) {
             case Negative:
-                item = new ItemFuncNeg(a);
+                item = new ItemFuncNeg(a, this.charsetIndex);
                 break;
             case Not:
             case NOT:
-                item = new ItemFuncNot(a);
+                item = new ItemFuncNot(a, this.charsetIndex);
                 break;
             case Compl:
-                item = new ItemFuncBitInversion(a);
+                item = new ItemFuncBitInversion(a, this.charsetIndex);
                 break;
             case Plus:
                 item = a;
                 break;
             case BINARY:
-                item = new ItemFuncBinaryCast(a, -1);
+                item = new ItemFuncBinaryCast(a, -1, this.charsetIndex);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
@@ -341,27 +340,27 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         List<Item> args = new ArrayList<>();
         args.add(left);
         args.addAll(visitExprList(x.getTargetList()));
-        item = new ItemFuncIn(args, isNeg, charsetIndex);
+        item = new ItemFuncIn(args, isNeg, this.charsetIndex);
         initName(x);
     }
 
     @Override
     public void endVisit(MySqlExtractExpr x) {
-        item = new ItemExtract(getItem(x.getValue()), x.getUnit());
+        item = new ItemExtract(getItem(x.getValue()), x.getUnit(), this.charsetIndex);
         initName(x);
     }
 
     @Override
     public void endVisit(SQLIntervalExpr x) {
         //Just as  placeholder
-        item = new ItemString(x.toString());
+        item = new ItemString(x.toString(), this.charsetIndex);
         item.setItemName(x.toString());
     }
 
     @Override
     public void endVisit(SQLNotExpr x) {
         Item arg = getItem(x.getExpr());
-        item = new ItemFuncNot(arg);
+        item = new ItemFuncNot(arg, this.charsetIndex);
         item.setWithSubQuery(arg.isWithSubQuery());
         item.setCorrelatedSubQuery(arg.isCorrelatedSubQuery());
         initName(x);
@@ -396,7 +395,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             elseExprNum = args.size();
             args.add(getItem(elseExpr));
         }
-        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum, charsetIndex);
+        item = new ItemFuncCase(args, nCases, firstExprNum, elseExprNum, this.charsetIndex);
     }
 
     @Override
@@ -414,13 +413,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 if (args.size() > 0) {
                     len = args.get(0);
                 }
-                item = new ItemCharTypeCast(a, len, charSetName);
+                item = new ItemCharTypeCast(a, len, charSetName, this.charsetIndex);
             } else if (charSetName == null) {
                 int len = -1;
                 if (args.size() > 0) {
                     len = args.get(0);
                 }
-                item = new ItemNCharTypeCast(a, len);
+                item = new ItemNCharTypeCast(a, len, this.charsetIndex);
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "",
                         "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'character set " + charSetName + ")'");
@@ -434,8 +433,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLCharExpr x) {
-        item = new ItemString(x.getText());
-        item.setCharsetIndex(this.charsetIndex);
+        item = new ItemString(x.getText(), this.charsetIndex);
         initName(x);
     }
 
@@ -453,14 +451,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLIntegerExpr x) {
         Number number = x.getNumber();
-        item = new ItemInt(number.longValue(), this.charsetIndex);
+        item = new ItemInt(number.longValue());
         initName(x);
     }
 
     @Override
     public void endVisit(SQLNCharExpr x) {
-        item = new ItemString(x.getText());
-        item.setCharsetIndex(this.charsetIndex);
+        item = new ItemString(x.getText(), this.charsetIndex);
         initName(x);
     }
 
@@ -499,8 +496,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 } catch (NumberFormatException e) {
                     //ignore error
                 }
-                item = new ItemString(realValue);
-                item.setCharsetIndex(this.charsetIndex);
+                item = new ItemString(realValue, this.charsetIndex);
                 item.setItemName(realValue);
             } else {
                 item = new ItemNull();
@@ -534,16 +530,16 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         boolean isDistinct = option != null;
         switch (funcName) {
             case "MAX":
-                item = new ItemSumMax(args, false, null);
+                item = new ItemSumMax(args, false, null, this.charsetIndex);
                 break;
             case "MIN":
-                item = new ItemSumMin(args, false, null);
+                item = new ItemSumMin(args, false, null, this.charsetIndex);
                 break;
             case "SUM":
-                item = new ItemSumSum(args, isDistinct, false, null);
+                item = new ItemSumSum(args, isDistinct, false, null, this.charsetIndex);
                 break;
             case "AVG":
-                item = new ItemSumAvg(args, isDistinct, false, null);
+                item = new ItemSumAvg(args, isDistinct, false, null, this.charsetIndex);
                 break;
             case "GROUP_CONCAT":
                 SQLOrderBy orderExpr = (SQLOrderBy) x.getAttribute(ItemFuncKeyWord.ORDER_BY);
@@ -565,13 +561,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 if (charExpr != null) {
                     separator = charExpr.getText();
                 }
-                item = new ItemFuncGroupConcat(args, isDistinct, orderList, separator, false, null);
+                item = new ItemFuncGroupConcat(args, isDistinct, orderList, separator, false, null, this.charsetIndex);
                 break;
             case "COUNT":
-                item = new ItemSumCount(args, isDistinct, false, null);
+                item = new ItemSumCount(args, isDistinct, false, null, this.charsetIndex);
                 break;
             case "STDDEV":
-                item = new ItemSumStd(args, 0, false, null);
+                item = new ItemSumStd(args, 0, false, null, this.charsetIndex);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported " + funcName);
@@ -588,14 +584,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             case "TRIM":
                 SQLExpr from = x.getFrom();
                 if (from == null) {
-                    item = new ItemFuncTrim(args.get(0), TrimTypeEnum.DEFAULT);
+                    item = new ItemFuncTrim(args.get(0), TrimTypeEnum.DEFAULT, this.charsetIndex);
                 } else {
                     TrimTypeEnum trimType = TrimTypeEnum.DEFAULT;
                     String trimOption = x.getTrimOption();
                     if (trimOption != null) {
                         trimType = TrimTypeEnum.valueOf(trimOption);
                     }
-                    item = new ItemFuncTrim(args.get(0), getItem(from), trimType);
+                    item = new ItemFuncTrim(args.get(0), getItem(from), trimType, this.charsetIndex);
                 }
                 break;
             case "CONVERT":
@@ -608,7 +604,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                         } catch (Exception e) {
                             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, " + args.get(1).getItemName() + ") ,please use CAST(expr AS type)");
                         }
-                        item = new ItemCharTypeConvert(args.get(0), castLength, null);
+                        item = new ItemCharTypeConvert(args.get(0), castLength, null, this.charsetIndex);
                         break;
                     }
                     CastType castType = getCastType(args.get(1).getItemName());
@@ -622,7 +618,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     if (using == null || !(using instanceof SQLIdentifierExpr)) {
                         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax,You should set correct charset");
                     }
-                    item = new ItemFuncConvCharset(args.get(0), ((SQLIdentifierExpr) using).getSimpleName());
+                    item = new ItemFuncConvCharset(args.get(0), ((SQLIdentifierExpr) using).getSimpleName(), this.charsetIndex);
                 }
                 break;
             case "CHAR":
@@ -632,7 +628,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
                     item = new ItemFuncChar(args, this.charsetIndex);
                 } else {
-                    item = new ItemFuncChar(args, (String) attributes.get(ItemFuncKeyWord.USING));
+                    item = new ItemFuncChar(args, (String) attributes.get(ItemFuncKeyWord.USING), this.charsetIndex);
                 }
                 break;
             case "ORD":
@@ -640,63 +636,63 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "ADDDATE":
                 if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
-                    item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, false);
+                    item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, false, this.charsetIndex);
                     break;
                 }
                 // fallthrough
             case "DATE_ADD":
                 SQLIntervalExpr intervalExpr = (SQLIntervalExpr) (x.getParameters().get(1));
-                item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), false);
+                item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), false, this.charsetIndex);
                 break;
             case "SUBDATE":
                 if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
-                    item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, true);
+                    item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, true, this.charsetIndex);
                     break;
                 }
                 // fallthrough
             case "DATE_SUB":
                 SQLIntervalExpr valueExpr = (SQLIntervalExpr) (x.getParameters().get(1));
-                item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), true);
+                item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), true, this.charsetIndex);
                 break;
             case "TIMESTAMPADD":
                 SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getParameters().get(0);
-                item = new ItemDateAddInterval(args.get(2), args.get(1), SQLIntervalUnit.valueOf(addUnit.getSimpleName().toUpperCase()), false);
+                item = new ItemDateAddInterval(args.get(2), args.get(1), SQLIntervalUnit.valueOf(addUnit.getSimpleName().toUpperCase()), false, this.charsetIndex);
                 break;
             case "TIMESTAMPDIFF":
                 SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getParameters().get(0);
-                item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName().toUpperCase()));
+                item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName().toUpperCase()), this.charsetIndex);
                 break;
             case "VAR_SAMP":
-                item = new ItemSumVariance(args, 1, false, null);
+                item = new ItemSumVariance(args, 1, false, null, this.charsetIndex);
                 break;
             case "VAR_POP":
             case "VARIANCE":
-                item = new ItemSumVariance(args, 0, false, null);
+                item = new ItemSumVariance(args, 0, false, null, this.charsetIndex);
                 break;
             case "STD":
             case "STDDEV":
             case "STDDEV_POP":
-                item = new ItemSumStd(args, 0, false, null);
+                item = new ItemSumStd(args, 0, false, null, this.charsetIndex);
                 break;
             case "STDDEV_SAMP":
-                item = new ItemSumStd(args, 1, false, null);
+                item = new ItemSumStd(args, 1, false, null, this.charsetIndex);
                 break;
             case "BIT_AND":
-                item = new ItemSumAnd(args, false, null);
+                item = new ItemSumAnd(args, false, null, this.charsetIndex);
                 break;
             case "BIT_OR":
-                item = new ItemSumOr(args, false, null);
+                item = new ItemSumOr(args, false, null, this.charsetIndex);
                 break;
             case "BIT_XOR":
-                item = new ItemSumXor(args, false, null);
+                item = new ItemSumXor(args, false, null, this.charsetIndex);
                 break;
             case "IF":
-                item = new ItemFuncIf(args);
+                item = new ItemFuncIf(args, this.charsetIndex);
                 break;
             case "GET_FORMAT":
                 SQLExpr expr = x.getParameters().get(0);
                 if (expr instanceof SQLIdentifierExpr) {
-                    Item arg0 = new ItemString(((SQLIdentifierExpr) expr).getName());
+                    Item arg0 = new ItemString(((SQLIdentifierExpr) expr).getName(), this.charsetIndex);
                     args.set(0, arg0);
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + expr.toString() + "'");
@@ -710,7 +706,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     item = ItemCreate.getInstance().createInnerFunc(funcName, args);
                 } else {
                     // unKnownFunction
-                    item = new ItemFuncUnknown(funcName, args);
+                    item = new ItemFuncUnknown(funcName, args, this.charsetIndex);
                     if (x.getParent() instanceof SQLSelectItem) {
                         if (x.getParent().getParent() instanceof MySqlSelectQueryBlock) {
                             if (((MySqlSelectQueryBlock) x.getParent().getParent()).getFrom() != null) {
@@ -767,7 +763,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLExistsExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager, usrVariables);
+        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager, usrVariables, this.charsetIndex);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -776,7 +772,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLBinaryExpr x) {
         String binary = x.getText();
         if (StringUtil.equals(binary, "")) {
-            item = new ItemString(binary);
+            item = new ItemString(binary, this.charsetIndex);
         } else {
             try {
                 item = new ItemInt(Long.parseLong(binary, 2));
@@ -794,7 +790,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'X'" + x.getHex() + "''");
         }
         try {
-            item = new ItemString(new String(bytes, CharsetUtil.getJavaCharset(this.charsetIndex)));
+            item = new ItemString(new String(bytes, CharsetUtil.getJavaCharset(this.charsetIndex)), this.charsetIndex);
         } catch (UnsupportedEncodingException e) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Not Support charset index =" + this.charsetIndex);
         }
@@ -804,7 +800,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex);
     }
 
 
@@ -813,26 +809,26 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         switch (operator) {
             case Equality:
                 if (isAll) {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager, usrVariables);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager, usrVariables, this.charsetIndex);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables, charsetIndex);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables, this.charsetIndex);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables, charsetIndex);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables, this.charsetIndex);
                 } else {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager, usrVariables);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager, usrVariables, this.charsetIndex);
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
             case GreaterThan:
             case GreaterThanOrEqual:
-                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager, usrVariables);
+                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager, usrVariables, this.charsetIndex);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",

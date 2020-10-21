@@ -20,8 +20,8 @@ import java.util.List;
  */
 public class ItemFuncIsfalse extends ItemFuncTruth {
 
-    public ItemFuncIsfalse(Item a) {
-        super(a, false, true);
+    public ItemFuncIsfalse(Item a, int charsetIndex) {
+        super(a, false, true, charsetIndex);
         args.add(a);
     }
 
@@ -43,7 +43,7 @@ public class ItemFuncIsfalse extends ItemFuncTruth {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIsfalse(newArgs.get(0));
+        return new ItemFuncIsfalse(newArgs.get(0), charsetIndex);
     }
 
 }

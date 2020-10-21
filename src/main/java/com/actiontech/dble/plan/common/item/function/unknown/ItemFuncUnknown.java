@@ -32,8 +32,8 @@ public class ItemFuncUnknown extends ItemFunc {
     /**
      * @param args
      */
-    public ItemFuncUnknown(String funcName, List<Item> args) {
-        super(args);
+    public ItemFuncUnknown(String funcName, List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
         this.funcName = funcName;
         this.withUnValAble = true;
     }
@@ -88,7 +88,7 @@ public class ItemFuncUnknown extends ItemFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncUnknown(funcName, newArgs);
+        return new ItemFuncUnknown(funcName, newArgs, charsetIndex);
     }
 
 }

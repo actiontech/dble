@@ -21,8 +21,8 @@ import java.util.List;
  * whose data type depends on parameters and is set at fix_field time.
  */
 public abstract class ItemTemporalHybridFunc extends ItemStrFunc {
-    public ItemTemporalHybridFunc(List<Item> args) {
-        super(args);
+    public ItemTemporalHybridFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     protected FieldTypes cachedFieldType; // TIME, DATE, DATETIME or

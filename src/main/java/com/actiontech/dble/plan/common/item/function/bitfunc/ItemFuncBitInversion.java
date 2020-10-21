@@ -19,8 +19,8 @@ import java.util.List;
 
 public class ItemFuncBitInversion extends ItemFuncBit {
 
-    public ItemFuncBitInversion(Item a) {
-        super(a);
+    public ItemFuncBitInversion(Item a, int charsetIndex) {
+        super(a, charsetIndex);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class ItemFuncBitInversion extends ItemFuncBit {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBitInversion(newArgs.get(0));
+        return new ItemFuncBitInversion(newArgs.get(0), charsetIndex);
     }
 
 }

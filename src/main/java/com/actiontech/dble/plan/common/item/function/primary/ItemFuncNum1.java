@@ -16,8 +16,8 @@ import java.util.List;
  */
 public abstract class ItemFuncNum1 extends ItemFuncNumhybrid {
 
-    public ItemFuncNum1(List<Item> args) {
-        super(args);
+    public ItemFuncNum1(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

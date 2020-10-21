@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncMod extends ItemNumOp {
 
-    public ItemFuncMod(Item a, Item b) {
-        super(a, b);
+    public ItemFuncMod(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class ItemFuncMod extends ItemNumOp {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncMod(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncMod(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 
 }

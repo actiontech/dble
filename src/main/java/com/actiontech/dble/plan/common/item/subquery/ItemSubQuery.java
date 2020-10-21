@@ -31,7 +31,8 @@ public abstract class ItemSubQuery extends ItemResultField {
         return SubSelectType.UNKNOWN_SUBS;
     }
 
-    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+        this.charsetIndex = charsetIndex;
         this.query = query;
         this.currentDb = currentDb;
         this.metaManager = metaManager;

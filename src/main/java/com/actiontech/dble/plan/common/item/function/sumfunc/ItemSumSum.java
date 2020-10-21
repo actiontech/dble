@@ -20,8 +20,8 @@ import java.util.List;
 
 public class ItemSumSum extends ItemSumNum {
 
-    public ItemSumSum(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields) {
-        super(args, isPushDown, fields);
+    public ItemSumSum(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, isPushDown, fields, charsetIndex);
         setDistinct(distinct);
     }
 
@@ -151,9 +151,9 @@ public class ItemSumSum extends ItemSumNum {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumSum(newArgs, hasWithDistinct(), false, null);
+            return new ItemSumSum(newArgs, hasWithDistinct(), false, null, charsetIndex);
         } else {
-            return new ItemSumSum(calArgs, hasWithDistinct(), isPushDown, fields);
+            return new ItemSumSum(calArgs, hasWithDistinct(), isPushDown, fields, charsetIndex);
         }
     }
 

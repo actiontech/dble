@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncHour extends ItemIntFunc {
 
-    public ItemFuncHour(List<Item> args) {
-        super(args);
+    public ItemFuncHour(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncHour extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncHour(realArgs);
+        return new ItemFuncHour(realArgs, charsetIndex);
     }
 }

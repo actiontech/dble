@@ -21,8 +21,8 @@ import java.util.List;
 public class ItemSumAvg extends ItemSumSum {
     private long count;
 
-    public ItemSumAvg(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields) {
-        super(args, distinct, isPushDown, fields);
+    public ItemSumAvg(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, distinct, isPushDown, fields, charsetIndex);
         count = 0;
     }
 
@@ -146,9 +146,9 @@ public class ItemSumAvg extends ItemSumSum {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumAvg(newArgs, hasWithDistinct(), false, null);
+            return new ItemSumAvg(newArgs, hasWithDistinct(), false, null, charsetIndex);
         } else {
-            return new ItemSumAvg(calArgs, hasWithDistinct(), isPushDown, fields);
+            return new ItemSumAvg(calArgs, hasWithDistinct(), isPushDown, fields, charsetIndex);
         }
     }
 

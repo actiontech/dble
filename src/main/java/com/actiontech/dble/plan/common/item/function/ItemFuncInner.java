@@ -19,8 +19,8 @@ public class ItemFuncInner extends ItemFunc {
     private final InnerFuncResponse rspHandler;
     private final String funcName;
 
-    public ItemFuncInner(String funcName, List<Item> args, InnerFuncResponse rspHandler) {
-        super(args);
+    public ItemFuncInner(String funcName, List<Item> args, InnerFuncResponse rspHandler, int charsetIndex) {
+        super(args, charsetIndex);
         this.funcName = funcName;
         this.rspHandler = rspHandler;
     }

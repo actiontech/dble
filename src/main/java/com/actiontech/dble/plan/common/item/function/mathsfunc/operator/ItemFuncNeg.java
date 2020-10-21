@@ -20,8 +20,8 @@ import java.util.List;
 
 public class ItemFuncNeg extends ItemFuncNum1 {
 
-    public ItemFuncNeg(Item a) {
-        super(new ArrayList<Item>());
+    public ItemFuncNeg(Item a, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
     }
 
@@ -81,6 +81,6 @@ public class ItemFuncNeg extends ItemFuncNum1 {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncNeg(newArgs.get(0));
+        return new ItemFuncNeg(newArgs.get(0), charsetIndex);
     }
 }

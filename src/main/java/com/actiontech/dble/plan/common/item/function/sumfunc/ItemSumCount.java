@@ -19,8 +19,8 @@ import java.util.List;
 public class ItemSumCount extends ItemSumInt {
     long count;
 
-    public ItemSumCount(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields) {
-        super(args, isPushDown, fields);
+    public ItemSumCount(List<Item> args, boolean distinct, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, isPushDown, fields, charsetIndex);
         count = 0;
         setDistinct(distinct);
     }
@@ -103,9 +103,9 @@ public class ItemSumCount extends ItemSumInt {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumCount(newArgs, hasWithDistinct(), false, null);
+            return new ItemSumCount(newArgs, hasWithDistinct(), false, null, charsetIndex);
         } else {
-            return new ItemSumCount(calArgs, hasWithDistinct(), isPushDown, fields);
+            return new ItemSumCount(calArgs, hasWithDistinct(), isPushDown, fields, charsetIndex);
         }
     }
 

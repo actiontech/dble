@@ -25,8 +25,8 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
     boolean isDate = false;
     int sign = 1;
 
-    public ItemFuncAddTime(List<Item> args, boolean typeArg, boolean negArg) {
-        super(args);
+    public ItemFuncAddTime(List<Item> args, boolean typeArg, boolean negArg, int charsetIndex) {
+        super(args, charsetIndex);
         this.isDate = typeArg;
         this.sign = negArg ? -1 : 1;
     }
@@ -128,6 +128,6 @@ public class ItemFuncAddTime extends ItemTemporalHybridFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncAddTime(realArgs, isDate, sign == -1);
+        return new ItemFuncAddTime(realArgs, isDate, sign == -1, charsetIndex);
     }
 }

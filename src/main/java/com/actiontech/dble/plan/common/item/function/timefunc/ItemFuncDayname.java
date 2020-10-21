@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncDayname extends ItemStrFunc {
 
-    public ItemFuncDayname(List<Item> args) {
-        super(args);
+    public ItemFuncDayname(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class ItemFuncDayname extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncDayname(realArgs);
+        return new ItemFuncDayname(realArgs, charsetIndex);
     }
 
 }

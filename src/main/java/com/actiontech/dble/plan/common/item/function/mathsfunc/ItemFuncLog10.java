@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncLog10 extends ItemDecFunc {
 
-    public ItemFuncLog10(List<Item> args) {
-        super(args);
+    public ItemFuncLog10(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncLog10 extends ItemDecFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncLog10(realArgs);
+        return new ItemFuncLog10(realArgs, charsetIndex);
     }
 }

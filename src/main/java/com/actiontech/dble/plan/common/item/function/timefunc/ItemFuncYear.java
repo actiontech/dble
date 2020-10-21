@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncYear extends ItemIntFunc {
 
-    public ItemFuncYear(List<Item> args) {
-        super(args);
+    public ItemFuncYear(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -39,6 +39,6 @@ public class ItemFuncYear extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncYear(realArgs);
+        return new ItemFuncYear(realArgs, charsetIndex);
     }
 }

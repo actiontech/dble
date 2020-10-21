@@ -17,8 +17,8 @@ import java.util.List;
  */
 public class ItemFuncSysdateLocal extends ItemDatetimeFunc {
 
-    public ItemFuncSysdateLocal(List<Item> args) {
-        super(args);
+    public ItemFuncSysdateLocal(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -46,6 +46,6 @@ public class ItemFuncSysdateLocal extends ItemDatetimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSysdateLocal(realArgs);
+        return new ItemFuncSysdateLocal(realArgs, charsetIndex);
     }
 }

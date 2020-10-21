@@ -20,8 +20,8 @@ public class ItemFuncMd5 extends ItemStrFunc {
     /**
      * @param a
      */
-    public ItemFuncMd5(Item a) {
-        super(a);
+    public ItemFuncMd5(Item a, int charsetIndex) {
+        super(a, charsetIndex);
     }
 
     @Override
@@ -42,6 +42,6 @@ public class ItemFuncMd5 extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncMd5(realArgs.get(0));
+        return new ItemFuncMd5(realArgs.get(0), charsetIndex);
     }
 }

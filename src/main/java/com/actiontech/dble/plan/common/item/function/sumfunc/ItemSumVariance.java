@@ -227,14 +227,14 @@ public class ItemSumVariance extends ItemSumNum {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumVariance(newArgs, sample, false, null);
+            return new ItemSumVariance(newArgs, sample, false, null, charsetIndex);
         } else {
-            return new ItemSumVariance(calArgs, sample, isPushDown, fields);
+            return new ItemSumVariance(calArgs, sample, isPushDown, fields, charsetIndex);
         }
     }
 
-    public ItemSumVariance(List<Item> args, int sample, boolean isPushDown, List<Field> fields) {
-        super(args, isPushDown, fields);
+    public ItemSumVariance(List<Item> args, int sample, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, isPushDown, fields, charsetIndex);
         this.sample = sample;
     }
 

@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncBitAnd extends ItemFuncBit {
 
-    public ItemFuncBitAnd(Item a, Item b) {
-        super(a, b);
+    public ItemFuncBitAnd(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -55,6 +55,6 @@ public class ItemFuncBitAnd extends ItemFuncBit {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBitAnd(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncBitAnd(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 }

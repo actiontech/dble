@@ -20,8 +20,8 @@ import java.util.List;
  */
 public class ItemFuncIstrue extends ItemFuncTruth {
 
-    public ItemFuncIstrue(Item a) {
-        super(a, true, true);
+    public ItemFuncIstrue(Item a, int charsetIndex) {
+        super(a, true, true, charsetIndex);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ItemFuncIstrue extends ItemFuncTruth {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIstrue(newArgs.get(0));
+        return new ItemFuncIstrue(newArgs.get(0), charsetIndex);
     }
 
 }

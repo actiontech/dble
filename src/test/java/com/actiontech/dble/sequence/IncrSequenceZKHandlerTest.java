@@ -11,6 +11,7 @@ import com.actiontech.dble.route.util.PropertiesUtil;
 import org.apache.curator.test.TestingServer;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Properties;
@@ -27,6 +28,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
  * @version 1.0
  * @time 23:35 2016/5/6
  */
+@Ignore
 public class IncrSequenceZKHandlerTest {
     private static final int MAX_CONNECTION = 5;
     private static final int threadCount = 5;

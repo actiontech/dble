@@ -17,10 +17,6 @@ public final class ManagerSchemaInfo {
     private Map<String, ManagerBaseTable> tables = new TreeMap<>();
 
     private ManagerSchemaInfo() {
-        //todo :delete demotest1 and demotest2
-        registerTable(new DemoTest1());
-        registerTable(new DemoTest2());
-
         registerTable(new Version());
         registerTable(new DbleVariables());
         registerTable(new DbleThreadPool());

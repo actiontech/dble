@@ -94,7 +94,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
     private void handlerLock() {
         if (session.getService().isTxStart()) {
             session.execute(true, CommitPacket.initCommit().toBytes(), null);
-            session.execute(true, rwSplitService -> {
+            session.execute(true, (isSuccess, rwSplitService) -> {
                 rwSplitService.setTxStart(false);
                 session.getService().singleTransactionsCount();
                 rwSplitService.setLocked(true);
@@ -116,7 +116,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             case RwSplitServerParse.UNINSTALL:
             case RwSplitServerParse.GRANT:
             case RwSplitServerParse.REVOKE:
-                return rwSplitService -> {
+                return (isSuccess, rwSplitService) -> {
                     if (session.getService().isTxStart()) {
                         rwSplitService.setTxStart(false);
                         rwSplitService.getSession().unbindIfSafe(true);

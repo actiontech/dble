@@ -60,7 +60,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:
-                        session.execute(true,  (isSuccess, rwSplitService) -> rwSplitService.setTxStart(true));
+                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setTxStart(true));
                         break;
                     case RwSplitServerParse.COMMIT:
                     case RwSplitServerParse.ROLLBACK:

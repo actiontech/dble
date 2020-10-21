@@ -90,7 +90,7 @@
 
 #  off Heap unit:bytes
 -DbufferPoolChunkSize=32767
--DbufferPoolPageNumber=256
+#-DbufferPoolPageNumber=256
 -DbufferPoolPageSize=2097152
 #-DmappedFileSize=2097152
 

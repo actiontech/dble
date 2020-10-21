@@ -368,7 +368,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLAllColumnExpr x) {
-        item = new ItemField(null, null, "*");
+        item = new ItemField(null, null, "*", charsetIndex);
         initName(x);
     }
 
@@ -439,7 +439,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLIdentifierExpr x) {
-        item = new ItemField(null, null, StringUtil.removeBackQuote(x.getSimpleName()));
+        item = new ItemField(null, null, StringUtil.removeBackQuote(x.getSimpleName()), charsetIndex);
     }
 
     @Override
@@ -503,7 +503,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 initName(x);
             }
         } else {
-            item = new ItemVariables(x.getName(), new ItemField(null, null, variable));
+            item = new ItemVariables(x.getName(), new ItemField(null, null, variable, charsetIndex));
             initName(x);
         }
     }
@@ -519,7 +519,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         } else {
             tableName = ((SQLIdentifierExpr) x.getOwner()).getSimpleName();
         }
-        item = new ItemField(dbName, StringUtil.removeBackQuote(tableName), StringUtil.removeBackQuote(x.getSimpleName()));
+        item = new ItemField(dbName, StringUtil.removeBackQuote(tableName), StringUtil.removeBackQuote(x.getSimpleName()), charsetIndex);
     }
 
     @Override

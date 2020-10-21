@@ -35,6 +35,11 @@ public class ItemField extends ItemIdent {
     /* if index!=-1, means the index of Item_field,need setField before val */
     private int index = -1;
 
+    public ItemField(String dbName, String tableName, String fieldName, int charsetIndex) {
+        super(dbName, tableName, fieldName);
+        this.charsetIndex = charsetIndex;
+    }
+
     public ItemField(String dbName, String tableName, String fieldName) {
         super(dbName, tableName, fieldName);
     }
@@ -42,6 +47,11 @@ public class ItemField extends ItemIdent {
     public ItemField(Field field) {
         super(null, field.getTable(), field.getName());
         setField(field);
+    }
+
+    public ItemField(Field field, int charsetIndex) {
+        this(field);
+        this.charsetIndex = charsetIndex;
     }
 
     /**
@@ -337,7 +347,7 @@ public class ItemField extends ItemIdent {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemField(dbName, tableName, itemName);
+        return new ItemField(dbName, tableName, itemName, charsetIndex);
     }
 
     public Field getField() {

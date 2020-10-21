@@ -10,13 +10,11 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
-import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,12 +60,6 @@ public class HintMasterDBHandler implements HintHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route dbInstance sql hint from " + realSQL);
         }
-        UserConfig userConfig = service.getUserConfig();
-        if (!(userConfig instanceof RwSplitUserConfig)) {
-            String msg = "Unsupported " + new Gson().toJson(hintMap.values()) + " for userType:" + userConfig.getClass().getSimpleName() + " username:" + userConfig.getName();
-            LOGGER.warn(msg);
-            throw new SQLNonTransientException(msg);
-        }
         boolean isRouteToMaster;
         try {
             isRouteToMaster = isMaster(hintSQLValue, sqlType);
@@ -76,7 +68,7 @@ public class HintMasterDBHandler implements HintHandler {
             isRouteToMaster = true;
         }
 
-        RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) service.getUserConfig();
+        RwSplitUserConfig rwSplitUserConfig = service.getUserConfig();
         String dbGroup = rwSplitUserConfig.getDbGroup();
         PhysicalDbInstance dbInstance;
         try {

@@ -4,7 +4,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -51,7 +50,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + ((RwSplitUserConfig) rwSplitService.getUserConfig()).getDbGroup());
+        writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + rwSplitService.getUserConfig().getDbGroup());
     }
 
     @Override
@@ -59,7 +58,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
         if (callback != null) {
-            callback.callback(rwSplitService);
+            callback.callback(false, rwSplitService);
         }
         if (!syncFinished) {
             mysqlService.getConnection().businessClose("unfinished sync");
@@ -84,7 +83,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         boolean executeResponse = mysqlService.syncAndExecute();
         if (executeResponse) {
             if (callback != null) {
-                callback.callback(rwSplitService);
+                callback.callback(true, rwSplitService);
             }
             rwSplitService.getSession().unbindIfSafe();
             synchronized (this) {

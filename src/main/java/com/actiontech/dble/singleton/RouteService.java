@@ -149,8 +149,7 @@ public final class RouteService {
             throw new SQLSyntaxErrorException(msg);
         }
         service.setExecuteSql(hintInfo.getRealSQL());
-        PhysicalDbInstance dbInstance = hintHandler.routeRwSplit(sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), sqlType, hintInfo.getHintMap());
-        return dbInstance;
+        return hintHandler.routeRwSplit(sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), sqlType, hintInfo.getHintMap());
     }
 
     private HintInfo parseHintSql(String stmt, int hintLength, int endPos) throws SQLSyntaxErrorException {

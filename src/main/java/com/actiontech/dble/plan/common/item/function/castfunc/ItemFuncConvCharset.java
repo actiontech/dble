@@ -20,8 +20,8 @@ public class ItemFuncConvCharset extends ItemStrFunc {
     private String mysqlCharset;
     private String javaCharset;
 
-    public ItemFuncConvCharset(Item a, String charset) {
-        super(a);
+    public ItemFuncConvCharset(Item a, String charset, int charsetIndex) {
+        super(a, charsetIndex);
         mysqlCharset = charset;
         javaCharset = CharsetUtil.getJavaCharset(charset);
     }
@@ -67,7 +67,7 @@ public class ItemFuncConvCharset extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncConvCharset(newArgs.get(0), mysqlCharset);
+        return new ItemFuncConvCharset(newArgs.get(0), mysqlCharset, charsetIndex);
     }
 
 }

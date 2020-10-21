@@ -18,8 +18,8 @@ import java.util.List;
 
 public class ItemFuncIsnotnull extends ItemBoolFunc {
 
-    public ItemFuncIsnotnull(Item a) {
-        super(a);
+    public ItemFuncIsnotnull(Item a, int charsetIndex) {
+        super(a, charsetIndex);
     }
 
     @Override
@@ -61,7 +61,7 @@ public class ItemFuncIsnotnull extends ItemBoolFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIsnotnull(newArgs.get(0));
+        return new ItemFuncIsnotnull(newArgs.get(0), charsetIndex);
     }
 
 }

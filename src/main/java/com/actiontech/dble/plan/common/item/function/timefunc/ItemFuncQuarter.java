@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncQuarter extends ItemIntFunc {
 
-    public ItemFuncQuarter(List<Item> args) {
-        super(args);
+    public ItemFuncQuarter(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -41,6 +41,6 @@ public class ItemFuncQuarter extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncQuarter(realArgs);
+        return new ItemFuncQuarter(realArgs, charsetIndex);
     }
 }

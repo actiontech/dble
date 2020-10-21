@@ -20,8 +20,9 @@ import java.util.List;
  */
 public class ItemFuncGreatest extends ItemFuncMinMax {
 
-    public ItemFuncGreatest(List<Item> args) {
-        super(args, -1);
+    public ItemFuncGreatest(List<Item> args, int charsetIndex) {
+        super(args, -1, charsetIndex);
+
     }
 
     @Override
@@ -31,6 +32,7 @@ public class ItemFuncGreatest extends ItemFuncMinMax {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncGreatest(realArgs);
+        return new ItemFuncGreatest(realArgs, charsetIndex);
+
     }
 }

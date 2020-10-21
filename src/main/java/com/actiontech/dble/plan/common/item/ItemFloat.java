@@ -19,6 +19,7 @@ public class ItemFloat extends ItemNum {
     private BigDecimal value;
 
     public ItemFloat(BigDecimal value) {
+        super();
         this.value = value;
         fixed = true;
         decimals = this.value.scale() > 0 ? this.value.scale() : 0;

@@ -15,8 +15,8 @@ import java.util.ArrayList;
  */
 public abstract class ItemNumOp extends ItemFuncNumhybrid {
 
-    public ItemNumOp(Item a, Item b) {
-        super(new ArrayList<Item>());
+    public ItemNumOp(Item a, Item b, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         args.add(b);
     }

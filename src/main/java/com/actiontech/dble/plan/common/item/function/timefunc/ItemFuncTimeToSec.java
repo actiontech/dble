@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncTimeToSec extends ItemIntFunc {
 
-    public ItemFuncTimeToSec(List<Item> args) {
-        super(args);
+    public ItemFuncTimeToSec(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -41,7 +41,6 @@ public class ItemFuncTimeToSec extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncTimeToSec(realArgs);
+        return new ItemFuncTimeToSec(realArgs, charsetIndex);
     }
-
 }

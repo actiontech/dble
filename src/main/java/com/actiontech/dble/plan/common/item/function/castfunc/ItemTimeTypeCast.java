@@ -21,13 +21,13 @@ import java.util.List;
 
 public class ItemTimeTypeCast extends ItemTimeFunc {
 
-    public ItemTimeTypeCast(Item a) {
-        super(new ArrayList<Item>());
+    public ItemTimeTypeCast(Item a, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
     }
 
-    public ItemTimeTypeCast(Item a, int decArg) {
-        super(new ArrayList<Item>());
+    public ItemTimeTypeCast(Item a, int decArg, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         decimals = decArg;
     }

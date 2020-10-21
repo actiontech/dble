@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncTimediff extends ItemTimeFunc {
 
-    public ItemFuncTimediff(List<Item> args) {
-        super(args);
+    public ItemFuncTimediff(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ItemFuncTimediff extends ItemTimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncTimediff(realArgs);
+        return new ItemFuncTimediff(realArgs, charsetIndex);
     }
 
 }

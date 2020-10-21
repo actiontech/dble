@@ -101,6 +101,6 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
 
     @Override
     public void setForExplain() {
-        itemSubQuery.setValue(new ItemString(NEED_REPLACE));
+        itemSubQuery.setValue(new ItemString(NEED_REPLACE, itemSubQuery.getCharsetIndex()));
     }
 }

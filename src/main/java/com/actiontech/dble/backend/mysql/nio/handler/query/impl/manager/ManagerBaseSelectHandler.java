@@ -147,6 +147,7 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
             }
             return createSumItem(sumFunc, isRealSelect);
         } else {
+            select.setItemName(select.getItemName().toLowerCase());
             return Collections.singletonList(select);
         }
     }

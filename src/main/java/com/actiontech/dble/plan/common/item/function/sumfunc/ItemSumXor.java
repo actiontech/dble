@@ -17,8 +17,8 @@ import java.util.List;
 
 public class ItemSumXor extends ItemSumBit {
 
-    public ItemSumXor(List<Item> itemPar, boolean isPushDown, List<Field> fields) {
-        super(itemPar, 0, isPushDown, fields);
+    public ItemSumXor(List<Item> itemPar, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(itemPar, 0, isPushDown, fields, charsetIndex);
     }
 
     @Override
@@ -64,9 +64,9 @@ public class ItemSumXor extends ItemSumBit {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumXor(newArgs, false, null);
+            return new ItemSumXor(newArgs, false, null, charsetIndex);
         } else {
-            return new ItemSumXor(calArgs, isPushDown, fields);
+            return new ItemSumXor(calArgs, isPushDown, fields, charsetIndex);
         }
     }
 

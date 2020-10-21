@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncUnixTimestamp extends ItemTimevalFunc {
 
-    public ItemFuncUnixTimestamp(List<Item> args) {
-        super(args);
+    public ItemFuncUnixTimestamp(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -39,6 +39,6 @@ public class ItemFuncUnixTimestamp extends ItemTimevalFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncUnixTimestamp(realArgs);
+        return new ItemFuncUnixTimestamp(realArgs, charsetIndex);
     }
 }

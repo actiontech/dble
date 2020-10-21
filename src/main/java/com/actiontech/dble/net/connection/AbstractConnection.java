@@ -8,7 +8,6 @@ import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -183,7 +182,6 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-
     public void setSocketParams(boolean isFrontChannel) throws IOException {
         SystemConfig system = SystemConfig.getInstance();
         int soRcvBuf;
@@ -242,8 +240,6 @@ public abstract class AbstractConnection implements Connection {
         return service;
     }
 
-    public abstract void setConnProperties(AuthResultInfo info);
-
     public ByteBuffer allocate() {
         int size = this.processor.getBufferPool().getChunkSize();
         return this.processor.getBufferPool().allocate(size);
@@ -290,14 +286,13 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-
     public void writePart(ByteBuffer buffer) {
         write(buffer);
     }
 
     public final boolean registerWrite(ByteBuffer buffer) {
 
-        // if ansyn writeDirectly finished event got lock before me ,then writing
+        // if async writeDirectly finished event got lock before me ,then writing
         // flag is set false but not start a writeDirectly request
         // so we check again
         try {
@@ -332,7 +327,7 @@ public abstract class AbstractConnection implements Connection {
             writeQueue.offer(new WriteOutTask(buffer, false));
         }
 
-        // if ansyn writeDirectly finished event got lock before me ,then writing
+        // if async writeDirectly finished event got lock before me ,then writing
         // flag is set false but not start a writeDirectly request
         // so we check again
         try {
@@ -342,7 +337,6 @@ public abstract class AbstractConnection implements Connection {
             this.close("writeDirectly err:" + e);
         }
     }
-
 
     public boolean isClosed() {
         return isClosed.get();
@@ -354,7 +348,6 @@ public abstract class AbstractConnection implements Connection {
         }
         return readBuffer;
     }
-
 
     public void onConnectFailed(Throwable e) {
     }
@@ -401,7 +394,7 @@ public abstract class AbstractConnection implements Connection {
         this.socketWR.asyncRead();
     }
 
-    public void doNextWriteCheck() throws IOException {
+    public void doNextWriteCheck() {
         this.socketWR.doNextWriteCheck();
     }
 
@@ -410,7 +403,6 @@ public abstract class AbstractConnection implements Connection {
     public void setId(long id) {
         this.id = id;
     }
-
 
     public boolean isFlowControlled() {
         return flowControlled;
@@ -423,7 +415,6 @@ public abstract class AbstractConnection implements Connection {
     public abstract void startFlowControl();
 
     public abstract void stopFlowControl();
-
 
     public int getLocalPort() {
         return localPort;
@@ -453,7 +444,6 @@ public abstract class AbstractConnection implements Connection {
         this.service = service;
     }
 
-
     public int getMaxPacketSize() {
         return maxPacketSize;
     }
@@ -469,7 +459,6 @@ public abstract class AbstractConnection implements Connection {
     public void setReadBufferChunk(int readBufferChunk) {
         this.readBufferChunk = readBufferChunk;
     }
-
 
     public CharsetNames getCharsetName() {
         return charsetName;
@@ -488,7 +477,6 @@ public abstract class AbstractConnection implements Connection {
     public void setCharsetName(CharsetNames charsetName) {
         this.charsetName = charsetName.copyObj();
     }
-
 
     public String getCloseReason() {
         return closeReason;
@@ -510,7 +498,6 @@ public abstract class AbstractConnection implements Connection {
         return startupTime;
     }
 
-
     public long getLastReadTime() {
         return lastReadTime;
     }
@@ -518,4 +505,5 @@ public abstract class AbstractConnection implements Connection {
     public long getLastWriteTime() {
         return lastWriteTime;
     }
+
 }

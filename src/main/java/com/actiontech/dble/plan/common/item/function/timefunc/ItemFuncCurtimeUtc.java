@@ -14,8 +14,8 @@ import java.util.List;
 
 public class ItemFuncCurtimeUtc extends ItemTimeFunc {
 
-    public ItemFuncCurtimeUtc(List<Item> args) {
-        super(args);
+    public ItemFuncCurtimeUtc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -47,6 +47,6 @@ public class ItemFuncCurtimeUtc extends ItemTimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncCurtimeUtc(realArgs);
+        return new ItemFuncCurtimeUtc(realArgs, charsetIndex);
     }
 }

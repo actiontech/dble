@@ -69,14 +69,21 @@ public class MySQLInstance extends PhysicalDbInstance {
             HandshakeV10Packet handshake = new HandshakeV10Packet();
             handshake.read(bin1);
 
-            String authPluginName = new String(handshake.getAuthPluginName());
             this.setDsVersion(new String(handshake.getServerVersion()));
+            // seed
+            int sl1 = handshake.getSeed().length;
+            int sl2 = handshake.getRestOfScrambleBuff().length;
+            byte[] seed = new byte[sl1 + sl2];
+            System.arraycopy(handshake.getSeed(), 0, seed, 0, sl1);
+            System.arraycopy(handshake.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
+
             byte[] authPluginData = null;
+            String authPluginName = new String(handshake.getAuthPluginName());
             if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
                 /**
                  * Phase 2: client to MySQL. Send auth packet.
                  */
-                startAuthPacket(out, handshake, PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake), authPluginName);
+                startAuthPacket(out, handshake, PasswordAuthPlugin.passwd(this.getConfig().getPassword(), seed), authPluginName);
                 /**
                  * Phase 3: MySQL to client. send OK/ERROR packet.
                  */
@@ -93,7 +100,7 @@ public class MySQLInstance extends PhysicalDbInstance {
                         authPluginName = bin2.getAuthPluginName();
                         authPluginData = bin2.getAuthPluginData();
                         if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
-                            out.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake)));
+                            out.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), seed)));
                             out.flush();
                             bin2.read(in);
                             if (bin2.getData()[0] == ErrorPacket.FIELD_COUNT) {
@@ -124,7 +131,7 @@ public class MySQLInstance extends PhysicalDbInstance {
                  * Phase 2: client to MySQL. Send auth packet.
                  */
                 try {
-                    startAuthPacket(out, handshake, PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake), authPluginName);
+                    startAuthPacket(out, handshake, PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), seed), authPluginName);
 
                     BinaryPacket bin2 = new BinaryPacket();
                     bin2.read(in);
@@ -147,7 +154,7 @@ public class MySQLInstance extends PhysicalDbInstance {
                         case EOFPacket.FIELD_COUNT:
                             authPluginName = bin2.getAuthPluginName();
                             if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
-                                out.write(PasswordAuthPlugin.nativePassword(PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake)));
+                                out.write(PasswordAuthPlugin.nativePassword(PasswordAuthPlugin.passwd(this.getConfig().getPassword(), seed)));
                                 out.flush();
                                 bin2.read(in);
                                 if (bin2.getData()[0] == ErrorPacket.FIELD_COUNT) {

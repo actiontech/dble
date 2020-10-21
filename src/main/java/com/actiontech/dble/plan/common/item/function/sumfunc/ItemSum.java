@@ -66,7 +66,8 @@ public abstract class ItemSum extends ItemResultField {
 
     protected List<Item> args;
 
-    public ItemSum(List<Item> args, boolean isPushDown, List<Field> fields) {
+    public ItemSum(List<Item> args, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        this.charsetIndex = charsetIndex;
         this.isPushDown = isPushDown;
         this.args = args;
         this.sourceFields = fields;

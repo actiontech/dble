@@ -56,9 +56,23 @@ public final class DbGroupHaDisable {
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
-            if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (!disableWithCluster(id, dh, subHostName, service)) {
-                    return;
+            if (ClusterConfig.getInstance().isClusterEnable()) {
+                if (ClusterConfig.getInstance().isNeedSyncHa()) {
+                    if (!disableWithCluster(id, dh, subHostName, service)) {
+                        return;
+                    }
+                } else {
+                    try {
+                        //local set disable
+                        final String result = dh.disableHosts(subHostName, true);
+                        //update total dataSources status
+                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
+                        HaConfigManager.getInstance().haFinish(id, null, result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        service.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
+                    }
                 }
             } else {
                 try {

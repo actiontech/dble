@@ -105,6 +105,11 @@ public class ProcessList extends ManagerBaseTable {
                                 row.put(COLUMN_USER, fc.getFrontEndService().getUser().toString());
                                 // Front_Host
                                 row.put(COLUMN_FRONT_HOST, fc.getHost() + ":" + fc.getLocalPort());
+                                // time
+                                row.put(COLUMN_TIME, "0");
+                                // state
+                                row.put(COLUMN_STATE, "");
+
                                 rows.add(row);
                                 // index
                                 indexs.put(shardingNode + "." + threadId, rows.size() - 1);
@@ -125,6 +130,10 @@ public class ProcessList extends ManagerBaseTable {
                             row.put(COLUMN_USER, fc.getFrontEndService().getUser().toString());
                             // Front_Host
                             row.put(COLUMN_FRONT_HOST, fc.getHost() + ":" + fc.getLocalPort());
+                            // time
+                            row.put(COLUMN_TIME, "0");
+                            // state
+                            row.put(COLUMN_STATE, "");
                             rows.add(row);
                         }
                     });

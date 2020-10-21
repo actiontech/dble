@@ -14,6 +14,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.statistic.CommandCount;
@@ -188,6 +189,12 @@ public final class IOProcessor {
                 it.remove();
                 continue;
             }
+
+            // a connection in change user
+            if (c.getService() instanceof MySQLBackAuthService) {
+                continue;
+            }
+
             if (c.getBackendService().getXaStatus() != null && c.getBackendService().getXaStatus() != TxState.TX_INITIALIZE_STATE) {
                 continue;
             }

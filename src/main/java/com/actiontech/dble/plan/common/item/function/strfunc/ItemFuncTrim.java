@@ -24,15 +24,15 @@ public class ItemFuncTrim extends ItemStrFunc {
     private boolean mTrimLeading;
     private boolean mTrimTrailing;
 
-    public ItemFuncTrim(Item a, Item b, TrimTypeEnum tm) {
-        super(a, b);
+    public ItemFuncTrim(Item a, Item b, TrimTypeEnum tm, int charsetIndex) {
+        super(a, b, charsetIndex);
         this.mTrimMode = tm;
         mTrimLeading = trimLeading();
         mTrimTrailing = trimTrailing();
     }
 
-    public ItemFuncTrim(Item a, TrimTypeEnum tm) {
-        super(a);
+    public ItemFuncTrim(Item a, TrimTypeEnum tm, int charsetIndex) {
+        super(a, charsetIndex);
         this.mTrimMode = tm;
         mTrimLeading = trimLeading();
         mTrimTrailing = trimTrailing();
@@ -122,17 +122,17 @@ public class ItemFuncTrim extends ItemStrFunc {
         else
             newArgs = calArgs;
         if (getArgCount() == 2)
-            return new ItemFuncTrim(newArgs.get(0), newArgs.get(1), mTrimMode);
+            return new ItemFuncTrim(newArgs.get(0), newArgs.get(1), mTrimMode, charsetIndex);
         else
-            return new ItemFuncTrim(newArgs.get(0), mTrimMode);
+            return new ItemFuncTrim(newArgs.get(0), mTrimMode, charsetIndex);
     }
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
         if (getArgCount() == 2)
-            return new ItemFuncTrim(realArgs.get(0), realArgs.get(1), mTrimMode);
+            return new ItemFuncTrim(realArgs.get(0), realArgs.get(1), mTrimMode, charsetIndex);
         else
-            return new ItemFuncTrim(realArgs.get(0), mTrimMode);
+            return new ItemFuncTrim(realArgs.get(0), mTrimMode, charsetIndex);
     }
 
 }

@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncToSeconds extends ItemIntFunc {
 
-    public ItemFuncToSeconds(List<Item> args) {
-        super(args);
+    public ItemFuncToSeconds(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class ItemFuncToSeconds extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncToSeconds(realArgs);
+        return new ItemFuncToSeconds(realArgs, charsetIndex);
     }
 
 }

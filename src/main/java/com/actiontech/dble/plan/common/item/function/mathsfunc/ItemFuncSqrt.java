@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncSqrt extends ItemDecFunc {
 
-    public ItemFuncSqrt(List<Item> args) {
-        super(args);
+    public ItemFuncSqrt(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -34,6 +34,6 @@ public class ItemFuncSqrt extends ItemDecFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSqrt(realArgs);
+        return new ItemFuncSqrt(realArgs, charsetIndex);
     }
 }

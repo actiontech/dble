@@ -14,8 +14,8 @@ import java.util.List;
 
 
 public class ItemFuncConv extends ItemStrFunc {
-    public ItemFuncConv(List<Item> args) {
-        super(args);
+    public ItemFuncConv(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class ItemFuncConv extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncConv(realArgs);
+        return new ItemFuncConv(realArgs, charsetIndex);
     }
 
 }

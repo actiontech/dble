@@ -151,7 +151,7 @@ class ManagerJoinNodeHandlerBuilder extends ManagerBaseHandlerBuilder {
                 partList = new ArrayList<>();
             if (value != null) {
                 // is null will never join
-                partList.add(new ItemString(value));
+                partList.add(new ItemString(value, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation())));
                 if (++partSize >= maxPartSize) {
                     List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);

@@ -54,7 +54,11 @@ public final class InsertHandler {
             return;
         }
         List<LinkedHashMap<String, String>> rows;
-        managerTable.getLock().lock();
+        boolean lockFlag = managerTable.getLock().tryLock();
+        if (!lockFlag) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            return;
+        }
         int rowSize;
         try {
             rows = managerTable.makeInsertRows(columns, insert.getValuesList());
@@ -75,6 +79,7 @@ public final class InsertHandler {
                 handleConfigException(e, service, managerTable);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+                LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {

@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
@@ -13,9 +14,14 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
+
 public class ChangeUserPacket extends MySQLPacket {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangeUserPacket.class);
-    private final long clientFlags;
+
+    public static final byte STATUS = (byte) 0x11;
+
+    private long clientFlags;
     private int charsetIndex;
     private String user;
     private byte[] password;
@@ -26,6 +32,10 @@ public class ChangeUserPacket extends MySQLPacket {
     public ChangeUserPacket(long clientFlags, int charsetIndex) {
         this.clientFlags = clientFlags;
         this.charsetIndex = charsetIndex;
+    }
+
+    public ChangeUserPacket(String user) {
+        this.user = user;
     }
 
     public void read(byte[] data) {
@@ -66,13 +76,51 @@ public class ChangeUserPacket extends MySQLPacket {
     }
 
     @Override
-    public void bufferWrite(AbstractConnection connection) {
-
+    public void bufferWrite(AbstractConnection c) {
+        ByteBuffer buffer = c.allocate();
+        BufferUtil.writeUB3(buffer, calcPacketSize());
+        buffer.put(packetId);
+        buffer.put(STATUS);
+        if (user != null) {
+            byte[] userData = user.getBytes();
+            buffer = c.checkWriteBuffer(buffer, userData.length + 1, true);
+            BufferUtil.writeWithNull(buffer, userData);
+        } else {
+            buffer = c.checkWriteBuffer(buffer, 1, true);
+            buffer.put((byte) 0x0);
+        }
+        if (password != null) {
+            buffer = c.checkWriteBuffer(buffer, BufferUtil.getLength(password), true);
+            BufferUtil.writeWithLength(buffer, password);
+        } else {
+            buffer = c.checkWriteBuffer(buffer, 1, true);
+            buffer.put((byte) 0x0);
+        }
+        if (database != null) {
+            byte[] databaseData = database.getBytes();
+            buffer = c.checkWriteBuffer(buffer, databaseData.length + 1, true);
+            BufferUtil.writeWithNull(buffer, database.getBytes());
+        } else {
+            buffer = c.checkWriteBuffer(buffer, 1, true);
+            buffer.put((byte) 0x0);
+        }
+        BufferUtil.writeUB2(buffer, charsetIndex);
+        //        if ((clientFlags & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
+        buffer = c.checkWriteBuffer(buffer, authPlugin.getBytes().length + 1, true);
+        BufferUtil.writeWithNull(buffer, authPlugin.getBytes());
+        //        }
+        c.write(buffer);
     }
 
     @Override
     public int calcPacketSize() {
-        return packetLength;
+        int size = 1;
+        size += (user == null) ? 1 : user.length() + 1;
+        size += (password == null) ? 1 : BufferUtil.getLength(password);
+        size += (database == null) ? 1 : database.length() + 1;
+        size += 2;
+        size += (authPlugin == null) ? 1 : authPlugin.length() + 1;
+        return size;
     }
 
     @Override
@@ -82,6 +130,10 @@ public class ChangeUserPacket extends MySQLPacket {
 
     public int getCharsetIndex() {
         return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
     }
 
     public String getUser() {

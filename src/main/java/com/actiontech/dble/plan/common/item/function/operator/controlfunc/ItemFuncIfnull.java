@@ -17,8 +17,8 @@ import java.util.List;
 
 
 public class ItemFuncIfnull extends ItemFuncCoalesce {
-    public ItemFuncIfnull(List<Item> args) {
-        super(args);
+    public ItemFuncIfnull(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -111,6 +111,6 @@ public class ItemFuncIfnull extends ItemFuncCoalesce {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncIfnull(realArgs);
+        return new ItemFuncIfnull(realArgs, charsetIndex);
     }
 }

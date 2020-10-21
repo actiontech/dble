@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncRadians extends ItemFuncUnits {
 
-    public ItemFuncRadians(List<Item> args) {
-        super(args, MySQLcom.M_PI / 180, 0.0);
+    public ItemFuncRadians(List<Item> args, int charsetIndex) {
+        super(args, MySQLcom.M_PI / 180, 0.0, charsetIndex);
     }
 
     @Override
@@ -26,6 +26,6 @@ public class ItemFuncRadians extends ItemFuncUnits {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncRadians(realArgs);
+        return new ItemFuncRadians(realArgs, charsetIndex);
     }
 }

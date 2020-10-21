@@ -50,7 +50,7 @@ public class MySQLProtoLogicHandler {
             service.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
             return;
         }
-        service.schema = db;
+        service.setSchema(db);
         service.getSession2().setRowCount(0);
         service.writeDirectly(OkPacket.OK);
     }

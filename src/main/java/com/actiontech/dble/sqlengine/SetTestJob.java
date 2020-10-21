@@ -132,11 +132,15 @@ public class SetTestJob implements ResponseHandler, Runnable {
 
     @Override
     public void okResponse(byte[] ok, AbstractService service) {
+        MySQLResponseService responseService = (MySQLResponseService) service;
+        if (!responseService.syncAndExecute()) {
+            return;
+        }
+
         if (userVariableSize > 0) {
             return;
         }
 
-        MySQLResponseService responseService = (MySQLResponseService) service;
         if (hasReturn.compareAndSet(false, true)) {
             doFinished(false);
             ResetConnHandler handler = new ResetConnHandler();

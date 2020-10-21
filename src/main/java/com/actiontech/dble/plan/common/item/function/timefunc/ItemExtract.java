@@ -25,8 +25,8 @@ public class ItemExtract extends ItemIntFunc {
     private SQLIntervalUnit intType;
     private boolean dateValue;
 
-    public ItemExtract(Item a, SQLIntervalUnit intType) {
-        super(a);
+    public ItemExtract(Item a, SQLIntervalUnit intType, int charsetIndex) {
+        super(a, charsetIndex);
         this.intType = intType;
     }
 
@@ -213,6 +213,6 @@ public class ItemExtract extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemExtract(newArgs.get(0), intType);
+        return new ItemExtract(newArgs.get(0), intType, charsetIndex);
     }
 }

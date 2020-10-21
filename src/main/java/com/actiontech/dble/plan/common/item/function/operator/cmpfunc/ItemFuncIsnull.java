@@ -24,8 +24,8 @@ import java.util.List;
  */
 public class ItemFuncIsnull extends ItemBoolFunc {
 
-    public ItemFuncIsnull(Item a) {
-        super(a);
+    public ItemFuncIsnull(Item a, int charsetIndex) {
+        super(a, charsetIndex);
         withIsNull = true;
     }
 
@@ -68,12 +68,12 @@ public class ItemFuncIsnull extends ItemBoolFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncIsnull(newArgs.get(0));
+        return new ItemFuncIsnull(newArgs.get(0), charsetIndex);
     }
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncIsnull(realArgs.get(0));
+        return new ItemFuncIsnull(realArgs.get(0), charsetIndex);
     }
 
 }

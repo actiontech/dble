@@ -23,8 +23,8 @@ import java.util.Map;
 
 public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
     private boolean isNot;
-    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
-        super(currentDb, query, false, metaManager, usrVariables);
+    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+        super(currentDb, query, false, metaManager, usrVariables, charsetIndex);
         this.isNot = isNot;
         if (!this.correlatedSubQuery) {
             if ((this.planNode.getLimitFrom() == -1)) {
@@ -78,7 +78,7 @@ public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager, this.usrVariables);
+        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager, this.usrVariables, this.charsetIndex);
     }
     @Override
     public SubSelectType subType() {

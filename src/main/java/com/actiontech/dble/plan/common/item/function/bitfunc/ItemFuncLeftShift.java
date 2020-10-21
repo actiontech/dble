@@ -17,8 +17,8 @@ import java.util.List;
 
 public class ItemFuncLeftShift extends ItemFuncBit {
 
-    public ItemFuncLeftShift(Item a, Item b) {
-        super(a, b);
+    public ItemFuncLeftShift(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -54,6 +54,6 @@ public class ItemFuncLeftShift extends ItemFuncBit {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncLeftShift(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncLeftShift(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 }

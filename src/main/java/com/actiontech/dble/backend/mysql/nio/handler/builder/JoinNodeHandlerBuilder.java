@@ -33,10 +33,12 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
 
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     private JoinNode node;
+    private final int charsertIndex;
 
     JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
         this.node = node;
+        charsertIndex = CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation());
     }
 
     @Override
@@ -185,8 +187,8 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         List<Item> strategyFilters = tnBig.getNestLoopFilters();
         List<Item> argList = new ArrayList<>();
         argList.add(keyInBig);
-        argList.add(new ItemString(NEED_REPLACE));
-        ItemFuncIn filter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+        argList.add(new ItemString(NEED_REPLACE, charsertIndex));
+        ItemFuncIn filter = new ItemFuncIn(argList, false, charsertIndex);
         strategyFilters.add(filter);
     }
 
@@ -204,12 +206,12 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 partList = new ArrayList<>();
             if (value != null) {
                 // is null will never join
-                partList.add(new ItemString(value));
+                partList.add(new ItemString(value, charsertIndex));
                 if (++partSize >= maxPartSize) {
                     List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);
                     argList.addAll(partList);
-                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, charsertIndex);
                     strategyFilters.add(inFilter);
                     partList = null;
                     partSize = 0;
@@ -220,7 +222,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             List<Item> argList = new ArrayList<>();
             argList.add(keyInBig);
             argList.addAll(partList);
-            ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+            ItemFuncIn inFilter = new ItemFuncIn(argList, false, charsertIndex);
             strategyFilters.add(inFilter);
         }
         // if no data

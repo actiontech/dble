@@ -612,9 +612,7 @@ public final class ClusterLogic {
                     new TypeToken<List<DBGroup>>() {
                     }.getType());
             dbs.setDbGroup(dbGroupList);
-            if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                syncHaStatusFromCluster(gson, dbs, dbGroupList);
-            }
+            syncHaStatusFromCluster(gson, dbs, dbGroupList);
         }
 
         JsonElement version = jsonObject.get(ClusterPathUtil.VERSION);

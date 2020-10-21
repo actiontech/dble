@@ -123,7 +123,7 @@ public class RWSplitNonBlockingSession {
     }
 
     public void bind(BackendConnection bindConn) {
-        if (conn != null) {
+        if (conn != null && conn != bindConn) {
             LOGGER.warn("last conn is remaining");
         }
         this.conn = bindConn;

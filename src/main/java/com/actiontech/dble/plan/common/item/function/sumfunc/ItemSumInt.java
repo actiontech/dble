@@ -15,8 +15,8 @@ import java.util.List;
 
 public abstract class ItemSumInt extends ItemSumNum {
 
-    public ItemSumInt(List<Item> args, boolean isPushDown, List<Field> fields) {
-        super(args, isPushDown, fields);
+    public ItemSumInt(List<Item> args, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, isPushDown, fields, charsetIndex);
     }
 
     @Override

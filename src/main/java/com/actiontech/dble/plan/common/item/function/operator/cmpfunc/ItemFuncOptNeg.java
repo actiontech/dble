@@ -24,8 +24,8 @@ public abstract class ItemFuncOptNeg extends ItemIntFunc {
     protected boolean negated = false; /* <=> the item represents NOT <func> */
     //public boolean pred_level = false; /* <=> [NOT] <func> is used on a  predicate level */
 
-    public ItemFuncOptNeg(List<Item> args, boolean isNegation) {
-        super(args);
+    public ItemFuncOptNeg(List<Item> args, boolean isNegation, int charsetIndex) {
+        super(args, charsetIndex);
         if (isNegation)
             negate();
     }

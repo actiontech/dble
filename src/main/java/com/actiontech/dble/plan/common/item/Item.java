@@ -128,9 +128,6 @@ public abstract class Item {
         return charsetIndex;
     }
 
-    public void setCharsetIndex(int charsetIndex) {
-        this.charsetIndex = charsetIndex;
-    }
 
     public enum ItemResult {
         STRING_RESULT, REAL_RESULT, INT_RESULT, ROW_RESULT, DECIMAL_RESULT
@@ -354,16 +351,16 @@ public abstract class Item {
             getDate(tm, MyTime.TIME_FUZZY_DATE);
             if (!nullValue) {
                 if (fType == FieldTypes.MYSQL_TYPE_DATE) {
-                    return new ItemString(MyTime.myDateToStr(tm));
+                    return new ItemString(MyTime.myDateToStr(tm), this.charsetIndex);
                 } else {
-                    return new ItemString(MyTime.myDatetimeToStr(tm, decimals));
+                    return new ItemString(MyTime.myDatetimeToStr(tm, decimals), this.charsetIndex);
                 }
             }
         } else if (i == FieldTypes.MYSQL_TYPE_TIME) {
             MySQLTime tm = new MySQLTime();
             getTime(tm);
             if (!nullValue)
-                return new ItemString(MyTime.myTimeToStrL(tm, decimals));
+                return new ItemString(MyTime.myTimeToStrL(tm, decimals), this.charsetIndex);
         } else {
             String res;
             if ((res = valStr()) != null) {
@@ -1027,11 +1024,7 @@ public abstract class Item {
                                         List<Field> fields);
 
     public final Item reStruct(List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        Item clone = cloneStruct(true, calArgs, isPushDown, fields);
-        if (calArgs.size() > 0) {
-            clone.setCharsetIndex(calArgs.get(0).getCharsetIndex());
-        }
-        return clone;
+        return cloneStruct(true, calArgs, isPushDown, fields);
     }
 
     //TODO:YHQ  NEED CHECK

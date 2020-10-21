@@ -3,9 +3,8 @@ package com.actiontech.dble.net.connection;
 import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
-import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
@@ -51,11 +50,6 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     @Override
-    public void setConnProperties(AuthResultInfo info) {
-
-    }
-
-    @Override
     public void startFlowControl() {
         ((ShardingService) this.getService()).getSession2().startFlowControl();
     }
@@ -68,8 +62,9 @@ public class FrontendConnection extends AbstractConnection {
     public void cleanup() {
         if (isCleanUp.compareAndSet(false, true)) {
             super.cleanup();
-            if (getService() instanceof BusinessService) {
-                ((BusinessService) getService()).userConnectionCount();
+            AbstractService service = getService();
+            if (service instanceof FrontEndService) {
+                ((FrontEndService) service).userConnectionCount();
             }
         }
     }
@@ -98,6 +93,6 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " localport = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "]";
     }
 }

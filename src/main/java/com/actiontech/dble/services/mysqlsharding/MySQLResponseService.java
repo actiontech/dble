@@ -8,6 +8,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
@@ -19,7 +20,9 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.VariablesService;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.MysqlPrepareLogicHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -185,6 +188,17 @@ public class MySQLResponseService extends VariablesService {
         }
     }
 
+    @Override
+    protected boolean beforeHandlingTask() {
+        if (session != null) {
+            if (session.isKilled()) {
+                return false;
+            }
+            session.setBackendResponseTime(this);
+        }
+        return true;
+    }
+
 
     @Override
     public void taskToTotalQueue(ServiceTask task) {
@@ -193,11 +207,6 @@ public class MySQLResponseService extends VariablesService {
             executor = DbleServer.getInstance().getComplexQueryExecutor();
         } else {
             executor = DbleServer.getInstance().getBackendBusinessExecutor();
-        }
-
-        if (session != null) {
-            if (session.isKilled()) return;
-            session.setBackendResponseTime(this);
         }
 
         if (isHandling.compareAndSet(false, true)) {
@@ -588,21 +597,40 @@ public class MySQLResponseService extends VariablesService {
         }
     }
 
-    public void execute(VariablesService service, String sql) {
-        StringBuilder synSQL = getSynSql(null, null,
-                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
-        synAndDoExecute(synSQL, sql, service.getCharset());
+    public void execute(BusinessService service, String sql) {
+        if (connection.getSchema() == null && connection.getOldSchema() != null) {
+            // change user
+            changeUser();
+        } else {
+            StringBuilder synSQL = getSynSql(null, null,
+                    service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+            synAndDoExecute(synSQL, sql, service.getCharset());
+        }
     }
 
     public void execute(RWSplitService service, byte[] originPacket) {
-        StringBuilder synSQL = getSynSql(null, null,
-                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
-        if (synSQL != null) {
-            sendQueryCmd(synSQL.toString(), service.getCharset());
-        }
+        if (service.getSchema() == null && getSchema() != null) {
+            // change user
+            changeUser();
+        } else {
+            StringBuilder synSQL = getSynSql(null, null,
+                    service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+            if (synSQL != null) {
+                sendQueryCmd(synSQL.toString(), service.getCharset());
+            }
 
-        prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
-        writeDirectly(originPacket);
+            prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
+            writeDirectly(originPacket);
+        }
+    }
+
+    //  the purpose is to set old schema to null
+    private void changeUser() {
+        DbInstanceConfig config = connection.getInstance().getConfig();
+        connection.setService(new MySQLBackAuthService(connection, config.getUser(), config.getPassword(), connection.getBackendService().getResponseHandler()));
+        ChangeUserPacket changeUserPacket = new ChangeUserPacket(config.getUser());
+        changeUserPacket.setCharsetIndex(CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset()));
+        changeUserPacket.bufferWrite(connection);
     }
 
     private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {

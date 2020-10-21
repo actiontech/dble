@@ -23,8 +23,8 @@ public class ItemCharTypeConvert extends ItemStrFunc {
     private int castLength;
     private String charSetName;
 
-    public ItemCharTypeConvert(Item a, int lengthArg, String charSetName) {
-        super(new ArrayList<Item>());
+    public ItemCharTypeConvert(Item a, int lengthArg, String charSetName, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         this.castLength = lengthArg;
         this.charSetName = charSetName;
@@ -88,6 +88,6 @@ public class ItemCharTypeConvert extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemCharTypeConvert(newArgs.get(0), castLength, charSetName);
+        return new ItemCharTypeConvert(newArgs.get(0), castLength, charSetName, charsetIndex);
     }
 }

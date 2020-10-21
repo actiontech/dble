@@ -6,7 +6,6 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
-import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -34,7 +33,6 @@ public abstract class AbstractService implements Service {
     protected volatile ProtoHandler proto;
     protected final ConcurrentLinkedQueue<ServiceTask> taskQueue;
 
-    protected UserConfig userConfig;
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
         this.proto = new MySQLProtoHandlerImpl();
@@ -81,15 +79,19 @@ public abstract class AbstractService implements Service {
     }
 
     protected void taskCreate(byte[] packetData) {
-        ServiceTask task = new ServiceTask(packetData, this);
-        taskQueue.offer(task);
-        taskToTotalQueue(task);
+        if (beforeHandlingTask()) {
+            ServiceTask task = new ServiceTask(packetData, this);
+            taskQueue.offer(task);
+            taskToTotalQueue(task);
+        }
     }
 
     protected void taskMultiQueryCreate(byte[] packetData) {
-        ServiceTask task = new ServiceTask(packetData, this, true);
-        taskQueue.offer(task);
-        taskToTotalQueue(task);
+        if (beforeHandlingTask()) {
+            ServiceTask task = new ServiceTask(packetData, this, true);
+            taskQueue.offer(task);
+            taskToTotalQueue(task);
+        }
     }
 
 
@@ -242,6 +244,10 @@ public abstract class AbstractService implements Service {
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
+    protected boolean beforeHandlingTask() {
+        return true;
+    }
+
     public void handleData(ServiceTask task) {
         ServiceTask executeTask = null;
         if (connection.isClosed()) {
@@ -283,10 +289,6 @@ public abstract class AbstractService implements Service {
 
     protected abstract void handleInnerData(byte[] data);
 
-    public UserConfig getUserConfig() {
-        return userConfig;
-    }
-
     public void writeOkPacket() {
         OkPacket ok = new OkPacket();
         byte packet = (byte) this.getPacketId().incrementAndGet();
@@ -306,7 +308,6 @@ public abstract class AbstractService implements Service {
     public void writeErrMessage(byte id, int vendorCode, String msg) {
         writeErrMessage(id, vendorCode, "HY000", msg);
     }
-
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         ErrorPacket err = new ErrorPacket();

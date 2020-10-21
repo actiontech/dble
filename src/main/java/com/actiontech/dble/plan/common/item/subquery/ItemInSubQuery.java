@@ -24,7 +24,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
     public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
-        super(currentDb, query, metaManager, usrVariables);
+        super(currentDb, query, metaManager, usrVariables, charsetIndex);
         this.leftOperand = leftOperand;
         this.isNeg = isNeg;
         this.charsetIndex = charsetIndex;

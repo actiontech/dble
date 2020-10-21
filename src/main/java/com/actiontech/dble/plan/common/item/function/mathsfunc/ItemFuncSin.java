@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncSin extends ItemDecFunc {
 
-    public ItemFuncSin(List<Item> args) {
-        super(args);
+    public ItemFuncSin(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -36,6 +36,6 @@ public class ItemFuncSin extends ItemDecFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSin(realArgs);
+        return new ItemFuncSin(realArgs, charsetIndex);
     }
 }

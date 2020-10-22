@@ -55,16 +55,16 @@ public final class DbGroupHaEnable {
                 if (ClusterConfig.getInstance().isNeedSyncHa()) {
                     if (!enableWithCluster(id, dbGroup, dbInstanceName, mc)) {
                         return;
-                    } else {
-                        try {
-                            String result = dbGroup.enableHosts(dbInstanceName, true);
-                            //only update for the status
-                            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dbGroup.getGroupName()), result);
-                        } catch (Exception e) {
-                            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                            mc.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
-                            return;
-                        }
+                    }
+                } else {
+                    try {
+                        String result = dbGroup.enableHosts(dbInstanceName, true);
+                        //only update for the status
+                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dbGroup.getGroupName()), result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        mc.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
                     }
                 }
             } else {

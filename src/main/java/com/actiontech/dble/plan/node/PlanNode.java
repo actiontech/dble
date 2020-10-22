@@ -257,6 +257,7 @@ public abstract class PlanNode {
         for (Item selected : this.getColumnsSelected()) {
             Item copySel = selected.cloneItem();
             copySel.setItemName(selected.getItemName());
+            copySel.setCharsetIndex(selected.getCharsetIndex());
             to.columnsSelected.add(copySel);
         }
         for (Order groupBy : this.getGroupBys()) {
@@ -399,7 +400,7 @@ public abstract class PlanNode {
 
     protected void dealSingleStarColumn(List<Item> newSels) {
         for (NamedField field : innerFields.keySet()) {
-            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
             newSels.add(col);
         }
     }
@@ -416,7 +417,7 @@ public abstract class PlanNode {
                     boolean found = false;
                     for (NamedField field : innerFields.keySet()) {
                         if (selTable.equals(field.getTable())) {
-                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
                             newSels.add(col);
                             found = true;
                         } else if (found) {

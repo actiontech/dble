@@ -697,13 +697,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + expr.toString() + "'");
                 }
-                item = ItemCreate.getInstance().createNativeFunc(funcName, args);
+                item = ItemCreate.getInstance().createNativeFunc(funcName, args, charsetIndex);
                 break;
             default:
                 if (ItemCreate.getInstance().isNativeFunc(funcName)) {
-                    item = ItemCreate.getInstance().createNativeFunc(funcName, args);
+                    item = ItemCreate.getInstance().createNativeFunc(funcName, args, charsetIndex);
                 } else if (ItemCreate.getInstance().isInnerFunc(funcName)) {
-                    item = ItemCreate.getInstance().createInnerFunc(funcName, args);
+                    item = ItemCreate.getInstance().createInnerFunc(funcName, args, charsetIndex);
                 } else {
                     // unKnownFunction
                     item = new ItemFuncUnknown(funcName, args, this.charsetIndex);

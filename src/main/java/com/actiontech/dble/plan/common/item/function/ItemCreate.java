@@ -281,13 +281,14 @@ public class ItemCreate {
         return innerFuncs.containsKey(funcName.toUpperCase());
     }
 
-    public ItemFunc createNativeFunc(String funcName, List<Item> args) {
+    public ItemFunc createNativeFunc(String funcName, List<Item> args, int charsetIndex) {
         ItemFunc nf = nativFuncs.get(funcName.toUpperCase());
+        nf.setCharsetIndex(charsetIndex);
         return nf.nativeConstruct(args);
     }
 
-    public ItemFuncInner createInnerFunc(String funcName, List<Item> args) {
-        return new ItemFuncInner(funcName, args, innerFuncs.get(funcName.toUpperCase()), defaultCharsetIndex);
+    public ItemFuncInner createInnerFunc(String funcName, List<Item> args, int charsetIndex) {
+        return new ItemFuncInner(funcName, args, innerFuncs.get(funcName.toUpperCase()), charsetIndex);
     }
 
     public ItemFunc createFuncCast(Item a, CastType type) {

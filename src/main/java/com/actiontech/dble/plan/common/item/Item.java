@@ -129,6 +129,11 @@ public abstract class Item {
     }
 
 
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
+
+
     public enum ItemResult {
         STRING_RESULT, REAL_RESULT, INT_RESULT, ROW_RESULT, DECIMAL_RESULT
     }

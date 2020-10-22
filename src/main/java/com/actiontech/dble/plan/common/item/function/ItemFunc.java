@@ -314,13 +314,13 @@ public abstract class ItemFunc extends Item {
         if (!forCalculate) {
             if (ItemCreate.getInstance().isNativeFunc(this.funcName())) {
                 List<Item> argList = cloneStructList(this.args);
-                return ItemCreate.getInstance().createNativeFunc(funcName(), argList);
+                return ItemCreate.getInstance().createNativeFunc(funcName(), argList, charsetIndex);
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected function:" + funcName());
             }
         } else {
             if (ItemCreate.getInstance().isNativeFunc(this.funcName())) {
-                return ItemCreate.getInstance().createNativeFunc(funcName(), calArgs);
+                return ItemCreate.getInstance().createNativeFunc(funcName(), calArgs, charsetIndex);
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "unexpected function:" + funcName());
             }

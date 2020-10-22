@@ -10,8 +10,8 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
 /**
  * @author mycat
  */
-public final class ServerParseStart {
-    private ServerParseStart() {
+public class ServerParseStart {
+    protected ServerParseStart() {
     }
 
     public static final int OTHER = -1;
@@ -53,7 +53,7 @@ public final class ServerParseStart {
         }
     }
 
-    private static int skipTrans(String stmt, int offset) {
+    protected static int skipTrans(String stmt, int offset) {
         if (stmt.length() > offset + "ransaction".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);

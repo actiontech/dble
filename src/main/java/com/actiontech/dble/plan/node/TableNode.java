@@ -35,6 +35,7 @@ public class TableNode extends PlanNode {
     private TableMeta tableMeta;
     private List<String> columns;
     private List<SQLHint> hintList;
+    private int charsetIndex;
 
     private TableNode() {
     }
@@ -60,11 +61,12 @@ public class TableNode extends PlanNode {
         this.keepFieldSchema = true;
     }
 
-    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) throws SQLNonTransientException {
+    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager, int charsetIndex) throws SQLNonTransientException {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
         this.schema = catalog;
         this.tableName = tableName;
+        this.charsetIndex = charsetIndex;
         ServerConfig config = DbleServer.getInstance().getConfig();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             this.schema = this.schema.toLowerCase();
@@ -231,4 +233,11 @@ public class TableNode extends PlanNode {
         this.hintList = hintList;
     }
 
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
 }

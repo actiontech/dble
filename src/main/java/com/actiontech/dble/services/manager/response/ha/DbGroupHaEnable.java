@@ -14,8 +14,8 @@ import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.HaConfigManager;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -55,16 +55,16 @@ public final class DbGroupHaEnable {
                 if (ClusterConfig.getInstance().isNeedSyncHa()) {
                     if (!enableWithCluster(id, dbGroup, dbInstanceName, service)) {
                         return;
-                    } else {
-                        try {
-                            String result = dbGroup.enableHosts(dbInstanceName, true);
-                            //only update for the status
-                            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dbGroup.getGroupName()), result);
-                        } catch (Exception e) {
-                            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                            service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
-                            return;
-                        }
+                    }
+                } else {
+                    try {
+                        String result = dbGroup.enableHosts(dbInstanceName, true);
+                        //only update for the status
+                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dbGroup.getGroupName()), result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
                     }
                 }
             } else {

@@ -2,7 +2,6 @@ package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
-import com.actiontech.dble.net.mysql.extra.CommitPacket;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
@@ -53,7 +52,13 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         SetHandler.handle(sql, session.getService(), rs >>> 8);
                         break;
                     case RwSplitServerParse.LOCK:
-                        handlerLock();
+                        session.execute(true, (isSuccess, rwSplitService) -> {
+                            if (rwSplitService.isTxStart()) {
+                                rwSplitService.setTxStart(false);
+                                session.getService().singleTransactionsCount();
+                            }
+                            rwSplitService.setLocked(true);
+                        });
                         break;
                     case RwSplitServerParse.UNLOCK:
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setLocked(false));
@@ -88,19 +93,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             session.getService().writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         } finally {
             TraceManager.finishSpan(traceObject);
-        }
-    }
-
-    private void handlerLock() {
-        if (session.getService().isTxStart()) {
-            session.execute(true, CommitPacket.initCommit().toBytes(), null);
-            session.execute(true, (isSuccess, rwSplitService) -> {
-                rwSplitService.setTxStart(false);
-                session.getService().singleTransactionsCount();
-                rwSplitService.setLocked(true);
-            });
-        } else {
-            session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setLocked(true));
         }
     }
 

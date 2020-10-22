@@ -19,8 +19,8 @@ public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
     protected Item select;
     protected boolean isField;
 
-    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
-        super(currentDb, query, metaManager, usrVariables);
+    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+        super(currentDb, query, metaManager, usrVariables, charsetIndex);
         this.select = this.planNode.getColumnsSelected().get(0);
         this.isField = isField;
     }

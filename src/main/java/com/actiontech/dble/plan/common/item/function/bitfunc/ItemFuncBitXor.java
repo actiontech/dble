@@ -17,8 +17,8 @@ import java.util.List;
 
 public class ItemFuncBitXor extends ItemFuncBit {
 
-    public ItemFuncBitXor(Item a, Item b) {
-        super(a, b);
+    public ItemFuncBitXor(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override
@@ -47,6 +47,6 @@ public class ItemFuncBitXor extends ItemFuncBit {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBitXor(newArgs.get(0), newArgs.get(1));
+        return new ItemFuncBitXor(newArgs.get(0), newArgs.get(1), charsetIndex);
     }
 }

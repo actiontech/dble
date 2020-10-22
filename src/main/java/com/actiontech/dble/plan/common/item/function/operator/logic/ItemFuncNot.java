@@ -23,8 +23,8 @@ import java.util.List;
  */
 public class ItemFuncNot extends ItemBoolFunc {
 
-    public ItemFuncNot(Item a) {
-        super(new ArrayList<Item>());
+    public ItemFuncNot(Item a, int charsetIndex) {
+        super(new ArrayList<>(), charsetIndex);
         args.add(a);
     }
 
@@ -57,7 +57,7 @@ public class ItemFuncNot extends ItemBoolFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncNot(newArgs.get(0));
+        return new ItemFuncNot(newArgs.get(0), charsetIndex);
     }
 
 }

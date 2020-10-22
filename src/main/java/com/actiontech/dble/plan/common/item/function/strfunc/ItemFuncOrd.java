@@ -21,9 +21,8 @@ public class ItemFuncOrd extends ItemIntFunc {
     private String mysqlCharset;
 
     public ItemFuncOrd(List<Item> args, int charsetIndex) {
-        super(args);
+        super(args, charsetIndex);
         this.mysqlCharset = CharsetUtil.getCharset(charsetIndex);
-        this.charsetIndex = charsetIndex;
     }
 
     @Override

@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncDegree extends ItemFuncUnits {
 
-    public ItemFuncDegree(List<Item> args) {
-        super(args, 180 / MySQLcom.M_PI, 0.0);
+    public ItemFuncDegree(List<Item> args, int charsetIndex) {
+        super(args, 180 / MySQLcom.M_PI, 0.0, charsetIndex);
     }
 
     @Override
@@ -26,6 +26,6 @@ public class ItemFuncDegree extends ItemFuncUnits {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncDegree(realArgs);
+        return new ItemFuncDegree(realArgs, charsetIndex);
     }
 }

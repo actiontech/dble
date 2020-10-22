@@ -21,8 +21,8 @@ public class ItemFuncCrc32 extends ItemIntFunc {
     /**
      * @param a
      */
-    public ItemFuncCrc32(Item a) {
-        super(a);
+    public ItemFuncCrc32(Item a, int charsetIndex) {
+        super(a, charsetIndex);
     }
 
     @Override
@@ -50,6 +50,6 @@ public class ItemFuncCrc32 extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncCrc32(realArgs.get(0));
+        return new ItemFuncCrc32(realArgs.get(0), charsetIndex);
     }
 }

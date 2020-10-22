@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncRight extends ItemStrFunc {
 
-    public ItemFuncRight(List<Item> args) {
-        super(args);
+    public ItemFuncRight(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncRight extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncRight(realArgs);
+        return new ItemFuncRight(realArgs, charsetIndex);
     }
 }

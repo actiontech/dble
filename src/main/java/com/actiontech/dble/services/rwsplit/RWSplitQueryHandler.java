@@ -37,7 +37,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 switch (sqlType) {
                     case ServerParse.USE:
                         String schema = UseHandler.getSchemaName(sql, rs >>> 8);
-                        session.execute(true, rwSplitService -> rwSplitService.setSchema(schema));
+                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setSchema(schema));
                         break;
                     case ServerParse.SHOW:
                     case ServerParse.SELECT:
@@ -47,24 +47,24 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         SetHandler.handle(sql, session.getService(), rs >>> 8);
                         break;
                     case ServerParse.LOCK:
-                        session.execute(true, rwSplitService -> rwSplitService.setLocked(true));
+                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setLocked(true));
                         break;
                     case ServerParse.UNLOCK:
-                        session.execute(true, rwSplitService -> rwSplitService.setLocked(false));
+                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setLocked(false));
                         break;
                     case ServerParse.START:
                     case ServerParse.BEGIN:
-                        session.execute(true, rwSplitService -> rwSplitService.setTxStart(true));
+                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setTxStart(true));
                         break;
                     case ServerParse.COMMIT:
                     case ServerParse.ROLLBACK:
-                        session.execute(true, rwSplitService -> {
+                        session.execute(true, (isSuccess, rwSplitService) -> {
                             rwSplitService.getSession().unbindIfSafe(true);
                         });
                         break;
                     case ServerParse.LOAD_DATA_INFILE_SQL:
                         session.getService().setInLoadData(true);
-                        session.execute(true, rwSplitService -> rwSplitService.setInLoadData(false));
+                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setInLoadData(false));
                         break;
                     default:
                         // 1. DDL

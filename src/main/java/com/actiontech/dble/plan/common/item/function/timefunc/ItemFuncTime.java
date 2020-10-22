@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncTime extends ItemTimeFunc {
 
-    public ItemFuncTime(List<Item> args) {
-        super(args);
+    public ItemFuncTime(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -29,6 +29,6 @@ public class ItemFuncTime extends ItemTimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncTime(realArgs);
+        return new ItemFuncTime(realArgs, charsetIndex);
     }
 }

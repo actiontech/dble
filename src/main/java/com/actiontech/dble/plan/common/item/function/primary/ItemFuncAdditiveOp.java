@@ -9,8 +9,8 @@ import com.actiontech.dble.plan.common.item.Item;
 
 public abstract class ItemFuncAdditiveOp extends ItemNumOp {
 
-    public ItemFuncAdditiveOp(Item a, Item b) {
-        super(a, b);
+    public ItemFuncAdditiveOp(Item a, Item b, int charsetIndex) {
+        super(a, b, charsetIndex);
     }
 
     @Override

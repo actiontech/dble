@@ -20,8 +20,8 @@ import java.util.List;
  */
 public class ItemSumStd extends ItemSumVariance {
 
-    public ItemSumStd(List<Item> args, int sample, boolean isPushDown, List<Field> fields) {
-        super(args, sample, isPushDown, fields);
+    public ItemSumStd(List<Item> args, int sample, boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(args, sample, isPushDown, fields, charsetIndex);
     }
 
     @Override
@@ -64,9 +64,9 @@ public class ItemSumStd extends ItemSumVariance {
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         if (!forCalculate) {
             List<Item> newArgs = cloneStructList(args);
-            return new ItemSumStd(newArgs, sample, false, null);
+            return new ItemSumStd(newArgs, sample, false, null, charsetIndex);
         } else {
-            return new ItemSumStd(calArgs, sample, isPushDown, fields);
+            return new ItemSumStd(calArgs, sample, isPushDown, fields, charsetIndex);
         }
     }
 

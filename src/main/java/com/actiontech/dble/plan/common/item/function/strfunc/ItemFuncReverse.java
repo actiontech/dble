@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncReverse extends ItemStrFunc {
 
-    public ItemFuncReverse(List<Item> args) {
-        super(args);
+    public ItemFuncReverse(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -35,6 +35,6 @@ public class ItemFuncReverse extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncReverse(realArgs);
+        return new ItemFuncReverse(realArgs, charsetIndex);
     }
 }

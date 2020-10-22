@@ -34,12 +34,11 @@ public class ItemFuncCase extends ItemFunc {
      * @param elseExprNum  the index of else in args
      */
     public ItemFuncCase(List<Item> args, int ncases, int firstExprNum, int elseExprNum, int charsetIndex) {
-        super(args);
+        super(args, charsetIndex);
         this.ncases = ncases;
         this.firstExprNum = firstExprNum;
         this.elseExprNum = elseExprNum;
         this.cachedResultType = ItemResult.INT_RESULT;
-        this.charsetIndex = charsetIndex;
     }
 
     @Override

@@ -23,8 +23,8 @@ import java.util.List;
 public class ItemFuncTimestampDiff extends ItemIntFunc {
     private SQLIntervalUnit intType;
 
-    public ItemFuncTimestampDiff(Item a, Item b, SQLIntervalUnit type) {
-        super(new ArrayList<Item>());
+    public ItemFuncTimestampDiff(Item a, Item b, SQLIntervalUnit type, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         args.add(b);
         this.intType = type;
@@ -155,6 +155,6 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncTimestampDiff(newArgs.get(0), newArgs.get(1), intType);
+        return new ItemFuncTimestampDiff(newArgs.get(0), newArgs.get(1), intType, charsetIndex);
     }
 }

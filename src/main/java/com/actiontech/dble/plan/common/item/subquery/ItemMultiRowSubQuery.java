@@ -31,8 +31,8 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
      * @param currentDb
      * @param query
      */
-    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
-        super(currentDb, query, metaManager, usrVariables);
+    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+        super(currentDb, query, metaManager, usrVariables, charsetIndex);
     }
 
     @Override

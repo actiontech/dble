@@ -16,8 +16,8 @@ import java.util.List;
 
 public abstract class ItemRealFunc extends ItemFunc {
 
-    public ItemRealFunc(List<Item> args) {
-        super(args);
+    public ItemRealFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override

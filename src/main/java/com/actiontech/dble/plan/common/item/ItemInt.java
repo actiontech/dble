@@ -18,17 +18,12 @@ import java.util.List;
 public class ItemInt extends ItemNum {
     private BigInteger value;
 
-    public ItemInt(long value) {
-        this.value = BigInteger.valueOf(value);
-        fixed = true;
-        maxLength = String.valueOf(value).length();
-    }
 
-    public ItemInt(long value, int charsetIndex) {
+    public ItemInt(long value) {
+        super();
         this.value = BigInteger.valueOf(value);
         fixed = true;
         maxLength = String.valueOf(value).length();
-        this.charsetIndex = charsetIndex;
     }
 
     @Override

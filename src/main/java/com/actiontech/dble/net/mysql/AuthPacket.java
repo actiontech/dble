@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.DbleServer;
@@ -48,15 +48,12 @@ public class AuthPacket extends MySQLPacket {
     private long maxPacketSize;
     private int charsetIndex;
 
-
     private byte[] extra; // from FILLER(23)
     private String user;
     private byte[] password;
     private String database;
     private String authPlugin;
     private String tenant = "";
-
-
     private boolean multStatementAllow = false;
 
     public void setAuthPlugin(String authPlugin) {

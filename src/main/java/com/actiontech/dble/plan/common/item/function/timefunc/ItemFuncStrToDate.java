@@ -21,8 +21,8 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
     /**
      * @param args
      */
-    public ItemFuncStrToDate(List<Item> args) {
-        super(args);
+    public ItemFuncStrToDate(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -143,6 +143,6 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncStrToDate(realArgs);
+        return new ItemFuncStrToDate(realArgs, charsetIndex);
     }
 }

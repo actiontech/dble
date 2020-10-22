@@ -19,23 +19,23 @@ public abstract class ItemStrFunc extends ItemFunc {
 
     protected static final String EMPTY = "";
 
-    public ItemStrFunc() {
-        this(new ArrayList<Item>());
+    public ItemStrFunc(int charsetIndex) {
+        this(new ArrayList<Item>(), charsetIndex);
     }
 
-    public ItemStrFunc(Item a) {
-        this(new ArrayList<Item>());
+    public ItemStrFunc(Item a, int charsetIndex) {
+        this(new ArrayList<Item>(), charsetIndex);
         args.add(a);
     }
 
-    public ItemStrFunc(Item a, Item b) {
-        this(new ArrayList<Item>());
+    public ItemStrFunc(Item a, Item b, int charsetIndex) {
+        this(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         args.add(b);
     }
 
-    public ItemStrFunc(List<Item> args) {
-        super(args);
+    public ItemStrFunc(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
         decimals = NOT_FIXED_DEC;
     }
 

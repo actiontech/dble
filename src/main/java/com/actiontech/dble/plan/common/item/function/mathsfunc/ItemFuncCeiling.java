@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncCeiling extends ItemFuncIntVal {
 
-    public ItemFuncCeiling(List<Item> args) {
-        super(args);
+    public ItemFuncCeiling(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -62,6 +62,6 @@ public class ItemFuncCeiling extends ItemFuncIntVal {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncCeiling(realArgs);
+        return new ItemFuncCeiling(realArgs, charsetIndex);
     }
 }

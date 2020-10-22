@@ -18,8 +18,8 @@ public class ItemFuncField extends ItemIntFunc {
 
     ItemResult cmpType;
 
-    public ItemFuncField(List<Item> args) {
-        super(args);
+    public ItemFuncField(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -78,6 +78,6 @@ public class ItemFuncField extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncField(realArgs);
+        return new ItemFuncField(realArgs, charsetIndex);
     }
 }

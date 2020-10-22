@@ -20,13 +20,13 @@ public class ItemFuncChar extends ItemStrFunc {
     private String mysqlCharset;
 
     public ItemFuncChar(List<Item> args, int charsetIndex) {
-        super(args);
+        super(args, charsetIndex);
         this.mysqlCharset = CharsetUtil.getCharset(charsetIndex);
         this.charsetIndex = charsetIndex;
     }
 
-    public ItemFuncChar(List<Item> args, String charset) {
-        super(args);
+    public ItemFuncChar(List<Item> args, String charset, int charsetIndex) {
+        super(args, charsetIndex);
         this.mysqlCharset = charset;
         this.charsetIndex = CharsetUtil.getCharsetDefaultIndex(charset);
     }
@@ -85,7 +85,7 @@ public class ItemFuncChar extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncChar(newArgs, mysqlCharset);
+        return new ItemFuncChar(newArgs, mysqlCharset, charsetIndex);
     }
 
 }

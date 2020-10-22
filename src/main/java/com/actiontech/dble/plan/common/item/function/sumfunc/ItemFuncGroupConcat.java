@@ -37,8 +37,8 @@ public class ItemFuncGroupConcat extends ItemSum {
     private RowDataComparator rowComparator;
     private Queue<OrderResult> reusltList;
     public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String isSeparator,
-                               boolean isPushDown, List<Field> fields) {
-        super(selItems, isPushDown, fields);
+                               boolean isPushDown, List<Field> fields, int charsetIndex) {
+        super(selItems, isPushDown, fields, charsetIndex);
         seperator = isSeparator;
         this.resultSb = new StringBuilder();
         this.orders = orders;
@@ -249,10 +249,10 @@ public class ItemFuncGroupConcat extends ItemSum {
         if (!forCalculate) {
             List<Item> argList = cloneStructList(args);
             return new ItemFuncGroupConcat(argList, hasWithDistinct(), this.orders, this.seperator,
-                    false, null);
+                    false, null, charsetIndex);
         } else {
             return new ItemFuncGroupConcat(calArgs, hasWithDistinct(), this.orders, this.seperator, isPushDown,
-                    fields);
+                    fields, charsetIndex);
         }
     }
 

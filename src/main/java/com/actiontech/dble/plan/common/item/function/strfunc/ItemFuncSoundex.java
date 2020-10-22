@@ -16,8 +16,8 @@ import java.util.List;
 
 public class ItemFuncSoundex extends ItemStrFunc {
 
-    public ItemFuncSoundex(Item a) {
-        super(a);
+    public ItemFuncSoundex(Item a, int charsetIndex) {
+        super(a, charsetIndex);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ItemFuncSoundex extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncSoundex(newArgs.get(0));
+        return new ItemFuncSoundex(newArgs.get(0), charsetIndex);
     }
 
     public static String soundex(String s) {
@@ -123,7 +123,7 @@ public class ItemFuncSoundex extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSoundex(realArgs.get(0));
+        return new ItemFuncSoundex(realArgs.get(0), charsetIndex);
     }
 
 }

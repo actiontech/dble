@@ -145,9 +145,9 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         if (rrn != null) {
             String sql = rrn.getStatement();
             if (sql.length() > 1024) {
-                row.put("sql", sql.substring(0, 1024));
+                row.put("sql", sql.substring(0, 1024).replaceAll("[\n\t]", " "));
             } else {
-                row.put("sql", sql);
+                row.put("sql", sql.replaceAll("[\n\t]", " "));
             }
         }
         long rt = c.getLastReadTime();

@@ -17,8 +17,8 @@ import java.util.List;
 
 public class ItemFuncDayofweek extends ItemIntFunc {
 
-    public ItemFuncDayofweek(List<Item> args) {
-        super(args);
+    public ItemFuncDayofweek(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -45,6 +45,6 @@ public class ItemFuncDayofweek extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncDayofweek(realArgs);
+        return new ItemFuncDayofweek(realArgs, charsetIndex);
     }
 }

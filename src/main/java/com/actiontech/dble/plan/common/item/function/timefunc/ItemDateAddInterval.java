@@ -27,8 +27,8 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
     private SQLIntervalUnit intType;
     private boolean dateSubInterval;
 
-    public ItemDateAddInterval(Item a, Item b, SQLIntervalUnit type, boolean neg) {
-        super(new ArrayList<Item>());
+    public ItemDateAddInterval(Item a, Item b, SQLIntervalUnit type, boolean neg, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
         args.add(b);
         this.intType = type;
@@ -168,7 +168,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemDateAddInterval(newArgs.get(0), newArgs.get(1), intType, this.dateSubInterval);
+        return new ItemDateAddInterval(newArgs.get(0), newArgs.get(1), intType, this.dateSubInterval, charsetIndex);
     }
 
 }

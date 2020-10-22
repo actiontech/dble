@@ -4,7 +4,6 @@ import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -48,11 +47,6 @@ public class FrontendConnection extends AbstractConnection {
     @Override
     public void businessClose(String reason) {
         this.close(reason);
-    }
-
-    @Override
-    public void setConnProperties(AuthResultInfo info) {
-
     }
 
     @Override

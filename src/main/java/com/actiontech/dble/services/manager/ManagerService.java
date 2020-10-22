@@ -2,20 +2,18 @@ package com.actiontech.dble.services.manager;
 
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.CharsetNames;
+import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
-import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.CommandCount;
 
 import java.io.UnsupportedEncodingException;
 
@@ -25,38 +23,21 @@ import java.io.UnsupportedEncodingException;
 public class ManagerService extends FrontEndService {
 
     private final ManagerQueryHandler handler;
-
-    protected UserName user;
-
     private volatile String executeSql;
-    private volatile String schema;
-
     private final ManagerSession session;
-
-    protected final CommandCount commands;
 
     public ManagerService(AbstractConnection connection) {
         super(connection);
         this.handler = new ManagerQueryHandler(this);
         this.proto = new MySQLProtoHandlerImpl();
         this.session = new ManagerSession(this);
-        this.commands = connection.getProcessor().getCommands();
     }
 
+    @Override
     public void initFromAuthInfo(AuthResultInfo info) {
-        AuthPacket auth = info.getMysqlAuthPacket();
-        this.user = new UserName(auth.getUser(), auth.getTenant());
-        this.schema = info.getMysqlAuthPacket().getDatabase();
-        this.userConfig = info.getUserConfig();
+        super.initFromAuthInfo(info);
         this.handler.setReadOnly(((ManagerUserConfig) userConfig).isReadOnly());
-        connection.initCharsetIndex(info.getMysqlAuthPacket().getCharsetIndex());
-        boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
-        boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
-        if (clientCompress && usingCompress) {
-            this.setSupportCompress(true);
-        }
     }
-
 
     @Override
     protected void handleInnerData(byte[] data) {
@@ -92,16 +73,6 @@ public class ManagerService extends FrontEndService {
     }
 
     @Override
-    public void userConnectionCount() {
-        FrontendUserManager.getInstance().countDown(user, true);
-    }
-
-    @Override
-    public UserName getUser() {
-        return user;
-    }
-
-    @Override
     public String getExecuteSql() {
         return executeSql;
     }
@@ -110,7 +81,6 @@ public class ManagerService extends FrontEndService {
     public void killAndClose(String reason) {
         connection.close(reason);
     }
-
 
     public String getCommand(byte[] data, CharsetNames charsetName) throws UnsupportedEncodingException {
         String sql = null;
@@ -131,14 +101,6 @@ public class ManagerService extends FrontEndService {
 
     protected void sessionStart() {
         TraceManager.sessionStart(this, "manager-server-start");
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        this.schema = schema;
     }
 
     public FrontendConnection getConnection() {

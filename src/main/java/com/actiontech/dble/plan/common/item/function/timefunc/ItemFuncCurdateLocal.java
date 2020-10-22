@@ -14,8 +14,8 @@ import java.util.List;
 
 public class ItemFuncCurdateLocal extends ItemDateFunc {
 
-    public ItemFuncCurdateLocal(List<Item> args) {
-        super(args);
+    public ItemFuncCurdateLocal(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -38,6 +38,6 @@ public class ItemFuncCurdateLocal extends ItemDateFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncCurdateLocal(realArgs);
+        return new ItemFuncCurdateLocal(realArgs, charsetIndex);
     }
 }

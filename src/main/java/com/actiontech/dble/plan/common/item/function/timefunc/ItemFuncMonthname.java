@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncMonthname extends ItemStrFunc {
 
-    public ItemFuncMonthname(List<Item> args) {
-        super(args);
+    public ItemFuncMonthname(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class ItemFuncMonthname extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncMonthname(realArgs);
+        return new ItemFuncMonthname(realArgs, charsetIndex);
     }
 
 }

@@ -19,8 +19,8 @@ import java.util.List;
 
 public class ItemFuncInterval extends ItemIntFunc {
 
-    public ItemFuncInterval(List<Item> args) {
-        super(args);
+    public ItemFuncInterval(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -55,6 +55,6 @@ public class ItemFuncInterval extends ItemIntFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncInterval(realArgs);
+        return new ItemFuncInterval(realArgs, charsetIndex);
     }
 }

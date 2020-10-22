@@ -15,8 +15,8 @@ import java.util.List;
 
 public class ItemFuncSecToTime extends ItemTimeFunc {
 
-    public ItemFuncSecToTime(List<Item> args) {
-        super(args);
+    public ItemFuncSecToTime(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -53,6 +53,6 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncSecToTime(realArgs);
+        return new ItemFuncSecToTime(realArgs, charsetIndex);
     }
 }

@@ -24,8 +24,8 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 
     protected FieldTypes cachedFieldType;
 
-    public ItemFuncCoalesce(List<Item> args) {
-        super(args);
+    public ItemFuncCoalesce(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -35,7 +35,7 @@ public class ItemFuncCoalesce extends ItemFuncNumhybrid {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncCoalesce(realArgs);
+        return new ItemFuncCoalesce(realArgs, charsetIndex);
     }
 
     @Override

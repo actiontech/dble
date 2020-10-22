@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemfuncLoadFile extends ItemStrFunc {
 
-    public ItemfuncLoadFile(List<Item> args) {
-        super(args);
+    public ItemfuncLoadFile(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -29,6 +29,6 @@ public class ItemfuncLoadFile extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemfuncLoadFile(realArgs);
+        return new ItemfuncLoadFile(realArgs, charsetIndex);
     }
 }

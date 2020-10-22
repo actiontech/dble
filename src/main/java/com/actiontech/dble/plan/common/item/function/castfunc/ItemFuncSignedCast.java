@@ -32,8 +32,8 @@ import java.util.List;
  */
 public class ItemFuncSignedCast extends ItemIntFunc {
 
-    public ItemFuncSignedCast(Item a) {
-        super(new ArrayList<Item>());
+    public ItemFuncSignedCast(Item a, int charsetIndex) {
+        super(new ArrayList<Item>(), charsetIndex);
         args.add(a);
     }
 
@@ -98,6 +98,6 @@ public class ItemFuncSignedCast extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncSignedCast(newArgs.get(0));
+        return new ItemFuncSignedCast(newArgs.get(0), charsetIndex);
     }
 }

@@ -13,8 +13,8 @@ import java.util.List;
 
 public class ItemFuncMakeSet extends ItemStrFunc {
 
-    public ItemFuncMakeSet(List<Item> args) {
-        super(args);
+    public ItemFuncMakeSet(List<Item> args, int charsetIndex) {
+        super(args, charsetIndex);
     }
 
     @Override
@@ -45,6 +45,6 @@ public class ItemFuncMakeSet extends ItemStrFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncMakeSet(realArgs);
+        return new ItemFuncMakeSet(realArgs, charsetIndex);
     }
 }

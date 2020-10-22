@@ -1,0 +1,230 @@
+version: '2'
+networks:
+    net:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.18.0.0/16
+                  gateway: 172.18.0.253
+services:
+  mgr-a-1:
+      image: mysql:5.7
+      container_name: mgr-a-1
+      hostname: mgr-a-1
+      privileged: true
+      stdin_open: true
+      tty: true
+      ports:
+          - "3307:3306"
+      networks:
+          net:
+              ipv4_address: 172.18.0.2
+      environment:
+          MYSQL_ROOT_PASSWORD: 123456
+      command: ["mysqld",
+          "--server-id=1",
+          "--log-bin=mysql-bin-1.log",
+          "--enforce-gtid-consistency=ON",
+          "--log-slave-updates=ON",
+          "--gtid-mode=ON",
+          "--transaction-write-set-extraction=XXHASH64",
+          "--binlog-checksum=NONE",
+          "--master-info-repository=TABLE",
+          "--relay-log-info-repository=TABLE",
+          "--plugin-load=group_replication.so",
+          "--relay-log-recovery=ON",
+          "--loose-group-replication-start-on-boot=OFF",
+          "--loose-group-replication-group-name=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "--loose-group-replication-local-address=mgr-a-1:6606",
+          "--loose-group-replication-group-seeds=mgr-a-1:6606,mgr-a-2:6606,mgr-a-3:6606",
+          "--loose-group-replication-single-primary-mode=ON",
+          "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
+  mgr-a-2:
+      image: mysql:5.7
+      container_name: mgr-a-2
+      hostname: mgr-a-2
+      privileged: true
+      stdin_open: true
+      tty: true
+      ports:
+          - "3308:3306"
+      depends_on:
+          -  "mgr-a-1"
+      networks:
+          net:
+              ipv4_address: 172.18.0.3
+      environment:
+          MYSQL_ROOT_PASSWORD: 123456
+      command: ["mysqld",
+          "--server-id=2",
+          "--log-bin=mysql-bin-1.log",
+          "--enforce-gtid-consistency=ON",
+          "--log-slave-updates=ON",
+          "--gtid-mode=ON",
+          "--transaction-write-set-extraction=XXHASH64",
+          "--binlog-checksum=NONE",
+          "--master-info-repository=TABLE",
+          "--relay-log-info-repository=TABLE",
+          "--plugin-load=group_replication.so",
+          "--relay-log-recovery=ON",
+          "--loose-group-replication-start-on-boot=OFF",
+          "--loose-group-replication-group-name=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "--loose-group-replication-local-address=mgr-a-2:6606",
+          "--loose-group-replication-group-seeds=mgr-a-1:6606,mgr-a-2:6606,mgr-a-3:6606",
+          "--loose-group-replication-single-primary-mode=ON",
+          "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
+  mgr-a-3:
+      image: mysql:5.7
+      container_name: mgr-a-3
+      hostname: mgr-a-3
+      privileged: true
+      stdin_open: true
+      tty: true
+      ports:
+          - "3309:3306"
+      depends_on:
+          - "mgr-a-1"
+      networks:
+          net:
+              ipv4_address: 172.18.0.4
+      environment:
+          MYSQL_ROOT_PASSWORD: 123456
+      command: ["mysqld",
+          "--server-id=3",
+          "--log-bin=mysql-bin-1.log",
+          "--enforce-gtid-consistency=ON",
+          "--log-slave-updates=ON",
+          "--gtid-mode=ON",
+          "--transaction-write-set-extraction=XXHASH64",
+          "--binlog-checksum=NONE",
+          "--master-info-repository=TABLE",
+          "--relay-log-info-repository=TABLE",
+          "--plugin-load=group_replication.so",
+          "--relay-log-recovery=ON",
+          "--loose-group-replication-start-on-boot=OFF",
+          "--loose-group-replication-group-name=aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          "--loose-group-replication-local-address=mgr-a-3:6606",
+          "--loose-group-replication-group-seeds=mgr-a-1:6606,mgr-a-2:6606,mgr-a-3:6606",
+          "--loose-group-replication-single-primary-mode=ON",
+          "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
+  mgr-b-1:
+      image: mysql:5.7
+      container_name: mgr-b-1
+      hostname: mgr-b-1
+      privileged: true
+      stdin_open: true
+      tty: true
+      ports:
+          - "3310:3306"
+      networks:
+          net:
+              ipv4_address: 172.18.0.5
+      environment:
+          MYSQL_ROOT_PASSWORD: 123456
+      command: ["mysqld",
+          "--server-id=4",
+          "--log-bin=mysql-bin-1.log",
+          "--enforce-gtid-consistency=ON",
+          "--log-slave-updates=ON",
+          "--gtid-mode=ON",
+          "--transaction-write-set-extraction=XXHASH64",
+          "--binlog-checksum=NONE",
+          "--master-info-repository=TABLE",
+          "--relay-log-info-repository=TABLE",
+          "--plugin-load=group_replication.so",
+          "--relay-log-recovery=ON",
+          "--loose-group-replication-start-on-boot=OFF",
+          "--loose-group-replication-group-name=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "--loose-group-replication-local-address=mgr-b-1:6606",
+          "--loose-group-replication-group-seeds=mgr-b-1:6606,mgr-b-2:6606,mgr-b-3:6606",
+          "--loose-group-replication-single-primary-mode=ON",
+          "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
+  mgr-b-2:
+      image: mysql:5.7
+      container_name: mgr-b-2
+      hostname: mgr-b-2
+      privileged: true
+      stdin_open: true
+      tty: true
+      ports:
+          - "3311:3306"
+      depends_on:
+          - "mgr-b-1"
+      networks:
+          net:
+              ipv4_address: 172.18.0.6
+      environment:
+          MYSQL_ROOT_PASSWORD: 123456
+      command: ["mysqld",
+          "--server-id=5",
+          "--log-bin=mysql-bin-1.log",
+          "--enforce-gtid-consistency=ON",
+          "--log-slave-updates=ON",
+          "--gtid-mode=ON",
+          "--transaction-write-set-extraction=XXHASH64",
+          "--binlog-checksum=NONE",
+          "--master-info-repository=TABLE",
+          "--relay-log-info-repository=TABLE",
+          "--plugin-load=group_replication.so",
+          "--relay-log-recovery=ON",
+          "--loose-group-replication-start-on-boot=OFF",
+          "--loose-group-replication-group-name=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "--loose-group-replication-local-address=mgr-b-2:6606",
+          "--loose-group-replication-group-seeds=mgr-b-1:6606,mgr-b-2:6606,mgr-b-3:6606",
+          "--loose-group-replication-single-primary-mode=ON",
+          "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
+  mgr-b-3:
+      image: mysql:5.7
+      container_name: mgr-b-3
+      hostname: mgr-b-3
+      privileged: true
+      stdin_open: true
+      tty: true
+      ports:
+          - "3312:3306"
+      depends_on:
+          - "mgr-b-1"
+      networks:
+          net:
+              ipv4_address: 172.18.0.7
+      environment:
+          MYSQL_ROOT_PASSWORD: 123456
+      command: ["mysqld",
+          "--server-id=6",
+          "--log-bin=mysql-bin-1.log",
+          "--enforce-gtid-consistency=ON",
+          "--log-slave-updates=ON",
+          "--gtid-mode=ON",
+          "--transaction-write-set-extraction=XXHASH64",
+          "--binlog-checksum=NONE",
+          "--master-info-repository=TABLE",
+          "--relay-log-info-repository=TABLE",
+          "--plugin-load=group_replication.so",
+          "--relay-log-recovery=ON",
+          "--loose-group-replication-start-on-boot=OFF",
+          "--loose-group-replication-group-name=bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          "--loose-group-replication-local-address=mgr-b-3:6606",
+          "--loose-group-replication-group-seeds=mgr-b-1:6606,mgr-b-2:6606,mgr-b-3:6606",
+          "--loose-group-replication-single-primary-mode=ON",
+          "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
+  dble-server:
+        image: actiontech/dble-mgr:latest
+        container_name: dble-server
+        hostname: dble-server
+        privileged: true
+        stdin_open: true
+        tty: true
+        command: ["/opt/dble/bin/wait-for-it.sh", "mgr-a-1:3306","--","/opt/dble/bin/docker_init_start.sh","startMgr"]
+        ports:
+            - "8066:8066"
+            - "9066:9066"
+        depends_on:
+            - "mgr-a-1"
+            - "mgr-a-2"
+            - "mgr-a-3"
+            - "mgr-b-1"
+            - "mgr-b-2"
+            - "mgr-b-3"
+        networks:
+            net:
+              ipv4_address: 172.18.0.8

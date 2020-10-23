@@ -153,9 +153,7 @@ public class DumpFileWriter {
                         if (endTime - startTime > 1000) {
                             startTime = endTime;
                             if (queue.isEmpty()) {
-                                LOGGER.debug("dump file executor parse statement slowly.");
-                            } else if (this.queue.size() == queueSize) {
-                                LOGGER.debug("dump file writer is slow, you can try increasing write queue size.");
+                                LOGGER.debug("dump file executor parse statement slowly, you can try decreasing [{}] write queue size.", shardingNode);
                             }
                         }
                     }
@@ -167,6 +165,11 @@ public class DumpFileWriter {
                     }
                     if (this.fileChannel != null) {
                         this.fileChannel.write(ByteBuffer.wrap(stmt.getBytes()));
+                    }
+                    if (LOGGER.isDebugEnabled()) {
+                        if (queue.size() == queueSize) {
+                            LOGGER.debug("dump file writer is slow, you can try increasing [{}] write queue size.", shardingNode);
+                        }
                     }
                 }
             } catch (IOException e) {

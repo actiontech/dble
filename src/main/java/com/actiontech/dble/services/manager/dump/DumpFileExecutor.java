@@ -21,10 +21,12 @@ public final class DumpFileExecutor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     private BlockingQueue<String> queue;
     private DumpFileContext context;
+    private int queueSize;
     private volatile boolean isStop = false;
 
     public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer, DumpFileConfig config, SchemaConfig schemaConfig) {
         this.queue = queue;
+        this.queueSize = queue.size();
         this.context = new DumpFileContext(writer, config);
         if (schemaConfig != null) {
             this.context.setDefaultSchema(schemaConfig);
@@ -60,7 +62,7 @@ public final class DumpFileExecutor implements Runnable {
                     if (endTime - startTime > 1000) {
                         startTime = endTime;
                         if (queue.isEmpty()) {
-                            LOGGER.debug("dump file reader is slow, you can try increasing read queue size.");
+                            LOGGER.debug("dump file reader is slow, you can try decreasing read queue size.");
                         }
                     }
                 }
@@ -86,7 +88,11 @@ public final class DumpFileExecutor implements Runnable {
                 } else {
                     handler.handle(context, statement);
                 }
-
+                if (LOGGER.isDebugEnabled()) {
+                    if (queue.size() == queueSize) {
+                        LOGGER.debug("dump file executor is slow, you can try increasing read queue size.");
+                    }
+                }
             } catch (DumpException | SQLSyntaxErrorException e) {
                 assert stmt != null;
                 String currentStmt = stmt.length() <= 1024 ? stmt : stmt.substring(0, 1024);

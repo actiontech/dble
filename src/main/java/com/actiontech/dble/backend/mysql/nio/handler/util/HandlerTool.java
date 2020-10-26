@@ -221,6 +221,7 @@ public final class HandlerTool {
             args.add(newArg);
         }
         ItemFunc ret = (ItemFunc) f.reStruct(args, allPushDown, fields);
+        ret.setCharsetIndex(f.getCharsetIndex());
         ret.setItemName(f.getPushDownName() == null ? f.getItemName() : f.getPushDownName());
         return ret;
     }

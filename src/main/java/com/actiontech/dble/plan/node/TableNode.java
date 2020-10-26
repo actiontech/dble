@@ -118,6 +118,7 @@ public class TableNode extends PlanNode {
         if (tableMeta != null) {
             for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
                 NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
+                tmpField.setCharsetIndex(charsetIndex);
                 innerFields.put(tmpField, tmpField);
             }
         } else {
@@ -138,7 +139,7 @@ public class TableNode extends PlanNode {
                 newSelects.add(sel);
             else {
                 for (NamedField innerField : innerFields.keySet()) {
-                    ItemField col = new ItemField(null, sel.getTableName(), innerField.getName());
+                    ItemField col = new ItemField(null, sel.getTableName(), innerField.getName(), charsetIndex);
                     newSelects.add(col);
                 }
             }
@@ -152,6 +153,7 @@ public class TableNode extends PlanNode {
         newTableNode.tableName = this.tableName;
         newTableNode.tableMeta = this.tableMeta == null ? null : this.tableMeta.toBuilder().build();
         newTableNode.columns = this.columns;
+        newTableNode.charsetIndex = this.charsetIndex;
         newTableNode.referedTableNodes.add(newTableNode);
         newTableNode.setNoshardNode(this.getNoshardNode());
 

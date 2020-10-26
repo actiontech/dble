@@ -95,7 +95,17 @@ public class DefaultDruidParser implements DruidParser {
         if (originTableAliasMap == null) {
             return null;
         }
+
         Map<String, String> tableAliasMap = new HashMap<>(originTableAliasMap);
+        for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            // fixme: not strict
+            if (key != null && key.startsWith("`")) {
+                tableAliasMap.put(key.replaceAll("`", ""), value);
+            }
+        }
+
         Iterator<Map.Entry<String, String>> iterator = tableAliasMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, String> next = iterator.next();

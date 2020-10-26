@@ -28,11 +28,11 @@ public class RWSplitNonBlockingSession {
         this.rwSplitService = service;
     }
 
-    public void execute(boolean master, Callback callback) {
+    public void execute(Boolean master, Callback callback) {
         execute(master, null, callback);
     }
 
-    public void execute(boolean master, byte[] originPacket, Callback callback) {
+    public void execute(Boolean master, byte[] originPacket, Callback callback) {
         try {
             RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback);
             if (conn != null && !conn.isClosed()) {

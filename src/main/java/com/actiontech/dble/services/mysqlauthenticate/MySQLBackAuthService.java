@@ -85,9 +85,6 @@ public class MySQLBackAuthService extends AuthService {
             }
 
 
-            //need auth switch for other plugin
-            AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
-
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
                     // get ok from mysql,login success
@@ -100,7 +97,9 @@ public class MySQLBackAuthService extends AuthService {
                     String errMsg = new String(err.getMessage());
                     checkForResult(new AuthResultInfo(errMsg));
                     break;
-                case AuthSwitchRequestPackage.STATUS:
+                case AuthSwitchRequestPackage.STATUS: {
+                    //need auth switch for other plugin
+                    AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
                     authSwitchRequestPackage.read(data);
 
                     String authPluginName = new String(authSwitchRequestPackage.getAuthPluginName());
@@ -113,8 +112,11 @@ public class MySQLBackAuthService extends AuthService {
                     this.seed = authSwitchRequestPackage.getAuthPluginData();
                     sendSwitchResponse(PasswordAuthPlugin.passwd(passwd, seed, pluginName), ++data[3]);
                     break;
-                case PasswordAuthPlugin.AUTH_SWITCH_MORE:
+                }
+                case PasswordAuthPlugin.AUTH_SWITCH_MORE: {
                     authSwitchMore = true;
+                    //need auth switch for other plugin
+                    AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
                     authSwitchRequestPackage.read(data);
                     if (authSwitchRequestPackage.getAuthPluginData() != null && authSwitchRequestPackage.getAuthPluginData().length > 0) {
                         BinaryPacket binaryPacket = new BinaryPacket();
@@ -123,6 +125,7 @@ public class MySQLBackAuthService extends AuthService {
                         binaryPacket.bufferWrite(connection);
                     }
                     break;
+                }
                 default:
                     break;
             }

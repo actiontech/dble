@@ -46,7 +46,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.SHOW:
                     case RwSplitServerParse.SELECT:
-                        session.execute(false, null);
+                        session.execute(null, null);
                         break;
                     case RwSplitServerParse.SET:
                         SetHandler.handle(sql, session.getService(), rs >>> 8);

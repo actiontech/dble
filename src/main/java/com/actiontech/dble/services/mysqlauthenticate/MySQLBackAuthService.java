@@ -80,9 +80,13 @@ public class MySQLBackAuthService extends AuthService {
                     byte[] publicKey = binPacket.readKey(data);
                     byte[] authResponse = PasswordAuthPlugin.sendEnPasswordWithPublicKey(seed, publicKey, passwd, ++data[3]);
                     connection.write(authResponse);
+                    return;
                 }
-                return;
             }
+
+
+            //need auth switch for other plugin
+            AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
 
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
@@ -97,8 +101,6 @@ public class MySQLBackAuthService extends AuthService {
                     checkForResult(new AuthResultInfo(errMsg));
                     break;
                 case AuthSwitchRequestPackage.STATUS:
-                    //need auth switch for other plugin
-                    AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
                     authSwitchRequestPackage.read(data);
 
                     String authPluginName = new String(authSwitchRequestPackage.getAuthPluginName());
@@ -113,10 +115,13 @@ public class MySQLBackAuthService extends AuthService {
                     break;
                 case PasswordAuthPlugin.AUTH_SWITCH_MORE:
                     authSwitchMore = true;
-                    BinaryPacket binaryPacket = new BinaryPacket();
-                    binaryPacket.setData(new byte[]{2});
-                    binaryPacket.setPacketId(++data[3]);
-                    binaryPacket.bufferWrite(connection);
+                    authSwitchRequestPackage.read(data);
+                    if (authSwitchRequestPackage.getAuthPluginData() != null && authSwitchRequestPackage.getAuthPluginData().length > 0) {
+                        BinaryPacket binaryPacket = new BinaryPacket();
+                        binaryPacket.setData(new byte[]{2});
+                        binaryPacket.setPacketId(++data[3]);
+                        binaryPacket.bufferWrite(connection);
+                    }
                     break;
                 default:
                     break;

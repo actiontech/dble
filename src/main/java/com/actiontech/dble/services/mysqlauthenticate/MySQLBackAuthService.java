@@ -80,9 +80,10 @@ public class MySQLBackAuthService extends AuthService {
                     byte[] publicKey = binPacket.readKey(data);
                     byte[] authResponse = PasswordAuthPlugin.sendEnPasswordWithPublicKey(seed, publicKey, passwd, ++data[3]);
                     connection.write(authResponse);
+                    return;
                 }
-                return;
             }
+
 
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
@@ -96,7 +97,7 @@ public class MySQLBackAuthService extends AuthService {
                     String errMsg = new String(err.getMessage());
                     checkForResult(new AuthResultInfo(errMsg));
                     break;
-                case AuthSwitchRequestPackage.STATUS:
+                case AuthSwitchRequestPackage.STATUS: {
                     //need auth switch for other plugin
                     AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
                     authSwitchRequestPackage.read(data);
@@ -111,13 +112,20 @@ public class MySQLBackAuthService extends AuthService {
                     this.seed = authSwitchRequestPackage.getAuthPluginData();
                     sendSwitchResponse(PasswordAuthPlugin.passwd(passwd, seed, pluginName), ++data[3]);
                     break;
-                case PasswordAuthPlugin.AUTH_SWITCH_MORE:
+                }
+                case PasswordAuthPlugin.AUTH_SWITCH_MORE: {
                     authSwitchMore = true;
-                    BinaryPacket binaryPacket = new BinaryPacket();
-                    binaryPacket.setData(new byte[]{2});
-                    binaryPacket.setPacketId(++data[3]);
-                    binaryPacket.bufferWrite(connection);
+                    //need auth switch for other plugin
+                    AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
+                    authSwitchRequestPackage.read(data);
+                    if (authSwitchRequestPackage.getAuthPluginData() != null && authSwitchRequestPackage.getAuthPluginData().length > 0) {
+                        BinaryPacket binaryPacket = new BinaryPacket();
+                        binaryPacket.setData(new byte[]{2});
+                        binaryPacket.setPacketId(++data[3]);
+                        binaryPacket.bufferWrite(connection);
+                    }
                     break;
+                }
                 default:
                     break;
             }

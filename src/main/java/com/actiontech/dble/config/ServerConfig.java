@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
@@ -15,6 +15,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDataHostDiff;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -433,7 +434,10 @@ public class ServerConfig {
                 LOGGER.debug("metadata will delete Tables:" + tables);
             }
             for (Pair<String, String> table : delTables) {
-                ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getKey()).dropTable(table.getValue());
+                SchemaMeta oldSchemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getKey());
+                if (oldSchemaMeta != null) {
+                    oldSchemaMeta.dropTable(table.getValue());
+                }
             }
             LOGGER.info("metadata finished for deleted tables");
         }

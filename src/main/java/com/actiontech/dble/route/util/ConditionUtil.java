@@ -87,23 +87,15 @@ public final class ConditionUtil {
     }
 
     private static TableStat.Condition getUsefulCondition(TableStat.Condition condition, Map<String, String> tableAliasMap, String defaultSchema) {
-        String tableFullName = condition.getColumn().getTable();
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            tableFullName = tableFullName.toLowerCase();
-        }
-        if (tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("condition [" + condition + "] will be pruned for can't find table " + tableFullName);
-            }
-            //ignore subQuery's alias
-            return null;
-        }
-
-        Pair<String, String> table = getTableInfo(tableAliasMap, tableFullName, defaultSchema);
+        Pair<String, String> table = getTrueTableName(condition, tableAliasMap, defaultSchema);
+        if (table == null) return null;
 
         String schemaName = table.getKey();
+        if (schemaName == null) {
+            return null;
+        }
         String tableName = table.getValue();
-        tableFullName = schemaName + "." + tableName;
+        String tableFullName = schemaName + "." + tableName;
 
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase()) || schemaConfig == null) {
@@ -147,6 +139,23 @@ public final class ConditionUtil {
             LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingcolumn/joinkey");
         }
         return null;
+    }
+
+    private static Pair<String, String> getTrueTableName(TableStat.Condition condition, Map<String, String> tableAliasMap, String defaultSchema) {
+        String tableFullName = condition.getColumn().getTable();
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tableFullName = tableFullName.toLowerCase();
+        }
+        if (tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("condition [" + condition + "] will be pruned for can't find table " + tableFullName);
+            }
+            //ignore subQuery's alias
+            return null;
+        }
+
+        Pair<String, String> table = getTableInfo(tableAliasMap, tableFullName, defaultSchema);
+        return table;
     }
 
     private static Pair<String, String> getTableInfo(Map<String, String> tableAliasMap, String tableFullName, String defaultSchema) {

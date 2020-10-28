@@ -10,6 +10,7 @@ import java.util.Optional;
 
 /**
  * special Util
+ *
  * @author lin
  */
 public final class CheckConfigurationUtil {
@@ -18,6 +19,10 @@ public final class CheckConfigurationUtil {
 
     public static void checkConfiguration() throws IOException {
         String path = getHomePathSuffix();
+        Optional.ofNullable(path).orElseThrow(() -> {
+            System.out.println("homePath is not set");
+            return new NullPointerException("homePath is not set");
+        });
         if (Strings.isNullOrEmpty(trimSingleQuotes(path))) {
             System.out.println("homePath is not be null");
             throw new NullPointerException("homePath is not be null");

@@ -14,6 +14,7 @@ import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.services.manager.handler.ShowServerLog;
 import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.util.CheckConfigurationUtil;
 
 public final class DbleStartup {
     private DbleStartup() {
@@ -21,6 +22,7 @@ public final class DbleStartup {
 
     public static void main(String[] args) {
         try {
+            CheckConfigurationUtil.checkConfiguration();
             ClusterController.loadClusterProperties();
             //lod system properties
             SystemConfigLoader.initSystemConfig();

@@ -17,6 +17,8 @@ import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.RandomUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -25,6 +27,8 @@ import java.io.IOException;
  * Created by szf on 2020/6/18.
  */
 public class MySQLFrontAuthService extends AuthService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLFrontAuthService.class);
 
     private volatile AuthPacket authPacket;
 
@@ -143,8 +147,11 @@ public class MySQLFrontAuthService extends AuthService {
         try {
             PluginName name = PluginName.valueOf(auth.getAuthPlugin());
             if (pluginName != name) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("auth switch request client-plugin:[{}],server-plugin:[{}]->[{}]", name, pluginName, PluginName.mysql_native_password);
+                }
                 needAuthSwitched = true;
-                this.pluginName = name;
+                this.pluginName = PluginName.mysql_native_password;
                 sendSwitchPacket(pluginName);
                 return;
             }

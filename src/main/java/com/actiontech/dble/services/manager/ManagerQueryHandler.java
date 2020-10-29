@@ -149,6 +149,7 @@ public class ManagerQueryHandler {
             }
         } catch (Exception e) {
             service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command " + e.getMessage());
+            LOGGER.warn("unknown error:", e);
         }
     }
 

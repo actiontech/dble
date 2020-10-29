@@ -266,6 +266,7 @@ public abstract class PlanNode {
         for (Item selected : this.getColumnsSelected()) {
             Item copySel = selected.cloneItem();
             copySel.setItemName(selected.getItemName());
+            copySel.setCharsetIndex(selected.getCharsetIndex());
             to.columnsSelected.add(copySel);
         }
         for (Order groupBy : this.getGroupBys()) {
@@ -300,6 +301,7 @@ public abstract class PlanNode {
                 String tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
                 String tmpFieldName = coutField.getName();
                 NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode);
+                tmpField.setCharsetIndex(coutField.getCharsetIndex());
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + tmpFieldName + "'");
                 innerFields.put(tmpField, coutField);
@@ -408,7 +410,7 @@ public abstract class PlanNode {
 
     protected void dealSingleStarColumn(List<Item> newSels) {
         for (NamedField field : innerFields.keySet()) {
-            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
             newSels.add(col);
         }
     }
@@ -425,7 +427,7 @@ public abstract class PlanNode {
                     boolean found = false;
                     for (NamedField field : innerFields.keySet()) {
                         if (selTable.equals(field.getTable())) {
-                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
+                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
                             newSels.add(col);
                             found = true;
                         } else if (found) {

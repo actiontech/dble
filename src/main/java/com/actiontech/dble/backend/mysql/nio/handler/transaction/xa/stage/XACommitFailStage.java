@@ -99,6 +99,9 @@ public class XACommitFailStage extends XACommitStage {
         } else {
             String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
+            if (logger.isDebugEnabled()) {
+                logger.debug("XA COMMIT " + xaTxId + " to " + service);
+            }
             newService.execCmd("XA COMMIT " + xaTxId);
         }
     }

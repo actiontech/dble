@@ -49,17 +49,12 @@ public class ItemField extends ItemIdent {
         setField(field);
     }
 
-    public ItemField(Field field, int charsetIndex) {
-        this(field);
-        this.charsetIndex = charsetIndex;
-    }
-
     /**
      * save index
      *
      * @param index
      */
-    public ItemField(int index, int charsetIndex) {
+    public ItemField(int index) {
         super(null, "", "");
         this.index = index;
     }

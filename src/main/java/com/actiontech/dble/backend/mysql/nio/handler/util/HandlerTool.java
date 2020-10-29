@@ -103,6 +103,7 @@ public final class HandlerTool {
         ret.fixFields();
         return ret;
     }
+
     /**
      * create Item, the Item value referenced by field and changed by field changes
      *
@@ -249,6 +250,7 @@ public final class HandlerTool {
             args.add(newArg);
         }
         ItemFunc ret = (ItemFunc) f.reStruct(args, allPushDown, fields);
+        ret.setCharsetIndex(f.getCharsetIndex());
         ret.setItemName(f.getPushDownName() == null ? f.getItemName() : f.getPushDownName());
         return ret;
     }
@@ -293,7 +295,7 @@ public final class HandlerTool {
         int index = findField(col, fields, startIndex);
         if (index < 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "field not found:" + col);
-        ItemField ret = new ItemField(fields.get(index), col.getCharsetIndex());
+        ItemField ret = new ItemField(fields.get(index));
         ret.setItemName(col.getPushDownName() == null ? col.getItemName() : col.getPushDownName());
         return ret;
     }

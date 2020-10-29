@@ -144,6 +144,7 @@ public class MySQLFrontAuthService extends AuthService {
             PluginName name = PluginName.valueOf(auth.getAuthPlugin());
             if (pluginName != name) {
                 needAuthSwitched = true;
+                this.pluginName = name;
                 sendSwitchPacket(pluginName);
                 return;
             }

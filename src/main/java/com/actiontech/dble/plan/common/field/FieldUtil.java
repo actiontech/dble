@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.plan.common.field;
 
+import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 
 import java.util.List;
@@ -149,7 +150,7 @@ public class FieldUtil {
             return FieldTypes.MYSQL_TYPE_TIMESTAMP;
         } else if (realType == FieldTypes.MYSQL_TYPE_NEWDATE) {
             return FieldTypes.MYSQL_TYPE_DATE;
-        /* Note: NEWDECIMAL is a type, not only a real_type */
+            /* Note: NEWDECIMAL is a type, not only a real_type */
         } else {
             return realType;
         }
@@ -1430,6 +1431,16 @@ public class FieldUtil {
             },
     };
 
+    public static boolean isBinaryType(int dataType) {
+        return dataType == Fields.FIELD_TYPE_MEDIUM_BLOB || dataType == Fields.FIELD_TYPE_BLOB || dataType == Fields.FIELD_TYPE_LONG_BLOB ||
+                dataType == Fields.FIELD_TYPE_TINY_BLOB;
+    }
+
+    public static boolean isNumberType(int dataType) {
+        return dataType == Fields.FIELD_TYPE_LONG || dataType == Fields.FIELD_TYPE_LONGLONG || dataType == Fields.FIELD_TYPE_TINY ||
+                dataType == Fields.FIELD_TYPE_SHORT || dataType == Fields.FIELD_TYPE_BIT || dataType == Fields.FIELD_TYPE_NEW_DECIMAL ||
+                dataType == Fields.FIELD_TYPE_FLOAT || dataType == Fields.FIELD_TYPE_DOUBLE;
+    }
 
     public static boolean isNumberType(String dataType) {
         if (dataType == null) return false;

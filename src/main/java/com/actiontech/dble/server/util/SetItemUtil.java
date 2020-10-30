@@ -197,7 +197,8 @@ public final class SetItemUtil {
         } else if (valueExpr instanceof SQLDefaultExpr || valueExpr instanceof SQLNullExpr) {
             strValue = valueExpr.toString();
         } else if (valueExpr instanceof SQLBooleanExpr) {
-            strValue = valueExpr.toString();
+            // SQLBooleanExpr toString is xFalse
+            strValue = valueExpr.toString().substring(1);
         }
         return strValue;
     }

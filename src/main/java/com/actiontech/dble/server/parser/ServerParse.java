@@ -1058,7 +1058,8 @@ public class ServerParse {
 
     // ROLLBACK
     protected static int rollbackCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 6) {
+        int len = stmt.length();
+        if (len > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -1068,10 +1069,41 @@ public class ServerParse {
             if ((c1 == 'L' || c1 == 'l') && (c2 == 'L' || c2 == 'l') &&
                     (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a') &&
                     (c5 == 'C' || c5 == 'c') && (c6 == 'K' || c6 == 'k')) {
+                char tmp;
+                while (len > ++offset) {
+                    tmp = stmt.charAt(offset);
+                    if (ParseUtil.isSpace(tmp)) {
+                        continue;
+                    }
+                    switch (tmp) {
+                        case '/':
+                            offset = ParseUtil.comment(stmt, offset);
+                            break;
+                        case 't':
+                        case 'T':
+                            return ROLLBACK_SAVEPOINT;
+                        case 'w':
+                        case 'W':
+                            return rollbackWorkCheck(stmt, offset);
+                        default:
+                            break;
+                    }
+                }
+                return ROLLBACK;
+            }
+        }
+        return OTHER;
+    }
+
+    protected static int rollbackWorkCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'K' || c3 == 'k')) {
                 if (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset)) {
                     return ROLLBACK;
-                } else {
-                    return ROLLBACK_SAVEPOINT;
                 }
             }
         }

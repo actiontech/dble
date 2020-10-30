@@ -10,18 +10,19 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.util.HexFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,9 +171,10 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 continue;
             }
             int type = fieldPackets.get(i).getType();
-            if (type == Fields.FIELD_TYPE_LONG || type == Fields.FIELD_TYPE_LONGLONG || type == Fields.FIELD_TYPE_NEW_DECIMAL ||
-                    type == Fields.FIELD_TYPE_FLOAT | type == Fields.FIELD_TYPE_DOUBLE) {
+            if (FieldUtil.isNumberType(type)) {
                 setItems[i].setValue(new String(rowDataPk.getValue(i)));
+            } else if (FieldUtil.isBinaryType(type)) {
+                setItems[i].setValue("0x" + HexFormatUtil.bytesToHexString(rowDataPk.getValue(i)));
             } else {
                 setItems[i].setValue("'" + new String(rowDataPk.getValue(i)) + "'");
             }

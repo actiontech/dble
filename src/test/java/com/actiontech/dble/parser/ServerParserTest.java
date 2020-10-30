@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.parser;
 
 import com.actiontech.dble.server.parser.ServerParse;
@@ -94,6 +94,7 @@ public class ServerParserTest {
     @Test
     public void testIsRollback() {
         Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("rollback"));
+        Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("rollback  work   /* dble_dest_expect:M */"));
         Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("ROLLBACK"));
         Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("rolLBACK "));
     }
@@ -139,12 +140,12 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("SHOW DATABASES", 4));
         Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("SHOW databases ", 4));
         //"show database " statement need stricter inspection #1961
-    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases ...", 4));
-    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases...", 4));
-    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases like... ", 4));
-    	Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases where...", 4));
-    	Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases like ...", 4));
-    	Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases where ...", 4));
+        Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases ...", 4));
+        Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases...", 4));
+        Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases like... ", 4));
+        Assert.assertNotEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases where...", 4));
+        Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases like ...", 4));
+        Assert.assertEquals(ServerParseShow.DATABASES, ServerParseShow.parse("show databases where ...", 4));
     }
 
     @Test

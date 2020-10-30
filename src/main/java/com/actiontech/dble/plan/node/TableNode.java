@@ -36,6 +36,7 @@ public class TableNode extends PlanNode {
     private TableMeta tableMeta;
     private List<String> columns;
     private List<SQLHint> hintList;
+    private int charsetIndex = 63;
 
     private TableNode() {
     }
@@ -61,9 +62,10 @@ public class TableNode extends PlanNode {
         this.keepFieldSchema = true;
     }
 
-    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) throws SQLNonTransientException {
+    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager, int charsetIndex) throws SQLNonTransientException {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
+        this.charsetIndex = charsetIndex;
         this.schema = catalog;
         this.tableName = tableName;
         ServerConfig config = DbleServer.getInstance().getConfig();
@@ -121,11 +123,13 @@ public class TableNode extends PlanNode {
         if (tableMeta != null) {
             for (ColumnMeta cm : tableMeta.getColumns()) {
                 NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
+                tmpField.setCharsetIndex(charsetIndex);
                 innerFields.put(tmpField, tmpField);
             }
         } else {
             for (String col : columns) {
                 NamedField tmpField = new NamedField(schema, tmpTable, col, this);
+                tmpField.setCharsetIndex(charsetIndex);
                 innerFields.put(tmpField, tmpField);
             }
         }
@@ -159,7 +163,7 @@ public class TableNode extends PlanNode {
                 newSelects.add(sel);
             else {
                 for (NamedField innerField : innerFields.keySet()) {
-                    ItemField col = new ItemField(null, sel.getTableName(), innerField.getName());
+                    ItemField col = new ItemField(null, sel.getTableName(), innerField.getName(), charsetIndex);
                     newSelects.add(col);
                 }
             }
@@ -232,4 +236,11 @@ public class TableNode extends PlanNode {
         this.hintList = hintList;
     }
 
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
+    }
 }

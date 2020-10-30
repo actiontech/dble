@@ -55,10 +55,16 @@ public final class SetItemUtil {
     }
 
     public static String getCharsetClientVal(SQLExpr valueExpr) throws SQLSyntaxErrorException {
+        if (valueExpr instanceof SQLVariantRefExpr) {
+            return valueExpr.toString();
+        }
+
         String charsetClient = parseStringValue(valueExpr);
         if (charsetClient == null || charsetClient.equalsIgnoreCase("null")) {
             throw new SQLSyntaxErrorException("Variable 'character_set_client' can't be set to the value of 'NULL'");
-        } else if (checkCharset(charsetClient)) {
+        }
+
+        if (checkCharset(charsetClient)) {
             if (!CharsetUtil.checkCharsetClient(charsetClient)) {
                 throw new SQLSyntaxErrorException("Variable 'character_set_client' can't be set to the value of '" + charsetClient + "'");
             }
@@ -194,10 +200,11 @@ public final class SetItemUtil {
         } else if (valueExpr instanceof SQLIntegerExpr) {
             SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
             strValue = value.getNumber().toString();
-        } else if (valueExpr instanceof SQLDefaultExpr || valueExpr instanceof SQLNullExpr) {
+        } else if (valueExpr instanceof SQLDefaultExpr || valueExpr instanceof SQLNullExpr ||
+                valueExpr instanceof SQLVariantRefExpr) {
             strValue = valueExpr.toString();
         } else if (valueExpr instanceof SQLBooleanExpr) {
-            strValue = valueExpr.toString();
+            strValue = valueExpr.toString().substring(1);
         }
         return strValue;
     }

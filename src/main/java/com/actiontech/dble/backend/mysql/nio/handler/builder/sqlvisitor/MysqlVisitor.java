@@ -19,6 +19,7 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.google.common.base.Strings;
 
 import java.util.HashMap;
 import java.util.List;
@@ -144,26 +145,32 @@ public abstract class MysqlVisitor {
     protected String getItemName(Item item) {
         if (item instanceof ItemCondOr) {
             StringBuilder sb = new StringBuilder();
+            sb.append("(");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" OR ");
                 }
+                sb.append("%&");
                 sb.append("(");
                 sb.append(getItemName(item.arguments().get(index)));
                 sb.append(")");
+                sb.append("%&");
             }
-            return sb.toString();
+            sb.append(")");
+            return removeExtraBracket(sb.toString());
         } else if (item instanceof ItemCondAnd) {
             StringBuilder sb = new StringBuilder();
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" AND ");
                 }
+                sb.append("%&");
                 sb.append("(");
                 sb.append(getItemName(item.arguments().get(index)));
                 sb.append(")");
+                sb.append("%&");
             }
-            return sb.toString();
+            return removeExtraBracket(sb.toString());
         } else if (item instanceof ItemFuncNot) {
             return " ( NOT " + getItemName(item.arguments().get(0)) + ")";
         } else if (item instanceof ItemBoolFunc2) {
@@ -205,6 +212,36 @@ public abstract class MysqlVisitor {
         } else {
             return item.getItemName();
         }
+    }
+
+
+    private static String trimHelper(String str) {
+        char[] value = str.toCharArray();
+        int len = value.length;
+        int startIndex = 0;
+        char[] val = value;
+
+        while ((startIndex < len) && (val[startIndex] == '(') && (val[len - 1] == ')')) {
+            startIndex++;
+            len--;
+        }
+        return ((startIndex > 0) || (len < value.length)) ? str.substring(startIndex, len) : str;
+    }
+
+    private String removeExtraBracket(String sql) {
+        StringBuilder sb = new StringBuilder();
+        String separator = "%&";
+        char separatorChar = '(';
+        String[] sqlArray = sql.split(separator);
+        for (String word : sqlArray) {
+            if (Strings.isNullOrEmpty(word)) continue;
+            if (word.charAt(0) == separatorChar && !word.contains("OR") && !word.contains("AND")) {
+                word = trimHelper(word);
+            }
+            sb.append(word);
+            sb.append(" ");
+        }
+        return sb.toString();
     }
 
     public Item getWhereFilter() {

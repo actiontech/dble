@@ -129,15 +129,6 @@ public class RWSplitNonBlockingSession {
         this.conn = bindConn;
     }
 
-    public void unbindIfSafe(boolean safe) {
-        if (safe) {
-            this.conn.release();
-            this.conn = null;
-        } else {
-            unbindIfSafe();
-        }
-    }
-
     public void unbindIfSafe() {
         if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
                 !rwSplitService.isInLoadData() &&

@@ -144,7 +144,7 @@ public abstract class MysqlVisitor {
     protected String getItemName(Item item) {
         if (item instanceof ItemCondOr) {
             StringBuilder sb = new StringBuilder();
-            sb.append("(");
+            sb.append(" ( ");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" OR ");
@@ -155,7 +155,7 @@ public abstract class MysqlVisitor {
             return sb.toString();
         } else if (item instanceof ItemCondAnd) {
             StringBuilder sb = new StringBuilder();
-            sb.append("(");
+            sb.append(" ( ");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" AND ");

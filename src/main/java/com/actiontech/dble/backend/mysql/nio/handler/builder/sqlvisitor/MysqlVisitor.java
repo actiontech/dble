@@ -132,25 +132,25 @@ public abstract class MysqlVisitor {
     protected String getItemName(Item item) {
         if (item instanceof ItemCondOr) {
             StringBuilder sb = new StringBuilder();
+            sb.append(" ( ");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" OR ");
                 }
-                sb.append("(");
                 sb.append(getItemName(item.arguments().get(index)));
-                sb.append(")");
             }
+            sb.append(")");
             return sb.toString();
         } else if (item instanceof ItemCondAnd) {
             StringBuilder sb = new StringBuilder();
+            sb.append(" ( ");
             for (int index = 0; index < item.getArgCount(); index++) {
                 if (index > 0) {
                     sb.append(" AND ");
                 }
-                sb.append("(");
                 sb.append(getItemName(item.arguments().get(index)));
-                sb.append(")");
             }
+            sb.append(")");
             return sb.toString();
         } else if (item instanceof ItemFuncNot) {
             return " ( NOT " + getItemName(item.arguments().get(0)) + ")";

@@ -44,7 +44,7 @@ public class RWSplitNonBlockingSession {
                 return;
             }
 
-            PhysicalDbInstance instance = rwGroup.select(master);
+            PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master, rwSplitService.isAutocommit(), rwSplitService.isTxStart()));
             checkDest(!instance.isReadInstance());
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
@@ -53,6 +53,13 @@ public class RWSplitNonBlockingSession {
         } catch (SQLSyntaxErrorException se) {
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         }
+    }
+
+    private Boolean canRunOnMaster(Boolean master, boolean autocommit, boolean txStart) {
+        if ((null == master || !master) && (!autocommit || txStart)) {
+            return true;
+        }
+        return master;
     }
 
     private void checkDest(boolean isMaster) throws SQLSyntaxErrorException {

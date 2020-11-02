@@ -19,7 +19,6 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
-import com.google.common.base.Strings;
 
 import java.util.HashMap;
 import java.util.List;
@@ -207,9 +206,6 @@ public abstract class MysqlVisitor {
             return item.getItemName();
         }
     }
-
-
-
 
     public Item getWhereFilter() {
         return whereFilter;

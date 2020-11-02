@@ -167,7 +167,7 @@ public class MySQLPlanNodeVisitor {
     }
 
     public boolean visit(SQLExprTableSource tableSource) {
-        PlanNode table;
+        TableNode table;
         String schema;
         String tableName;
         SQLExpr expr = tableSource.getExpr();
@@ -215,12 +215,12 @@ public class MySQLPlanNodeVisitor {
             return true;
         } else {
             try {
-                table = new TableNode(schema, tableName, this.metaManager);
+                table = new TableNode(schema, tableName, this.metaManager, charsetIndex);
             } catch (SQLNonTransientException e) {
                 throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
             }
         }
-        ((TableNode) table).setHintList(tableSource.getHints());
+        table.setHintList(tableSource.getHints());
         this.tableNode = table;
         return true;
     }
@@ -358,6 +358,7 @@ public class MySQLPlanNodeVisitor {
             MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables);
             expr.accept(ev);
             Item selItem = ev.getItem();
+            selItem.setCharsetIndex(charsetIndex);
             if (selItem.isWithSubQuery()) {
                 setSubQueryNode(selItem);
             }

@@ -71,7 +71,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     case RwSplitServerParse.ROLLBACK:
                         session.execute(true, (isSuccess, rwSplitService) -> {
                             rwSplitService.setTxStart(false);
-                            rwSplitService.getSession().unbindIfSafe();
                             session.getService().singleTransactionsCount();
                         });
                         break;
@@ -109,11 +108,8 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             case RwSplitServerParse.GRANT:
             case RwSplitServerParse.REVOKE:
                 return (isSuccess, rwSplitService) -> {
-                    if (session.getService().isTxStart()) {
-                        rwSplitService.setTxStart(false);
-                        rwSplitService.getSession().unbindIfSafe(true);
-                        session.getService().singleTransactionsCount();
-                    }
+                    rwSplitService.setTxStart(false);
+                    session.getService().singleTransactionsCount();
                 };
             default:
                 return null;

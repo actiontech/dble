@@ -16,6 +16,7 @@ public class NamedField {
     private final int hashCode;
     // which node of the field belong
     public final PlanNode planNode;
+    private int charsetIndex;
 
     public NamedField(String inputSchema, String inputTable, String name, PlanNode planNode) {
         String tempTableSchmea;
@@ -55,6 +56,14 @@ public class NamedField {
 
     public String getName() {
         return name;
+    }
+
+    public int getCharsetIndex() {
+        return charsetIndex;
+    }
+
+    public void setCharsetIndex(int charsetIndex) {
+        this.charsetIndex = charsetIndex;
     }
 
     @Override

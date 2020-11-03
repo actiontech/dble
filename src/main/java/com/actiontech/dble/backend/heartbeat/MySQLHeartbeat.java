@@ -131,7 +131,8 @@ public class MySQLHeartbeat {
 
     // only use when heartbeat connection is closed
     boolean doHeartbeatRetry() {
-        if (errorRetryCount > 0 && ++errorCount <= errorRetryCount) {
+        if (errorRetryCount > 0 && errorCount < errorRetryCount) {
+            ++errorCount;
             // should continue checking error status
             if (detector != null) {
                 detector.quit();
@@ -157,7 +158,8 @@ public class MySQLHeartbeat {
         startErrorTime.compareAndSet(-1, System.currentTimeMillis());
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
-        if (errorRetryCount > 0 && ++errorCount <= errorRetryCount) {
+        if (errorRetryCount > 0 && errorCount < errorRetryCount) {
+            ++errorCount;
             LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
             heartbeat(); // error count not enough, heart beat again
             recordErrorCount();

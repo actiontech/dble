@@ -166,14 +166,16 @@ public class SetTestJob implements ResponseHandler, Runnable {
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         RowDataPacket rowDataPk = new RowDataPacket(fieldPackets.size());
         rowDataPk.read(row);
+
+        FieldPacket fieldPacket;
         for (int i = 0; i < userVariableSize; i++) {
             if (rowDataPk.getValue(i) == null) {
                 continue;
             }
-            int type = fieldPackets.get(i).getType();
-            if (FieldUtil.isNumberType(type)) {
+            fieldPacket = fieldPackets.get(i);
+            if (FieldUtil.isNumberType(fieldPacket.getType())) {
                 setItems[i].setValue(new String(rowDataPk.getValue(i)));
-            } else if (FieldUtil.isBinaryType(type)) {
+            } else if (FieldUtil.isBinaryType(fieldPacket.getType()) && (fieldPacket.getFlags() & FieldUtil.BINARY_FLAG) != 0) {
                 setItems[i].setValue("0x" + HexFormatUtil.bytesToHexString(rowDataPk.getValue(i)));
             } else {
                 setItems[i].setValue("'" + new String(rowDataPk.getValue(i)) + "'");

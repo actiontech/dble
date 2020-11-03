@@ -19,6 +19,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -46,7 +47,7 @@ public class MySQLHeartbeat {
     protected volatile int status;
     private String heartbeatSQL;
     private long heartbeatTimeout; // during the time, heart failed will ignore
-    private volatile int errorCount = 0;
+    private final AtomicInteger errorCount = new AtomicInteger(0);
     private AtomicLong startErrorTime = new AtomicLong(-1L);
     private volatile boolean isStop = true;
     private volatile int dbSynStatus = DB_SYN_NORMAL;
@@ -131,14 +132,13 @@ public class MySQLHeartbeat {
 
     // only use when heartbeat connection is closed
     boolean doHeartbeatRetry() {
-        if (errorRetryCount > 0 && errorCount < errorRetryCount) {
-            ++errorCount;
+        if (errorRetryCount > 0 && errorCount.get() < errorRetryCount) {
             // should continue checking error status
             if (detector != null) {
                 detector.quit();
             }
             isChecking.set(false);
-            LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
+            LOGGER.warn("retry to do heartbeat for the " + errorCount.incrementAndGet() + " times");
             heartbeat(); // error count not enough, heart beat again
             recordErrorCount();
             return true;
@@ -158,9 +158,8 @@ public class MySQLHeartbeat {
         startErrorTime.compareAndSet(-1, System.currentTimeMillis());
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
-        if (errorRetryCount > 0 && errorCount < errorRetryCount) {
-            ++errorCount;
-            LOGGER.warn("retry to do heartbeat for the " + errorCount + " times");
+        if (errorRetryCount > 0 && errorCount.get() < errorRetryCount) {
+            LOGGER.warn("retry to do heartbeat for the " + errorCount.incrementAndGet() + " times");
             heartbeat(); // error count not enough, heart beat again
             recordErrorCount();
         }
@@ -192,7 +191,7 @@ public class MySQLHeartbeat {
         switch (status) {
             case TIMEOUT_STATUS:
                 this.status = INIT_STATUS;
-                this.errorCount = 0;
+                this.errorCount.set(0);
                 this.startErrorTime.set(-1);
                 if (isStop) {
                     detector.quit();
@@ -204,7 +203,7 @@ public class MySQLHeartbeat {
                 break;
             default:
                 this.status = OK_STATUS;
-                this.errorCount = 0;
+                this.errorCount.set(0);
                 this.startErrorTime.set(-1);
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
@@ -276,7 +275,7 @@ public class MySQLHeartbeat {
     }
 
     public int getErrorCount() {
-        return errorCount;
+        return errorCount.get();
     }
 
     public HeartbeatRecorder getRecorder() {

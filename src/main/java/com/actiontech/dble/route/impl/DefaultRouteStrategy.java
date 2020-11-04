@@ -94,7 +94,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "simple-route-detail");
         TraceManager.log(ImmutableMap.of("druidParser", druidParser.getClass().toString()), traceObject);
         try {
-            return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, new ServerSchemaStatVisitor(), service, isExplain);
+            return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, new ServerSchemaStatVisitor(schema.getName()), service, isExplain);
         } finally {
             TraceManager.finishSpan(service, traceObject);
         }

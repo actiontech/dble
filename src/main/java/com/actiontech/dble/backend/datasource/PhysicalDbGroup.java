@@ -50,7 +50,7 @@ public class PhysicalDbGroup {
     private final LoadBalancer loadBalancer = new RandomLoadBalancer();
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
-    private boolean useless = false;
+    private boolean useless = true;
 
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;

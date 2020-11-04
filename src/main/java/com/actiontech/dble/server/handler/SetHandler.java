@@ -126,9 +126,9 @@ public final class SetHandler {
             throw new SQLSyntaxErrorException("setting GLOBAL value is not supported");
         } else if (setStatement.getAccessModel() != null) {
             if (setStatement.getAccessModel().equals("ONLY")) {
-                item = newSetItem(VersionUtil.TX_READ_ONLY, new SQLBooleanExpr(true));
+                item = newSetItem(VersionUtil.TX_READ_ONLY, new SQLIntegerExpr(1));
             } else {
-                item = newSetItem(VersionUtil.TX_READ_ONLY, new SQLBooleanExpr(false));
+                item = newSetItem(VersionUtil.TX_READ_ONLY, new SQLIntegerExpr(0));
             }
         } else {
             item = newSetItem(VersionUtil.TRANSACTION_ISOLATION, new SQLCharExpr(setStatement.getIsolationLevel()));

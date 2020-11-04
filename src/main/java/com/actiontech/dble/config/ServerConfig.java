@@ -64,10 +64,12 @@ public class ServerConfig {
         //read sharding.xml,db.xml and user.xml
         confInitNew = new ConfigInitializer(false);
         this.users = confInitNew.getUsers();
-        this.schemas = confInitNew.getSchemas();
         this.dbGroups = confInitNew.getDbGroups();
+
+        this.schemas = confInitNew.getSchemas();
         this.shardingNodes = confInitNew.getShardingNodes();
         this.erRelations = confInitNew.getErRelations();
+        this.functions = confInitNew.getFunctions();
         this.fullyConfigured = confInitNew.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
 
@@ -75,17 +77,17 @@ public class ServerConfig {
 
         this.lock = new ReentrantReadWriteLock();
         this.blacklistConfig = confInitNew.getBlacklistConfig();
-        this.functions = confInitNew.getFunctions();
     }
 
 
     public ServerConfig(ConfigInitializer confInit) {
         //read sharding.xml,db.xml and user.xml
         this.users = confInit.getUsers();
-        this.schemas = confInit.getSchemas();
         this.dbGroups = confInit.getDbGroups();
+        this.schemas = confInit.getSchemas();
         this.shardingNodes = confInit.getShardingNodes();
         this.erRelations = confInit.getErRelations();
+        this.functions = confInit.getFunctions();
         this.fullyConfigured = confInit.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
 
@@ -93,7 +95,6 @@ public class ServerConfig {
 
         this.lock = new ReentrantReadWriteLock();
         this.blacklistConfig = confInit.getBlacklistConfig();
-        this.functions = confInit.getFunctions();
     }
 
     private void waitIfChanging() {

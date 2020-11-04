@@ -1,6 +1,6 @@
 package com.actiontech.dble.net.connection;
 
-import com.actiontech.dble.config.model.db.PoolConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AbstractService;
@@ -22,16 +22,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class FrontendConnection extends AbstractConnection {
 
     private static final long AUTH_TIMEOUT = 15 * 1000L;
-    private final boolean isManager;
 
-    protected final long idleTimeout = PoolConfig.DEFAULT_IDLE_TIMEOUT;
-    private AtomicBoolean isCleanUp = new AtomicBoolean(false);
+    private final boolean isManager;
+    private final long idleTimeout;
+    private final AtomicBoolean isCleanUp;
 
     public FrontendConnection(NetworkChannel channel, SocketWR socketWR, boolean isManager) throws IOException {
         super(channel, socketWR);
         this.isManager = isManager;
         InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
-        InetSocketAddress remoteAddress = null;
+        InetSocketAddress remoteAddress;
         if (channel instanceof SocketChannel) {
             remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
         } else if (channel instanceof AsynchronousSocketChannel) {
@@ -42,6 +42,8 @@ public class FrontendConnection extends AbstractConnection {
         this.host = remoteAddress.getHostString();
         this.port = localAddress.getPort();
         this.localPort = remoteAddress.getPort();
+        this.idleTimeout = SystemConfig.getInstance().getIdleTimeout();
+        this.isCleanUp = new AtomicBoolean(false);
     }
 
     @Override
@@ -82,7 +84,6 @@ public class FrontendConnection extends AbstractConnection {
             return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
         }
     }
-
 
     public boolean isManager() {
         return isManager;

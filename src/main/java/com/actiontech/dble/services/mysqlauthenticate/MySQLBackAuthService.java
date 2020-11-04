@@ -116,13 +116,8 @@ public class MySQLBackAuthService extends AuthService {
                 case PasswordAuthPlugin.AUTH_SWITCH_MORE: {
                     authSwitchMore = true;
                     //need auth switch for other plugin
-                    AuthSwitchRequestPackage authSwitchRequestPackage = new AuthSwitchRequestPackage();
-                    authSwitchRequestPackage.read(data);
-                    if (authSwitchRequestPackage.getAuthPluginData() != null && authSwitchRequestPackage.getAuthPluginData().length > 0) {
-                        BinaryPacket binaryPacket = new BinaryPacket();
-                        binaryPacket.setData(new byte[]{2});
-                        binaryPacket.setPacketId(++data[3]);
-                        binaryPacket.bufferWrite(connection);
+                    if (data.length > 5 && data[5] == PasswordAuthPlugin.AUTHSTAGE_FULL) {
+                        sendSwitchResponse(new byte[]{2}, ++data[3]);
                     }
                     break;
                 }

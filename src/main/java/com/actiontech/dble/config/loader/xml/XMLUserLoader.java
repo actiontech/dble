@@ -28,10 +28,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import static com.actiontech.dble.services.manager.information.tables.DbleRwSplitEntry.*;
-
-import java.util.regex.Pattern;
 
 public class XMLUserLoader {
     public static final String TYPE_MANAGER_USER = "managerUser";
@@ -46,6 +45,8 @@ public class XMLUserLoader {
     private AtomicInteger userId = new AtomicInteger(0);
     private static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
     private Document document;
+    // whether db.xml contains shardingUser
+    private boolean containsShardingUser;
 
     public XMLUserLoader() {
         this.users = Maps.newHashMap();
@@ -136,10 +137,14 @@ public class XMLUserLoader {
         }
     }
 
-
     private void loadManagerUser(Element root, String xmlFile) {
         NodeList list = root.getElementsByTagName(TYPE_MANAGER_USER);
-        for (int i = 0, n = list.getLength(); i < n; i++) {
+        int size = list.getLength();
+        if (size == 0) {
+            return;
+        }
+
+        for (int i = 0; i < size; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element element = (Element) node;
@@ -164,7 +169,13 @@ public class XMLUserLoader {
 
     private void loadShardingUser(Element root, String xmlFile, Map<String, WallProvider> blackListMap) {
         NodeList list = root.getElementsByTagName(TYPE_SHARDING_USER);
-        for (int i = 0, n = list.getLength(); i < n; i++) {
+        int size = list.getLength();
+        if (size == 0) {
+            return;
+        }
+
+        this.containsShardingUser = true;
+        for (int i = 0; i < size; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element element = (Element) node;
@@ -210,7 +221,11 @@ public class XMLUserLoader {
 
     private void loadRwSplitUser(Element root, String xmlFile, Map<String, WallProvider> blackListMap) {
         NodeList list = root.getElementsByTagName(TYPE_RWSPLIT_USER);
-        for (int i = 0, n = list.getLength(); i < n; i++) {
+        int size = list.getLength();
+        if (size == 0) {
+            return;
+        }
+        for (int i = 0; i < size; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element element = (Element) node;
@@ -497,4 +512,9 @@ public class XMLUserLoader {
         }
         return privilegesConfig;
     }
+
+    public boolean isContainsShardingUser() {
+        return containsShardingUser;
+    }
+
 }

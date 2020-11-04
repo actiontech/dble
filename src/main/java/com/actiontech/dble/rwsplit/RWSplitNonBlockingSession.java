@@ -44,7 +44,7 @@ public class RWSplitNonBlockingSession {
                 return;
             }
 
-            PhysicalDbInstance instance = rwGroup.select(master);
+            PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master));
             checkDest(!instance.isReadInstance());
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
@@ -53,6 +53,13 @@ public class RWSplitNonBlockingSession {
         } catch (SQLSyntaxErrorException se) {
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         }
+    }
+
+    private Boolean canRunOnMaster(Boolean master) {
+        if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart()) {
+            return true;
+        }
+        return master;
     }
 
     private void checkDest(boolean isMaster) throws SQLSyntaxErrorException {
@@ -127,15 +134,6 @@ public class RWSplitNonBlockingSession {
             LOGGER.warn("last conn is remaining");
         }
         this.conn = bindConn;
-    }
-
-    public void unbindIfSafe(boolean safe) {
-        if (safe) {
-            this.conn.release();
-            this.conn = null;
-        } else {
-            unbindIfSafe();
-        }
     }
 
     public void unbindIfSafe() {

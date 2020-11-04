@@ -53,24 +53,33 @@ public class ConfigInitializer implements ProblemReporter {
     public ConfigInitializer(boolean lowerCaseNames) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("load-config-file");
         try {
-            //load db.xml
-            XMLDbLoader dbLoader = new XMLDbLoader(null, this);
-            this.dbGroups = dbLoader.getDbGroups();
-
-            //load sharding.xml
-            XMLShardingLoader shardingLoader = new XMLShardingLoader(lowerCaseNames, this);
-            this.schemas = shardingLoader.getSchemas();
-            this.erRelations = shardingLoader.getErRelations();
-            this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
-            this.functions = shardingLoader.getFunctions();
-
             //load user.xml
             XMLUserLoader userLoader = new XMLUserLoader(null, this);
             this.users = userLoader.getUsers();
             this.blacklistConfig = userLoader.getBlacklistConfig();
 
-            deleteRedundancyConf();
-            checkWriteHost();
+            //load db.xml
+            XMLDbLoader dbLoader = new XMLDbLoader(null, this);
+            this.dbGroups = dbLoader.getDbGroups();
+
+            if (userLoader.isContainsShardingUser()) {
+                //load sharding.xml
+                XMLShardingLoader shardingLoader = new XMLShardingLoader(lowerCaseNames, this);
+                this.schemas = shardingLoader.getSchemas();
+                this.erRelations = shardingLoader.getErRelations();
+                this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
+                this.functions = shardingLoader.getFunctions();
+
+                deleteUselessShardingNode();
+            } else {
+                this.schemas = Collections.EMPTY_MAP;
+                this.erRelations = Collections.EMPTY_MAP;
+                this.shardingNodes = Collections.EMPTY_MAP;
+                this.functions = Collections.EMPTY_MAP;
+            }
+
+            checkRwSplitDbGroup();
+            checkWriteDbInstance();
         } finally {
             TraceManager.finishSpan(traceObject);
         }
@@ -93,24 +102,22 @@ public class ConfigInitializer implements ProblemReporter {
         LOGGER.info(problem);
     }
 
-    private void checkWriteHost() {
+    private void checkWriteDbInstance() {
         if (this.dbGroups.isEmpty()) {
             return;
         }
         //Mark all dbInstance whether they are fake or not
         for (PhysicalDbGroup dbGroup : this.dbGroups.values()) {
+            if (dbGroup.isUseless()) {
+                LOGGER.info("dbGroup " + dbGroup.getGroupName() + " is useless,server will create heartbeat,not create pool");
+            }
+
             for (PhysicalDbInstance dbInstance : dbGroup.getDbInstances(true)) {
                 if (checkDbInstanceFake(dbInstance)) {
                     dbInstance.setFakeNode(true);
                 } else if (!dbInstance.isDisabled()) {
                     this.fullyConfigured = true;
                 }
-            }
-        }
-        // if there are dbGroups exists. no empty shardingNodes allowed
-        for (ShardingNode shardingNode : this.shardingNodes.values()) {
-            if (shardingNode.getDbGroup() == null) {
-                throw new ConfigException("dbGroup not exists " + shardingNode.getDbGroupName());
             }
         }
     }
@@ -124,13 +131,11 @@ public class ConfigInitializer implements ProblemReporter {
         return false;
     }
 
-    private void deleteRedundancyConf() {
-        Set<String> allUseShardingNode = new HashSet<>();
-
+    private void deleteUselessShardingNode() {
         if (schemas.size() == 0) {
             errorInfos.add(new ErrorInfo("Xml", "WARNING", "No sharding available"));
         }
-
+        Set<String> allUseShardingNode = new HashSet<>();
         for (SchemaConfig sc : schemas.values()) {
             // check shardingNode / dbGroup
             Set<String> shardingNodeNames = sc.getAllShardingNodes();
@@ -144,15 +149,18 @@ public class ConfigInitializer implements ProblemReporter {
             allUseShardingNode.addAll(redundancy.getShardingNodes());
         }
 
-        Set<String> allUseDbGroups = new HashSet<>();
         //delete redundancy shardingNode
         Iterator<Map.Entry<String, ShardingNode>> iterator = this.shardingNodes.entrySet().iterator();
+        PhysicalDbGroup shardingNodeGroup;
         while (iterator.hasNext()) {
             Map.Entry<String, ShardingNode> entry = iterator.next();
             String shardingNodeName = entry.getKey();
             if (allUseShardingNode.contains(shardingNodeName)) {
-                if (entry.getValue().getDbGroup() != null) {
-                    allUseDbGroups.add(entry.getValue().getDbGroup().getGroupName());
+                shardingNodeGroup = entry.getValue().getDbGroup();
+                if (shardingNodeGroup != null) {
+                    shardingNodeGroup.setUseless(false);
+                } else {
+                    throw new ConfigException("dbGroup not exists " + entry.getValue().getDbGroupName());
                 }
             } else {
                 LOGGER.info("shardingNode " + shardingNodeName + " is useless,server will ignore it");
@@ -160,37 +168,25 @@ public class ConfigInitializer implements ProblemReporter {
                 iterator.remove();
             }
         }
-        allUseShardingNode.clear();
+    }
 
+    private void checkRwSplitDbGroup() {
         // include rwSplit dbGroup
         RwSplitUserConfig rwSplitUserConfig;
-        HashSet<String> rwGroups = new HashSet<>();
+        PhysicalDbGroup group;
         for (UserConfig config : this.users.values()) {
             if (config instanceof RwSplitUserConfig) {
                 rwSplitUserConfig = (RwSplitUserConfig) config;
-                String group = rwSplitUserConfig.getDbGroup();
-                if (!this.dbGroups.containsKey(group)) {
-                    throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + group + "] for rwSplit isn't configured in db.xml.");
-                }
-                if (allUseDbGroups.contains(group)) {
-                    throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + group + "] has been used by sharding node, can't be used by rwSplit.");
+                group = this.dbGroups.get(rwSplitUserConfig.getDbGroup());
+                if (group == null) {
+                    throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] for rwSplit isn't configured in db.xml.");
+                } else if (!group.isUseless()) {
+                    throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] has been used by sharding node, can't be used by rwSplit.");
                 } else {
-                    rwGroups.add(group);
+                    group.setUseless(false);
                 }
             }
         }
-        allUseDbGroups.addAll(rwGroups);
-
-        //mark useless db_group: have heartbeat/ have not pool init
-        for (Map.Entry<String, PhysicalDbGroup> dbGroupEntry : this.dbGroups.entrySet()) {
-            dbGroupEntry.getValue().setUseless(false);
-            if (allUseDbGroups.size() < this.dbGroups.size() && !allUseDbGroups.contains(dbGroupEntry.getKey())) {
-                LOGGER.info("dbGroup " + dbGroupEntry.getKey() + " is useless,server will create heartbeat,not create pool");
-                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupEntry.getKey() + " is useless"));
-                dbGroupEntry.getValue().setUseless(true);
-            }
-        }
-        allUseDbGroups.clear();
     }
 
     public void testConnection() {

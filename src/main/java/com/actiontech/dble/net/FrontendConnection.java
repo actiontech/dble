@@ -48,6 +48,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected FrontendQueryHandler queryHandler;
     protected String executeSql;
+    private boolean userCurrentFlag;
     private final long idleTimeout = SystemConfig.getInstance().getIdleTimeout();
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
@@ -131,6 +132,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void setUser(UserName user) {
         this.user = user;
+        this.userCurrentFlag = true;
     }
 
 
@@ -173,6 +175,9 @@ public abstract class FrontendConnection extends AbstractConnection {
         err.write(this);
     }
 
+    public boolean isUserCurrentFlag() {
+        return userCurrentFlag;
+    }
 
     public void query(byte[] data) {
         String sql = null;

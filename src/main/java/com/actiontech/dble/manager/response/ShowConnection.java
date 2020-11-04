@@ -170,7 +170,7 @@ public final class ShowConnection {
                     continue;
                 }
                 whereInfo.remove("front_id");
-                if (whereInfo.isEmpty() || checkConn(fc, whereInfo)) {
+                if (fc.isUserCurrentFlag() && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
                     RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
@@ -179,7 +179,7 @@ public final class ShowConnection {
             }
 
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc != null && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
+                if (fc != null && fc.isUserCurrentFlag() && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
                     RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);

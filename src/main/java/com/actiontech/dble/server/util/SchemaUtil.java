@@ -171,7 +171,7 @@ public final class SchemaUtil {
                 return false;
             }
         }
-        ServerSchemaStatVisitor queryTableVisitor = new ServerSchemaStatVisitor();
+        ServerSchemaStatVisitor queryTableVisitor = new ServerSchemaStatVisitor(service.getSchema());
         childSelectStmt.accept(queryTableVisitor);
         for (SQLSelect sqlSelect : queryTableVisitor.getSubQueryList()) {
             if (!isNoSharding(service, sqlSelect.getQuery(), stmt, new SQLSelectStatement(sqlSelect), contextSchema, schemas, shardingNode)) {

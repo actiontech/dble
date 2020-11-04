@@ -950,6 +950,12 @@ public class NonBlockingSession extends Session {
                     newConn.getBackendService().setXaStatus(errConn.getBackendService().getXaStatus());
                     newConn.getBackendService().setSession(this);
                     newConn.getBackendService().setResponseHandler(queryHandler);
+                    if (newConn.isClosed()) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("BackendConnection[{}] is closed.", newConn);
+                        }
+                        return errConn.getBackendService();
+                    }
                     errConn.businessClose("error connection change in xa");
                     this.bindConnection(node, newConn);
                     return newConn.getBackendService();

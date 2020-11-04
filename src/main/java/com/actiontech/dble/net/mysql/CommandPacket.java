@@ -131,6 +131,7 @@ public class CommandPacket extends MySQLPacket {
             buffer.put(packetId++);
             remain = writeBody(buffer, isFirst, remain);
             service.writeDirectly(buffer);
+            service.getSession().getShardingService().nextPacketId();
             isFirst = false;
         }
 

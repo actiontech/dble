@@ -6,7 +6,11 @@
 package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.util.CollectionUtil;
@@ -46,12 +50,20 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     private List<SQLSelect> firstClassSubQueryList = new ArrayList();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
-    private Set<String> tableTables = new HashSet<>();
+    private Set<Pair<String, String>> selectSchemaTables = new HashSet<>();
     private List<String> selectTableList = new ArrayList<>();
     private List<SQLExprTableSource> motifyTableSourceList = new ArrayList<>();
     private String currentTable;
+    private String currentSchema;
     private boolean firstSelectBlock = true;
     private boolean containsInnerFunction = false;
+
+    public ServerSchemaStatVisitor() {
+    }
+
+    public ServerSchemaStatVisitor(String currentSchema) {
+        this.currentSchema = currentSchema;
+    }
 
     private void reset() {
         this.relationships.clear();
@@ -235,8 +247,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSubqueryTableSource x) {
+        Set<Pair<String, String>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
+        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        selectSchemaTables.clear();
         putAliasToMap(x.getAlias(), "subquery");
-        return super.visit(x);
+        boolean visitResult = super.visit(x);
+        selectSchemaTables.addAll(tmpSelectSchemaTables);
+        tmpSelectSchemaTables.clear();
+        return visitResult;
     }
 
     @Override
@@ -379,10 +397,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             SQLJoinTableSource tableSource = (SQLJoinTableSource) x.getTableSource();
             if (tableSource.getRight() instanceof SQLExprTableSource) {
                 String ident = tableSource.getRight().toString();
-                putAliasToMap(ident, ident.replace("`", ""));
+                putAliasToMap(ident, ident);
                 String alias = tableSource.getRight().getAlias();
                 if (alias != null) {
-                    putAliasToMap(alias, ident.replace("`", ""));
+                    putAliasToMap(alias, ident);
                 }
                 motifyTableSourceList.add((SQLExprTableSource) tableSource.getRight());
             } else {
@@ -391,10 +409,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
             if (tableSource.getLeft() instanceof SQLExprTableSource) {
                 String ident = tableSource.getLeft().toString();
-                putAliasToMap(ident, ident.replace("`", ""));
+                putAliasToMap(ident, ident);
                 String alias = tableSource.getLeft().getAlias();
                 if (alias != null) {
-                    putAliasToMap(alias, ident.replace("`", ""));
+                    putAliasToMap(alias, ident);
                 }
                 motifyTableSourceList.add((SQLExprTableSource) tableSource.getLeft());
             } else {
@@ -405,18 +423,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             if (identName != null) {
                 String ident = identName.toString();
                 currentTable = ident;
-
-                putAliasToMap(ident, ident.replace("`", ""));
+                putAliasToMap(ident, ident);
                 String alias = x.getTableSource().getAlias();
                 if (alias != null) {
-                    putAliasToMap(alias, ident.replace("`", ""));
+                    putAliasToMap(alias, ident);
                 }
             } else {
                 x.getTableSource().accept(this);
             }
         }
-
-
         accept(x.getItems());
         accept(x.getWhere());
 
@@ -437,18 +452,17 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             motifyTableSourceList.add(x);
             String alias = x.getAlias();
             if (alias != null && !aliasMap.containsKey(alias)) {
-                putAliasToMap(alias, ident.replace("`", ""));
+                putAliasToMap(alias, ident);
             }
 
             if (!aliasMap.containsKey(ident)) {
-                putAliasToMap(ident, ident.replace("`", ""));
+                putAliasToMap(ident, ident);
             }
         } else {
             this.accept(x.getExpr());
         }
         return false;
     }
-
 
     @Override
     public boolean visit(SQLSelect x) {
@@ -559,12 +573,30 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     private Column getColumnByExpr(SQLIdentifierExpr expr) {
         String column = expr.getName();
-        String table = currentTable;
-        if (table != null) {
-            return new Column(table, column);
+        if (currentSchema == null) {
+            return currentTable == null ? null : new Column(currentTable, column);
+        } else {
+            int i = 0;
+            String table = null;
+            for (Pair<String, String> k : selectSchemaTables) {
+                if (k.getKey() == null || k.getValue().equals("subquery")) {
+                    continue;
+                }
+                BaseTableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(k.getKey()).getTable(k.getValue());
+                if ((tableConfig instanceof ShardingTableConfig && StringUtil.equalsIgnoreCase(((ShardingTableConfig) tableConfig).getShardingColumn(), column)) ||
+                        (tableConfig instanceof ChildTableConfig && StringUtil.equalsIgnoreCase(((ChildTableConfig) tableConfig).getJoinColumn(), column))) {
+                    table = tableConfig.getName();
+                    if (++i > 1) {
+                        break;
+                    }
+                }
+            }
+            if (i == 1) {
+                return new Column(table, column);
+            } else {
+                return null;
+            }
         }
-
-        return null;
     }
 
     private Column getColumnByExpr(SQLPropertyExpr expr) {
@@ -597,7 +629,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             return;
         }
         if (containSchema) {
-            putAliasToMap(tableName, tableName.replace("`", ""));
+            putAliasToMap(tableName, tableName);
             return;
         }
         String tempStr;
@@ -613,9 +645,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * get table name of field in between expr
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (tableTables.size() == 1) { //only has 1 table
-            return tableTables.iterator().next();
-        } else if (tableTables.size() == 0) { //no table
+        if (selectSchemaTables.size() == 1) { //only has 1 table
+            return selectSchemaTables.iterator().next().getValue();
+        } else if (selectSchemaTables.size() == 0) { //no table
             return "";
         } else { // multi tables
             for (Column col : columns.values()) {
@@ -853,13 +885,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     private void putAliasToMap(String name, String value) {
+        value = value.replace("`", "");
         if (name != null) {
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 name = name.toLowerCase();
                 value = value.toLowerCase();
             }
             aliasMap.put(name, value);
-            tableTables.add(value);
+            String[] array = value.split("\\.");
+            selectSchemaTables.add(array.length == 2 ? new Pair<>(array[0], array[1]) : new Pair<>(currentSchema, array[0]));
         }
     }
 

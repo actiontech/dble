@@ -81,6 +81,7 @@ public class ItemCreate {
         nativFuncs.put("DATEDIFF", new ItemFuncDatediff(null));
         nativFuncs.put("DATE_FORMAT", new ItemFuncDateFormat(null, false));
         nativFuncs.put("DAYNAME", new ItemFuncDayname(null));
+        nativFuncs.put("DAY", new ItemFuncDayofmonth(null));
         nativFuncs.put("DAYOFMONTH", new ItemFuncDayofmonth(null));
         nativFuncs.put("DAYOFWEEK", new ItemFuncDayofweek(null));
         nativFuncs.put("DAYOFYEAR", new ItemFuncDayofyear(null));

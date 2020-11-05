@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
@@ -582,12 +583,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 if (k.getKey() == null || k.getValue().equals("subquery")) {
                     continue;
                 }
-                BaseTableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(k.getKey()).getTable(k.getValue());
-                if ((tableConfig instanceof ShardingTableConfig && StringUtil.equalsIgnoreCase(((ShardingTableConfig) tableConfig).getShardingColumn(), column)) ||
-                        (tableConfig instanceof ChildTableConfig && StringUtil.equalsIgnoreCase(((ChildTableConfig) tableConfig).getJoinColumn(), column))) {
-                    table = tableConfig.getName();
-                    if (++i > 1) {
-                        break;
+                SchemaConfig schemaConfig;
+                if ((schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(k.getKey())) != null) {
+                    BaseTableConfig tableConfig;
+                    if ((tableConfig = schemaConfig.getTable(k.getValue())) != null && ((tableConfig instanceof ShardingTableConfig && StringUtil.equalsIgnoreCase(((ShardingTableConfig) tableConfig).getShardingColumn(), column)) ||
+                            (tableConfig instanceof ChildTableConfig && StringUtil.equalsIgnoreCase(((ChildTableConfig) tableConfig).getJoinColumn(), column)))) {
+                        table = tableConfig.getName();
+                        if (++i > 1) {
+                            break;
+                        }
                     }
                 }
             }

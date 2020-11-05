@@ -529,7 +529,9 @@ public class NonBlockingSession extends Session {
             discard = true;
         } catch (Exception e) {
             LOGGER.info(String.valueOf(shardingService) + rrs, e);
-            handleSpecial(rrs, false, null);
+            if (!hasDDLInProcess) {
+                handleSpecial(rrs, false, null);
+            }
             shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);

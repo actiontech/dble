@@ -90,13 +90,14 @@ public final class ShowDbInstance {
         ServerConfig conf = DbleServer.getInstance().getConfig();
 
         if (null != name) {
-            ShardingNode dn = conf.getShardingNodes().get(name);
-            for (PhysicalDbInstance w : dn.getDbGroup().getDbInstances(true)) {
-                RowDataPacket row = getRow(w.getDbGroupConfig().getName(), w, service.getCharset().getResults());
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, service, true);
+            ShardingNode dn = conf.getShardingNodes().get(StringUtil.removeAllApostrophe(name));
+            if (dn != null) {
+                for (PhysicalDbInstance w : dn.getDbGroup().getDbInstances(true)) {
+                    RowDataPacket row = getRow(w.getDbGroupConfig().getName(), w, service.getCharset().getResults());
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
             }
-
         } else {
             // add all
             for (Map.Entry<String, PhysicalDbGroup> entry : conf.getDbGroups().entrySet()) {

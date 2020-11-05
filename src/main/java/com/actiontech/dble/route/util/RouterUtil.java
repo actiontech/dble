@@ -30,6 +30,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.HexFormatUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
@@ -523,6 +524,10 @@ public final class RouterUtil {
             String schemaName = table.getKey();
             String tableName = table.getValue();
             SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+            if (schema == null) {
+                String msg = "Table " + StringUtil.getFullName(schemaName, tableName) + " doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
             schemaList.add(schemaName);
             BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
@@ -541,6 +546,15 @@ public final class RouterUtil {
         if (globalTables.size() == tableSize) {
             return tryRouteGlobalTablesToOneNode(tmpResultNodes, globalTables);
         }
+
+        return tryCalculateRouteTablesToOneNodeForComplex(rrs, ctx, tmpResultNodes, globalTables, tablesSet, clientCharset);
+    }
+
+    private static String tryCalculateRouteTablesToOneNodeForComplex(
+            RouteResultset rrs, DruidShardingParseInfo ctx,
+            Set<String> tmpResultNodes,
+            Set<Pair<String, BaseTableConfig>> globalTables, Set<Pair<String, String>> tablesSet,
+            String clientCharset) throws SQLException {
         if (tablesSet.size() != 0) {
             Set<String> resultNodes = new HashSet<>();
             for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {

@@ -275,10 +275,10 @@ public class ProxyMetaManager {
         try {
             while (true) {
                 int oldVersion = version.get();
+                if (catalogs.get(schema) == null) {
+                    return null;
+                }
                 if (metaCount.get() == 0) {
-                    if (catalogs.get(schema) == null) {
-                        return null;
-                    }
                     PlanNode viewNode = catalogs.get(schema).getView(vName);
                     if (version.get() == oldVersion) {
                         return viewNode;

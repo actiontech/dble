@@ -21,6 +21,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -363,7 +364,10 @@ public class ServerConfig {
                 LOGGER.debug("metadata will delete Tables:" + tables);
             }
             for (Pair<String, String> table : delTables) {
-                ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getKey()).dropTable(table.getValue());
+                SchemaMeta oldSchemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getKey());
+                if (oldSchemaMeta != null) {
+                    oldSchemaMeta.dropTable(table.getValue());
+                }
             }
             LOGGER.info("metadata finished for deleted tables");
         }

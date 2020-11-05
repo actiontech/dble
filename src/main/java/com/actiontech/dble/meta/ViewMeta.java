@@ -105,7 +105,10 @@ public class ViewMeta {
     }
 
     private void checkDuplicate(int type, Boolean isReplace) throws SQLException {
-
+        if (StringUtil.isEmpty(schema)) {
+            String msg = "No database selected";
+            throw new SQLException(msg, "3D000", ErrorCode.ER_NO_DB_ERROR);
+        }
         ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
         StructureMeta.TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);

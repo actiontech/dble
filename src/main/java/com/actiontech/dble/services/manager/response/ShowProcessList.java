@@ -86,7 +86,7 @@ public final class ShowProcessList {
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc == null)
+                if (fc == null || !fc.convertToFrontEndService())
                     break;
 
                 Map<RouteResultsetNode, BackendConnection> backendConns = null;

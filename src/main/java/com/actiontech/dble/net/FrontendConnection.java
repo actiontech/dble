@@ -133,7 +133,6 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.user = user;
     }
 
-
     public byte[] getSeed() {
         return seed;
     }
@@ -173,6 +172,9 @@ public abstract class FrontendConnection extends AbstractConnection {
         err.write(this);
     }
 
+    public boolean isAuthenticated() {
+        return isAuthenticated;
+    }
 
     public void query(byte[] data) {
         String sql = null;

@@ -85,7 +85,7 @@ public final class ShowConnectionSQL {
         byte packetId = EOF.getPacketId();
         for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (!fc.isClosed()) {
+                if (!fc.isClosed() && fc.isAuthenticated()) {
                     RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);

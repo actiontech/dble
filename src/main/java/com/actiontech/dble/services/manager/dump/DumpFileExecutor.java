@@ -129,9 +129,8 @@ public final class DumpFileExecutor implements Runnable {
             return true;
         }
         // skip view
-        if ((ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) && skipView(stmt)) {
-            context.setSkipContext(true);
-            return true;
+        if (ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) {
+            return skipView(stmt);
         }
         // footer
         if (stmt.contains("=@OLD_")) {
@@ -145,8 +144,10 @@ public final class DumpFileExecutor implements Runnable {
         Matcher matcher = DumpFileReader.CREATE_VIEW.matcher(stmt);
         if (matcher.find()) {
             context.addError("skip view " + matcher.group(1));
+            return true;
         }
-        return false;
+        matcher = DumpFileReader.CREATE_VIEW1.matcher(stmt);
+        return matcher.find();
     }
 
 }

@@ -213,13 +213,15 @@ public final class ShowBackend {
         row.add(c.getCharsetName().getClient().getBytes());
         row.add(c.getCharsetName().getCollation().getBytes());
         row.add(c.getCharsetName().getResults().getBytes());
-        row.add((c.getBackendService().getTxIsolation() + "").getBytes());
-        row.add((c.getBackendService().isAutocommit() + "").getBytes());
-        row.add(StringUtil.encode(c.getBackendService().getStringOfSysVariables(), charset));
-        row.add(StringUtil.encode(c.getBackendService().getStringOfUsrVariables(), charset));
-        row.add(StringUtil.encode(c.getBackendService().getXaStatus().toString(), charset));
+        row.add(c.isClosed() ? null : (c.getBackendService().getTxIsolation() + "").getBytes());
+        row.add(c.isClosed() ? null : (c.getBackendService().isAutocommit() + "").getBytes());
+        row.add(c.isClosed() ? null : StringUtil.encode(c.getBackendService().getStringOfSysVariables(), charset));
+        row.add(c.isClosed() ? null : StringUtil.encode(c.getBackendService().getStringOfUsrVariables(), charset));
+        row.add(c.isClosed() ? null : StringUtil.encode(c.getBackendService().getXaStatus().toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(c.getPoolDestroyedTime()), charset));
-        if (state == PooledConnection.INITIAL) {
+        if (c.isClosed()) {
+            row.add(null);
+        } else if (state == PooledConnection.INITIAL) {
             ResponseHandler handler = c.getBackendService().getResponseHandler();
             row.add(handler instanceof HeartbeatSQLJob ? "true".getBytes() : "false".getBytes());
         } else {

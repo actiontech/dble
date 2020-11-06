@@ -20,9 +20,9 @@ public class ManagerAuthenticator extends FrontendAuthenticator {
     @Override
     protected void setConnProperties(AuthPacket auth) {
         ManagerConnection sc = (ManagerConnection) source;
-        sc.setAuthenticated(true);
         UserName user = new UserName(auth.getUser(), "");
         sc.setUser(user);
+        sc.setAuthenticated(true);
         sc.setUserConfig((ManagerUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(user)));
         sc.initCharsetIndex(auth.getCharsetIndex());
         sc.setHandler(new ManagerCommandHandler(sc));

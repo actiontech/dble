@@ -367,7 +367,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                     return;
                 }
 
-                heartbeat.heartbeat();
+                heartbeat.heartbeat(true);
             }
         }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
     }

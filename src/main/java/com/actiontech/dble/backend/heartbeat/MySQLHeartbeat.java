@@ -57,6 +57,7 @@ public class MySQLHeartbeat {
     private volatile ScheduledFuture scheduledFuture;
     private AtomicLong errorTimeInLast5Min = new AtomicLong();
     private int errorTimeInLast5MinCount = 0;
+    private volatile boolean isInnerRetry = false;
 
     public MySQLHeartbeat(PhysicalDbInstance dbInstance) {
         this.source = dbInstance;
@@ -107,8 +108,12 @@ public class MySQLHeartbeat {
 
     /**
      * execute heart beat
+     * @param isThreadRetry
      */
-    public void heartbeat() {
+    public void heartbeat(boolean isThreadRetry) {
+        if (isInnerRetry && isThreadRetry) {
+            return;
+        }
         if (isChecking.compareAndSet(false, true)) {
             if (detector == null || detector.isQuit()) {
                 detector = new MySQLDetector(this);
@@ -133,13 +138,14 @@ public class MySQLHeartbeat {
     // only use when heartbeat connection is closed
     boolean doHeartbeatRetry() {
         if (errorRetryCount > 0 && errorCount.get() < errorRetryCount) {
+            isInnerRetry = true;
             // should continue checking error status
             if (detector != null) {
                 detector.quit();
             }
             isChecking.set(false);
             LOGGER.warn("retry to do heartbeat for the " + errorCount.incrementAndGet() + " times");
-            heartbeat(); // error count not enough, heart beat again
+            heartbeat(false); // error count not enough, heart beat again
             recordErrorCount();
             return true;
         }
@@ -160,8 +166,10 @@ public class MySQLHeartbeat {
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
         if (errorRetryCount > 0 && errorCount.get() < errorRetryCount) {
             LOGGER.warn("retry to do heartbeat for the " + errorCount.incrementAndGet() + " times");
-            heartbeat(); // error count not enough, heart beat again
+            heartbeat(false); // error count not enough, heart beat again
             recordErrorCount();
+        } else {
+            isInnerRetry = false;
         }
     }
 
@@ -196,7 +204,7 @@ public class MySQLHeartbeat {
                 if (isStop) {
                     detector.quit();
                 } else {
-                    heartbeat(); // timeout, heart beat again
+                    heartbeat(false); // timeout, heart beat again
                 }
                 break;
             case OK_STATUS:
@@ -296,5 +304,9 @@ public class MySQLHeartbeat {
 
     public int getErrorTimeInLast5MinCount() {
         return errorTimeInLast5MinCount;
+    }
+
+    public void setInnerRetry(boolean innerRetry) {
+        isInnerRetry = innerRetry;
     }
 }

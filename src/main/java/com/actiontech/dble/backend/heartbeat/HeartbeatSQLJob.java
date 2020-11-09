@@ -47,6 +47,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     @Override
     public void connectionAcquired(final BackendConnection conn) {
         this.connection = conn;
+        heartbeat.setInnerRetry(false);
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setComplexQuery(true);
         try {

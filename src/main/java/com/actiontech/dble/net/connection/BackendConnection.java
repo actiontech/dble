@@ -26,14 +26,14 @@ public class BackendConnection extends PooledConnection {
 
     private ReadTimeStatusInstance instance;
 
-    public BackendConnection(NetworkChannel channel, SocketWR socketWR, ReadTimeStatusInstance instance, ResponseHandler handler) {
+    public BackendConnection(NetworkChannel channel, SocketWR socketWR, ReadTimeStatusInstance instance, ResponseHandler handler, String schema) {
         super(channel, socketWR);
         this.instance = instance;
         DbInstanceConfig config = instance.getConfig();
         this.host = config.getIp();
         this.port = config.getPort();
         this.lastTime = TimeUtil.currentTimeMillis();
-        this.setService(new MySQLBackAuthService(this, config.getUser(), null, config.getPassword(), null, handler));
+        this.setService(new MySQLBackAuthService(this, config.getUser(), schema, config.getPassword(), null, handler));
 
     }
 

@@ -34,7 +34,7 @@ public class MySQLConnectionFactory extends PooledConnectionFactory {
             channel = AsynchronousSocketChannel.open(DbleServer.getInstance().getNextAsyncChannelGroup());
             socketWR = new AIOSocketWR();
         }
-        BackendConnection connection = new BackendConnection(channel, socketWR, instance, handler);
+        BackendConnection connection = new BackendConnection(channel, socketWR, instance, handler, schema);
         connection.setSocketParams(false);
         socketWR.initFromConnection(connection);
         DbleServer.getInstance().getConnector().postConnect(connection);

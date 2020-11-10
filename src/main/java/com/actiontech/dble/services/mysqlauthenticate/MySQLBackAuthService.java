@@ -314,4 +314,11 @@ public class MySQLBackAuthService extends AuthService {
         return flag;
     }
 
+    @Override
+    public void cleanup() {
+        super.cleanup();
+        if (handler != null) {
+            this.handler.connectionClose(this, "abnormal connection");
+        }
+    }
 }

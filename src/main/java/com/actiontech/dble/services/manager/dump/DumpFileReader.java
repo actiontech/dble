@@ -21,6 +21,7 @@ public final class DumpFileReader {
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     public static final String EOF = "dump file eof";
     public static final Pattern CREATE_VIEW = Pattern.compile("CREATE\\s+VIEW\\s+`?([a-zA-Z_0-9\\-_]+)`?\\s+", Pattern.CASE_INSENSITIVE);
+    public static final Pattern CREATE_VIEW1 = Pattern.compile("CREATE\\s+ALGORITHM", Pattern.CASE_INSENSITIVE);
     private StringBuilder tempStr = new StringBuilder(200);
     private BlockingQueue<String> readQueue;
     private FileChannel fileChannel;

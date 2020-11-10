@@ -82,7 +82,7 @@ public final class ShowConnectionSQL {
         byte packetId = EOF.getPacketId();
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (!fc.isClosed()) {
+                if (!fc.isClosed() && fc.convertToFrontEndService()) {
                     RowDataPacket row = getRow(fc, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);

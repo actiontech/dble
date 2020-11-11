@@ -37,7 +37,7 @@ public final class MysqlSystemSchemaHandler {
         }
 
         if (mySqlSelectQueryBlock == null) {
-            service.writeDirectly(service.writeToBuffer(OkPacket.OK, service.allocate()));
+            service.writeOkPacket();
             return;
         }
 

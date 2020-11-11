@@ -147,7 +147,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
             ResetConnHandler handler = new ResetConnHandler();
             responseService.setResponseHandler(handler);
             responseService.setComplexQuery(true);
-            responseService.writeDirectly(responseService.writeToBuffer(ResetConnectionPacket.RESET, responseService.allocate()));
+            responseService.writeDirectly(ResetConnectionPacket.RESET);
         }
     }
 
@@ -192,7 +192,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
             ResetConnHandler handler = new ResetConnHandler();
             responseService.setResponseHandler(handler);
             responseService.setComplexQuery(true);
-            responseService.writeDirectly(responseService.writeToBuffer(ResetConnectionPacket.RESET, responseService.allocate()));
+            responseService.writeDirectly(ResetConnectionPacket.RESET);
         }
     }
 

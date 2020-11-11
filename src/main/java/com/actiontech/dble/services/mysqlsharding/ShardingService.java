@@ -396,21 +396,16 @@ public class ShardingService extends BusinessService {
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
-        if (session.isDiscard() || session.isKilled()) {
-            session.setKilled(false);
-            session.setDiscard(false);
-        }
     }
 
     @Override
-    protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
-        markFinished();
-        super.writeErrMessage(id, vendorCode, sqlState, msg);
-    }
-
     public void markFinished() {
         if (session != null) {
             session.setStageFinished();
+            if (session.isDiscard() || session.isKilled()) {
+                session.setKilled(false);
+                session.setDiscard(false);
+            }
         }
     }
 
@@ -539,6 +534,7 @@ public class ShardingService extends BusinessService {
     @Override
     public void write(MySQLPacket packet) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
+        markFinished();
         if (packet.isEndOfSession()) {
             //error finished do resource clean up
             session.resetMultiStatementStatus();
@@ -569,6 +565,7 @@ public class ShardingService extends BusinessService {
     @Override
     public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
+        markFinished();
         if (packet.isEndOfSession()) {
             //error finished do resource clean up
             session.resetMultiStatementStatus();

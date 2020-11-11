@@ -8,7 +8,6 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -45,7 +44,7 @@ public class DruidDropTableParser extends DefaultDruidParser {
         Map<String, BaseTableConfig> tables = schemaInfo.getSchemaConfig().getTables();
         BaseTableConfig tc = tables.get(schemaInfo.getTable());
         if (tc == null) {
-            service.writeDirectly(service.writeToBuffer(OkPacket.OK, service.allocate()));
+            service.writeOkPacket();
             rrs.setFinishedExecute(true);
         } else {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);

@@ -10,10 +10,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-
 import com.actiontech.dble.server.SessionStage;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
@@ -78,13 +76,13 @@ public final class KillHandler {
         NonBlockingSession killSession = ((ShardingService) killConn.getService()).getSession2();
         if (killSession.getTransactionManager().getXAStage() != null ||
                 killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
-            getOkPacket(service).write(service.getConnection());
+            service.writeOkPacket();
             return;
         }
 
         killSession.setKilled(true);
         // return ok to front connection that sends kill query
-        getOkPacket(service).write(service.getConnection());
+        service.writeOkPacket();
 
         while (true) {
             if (!killSession.isKilled()) {
@@ -117,9 +115,7 @@ public final class KillHandler {
     private static void killConnection(long id, ShardingService service) {
         // kill myself
         if (id == service.getConnection().getId()) {
-            OkPacket packet = getOkPacket(service);
-            packet.setPacketId(0);
-            packet.write(service.getConnection());
+            service.writeOkPacket();
             return;
         }
 
@@ -134,7 +130,7 @@ public final class KillHandler {
         }
         fc.killAndClose("killed");*/
 
-        getOkPacket(service).write(service.getConnection());
+        service.writeOkPacket();
     }
 
     private static FrontendConnection findFrontConn(long connId) {
@@ -146,16 +142,6 @@ public final class KillHandler {
             }
         }
         return fc;
-    }
-
-    private static OkPacket getOkPacket(ShardingService service) {
-        byte packetId = (byte) service.getSession2().getPacketId().get();
-        OkPacket packet = new OkPacket();
-        packet.setPacketId(++packetId);
-        packet.setAffectedRows(0);
-        packet.setServerStatus(2);
-        service.getSession2().multiStatementPacket(packet, packetId);
-        return packet;
     }
 
 }

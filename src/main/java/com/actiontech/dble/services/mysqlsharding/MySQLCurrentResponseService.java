@@ -25,13 +25,17 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
         }
     }
 
-
     @Override
     public void consumerInternalData() {
         try {
-            super.handleInnerData();
+            handleInnerData();
+        } catch (Exception e) {
+            handleDataError(e);
         } finally {
             isHandling.set(false);
+            if (taskQueue.size() > 0) {
+                taskToTotalQueue(null);
+            }
         }
     }
 }

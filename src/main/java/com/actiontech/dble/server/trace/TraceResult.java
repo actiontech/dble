@@ -132,9 +132,15 @@ public class TraceResult implements Cloneable {
         if (existReceivedMap != null) {
             existReceivedMap.putAll(connMap);
         }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("connReceivedMap:{}", connReceivedMap);
+        }
     }
 
     public void clearConnReceivedMap() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("clear connReceivedMap:{}", connReceivedMap);
+        }
         connReceivedMap.clear();
     }
 
@@ -183,6 +189,9 @@ public class TraceResult implements Cloneable {
         simpleHandler = null;
         builder = null; //for complex query
         connFlagMap.clear();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("clear connReceivedMap:{}", connReceivedMap);
+        }
         for (Map<MySQLResponseService, TraceRecord> connReceived : connReceivedMap.values()) {
             connReceived.clear();
         }

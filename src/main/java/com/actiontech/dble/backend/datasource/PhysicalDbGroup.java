@@ -50,7 +50,8 @@ public class PhysicalDbGroup {
     private final LoadBalancer loadBalancer = new RandomLoadBalancer();
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
-    private boolean useless = true;
+    private boolean shardingUseless = true;
+    private boolean rwSplitUseless = true;
 
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
@@ -127,11 +128,23 @@ public class PhysicalDbGroup {
     }
 
     public boolean isUseless() {
-        return useless;
+        return shardingUseless && rwSplitUseless;
     }
 
-    public void setUseless(boolean useless) {
-        this.useless = useless;
+    public boolean isShardingUseless() {
+        return shardingUseless;
+    }
+
+    public boolean isRwSplitUseless() {
+        return rwSplitUseless;
+    }
+
+    public void setShardingUseless(boolean shardingUseless) {
+        this.shardingUseless = shardingUseless;
+    }
+
+    public void setRwSplitUseless(boolean rwSplitUseless) {
+        this.rwSplitUseless = rwSplitUseless;
     }
 
     private boolean checkSlaveSynStatus() {
@@ -442,6 +455,6 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
                 pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
                 pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
-                pool.getGroupName().equals(this.groupName) && pool.isUseless() == this.isUseless();
+                pool.getGroupName().equals(this.groupName) && pool.isShardingUseless() == this.isShardingUseless() && pool.isRwSplitUseless() == this.isRwSplitUseless();
     }
 }

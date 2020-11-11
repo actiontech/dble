@@ -748,6 +748,7 @@ public class ServerParse {
 
     // BEGIN
     protected static int beginCheck(String stmt, int offset) {
+        String key = "work";
         if (stmt.length() > offset + 4) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -757,15 +758,26 @@ public class ServerParse {
                     (c2 == 'G' || c2 == 'g') &&
                     (c3 == 'I' || c3 == 'i') &&
                     (c4 == 'N' || c4 == 'n') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset))) {
+                    (stmt.length() == ++offset || keyCheck(stmt, key, offset) || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset))) {
                 return BEGIN;
             }
         }
         return OTHER;
     }
 
+
+    private static boolean keyCheck(String stmt, String key, int offset) {
+        String lowerStmt = stmt.toLowerCase().substring(offset).trim();
+        offset = stmt.toLowerCase().indexOf(key) + key.length() - 1;
+        if (lowerStmt.startsWith(key) && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset))) {
+            return true;
+        }
+        return false;
+    }
+
     // COMMIT
     private static int commitCheck(String stmt, int offset) {
+        String key = "work";
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -777,7 +789,7 @@ public class ServerParse {
                     (c3 == 'M' || c3 == 'm') &&
                     (c4 == 'I' || c4 == 'i') &&
                     (c5 == 'T' || c5 == 't') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset))) {
+                    (stmt.length() == ++offset || keyCheck(stmt, key, offset) || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset))) {
                 return COMMIT;
             }
         }

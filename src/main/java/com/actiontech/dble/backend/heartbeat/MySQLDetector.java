@@ -165,7 +165,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     AlertUtil.alertResolve(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
                             ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR, url);
                 }
-                if (!source.isSalveOrRead()) { // writehost checkRecoverFail read only
+                if (heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS || !source.isSalveOrRead()) { // writehost checkRecoverFail read only
                     source.setReadOnly(variables.isReadOnly());
                 }
             }

@@ -58,8 +58,13 @@ public class ServerParse {
     public static final int MIGRATE = 203;
     /* don't set the constant to 255 */
     public static final int UNSUPPORT = 254;
+    public static final int SELECT_FOR_UPDATE = 156;
+    public static final int LOCK_IN_SHARE_MODE = 157;
+
     private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
     private static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SELECT_FOR_UPDATE_PATTERN = Pattern.compile(".*(\\s+for\\s+update)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern LOCK_IN_SHARE_MODE_PATTERN = Pattern.compile(".*(\\s+lock\\s+in\\s+share\\s+mode)\\s*$", Pattern.CASE_INSENSITIVE);
 
     public static boolean startWithHint(String stmt) {
         int length = stmt.length();
@@ -1289,4 +1294,18 @@ public class ServerParse {
         }
         return OTHER;
     }
+
+    public static int parseSpecial(int sqlType, String stmt) {
+        if (ServerParse.SELECT != sqlType) {
+            return OTHER;
+        }
+        if (SELECT_FOR_UPDATE_PATTERN.matcher(stmt).matches()) {
+            return SELECT_FOR_UPDATE;
+        }
+        if (LOCK_IN_SHARE_MODE_PATTERN.matcher(stmt).matches()) {
+            return LOCK_IN_SHARE_MODE;
+        }
+        return OTHER;
+    }
+
 }

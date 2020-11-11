@@ -267,7 +267,9 @@ public final class RouterUtil {
         if (rrs.getRunOnSlave() != null) {
             nodes[0].setRunOnSlave(rrs.getRunOnSlave());
         }
-
+        if (rrs.isSpecialDeal()) {
+            nodes[0].setSpecialDeal(true);
+        }
         return rrs;
     }
 
@@ -313,16 +315,18 @@ public final class RouterUtil {
     private static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes) {
         RouteResultsetNode[] nodes = new RouteResultsetNode[shardingNodes.size()];
         int i = 0;
-        RouteResultsetNode node;
         for (String shardingNode : shardingNodes) {
-            node = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement());
+            nodes[i] = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement());
             if (rrs.getCanRunInReadDB() != null) {
-                node.setCanRunInReadDB(rrs.getCanRunInReadDB());
+                nodes[i].setCanRunInReadDB(rrs.getCanRunInReadDB());
             }
             if (rrs.getRunOnSlave() != null) {
-                nodes[0].setRunOnSlave(rrs.getRunOnSlave());
+                nodes[i].setRunOnSlave(rrs.getRunOnSlave());
             }
-            nodes[i++] = node;
+            if (rrs.isSpecialDeal()) {
+                nodes[i].setSpecialDeal(true);
+            }
+            i++;
         }
         rrs.setSqlRouteCacheAble(cache);
         rrs.setNodes(nodes);

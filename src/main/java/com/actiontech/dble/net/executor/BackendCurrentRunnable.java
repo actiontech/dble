@@ -20,7 +20,7 @@ public class BackendCurrentRunnable implements Runnable {
         ServiceTask task;
         while (true) {
             while ((task = concurrentBackQueue.poll()) != null) {
-                task.getService().consumerInternalData();
+                task.getService().consumerInternalData(task);
             }
         }
     }

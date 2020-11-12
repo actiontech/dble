@@ -26,7 +26,7 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
     }
 
     @Override
-    public void consumerInternalData() {
+    public void consumerInternalData(ServiceTask task) {
         try {
             handleInnerData();
         } catch (Exception e) {
@@ -34,7 +34,7 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
         } finally {
             isHandling.set(false);
             if (taskQueue.size() > 0) {
-                taskToTotalQueue(null);
+                taskToTotalQueue(task);
             }
         }
     }

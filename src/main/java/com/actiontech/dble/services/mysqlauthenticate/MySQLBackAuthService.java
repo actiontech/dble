@@ -239,8 +239,10 @@ public class MySQLBackAuthService extends AuthService {
     @Override
     public void taskToTotalQueue(ServiceTask task) {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            if (isHandling.compareAndSet(false, true)) {
-                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
+            if (task != null) {
+                if (isHandling.compareAndSet(false, true)) {
+                    DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
+                }
             }
         } else {
             Executor executor = DbleServer.getInstance().getBackendBusinessExecutor();

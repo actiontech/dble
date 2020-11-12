@@ -147,6 +147,7 @@ public abstract class AbstractService implements Service {
     }
 
     public void writeDirectly(ByteBuffer buffer) {
+        markFinished();
         this.connection.write(buffer);
     }
 
@@ -161,16 +162,17 @@ public abstract class AbstractService implements Service {
         }
     }
 
-
     public void write(MySQLPacket packet) {
         if (packet.isEndOfSession() || packet.isEndOfQuery()) {
             TraceManager.sessionFinish(this);
         }
+        markFinished();
         packet.bufferWrite(connection);
     }
 
     public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
         buffer = packet.write(buffer, this, true);
+        markFinished();
         connection.write(buffer);
         if (packet.isEndOfSession() || packet.isEndOfQuery()) {
             TraceManager.sessionFinish(this);
@@ -290,6 +292,7 @@ public abstract class AbstractService implements Service {
     protected abstract void handleInnerData(byte[] data);
 
     public void writeOkPacket() {
+        markFinished();
         OkPacket ok = new OkPacket();
         byte packet = (byte) this.getPacketId().incrementAndGet();
         ok.read(OkPacket.OK);
@@ -310,11 +313,15 @@ public abstract class AbstractService implements Service {
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);
         err.setSqlState(StringUtil.encode(sqlState, connection.getCharsetName().getResults()));
         err.setMessage(StringUtil.encode(msg, connection.getCharsetName().getResults()));
         err.write(connection);
+    }
+
+    protected void markFinished() {
     }
 }

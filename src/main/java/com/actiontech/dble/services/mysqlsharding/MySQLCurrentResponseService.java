@@ -13,12 +13,11 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
         super(connection);
     }
 
-
     @Override
     public void taskToTotalQueue(ServiceTask task) {
         if (isComplexQuery()) {
             super.taskToTotalQueue(task);
-        } else {
+        } else if (task != null) {
             if (isHandling.compareAndSet(false, true)) {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }

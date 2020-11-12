@@ -50,7 +50,7 @@ public class AutoCommitHandler implements TransactionHandler {
         if (errConnection != null && errConnection.size() > 0) {
             for (RouteResultsetNode node : nodes) {
                 final BackendConnection conn = session.getTarget(node);
-                if (errConnection.contains(conn.getBackendService())) {
+                if (null != conn && errConnection.contains(conn.getBackendService())) {
                     session.getTargetMap().remove(node);
                     conn.businessClose("rollback error connection closed");
                 }

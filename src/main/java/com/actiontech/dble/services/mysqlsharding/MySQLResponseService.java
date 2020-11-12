@@ -11,7 +11,6 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
@@ -522,7 +521,7 @@ public class MySQLResponseService extends VariablesService {
         setSession(null);
         logResponse.set(false);
         TraceManager.sessionFinish(this);
-        ((PooledConnection) connection).getPoolRelated().release((PooledConnection) connection);
+        connection.getPoolRelated().release(connection);
     }
 
     public void onConnectionClose(String reason) {

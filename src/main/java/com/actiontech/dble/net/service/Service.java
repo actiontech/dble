@@ -11,7 +11,7 @@ public interface Service {
 
     void execute(ServiceTask task);
 
-    void consumerInternalData();
+    void consumerInternalData(ServiceTask task);
 
     void cleanup();
 }

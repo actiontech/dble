@@ -67,7 +67,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
         RollbackStage rollbackStage;
         if (session.getTargetCount() <= 0) {
             rollbackStage = new RollbackStage(session, null);
-            rollbackStage.next(false, null, null);
+            rollbackStage.next(false, null, sendData);
             return;
         }
 

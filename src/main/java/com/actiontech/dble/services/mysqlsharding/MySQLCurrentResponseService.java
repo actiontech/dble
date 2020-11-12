@@ -17,7 +17,7 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
     public void taskToTotalQueue(ServiceTask task) {
         if (isComplexQuery()) {
             super.taskToTotalQueue(task);
-        } else if (task != null) {
+        } else {
             if (isHandling.compareAndSet(false, true)) {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }
@@ -25,7 +25,7 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
     }
 
     @Override
-    public void consumerInternalData() {
+    public void consumerInternalData(ServiceTask task) {
         try {
             handleInnerData();
         } catch (Exception e) {
@@ -33,7 +33,7 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
         } finally {
             isHandling.set(false);
             if (taskQueue.size() > 0) {
-                taskToTotalQueue(null);
+                taskToTotalQueue(task);
             }
         }
     }

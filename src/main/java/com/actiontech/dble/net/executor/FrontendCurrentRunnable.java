@@ -42,6 +42,9 @@ public class FrontendCurrentRunnable implements Runnable {
             }
             if (task != null) {
                 //handler data
+                if (task.getService() == null) {
+                    continue;
+                }
                 task.getService().execute(task);
             }
 

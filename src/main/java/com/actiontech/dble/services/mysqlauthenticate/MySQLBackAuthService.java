@@ -239,21 +239,19 @@ public class MySQLBackAuthService extends AuthService {
     @Override
     public void taskToTotalQueue(ServiceTask task) {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            if (task != null) {
-                if (isHandling.compareAndSet(false, true)) {
-                    DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
-                }
+            if (isHandling.compareAndSet(false, true)) {
+                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }
         } else {
             Executor executor = DbleServer.getInstance().getBackendBusinessExecutor();
             if (isHandling.compareAndSet(false, true)) {
-                executor.execute(this::consumerInternalData);
+                executor.execute(() -> consumerInternalData(task));
             }
         }
     }
 
     @Override
-    public void consumerInternalData() {
+    public void consumerInternalData(ServiceTask task) {
         try {
             handleInnerData();
         } catch (Exception e) {
@@ -261,7 +259,7 @@ public class MySQLBackAuthService extends AuthService {
         } finally {
             isHandling.set(false);
             if (taskQueue.size() > 0) {
-                taskToTotalQueue(null);
+                taskToTotalQueue(task);
             }
         }
     }

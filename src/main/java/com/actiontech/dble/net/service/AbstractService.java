@@ -117,7 +117,7 @@ public abstract class AbstractService implements Service {
 
     }
 
-    public void consumerInternalData() {
+    public void consumerInternalData(ServiceTask task) {
         throw new RuntimeException("function not support");
     }
 

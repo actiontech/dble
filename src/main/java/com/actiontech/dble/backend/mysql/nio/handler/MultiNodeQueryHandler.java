@@ -623,6 +623,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             service.getLoadDataInfileHandler().clear();
         }
 
+        if (errorConnsCnt == rrs.getNodes().length) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("all nodes can't connect.");
+            }
+            packet.write(session.getSource());
+            return;
+        }
+
         if (service.isAutocommit() && !service.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             TransactionHandler handler = new AutoCommitHandler(session, packet, rrs.getNodes(), errConnection);

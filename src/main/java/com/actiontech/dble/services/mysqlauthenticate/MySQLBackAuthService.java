@@ -245,13 +245,13 @@ public class MySQLBackAuthService extends AuthService {
         } else {
             Executor executor = DbleServer.getInstance().getBackendBusinessExecutor();
             if (isHandling.compareAndSet(false, true)) {
-                executor.execute(this::consumerInternalData);
+                executor.execute(() -> consumerInternalData(task));
             }
         }
     }
 
     @Override
-    public void consumerInternalData() {
+    public void consumerInternalData(ServiceTask task) {
         try {
             handleInnerData();
         } catch (Exception e) {
@@ -259,7 +259,7 @@ public class MySQLBackAuthService extends AuthService {
         } finally {
             isHandling.set(false);
             if (taskQueue.size() > 0) {
-                taskToTotalQueue(null);
+                taskToTotalQueue(task);
             }
         }
     }

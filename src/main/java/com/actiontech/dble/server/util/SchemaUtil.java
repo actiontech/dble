@@ -185,9 +185,11 @@ public final class SchemaUtil {
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), contextSchema, table);
         String currentSchema = schemaInfo.schema.toUpperCase();
-        if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(currentSchema)) {
-            schemas.add(currentSchema);
-            return false;
+        if (!schemaInfo.dual) {
+            if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(currentSchema)) {
+                schemas.add(currentSchema);
+                return false;
+            }
         }
 
         ShardingPrivileges.CheckType checkType = ShardingPrivileges.CheckType.SELECT;

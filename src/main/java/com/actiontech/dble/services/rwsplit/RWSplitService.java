@@ -193,7 +193,12 @@ public class RWSplitService extends BusinessService {
             int sqlType = rs & 0xff;
             switch (sqlType) {
                 case ServerParse.SELECT:
-                    session.execute(null, data, null);
+                    int rs2 = ServerParse.parseSpecial(sqlType, sql);
+                    if (rs2 == ServerParse.SELECT_FOR_UPDATE || rs2 == ServerParse.LOCK_IN_SHARE_MODE) {
+                        session.execute(true, data, null);
+                    } else {
+                        session.execute(null, data, null);
+                    }
                     break;
                 default:
                     session.execute(true, data, null);

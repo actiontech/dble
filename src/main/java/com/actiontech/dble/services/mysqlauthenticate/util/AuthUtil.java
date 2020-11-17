@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
 import com.actiontech.dble.singleton.CapClientFoundRows;
@@ -73,6 +74,13 @@ public final class AuthUtil {
 
                 if ((Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & clientFlags)) != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
                     return "The client requested CLIENT_FOUND_ROWS capabilities does not match, in the manager use show @@cap_client_found_rows check latest status.";
+                }
+            } else if (userConfig instanceof ManagerUserConfig) {
+                switch (checkManagerSchema(schema)) {
+                    case ErrorCode.ER_BAD_DB_ERROR:
+                        return "Unknown database '" + schema + "'";
+                    default:
+                        break;
                 }
             }
 
@@ -165,6 +173,13 @@ public final class AuthUtil {
         } else {
             return ErrorCode.ER_DBACCESS_DENIED_ERROR;
         }
+    }
+
+    private static int checkManagerSchema(String schema) {
+        if (schema != null && !ManagerSchemaInfo.SCHEMA_NAME.equals(schema.toLowerCase())) {
+            return ErrorCode.ER_BAD_DB_ERROR;
+        }
+        return 0;
     }
 
 }

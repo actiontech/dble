@@ -5,7 +5,6 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.*;
@@ -64,21 +63,13 @@ public final class Describe {
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
             MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), describeStatement.getTableName(), null);
-            schemaName = schemaInfo.getSchema().toLowerCase();
+            // schemaName = schemaInfo.getSchema().toLowerCase();
             tableName = schemaInfo.getTable().toLowerCase();
         } catch (SQLException e) {
             service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
-        if (!ManagerSchemaInfo.SCHEMA_NAME.equals(schemaName)) {
-            service.writeErrMessage("42000", "Unknown database '" + schemaName + "'", ErrorCode.ER_BAD_DB_ERROR);
-            return;
-        }
-        ManagerBaseTable table = ManagerSchemaInfo.getInstance().getTables().get(tableName);
-        if (table == null) {
-            service.writeErrMessage("42S02", " Table '" + ManagerSchemaInfo.SCHEMA_NAME + "." + tableName + "' doesn't exist", ErrorCode.ER_NO_SUCH_TABLE);
-            return;
-        }
+
         ByteBuffer buffer = service.allocate();
 
         // write header
@@ -94,6 +85,8 @@ public final class Describe {
 
         // write rows
         byte packetId = EOF.getPacketId();
+
+        ManagerBaseTable table = ManagerSchemaInfo.getInstance().getTables().get(tableName);
         for (ColumnMeta column : table.getColumnsMeta()) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(column.getName(), service.getCharset().getResults()));

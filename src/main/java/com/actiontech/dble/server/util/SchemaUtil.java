@@ -108,7 +108,9 @@ public final class SchemaUtil {
         }
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schemaInfo.table = schemaInfo.table.toLowerCase();
-            schemaInfo.schema = schemaInfo.schema.toLowerCase();
+            if (!schemaInfo.dual) {
+                schemaInfo.schema = schemaInfo.schema.toLowerCase();
+            }
         }
 
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);

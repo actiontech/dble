@@ -186,10 +186,10 @@ public final class SchemaUtil {
     private static boolean isNoSharding(ShardingService service, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), contextSchema, table);
-        String currentSchema = schemaInfo.schema.toUpperCase();
         if (schemaInfo.dual) {
             return true;
         }
+        String currentSchema = schemaInfo.schema.toUpperCase();
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(currentSchema)) {
             schemas.add(currentSchema);
             return false;

@@ -158,7 +158,7 @@ public class ConfigInitializer implements ProblemReporter {
             if (allUseShardingNode.contains(shardingNodeName)) {
                 shardingNodeGroup = entry.getValue().getDbGroup();
                 if (shardingNodeGroup != null) {
-                    shardingNodeGroup.setUseless(false);
+                    shardingNodeGroup.setShardingUseless(false);
                 } else {
                     throw new ConfigException("dbGroup not exists " + entry.getValue().getDbGroupName());
                 }
@@ -180,10 +180,10 @@ public class ConfigInitializer implements ProblemReporter {
                 group = this.dbGroups.get(rwSplitUserConfig.getDbGroup());
                 if (group == null) {
                     throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] for rwSplit isn't configured in db.xml.");
-                } else if (!group.isUseless()) {
+                } else if (!group.isShardingUseless()) {
                     throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] has been used by sharding node, can't be used by rwSplit.");
                 } else {
-                    group.setUseless(false);
+                    group.setRwSplitUseless(false);
                 }
             }
         }

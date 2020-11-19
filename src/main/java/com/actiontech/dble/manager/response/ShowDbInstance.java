@@ -131,7 +131,7 @@ public final class ShowDbInstance {
         row.add(StringUtil.encode(ds.isReadInstance() ? "R" : "W", charset));
         row.add(IntegerUtil.toBytes(ds.getActiveConnections()));
         row.add(IntegerUtil.toBytes(ds.getIdleConnections()));
-        row.add(LongUtil.toBytes(ds.getTotalConnections()));
+        row.add(LongUtil.toBytes(ds.getConfig().getMaxCon()));
         row.add(LongUtil.toBytes(ds.getCount(true)));
         row.add(LongUtil.toBytes(ds.getCount(false)));
         row.add(StringUtil.encode(ds.isDisabled() ? "true" : "false", charset));

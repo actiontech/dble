@@ -34,8 +34,8 @@ public class ManagerUserConfig extends UserConfig {
         schemaInfo.setSchema((schemaInfo.getSchema().toLowerCase()));
         schemaInfo.setTable(schemaInfo.getTable().toLowerCase());
         if (!ManagerSchemaInfo.SCHEMA_NAME.equals(schemaInfo.getSchema())) {
-            String msg = "Access denied for user '" + user + "' to database '" + schemaInfo.getSchema() + "'";
-            throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            String msg = "Unknown database '" + schemaInfo.getSchema() + "'";
+            throw new SQLException(msg, "42000", ErrorCode.ER_BAD_DB_ERROR);
         }
         if (!ManagerSchemaInfo.getInstance().getTables().containsKey(schemaInfo.getTable())) {
             String msg = "Table " + StringUtil.getFullName(schemaInfo.getSchema(), schemaInfo.getTable()) + " doesn't exist";

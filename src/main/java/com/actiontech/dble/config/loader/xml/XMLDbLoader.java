@@ -104,6 +104,7 @@ public class XMLDbLoader {
         NodeList list = root.getElementsByTagName("dbGroup");
         for (int i = 0, n = list.getLength(); i < n; ++i) {
             Set<String> instanceNames = new HashSet<>();
+            Set<String> instanceUrls = new HashSet<>();
             Element element = (Element) list.item(i);
             String name = element.getAttribute("name");
             Matcher nameMatcher = PATTERN_DB.matcher(name);
@@ -141,11 +142,15 @@ public class XMLDbLoader {
                 Element dbInstance = (Element) dbInstances.item(r);
                 DbInstanceConfig tmpDbInstanceConfig = createDbInstanceConf(name, dbInstance);
                 String instanceName = tmpDbInstanceConfig.getInstanceName();
+                String instanceUrl = tmpDbInstanceConfig.getUrl();
                 if (instanceNames.contains(instanceName)) {
                     throw new ConfigException("dbGroup[" + name + "]'s child host name [" + instanceName + "]  duplicated!");
                 } else {
                     instanceNames.add(instanceName);
                 }
+                Optional.of(instanceUrl).filter(currentUrl -> !instanceUrls.contains(currentUrl)).orElseThrow(() ->
+                        new ConfigException("dbGroup[" + name + "]'s child url [" + instanceUrl + "]  duplicated!"));
+                instanceUrls.add(instanceUrl);
                 if (tmpDbInstanceConfig.isPrimary()) {
                     if (writeDbConf == null) {
                         writeDbConf = tmpDbInstanceConfig;

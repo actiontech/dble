@@ -37,7 +37,7 @@ public class ItemField extends ItemIdent {
 
     public ItemField(String dbName, String tableName, String fieldName, int charsetIndex) {
         super(dbName, tableName, fieldName);
-        this.charsetIndex = charsetIndex;
+        setCharsetIndex(charsetIndex);
     }
 
     public ItemField(String dbName, String tableName, String fieldName) {

@@ -130,7 +130,9 @@ public abstract class Item {
 
 
     public void setCharsetIndex(int charsetIndex) {
-        this.charsetIndex = charsetIndex;
+        if (charsetIndex != 0) {
+            this.charsetIndex = charsetIndex;
+        }
     }
 
 

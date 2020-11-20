@@ -18,7 +18,7 @@ public class ItemString extends ItemBasicConstant {
     private String value;
 
     public ItemString(String value, int charsetIndex) {
-        this.charsetIndex = charsetIndex;
+        setCharsetIndex(charsetIndex);
         this.value = value;
         maxLength = value.length();
         fixed = true;

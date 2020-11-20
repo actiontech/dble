@@ -27,7 +27,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
         super(currentDb, query, metaManager, usrVariables, charsetIndex);
         this.leftOperand = leftOperand;
         this.isNeg = isNeg;
-        this.charsetIndex = charsetIndex;
+        setCharsetIndex(charsetIndex);
         if (this.planNode.getColumnsSelected().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPERAND_COLUMNS, "", "Operand should contain 1 column(s)");
         }

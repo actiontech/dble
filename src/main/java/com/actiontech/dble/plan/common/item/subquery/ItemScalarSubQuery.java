@@ -21,7 +21,7 @@ import java.util.Map;
 public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
     public ItemScalarSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
         super(currentDb, query, false, metaManager, usrVariables, charsetIndex);
-        this.charsetIndex = charsetIndex;
+        setCharsetIndex(charsetIndex);
         if (this.planNode.getColumnsSelected().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPERAND_COLUMNS, "", "Operand should contain 1 column(s)");
         }

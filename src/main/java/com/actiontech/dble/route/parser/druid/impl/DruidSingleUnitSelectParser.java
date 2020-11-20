@@ -64,11 +64,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             }
             // change canRunInReadDB
             if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())) {
-                if (!service.isAutocommit()) {
-                    rrs.setCanRunInReadDB(false);
-                } else {
-                    rrs.setSpecialDeal(true);
-                }
+                rrs.setCanRunInReadDB(false);
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             StringPtr noShardingNode = new StringPtr(null);

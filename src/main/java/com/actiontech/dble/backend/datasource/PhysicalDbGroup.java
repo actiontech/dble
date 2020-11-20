@@ -226,10 +226,6 @@ public class PhysicalDbGroup {
     }
 
     public PhysicalDbInstance select(Boolean master) throws IOException {
-        return select(master, false);
-    }
-
-    public PhysicalDbInstance select(Boolean master, boolean isSpecialDeal) throws IOException {
         if (rwSplitMode == RW_SPLIT_OFF && (master != null && !master)) {
             LOGGER.warn("force slave,but the dbGroup[{}] doesn't contains active slave dbInstance", groupName);
             throw new IOException("force slave,but the dbGroup[" + groupName + "] doesn't contain active slave dbInstance");
@@ -247,12 +243,6 @@ public class PhysicalDbGroup {
             throw new IOException("the dbGroup[" + groupName + "] doesn't contain active dbInstance.");
         }
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
-        if (isSpecialDeal && selectInstance.isSalveOrRead() && selectInstance.isReadOnly()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("select write {}, because previously selected {} is readOnly", writeDbInstance, selectInstance);
-            }
-            return writeDbInstance;
-        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("select {}", selectInstance);
         }

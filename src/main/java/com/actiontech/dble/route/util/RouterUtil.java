@@ -267,9 +267,6 @@ public final class RouterUtil {
         if (rrs.getRunOnSlave() != null) {
             nodes[0].setRunOnSlave(rrs.getRunOnSlave());
         }
-        if (rrs.isSpecialDeal()) {
-            nodes[0].setSpecialDeal(true);
-        }
         return rrs;
     }
 
@@ -322,9 +319,6 @@ public final class RouterUtil {
             }
             if (rrs.getRunOnSlave() != null) {
                 nodes[i].setRunOnSlave(rrs.getRunOnSlave());
-            }
-            if (rrs.isSpecialDeal()) {
-                nodes[i].setSpecialDeal(true);
             }
             i++;
         }

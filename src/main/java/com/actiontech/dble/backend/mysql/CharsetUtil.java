@@ -396,6 +396,8 @@ public final class CharsetUtil {
     public static int getCharsetDefaultIndex(String charset) {
         if (charset == null || charset.length() == 0) {
             return 0;
+        } else if (charset.equalsIgnoreCase("null")) {
+            return COLLATION_TO_INDEX.get("binary").getId();
         } else {
             CollationInfo info = CHARSET_TO_DEFAULT_COLLATION.get(charset.toLowerCase());
             return (info == null) ? 0 : info.getId();

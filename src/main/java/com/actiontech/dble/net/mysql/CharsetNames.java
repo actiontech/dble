@@ -42,9 +42,6 @@ public class CharsetNames {
     }
 
     public int getResultsIndex() {
-        if (results.equals("null")) {
-            return CharsetUtil.getCollationIndex(collation);
-        }
         return CharsetUtil.getCharsetDefaultIndex(results);
     }
 

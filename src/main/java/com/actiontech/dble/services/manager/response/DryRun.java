@@ -237,17 +237,20 @@ public final class DryRun {
         if (userMap != null && userMap.size() > 0) {
             Set<String> schema = new HashSet<>();
             boolean hasManagerUser = false;
-            boolean hasServerUser = false;
+            boolean hasShardingUser = false;
+            boolean hasRWSplitUser = false;
             for (UserConfig user : userMap.values()) {
                 if (user instanceof ManagerUserConfig) {
                     hasManagerUser = true;
                 } else if (user instanceof ShardingUserConfig) {
-                    hasServerUser = true;
+                    hasShardingUser = true;
                     schema.addAll(((ShardingUserConfig) user).getSchemas());
+                } else {
+                    hasRWSplitUser = true;
                 }
             }
-            if (!hasServerUser) {
-                list.add(new ErrorInfo("Xml", "WARNING", "There is No Server User"));
+            if (!hasShardingUser) {
+                list.add(new ErrorInfo("Xml", "WARNING", "There is No Sharding User"));
             } else if (schema.size() <= serverConfig.getSchemas().size()) {
                 for (String schemaName : serverConfig.getSchemas().keySet()) {
                     if (!schema.contains(schemaName)) {
@@ -255,6 +258,11 @@ public final class DryRun {
                     }
                 }
             }
+
+            if (!hasRWSplitUser) {
+                list.add(new ErrorInfo("Xml", "WARNING", "There is No RWSplit User"));
+            }
+
             if (!hasManagerUser) {
                 list.add(new ErrorInfo("Xml", "WARNING", "There is No Manager User"));
             }

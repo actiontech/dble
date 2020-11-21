@@ -89,7 +89,7 @@ public class ShardingNode {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
             checkRequest(schema);
-            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isSpecialDeal());
+            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate());
             instance.getConnection(schema, handler, attachment, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -99,7 +99,7 @@ public class ShardingNode {
     public BackendConnection getConnection(String schema, boolean autocommit, Object attachment) throws IOException {
         checkRequest(schema);
         RouteResultsetNode rrs = (RouteResultsetNode) attachment;
-        PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, autocommit), rrs.isSpecialDeal());
+        PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, autocommit), rrs.isForUpdate());
         return instance.getConnection(schema, attachment);
     }
 

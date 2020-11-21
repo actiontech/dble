@@ -67,7 +67,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 if (!service.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
                 } else {
-                    rrs.setSpecialDeal(true);
+                    rrs.setForUpdate(true);
                 }
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {

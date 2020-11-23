@@ -249,7 +249,7 @@ public class PhysicalDbGroup {
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
         if (isForUpdate && selectInstance.isSalveOrRead()) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("select write {}, because previously selected {} is readOnly", writeDbInstance, selectInstance);
+                LOGGER.debug("select write {}", writeDbInstance);
             }
             return writeDbInstance;
         }

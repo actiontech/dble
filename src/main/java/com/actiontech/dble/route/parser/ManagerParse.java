@@ -217,7 +217,10 @@ public final class ManagerParse {
         if (thePart.startsWith("FILE @@")) {
             return CONFIGFILE;
         }
-        char c1 = stmt.charAt(++offset);
+        if (stmt.length() <= ++offset) {
+            return OTHER;
+        }
+        char c1 = stmt.charAt(offset);
         switch (c1) {
             case 'L':
             case 'l':
@@ -274,7 +277,7 @@ public final class ManagerParse {
     }
 
     private static int freshCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
+        if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

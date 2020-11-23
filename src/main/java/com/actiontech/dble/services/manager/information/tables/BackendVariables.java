@@ -30,10 +30,10 @@ public class BackendVariables extends ManagerBaseTable {
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_BACKED_ID, new ColumnMeta(COLUMN_BACKED_ID, "int(11)", false));
+        columns.put(COLUMN_BACKED_ID, new ColumnMeta(COLUMN_BACKED_ID, "int(11)", false, true));
         columnsType.put(COLUMN_BACKED_ID, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_VAR_NAME, new ColumnMeta(COLUMN_VAR_NAME, "varchar(12)", false));
+        columns.put(COLUMN_VAR_NAME, new ColumnMeta(COLUMN_VAR_NAME, "varchar(12)", false, true));
         columnsType.put(COLUMN_VAR_NAME, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_VAR_VALUE, new ColumnMeta(COLUMN_VAR_VALUE, "varchar(12)", false));

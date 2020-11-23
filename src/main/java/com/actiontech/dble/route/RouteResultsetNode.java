@@ -28,7 +28,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
 
     private Boolean runOnSlave = null;
     private AtomicLong multiplexNum;
-    private boolean isSpecialDeal = false;
+    private boolean isForUpdate = false;
 
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
@@ -41,12 +41,12 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         this.multiplexNum = new AtomicLong(0);
     }
 
-    public boolean isSpecialDeal() {
-        return isSpecialDeal;
+    public boolean isForUpdate() {
+        return isForUpdate;
     }
 
-    public void setSpecialDeal(boolean specialDeal) {
-        isSpecialDeal = specialDeal;
+    public void setForUpdate(boolean forUpdate) {
+        isForUpdate = forUpdate;
     }
 
     public Boolean getRunOnSlave() {

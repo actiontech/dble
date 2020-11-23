@@ -63,14 +63,14 @@ public final class RouteResultset implements Serializable {
     private Boolean runOnSlave = null;
     private String[] groupByCols;
 
-    private boolean isSpecialDeal = false;
+    private boolean isForUpdate = false;
 
-    public boolean isSpecialDeal() {
-        return isSpecialDeal;
+    public boolean isForUpdate() {
+        return isForUpdate;
     }
 
-    public void setSpecialDeal(boolean specialDeal) {
-        isSpecialDeal = specialDeal;
+    public void setForUpdate(boolean forUpdate) {
+        isForUpdate = forUpdate;
     }
 
     public String[] getGroupByCols() {

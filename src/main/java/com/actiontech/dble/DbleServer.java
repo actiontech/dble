@@ -409,7 +409,7 @@ public final class DbleServer {
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDbGroups());
             SystemVariables newSystemVariables = handler.execute();
             if (newSystemVariables == null) {
-                throw new IOException("Can't get variables from shardingNode");
+                throw new IOException("Can't get variables from all dbGroups");
             } else {
                 systemVariables = newSystemVariables;
             }

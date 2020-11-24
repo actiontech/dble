@@ -88,8 +88,8 @@ public class XACommitFailStage extends XACommitStage {
     public void onEnterStage(MySQLResponseService service) {
         RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
         if (!service.getConnection().isClosed() && service.getXaStatus() != TxState.TX_COMMIT_FAILED_STATE) {
-            xaHandler.fakedResponse(service, null);
             session.releaseConnection(rrn, true, false);
+            xaHandler.fakedResponse(rrn);
             return;
         }
         MySQLResponseService newService = session.freshConn(service.getConnection(), xaHandler);

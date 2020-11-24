@@ -269,6 +269,7 @@ public class RWSplitService extends BusinessService {
         super.cleanup();
         if (session != null) {
             TsQueriesCounter.getInstance().addToHistory(this);
+            session.close("clean up");
         }
     }
 }

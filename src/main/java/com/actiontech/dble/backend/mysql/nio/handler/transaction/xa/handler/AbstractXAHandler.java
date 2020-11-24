@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 public abstract class AbstractXAHandler extends MultiNodeHandler {
 
@@ -167,8 +168,10 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         isFailed.set(false);
     }
 
-    public void setUnResponseRrns() {
-        this.unResponseRrns.addAll(session.getTargetKeys());
+    public Set<RouteResultsetNode> setUnResponseRrns() {
+        Set<RouteResultsetNode> targetKeys = session.getTargetKeys();
+        this.unResponseRrns.addAll(targetKeys);
+        return targetKeys;
     }
 
     public String getXAStage() {

@@ -10,6 +10,8 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
+
 public abstract class XAStage implements TransactionStage {
     protected static final Logger LOGGER = LoggerFactory.getLogger(XAStage.class);
 
@@ -32,13 +34,15 @@ public abstract class XAStage implements TransactionStage {
 
     @Override
     public void onEnterStage() {
-        xaHandler.setUnResponseRrns();
-        for (RouteResultsetNode rrn : session.getTargetKeys()) {
-            if (session.getTarget(rrn).getBackendService() != null) {
+        Set<RouteResultsetNode> resultsetNodes = xaHandler.setUnResponseRrns();
+        for (RouteResultsetNode rrn : resultsetNodes) {
+            if (null == session.getTarget(rrn)) {
+                LOGGER.debug("this node may be release.{}", rrn);
+            } else if (session.getTarget(rrn).getBackendService() != null) {
                 onEnterStage(session.getTarget(rrn).getBackendService());
             } else {
-                xaHandler.fakedResponse(rrn);
                 session.releaseConnection(rrn, LOGGER.isDebugEnabled(), false);
+                xaHandler.fakedResponse(rrn);
             }
         }
     }

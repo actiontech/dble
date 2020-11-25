@@ -72,14 +72,14 @@ public class ClusterClearKeyListener implements Runnable {
             newKeyMap.put(output.getKeys(i), output.getValues(i));
             if (cache.get(output.getKeys(i)) != null) {
                 if (!cache.get(output.getKeys(i)).equals(output.getValues(i))) {
-                    if (output.getKeys(i).equalsIgnoreCase(ClusterPathUtil.getConfStatusPath())) {
+                    if (output.getKeys(i).equalsIgnoreCase(ClusterPathUtil.getConfStatusOperatorPath())) {
                         reloadKv = new KvBean(output.getKeys(i), output.getValues(i), KvBean.UPDATE);
                     } else {
                         diffMap.put(output.getKeys(i), new KvBean(output.getKeys(i), output.getValues(i), KvBean.UPDATE));
                     }
                 }
             } else {
-                if (output.getKeys(i).equalsIgnoreCase(ClusterPathUtil.getConfStatusPath())) {
+                if (output.getKeys(i).equalsIgnoreCase(ClusterPathUtil.getConfStatusOperatorPath())) {
                     reloadKv = new KvBean(output.getKeys(i), output.getValues(i), KvBean.ADD);
                 } else {
                     diffMap.put(output.getKeys(i), new KvBean(output.getKeys(i), output.getValues(i), KvBean.ADD));
@@ -90,7 +90,7 @@ public class ClusterClearKeyListener implements Runnable {
         //find out the deleted Key
         for (Map.Entry<String, String> entry : cache.entrySet()) {
             if (!newKeyMap.containsKey(entry.getKey())) {
-                if (entry.getKey().equalsIgnoreCase(ClusterPathUtil.getConfStatusPath())) {
+                if (entry.getKey().equalsIgnoreCase(ClusterPathUtil.getConfStatusOperatorPath())) {
                     reloadKv = new KvBean(entry.getKey(), entry.getValue(), KvBean.DELETE);
                 } else {
                     diffMap.put(entry.getKey(), new KvBean(entry.getKey(), entry.getValue(), KvBean.DELETE));

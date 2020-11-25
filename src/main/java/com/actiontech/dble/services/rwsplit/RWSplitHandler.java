@@ -69,7 +69,12 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 data[3] = (byte) rwSplitService.nextPacketId();
-                frontedConnection.write(data);
+                if (buffer != null) {
+                    buffer = rwSplitService.writeToBuffer(data, buffer);
+                    frontedConnection.write(buffer);
+                } else {
+                    frontedConnection.write(data);
+                }
                 write2Client = true;
             }
         }

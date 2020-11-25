@@ -88,6 +88,10 @@ public class ManagerService extends FrontEndService {
             MySQLMessage mm = new MySQLMessage(data);
             mm.position(5);
             sql = mm.readString(charsetName.getClient());
+            // remove last ';'
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1);
+            }
             executeSql = sql;
         } catch (UnsupportedEncodingException e) {
             throw e;

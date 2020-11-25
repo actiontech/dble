@@ -137,7 +137,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (!service.isAutocommit()) {
                 rrs.setCanRunInReadDB(false);
             } else {
-                rrs.setSpecialDeal(true);
+                rrs.setForUpdate(true);
             }
         }
         if (noShardingNode != null) {

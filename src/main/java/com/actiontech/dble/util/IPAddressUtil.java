@@ -117,13 +117,16 @@ public final class IPAddressUtil {
         } else if (source.contains(SEPARATOR_2) && !source.contains(IPV6_LOCAL_PREFIX)) {
             //rule 172.0.0.%
             String start = source.replace(SEPARATOR_2, "0");
-            String end = null;
+            String regex = null;
             if (sun.net.util.IPAddressUtil.isIPv4LiteralAddress(start)) {
-                end = source.replace(SEPARATOR_2, "255");
+                regex = source.replace("%", "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
             } else if (sun.net.util.IPAddressUtil.isIPv6LiteralAddress(start)) {
-                end = source.replace(SEPARATOR_2, "ffff");
+                regex = source.replace("%", "([0-9a-fA-F]{1,4})");
             }
-            return between(target, start, end);
+            if (null == regex) {
+                return false;
+            }
+            return Pattern.matches(regex, target);
         } else if (source.contains(SEPARATOR_3)) {
             //rule CIDR
             String[] sourceSplit = source.split(SEPARATOR_3);

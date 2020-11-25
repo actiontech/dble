@@ -87,7 +87,9 @@ public class RWSplitService extends BusinessService {
     protected void handleInnerData(byte[] data) {
         // if the statement is load data, directly push down
         if (inLoadData) {
-            session.execute(true, data, null);
+            session.execute(true, data, (isSuccess, rwSplitService) -> {
+                rwSplitService.setInLoadData(false);
+            });
             return;
         }
 

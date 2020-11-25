@@ -617,8 +617,9 @@ public class MySQLResponseService extends VariablesService {
             if (synSQL != null) {
                 sendQueryCmd(synSQL.toString(), service.getCharset());
             }
-
-            prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
+            if (originPacket.length > 4) {
+                prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
+            }
             writeDirectly(originPacket);
         }
     }

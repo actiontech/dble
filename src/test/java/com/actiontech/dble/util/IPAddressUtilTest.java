@@ -83,12 +83,54 @@ public class IPAddressUtilTest {
         Assert.assertEquals(IPAddressUtil.match(host6, "1::3:4:5:6:7:8-1::3:4:5:6:7:ffff"), true);
         Assert.assertEquals(IPAddressUtil.match(host6, "1::3:4:5:6:7:9-1::3:4:5:6:7:ffff"), false);
         Assert.assertEquals(IPAddressUtil.match(host6, "1::3:4:5:6:7:9-1::3:4:5:6:7:ffff"), false);
-        Assert.assertEquals(IPAddressUtil.match(host6, "1::3:4:%:5:6:7"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:%:5:6:7:8"), true);
         Assert.assertEquals(IPAddressUtil.match(host6, "1::2:%:5:6:7:%"), false);
         Assert.assertEquals(IPAddressUtil.match(host6, "1::3:9:5:6:7:8/60"), true);
         Assert.assertEquals(IPAddressUtil.match(host6, "1::3:9:5:6:7:8/61"), false);
         Assert.assertEquals(IPAddressUtil.match(host6, "192.168.2.22"), false);
         Assert.assertEquals(IPAddressUtil.match(host6, "192.168.1.10-192.168.1.100"), false);
         Assert.assertEquals(IPAddressUtil.match(host6, "192.168.1.%"), false);
+    }
+
+    @Test
+    public void match2() throws UnknownHostException {
+        String host4 = "192.168.2.1";
+        Assert.assertEquals(IPAddressUtil.match(host4, "192.168.2.%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host4, "192.168.1.%"), false);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.%.%.%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host4, "192.%.%.%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host4, "192.168.%.%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host4, "193.%.%.%"), false);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.169.%.%"), false);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.168.%.%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.%.3.%"), false);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.%.2.%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.%.%.2"), false);
+        Assert.assertEquals(IPAddressUtil.match(host4, "%.%.%.1"), true);
+    }
+
+    @Test
+    public void match3() throws UnknownHostException {
+
+        String host6 = "1:0:3:4:5:6:7:8";
+        Assert.assertEquals(IPAddressUtil.match(host6, "%:0:3:4:5:6:7:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:%:3:4:5:6:7:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:%:4:5:6:7:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:%:5:6:7:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:%:6:7:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:5:%:7:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:5:6:%:8"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:5:6:7:%"), true);
+        Assert.assertEquals(IPAddressUtil.match(host6, "%:%:%:%:%:%:%:%"), true);
+
+        Assert.assertEquals(IPAddressUtil.match(host6, "%:1:3:4:5:6:7:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "2:%:3:4:5:6:7:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:1:%:4:5:6:7:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:4:%:5:6:7:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:5:%:6:7:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:6:%:7:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:5:7:%:8"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "1:0:3:4:5:6:8:%"), false);
+        Assert.assertEquals(IPAddressUtil.match(host6, "%:%:%:%:%:%:%:9"), false);
     }
 }

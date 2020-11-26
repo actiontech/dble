@@ -29,6 +29,8 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.*;
 
+import com.actiontech.dble.route.RouteResultsetNode;
+
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {

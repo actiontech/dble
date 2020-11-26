@@ -614,9 +614,9 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    public void executeMultiSelectforBoguan(RouteResultset rrs) {
+    public void executeMultiSelectEx(RouteResultset rrs) {
         String realSQL = rrs.getNodes()[0].getStatement();
-        String routeSQL = rrs.getSrcStatement(
+        String routeSQL = rrs.getSrcStatement();
         if (routeSQL.equals(realSQL)) { // really simple sql
             executeOther(rrs);
         } else { //come with hint

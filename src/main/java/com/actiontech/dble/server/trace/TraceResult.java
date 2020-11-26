@@ -13,7 +13,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
 import com.actiontech.dble.plan.util.ReferenceHandlerInfo;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +46,8 @@ public class TraceResult implements Cloneable {
     private ResponseHandler simpleHandler = null;
     private BaseHandlerBuilder builder = null; //for complex query
     private ConcurrentMap<String, Boolean> connFlagMap = new ConcurrentHashMap<>();
-    private ConcurrentMap<ResponseHandler, Map<MySQLResponseService, TraceRecord>> connReceivedMap = new ConcurrentHashMap<>();
-    private ConcurrentMap<ResponseHandler, Map<MySQLResponseService, TraceRecord>> connFinishedMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<ResponseHandler, Map<String, TraceRecord>> connReceivedMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<ResponseHandler, Map<String, TraceRecord>> connFinishedMap = new ConcurrentHashMap<>();
     private ConcurrentMap<DMLResponseHandler, TraceRecord> recordStartMap = new ConcurrentHashMap<>();
     private ConcurrentMap<DMLResponseHandler, TraceRecord> recordEndMap = new ConcurrentHashMap<>();
     private long veryEnd;
@@ -127,8 +126,8 @@ public class TraceResult implements Cloneable {
         connFlagMap.clear();
     }
 
-    public void addToConnReceivedMap(ResponseHandler responseHandler, Map<MySQLResponseService, TraceRecord> connMap) {
-        Map<MySQLResponseService, TraceRecord> existReceivedMap = connReceivedMap.putIfAbsent(responseHandler, connMap);
+    public void addToConnReceivedMap(ResponseHandler responseHandler, Map<String, TraceRecord> connMap) {
+        Map<String, TraceRecord> existReceivedMap = connReceivedMap.putIfAbsent(responseHandler, connMap);
         if (existReceivedMap != null) {
             existReceivedMap.putAll(connMap);
         }
@@ -138,8 +137,8 @@ public class TraceResult implements Cloneable {
         connReceivedMap.clear();
     }
 
-    public void addToConnFinishedMap(ResponseHandler responseHandler, Map<MySQLResponseService, TraceRecord> connMap) {
-        Map<MySQLResponseService, TraceRecord> existReceivedMap = connFinishedMap.putIfAbsent(responseHandler, connMap);
+    public void addToConnFinishedMap(ResponseHandler responseHandler, Map<String, TraceRecord> connMap) {
+        Map<String, TraceRecord> existReceivedMap = connFinishedMap.putIfAbsent(responseHandler, connMap);
         if (existReceivedMap != null) {
             existReceivedMap.putAll(connMap);
         }
@@ -183,11 +182,11 @@ public class TraceResult implements Cloneable {
         simpleHandler = null;
         builder = null; //for complex query
         connFlagMap.clear();
-        for (Map<MySQLResponseService, TraceRecord> connReceived : connReceivedMap.values()) {
+        for (Map<String, TraceRecord> connReceived : connReceivedMap.values()) {
             connReceived.clear();
         }
         connReceivedMap.clear();
-        for (Map<MySQLResponseService, TraceRecord> connReceived : connFinishedMap.values()) {
+        for (Map<String, TraceRecord> connReceived : connFinishedMap.values()) {
             connReceived.clear();
         }
         connFinishedMap.clear();
@@ -296,7 +295,7 @@ public class TraceResult implements Cloneable {
         for (ReferenceHandlerInfo result : results) {
             DMLResponseHandler handler = result.getHandler();
             if (handler instanceof BaseSelectHandler) {
-                Map<MySQLResponseService, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
+                Map<String, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
                 if (fetchStartRecordMap == null) {
                     if (!result.isNestLoopQuery()) {
                         lst.add(genTraceRecord("Execute_SQL", lastChildFinished, result.getName(), result.getRefOrSQL())); // lastChildFinished may is Long.MAX_VALUE
@@ -321,7 +320,7 @@ public class TraceResult implements Cloneable {
                             lst.add(genTraceRecord("Execute_SQL", handlerStart.getTimestamp(), handlerEnd.getTimestamp(), result.getName(), result.getRefOrSQL()));
                         }
                     }
-                    Map<MySQLResponseService, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
+                    Map<String, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
                     if (fetchEndRecordMap == null) {
                         lst.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
                     } else {
@@ -368,8 +367,8 @@ public class TraceResult implements Cloneable {
         for (ReferenceHandlerInfo result : results) {
             DMLResponseHandler handler = result.getHandler();
             if (handler instanceof BaseSelectHandler) {
-                Map<MySQLResponseService, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
-                Map<MySQLResponseService, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
+                Map<String, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
+                Map<String, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
                 if (fetchStartRecordMap == null || fetchEndRecordMap == null || fetchStartRecordMap.size() != 1 || fetchEndRecordMap.size() != 1) {
                     printNoResultDebug(fetchStartRecordMap, fetchEndRecordMap);
                     return true;
@@ -418,7 +417,7 @@ public class TraceResult implements Cloneable {
         return false;
     }
 
-    private void printNoResultDebug(Map<MySQLResponseService, TraceRecord> fetchStartRecordMap, Map<MySQLResponseService, TraceRecord> fetchEndRecordMap) {
+    private void printNoResultDebug(Map<String, TraceRecord> fetchStartRecordMap, Map<String, TraceRecord> fetchEndRecordMap) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("collect info not in pairs for connection");
             if (fetchStartRecordMap != null) {
@@ -433,13 +432,13 @@ public class TraceResult implements Cloneable {
     private boolean genSimpleResults(List<String[]> lst) {
         lst.add(genTraceRecord("Route_Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
         lst.add(genTraceRecord("Prepare_to_Push", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
-        Map<MySQLResponseService, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
-        Map<MySQLResponseService, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
+        Map<String, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
+        Map<String, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
         List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
         List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
         long minFetchStart = Long.MAX_VALUE;
         long maxFetchEnd = 0;
-        for (Map.Entry<MySQLResponseService, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
+        for (Map.Entry<String, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
             TraceRecord fetchStartRecord = fetchStart.getValue();
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
             executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
@@ -462,16 +461,16 @@ public class TraceResult implements Cloneable {
     }
 
     private void genRunningSimpleResults(List<String[]> lst) {
-        Map<MySQLResponseService, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
+        Map<String, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
 
         Set<String> receivedNode = new HashSet<>();
         long minFetchStart = Long.MAX_VALUE;
         long maxFetchEnd = 0;
         if (connFetchStartMap != null) {
-            Map<MySQLResponseService, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
+            Map<String, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
             List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
             List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
-            for (Map.Entry<MySQLResponseService, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
+            for (Map.Entry<String, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
                 TraceRecord fetchStartRecord = fetchStart.getValue();
                 receivedNode.add(fetchStartRecord.getShardingNode());
                 minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
@@ -620,8 +619,8 @@ public class TraceResult implements Cloneable {
         for (ReferenceHandlerInfo result : results) {
             DMLResponseHandler handler = result.getHandler();
             if (handler instanceof BaseSelectHandler) {
-                Map<MySQLResponseService, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
-                Map<MySQLResponseService, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
+                Map<String, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
+                Map<String, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
                 if (fetchStartRecordMap == null || fetchEndRecordMap == null || fetchStartRecordMap.size() != 1 || fetchEndRecordMap.size() != 1) {
                     printNoResultDebug(fetchStartRecordMap, fetchEndRecordMap);
                     return true;
@@ -670,13 +669,13 @@ public class TraceResult implements Cloneable {
     }
 
     private boolean genSimpleLogs(List<String[]> lst) {
-        Map<MySQLResponseService, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
-        Map<MySQLResponseService, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
+        Map<String, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
+        Map<String, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
         List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
         List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
         long minFetchStart = Long.MAX_VALUE;
         long maxFetchEnd = 0;
-        for (Map.Entry<MySQLResponseService, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
+        for (Map.Entry<String, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
             TraceRecord fetchStartRecord = fetchStart.getValue();
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
             executeList.add(genLogRecord(fetchStartRecord.getShardingNode() + "_First_Result_Fetch", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp()));
@@ -724,14 +723,14 @@ public class TraceResult implements Cloneable {
             tr.connFlagMap = new ConcurrentHashMap<>();
             tr.connFlagMap.putAll(this.connFlagMap);
             tr.connReceivedMap = new ConcurrentHashMap<>();
-            for (Map.Entry<ResponseHandler, Map<MySQLResponseService, TraceRecord>> item : connReceivedMap.entrySet()) {
-                Map<MySQLResponseService, TraceRecord> connMap = new ConcurrentHashMap<>();
+            for (Map.Entry<ResponseHandler, Map<String, TraceRecord>> item : connReceivedMap.entrySet()) {
+                Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
                 connMap.putAll(item.getValue());
                 tr.connReceivedMap.put(item.getKey(), connMap);
             }
             tr.connFinishedMap = new ConcurrentHashMap<>();
-            for (Map.Entry<ResponseHandler, Map<MySQLResponseService, TraceRecord>> item : connFinishedMap.entrySet()) {
-                Map<MySQLResponseService, TraceRecord> connMap = new ConcurrentHashMap<>();
+            for (Map.Entry<ResponseHandler, Map<String, TraceRecord>> item : connFinishedMap.entrySet()) {
+                Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
                 connMap.putAll(item.getValue());
                 tr.connFinishedMap.put(item.getKey(), connMap);
             }

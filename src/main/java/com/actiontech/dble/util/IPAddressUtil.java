@@ -54,13 +54,20 @@ public final class IPAddressUtil {
      * @param target ip to be check
      */
     public static boolean check(String target) {
+        int separatorIndex = target.lastIndexOf(SEPARATOR_2);
+        boolean isWildcard = false;
+        if (separatorIndex == 0) {
+            isWildcard = target.charAt(separatorIndex + 1) == '.' || target.charAt(separatorIndex + 1) == ':';
+        } else if (separatorIndex > 0) {
+            isWildcard = target.charAt(separatorIndex - 1) == '.' || target.charAt(separatorIndex - 1) == ':';
+        }
         if (target.contains(SEPARATOR_1)) {
             //rule ip1-ip2
             String[] sourceSplit = target.split(SEPARATOR_1);
             if (sourceSplit.length == 2) {
                 return Pattern.matches(PATTERN_IP, sourceSplit[0]) && Pattern.matches(PATTERN_IP, sourceSplit[1]);
             }
-        } else if (target.contains(SEPARATOR_2) && !target.contains(IPV6_LOCAL_PREFIX)) {
+        } else if (target.contains(SEPARATOR_2) && isWildcard) {
             //rule 172.0.0.%
             String start = target.replace(SEPARATOR_2, "0");
             return Pattern.matches(PATTERN_IP, start);
@@ -108,13 +115,20 @@ public final class IPAddressUtil {
         if (StringUtil.isEmpty(target) || StringUtil.isEmpty(source)) {
             return false;
         }
+        int separatorIndex = source.lastIndexOf(SEPARATOR_2);
+        boolean isWildcard = false;
+        if (separatorIndex == 0) {
+            isWildcard = source.charAt(separatorIndex + 1) == '.' || source.charAt(separatorIndex + 1) == ':';
+        } else if (separatorIndex > 0) {
+            isWildcard = source.charAt(separatorIndex - 1) == '.' || source.charAt(separatorIndex - 1) == ':';
+        }
         if (source.contains(SEPARATOR_1)) {
             //rule ip1-ip2
             String[] sourceSplit = source.split(SEPARATOR_1);
             if (sourceSplit.length == 2) {
                 return between(target, sourceSplit[0], sourceSplit[1]);
             }
-        } else if (source.contains(SEPARATOR_2) && !source.contains(IPV6_LOCAL_PREFIX)) {
+        } else if (source.contains(SEPARATOR_2) && isWildcard) {
             //rule 172.0.0.%
             String start = source.replace(SEPARATOR_2, "0");
             String regex = null;

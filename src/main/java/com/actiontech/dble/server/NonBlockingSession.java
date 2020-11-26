@@ -261,12 +261,13 @@ public class NonBlockingSession extends Session {
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            if (traceResult.addToConnFlagMap(service.getConnection().getId() + ":" + node.getStatementHash()) == null) {
+            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+            if (traceResult.addToConnFlagMap(key) == null) {
                 ResponseHandler responseHandler = service.getResponseHandler();
                 responseTime = System.nanoTime();
                 TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());
-                Map<MySQLResponseService, TraceRecord> connMap = new ConcurrentHashMap<>();
-                connMap.put(service, record);
+                Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
+                connMap.put(key, record);
                 traceResult.addToConnReceivedMap(responseHandler, connMap);
             }
         }
@@ -346,8 +347,9 @@ public class NonBlockingSession extends Session {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             ResponseHandler responseHandler = service.getResponseHandler();
             TraceRecord record = new TraceRecord(System.nanoTime(), node.getName(), node.getStatement());
-            Map<MySQLResponseService, TraceRecord> connMap = new ConcurrentHashMap<>();
-            connMap.put(service, record);
+            Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
+            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+            connMap.put(key, record);
             traceResult.addToConnFinishedMap(responseHandler, connMap);
         }
 

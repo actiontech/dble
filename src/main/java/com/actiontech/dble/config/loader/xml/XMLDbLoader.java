@@ -78,7 +78,7 @@ public class XMLDbLoader {
             loadDbGroups(root);
         } catch (Exception e) {
             throw new ConfigException("[" + xmlFile + "] occurred  parse errors, The detailed errors are as follows . \n\n" + e, e);
-        }finally {
+        } finally {
 
             if (dtd != null) {
                 try {

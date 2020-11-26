@@ -59,6 +59,12 @@ public class IPAddressUtilTest {
         Assert.assertEquals(false, IPAddressUtil.check("0.0.0.-1"));
         Assert.assertEquals(false, IPAddressUtil.check("255.255.255"));
         Assert.assertEquals(false, IPAddressUtil.check("255.255.255.255.255"));
+
+
+        Assert.assertEquals(true, IPAddressUtil.check("fe80:%:%:%:%:%:%:%"));
+        Assert.assertEquals(true, IPAddressUtil.check("127.0.0.%"));
+        Assert.assertEquals(true, IPAddressUtil.check("%.0.0.%"));
+        Assert.assertEquals(true, IPAddressUtil.check("%:%:%:%:%:%:%:fe80"));
     }
 
     @Test

@@ -69,6 +69,9 @@ import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
 import static com.actiontech.dble.server.parser.ServerParse.DDL;
 
+import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+
 /**
  * @author mycat
  */
@@ -102,6 +105,7 @@ public class NonBlockingSession extends Session {
     private volatile boolean timeCost = false;
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
+    private RouteResultsetNode[] hintNodes = null;
 
     private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
     private volatile String remingSql = null;
@@ -114,6 +118,14 @@ public class NonBlockingSession extends Session {
     private volatile long rowCountLastSQL = 0;
 
     private final HashSet<BackendConnection> flowControlledBackendConnections = new HashSet<>();
+
+    public void setHintNodes(RouteResultsetNode[] newNodes) {
+        hintNodes = newNodes;
+    }
+
+    public RouteResultsetNode[] getHintNodes() {
+        return hintNodes;
+    }
 
     public NonBlockingSession(ShardingService service) {
         this.shardingService = service;
@@ -482,8 +494,8 @@ public class NonBlockingSession extends Session {
                 executeDDL(rrs);
             } else {
                 setRouteResultToTrace(nodes);
-                // dml or simple select
-                executeOther(rrs);
+                // hint query also need backend aggregator operation.
+                executeMultiSelectEx(rrs);
             }
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);
@@ -599,6 +611,33 @@ public class NonBlockingSession extends Session {
             LOGGER.info(shardingService + " execute plan is : " + node, e);
             this.closeAndClearResources("Exception");
             shardingService.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
+        }
+    }
+
+    public void executeMultiSelectforBoguan(RouteResultset rrs) {
+        String realSQL = rrs.getNodes()[0].getStatement();
+        String routeSQL = rrs.getSrcStatement(
+        if (routeSQL.equals(realSQL)) { // really simple sql
+            executeOther(rrs);
+        } else { //come with hint
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(rrs.getSchema());
+            try {
+                RouteResultset newrrs = RouteService.getInstance().route(schemaConfig, rrs.getNodes()[0].getSqlType(), realSQL, this.shardingService, false);
+                RouteResultsetNode[] newnodes = newrrs.getNodes();
+                if (newnodes == null || newnodes.length == 0 || newnodes[0].getName() == null || newnodes[0].getName().equals("")) {
+                    try {
+                        this.setHintNodes(rrs.getNodes()); //keep hint routed nodes
+                        this.complexRrs = newrrs;
+                        executeMultiSelect(newrrs);
+                    } catch (MySQLOutPutException e) {
+                        shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
+                    }
+                } else {
+                    executeOther(rrs);
+                }
+            } catch (Exception e) {
+                return;
+            }
         }
     }
 

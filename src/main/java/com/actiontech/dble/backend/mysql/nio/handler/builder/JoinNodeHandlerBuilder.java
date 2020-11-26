@@ -79,6 +79,12 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             } else {
                 rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
             }
+
+            RouteResultsetNode[] newNodes = this.session.getHintNodes();
+            if (newNodes != null) {
+                rrs.setNodes(this.filterRRSNode(rrs.getNodes(), newNodes));
+            }
+
             buildMergeHandler(node, rrs.getNodes());
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception! Error:" + e.getMessage(), e);

@@ -527,4 +527,21 @@ public abstract class BaseHandlerBuilder {
         }
     }
 
+    public RouteResultsetNode[] filterRRSNode(RouteResultsetNode[] complexNodes, RouteResultsetNode[] hintNodes) {
+        RouteResultsetNode[] retNodes = new RouteResultsetNode[hintNodes.length];
+        int count = 0;
+        for (RouteResultsetNode hNode : hintNodes) {
+            for (RouteResultsetNode cNode : complexNodes) {
+                String hName = hNode.getName();
+                String cName = cNode.getName();
+                if (hName.equals(cName)) {
+                    retNodes[count] = cNode;
+                    count++;
+                    break;
+                }
+            }
+        }
+        return retNodes;
+    }
+
 }

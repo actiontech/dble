@@ -97,13 +97,6 @@ public class ERJoinChooser {
             ERTable rightER = getLeftOutJoinChildER(jn, right, filter.arguments().get(1));
             if (isErRelation(leftER, rightER)) {
                 jn.getERkeys().add(leftER);
-            } else {
-                if (leftER != null && rightER != null) {
-                    if (right.getNoshardNode().containsAll(DbleServer.getInstance().getConfig().getSchemas().
-                            get(leftER.getSchema()).getTables().get(leftER.getTable()).getShardingNodes())) {
-                        jn.getERkeys().add(leftER);
-                    }
-                }
             }
         }
         return jn;

@@ -53,6 +53,9 @@ public final class ShowHandler {
             case ServerParseShow.CREATE_DATABASE:
                 ShowCreateDatabase.response(service, stmt);
                 break;
+            case ServerParseShow.FULL_PROCESS_LIST:
+                ShowProcessList.response(service, stmt);
+                break;
             case ServerParseShow.CHARSET:
                 stmt = stmt.toLowerCase().replaceFirst("charset", "character set");
                 // fallthrough

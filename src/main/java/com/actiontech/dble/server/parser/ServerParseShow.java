@@ -5,14 +5,14 @@
 */
 package com.actiontech.dble.server.parser;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.response.ShowColumns;
 import com.actiontech.dble.server.response.ShowIndex;
 import com.actiontech.dble.server.response.ShowTableStatus;
 import com.actiontech.dble.server.response.ShowTablesStmtInfo;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author mycat
@@ -33,6 +33,7 @@ public final class ServerParseShow {
     public static final int VARIABLES = 11;
     public static final int CREATE_VIEW = 12;
     public static final int CREATE_DATABASE = 13;
+    public static final int FULL_PROCESS_LIST = 14;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -55,7 +56,7 @@ public final class ServerParseShow {
                     continue;
                 case 'D':
                 case 'd':
-                    return dataCheck(stmt, i);
+                    return showDCheck(stmt, i);
                 case 'G':
                 case 'g':
                     return showGCheck(stmt, i);
@@ -94,6 +95,21 @@ public final class ServerParseShow {
                 return showCreateCheck(stmt, offset);
             } else {
                 return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int showDCheck(String stmt, int offset) {
+        if (stmt.length() > offset++) {
+            switch (stmt.charAt(offset)) {
+                case 'a':
+                case 'A':
+                    return dataCheck(stmt, offset);
+                case 'b':
+                case 'B':
+                    return showDbleProcessListCheck(stmt, offset);
+                default:
             }
         }
         return OTHER;
@@ -165,11 +181,10 @@ public final class ServerParseShow {
 
     // SHOW DATA
     private static int dataCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ata?".length()) {
-            char c1 = stmt.charAt(++offset);
+        if (stmt.length() > offset + "ta?".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')) {
+            if ((c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a')) {
                 switch (stmt.charAt(++offset)) {
                     case 'B':
                     case 'b':
@@ -352,6 +367,7 @@ public final class ServerParseShow {
         }
         return OTHER;
     }
+
     private static int showDatabasesWhere(String stmt, int offset) {
         if (stmt.length() > offset + "where".length()) {
             char c1 = stmt.charAt(++offset);
@@ -373,6 +389,7 @@ public final class ServerParseShow {
         }
         return OTHER;
     }
+
     private static int showSCheck(String stmt, int offset) {
         // the length of "ession" or "chemas" is 6.
         if (stmt.length() > offset + 6) {
@@ -518,6 +535,15 @@ public final class ServerParseShow {
                     (c9 == 'S' || c9 == 's') && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return VARIABLES;
             }
+        }
+        return OTHER;
+    }
+
+    // SHOW dble_PROCESSLIST
+    private static int showDbleProcessListCheck(String stmt, int offset) {
+        final String keyword = "BLE_PROCESSLIST";
+        if (ParseUtil.compare(stmt, offset, keyword) && !ParseUtil.isErrorTail(offset + keyword.length(), stmt)) {
+            return FULL_PROCESS_LIST;
         }
         return OTHER;
     }

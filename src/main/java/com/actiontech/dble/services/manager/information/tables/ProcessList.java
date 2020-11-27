@@ -39,13 +39,13 @@ public class ProcessList extends ManagerBaseTable {
         columns.put(COLUMN_FRONT_ID, new ColumnMeta(COLUMN_FRONT_ID, "int(11)", false, true));
         columnsType.put(COLUMN_FRONT_ID, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(12)", false, true));
+        columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(12)", false));
         columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_DB_INSTANCE, new ColumnMeta(COLUMN_DB_INSTANCE, "varchar(12)", false));
         columnsType.put(COLUMN_DB_INSTANCE, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_MYSQL_ID, new ColumnMeta(COLUMN_MYSQL_ID, "int(11)", false));
+        columns.put(COLUMN_MYSQL_ID, new ColumnMeta(COLUMN_MYSQL_ID, "int(11)", false, true));
         columnsType.put(COLUMN_MYSQL_ID, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_USER, new ColumnMeta(COLUMN_USER, "varchar(12)", false));

@@ -10,7 +10,6 @@
         "http://checkstyle.sourceforge.net/dtds/suppressions_1_1.dtd">
 
 <suppressions>
-    <suppress checks=".*" files="StructureMeta.java"/>
     <suppress checks=".*" files="UcoreInterface.java"/>
     <suppress checks=".*" files="UcoreGrpc.java"/>
     <suppress checks=".*" files="AlertBlockQueue.java"/>
@@ -24,6 +23,7 @@
     <suppress checks=".*" files="BTraceCostTime.java"/>
     <suppress checks="CyclomaticComplexity" files="CreateTableParserImp.java"/>
     <suppress checks="CyclomaticComplexity" files="XMLSchemaLoader.java"/>
+    <suppress checks="CyclomaticComplexity" files="GlobalTableProcessor.java"/>
     <suppress checks="UncommentedMain" files="XmltoCluster.java"/>
     <suppress checks="UncommentedMain" files="XmltoZkMain.java"/>
 </suppressions>

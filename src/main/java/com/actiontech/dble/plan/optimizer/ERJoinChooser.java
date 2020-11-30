@@ -77,7 +77,7 @@ public class ERJoinChooser {
      * left join's ER is different from inner join's
      * ex:t1,t2 ,if t1 left join t2 on
      * t1.id=t2.id can be pushed
-     * < we cna't change left join's structure>
+     * < we can't change left join's structure>
      *
      * @return
      */
@@ -107,6 +107,7 @@ public class ERJoinChooser {
             return null;
         else if (!PlanUtil.isERNode(child) && child.type() != PlanNode.PlanNodeType.TABLE)
             return null;
+
         if (onItem == null || !onItem.type().equals(Item.ItemType.FIELD_ITEM))
             return null;
         Pair<TableNode, ItemField> joinColumnInfo = PlanUtil.findColumnInTableLeaf((ItemField) onItem, joinNode);
@@ -130,7 +131,7 @@ public class ERJoinChooser {
     /* ------------------- left join optimizer end -------------------- */
 
     /**
-     * inner join's ER, rebuild inner joi's unit
+     * inner join's ER, rebuild inner join's unit
      *
      * @return
      */
@@ -390,7 +391,8 @@ public class ERJoinChooser {
     private boolean isUnit(PlanNode node) {
         if (isGlobalTree(node))
             return true;
-        else return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery() || !((JoinNode) node).isInnerJoin();
+        else
+            return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery() || !((JoinNode) node).isInnerJoin();
     }
 
     /**

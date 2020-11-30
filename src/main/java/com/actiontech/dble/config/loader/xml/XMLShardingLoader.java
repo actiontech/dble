@@ -106,10 +106,8 @@ public class XMLShardingLoader {
             loadShardingNode(root);
             loadFunctions(root);
             loadSchemas(root);
-        } catch (ConfigException e) {
-            throw e;
         } catch (Exception e) {
-            throw new ConfigException(e);
+            throw new ConfigException("[" + xmlFile + "] occurred  parse errors, The detailed errors are as follows .  \n\n" + e, e);
         } finally {
 
             if (dtd != null) {

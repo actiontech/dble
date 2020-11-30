@@ -528,11 +528,11 @@ public class DruidSelectParser extends DefaultDruidParser {
             int needAddLimitSize = needAddLimitSize(sqlSchema, rrs, mysqlSelectQuery, allConditions);
             if (needAddLimitSize >= 0) {
                 SQLLimit limit = new SQLLimit();
-                limit.setRowCount(new SQLIntegerExpr(limitSize));
+                limit.setRowCount(new SQLIntegerExpr(needAddLimitSize));
                 mysqlSelectQuery.setLimit(limit);
-                rrs.setLimitSize(limitSize);
+                rrs.setLimitSize(needAddLimitSize);
                 String sql = RouterUtil.removeSchema(statementToString(stmt), sqlSchema.getName());
-                rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
+                rrs.changeNodeSqlAfterAddLimit(sql, 0, needAddLimitSize);
             }
             SQLLimit limit = mysqlSelectQuery.getLimit();
             if (limit != null && needAddLimitSize < 0) {

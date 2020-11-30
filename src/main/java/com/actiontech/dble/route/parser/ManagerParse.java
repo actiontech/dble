@@ -671,7 +671,7 @@ public final class ManagerParse {
 
     // KILL @
     private static int kill(String stmt, int offset) {
-        if (stmt.length() > offset + 3) {
+        if (stmt.length() > offset + 4) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

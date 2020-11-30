@@ -5,12 +5,17 @@
 
 package com.actiontech.dble.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
 public final class NetUtil {
+    public static final Logger LOGGER = LoggerFactory.getLogger(NetUtil.class);
+
     private NetUtil() {
     }
 
@@ -31,6 +36,7 @@ public final class NetUtil {
                 }
             }
         } catch (Exception e) {
+            LOGGER.error("get hostIp Exception：{}", e);
             return null;
         }
         return null;

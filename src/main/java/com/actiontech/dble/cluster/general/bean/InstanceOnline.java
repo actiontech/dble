@@ -5,12 +5,15 @@ import com.actiontech.dble.util.NetUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2019/8/28.
  */
 public final class InstanceOnline {
 
+    public static final Logger LOGGER = LoggerFactory.getLogger(InstanceOnline.class);
     private static final InstanceOnline INSTANCE = new InstanceOnline();
     private static final String SERVER_PORT = "SERVER_PORT";
     private static final String HOST_ADDR = "HOST_ADDR";
@@ -30,7 +33,9 @@ public final class InstanceOnline {
     }
 
     public boolean canRemovePath(String value) {
+        LOGGER.info("old instanceOnline info：{}", value);
         if (hostAddr == null) {
+            LOGGER.info("new instanceOnline's hostAddr is null");
             return false;
         }
         try {

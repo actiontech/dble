@@ -112,7 +112,7 @@ public class SelectInformationSchemaColumnsHandler {
         } else {
             BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig == null) {
-                shardingService.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
+                shardingService.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn't exist");
                 return;
             }
             shardingNode = tableConfig.getShardingNodes().get(0);

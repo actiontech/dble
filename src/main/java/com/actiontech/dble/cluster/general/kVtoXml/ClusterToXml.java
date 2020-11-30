@@ -50,9 +50,8 @@ public final class ClusterToXml {
             xmlProcess.initJaxbClass();
 
             //add listener to watch the Prefix of the keys
+            new ConfigStatusResponse(listener);
             new PauseShardingNodeResponse(listener);
-
-            final ClusterSingleKeyListener configStatusListener = new ClusterSingleKeyListener(ClusterPathUtil.getConfStatusPath() + SEPARATOR, new ConfigStatusResponse(), sender);
 
             final ClusterSingleKeyListener binlogPauseListener = new ClusterSingleKeyListener(ClusterPathUtil.getBinlogPause() + SEPARATOR, new BinlogPauseStatusResponse(), sender);
 
@@ -74,10 +73,6 @@ public final class ClusterToXml {
             Thread thread6 = new Thread(binlogPauseListener);
             thread6.setName("BINLOG_PAUSE_UCORE_LISTENER");
             thread6.start();
-
-            Thread thread7 = new Thread(configStatusListener);
-            thread7.setName("CONFIG_STATUS_UCORE_LISTENER");
-            thread7.start();
 
             Thread thread2 = new Thread(ddlListener);
             thread2.setName("DDL_UCORE_LISTENER");

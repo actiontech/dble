@@ -86,13 +86,13 @@ public class ClusterOffLineListener implements Runnable {
     private boolean reInitOnlineStatus() {
         try {
             //release and renew lock
-            boolean init = OnlineStatus.getInstance().rebuildOnline();
-            if (init) {
+            boolean success = OnlineStatus.getInstance().rebuildOnline();
+            if (success) {
                 LOGGER.info("rewrite server online status success");
             } else {
-                LOGGER.info("rewrite server wait for online status inited");
+                LOGGER.info("rewrite server online failed");
             }
-            return init;
+            return success;
         } catch (Exception e) {
             LOGGER.warn("rewrite server online status failed: ", e);
             //alert

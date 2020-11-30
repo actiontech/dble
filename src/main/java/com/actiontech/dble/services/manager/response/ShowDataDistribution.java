@@ -74,7 +74,7 @@ public final class ShowDataDistribution {
         }
         BaseTableConfig tableConfig = schemaConfig.getTables().get(schemaInfo[1]);
         if (tableConfig == null) {
-            service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn‘t exist");
+            service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn't exist");
             return;
         } else if (tableConfig instanceof SingleTableConfig) {
             service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " is Single table");

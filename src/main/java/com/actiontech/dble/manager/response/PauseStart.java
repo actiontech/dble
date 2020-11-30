@@ -54,7 +54,7 @@ public final class PauseStart {
 
 
     public static void pause(ManagerConnection c, String sql) {
-
+        LOGGER.info("pause start from command");
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match pause @@shardingNode ='dn......' and timeout = ([0-9]+)");
@@ -98,9 +98,9 @@ public final class PauseStart {
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage());
                 }
-                c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
+                c.writeErrMessage(1003, "The backend connection recycle failure, try it later");
             } else {
-                c.writeErrMessage(1003, "Pause resume when recycle connection ,pause revert");
+                c.writeErrMessage(1003, "Pause resume when recycle connection, pause revert");
             }
 
         } else {

@@ -69,8 +69,10 @@ public final class ClusterLogic {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterLogic.class);
 
     private static Map<String, String> ddlLockMap = new ConcurrentHashMap<String, String>();
+
     private ClusterLogic() {
     }
+
     public static void executeViewEvent(String path, String key, String value) throws Exception {
         String[] childNameInfo = key.split(Repository.SCHEMA_VIEW_SPLIT);
         String schema = childNameInfo[0];
@@ -185,6 +187,7 @@ public final class ClusterLogic {
         ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
         ClusterHelper.createSelfTempNode(ClusterPathUtil.getDDLPath(fullName), ClusterPathUtil.SUCCESS);
     }
+
     public static void ddlUpdateEvent(String keyName, DDLInfo ddlInfo) throws Exception {
         LOGGER.info("ddl execute success notice");
         String[] tableInfo = keyName.split("\\.");
@@ -383,7 +386,7 @@ public final class ClusterLogic {
         }
         lock.lock();
         try {
-            if (waitThread.isAlive()) {
+            if (waitThread != null && waitThread.isAlive()) {
                 waitThread.interrupt();
             }
         } finally {
@@ -982,6 +985,7 @@ public final class ClusterLogic {
             LOGGER.warn(" server offline binlog status check error: ", e);
         }
     }
+
     public static void checkDDLAndRelease(String crashNode) {
         //deal with the status when the ddl is init notified
         //and than the ddl server is shutdown

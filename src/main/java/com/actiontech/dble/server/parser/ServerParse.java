@@ -713,6 +713,8 @@ public class ServerParse {
                         case 'Q':
                         case 'q':
                             return killQueryCheck(stmt, offset);
+                        case '@':
+                            return killConnection(stmt, offset);
                         default:
                             return (offset << 8) | KILL;
                     }
@@ -1316,6 +1318,18 @@ public class ServerParse {
         }
         if (LOCK_IN_SHARE_MODE_PATTERN.matcher(stmt).matches()) {
             return LOCK_IN_SHARE_MODE;
+        }
+        return OTHER;
+    }
+
+    // KILL @@CONNECTION' ' XXXXXX
+    private static int killConnection(String stmt, int offset) {
+        final String keyword = "@@CONNECTION";
+        if (ParseUtil.compare(stmt, offset, keyword)) {
+            offset = offset + keyword.length();
+            if (stmt.length() > offset && ParseUtil.isSpace(stmt.charAt(offset)) && ParseUtil.isErrorTail(offset + 1, stmt)) {
+                return (offset << 8) | KILL;
+            }
         }
         return OTHER;
     }

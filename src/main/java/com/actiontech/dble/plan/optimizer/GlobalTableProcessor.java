@@ -47,8 +47,7 @@ public final class GlobalTableProcessor {
         if (PlanUtil.isERNode(tn)) {
             // treat er join as an un global table
             tn.setUnGlobalTableCount(1);
-            Set<String> newSet = new HashSet<>();
-            newSet.addAll(tn.getReferedTableNodes().get(0).getNoshardNode());
+            Set<String> newSet = new HashSet<>(tn.getReferedTableNodes().get(0).getNoshardNode());
             tn.setNoshardNode(newSet);
         } else {
             int unGlobalCount = calcUnGlobalCount(tn);
@@ -76,7 +75,9 @@ public final class GlobalTableProcessor {
                     if (left.getUnGlobalTableCount() == 0) { // left node is global,left join will not push down
                         tn.setNoshardNode(null);
                         status = false;
-                    } else if (left.type() == PlanNode.PlanNodeType.TABLE || PlanUtil.isERNode(left)) {
+                    } else if (left.type() == PlanNode.PlanNodeType.TABLE ||
+                            PlanUtil.isERNode(left) ||
+                            left.getNoshardNode() != null && left.getNoshardNode().size() > 0) {
                         if (!isGlobalTableBigEnough(jn)) {
                             tn.setNoshardNode(null);
                             status = false;

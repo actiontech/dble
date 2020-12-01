@@ -15,14 +15,19 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.SessionStage;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.LockSupport;
 
 /**
  * @author mycat
  */
 public final class KillHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(KillHandler.class);
+
     private KillHandler() {
     }
 
@@ -120,17 +125,23 @@ public final class KillHandler {
         }
 
         //todo kill should be rewrite
-        /*FrontendConnection fc = findFrontConn(id);
+        FrontendConnection fc = findFrontConn(id);
         if (fc == null) {
             service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             return;
-        } else if (!fc.getUser().equals(service.getUser())) {
-            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
+        }
+        if (!Objects.equals(fc.getFrontEndService().getUser(), service.getUser())) {
+            service.writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "can't kill other user's connection" + id);
             return;
         }
-        fc.killAndClose("killed");*/
+        LOGGER.info("{} {}", fc, "killed by self");
+        fc.getFrontEndService().killAndClose("kill by self");
 
-        service.writeOkPacket();
+        OkPacket packet = new OkPacket();
+        packet.setPacketId(service.nextPacketId());
+        packet.setAffectedRows(1);
+        packet.setServerStatus(2);
+        packet.write(service.getConnection());
     }
 
     private static FrontendConnection findFrontConn(long connId) {

@@ -8,12 +8,12 @@ package com.actiontech.dble.plan.optimizer;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -77,7 +77,7 @@ public class ERJoinChooser {
      * left join's ER is different from inner join's
      * ex:t1,t2 ,if t1 left join t2 on
      * t1.id=t2.id can be pushed
-     * < we cna't change left join's structure>
+     * < we can't change left join's structure>
      *
      * @return
      */
@@ -130,7 +130,7 @@ public class ERJoinChooser {
     /* ------------------- left join optimizer end -------------------- */
 
     /**
-     * inner join's ER, rebuild inner joi's unit
+     * inner join's ER, rebuild inner join's unit
      *
      * @return
      */
@@ -390,7 +390,8 @@ public class ERJoinChooser {
     private boolean isUnit(PlanNode node) {
         if (isGlobalTree(node))
             return true;
-        else return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery() || !((JoinNode) node).isInnerJoin();
+        else
+            return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery() || !((JoinNode) node).isInnerJoin();
     }
 
     /**

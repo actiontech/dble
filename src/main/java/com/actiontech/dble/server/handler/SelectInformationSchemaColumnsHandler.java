@@ -13,7 +13,10 @@ import com.actiontech.dble.manager.response.ShowConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.sqlengine.*;
+import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
+import com.actiontech.dble.sqlengine.SQLJob;
+import com.actiontech.dble.sqlengine.SQLQueryResult;
+import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
@@ -113,7 +116,7 @@ public class SelectInformationSchemaColumnsHandler {
         } else {
             BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig == null) {
-                c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn‘t exist");
+                c.writeErrMessage(ErrorCode.ER_YES, "The table " + table + " doesn't exist");
                 return;
             }
             shardingNode = tableConfig.getShardingNodes().get(0);
@@ -164,8 +167,7 @@ public class SelectInformationSchemaColumnsHandler {
         replaceSchema(whereExpr, shardingDataBase);
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT ").
-                append(StringUtils.join(selectColsAsAlias, ", ") + " ").
+        sql.append("SELECT ").append(StringUtils.join(selectColsAsAlias, ", ")).append(" ").
                 append("FROM INFORMATION_SCHEMA.COLUMNS WHERE ").
                 append(whereExpr.toString());
 

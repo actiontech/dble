@@ -7,10 +7,8 @@ package com.actiontech.dble.services.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
@@ -50,12 +48,6 @@ public final class PauseEnd {
                 String value = ClusterHelper.getPathValue(ClusterPathUtil.getPauseResultNodePath());
                 if (StringUtil.isEmpty(value)) {
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
-                    return;
-                }
-
-                PauseInfo pauseInfo = new PauseInfo(value);
-                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
                     return;
                 }
 

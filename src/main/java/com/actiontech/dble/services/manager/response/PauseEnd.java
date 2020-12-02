@@ -53,12 +53,6 @@ public final class PauseEnd {
                     return;
                 }
 
-                PauseInfo pauseInfo = new PauseInfo(value);
-                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
-                    return;
-                }
-
                 if (!PauseShardingNodeManager.getInstance().tryResume()) {
                     OK.setMessage(("No shardingNode paused, But still notify cluster").getBytes());
                     return;

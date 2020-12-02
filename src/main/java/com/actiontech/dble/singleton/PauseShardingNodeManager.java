@@ -45,7 +45,7 @@ public final class PauseShardingNodeManager {
     private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
-    private DistributeLock distributeLock = null;
+    private volatile DistributeLock distributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 

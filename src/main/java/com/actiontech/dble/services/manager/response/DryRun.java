@@ -159,7 +159,7 @@ public final class DryRun {
 
                     if (sb.length() > 1) {
                         sb.setLength(sb.length() - 1);
-                        list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " don't exists in shardingNode[" + sb.toString() + "]"));
+                        list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " doesn't exists in shardingNode(s)[" + sb.toString() + "]"));
                     }
                 }
             }

@@ -10,6 +10,7 @@ import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
@@ -22,8 +23,10 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusResponse.class);
 
+    private static final String CONFIG_STATUS_OPERATOR_PATH = ClusterPathUtil.getConfStatusOperatorPath();
 
-    public ConfigStatusResponse() {
+    public ConfigStatusResponse(ClusterClearKeyListener confListener) {
+        confListener.addChild(this, CONFIG_STATUS_OPERATOR_PATH);
     }
 
     @Override
@@ -36,7 +39,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         String path = configValue.getKey();
         String[] paths = path.split(ClusterPathUtil.SEPARATOR);
-        if (paths.length != ClusterLogic.getPathHeight(ClusterPathUtil.getConfStatusPath()) + 1) {
+        if (paths.length != ClusterLogic.getPathHeight(CONFIG_STATUS_OPERATOR_PATH)) {
             return;
         }
         if ("".equals(configValue.getValue())) {

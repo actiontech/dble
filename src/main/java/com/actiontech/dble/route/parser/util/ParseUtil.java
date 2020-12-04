@@ -415,6 +415,30 @@ public final class ParseUtil {
     }
 
 
+    /**
+     * compare the prefix use keyword string.
+     * <p>
+     * Distinct from others,this implementation doesn't need {@code String.toCharArray()} to pass  {@code keyword} argument.It prevent memory copy.
+     *
+     * @param origin
+     * @param offsetInS
+     * @param keyword   must upper case
+     * @return
+     */
+    public static boolean compare(String origin, int offsetInS, String keyword) {
+        assert keyword.toUpperCase().equals(keyword);
+        if (origin.length() >= offsetInS + keyword.length()) {
+            for (int i = 0; i < keyword.length(); ++i, offsetInS++) {
+                if (Character.toUpperCase(origin.charAt(offsetInS)) != keyword.charAt(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+
     public static int findNextBreak(String sql) {
         return findNextBreak(sql, false);
     }

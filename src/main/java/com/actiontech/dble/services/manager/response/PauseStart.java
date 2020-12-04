@@ -54,7 +54,7 @@ public final class PauseStart {
 
 
     public static void pause(ManagerService service, String sql) {
-
+        LOGGER.info("pause start from command");
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match pause @@shardingNode ='dn......' and timeout = ([0-9]+)");
@@ -78,42 +78,39 @@ public final class PauseStart {
             return;
         }
 
-        try {
-            if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
-                //the error message can only show in single mod
-                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
-                return;
-            }
 
-            //self pause the shardingNode
-            long timeOut = Long.parseLong(ma.group(2)) * 1000;
-            long beginTime = System.currentTimeMillis();
-            boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
+        if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
+            //the error message can only show in single mod
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
+            return;
+        }
 
-            LOGGER.info("wait finished " + recycleFinish);
-            if (!recycleFinish) {
-                if (PauseShardingNodeManager.getInstance().tryResume()) {
-                    try {
-                        PauseShardingNodeManager.getInstance().resumeCluster();
-                    } catch (Exception e) {
-                        LOGGER.warn(e.getMessage());
-                    }
-                    service.writeErrMessage(1003, "The backend connection recycle failure,try it later");
-                } else {
-                    service.writeErrMessage(1003, "Pause resume when recycle connection ,pause revert");
-                }
-            } else {
+        //self pause the shardingNode
+        long timeOut = Long.parseLong(ma.group(2)) * 1000;
+        long beginTime = System.currentTimeMillis();
+        boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
+
+        LOGGER.info("wait finished " + recycleFinish);
+        if (!recycleFinish) {
+            if (PauseShardingNodeManager.getInstance().tryResume()) {
                 try {
-                    if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
-                        OK.write(service.getConnection());
-                    }
+                    PauseShardingNodeManager.getInstance().resumeCluster();
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage());
-                    service.writeErrMessage(1003, e.getMessage());
                 }
+                service.writeErrMessage(1003, "The backend connection recycle failure, try it later");
+            } else {
+                service.writeErrMessage(1003, "Pause resume when recycle connection, pause revert");
             }
-        } finally {
-            PauseShardingNodeManager.getInstance().releaseDistributeLock();
+        } else {
+            try {
+                if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
+                    OK.write(service.getConnection());
+                }
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+                service.writeErrMessage(1003, e.getMessage());
+            }
         }
     }
 

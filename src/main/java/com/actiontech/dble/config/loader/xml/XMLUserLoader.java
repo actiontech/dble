@@ -86,7 +86,7 @@ public class XMLUserLoader {
             loadShardingUser(root, xmlFile, blackListMap);
             loadRwSplitUser(root, xmlFile, blackListMap);
         } catch (Exception e) {
-            throw new ConfigException("[" + xmlFile + "] occurred  parse errors, The detailed results are as follows . \n\n" + e, e);
+            throw new ConfigException("[user.xml] occurred  parse errors, The detailed results are as follows . " + e, e);
         } finally {
             if (dtd != null) {
                 try {

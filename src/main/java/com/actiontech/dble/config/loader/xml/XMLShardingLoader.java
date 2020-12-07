@@ -277,6 +277,13 @@ public class XMLShardingLoader {
                 throw new ConfigException("shardingNode of " + tableNameElement + " is empty");
             }
             String[] theShardingNodes = SplitUtil.split(shardingNodeRef, ',', '$', '-');
+            final long distinctCount = Arrays.stream(theShardingNodes).distinct().count();
+            if (distinctCount != theShardingNodes.length) {
+                /*
+                detected repeat props;
+                 */
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for ShardingTableConfig " + tableNameElement + ", you use two same node in one shardingNode prop");
+            }
             if (theShardingNodes.length <= 1) {
                 throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for ShardingTableConfig " + tableNameElement + ", please use SingleTable");
             }
@@ -315,7 +322,6 @@ public class XMLShardingLoader {
     }
 
 
-
     private void loadGlobalTables(Element node, boolean isLowerCaseNames, Map<String, BaseTableConfig> tables, int schemaMaxLimit) {
         NodeList nodeList = node.getElementsByTagName("globalTable");
         for (int i = 0; i < nodeList.getLength(); i++) {
@@ -332,6 +338,13 @@ public class XMLShardingLoader {
                 throw new ConfigException("shardingNode of " + tableNameElement + " is empty");
             }
             String[] theShardingNodes = SplitUtil.split(shardingNodeRef, ',', '$', '-');
+            final long distinctCount = Arrays.stream(theShardingNodes).distinct().count();
+            if (distinctCount != theShardingNodes.length) {
+                /*
+                detected repeat props;
+                 */
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for GlobalTableConfig " + tableNameElement + ",you use two same node in one shardingNode prop");
+            }
             if (theShardingNodes.length <= 1) {
                 throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for GlobalTableConfig " + tableNameElement + ", please use SingleTable");
             }

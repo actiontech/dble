@@ -618,8 +618,8 @@ public class ERJoinChooser {
      */
     private static class JoinColumnInfo {
         private Item key; // join on's on key
-        private PlanNode tn; // treenode of the joinkey belong to
-        private ERTable cm; //  joinkey is er ,if so,save th parentkey
+        private PlanNode tn; // treenode of the joinColumn belong to
+        private ERTable cm; //  joinColumn is er ,if so,save th parentkey
 
         JoinColumnInfo(Item key) {
             this.key = key;

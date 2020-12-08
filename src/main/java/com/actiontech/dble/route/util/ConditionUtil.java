@@ -136,7 +136,7 @@ public final class ConditionUtil {
             }
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingcolumn/joinkey");
+            LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingColumn/joinColumn");
         }
         return null;
     }

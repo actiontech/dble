@@ -159,7 +159,7 @@ public final class DryRun {
 
                     if (sb.length() > 1) {
                         sb.setLength(sb.length() - 1);
-                        list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " don't exists in shardingNode[" + sb.toString() + "]"));
+                        list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " doesn't exists in shardingNode(s)[" + sb.toString() + "]"));
                     }
                 }
             }
@@ -250,7 +250,11 @@ public final class DryRun {
                 }
             }
             if (!hasShardingUser) {
-                list.add(new ErrorInfo("Xml", "WARNING", "There is No Sharding User"));
+                if (serverConfig.getSchemas().size() > 0) {
+                    list.add(new ErrorInfo("Xml", "WARNING", "There is No Sharding User"));
+                } else {
+                    list.add(new ErrorInfo("Xml", "NOTICE", "There is No Sharding User"));
+                }
             } else if (schema.size() <= serverConfig.getSchemas().size()) {
                 for (String schemaName : serverConfig.getSchemas().keySet()) {
                     if (!schema.contains(schemaName)) {
@@ -260,7 +264,11 @@ public final class DryRun {
             }
 
             if (!hasRWSplitUser) {
-                list.add(new ErrorInfo("Xml", "WARNING", "There is No RWSplit User"));
+                if (serverConfig.getSchemas().size() == 0) {
+                    list.add(new ErrorInfo("Xml", "WARNING", "There is No RWSplit User"));
+                } else {
+                    list.add(new ErrorInfo("Xml", "NOTICE", "There is No RWSplit User"));
+                }
             }
 
             if (!hasManagerUser) {

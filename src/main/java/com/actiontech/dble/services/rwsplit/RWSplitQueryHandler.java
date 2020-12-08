@@ -85,6 +85,9 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.getService().setInLoadData(true);
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setInLoadData(false));
                         break;
+                    case RwSplitServerParse.HELP:
+                        session.execute(null, null);
+                        break;
                     default:
                         // 1. DDL
                         // 2. DML

@@ -85,10 +85,8 @@ public class XMLUserLoader {
             Map<String, WallProvider> blackListMap = loadBlackList(root);
             loadShardingUser(root, xmlFile, blackListMap);
             loadRwSplitUser(root, xmlFile, blackListMap);
-        } catch (ConfigException e) {
-            throw e;
         } catch (Exception e) {
-            throw new ConfigException(e);
+            throw new ConfigException("[" + xmlFile + "] occurred  parse errors, The detailed results are as follows . \n\n" + e, e);
         } finally {
             if (dtd != null) {
                 try {

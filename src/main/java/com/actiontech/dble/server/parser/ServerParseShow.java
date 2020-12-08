@@ -33,7 +33,7 @@ public final class ServerParseShow {
     public static final int VARIABLES = 11;
     public static final int CREATE_VIEW = 12;
     public static final int CREATE_DATABASE = 13;
-    public static final int FULL_PROCESS_LIST = 14;
+    public static final int DBLE_PROCESS_LIST = 14;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -543,7 +543,7 @@ public final class ServerParseShow {
     private static int showDbleProcessListCheck(String stmt, int offset) {
         final String keyword = "BLE_PROCESSLIST";
         if (ParseUtil.compare(stmt, offset, keyword) && !ParseUtil.isErrorTail(offset + keyword.length(), stmt)) {
-            return FULL_PROCESS_LIST;
+            return DBLE_PROCESS_LIST;
         }
         return OTHER;
     }

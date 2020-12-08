@@ -31,8 +31,8 @@ import java.util.*;
  * @author collapsar
  * @author collapsar
  */
-public final class ShowProcessList {
-    private ShowProcessList() {
+public final class ShowDbleProcessList {
+    private ShowDbleProcessList() {
     }
 
     private static final int FIELD_COUNT = 10;

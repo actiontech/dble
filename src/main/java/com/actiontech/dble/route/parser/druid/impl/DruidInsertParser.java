@@ -142,7 +142,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt.getColumns(), partitionColumn);
         if (shardingColIndex != -1) return shardingColIndex;
-        throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + insertStmt);
+        throw new SQLNonTransientException("bad insert sql, shardingColumn/joinColumn:" + partitionColumn + " not provided," + insertStmt);
     }
 
     private boolean parserNoSharding(ShardingService service, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,

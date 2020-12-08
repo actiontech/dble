@@ -20,7 +20,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -142,7 +141,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     private int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = getShardingColIndex(schemaInfo, replaceStmt.getColumns(), partitionColumn);
         if (shardingColIndex != -1) return shardingColIndex;
-        throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + replaceStmt);
+        throw new SQLNonTransientException("bad insert sql, shardingColumn/joinColumn:" + partitionColumn + " not provided," + replaceStmt);
     }
 
     /**

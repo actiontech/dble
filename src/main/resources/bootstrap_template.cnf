@@ -13,7 +13,7 @@
 -XX:MaxDirectMemorySize=2G
 -XX:+PrintHeapAtGC
 -XX:+PrintGCDateStamps
--Xloggc:./logs/gc_%t_%p.log
+-Xloggc:./logs/gc_%WRAPPER_TIME_YYYYMMDDHHIISS%_%p.log
 -XX:+PrintGCTimeStamps
 -XX:+PrintGCDetails
 #  base config

@@ -37,9 +37,20 @@ public class FrontendBlockRunnable implements Runnable {
         }
         while (true) {
             try {
+                if (Thread.currentThread().isInterrupted()) {
+                    DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                    LOGGER.debug("interrupt thread:{},frontNormalTasks:{},frontPriorityTasks:{}", Thread.currentThread().toString(), frontNormalTasks, frontPriorityTasks);
+                    break;
+                }
                 task = frontPriorityTasks.poll();
                 if (task == null) {
                     task = frontNormalTasks.take();
+                }
+                if (Thread.currentThread().isInterrupted()) {
+                    frontNormalTasks.offer(task);
+                    DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                    LOGGER.debug("interrupt thread:{},frontNormalTasks:{},frontPriorityTasks:{}", Thread.currentThread().toString(), frontNormalTasks, frontPriorityTasks);
+                    break;
                 }
                 if (task.getService() == null) {
                     continue;
@@ -58,7 +69,10 @@ public class FrontendBlockRunnable implements Runnable {
                     workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                 }
             } catch (InterruptedException e) {
-                throw new RuntimeException("FrontendCommandHandler error.", e);
+                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                LOGGER.debug("interrupt thread exception:{},frontNormalTasks:{},frontPriorityTasks:{}", Thread.currentThread().toString(), frontNormalTasks, frontPriorityTasks);
+                LOGGER.warn("FrontendCommandHandler error.", e);
+                break;
             }
         }
     }

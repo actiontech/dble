@@ -282,7 +282,7 @@ public class XMLShardingLoader {
                 /*
                 detected repeat props;
                  */
-                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for ShardingTableConfig " + tableNameElement + ", you use two same node in one shardingNode prop");
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for ShardingTableConfig " + tableNameElement + " ,the nodes duplicated!");
             }
             if (theShardingNodes.length <= 1) {
                 throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for ShardingTableConfig " + tableNameElement + ", please use SingleTable");
@@ -343,7 +343,7 @@ public class XMLShardingLoader {
                 /*
                 detected repeat props;
                  */
-                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for GlobalTableConfig " + tableNameElement + ",you use two same node in one shardingNode prop");
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for GlobalTableConfig " + tableNameElement + ",the nodes duplicated!");
             }
             if (theShardingNodes.length <= 1) {
                 throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for GlobalTableConfig " + tableNameElement + ", please use SingleTable");

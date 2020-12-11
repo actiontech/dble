@@ -637,7 +637,7 @@ public class NonBlockingSession extends Session {
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                     }
                 } else {
-                    RouteResultsetNode[] hintNodes = rrs.getNodes();
+                    this.setHintNodes(rrs.getNodes());
                     RouteResultsetNode[] complexNodes = newrrs.getNodes();
                     RouteResultsetNode[] retNodes = new RouteResultsetNode[hintNodes.length];
                     int count = 0;

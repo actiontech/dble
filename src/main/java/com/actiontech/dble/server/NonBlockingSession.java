@@ -617,7 +617,11 @@ public class NonBlockingSession extends Session {
     public void executeMultiSelectEx(RouteResultset rrs) {
         String realSQL = rrs.getNodes()[0].getStatement();
         String routeSQL = rrs.getSrcStatement();
-        if (routeSQL.equals(realSQL)) { // really simple sql
+
+        String tmpRSQL = realSQL.toLowerCase().replaceAll("\n", " ");
+        String tmpHSQL = routeSQL.toLowerCase().replaceAll("[ ]+", " ");
+
+        if (tmpHSQL.equals(tmpRSQL)) { // really simple sql
             executeOther(rrs);
         } else { //come with hint
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(rrs.getSchema());
@@ -633,6 +637,22 @@ public class NonBlockingSession extends Session {
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                     }
                 } else {
+                    RouteResultsetNode[] hintNodes = rrs.getNodes();
+                    RouteResultsetNode[] complexNodes = newrrs.getNodes();
+                    RouteResultsetNode[] retNodes = new RouteResultsetNode[hintNodes.length];
+                    int count = 0;
+                    for (RouteResultsetNode hNode : hintNodes) {
+                        for (RouteResultsetNode cNode : complexNodes) {
+                            String hName = hNode.getName();
+                            String cName = cNode.getName();
+                            if (hName.equals(cName)) {
+                                retNodes[count] = cNode;
+                                count++;
+                                break;
+                            }
+                        }
+                    }
+                    newrrs.setNodes(retNodes);
                     executeOther(rrs);
                 }
             } catch (Exception e) {

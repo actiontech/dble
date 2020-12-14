@@ -50,7 +50,7 @@ public final class SystemConfigLoader {
                 }
                 // only support these option
                 if (line.startsWith("-server") || line.startsWith("-X") || line.startsWith("-agentlib") ||
-                        line.startsWith("-Dcom.sun.management.jmxremote")) {
+                        line.startsWith("-javaagent") || line.startsWith("-Dcom.sun.management.jmxremote")) {
                     continue;
                 }
                 int ind = line.indexOf('=');

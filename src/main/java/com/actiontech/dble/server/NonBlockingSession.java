@@ -69,7 +69,7 @@ import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
 import static com.actiontech.dble.server.parser.ServerParse.DDL;
 
-import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 
 /**
@@ -626,7 +626,7 @@ public class NonBlockingSession extends Session {
         } else { //come with hint
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(rrs.getSchema());
             try {
-                RouteResultset newrrs = RouteService.getInstance().route(schemaConfig, rrs.getNodes()[0].getSqlType(), realSQL, this.shardingService, false);
+                RouteResultset newrrs = RouteStrategyFactory.getRouteStrategy().route(schemaConfig, rrs.getNodes()[0].getSqlType(), realSQL, this.shardingService, false);
                 RouteResultsetNode[] newnodes = newrrs.getNodes();
                 if (newnodes == null || newnodes.length == 0 || newnodes[0].getName() == null || newnodes[0].getName().equals("")) {
                     try {
@@ -637,11 +637,11 @@ public class NonBlockingSession extends Session {
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                     }
                 } else {
-                    this.setHintNodes(rrs.getNodes());
+                    RouteResultsetNode[] mhintNodes = rrs.getNodes();
                     RouteResultsetNode[] complexNodes = newrrs.getNodes();
-                    RouteResultsetNode[] retNodes = new RouteResultsetNode[hintNodes.length];
+                    RouteResultsetNode[] retNodes = new RouteResultsetNode[mhintNodes.length];
                     int count = 0;
-                    for (RouteResultsetNode hNode : hintNodes) {
+                    for (RouteResultsetNode hNode : mhintNodes) {
                         for (RouteResultsetNode cNode : complexNodes) {
                             String hName = hNode.getName();
                             String cName = cNode.getName();
@@ -653,7 +653,7 @@ public class NonBlockingSession extends Session {
                         }
                     }
                     newrrs.setNodes(retNodes);
-                    executeOther(rrs);
+                    executeOther(newrrs);
                 }
             } catch (Exception e) {
                 return;

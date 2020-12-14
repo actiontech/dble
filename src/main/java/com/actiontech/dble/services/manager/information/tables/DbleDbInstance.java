@@ -306,7 +306,14 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     @Override
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
-        affectPks.forEach(affectPk -> affectPk.putAll(values));
+        affectPks.forEach(affectPk -> {
+            if (values.containsKey(COLUMN_PASSWORD_ENCRYPT) && Boolean.FALSE.toString().equalsIgnoreCase(values.get(COLUMN_ENCRYPT_CONFIGURED))) {
+                boolean containsName = values.containsKey(COLUMN_NAME);
+                boolean containsUser = values.containsKey(COLUMN_USER);
+                values.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(containsName ? values.get(COLUMN_NAME) : affectPk.get(COLUMN_NAME), containsUser ? values.get(COLUMN_USER) : affectPk.get(COLUMN_USER), values.get(COLUMN_PASSWORD_ENCRYPT)));
+            }
+            affectPk.putAll(values);
+        });
         return insertOrUpdate(Lists.newArrayList(affectPks), false);
     }
 

@@ -495,7 +495,11 @@ public class NonBlockingSession extends Session {
             } else {
                 setRouteResultToTrace(nodes);
                 // hint query also need backend aggregator operation.
-                executeMultiSelectEx(rrs);
+                if (rrs.getSqlType() == ServerParse.SELECT) {
+                    executeMultiSelectEx(rrs);
+                } else {
+                    executeOther(rrs);
+                }
             }
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);

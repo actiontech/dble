@@ -200,6 +200,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void paramEofResponse(List<byte[]> params, byte[] eof, MySQLResponseService service) {
         synchronized (this) {
+            if (buffer == null) {
+                buffer = frontedConnection.allocate();
+            }
             for (byte[] field : params) {
                 field[3] = (byte) rwSplitService.nextPacketId();
                 buffer = frontedConnection.writeToBuffer(field, buffer);

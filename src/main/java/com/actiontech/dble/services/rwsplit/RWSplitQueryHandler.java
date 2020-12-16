@@ -7,6 +7,7 @@ import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
+import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
@@ -87,6 +88,12 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.HELP:
                         session.execute(null, null);
+                        break;
+                    case RwSplitServerParse.CREATE_TEMPORARY_TABLE:
+                        TempTableHandler.handleCreate(sql, session.getService(), rs >>> 8);
+                        break;
+                    case RwSplitServerParse.DROP_TEMPORARY_TABLE:
+                        TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
                         break;
                     default:
                         // 1. DDL

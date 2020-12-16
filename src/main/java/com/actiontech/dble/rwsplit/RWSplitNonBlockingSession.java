@@ -56,7 +56,7 @@ public class RWSplitNonBlockingSession {
     }
 
     private Boolean canRunOnMaster(Boolean master) {
-        if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart()) {
+        if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart() || rwSplitService.isUsingTmpTable()) {
             return true;
         }
         return master;
@@ -139,7 +139,7 @@ public class RWSplitNonBlockingSession {
     public void unbindIfSafe() {
         if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
                 !rwSplitService.isInLoadData() &&
-                !rwSplitService.isInPrepare() && this.conn != null) {
+                !rwSplitService.isInPrepare() && this.conn != null && !rwSplitService.isUsingTmpTable()) {
             this.conn.release();
             this.conn = null;
         }

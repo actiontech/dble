@@ -492,7 +492,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         this.accept(x.getWithSubQuery());
+
+        Set<Pair<String, Pair<String, String>>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
+        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        selectSchemaTables.clear();
         this.accept(x.getQuery());
+        selectSchemaTables.addAll(tmpSelectSchemaTables);
+        tmpSelectSchemaTables.clear();
+
         this.accept(x.getOrderBy());
         return false;
     }

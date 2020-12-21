@@ -38,7 +38,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
         } else {
-            mysqlService.execute(rwSplitService, rwSplitService.getExecuteSql());
+            mysqlService.execute(rwSplitService, rwSplitService.getExecuteSqlBytes());
         }
     }
 

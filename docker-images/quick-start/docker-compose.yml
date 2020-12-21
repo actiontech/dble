@@ -8,7 +8,9 @@ networks:
                   gateway: 172.18.0.253
 services:
     mysql1:
-        image: mysql:5.7
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
         container_name: backend-mysql1
         hostname: backend-mysql1
         privileged: true
@@ -16,15 +18,15 @@ services:
         tty: true
         ports:
             - "33061:3306"
-        volumes:
-            - ./:/etc/mysql/
         networks:
             net:
               ipv4_address: 172.18.0.2
         environment:
             MYSQL_ROOT_PASSWORD: 123456
     mysql2:
-        image: mysql:5.7
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
         container_name: backend-mysql2
         hostname: backend-mysql2
         privileged: true
@@ -32,20 +34,23 @@ services:
         tty: true
         ports:
             - "33062:3306"
-        volumes:
-            - ./:/etc/mysql/
         networks:
             net:
               ipv4_address: 172.18.0.3
         environment:
             MYSQL_ROOT_PASSWORD: 123456
     dble-server:
-        image: actiontech/dble:latest
+        build:
+            context: ../dble-image
+        image: actiontech-dble:latest
         container_name: dble-server
         hostname: dble-server
         privileged: true
         stdin_open: true
         tty: true
+        volumes:
+            - "./conf:/opt/dble/extend.conf.d"
+            - "./logs:/opt/dble/logs"
         command: ["/opt/dble/bin/wait-for-it.sh", "backend-mysql1:3306","--","/opt/dble/bin/docker_init_start.sh"]
         ports:
             - "8066:8066"

@@ -1,0 +1,170 @@
+version: '2'
+networks:
+    net:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.18.0.0/16
+                  gateway: 172.18.0.253
+services:
+    mgr-a-1:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: mgr-a-1
+        hostname: mgr-a-1
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3307:3306"
+        volumes:
+            - "./mgr-a-1:/etc/mysql/extend.conf.d"
+            - "./script/master:/docker-entrypoint-initdb.d"
+        networks:
+            net:
+                ipv4_address: 172.18.0.2
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    mgr-a-2:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: mgr-a-2
+        hostname: mgr-a-2
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3308:3306"
+        volumes:
+            - "./mgr-a-2:/etc/mysql/extend.conf.d"
+        depends_on:
+            - "mgr-a-1"
+        networks:
+            net:
+                ipv4_address: 172.18.0.3
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    mgr-a-3:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: mgr-a-3
+        hostname: mgr-a-3
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3309:3306"
+        volumes:
+            - "./mgr-a-3:/etc/mysql/extend.conf.d"
+        depends_on:
+            - "mgr-a-1"
+        networks:
+            net:
+                ipv4_address: 172.18.0.4
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    mgr-b-1:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: mgr-b-1
+        hostname: mgr-b-1
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3310:3306"
+        volumes:
+          - "./mgr-b-1:/etc/mysql/extend.conf.d"
+          - "./script/master:/docker-entrypoint-initdb.d"
+        networks:
+            net:
+                ipv4_address: 172.18.0.5
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    mgr-b-2:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: mgr-b-2
+        hostname: mgr-b-2
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3311:3306"
+        depends_on:
+            - "mgr-b-1"
+        volumes:
+            - "./mgr-b-2:/etc/mysql/extend.conf.d"
+        networks:
+            net:
+                ipv4_address: 172.18.0.6
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    mgr-b-3:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: mgr-b-3
+        hostname: mgr-b-3
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "3312:3306"
+        volumes:
+          - "./mgr-b-3:/etc/mysql/extend.conf.d"
+        depends_on:
+            - "mgr-b-1"
+        networks:
+            net:
+                ipv4_address: 172.18.0.7
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    dble-server:
+        build:
+            context: ../dble-image
+        image: actiontech-dble:latest
+        container_name: dble-server
+        hostname: dble-server
+        privileged: true
+        stdin_open: true
+        tty: true
+        volumes:
+            - "./conf:/opt/dble/extend.conf.d"
+            - "./logs:/opt/dble/logs"
+        environment:
+            MASTERS: mgr-a-1,mgr-b-1
+            SLAVES: mgr-a-2,mgr-a-3,mgr-b-2,mgr-b-3
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+        command: ["/opt/dble/bin/wait-for-it.sh", "mgr-a-1:3306","--","/opt/dble/bin/docker_init_start.sh"]
+        ports:
+            - "8066:8066"
+            - "9066:9066"
+        depends_on:
+            - "mgr-a-1"
+            - "mgr-a-2"
+            - "mgr-a-3"
+            - "mgr-b-1"
+            - "mgr-b-2"
+            - "mgr-b-3"
+        networks:
+            net:
+                ipv4_address: 172.18.0.8

@@ -128,6 +128,12 @@ public final class RwSplitServerParse extends ServerParse {
         return rt;
     }
 
+
+    public static boolean isMultiStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        return index + 1 < sql.length() && !ParseUtil.isEOF(sql, index);
+    }
+
     // INSERT' ' | INSTALL '  '
     protected static int iCheck(String stmt, int offset) {
         int type = OTHER;

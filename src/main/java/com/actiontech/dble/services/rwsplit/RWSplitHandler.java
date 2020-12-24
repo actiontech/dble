@@ -8,24 +8,36 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 
 public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler, StatisticsHandler {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitHandler.class);
     private final RWSplitService rwSplitService;
     private final byte[] originPacket;
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
+    /**
+     * When client send one request. dble should return one and only one response.
+     * But , maybe OK event and connection closed event are run in parallel.
+     * so we need use synchronized and write2Client to prevent conflict.
+     */
     private boolean write2Client = false;
     private final Callback callback;
     private final boolean isHint;
+    /**
+     * If there are more packets next.This flag in would be set.
+     */
+    private static final int HAS_MORE_RESULTS = 0x08;
 
     public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback, boolean isHint) {
         this.rwSplitService = service;
@@ -94,15 +106,23 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean executeResponse = mysqlService.syncAndExecute();
         if (executeResponse) {
-            if (callback != null) {
-                callback.callback(true, rwSplitService);
+
+            final OkPacket packet = new OkPacket();
+            packet.read(data);
+            if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
+                if (callback != null) {
+                    callback.callback(true, rwSplitService);
+                }
+                rwSplitService.getSession().unbindIfSafe();
             }
-            rwSplitService.getSession().unbindIfSafe();
+
             synchronized (this) {
                 if (!write2Client) {
                     data[3] = (byte) rwSplitService.nextPacketId();
                     frontedConnection.write(data);
-                    write2Client = true;
+                    if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
+                        write2Client = true;
+                    }
                 }
             }
         }
@@ -153,10 +173,28 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
-                rwSplitService.getSession().unbindIfSafe();
+                if ((eof[7] & HAS_MORE_RESULTS) == 0) {
+                    /*
+                    last resultset will call this
+                     */
+                    rwSplitService.getSession().unbindIfSafe();
+                } else {
+                    LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
+                }
                 buffer = frontedConnection.writeToBuffer(eof, buffer);
+                /*
+                multi statement all cases are as follows:
+                1. if an resultSet is followed by an resultSet. buffer will re-assign in fieldEofResponse()
+                2. if an resultSet is followed by an okResponse. okResponse() send directly without use buffer.
+                3. if an resultSet is followed by  an errorResponse. buffer will be used if it is not null.
+                We must prevent  same buffer called connection.write() twice.
+                According to the above, you need write buffer immediately and set buffer to null.
+                 */
                 frontedConnection.write(buffer);
-                write2Client = true;
+                buffer = null;
+                if ((eof[7] & HAS_MORE_RESULTS) == 0) {
+                    write2Client = true;
+                }
             }
         }
     }

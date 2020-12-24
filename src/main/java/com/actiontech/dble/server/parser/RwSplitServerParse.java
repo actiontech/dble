@@ -130,8 +130,8 @@ public final class RwSplitServerParse extends ServerParse {
 
 
     public static boolean isMultiStatement(String sql) {
-        final int index = sql.indexOf(';');
-        return index != -1 && index != sql.length() - 1;
+        int index = ParseUtil.findNextBreak(sql);
+        return index + 1 < sql.length() && !ParseUtil.isEOF(sql, index);
     }
 
     // INSERT' ' | INSTALL '  '

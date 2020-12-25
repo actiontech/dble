@@ -4,17 +4,25 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlPrepareStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MysqlDeallocatePrepareStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class RWSplitNonBlockingSession {
 
@@ -23,12 +31,35 @@ public class RWSplitNonBlockingSession {
     private volatile BackendConnection conn;
     private final RWSplitService rwSplitService;
     private PhysicalDbGroup rwGroup;
+    private Set<String> nameSet = new HashSet<>();
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
     }
 
     public void execute(Boolean master, Callback callback) {
+        execute(master, null, callback);
+    }
+
+    public void execute(Boolean master, Callback callback, String sql) {
+        try {
+            SQLStatement statement = parseSQL(sql);
+            if (statement instanceof MySqlPrepareStatement) {
+                String simpleName = ((MySqlPrepareStatement) statement).getName().getSimpleName();
+                nameSet.add(simpleName);
+                rwSplitService.setTxStart(true);
+            }
+            if (statement instanceof MysqlDeallocatePrepareStatement) {
+                String simpleName = ((MysqlDeallocatePrepareStatement) statement).getStatementName().getSimpleName();
+                nameSet.remove(simpleName);
+                if (nameSet.isEmpty()) {
+                    rwSplitService.setTxStart(false);
+                }
+            }
+        } catch (SQLSyntaxErrorException throwables) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
+        }
         execute(master, null, callback);
     }
 
@@ -74,6 +105,15 @@ public class RWSplitNonBlockingSession {
             return;
         }
         throw new SQLSyntaxErrorException("unexpected dble_dest_expect,real[" + (isMaster ? "M" : "S") + "],expect[" + dest + "]");
+    }
+
+    private SQLStatement parseSQL(String stmt) throws SQLSyntaxErrorException {
+        SQLStatementParser parser = new MySqlStatementParser(stmt);
+        try {
+            return parser.parseStatement();
+        } catch (Exception t) {
+            throw new SQLSyntaxErrorException(t);
+        }
     }
 
     public PhysicalDbGroup getRwGroup() {

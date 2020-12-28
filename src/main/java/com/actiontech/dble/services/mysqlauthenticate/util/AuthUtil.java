@@ -8,12 +8,10 @@ package com.actiontech.dble.services.mysqlauthenticate.util;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
-import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
@@ -81,6 +79,20 @@ public final class AuthUtil {
                         return "Unknown database '" + schema + "'";
                     default:
                         break;
+                }
+            } else if (userConfig instanceof RwSplitUserConfig) {
+                // check RwSplitUserConfig
+                switch (checkDatabase(schema)) {
+                    case ErrorCode.ER_BAD_DB_ERROR:
+                        return "Unknown database '" + schema + "'";
+                    case ErrorCode.ER_DBACCESS_DENIED_ERROR:
+                        return "Access denied for user '" + user + "' to database '" + schema + "'";
+                    default:
+                        break;
+                }
+
+                if ((Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & clientFlags)) != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
+                    return "The client requested CLIENT_FOUND_ROWS capabilities does not match, in the manager use show @@cap_client_found_rows check latest status.";
                 }
             }
 
@@ -173,6 +185,17 @@ public final class AuthUtil {
         } else {
             return ErrorCode.ER_DBACCESS_DENIED_ERROR;
         }
+    }
+
+    private static int checkDatabase(String database) {
+        if (database == null) {
+            return 0;
+        }
+        Set<String> databases = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute();
+        if (!databases.contains(database)) {
+            return ErrorCode.ER_BAD_DB_ERROR;
+        }
+        return 0;
     }
 
     private static int checkManagerSchema(String schema) {

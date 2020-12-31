@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.values.ConfStatus;
+import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -30,7 +32,6 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -118,14 +119,18 @@ public final class UpdateHandler {
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
-                handleConfigException(e, service, managerTable);
+                service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
+                LOGGER.warn("Update failure.The reason is ", e);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {
-            managerTable.deleteBackupFile();
+            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
+            DbleTempConfig.getInstance().setShardingConfig(DbleServer.getInstance().getConfig().getShardingConfig());
+            DbleTempConfig.getInstance().setSequenceConfig(DbleServer.getInstance().getConfig().getSequenceConfig());
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();
@@ -192,15 +197,5 @@ public final class UpdateHandler {
         }
         columnName = StringUtil.removeBackQuote(columnName);
         return columnName;
-    }
-
-    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
-        try {
-            managerTable.rollbackXmlFile();
-        } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
-        }
-        service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
     }
 }

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.services.manager.information;
 
-import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -15,9 +14,6 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.collect.Sets;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -178,22 +174,6 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
         }
     }
 
-    public void rollbackXmlFile() throws IOException {
-        //rollback
-        File tempFile = new File(this.xmlFilePath + ".tmp");
-        File file = new File(this.xmlFilePath);
-        if (tempFile.exists()) {
-            FileUtils.copy(tempFile, file);
-        } else {
-            throw new FileNotFoundException(tempFile.getPath());
-        }
-    }
-
-    public void deleteBackupFile() {
-        //delete
-        File tempFile = new File(this.xmlFilePath + ".tmp");
-        if (tempFile.exists()) {
-            tempFile.delete();
-        }
+    public void afterExecute() {
     }
 }

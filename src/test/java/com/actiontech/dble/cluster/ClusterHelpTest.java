@@ -13,6 +13,8 @@ import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAda
 import com.actiontech.dble.cluster.zkprocess.entity.user.User;
 import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.config.converter.ShardingConverter;
+import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;
@@ -42,7 +44,7 @@ public class ClusterHelpTest {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
         Gson gson = gsonBuilder.create();
-        String jsonContent = ClusterLogic.parseShardingXmlFileToJson(xmlProcess, gson, READ_PATH);
+        String jsonContent = new ShardingConverter().shardingXmlToJson();
         Shardings newShardingBean = ClusterLogic.parseShardingJsonToBean(gson, jsonContent);
         ClusterLogic.writeMapFileAddFunction(newShardingBean.getFunction());
         String newXml = xmlProcess.baseParseToString(newShardingBean, "sharding");
@@ -74,7 +76,7 @@ public class ClusterHelpTest {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
         Gson gson = gsonBuilder.create();
-        String jsonContent = ClusterLogic.parseUserXmlFileToJson(xmlProcess, gson, READ_PATH);
+        String jsonContent = new UserConverter().userXmlToJson();
         Users newShardingBean = ClusterLogic.parseUserJsonToBean(gson, jsonContent);
         String newXml = xmlProcess.baseParseToString(newShardingBean, "user");
         Assert.assertEquals(originXml.length(), newXml.length());

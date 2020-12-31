@@ -10,6 +10,10 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.*;
+import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.SequenceConverter;
+import com.actiontech.dble.config.converter.ShardingConverter;
+import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -71,7 +75,17 @@ public final class DryRun {
         LOGGER.info("reload config(dry-run): load all xml info start");
         ConfigInitializer loader;
         try {
-            loader = new ConfigInitializer(false);
+            //sync json
+            String userConfig = new UserConverter().userXmlToJson();
+            String dbConfig = DBConverter.dbXmlToJson();
+            String shardingConfig = new ShardingConverter().shardingXmlToJson();
+            String sequenceConfig = null;
+            if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
+                sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
+            } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
+                sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
+            }
+            loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
         } catch (Exception e) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
             return;
@@ -109,9 +123,9 @@ public final class DryRun {
         } else {
             try {
                 if (newSystemVariables.isLowerCaseTableNames()) {
-                    serverConfig.reviseLowerCase();
+                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
                 } else {
-                    serverConfig.loadSequence();
+                    serverConfig.loadSequence(loader.getSequenceConfig());
                     serverConfig.selfChecking0();
                 }
                 //table exists check ,if the vars can not be touch ,the table check has no meaning

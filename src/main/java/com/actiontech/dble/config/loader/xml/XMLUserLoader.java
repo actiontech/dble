@@ -43,7 +43,7 @@ public class XMLUserLoader {
     private static final String DEFAULT_XML = "/" + ConfigFileName.USER_XML;
     private ProblemReporter problemReporter;
     private AtomicInteger userId = new AtomicInteger(0);
-    private static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
+    public static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
     private Document document;
     // whether db.xml contains shardingUser
     private boolean containsShardingUser;

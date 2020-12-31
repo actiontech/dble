@@ -11,24 +11,10 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.entity.Users;
-import com.actiontech.dble.cluster.zkprocess.entity.user.User;
-import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class UserZkToXmlListener implements NotifyService {
-    private final Gson gson;
-    private XmlProcessBase xmlParseBase;
 
-    public UserZkToXmlListener(ZookeeperProcessListen zookeeperListen,
-                               XmlProcessBase xmlParseBase) {
-        this.xmlParseBase = xmlParseBase;
-        xmlParseBase.addParseClass(Users.class);
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
-        gson = gsonBuilder.create();
+    public UserZkToXmlListener(ZookeeperProcessListen zookeeperListen) {
         zookeeperListen.addToInit(this);
     }
 
@@ -38,7 +24,7 @@ public class UserZkToXmlListener implements NotifyService {
         if (configValue == null) {
             throw new RuntimeException(ClusterPathUtil.getUserConfPath() + " is null");
         }
-        ClusterLogic.syncUserXmlToLocal(configValue, xmlParseBase, gson);
+        ClusterLogic.syncUserJson(configValue);
 
         return true;
     }

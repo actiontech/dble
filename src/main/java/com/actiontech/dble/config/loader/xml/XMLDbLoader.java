@@ -38,7 +38,7 @@ public class XMLDbLoader {
     private final Map<String, DbGroupConfig> dbGroupConfigs;
     private ProblemReporter problemReporter;
     private final Map<String, PhysicalDbGroup> dbGroups;
-    private static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
 
     public XMLDbLoader(String dbFile, ProblemReporter problemReporter) {
         this.dbGroupConfigs = new LinkedHashMap<>();
@@ -243,11 +243,11 @@ public class XMLDbLoader {
         return nodes;
     }
 
-    private PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node, boolean isRead) {
+    public static PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node, boolean isRead) {
         return new MySQLInstance(node, conf, isRead);
     }
 
-    private PhysicalDbGroup getPhysicalDBPoolSingleWH(DbGroupConfig conf) {
+    public static PhysicalDbGroup getPhysicalDBPoolSingleWH(DbGroupConfig conf) {
         //create PhysicalDbInstance for writeDirectly host
         PhysicalDbInstance writeSource = createDbInstance(conf, conf.getWriteInstanceConfig(), false);
         PhysicalDbInstance[] readSources = new PhysicalDbInstance[conf.getReadInstanceConfigs().length];

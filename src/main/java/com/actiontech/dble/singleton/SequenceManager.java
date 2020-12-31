@@ -45,6 +45,10 @@ public final class SequenceManager {
         INSTANCE.handler.load(lowerCaseTableNames);
     }
 
+    public static void load(boolean lowerCaseTableNames, String sequenceJson) {
+        INSTANCE.handler.loadByJson(lowerCaseTableNames, sequenceJson);
+    }
+
     public static SequenceManager getInstance() {
         return INSTANCE;
     }

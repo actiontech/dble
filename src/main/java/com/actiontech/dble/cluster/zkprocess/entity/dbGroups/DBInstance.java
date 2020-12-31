@@ -8,10 +8,7 @@ package com.actiontech.dble.cluster.zkprocess.entity.dbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Propertied;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +41,9 @@ public class DBInstance implements Propertied {
     protected Boolean primary;
 
     protected List<Property> property;
+
+    @XmlTransient
+    protected String dbGroup;
 
     public DBInstance() {
     }
@@ -170,6 +170,14 @@ public class DBInstance implements Propertied {
 
     public void setProperty(List<Property> property) {
         this.property = property;
+    }
+
+    public void setDbGroup(String dbGroup) {
+        this.dbGroup = dbGroup;
+    }
+
+    public String getDbGroup() {
+        return dbGroup;
     }
 
     @Override

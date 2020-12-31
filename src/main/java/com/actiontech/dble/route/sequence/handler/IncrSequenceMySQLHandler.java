@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import org.slf4j.Logger;
@@ -26,6 +27,15 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     public void load(boolean isLowerCaseTableNames) {
         // load sequence properties
         Properties props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_DB_FILE_NAME, isLowerCaseTableNames);
+        removeDesertedSequenceVals(props);
+        putNewSequenceVals(props);
+    }
+
+    @Override
+    public void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+        SequenceConverter sequenceConverter = new SequenceConverter();
+        Properties props = sequenceConverter.jsonToProperties(sequenceJson);
+        props = PropertiesUtil.handleLowerCase(props, isLowerCaseTableNames);
         removeDesertedSequenceVals(props);
         putNewSequenceVals(props);
     }

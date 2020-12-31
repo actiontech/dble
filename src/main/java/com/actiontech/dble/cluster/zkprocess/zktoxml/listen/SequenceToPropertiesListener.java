@@ -31,7 +31,7 @@ public class SequenceToPropertiesListener implements NotifyService {
             throw new RuntimeException(ClusterPathUtil.getSequencesCommonPath() + " is null");
         }
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue());
-        ClusterLogic.syncSequenceToLocal(configValue);
+        ClusterLogic.syncSequenceJson(configValue);
         return true;
     }
 }

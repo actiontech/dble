@@ -12,6 +12,15 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.ClusterLogic;
+import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
+import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
+import com.actiontech.dble.cluster.zkprocess.entity.Users;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAdapter;
+import com.actiontech.dble.cluster.zkprocess.entity.user.User;
+import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
+import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
@@ -32,6 +41,8 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +71,10 @@ public class ServerConfig {
     private ConfigInitializer confInitNew;
     private volatile Map<String, Properties> blacklistConfig;
     private volatile Map<String, AbstractPartitionAlgorithm> functions;
+    private String dbConfig;
+    private String shardingConfig;
+    private String userConfig;
+    private String sequenceConfig;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -96,6 +111,28 @@ public class ServerConfig {
 
         this.lock = new ReentrantReadWriteLock();
         this.blacklistConfig = confInit.getBlacklistConfig();
+    }
+
+    public ServerConfig(String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) {
+        confInitNew = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
+        this.users = confInitNew.getUsers();
+        this.dbGroups = confInitNew.getDbGroups();
+
+        this.schemas = confInitNew.getSchemas();
+        this.shardingNodes = confInitNew.getShardingNodes();
+        this.erRelations = confInitNew.getErRelations();
+        this.functions = confInitNew.getFunctions();
+        this.fullyConfigured = confInitNew.isFullyConfigured();
+        ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
+
+        this.reloadTime = TimeUtil.currentTimeMillis();
+
+        this.lock = new ReentrantReadWriteLock();
+        this.blacklistConfig = confInitNew.getBlacklistConfig();
+        this.userConfig = userConfig;
+        this.dbConfig = dbConfig;
+        this.shardingConfig = shardingConfig;
+        this.sequenceConfig = sequenceConfig;
     }
 
     private void waitIfChanging() {
@@ -171,9 +208,11 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
-                          final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
+                          final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
+                          String userJsonConfig, String sequenceJsonConfig, String shardingJsonConfig, String dbJsonConfig) throws SQLNonTransientException {
         boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations,
-                newSystemVariables, isFullyConfigured, loadAllMode, newBlacklistConfig, newFunctions);
+                newSystemVariables, isFullyConfigured, loadAllMode, newBlacklistConfig, newFunctions, userJsonConfig,
+                sequenceJsonConfig, shardingJsonConfig, dbJsonConfig);
         this.reloadTime = TimeUtil.currentTimeMillis();
         return result;
     }
@@ -286,7 +325,8 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables,
-                          boolean isFullyConfigured, final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions) throws SQLNonTransientException {
+                          boolean isFullyConfigured, final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
+                          String userJsonConfig, String sequenceJsonConfig, String shardingJsonConfig, String dbJsonConfig) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
@@ -335,6 +375,10 @@ public class ServerConfig {
             this.erRelations = newErRelations;
             this.blacklistConfig = newBlacklistConfig;
             this.functions = newFunctions;
+            this.userConfig = userJsonConfig;
+            this.dbConfig = dbJsonConfig;
+            this.shardingConfig = shardingJsonConfig;
+            this.sequenceConfig = sequenceJsonConfig;
             CacheService.getInstance().clearCache();
             this.changing = false;
             if (isFullyConfigured) {
@@ -411,10 +455,7 @@ public class ServerConfig {
         return sb.toString();
     }
 
-    /**
-     * turned all the config into lowerCase config
-     */
-    public void reviseLowerCase() {
+    public void reviseLowerCase(String sequenceJson) {
 
         //user sharding
         for (UserConfig uc : users.values()) {
@@ -456,13 +497,21 @@ public class ServerConfig {
 
             erRelations = newErMap;
         }
-        loadSequence();
+        loadSequence(sequenceJson);
         selfChecking0();
 
     }
 
     public void loadSequence() {
         SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+    }
+
+    public void loadSequence(String sequenceJson) {
+        if (StringUtil.isEmpty(sequenceJson)) {
+            loadSequence();
+        } else {
+            SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames(), sequenceJson);
+        }
     }
 
     public void selfChecking0() throws ConfigException {
@@ -512,6 +561,51 @@ public class ServerConfig {
         }
     }
 
+    public void syncJsonToLocal(boolean isWriteToLocal) throws Exception {
+        XmlProcessBase xmlProcess = new XmlProcessBase();
+        xmlProcess.addParseClass(Shardings.class);
+        xmlProcess.addParseClass(DbGroups.class);
+        xmlProcess.addParseClass(Users.class);
+        // init xml
+        xmlProcess.initJaxbClass();
+
+        //sharding
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
+        Gson gson = gsonBuilder.create();
+        ClusterLogic.syncShardingXmlToLocal(this.shardingConfig, xmlProcess, gson, isWriteToLocal);
+
+        //db
+        ClusterLogic.syncDbXmlToLocal(xmlProcess, this.dbConfig, isWriteToLocal);
+
+        //user
+        gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
+        gson = gsonBuilder.create();
+        ClusterLogic.syncUserXmlToLocal(this.userConfig, xmlProcess, gson, isWriteToLocal);
+
+        //sequence
+        ClusterLogic.syncSequenceToLocal(this.sequenceConfig, isWriteToLocal);
+    }
+
+    public String getDbConfig() {
+        return dbConfig;
+    }
+
+    public void setDbConfig(String dbConfig) {
+        this.dbConfig = dbConfig;
+    }
+
+    public String getShardingConfig() {
+        return shardingConfig;
+    }
+
+    public String getUserConfig() {
+        return userConfig;
+    }
+
+    public String getSequenceConfig() {
+        return sequenceConfig;
+    }
 }
 
 

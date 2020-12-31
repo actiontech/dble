@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.route.util;
 
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceHandler;
 import com.actiontech.dble.util.ResourceUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Enumeration;
 import java.util.Properties;
 
@@ -39,6 +39,11 @@ public final class PropertiesUtil {
 
     public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames) {
         Properties props = loadProps(propsFile);
+        return handleLowerCase(props, isLowerCaseTableNames);
+    }
+
+
+    public static Properties handleLowerCase(Properties props, boolean isLowerCaseTableNames) {
         if (isLowerCaseTableNames) {
             Properties newProps = new Properties();
             Enumeration<?> enu = props.propertyNames();
@@ -55,6 +60,15 @@ public final class PropertiesUtil {
             return newProps;
         } else {
             return props;
+        }
+    }
+
+
+    public static void storeProps(Properties props, String propsFile) {
+        try (OutputStream os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile)) {
+            props.store(os, "\n Copyright (C) 2016-2020 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
+        } catch (IOException e) {
+            throw new java.lang.RuntimeException(e);
         }
     }
 }

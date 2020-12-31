@@ -28,12 +28,12 @@ public class SequencePropertiesLoader implements ClusterXmlLoader {
     @Override
     public void notifyProcess(KvBean configValue) throws Exception {
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        ClusterLogic.syncSequenceToLocal(configValue);
+        ClusterLogic.syncSequenceJson(configValue);
     }
 
     @Override
     public void notifyCluster() throws Exception {
-        ClusterLogic.syncSequenceToCluster();
+        ClusterLogic.syncSequencePropsToCluster();
     }
 
 }

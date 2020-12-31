@@ -166,7 +166,7 @@ public class XMLShardingLoader {
         makeAllErRelations();
     }
 
-    private int getSqlMaxLimit(String sqlMaxLimitStr, int defaultMaxLimit) {
+    public static int getSqlMaxLimit(String sqlMaxLimitStr, int defaultMaxLimit) {
         // sql result size limit
         if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
             defaultMaxLimit = Integer.parseInt(sqlMaxLimitStr);
@@ -536,7 +536,7 @@ public class XMLShardingLoader {
         }
     }
 
-    private List<String[]> mergerHostDatabase(String[] hostStrings, String[] databases) {
+    public static List<String[]> mergerHostDatabase(String[] hostStrings, String[] databases) {
         List<String[]> mhdList = new ArrayList<>();
         for (String hostString : hostStrings) {
             for (String database : databases) {
@@ -611,7 +611,7 @@ public class XMLShardingLoader {
         }
     }
 
-    private AbstractPartitionAlgorithm createFunction(String name, String clazz)
+    public static AbstractPartitionAlgorithm createFunction(String name, String clazz)
             throws ClassNotFoundException, InstantiationException,
             IllegalAccessException, InvocationTargetException {
 

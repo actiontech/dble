@@ -8,6 +8,9 @@ package com.actiontech.dble.config;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.ShardingConverter;
+import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.helper.TestSchemasTask;
 import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.loader.xml.XMLDbLoader;
@@ -47,6 +50,10 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile boolean fullyConfigured = false;
     private volatile Map<String, Properties> blacklistConfig;
     private volatile Map<String, AbstractPartitionAlgorithm> functions;
+    private String dbConfig;
+    private String shardingConfig;
+    private String userConfig;
+    private String sequenceConfig;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
@@ -83,6 +90,34 @@ public class ConfigInitializer implements ProblemReporter {
         } finally {
             TraceManager.finishSpan(traceObject);
         }
+    }
+
+    public ConfigInitializer(String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) {
+        //user
+        UserConverter userConverter = new UserConverter();
+        userConverter.userJsonToMap(userConfig, this);
+        this.users = userConverter.getUserConfigMap();
+        this.blacklistConfig = userConverter.getBlackListConfigMap();
+        this.userConfig = userConfig;
+
+        //db
+        DBConverter dbConverter = new DBConverter();
+        dbConverter.dbJsonToMap(dbConfig, this);
+        this.dbGroups = dbConverter.getDbGroupMap();
+        this.dbConfig = dbConfig;
+
+        //sharding
+        ShardingConverter shardingConverter = new ShardingConverter();
+        shardingConverter.shardingJsonToMap(shardingConfig, dbConverter.getDbGroupMap(), sequenceConfig, this);
+        this.schemas = shardingConverter.getSchemaConfigMap();
+        this.erRelations = shardingConverter.getErRelations();
+        this.shardingNodes = shardingConverter.getShardingNodeMap();
+        this.functions = shardingConverter.getFunctionMap();
+        this.shardingConfig = shardingConfig;
+        this.sequenceConfig = sequenceConfig;
+
+        checkRwSplitDbGroup();
+        checkWriteDbInstance();
     }
 
     @Override
@@ -344,4 +379,19 @@ public class ConfigInitializer implements ProblemReporter {
         return errorInfos;
     }
 
+    public String getDbConfig() {
+        return dbConfig;
+    }
+
+    public String getShardingConfig() {
+        return shardingConfig;
+    }
+
+    public String getUserConfig() {
+        return userConfig;
+    }
+
+    public String getSequenceConfig() {
+        return sequenceConfig;
+    }
 }

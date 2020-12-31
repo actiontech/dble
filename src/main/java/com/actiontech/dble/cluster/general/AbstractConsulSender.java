@@ -17,7 +17,6 @@ import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -102,13 +101,11 @@ public abstract class AbstractConsulSender implements ClusterSender {
     public void writeConfToCluster() throws Exception {
         ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener(this);
 
-        XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        new XmlDbLoader(xmlProcess, ucoreListen);
-        new XmlShardingLoader(xmlProcess, ucoreListen);
-        new XmlUserLoader(xmlProcess, ucoreListen);
+        new XmlDbLoader(ucoreListen);
+        new XmlShardingLoader(ucoreListen);
+        new XmlUserLoader(ucoreListen);
         new SequencePropertiesLoader(ucoreListen);
-        xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
         new DbGroupHaResponse().notifyCluster();
     }

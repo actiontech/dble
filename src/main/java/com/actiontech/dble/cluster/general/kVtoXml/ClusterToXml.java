@@ -11,7 +11,6 @@ import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.listener.ClusterOffLineListener;
 import com.actiontech.dble.cluster.general.listener.ClusterSingleKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.model.ClusterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,13 +40,11 @@ public final class ClusterToXml {
         try {
             //create a new listener to the ucore config change
             listener = new ClusterClearKeyListener(sender);
-            XmlProcessBase xmlProcess = new XmlProcessBase();
             //add all loader into listener map list
-            new XmlDbLoader(xmlProcess, listener);
-            new XmlShardingLoader(xmlProcess, listener);
-            new XmlUserLoader(xmlProcess, listener);
+            new XmlDbLoader(listener);
+            new XmlShardingLoader(listener);
+            new XmlUserLoader(listener);
             new SequencePropertiesLoader(listener);
-            xmlProcess.initJaxbClass();
 
             //add listener to watch the Prefix of the keys
             new ConfigStatusResponse(listener);

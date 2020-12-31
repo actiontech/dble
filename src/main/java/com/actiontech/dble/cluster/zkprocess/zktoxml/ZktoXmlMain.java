@@ -8,7 +8,6 @@ package com.actiontech.dble.cluster.zkprocess.zktoxml;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.*;
 import com.actiontech.dble.util.KVPathUtil;
@@ -54,16 +53,15 @@ public final class ZktoXmlMain {
         LOGGER.info("initListenerFromZK start");
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
         Set<NotifyService> childService = new HashSet<>();
-        XmlProcessBase xmlProcess = new XmlProcessBase();
 
         // load sharding
-        childService.add(new ShardingZkToXmlListener(zkListen, xmlProcess));
+        childService.add(new ShardingZkToXmlListener(zkListen));
 
         // load db
-        childService.add(new DbGroupsZKToXmlListener(zkListen, xmlProcess));
+        childService.add(new DbGroupsZKToXmlListener(zkListen));
 
         // load user
-        childService.add(new UserZkToXmlListener(zkListen, xmlProcess));
+        childService.add(new UserZkToXmlListener(zkListen));
         // load sequence
         childService.add(new SequenceToPropertiesListener(zkListen));
 
@@ -77,9 +75,6 @@ public final class ZktoXmlMain {
         pauseShardingNodeListener = new PauseShardingNodeListener();
         ZKUtils.addChildPathCache(ClusterPathUtil.getPauseShardingNodePath(), pauseShardingNodeListener);
 
-
-        // init xml
-        xmlProcess.initJaxbClass();
 
         // notify all
         zkListen.initAllNode();

@@ -13,7 +13,13 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
+import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.SequenceConverter;
+import com.actiontech.dble.config.converter.ShardingConverter;
+import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -113,7 +119,7 @@ public final class DbleServer {
 
     public void startup() throws Exception {
         LOGGER.info("===========================================DBLE SERVER STARTING===================================");
-        this.config = new ServerConfig();
+        initServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
 
@@ -258,8 +264,36 @@ public final class DbleServer {
         LOGGER.info("====================================CronScheduler started=========================================");
 
         CustomMySQLHa.getInstance().start();
+        LOGGER.info("====================================sync config to xml=========================================");
+
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            this.config.syncJsonToLocal(true);
+        }
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
+    }
+
+    private void initServerConfig() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            this.config = new ServerConfig(DbleTempConfig.getInstance().getUserConfig(), DbleTempConfig.getInstance().getDbConfig(),
+                    DbleTempConfig.getInstance().getShardingConfig(), DbleTempConfig.getInstance().getSequenceConfig());
+        } else {
+            //sync json
+            String userConfig = new UserConverter().userXmlToJson();
+            String dbConfig = DBConverter.dbXmlToJson();
+            String sequenceConfig = null;
+            if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
+                sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
+            } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
+                sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
+            }
+            String shardingConfig = new ShardingConverter().shardingXmlToJson();
+            DbleTempConfig.getInstance().setUserConfig(userConfig);
+            DbleTempConfig.getInstance().setDbConfig(dbConfig);
+            DbleTempConfig.getInstance().setShardingConfig(shardingConfig);
+            DbleTempConfig.getInstance().setSequenceConfig(sequenceConfig);
+            this.config = new ServerConfig(userConfig, dbConfig, shardingConfig, sequenceConfig);
+        }
     }
 
     private void initAioProcessor(int processorCount) throws IOException {
@@ -386,10 +420,10 @@ public final class DbleServer {
 
     private void reviseSchemas() {
         if (systemVariables.isLowerCaseTableNames()) {
-            config.reviseLowerCase();
+            config.reviseLowerCase(DbleTempConfig.getInstance().getSequenceConfig());
             ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getShardingNodes());
         } else {
-            config.loadSequence();
+            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
             config.selfChecking0();
         }
     }

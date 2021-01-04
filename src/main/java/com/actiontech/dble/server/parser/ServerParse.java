@@ -496,13 +496,13 @@ public class ServerParse {
     public static int createTempTableCheck(String stmt, int offset) {
         String keyword = "EMPORARY";
         if (!ParseUtil.compare(stmt, offset, keyword)) {
-            return OTHER;
+            return DDL;
         }
         offset += keyword.length();
         offset = ParseUtil.skipSpace(stmt, offset);
         keyword = "TABLE";
         if (!ParseUtil.compare(stmt, offset, keyword)) {
-            return OTHER;
+            return DDL;
         }
         offset += keyword.length();
         offset = ParseUtil.skipSpace(stmt, offset);
@@ -513,13 +513,13 @@ public class ServerParse {
     public static int dropTempTableCheck(String stmt, int offset) {
         String keyword = "TEMPORARY";
         if (!ParseUtil.compare(stmt, offset, keyword)) {
-            return OTHER;
+            return DDL;
         }
         offset += keyword.length();
         offset = ParseUtil.skipSpace(stmt, offset);
         keyword = "TABLE";
         if (!ParseUtil.compare(stmt, offset, keyword)) {
-            return OTHER;
+            return DDL;
         }
         offset += keyword.length();
         offset = ParseUtil.skipSpace(stmt, offset);
@@ -640,7 +640,16 @@ public class ServerParse {
                             return dropPrepareCheck(stmt, offset);
                         case 't':
                         case 'T':
-                            return dropTempTableCheck(stmt, offset);
+                            if (stmt.length() > offset + 1) {
+                                char c7 = stmt.charAt(offset + 1);
+                                if (c7 == 'e' || c7 == 'E') {
+                                    return dropTempTableCheck(stmt, offset);
+                                } else {
+                                    return DDL;
+                                }
+                            } else {
+                                return DDL;
+                            }
                         default:
                             return DDL;
                     }

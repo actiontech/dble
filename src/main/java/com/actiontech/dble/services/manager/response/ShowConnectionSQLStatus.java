@@ -12,9 +12,8 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
-
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 
@@ -35,7 +34,7 @@ public final class ShowConnectionSQLStatus {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("OPERATION", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("OPERATION", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("START(ms)", Fields.FIELD_TYPE_VAR_STRING);

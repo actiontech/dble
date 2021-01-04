@@ -21,7 +21,11 @@ public class UnSortedLocalResult extends LocalResult {
 
     @Override
     protected ResultExternal makeExternal() {
-        return new UnSortedResultDiskBuffer(pool, fieldsCount);
+        if (maxReadMemorySize != -1) {
+            return new UnSortedResultDiskBuffer(pool, fieldsCount, maxReadMemorySize);
+        } else {
+            return new UnSortedResultDiskBuffer(pool, fieldsCount);
+        }
     }
 
     @Override

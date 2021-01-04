@@ -34,6 +34,7 @@ public abstract class LocalResult implements ResultStore {
     /* @bug 1208 */
     protected String charset = "UTF-8";
     protected MemSizeController bufferMC;
+    protected int maxReadMemorySize = -1;
 
     public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset) {
         this.rows = new ArrayList<>(initialCapacity);
@@ -43,6 +44,10 @@ public abstract class LocalResult implements ResultStore {
         this.isClosed = false;
         this.lock = new ReentrantLock();
         this.charset = charset;
+    }
+
+    public void setMaxMemory(int maxMemory) {
+        this.maxMemory = maxMemory;
     }
 
     /**
@@ -220,5 +225,9 @@ public abstract class LocalResult implements ResultStore {
     public LocalResult setMemSizeController(MemSizeController memSizeController) {
         this.bufferMC = memSizeController;
         return this;
+    }
+
+    public void setMaxReadMemorySize(int maxReadMemorySize) {
+        this.maxReadMemorySize = maxReadMemorySize;
     }
 }

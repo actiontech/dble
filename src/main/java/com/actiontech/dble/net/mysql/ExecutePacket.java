@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BindValue;
@@ -68,6 +68,7 @@ public class ExecutePacket extends MySQLPacket {
 
     private BindValue[] values;
     private PreparedStatement preStmt;
+    private byte flag;
 
     public ExecutePacket(PreparedStatement preStmt) {
         this.preStmt = preStmt;
@@ -80,7 +81,7 @@ public class ExecutePacket extends MySQLPacket {
         packetId = mm.read();
         mm.read(); //[17] COM_STMT_EXECUTE
         mm.readUB4(); //stmt-id
-        mm.read(); // flags
+        flag = mm.read(); // flags
         mm.readUB4(); //iteration-count
 
         int parameterCount = values.length;
@@ -142,9 +143,14 @@ public class ExecutePacket extends MySQLPacket {
     }
 
 
-
     public BindValue[] getValues() {
         return values;
     }
 
+    /**
+     * @return the flag
+     */
+    public byte getFlag() {
+        return flag;
+    }
 }

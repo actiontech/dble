@@ -16,6 +16,7 @@ public class CommandCount {
     private long stmtSendLongData;
     private long stmtReset;
     private long stmtExecute;
+    private long stmtFetch;
     private long stmtClose;
     private long ping;
     private long kill;
@@ -73,6 +74,14 @@ public class CommandCount {
 
     public long stmtExecuteCount() {
         return stmtExecute;
+    }
+
+    public void doStmtFetch() {
+        ++stmtFetch;
+    }
+
+    public long stmtFetchCount() {
+        return stmtFetch;
     }
 
     public void doStmtClose() {

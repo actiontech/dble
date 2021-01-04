@@ -30,6 +30,11 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
         mainTape = new ResultDiskTape(pool, file, columnCount);
     }
 
+    public UnSortedResultDiskBuffer(BufferPool pool, int columnCount, int maxReadMemorySize) {
+        super(pool, columnCount);
+        mainTape = new ResultDiskTape(pool, file, columnCount, maxReadMemorySize);
+    }
+
     @Override
     public int tapeCount() {
         return 1;

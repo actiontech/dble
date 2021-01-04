@@ -8,16 +8,21 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
+import com.actiontech.dble.backend.mysql.store.CursorCache;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
-import com.actiontech.dble.net.mysql.ExecutePacket;
-import com.actiontech.dble.net.mysql.LongDataPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.ResetPacket;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.server.RequestScope;
+import com.actiontech.dble.server.parser.PrepareChangeVisitor;
+import com.actiontech.dble.server.parser.PrepareStatementCalculateVisitor;
 import com.actiontech.dble.server.response.PreparedStmtResponse;
+import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.HexFormatUtil;
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.escape.Escaper;
 import com.google.common.escape.Escapers;
 import com.google.common.escape.Escapers.Builder;
@@ -27,8 +32,14 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+
+import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
+import static com.alibaba.druid.util.JdbcConstants.MYSQL;
 
 /**
  * @author mycat, CrazyPig, zhuam
@@ -60,11 +71,40 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("use server prepare, sql: " + sql);
         }
-        int columnCount = getColumnCount(sql);
-        int paramCount = getParamCount(sql);
-        PreparedStatement pStmt = new PreparedStatement(++pStmtId, sql, columnCount, paramCount);
+
+        final List<SQLStatement> statements = SQLUtils.parseStatements(sql, MYSQL, true);
+        if (statements.isEmpty()) {
+            service.writeErrMessage(ErrorCode.ERR_WRONG_USED, "can't parse sql into statement");
+            return;
+        }
+        if (statements.size() > 1) {
+            service.writeErrMessage(ErrorCode.ERR_WRONG_USED, "can't use more than one statement in prepare-statement");
+            return;
+        }
+        final SQLStatement sqlStatement = statements.get(0);
+
+        int paramCount = getParamCount(sqlStatement);
+        PreparedStatement pStmt = new PreparedStatement(++pStmtId, sql, paramCount);
+        final RequestScope requestScope = service.getRequestScope();
+        service.getRequestScope().setCurrentPreparedStatement(pStmt);
+        service.getRequestScope().setPrepared(true);
         pStmtForId.put(pStmt.getId(), pStmt);
-        PreparedStmtResponse.response(pStmt, service);
+        if (!(sqlStatement instanceof SQLSelectStatement)) {
+            //notSelect
+            PreparedStmtResponse.response(pStmt, service);
+        } else {
+            //isSelect,should calculate column count to support cursor if possible.
+            final PrepareChangeVisitor visitor = new PrepareChangeVisitor();
+            sqlStatement.accept(visitor);
+            requestScope.setOutputState(OutputStateEnum.PREPARE);
+            service.query(sqlStatement.toString());
+            requestScope.getCurrentPreparedStatement().setPrepareCallback((columnCount) -> {
+                pStmt.setColumnsNumber(columnCount);
+                PreparedStmtResponse.response(pStmt, service);
+            });
+        }
+
+
     }
 
     @Override
@@ -110,6 +150,8 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         if ((pStmt = pStmtForId.get(statementId)) == null) {
             service.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
+            service.getRequestScope().setCurrentPreparedStatement(pStmt);
+            service.getRequestScope().setPrepared(true);
             ExecutePacket packet = new ExecutePacket(pStmt);
             try {
                 packet.read(data, service.getCharset());
@@ -120,7 +162,10 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             BindValue[] bindValues = packet.getValues();
             // reset the Parameter
             String sql = prepareStmtBindValue(pStmt, bindValues);
-            service.getSession2().setPrepared(true);
+
+            if (packet.getFlag() == CursorTypeFlags.CURSOR_TYPE_READ_ONLY) {
+                service.getRequestScope().setUsingCursor(true);
+            }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute prepare sql: " + sql);
             }
@@ -136,29 +181,40 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close prepare stmt, stmtId = " + psId);
         }
+        final PreparedStatement preparedStatement = pStmtForId.get(psId);
+        if (preparedStatement != null) {
+            try {
+                preparedStatement.close();
+            } catch (Exception e) {
+                LOGGER.error("", e);
+            }
+        }
         pStmtForId.remove(psId);
     }
 
     @Override
     public void clear() {
+        for (PreparedStatement preparedStatement : this.pStmtForId.values()) {
+            try {
+                preparedStatement.close();
+            } catch (Exception e) {
+                LOGGER.error("", e);
+            }
+
+        }
         this.pStmtForId.clear();
     }
 
-    // TODO:the size of columns of prepared statement
     private int getColumnCount(String sql) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
+
     // the size of parameters of prepared statement
-    private int getParamCount(String sql) {
-        char[] cArr = sql.toCharArray();
-        int count = 0;
-        for (char aCArr : cArr) {
-            if (aCArr == '?') {
-                count++;
-            }
-        }
-        return count;
+    private int getParamCount(SQLStatement statement) {
+        final PrepareStatementCalculateVisitor visitor = new PrepareStatementCalculateVisitor();
+        statement.accept(visitor);
+        return visitor.getArgumentCount();
     }
 
     /**
@@ -242,5 +298,65 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         }
         return sb.toString();
     }
+
+    @Override
+    public void fetch(byte[] data) {
+
+        long statementId = ByteUtil.readUB4(data, 4 + 1); //skip to read
+        PreparedStatement pStmt;
+        if ((pStmt = pStmtForId.get(statementId)) == null) {
+            service.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
+        } else {
+
+            service.getRequestScope().setCurrentPreparedStatement(pStmt);
+            service.getRequestScope().setPrepared(true);
+
+            long expectSize = ByteUtil.readUB4(data, 4 + 1 + 4);
+            final CursorCache cursorCache = pStmt.getCursorCache();
+            final List<FieldPacket> fieldPackets = service.getRequestScope().getCurrentPreparedStatement().getFieldPackets();
+            ByteBuffer buffer = service.getSession2().getSource().allocate();
+            try {
+                int packetId = 1;
+                final Iterator<RowDataPacket> rowDataPacketIt = cursorCache.fetchBatch(expectSize);
+                while (rowDataPacketIt.hasNext()) {
+                    final RowDataPacket dataPacket = rowDataPacketIt.next();
+                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                    binRowDataPk.read(fieldPackets, dataPacket);
+                    binRowDataPk.setPacketId(packetId++);
+                    buffer = binRowDataPk.write(buffer, service, true);
+                }
+                if (packetId == 1) {
+                    /*
+                    no more rows
+                     */
+                    try {
+                        pStmt.close();
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
+                    }
+                }
+
+
+                EOFPacket ok = new EOFPacket();
+                ok.setPacketId(packetId++);
+
+                //            ok.setAffectedRows(0);
+                //            ok.setInsertId(0);
+                int statusFlag = 0;
+                statusFlag |= service.getSession2().getShardingService().isAutocommit() ? 2 : 1;
+                statusFlag |= SERVER_STATUS_CURSOR_EXISTS;
+                ok.setStatus(statusFlag);
+                ok.setWarningCount(0);
+                ok.write(buffer, service, true);
+                service.writeDirectly(buffer);
+
+
+            } finally {
+                service.getSession2().getSource().recycle(buffer);
+            }
+
+        }
+    }
+
 
 }

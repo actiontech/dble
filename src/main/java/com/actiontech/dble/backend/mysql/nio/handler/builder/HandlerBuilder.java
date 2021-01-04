@@ -8,10 +8,10 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ public class HandlerBuilder {
             final long startTime = System.nanoTime();
             BaseHandlerBuilder builder = getBuilder(session, node, false);
             DMLResponseHandler endHandler = builder.getEndHandler();
-            OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+            DMLResponseHandler fh = FinalHandlerFactory.createFinalHandler(session);
             endHandler.setNextHandler(fh);
             //set slave only into rrsNode
             for (DMLResponseHandler startHandler : fh.getMerges()) {

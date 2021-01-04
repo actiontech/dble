@@ -111,6 +111,9 @@ public final class SystemConfig {
     private int bufferPoolPageSize = 1024 * 1024 * 2;
     //minimum allocation unit
     private short bufferPoolChunkSize = 4096;
+    //used for cursor temp result
+    private int maxHeapTableSize = 4096;
+    private int heapTableBufferChunkSize = -1;
     // buffer pool page number
     private short bufferPoolPageNumber = (short) (Platform.getMaxDirectMemory() * 0.8 / bufferPoolPageSize);
     private boolean useDefaultPageNumber = true;
@@ -1184,6 +1187,25 @@ public final class SystemConfig {
         this.traceEndPoint = traceEndPoint;
     }
 
+    public int getMaxHeapTableSize() {
+        return maxHeapTableSize;
+    }
+
+    public void setMaxHeapTableSize(int maxHeapTableSize) {
+        this.maxHeapTableSize = maxHeapTableSize;
+    }
+
+    public int getHeapTableBufferChunkSize() {
+        if (heapTableBufferChunkSize == -1) {
+            return bufferPoolChunkSize;
+        }
+        return heapTableBufferChunkSize;
+    }
+
+    public void setHeapTableBufferChunkSize(int heapTableBufferChunkSize) {
+        this.heapTableBufferChunkSize = heapTableBufferChunkSize;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1266,6 +1288,8 @@ public final class SystemConfig {
                 ", useOuterHa=" + useOuterHa +
                 ", fakeMySQLVersion=" + fakeMySQLVersion +
                 ", traceEndPoint=" + traceEndPoint +
+                ", maxHeapTableSize=" + maxHeapTableSize +
+                ", heapTableBufferChunkSize=" + heapTableBufferChunkSize +
                 "]";
     }
 }

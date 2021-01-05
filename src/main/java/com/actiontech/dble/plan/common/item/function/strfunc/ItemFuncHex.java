@@ -5,9 +5,14 @@
 
 package com.actiontech.dble.plan.common.item.function.strfunc;
 
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.util.HexFormatUtil;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.List;
 
 
@@ -24,14 +29,75 @@ public class ItemFuncHex extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        long l = args.get(0).valInt().longValue();
-        if (args.get(0).isNull()) {
+
+        final Item arg1 = args.get(0);
+        if (arg1.isNull()) {
             this.nullValue = true;
-            return EMPTY;
+            return null;
+        } else {
+            this.nullValue = false;
         }
-        String val = Long.toHexString(l);
-        return val.length() % 2 != 0 ? "0" + val : val;
+        final ItemResult resultType = arg1.resultType();
+        switch (resultType) {
+            case INT_RESULT: {
+
+                final BigInteger bigInteger = arg1.valInt();
+                return cutOffBigInt2Hex(bigInteger);
+            }
+            case DECIMAL_RESULT: {
+                /*
+                because of Mysql's rule. discard the digits after the decimal point
+                 */
+                final BigInteger bigInteger = arg1.valDecimal().setScale(0, RoundingMode.HALF_UP).toBigInteger();
+                return cutOffBigInt2Hex(bigInteger);
+
+            }
+            case REAL_RESULT: {
+                /*
+                because of Mysql's rule. discard the digits after the decimal point
+                 */
+                final BigInteger bigInteger = arg1.valReal().setScale(0, RoundingMode.HALF_UP).toBigInteger();
+                return cutOffBigInt2Hex(bigInteger);
+            }
+            case STRING_RESULT: {
+                return textToHex(arg1.valStr(), CharsetUtil.getJavaCharset(charsetIndex));
+            }
+
+            default: {
+                this.nullValue = true;
+                return null;
+            }
+        }
     }
+
+    private String cutOffBigInt2Hex(BigInteger bigInteger) {
+        long l;
+        if (bigInteger.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0) {
+            /*
+            follow MySQL's rule, max display value is Long.MAX_VALUE
+            */
+            l = Long.MAX_VALUE;
+        } else if (bigInteger.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0) {
+            /*
+            follow MySQL's rule, min display value is Long.MIN_VALUE
+            */
+            l = Long.MIN_VALUE;
+        } else {
+            l = bigInteger.longValueExact();
+        }
+        return Long.toHexString(l);
+    }
+
+
+    private static String textToHex(String text, String charset) {
+        try {
+            byte[] buf = text.getBytes(charset);
+            return HexFormatUtil.bytesToHexString(buf);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {

@@ -54,14 +54,14 @@ public class ServerParse {
     public static final int FLUSH = 153;
     public static final int ROLLBACK_SAVEPOINT = 154;
     public static final int RELEASE_SAVEPOINT = 155;
-    public static final int CREATE_TEMPORARY_TABLE = 156;
-    public static final int DROP_TEMPORARY_TABLE = 157;
+    public static final int SELECT_FOR_UPDATE = 156;
+    public static final int LOCK_IN_SHARE_MODE = 157;
+    public static final int CREATE_TEMPORARY_TABLE = 158;
+    public static final int DROP_TEMPORARY_TABLE = 159;
 
     public static final int MIGRATE = 203;
     /* don't set the constant to 255 */
     public static final int UNSUPPORT = 254;
-    public static final int SELECT_FOR_UPDATE = 156;
-    public static final int LOCK_IN_SHARE_MODE = 157;
 
     private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
     private static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);

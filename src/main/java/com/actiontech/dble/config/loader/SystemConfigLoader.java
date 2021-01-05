@@ -125,6 +125,10 @@ public final class SystemConfigLoader {
         for (Map.Entry<Object, Object> item : systemDynamic.entrySet()) {
             system.put(item.getKey(), item.getValue());
         }
+        //must be first
+        if (null != system && !StringUtil.isEmpty(system.getProperty("fakeMySQLVersion"))) {
+            systemConfig.setFakeMySQLVersion(system.getProperty("fakeMySQLVersion"));
+        }
         ParameterMapping.mapping(systemConfig, system, StartProblemReporter.getInstance());
         if (system.size() > 0) {
             Set<String> propItem = new HashSet<>();

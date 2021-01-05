@@ -13,6 +13,7 @@ public class KeyVariables {
     private boolean targetAutocommit = true;
     private int targetIsolation = -1;
     private int targetMaxPacketSize = -1;
+    private String version;
 
     private boolean readOnly = false;
     private boolean lowerCase = true;
@@ -81,4 +82,11 @@ public class KeyVariables {
         this.targetMaxPacketSize = targetMaxPacketSize;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
 }

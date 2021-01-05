@@ -27,6 +27,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
     private static final String COLUMN_AUTOCOMMIT = "@@autocommit";
     private static final String COLUMN_READONLY = "@@read_only";
     private static final String COLUMN_MAX_PACKET = "@@max_allowed_packet";
+    private static final String COLUMN_VERSION = "@@version";
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
@@ -51,7 +52,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         if (columnIsolation == null) {
             return keyVariables;
         }
-        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation};
+        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation, COLUMN_VERSION};
         StringBuilder sql = new StringBuilder("select ");
         for (int i = 0; i < columns.length; i++) {
             if (i != 0) {
@@ -107,6 +108,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
                 keyVariables.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
                 keyVariables.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
                 keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
+                keyVariables.setVersion(result.getResult().get(COLUMN_VERSION));
 
                 if (needSync) {
                     boolean checkNeedSync = false;

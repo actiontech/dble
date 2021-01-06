@@ -68,7 +68,6 @@ public class ShardingService extends BusinessService {
 
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    protected String executeSql;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
@@ -77,7 +76,6 @@ public class ShardingService extends BusinessService {
     private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
-    private volatile boolean multiStatementAllow = false;
     private final NonBlockingSession session;
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
@@ -647,10 +645,6 @@ public class ShardingService extends BusinessService {
         this.txInterruptMsg = txInterruptMsg;
     }
 
-    public String getExecuteSql() {
-        return executeSql;
-    }
-
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
@@ -658,18 +652,6 @@ public class ShardingService extends BusinessService {
             //not a xa transaction ,close it
             session.kill();
         }
-    }
-
-    public void setExecuteSql(String executeSql) {
-        this.executeSql = executeSql;
-    }
-
-    public boolean isMultiStatementAllow() {
-        return multiStatementAllow;
-    }
-
-    public void setMultiStatementAllow(boolean multiStatementAllow) {
-        this.multiStatementAllow = multiStatementAllow;
     }
 
     public NonBlockingSession getSession2() {

@@ -25,7 +25,6 @@ public abstract class VariablesService extends AbstractService {
     protected volatile int txIsolation;
     protected volatile boolean autocommit;
     protected volatile boolean isSupportCompress;
-    protected volatile int maxPacketSize;
     protected volatile boolean multiStatementAllow;
 
     // protected volatile boolean isAuthorized;
@@ -35,7 +34,6 @@ public abstract class VariablesService extends AbstractService {
         this.usrVariables = new LinkedHashMap<>();
         this.sysVariables = new LinkedHashMap<>();
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
-        this.maxPacketSize = SystemConfig.getInstance().getMaxPacketSize();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
     }
 
@@ -125,15 +123,6 @@ public abstract class VariablesService extends AbstractService {
 
     public void setSupportCompress(boolean supportCompress) {
         isSupportCompress = supportCompress;
-    }
-
-    // maxPacketSize
-    public int getMaxPacketSize() {
-        return connection.getMaxPacketSize();
-    }
-
-    public void setMaxPacketSize(int maxPacketSize) {
-        connection.setMaxPacketSize(maxPacketSize);
     }
 
     // multiStatementAllow

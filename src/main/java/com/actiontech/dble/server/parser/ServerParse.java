@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -54,12 +54,14 @@ public class ServerParse {
     public static final int FLUSH = 153;
     public static final int ROLLBACK_SAVEPOINT = 154;
     public static final int RELEASE_SAVEPOINT = 155;
+    public static final int SELECT_FOR_UPDATE = 156;
+    public static final int LOCK_IN_SHARE_MODE = 157;
+    public static final int CREATE_TEMPORARY_TABLE = 158;
+    public static final int DROP_TEMPORARY_TABLE = 159;
 
     public static final int MIGRATE = 203;
     /* don't set the constant to 255 */
     public static final int UNSUPPORT = 254;
-    public static final int SELECT_FOR_UPDATE = 156;
-    public static final int LOCK_IN_SHARE_MODE = 157;
 
     private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
     private static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
@@ -455,7 +457,7 @@ public class ServerParse {
     //create table/view/...
     private static int createCheck(String stmt, int offset) {
         int len = stmt.length();
-        if (len > offset + 5) {
+        if (len > offset + 6) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -474,12 +476,54 @@ public class ServerParse {
                         return viewCheck(stmt, offset, false);
                     } else if (c6 == 'o' || c6 == 'O') {
                         return orCheck(stmt, offset);
+                    } else if (c6 == 't' || c6 == 'T') {
+                        if (len > ++offset) {
+                            char c7 = stmt.charAt(offset);
+                            if (c7 == 'e' || c7 == 'E') {
+                                return createTempTableCheck(stmt, offset);
+                            }
+                        }
                     }
                 }
                 return DDL;
             }
         }
         return OTHER;
+    }
+
+
+    //create TEMPORARY TABLE XXXX
+    public static int createTempTableCheck(String stmt, int offset) {
+        String keyword = "EMPORARY";
+        if (!ParseUtil.compare(stmt, offset, keyword)) {
+            return DDL;
+        }
+        offset += keyword.length();
+        offset = ParseUtil.skipSpace(stmt, offset);
+        keyword = "TABLE";
+        if (!ParseUtil.compare(stmt, offset, keyword)) {
+            return DDL;
+        }
+        offset += keyword.length();
+        offset = ParseUtil.skipSpace(stmt, offset);
+        return (offset << 8) | CREATE_TEMPORARY_TABLE;
+    }
+
+    //drop TEMPORARY TABLE XXXX
+    public static int dropTempTableCheck(String stmt, int offset) {
+        String keyword = "TEMPORARY";
+        if (!ParseUtil.compare(stmt, offset, keyword)) {
+            return DDL;
+        }
+        offset += keyword.length();
+        offset = ParseUtil.skipSpace(stmt, offset);
+        keyword = "TABLE";
+        if (!ParseUtil.compare(stmt, offset, keyword)) {
+            return DDL;
+        }
+        offset += keyword.length();
+        offset = ParseUtil.skipSpace(stmt, offset);
+        return (offset << 8) | DROP_TEMPORARY_TABLE;
     }
 
     /**
@@ -594,6 +638,18 @@ public class ServerParse {
                         case 'P':
                         case 'p':
                             return dropPrepareCheck(stmt, offset);
+                        case 't':
+                        case 'T':
+                            if (stmt.length() > offset + 1) {
+                                char c7 = stmt.charAt(offset + 1);
+                                if (c7 == 'e' || c7 == 'E') {
+                                    return dropTempTableCheck(stmt, offset);
+                                } else {
+                                    return DDL;
+                                }
+                            } else {
+                                return DDL;
+                            }
                         default:
                             return DDL;
                     }

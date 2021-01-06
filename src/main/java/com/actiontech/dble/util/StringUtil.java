@@ -97,6 +97,10 @@ public final class StringUtil {
         return ((str == null) || (str.length() == 0));
     }
 
+    public static boolean isBlank(String str) {
+        return ((str == null) || (str.length() == 0)) || (str.trim().length() == 0);
+    }
+
     public static byte[] hexString2Bytes(char[] hexString, int offset,
                                          int length) {
         if (hexString == null) {

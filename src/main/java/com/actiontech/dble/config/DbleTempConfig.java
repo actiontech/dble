@@ -52,4 +52,11 @@ public final class DbleTempConfig {
     public static DbleTempConfig getInstance() {
         return INSTANCE;
     }
+
+    public void clean() {
+        this.dbConfig = null;
+        this.shardingConfig = null;
+        this.userConfig = null;
+        this.sequenceConfig = null;
+    }
 }

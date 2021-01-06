@@ -17,6 +17,7 @@ public abstract class ManagerBaseTable {
     protected boolean isWritable = false;
     protected final LinkedHashMap<String, ColumnMeta> columns;
     protected final LinkedHashMap<String, Integer> columnsType;
+    private String msg;
 
     protected ManagerBaseTable(String tableName, int filedSize) {
         this.tableName = tableName;
@@ -66,5 +67,13 @@ public abstract class ManagerBaseTable {
 
     public Integer getColumnType(String columnName) {
         return columnsType.get(columnName);
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
     }
 }

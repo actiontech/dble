@@ -5,9 +5,7 @@
 
 package com.actiontech.dble.services.manager.handler;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.values.ConfStatus;
-import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -119,10 +117,6 @@ public final class DeleteHandler {
             }
             return;
         } finally {
-            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
-            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
-            DbleTempConfig.getInstance().setShardingConfig(DbleServer.getInstance().getConfig().getShardingConfig());
-            DbleTempConfig.getInstance().setSequenceConfig(DbleServer.getInstance().getConfig().getSequenceConfig());
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();

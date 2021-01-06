@@ -14,6 +14,7 @@ import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -108,7 +109,17 @@ public class ShardingConverter {
         List<Schema> schemaList = shardings.getSchema();
         Map<String, ShardingNodeConfig> shardingNodeConfigMap = Maps.newHashMap();
         List<ErrorInfo> errorInfos = new ArrayList<>();
-
+        if (shardings.getVersion() != null && !Versions.CONFIG_VERSION.equals(shardings.getVersion())) {
+            if (problemReporter != null) {
+                if (Versions.checkVersion(shardings.getVersion())) {
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.SHARDING_XML + " version is " + shardings.getVersion() + ".There may be some incompatible config between two versions, please check it";
+                    problemReporter.warn(message);
+                } else {
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.SHARDING_XML + " version is " + shardings.getVersion() + ".There must be some incompatible config between two versions, please check it";
+                    problemReporter.warn(message);
+                }
+            }
+        }
         try {
             shardingNodeListToMap(shardingNodeList, dbGroupMap, shardingNodeConfigMap);
             functionListToMap(functionList, problemReporter);
@@ -244,12 +255,12 @@ public class ShardingConverter {
         String singleTableSqlMaxLimitStr = null == singleTable.getSqlMaxLimit() ? null : String.valueOf(singleTable.getSqlMaxLimit());
         String singleTableShardingNode = singleTable.getShardingNode();
 
-        if (StringUtil.isEmpty(singleTableName)) {
+        if (StringUtil.isBlank(singleTableName)) {
             throw new ConfigException("one of tables' name is empty");
         }
         //limit size of the table
         int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(singleTableSqlMaxLimitStr, schemaSqlMaxLimit);
-        if (StringUtil.isEmpty(singleTableShardingNode)) {
+        if (StringUtil.isBlank(singleTableShardingNode)) {
             throw new ConfigException("shardingNode of " + singleTableName + " is empty");
         }
         String[] theShardingNodes = SplitUtil.split(singleTableShardingNode, ',', '$', '-');
@@ -262,7 +273,7 @@ public class ShardingConverter {
             if (tableName.contains("`")) {
                 tableName = tableName.replaceAll("`", "");
             }
-            if (StringUtil.isEmpty(tableName)) {
+            if (StringUtil.isBlank(tableName)) {
                 throw new ConfigException("one of table name of " + singleTableName + " is empty");
             }
             SingleTableConfig table = new SingleTableConfig(tableName, tableSqlMaxLimit, Arrays.asList(theShardingNodes));
@@ -281,14 +292,14 @@ public class ShardingConverter {
         String globalTableShardingNode = globalTable.getShardingNode();
         String globalTableCheckClass = Optional.ofNullable(globalTable.getCheckClass()).orElse(GLOBAL_TABLE_CHECK_DEFAULT);
         String globalTableCron = Optional.ofNullable(globalTable.getCron()).orElse(GLOBAL_TABLE_CHECK_DEFAULT_CRON).toUpperCase();
-        boolean globalCheck = !StringUtil.isEmpty(globalTable.getCheckClass());
+        boolean globalCheck = !StringUtil.isBlank(globalTable.getCheckClass());
 
-        if (StringUtil.isEmpty(globalTableName)) {
+        if (StringUtil.isBlank(globalTableName)) {
             throw new ConfigException("one of tables' name is empty");
         }
         //limit size of the table
         int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(globalTableSqlMaxLimitStr, schemaSqlMaxLimit);
-        if (StringUtil.isEmpty(globalTableShardingNode)) {
+        if (StringUtil.isBlank(globalTableShardingNode)) {
             throw new ConfigException("shardingNode of " + globalTableName + " is empty");
         }
         String[] theShardingNodes = SplitUtil.split(globalTableShardingNode, ',', '$', '-');
@@ -306,7 +317,7 @@ public class ShardingConverter {
             if (tableName.contains("`")) {
                 tableName = tableName.replaceAll("`", "");
             }
-            if (StringUtil.isEmpty(tableName)) {
+            if (StringUtil.isBlank(tableName)) {
                 throw new ConfigException("one of table name of " + globalTableName + " is empty");
             }
             GlobalTableConfig table = new GlobalTableConfig(tableName, tableSqlMaxLimit, Arrays.asList(theShardingNodes),
@@ -326,18 +337,18 @@ public class ShardingConverter {
         String shardingTableShardingColumn = shardingTable.getShardingColumn();
         boolean shardingTableSqlRequiredSharding = Optional.ofNullable(shardingTable.getSqlRequiredSharding()).orElse(false);
 
-        if (StringUtil.isEmpty(shardingTableName)) {
+        if (StringUtil.isBlank(shardingTableName)) {
             throw new ConfigException("one of tables' name is empty");
         }
         int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(shardingTableSqlMaxLimitStr, schemaSqlMaxLimit);
         //shardingNode of table
-        if (StringUtil.isEmpty(shardingTableShardingColumn)) {
+        if (StringUtil.isBlank(shardingTableShardingColumn)) {
             throw new ConfigException("shardingColumn of " + shardingTableName + " is empty");
         }
         shardingTableShardingColumn = shardingTableShardingColumn.toUpperCase();
-        String shardingTableIncrementColumn = StringUtil.isEmpty(shardingTable.getIncrementColumn()) ? null : shardingTable.getIncrementColumn().toUpperCase();
+        String shardingTableIncrementColumn = StringUtil.isBlank(shardingTable.getIncrementColumn()) ? null : shardingTable.getIncrementColumn().toUpperCase();
         String shardingTableFunction = shardingTable.getFunction();
-        if (StringUtil.isEmpty(shardingTableFunction)) {
+        if (StringUtil.isBlank(shardingTableFunction)) {
             throw new ConfigException("function of " + shardingTableName + " is empty");
         }
         AbstractPartitionAlgorithm algorithm = this.functionMap.get(shardingTableFunction);
@@ -345,7 +356,7 @@ public class ShardingConverter {
             throw new ConfigException("can't find function of name :" + shardingTableFunction + " in table " + shardingTableName);
         }
         String shardingTableShardingNode = shardingTable.getShardingNode();
-        if (StringUtil.isEmpty(shardingTableShardingNode)) {
+        if (StringUtil.isBlank(shardingTableShardingNode)) {
             throw new ConfigException("shardingNode of " + shardingTableName + " is empty");
         }
         String[] theShardingNodes = SplitUtil.split(shardingTableShardingNode, ',', '$', '-');
@@ -365,7 +376,7 @@ public class ShardingConverter {
             if (tableName.contains("`")) {
                 tableName = tableName.replaceAll("`", "");
             }
-            if (StringUtil.isEmpty(tableName)) {
+            if (StringUtil.isBlank(tableName)) {
                 throw new ConfigException("one of table name of " + shardingTableName + " is empty");
             }
             ShardingTableConfig table = new ShardingTableConfig(tableName, tableSqlMaxLimit,
@@ -419,7 +430,7 @@ public class ShardingConverter {
         }
 
         // add global sequence node when it is some dedicated servers */
-        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL && !StringUtil.isEmpty(sequenceJson)) {
+        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL && !StringUtil.isBlank(sequenceJson)) {
             IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
             redundancy.loadByJson(false, sequenceJson);
             allUseShardingNode.addAll(redundancy.getShardingNodes());
@@ -479,9 +490,9 @@ public class ShardingConverter {
             String childTableSqlMaxLimitStr = null == childTable.getSqlMaxLimit() ? null : String.valueOf(childTable.getSqlMaxLimit());
             String childTableJoinColumn = childTable.getJoinColumn().toUpperCase();
             String childTableParentColumn = childTable.getParentColumn().toUpperCase();
-            String childTableIncrementColumn = StringUtil.isEmpty(childTable.getIncrementColumn()) ? null : childTable.getIncrementColumn().toUpperCase();
+            String childTableIncrementColumn = StringUtil.isBlank(childTable.getIncrementColumn()) ? null : childTable.getIncrementColumn().toUpperCase();
 
-            if (StringUtil.isEmpty(childTableName)) {
+            if (StringUtil.isBlank(childTableName)) {
                 throw new ConfigException("one of table [" + parentTable.getName() + "]'s child name is empty");
             }
             int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(childTableSqlMaxLimitStr, schemaSqlMaxLimit);

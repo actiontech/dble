@@ -11,6 +11,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.HeartBeat;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.xml.XMLDbLoader;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
@@ -63,10 +64,31 @@ public class DBConverter {
 
     public void dbJsonToMap(String dbJson, ProblemReporter problemReporter) {
         DbGroups dbs = dbJsonToBean(dbJson);
+        //check
+        beanValidate(dbs);
+        if (dbs.getVersion() != null && !Versions.CONFIG_VERSION.equals(dbs.getVersion())) {
+            if (problemReporter != null) {
+                if (Versions.checkVersion(dbs.getVersion())) {
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " +
+                            ConfigFileName.DB_XML + " version is " + dbs.getVersion() + ".There may be some incompatible config between two versions, please check it";
+                    problemReporter.warn(message);
+                } else {
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.DB_XML + " version is " + dbs.getVersion() + ".There must be some incompatible config between two versions, please check it";
+                    problemReporter.warn(message);
+                }
+            }
+        }
         for (DBGroup dbGroup : dbs.getDbGroup()) {
             String dbGroupName = dbGroup.getName();
+            Matcher nameMatcher = XMLDbLoader.PATTERN_DB.matcher(dbGroupName);
+            if (!nameMatcher.matches()) {
+                throw new ConfigException("dbGroup name " + dbGroupName + " show be use " + XMLDbLoader.DB_NAME_FORMAT + "!");
+            }
+            if (this.dbGroupMap.containsKey(dbGroupName)) {
+                throw new ConfigException("dbGroup name " + dbGroupName + " duplicated!");
+            }
             List<DBInstance> dbInstanceList = dbGroup.getDbInstance();
-            Integer delayThreshold = dbGroup.getDelayThreshold();
+            int delayThreshold = Optional.ofNullable(dbGroup.getDelayThreshold()).orElse(-1);
             String disableHAStr = dbGroup.getDisableHA();
             boolean disableHA = Boolean.parseBoolean(Optional.ofNullable(disableHAStr).orElse("false"));
             int rwSplitMode = dbGroup.getRwSplitMode();
@@ -120,6 +142,24 @@ public class DBConverter {
         }
     }
 
+    private void beanValidate(DbGroups dbs) {
+        if (null == dbs) {
+            return;
+        }
+        List<DBGroup> dbGroupList = dbs.getDbGroup();
+        if (dbGroupList == null || dbGroupList.isEmpty()) {
+            throw new ConfigException("dbGroup is empty");
+        }
+        for (DBGroup dbGroup : dbGroupList) {
+            if (dbGroup.getDbInstance() == null || dbGroup.getDbInstance().isEmpty()) {
+                throw new ConfigException("The content of element type \"dbGroup\" is incomplete, it must match \"(heartbeat,dbInstance+)\"");
+            }
+            if (dbGroup.getHeartbeat() == null) {
+                throw new ConfigException("The content of element type \"dbGroup\" is incomplete, it must match \"(heartbeat,dbInstance+)\"");
+            }
+        }
+    }
+
     static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase, String path) throws JAXBException, XMLStreamException {
         // xml file to bean
         DbGroups groupsBean;
@@ -149,7 +189,7 @@ public class DBConverter {
         }
         if (StringUtil.isEmpty(name) || StringUtil.isEmpty(nodeUrl) || StringUtil.isEmpty(user)) {
             throw new ConfigException(
-                    "dbGroup " + dbGroup +
+                    "dbGroup " + dbGroup.getName() +
                             " define error,some attributes of this element is empty: " +
                             name);
         }

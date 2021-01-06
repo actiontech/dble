@@ -29,7 +29,6 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
     private Set<String> logicalPrimaryKeySet = Sets.newHashSet();
     private String xmlFilePath;
 
-    private String msg;
 
     protected ManagerWritableTable(String tableName, int filedSize) {
         super(tableName, filedSize);
@@ -67,14 +66,6 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
 
     public ReentrantLock getLock() {
         return lock;
-    }
-
-    public String getMsg() {
-        return msg;
-    }
-
-    public void setMsg(String msg) {
-        this.msg = msg;
     }
 
     public LinkedHashSet<String> getNotNullColumns() {

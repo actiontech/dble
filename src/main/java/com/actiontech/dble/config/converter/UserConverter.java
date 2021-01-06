@@ -10,6 +10,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.user.privilege.Table;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.config.util.ConfigException;
@@ -79,7 +80,17 @@ public class UserConverter {
     public void userJsonToMap(String userJson, ProblemReporter problemReporter) {
         Users users = userJsonToBean(userJson);
         List<BlackList> blacklist = Optional.ofNullable(users.getBlacklist()).orElse(Lists.newArrayList());
-
+        if (users.getVersion() != null && !Versions.CONFIG_VERSION.equals(users.getVersion())) {
+            if (problemReporter != null) {
+                if (Versions.checkVersion(users.getVersion())) {
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.USER_XML + " version is " + users.getVersion() + ".There may be some incompatible config between two versions, please check it";
+                    problemReporter.warn(message);
+                } else {
+                    String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the " + ConfigFileName.USER_XML + " version is " + users.getVersion() + ".There must be some incompatible config between two versions, please check it";
+                    problemReporter.warn(message);
+                }
+            }
+        }
         Map<String, WallProvider> blackListMap;
         try {
             blackListMap = blackListToMap(blacklist, problemReporter);

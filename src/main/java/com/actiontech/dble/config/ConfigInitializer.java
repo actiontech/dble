@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.helper.TestSchemasTask;
@@ -33,6 +34,8 @@ import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.JAXBException;
+import javax.xml.stream.XMLStreamException;
 import java.util.*;
 
 /**
@@ -85,8 +88,19 @@ public class ConfigInitializer implements ProblemReporter {
                 this.functions = Collections.EMPTY_MAP;
             }
 
+            //sync json
+            this.userConfig = new UserConverter().userXmlToJson();
+            this.dbConfig = DBConverter.dbXmlToJson();
+            if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
+                this.sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
+            } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
+                this.sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
+            }
+            this.shardingConfig = new ShardingConverter().shardingXmlToJson();
             checkRwSplitDbGroup();
             checkWriteDbInstance();
+        } catch (JAXBException | XMLStreamException e) {
+            throw new ConfigException(e);
         } finally {
             TraceManager.finishSpan(traceObject);
         }

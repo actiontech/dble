@@ -93,6 +93,10 @@ public class ServerConfig {
 
         this.lock = new ReentrantReadWriteLock();
         this.blacklistConfig = confInitNew.getBlacklistConfig();
+        this.userConfig = confInitNew.getUserConfig();
+        this.dbConfig = confInitNew.getDbConfig();
+        this.shardingConfig = confInitNew.getShardingConfig();
+        this.sequenceConfig = confInitNew.getSequenceConfig();
     }
 
 

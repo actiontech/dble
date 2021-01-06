@@ -13,10 +13,6 @@ import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.*;
-import com.actiontech.dble.config.converter.DBConverter;
-import com.actiontech.dble.config.converter.SequenceConverter;
-import com.actiontech.dble.config.converter.ShardingConverter;
-import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -38,6 +34,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -222,26 +219,22 @@ public final class ReloadConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
+    @Deprecated
     public static boolean reloadByLocalXml(final int loadAllMode) throws Exception {
-        //sync json
-        String userConfig = new UserConverter().userXmlToJson();
-        String dbConfig = DBConverter.dbXmlToJson();
-        String shardingConfig = new ShardingConverter().shardingXmlToJson();
-        String sequenceConfig = null;
-        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-            sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
-        } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
-            sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
-        }
-        return reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
+        return reload(loadAllMode, null, null, null, null);
     }
 
     public static boolean reloadByConfig(final int loadAllMode) throws Exception {
         String userConfig = DbleTempConfig.getInstance().getUserConfig();
+        userConfig = StringUtil.isBlank(userConfig) ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
         String dbConfig = DbleTempConfig.getInstance().getDbConfig();
+        dbConfig = StringUtil.isBlank(dbConfig) ? DbleServer.getInstance().getConfig().getDbConfig() : dbConfig;
         String shardingConfig = DbleTempConfig.getInstance().getShardingConfig();
+        shardingConfig = StringUtil.isBlank(shardingConfig) ? DbleServer.getInstance().getConfig().getShardingConfig() : shardingConfig;
         String sequenceConfig = DbleTempConfig.getInstance().getSequenceConfig();
+        sequenceConfig = StringUtil.isBlank(sequenceConfig) ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
         boolean reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
+        DbleTempConfig.getInstance().clean();
         return reloadResult;
     }
 
@@ -256,7 +249,11 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
             ConfigInitializer loader;
             try {
-                loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
+                if (null == userConfig && null == dbConfig && null == shardingConfig && null == sequenceConfig) {
+                    loader = new ConfigInitializer(false);
+                } else {
+                    loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
+                }
             } catch (Exception e) {
                 throw new Exception(e);
             }

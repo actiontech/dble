@@ -57,7 +57,7 @@ public class ServerParse {
     public static final int SELECT_FOR_UPDATE = 156;
     public static final int LOCK_IN_SHARE_MODE = 157;
     public static final int CREATE_TEMPORARY_TABLE = 158;
-    public static final int DROP_TEMPORARY_TABLE = 159;
+    public static final int DROP_TABLE = 159;
 
     public static final int MIGRATE = 203;
     /* don't set the constant to 255 */
@@ -483,6 +483,7 @@ public class ServerParse {
                                 return createTempTableCheck(stmt, offset);
                             }
                         }
+                        return DDL;
                     }
                 }
                 return DDL;
@@ -509,21 +510,22 @@ public class ServerParse {
         return (offset << 8) | CREATE_TEMPORARY_TABLE;
     }
 
-    //drop TEMPORARY TABLE XXXX
-    public static int dropTempTableCheck(String stmt, int offset) {
+    //DROP [TEMPORARY] TABLE [IF EXISTS]
+    //    tbl_name [, tbl_name] ...
+    //    [RESTRICT | CASCADE]
+    public static int dropTableCheck(String stmt, int offset) {
         String keyword = "TEMPORARY";
-        if (!ParseUtil.compare(stmt, offset, keyword)) {
-            return DDL;
+        if (ParseUtil.compare(stmt, offset, keyword)) {
+            offset += keyword.length();
+            offset = ParseUtil.skipSpace(stmt, offset);
         }
-        offset += keyword.length();
-        offset = ParseUtil.skipSpace(stmt, offset);
         keyword = "TABLE";
         if (!ParseUtil.compare(stmt, offset, keyword)) {
             return DDL;
         }
         offset += keyword.length();
         offset = ParseUtil.skipSpace(stmt, offset);
-        return (offset << 8) | DROP_TEMPORARY_TABLE;
+        return (offset << 8) | DROP_TABLE;
     }
 
     /**
@@ -640,16 +642,7 @@ public class ServerParse {
                             return dropPrepareCheck(stmt, offset);
                         case 't':
                         case 'T':
-                            if (stmt.length() > offset + 1) {
-                                char c7 = stmt.charAt(offset + 1);
-                                if (c7 == 'e' || c7 == 'E') {
-                                    return dropTempTableCheck(stmt, offset);
-                                } else {
-                                    return DDL;
-                                }
-                            } else {
-                                return DDL;
-                            }
+                            return dropTableCheck(stmt, offset);
                         default:
                             return DDL;
                     }

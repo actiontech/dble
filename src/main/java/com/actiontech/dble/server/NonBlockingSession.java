@@ -465,6 +465,7 @@ public class NonBlockingSession extends Session {
                         this.complexRrs = rrs;
                         executeMultiSelect(rrs);
                     } catch (MySQLOutPutException e) {
+                        LOGGER.warn("execute complex sql cause error", e);
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                     }
                 } else {

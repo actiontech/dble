@@ -1,16 +1,16 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.impl.aio;
 
 import com.actiontech.dble.DbleServer;
-
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketConnector;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,9 @@ public final class AIOConnector implements SocketConnector,
                 service.getConnection().setId(ID_GENERATOR.getId());
                 IOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
                 service.getConnection().setProcessor(processor);
-                service.register();
+                if (service instanceof AuthService) {
+                    ((AuthService) service).register();
+                }
             }
         } catch (Exception e) {
             service.getConnection().onConnectFailed(e);

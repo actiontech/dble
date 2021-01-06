@@ -1,7 +1,7 @@
 package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.service.ServiceTask;
 
 /**
@@ -9,15 +9,14 @@ import com.actiontech.dble.net.service.ServiceTask;
  */
 public class MySQLCurrentResponseService extends MySQLResponseService {
 
-    public MySQLCurrentResponseService(AbstractConnection connection) {
+    public MySQLCurrentResponseService(BackendConnection connection) {
         super(connection);
     }
 
-
     @Override
-    public void taskToTotalQueue(ServiceTask task) {
+    public void handleTask(ServiceTask task) {
         if (isComplexQuery()) {
-            super.taskToTotalQueue(task);
+            super.handleTask(task);
         } else {
             if (isHandling.compareAndSet(false, true)) {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
@@ -25,17 +24,4 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
         }
     }
 
-    @Override
-    public void consumerInternalData(ServiceTask task) {
-        try {
-            handleInnerData();
-        } catch (Exception e) {
-            handleDataError(e);
-        } finally {
-            isHandling.set(false);
-            if (taskQueue.size() > 0) {
-                taskToTotalQueue(task);
-            }
-        }
-    }
 }

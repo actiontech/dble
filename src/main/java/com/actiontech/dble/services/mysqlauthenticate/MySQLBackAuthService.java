@@ -1,49 +1,44 @@
 package com.actiontech.dble.services.mysqlauthenticate;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.ConnectionException;
-import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.singleton.CapClientFoundRows;
-import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.actiontech.dble.config.ErrorCode.ER_ACCESS_DENIED_ERROR;
 
 /**
  * Created by szf on 2020/6/19.
  */
-public class MySQLBackAuthService extends AuthService {
+public class MySQLBackAuthService extends BackendService implements AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLBackAuthService.class);
 
-    private final AtomicBoolean isHandling = new AtomicBoolean(false);
-    private volatile String user;
+    private final String user;
+    private final String passwd;
     private volatile String schema;
-    private volatile String passwd;
     private volatile PooledConnectionListener listener;
     private volatile ResponseHandler handler;
-
+    private volatile byte[] seed;
+    private volatile boolean authSwitchMore;
+    private volatile PluginName pluginName;
     private volatile long serverCapabilities;
 
-    public MySQLBackAuthService(AbstractConnection connection, String user, String schema, String passwd, PooledConnectionListener listener, ResponseHandler handler) {
+    public MySQLBackAuthService(BackendConnection connection, String user, String schema, String passwd, PooledConnectionListener listener, ResponseHandler handler) {
         super(connection);
         this.user = user;
         this.schema = schema;
@@ -53,13 +48,13 @@ public class MySQLBackAuthService extends AuthService {
     }
 
     // only for com_change_user
-    public MySQLBackAuthService(AbstractConnection connection, String user, String passwd, ResponseHandler handler) {
+    public MySQLBackAuthService(BackendConnection connection, String user, String passwd, ResponseHandler handler) {
         super(connection);
         this.user = user;
         this.passwd = passwd;
         this.handler = handler;
         // fake for skipping handshake
-        ((PooledConnection) connection).setOldSchema(null);
+        connection.setOldSchema(null);
         this.seed = new byte[0];
     }
 
@@ -83,7 +78,6 @@ public class MySQLBackAuthService extends AuthService {
                     return;
                 }
             }
-
 
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
@@ -124,42 +118,9 @@ public class MySQLBackAuthService extends AuthService {
                 default:
                     break;
             }
-
         } catch (Exception e) {
             LOGGER.warn(e.getMessage(), e);
             onConnectFailed(e);
-        } finally {
-            synchronized (this) {
-                currentTask = null;
-            }
-        }
-    }
-
-    protected void handleInnerData() {
-        ServiceTask task;
-        //LOGGER.info("LOOP FOR BACKEND " + Thread.currentThread().getName() + " " + taskQueue.size());
-        //threadUsageStat start
-        String threadName = null;
-        ThreadWorkUsage workUsage = null;
-        long workStart = 0;
-        if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
-            threadName = Thread.currentThread().getName();
-            workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
-            if (threadName.startsWith("backend")) {
-                if (workUsage == null) {
-                    workUsage = new ThreadWorkUsage();
-                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
-                }
-            }
-            workStart = System.nanoTime();
-        }
-        //handleData
-        while ((task = taskQueue.poll()) != null) {
-            handleInnerData(task.getOrgData());
-        }
-        //threadUsageStat end
-        if (workUsage != null && threadName.startsWith("backend")) {
-            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
         }
     }
 
@@ -167,7 +128,7 @@ public class MySQLBackAuthService extends AuthService {
         HandshakeV10Packet handshakePacket = new HandshakeV10Packet();
         handshakePacket.read(data);
 
-        ((BackendConnection) connection).setThreadId(handshakePacket.getThreadId());
+        connection.setThreadId(handshakePacket.getThreadId());
         connection.initCharacterSet(SystemConfig.getInstance().getCharset());
 
         int sl1 = handshakePacket.getSeed().length;
@@ -215,16 +176,16 @@ public class MySQLBackAuthService extends AuthService {
         }
         if (info.isSuccess()) {
             connection.setService(BusinessServiceFactory.getBackendBusinessService(info, connection));
-            ((BackendConnection) connection).getBackendService().setResponseHandler(handler);
+            connection.getBackendService().setResponseHandler(handler);
             boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & serverCapabilities);
             boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
             if (clientCompress && usingCompress) {
-                connection.getService().setSupportCompress(true);
+                connection.getBackendService().setSupportCompress(true);
             }
             if (listener != null) {
-                listener.onCreateSuccess((PooledConnection) connection);
+                listener.onCreateSuccess(connection);
             } else if (handler != null) {
-                handler.connectionAcquired((BackendConnection) connection);
+                handler.connectionAcquired(connection);
             }
         } else {
             throw new ConnectionException(ER_ACCESS_DENIED_ERROR, info.getErrorMsg());
@@ -237,50 +198,19 @@ public class MySQLBackAuthService extends AuthService {
     }
 
     @Override
-    public void taskToTotalQueue(ServiceTask task) {
-        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            if (isHandling.compareAndSet(false, true)) {
-                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
-            }
-        } else {
-            Executor executor = DbleServer.getInstance().getBackendBusinessExecutor();
-            if (isHandling.compareAndSet(false, true)) {
-                executor.execute(() -> consumerInternalData(task));
-            }
-        }
-    }
-
-    @Override
-    public void consumerInternalData(ServiceTask task) {
-        try {
-            handleInnerData();
-        } catch (Exception e) {
-            handleDataError(e);
-        } finally {
-            isHandling.set(false);
-            if (taskQueue.size() > 0) {
-                taskToTotalQueue(task);
-            }
-        }
-    }
-
-    @Override
     public void onConnectFailed(Throwable e) {
         if (listener != null) {
-            listener.onCreateFail((PooledConnection) connection, e);
+            listener.onCreateFail(connection, e);
         } else if (handler != null) {
             handler.connectionError(e, null);
         }
     }
 
-    private void handleDataError(Exception e) {
-        LOGGER.info(this.toString() + " handle data error:", e);
-        while (taskQueue.size() > 0) {
-            taskQueue.clear();
-        }
-        connection.close("handle data error:" + e.getMessage());
+    @Override
+    protected void handleDataError(Exception e) {
+        super.handleDataError(e);
         if (listener != null) {
-            listener.onCreateFail((BackendConnection) connection, e);
+            listener.onCreateFail(connection, e);
         } else if (handler != null) {
             handler.connectionError(e, null);
         }
@@ -330,4 +260,5 @@ public class MySQLBackAuthService extends AuthService {
             this.handler.connectionClose(this, "abnormal connection");
         }
     }
+
 }

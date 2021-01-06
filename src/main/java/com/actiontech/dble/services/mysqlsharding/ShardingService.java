@@ -3,7 +3,6 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
-import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -14,7 +13,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -29,7 +27,6 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
-import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
@@ -95,7 +92,6 @@ public class ShardingService extends BusinessService {
         session.setRowCount(0);
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
-        this.proto = new MySQLProtoHandlerImpl();
     }
 
     @Override
@@ -194,9 +190,8 @@ public class ShardingService extends BusinessService {
     }
 
     @Override
-    protected void taskToTotalQueue(ServiceTask task) {
+    protected void beforeHandlingTask() {
         session.setRequestTime();
-        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
     @Override
@@ -207,6 +202,16 @@ public class ShardingService extends BusinessService {
             sc.changeUserAuthSwitch(data, changeUserPacket);
             return;
         }*/
+
+        if (loadDataInfileHandler.isStart()) {
+            if (isEndOfDataFile(data)) {
+                loadDataInfileHandler.end(data[3]);
+            } else {
+                loadDataInfileHandler.handle(data);
+            }
+            return;
+        }
+
         switch (data[4]) {
             case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();
@@ -393,6 +398,7 @@ public class ShardingService extends BusinessService {
         this.multiStatementAllow = info.getMysqlAuthPacket().isMultStatementAllow();
     }
 
+    @Override
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
@@ -479,7 +485,6 @@ public class ShardingService extends BusinessService {
         if (loadDataInfileHandler != null) {
             try {
                 loadDataInfileHandler.clear();
-                proto = new LoadDataProtoHandlerImpl(loadDataInfileHandler);
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 LOGGER.info("load data error", e);
@@ -602,7 +607,7 @@ public class ShardingService extends BusinessService {
         }
     }
 
-
+    @Override
     public void cleanup() {
         super.cleanup();
         if (session != null) {
@@ -719,12 +724,12 @@ public class ShardingService extends BusinessService {
         return sptprepare;
     }
 
-    public void resetProto() {
-        this.proto = new MySQLProtoHandlerImpl();
+    private boolean isEndOfDataFile(byte[] data) {
+        return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
     }
 
     public String toString() {
-        return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
+        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
     }
 }

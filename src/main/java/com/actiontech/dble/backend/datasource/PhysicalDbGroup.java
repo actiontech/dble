@@ -6,12 +6,16 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
@@ -235,11 +239,15 @@ public class PhysicalDbGroup {
             throw new IOException("force slave,but the dbGroup[" + groupName + "] doesn't contain active slave dbInstance");
         }
 
-        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || (master != null && master)) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("select write {}", writeDbInstance);
+        if (rwSplitMode == RW_SPLIT_OFF || allSourceMap.size() == 1 || (master != null && master) || isForUpdate) {
+            if (writeDbInstance.isAlive()) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("select write {}", writeDbInstance);
+                }
+                return writeDbInstance;
+            } else {
+                reportHeartbeatError(writeDbInstance);
             }
-            return writeDbInstance;
         }
 
         List<PhysicalDbInstance> instances = getRWDbInstances(master == null);
@@ -247,16 +255,15 @@ public class PhysicalDbGroup {
             throw new IOException("the dbGroup[" + groupName + "] doesn't contain active dbInstance.");
         }
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
-        if (isForUpdate && selectInstance.isSalveOrRead()) {
+        if (selectInstance.isAlive()) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("select write {}", writeDbInstance);
+                LOGGER.debug("select {}", selectInstance);
             }
-            return writeDbInstance;
+            return selectInstance;
+        } else {
+            reportHeartbeatError(selectInstance);
+            return selectInstance;
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("select {}", selectInstance);
-        }
-        return selectInstance;
     }
 
     private List<PhysicalDbInstance> getRWDbInstances(boolean includeWrite) {
@@ -272,7 +279,7 @@ public class PhysicalDbGroup {
             if (ds.isAlive() && (!checkSlaveSynStatus() || ds.canSelectAsReadNode())) {
                 okSources.add(ds);
             } else {
-                LOGGER.warn("can't select dbInstance[{}] as read node", ds);
+                LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
             }
         }
 
@@ -445,6 +452,18 @@ public class PhysicalDbGroup {
             }
         }
         return true;
+    }
+
+    private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {
+        final DbInstanceConfig config = ins.getConfig();
+        String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance status";
+        if (dbGroupConfig.isShowSlaveSql()) {
+            heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
+        }
+        LOGGER.warn(heartbeatError);
+        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", config.getInstanceName() + "-" + dbGroupConfig.getName());
+        AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", config.getId(), labels);
+        throw new IOException(heartbeatError);
     }
 
     boolean equalsBaseInfo(PhysicalDbGroup pool) {

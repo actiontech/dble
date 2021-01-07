@@ -38,6 +38,9 @@ public abstract class ServerUserConfig extends UserConfig {
         if (o1 == null) {
             return o2 == null;
         }
+        if (o1.getAttributes() == null) {
+            return o2.getAttributes() == null;
+        }
         return o1 == o2 || o1.getAttributes().equals(o2.getAttributes());
     }
 

@@ -16,7 +16,7 @@ public class SequenceToZkLoader implements NotifyService {
 
     @Override
     public boolean notifyProcess() throws Exception {
-        ClusterLogic.syncSequenceToCluster();
+        ClusterLogic.syncSequencePropsToCluster();
         return true;
     }
 }

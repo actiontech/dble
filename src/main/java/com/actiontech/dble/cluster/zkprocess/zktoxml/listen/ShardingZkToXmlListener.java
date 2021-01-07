@@ -11,24 +11,10 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAdapter;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class ShardingZkToXmlListener implements NotifyService {
-    private final Gson gson;
-    private XmlProcessBase xmlParseBase;
 
-    public ShardingZkToXmlListener(ZookeeperProcessListen zookeeperListen,
-                                   XmlProcessBase xmlParseBase) {
-        this.xmlParseBase = xmlParseBase;
-        xmlParseBase.addParseClass(Shardings.class);
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
-        gson = gsonBuilder.create();
+    public ShardingZkToXmlListener(ZookeeperProcessListen zookeeperListen) {
         zookeeperListen.addToInit(this);
     }
 
@@ -38,7 +24,7 @@ public class ShardingZkToXmlListener implements NotifyService {
         if (configValue == null) {
             throw new RuntimeException(ClusterPathUtil.getConfShardingPath() + " is null");
         }
-        ClusterLogic.syncShardingXmlToLocal(configValue, xmlParseBase, gson);
+        ClusterLogic.syncShardingJson(configValue);
         return true;
     }
 

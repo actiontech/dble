@@ -8,6 +8,7 @@ import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.*;
 
@@ -232,6 +233,24 @@ public class SchemaConfig {
 
     public Map<String, Set<ERTable>> getFuncNodeERMap() {
         return funcNodeERMap;
+    }
+
+
+    public boolean equalsBaseInfo(SchemaConfig schemaConfig) {
+        return StringUtil.equalsWithEmpty(this.name, schemaConfig.getName()) &&
+                this.noSharding == schemaConfig.isNoSharding() &&
+                StringUtil.equalsWithEmpty(this.shardingNode, schemaConfig.getShardingNode()) &&
+                StringUtil.equalsWithEmpty(this.metaShardingNode, schemaConfig.getMetaShardingNode()) &&
+                isEquals(this.allShardingNodes, schemaConfig.getAllShardingNodes());
+
+    }
+
+
+    private boolean isEquals(Set<String> o1, Set<String> o2) {
+        if (o1 == null) {
+            return o2 == null;
+        }
+        return o1 == o2 || o1.equals(o2);
     }
 
 }

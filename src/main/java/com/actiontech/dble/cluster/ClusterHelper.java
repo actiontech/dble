@@ -23,6 +23,9 @@ public final class ClusterHelper {
     }
 
     public static KvBean getKV(String path) throws Exception {
+        if (ClusterGeneralConfig.getInstance().getClusterSender() == null) {
+            return null;
+        }
         return ClusterGeneralConfig.getInstance().getClusterSender().getKV(path);
     }
 
@@ -52,7 +55,10 @@ public final class ClusterHelper {
     }
 
     public static void writeConfToCluster() throws Exception {
-        ClusterGeneralConfig.getInstance().getClusterSender().writeConfToCluster();
+        ClusterLogic.syncSequenceJsonToCluster();
+        ClusterLogic.syncDbJsonToCluster();
+        ClusterLogic.syncShardingJsonToCluster();
+        ClusterLogic.syncUseJsonToCluster();
     }
 
     public static String getPathValue(String path) throws Exception {

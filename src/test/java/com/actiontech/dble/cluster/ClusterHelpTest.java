@@ -5,99 +5,156 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
-import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
-import com.actiontech.dble.cluster.zkprocess.entity.Users;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAdapter;
-import com.actiontech.dble.cluster.zkprocess.entity.user.User;
-import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.util.ResourceUtil;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.ConfigInitializer;
+import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.SequenceConverter;
+import com.actiontech.dble.config.converter.ShardingConverter;
+import com.actiontech.dble.config.converter.UserConverter;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
+import com.actiontech.dble.config.model.user.*;
+import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import org.junit.Assert;
 import org.junit.Test;
-import org.w3c.dom.Document;
 
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import javax.xml.bind.JAXBException;
+import javax.xml.stream.XMLStreamException;
+import java.util.*;
 
 public class ClusterHelpTest {
 
-    @Test
-    public void testShardingXml() throws Exception {
-        String READ_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "sharding_template.xml";
-        String originXml = loadOriginXml(ClusterPathUtil.LOCAL_WRITE_PATH + "sharding.dtd", READ_PATH);
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        xmlProcess.addParseClass(Shardings.class);
-        xmlProcess.initJaxbClass();
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
-        Gson gson = gsonBuilder.create();
-        String jsonContent = ClusterLogic.parseShardingXmlFileToJson(xmlProcess, gson, READ_PATH);
-        Shardings newShardingBean = ClusterLogic.parseShardingJsonToBean(gson, jsonContent);
-        ClusterLogic.writeMapFileAddFunction(newShardingBean.getFunction());
-        String newXml = xmlProcess.baseParseToString(newShardingBean, "sharding");
-        Assert.assertEquals(originXml.length(), newXml.length());
-    }
+    UserConverter userConverter = new UserConverter();
+    ShardingConverter shardingConverter = new ShardingConverter();
+    String sequencePropsToJson = null;
 
-    @Test
-    public void testDXml() throws Exception {
-        String READ_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "db_template.xml";
-        String originXml = loadOriginXml(ClusterPathUtil.LOCAL_WRITE_PATH + "db.dtd", READ_PATH);
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        xmlProcess.addParseClass(DbGroups.class);
-        xmlProcess.initJaxbClass();
-        Gson gson = new Gson();
-        String jsonContent = ClusterLogic.parseDbGroupXmlFileToJson(xmlProcess, gson, READ_PATH);
-        DbGroups newDbGroupsBean = ClusterLogic.parseDbGroupsJsonToBean(gson, jsonContent);
-        String newXml = xmlProcess.baseParseToString(newDbGroupsBean, "db");
-        Assert.assertEquals(originXml.length(), newXml.length());
-    }
+    ConfigInitializer configInitializerByJson = new ConfigInitializer(userConverter.userXmlToJson(), DBConverter.dbXmlToJson(), shardingConverter.shardingXmlToJson(), sequencePropsToJson);
 
+    ConfigInitializer configInitializerByXml = new ConfigInitializer(false);
 
-    @Test
-    public void testUserXml() throws Exception {
-        String READ_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "user_template.xml";
-        String originXml = loadOriginXml(ClusterPathUtil.LOCAL_WRITE_PATH + "user.dtd", READ_PATH);
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-        xmlProcess.addParseClass(Users.class);
-        xmlProcess.initJaxbClass();
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
-        Gson gson = gsonBuilder.create();
-        String jsonContent = ClusterLogic.parseUserXmlFileToJson(xmlProcess, gson, READ_PATH);
-        Users newShardingBean = ClusterLogic.parseUserJsonToBean(gson, jsonContent);
-        String newXml = xmlProcess.baseParseToString(newShardingBean, "user");
-        Assert.assertEquals(originXml.length(), newXml.length());
-    }
-
-
-    private String loadOriginXml(String dtdFile, String xmlFile) throws Exception {
-        InputStream dtd = ResourceUtil.getResourceAsStreamFromRoot(dtdFile);
-        InputStream xmlStream = ResourceUtil.getResourceAsStreamFromRoot(xmlFile);
-        Document root = ConfigUtil.getDocument(dtd, xmlStream);
-        StringWriter sw = new StringWriter();
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        transformer.transform(new DOMSource(root), new StreamResult(sw));
-        String xml = sw.toString();
-        xml = xml.replace("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>", "");
-        if (xml.charAt(xml.length() - 1) == '\n') {
-            xml = xml.substring(0, xml.length() - 1);
+    public ClusterHelpTest() throws JAXBException, XMLStreamException {
+        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
+            sequencePropsToJson = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
+        } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
+            sequencePropsToJson = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
         }
-        String regexPattern = "( )*<!-[\\s\\S]*?-->";
-        Pattern pattern = Pattern.compile(regexPattern, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(xml);
-        xml = matcher.replaceAll("");
-        return xml.replaceAll("((\r\n)|\n)[\\s\t ]*(\\1)+", "$1").replaceAll("^((\r\n)|\n)", "").replaceAll("(\r)", "");
+    }
+
+    @Test
+    public void testShardingXml() {
+        Map<ERTable, Set<ERTable>> erTableSetMapByXml = configInitializerByXml.getErRelations();
+        Map<String, AbstractPartitionAlgorithm> functionMapByXml = configInitializerByXml.getFunctions();
+        Map<String, SchemaConfig> schemaConfigMapByXml = configInitializerByXml.getSchemas();
+        Map<String, ShardingNode> shardingNodeMapByXml = configInitializerByXml.getShardingNodes();
+        Map<ERTable, Set<ERTable>> erTableSetMapByJson = configInitializerByJson.getErRelations();
+        Map<String, AbstractPartitionAlgorithm> functionMapByJson = configInitializerByJson.getFunctions();
+        Map<String, SchemaConfig> schemaConfigMapByJson = configInitializerByJson.getSchemas();
+        Map<String, ShardingNode> shardingNodeMapByJson = configInitializerByJson.getShardingNodes();
+
+        Assert.assertEquals(erTableSetMapByXml.size(), erTableSetMapByJson.size());
+        for (Map.Entry<ERTable, Set<ERTable>> erTableSetEntry : erTableSetMapByXml.entrySet()) {
+            Set<ERTable> erTableJson = erTableSetMapByJson.get(erTableSetEntry.getKey());
+            Assert.assertEquals(erTableJson, erTableSetEntry.getValue());
+        }
+
+        Assert.assertEquals(functionMapByXml.size(), functionMapByJson.size());
+        for (Map.Entry<String, AbstractPartitionAlgorithm> algorithmEntry : functionMapByXml.entrySet()) {
+            AbstractPartitionAlgorithm algorithmJson = functionMapByJson.get(algorithmEntry.getKey());
+            Assert.assertEquals(algorithmJson, algorithmEntry.getValue());
+        }
+
+
+        Assert.assertEquals(shardingNodeMapByXml.size(), shardingNodeMapByJson.size());
+        for (Map.Entry<String, ShardingNode> shardingNodeConfigEntry : shardingNodeMapByXml.entrySet()) {
+            ShardingNode shardingNodeJson = shardingNodeMapByJson.get(shardingNodeConfigEntry.getKey());
+            Assert.assertTrue(shardingNodeJson.equalsBaseInfo(shardingNodeConfigEntry.getValue()));
+        }
+
+        Assert.assertEquals(schemaConfigMapByXml.size(), schemaConfigMapByJson.size());
+        for (Map.Entry<String, SchemaConfig> schemaConfigEntry : schemaConfigMapByXml.entrySet()) {
+            SchemaConfig schemaConfigJson = schemaConfigMapByJson.get(schemaConfigEntry.getKey());
+            Assert.assertTrue(schemaConfigJson.equalsBaseInfo(schemaConfigEntry.getValue()));
+            Assert.assertEquals(schemaConfigJson.getTables().size(), schemaConfigEntry.getValue().getTables().size());
+            for (Map.Entry<String, BaseTableConfig> tableConfigEntry : schemaConfigJson.getTables().entrySet()) {
+                Assert.assertTrue(tableConfigEntry.getValue().equalsBaseInfo(schemaConfigEntry.getValue().getTables().get(tableConfigEntry.getKey())));
+
+                BaseTableConfig baseTableConfig = schemaConfigEntry.getValue().getTables().get(tableConfigEntry.getKey());
+                if (baseTableConfig instanceof ShardingTableConfig) {
+                    Assert.assertTrue(((ShardingTableConfig) tableConfigEntry.getValue()).equalsBaseInfo((ShardingTableConfig) baseTableConfig));
+                } else if (baseTableConfig instanceof ChildTableConfig) {
+                    Assert.assertTrue(((ChildTableConfig) tableConfigEntry.getValue()).equalsBaseInfo((ChildTableConfig) baseTableConfig));
+                } else if (baseTableConfig instanceof GlobalTableConfig) {
+                    Assert.assertTrue(((GlobalTableConfig) tableConfigEntry.getValue()).equalsBaseInfo((GlobalTableConfig) baseTableConfig));
+                } else {
+                    Assert.assertTrue(tableConfigEntry.getValue().equalsBaseInfo(baseTableConfig));
+                }
+            }
+        }
+
+    }
+
+    @Test
+    public void testDXml() {
+        Map<String, PhysicalDbGroup> dbGroupsByXml = configInitializerByXml.getDbGroups();
+        Assert.assertEquals(dbGroupsByXml.size(), configInitializerByJson.getDbGroups().size());
+        for (Map.Entry<String, PhysicalDbGroup> physicalDbGroupEntry : dbGroupsByXml.entrySet()) {
+            PhysicalDbGroup physicalDbGroup = configInitializerByJson.getDbGroups().get(physicalDbGroupEntry.getKey());
+            Assert.assertTrue(physicalDbGroupEntry.getValue().equalsBaseInfo(physicalDbGroup));
+            Assert.assertEquals(physicalDbGroupEntry.getValue().getAllDbInstanceMap().size(), physicalDbGroup.getAllDbInstanceMap().size());
+            for (Map.Entry<String, PhysicalDbInstance> physicalDbInstanceEntry : physicalDbGroupEntry.getValue().getAllDbInstanceMap().entrySet()) {
+                Assert.assertEquals(physicalDbInstanceEntry.getValue(), physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstanceEntry.getKey()));
+            }
+        }
+
+
+        for (Map.Entry<String, PhysicalDbGroup> physicalDbGroupEntry : configInitializerByJson.getDbGroups().entrySet()) {
+            PhysicalDbGroup physicalDbGroup = dbGroupsByXml.get(physicalDbGroupEntry.getKey());
+            Assert.assertTrue(physicalDbGroupEntry.getValue().equalsBaseInfo(physicalDbGroup));
+            Assert.assertEquals(physicalDbGroupEntry.getValue().getAllDbInstanceMap().size(), physicalDbGroup.getAllDbInstanceMap().size());
+            for (Map.Entry<String, PhysicalDbInstance> physicalDbInstanceEntry : physicalDbGroupEntry.getValue().getAllDbInstanceMap().entrySet()) {
+                Assert.assertEquals(physicalDbInstanceEntry.getValue(), physicalDbGroup.getAllDbInstanceMap().get(physicalDbInstanceEntry.getKey()));
+            }
+        }
+    }
+
+
+    @Test
+    public void testUserXml() {
+        Map<UserName, UserConfig> users = configInitializerByXml.getUsers();
+        Map<String, Properties> blacklistConfig = configInitializerByXml.getBlacklistConfig();
+        Map<UserName, UserConfig> userConfigMap = configInitializerByJson.getUsers();
+        Map<String, Properties> blackListConfigMap = configInitializerByJson.getBlacklistConfig();
+        Assert.assertEquals(users.size(), userConfigMap.size());
+        Assert.assertEquals(blacklistConfig, blackListConfigMap);
+
+        for (Map.Entry<UserName, UserConfig> userConfigEntry : users.entrySet()) {
+            UserConfig userConfig = userConfigMap.get(userConfigEntry.getKey());
+            if (userConfig instanceof ShardingUserConfig) {
+                Assert.assertTrue(((ShardingUserConfig) userConfigEntry.getValue()).equalsBaseInfo((ShardingUserConfig) userConfig));
+            } else if (userConfig instanceof RwSplitUserConfig) {
+                Assert.assertTrue(((RwSplitUserConfig) userConfigEntry.getValue()).equalsBaseInfo((RwSplitUserConfig) userConfig));
+            } else if (userConfig instanceof ManagerUserConfig) {
+                Assert.assertTrue(((ManagerUserConfig) userConfigEntry.getValue()).equalsBaseInfo((ManagerUserConfig) userConfig));
+            } else {
+                Assert.assertTrue(userConfigEntry.getValue().equalsBaseInfo(userConfig));
+            }
+        }
+        for (Map.Entry<UserName, UserConfig> userConfigEntry : userConfigMap.entrySet()) {
+            UserConfig userConfig = users.get(userConfigEntry.getKey());
+            if (userConfig instanceof ShardingUserConfig) {
+                Assert.assertTrue(((ShardingUserConfig) userConfigEntry.getValue()).equalsBaseInfo((ShardingUserConfig) userConfig));
+            } else if (userConfig instanceof RwSplitUserConfig) {
+                Assert.assertTrue(((RwSplitUserConfig) userConfigEntry.getValue()).equalsBaseInfo((RwSplitUserConfig) userConfig));
+            } else if (userConfig instanceof ManagerUserConfig) {
+                Assert.assertTrue(((ManagerUserConfig) userConfigEntry.getValue()).equalsBaseInfo((ManagerUserConfig) userConfig));
+            } else {
+                Assert.assertTrue(userConfigEntry.getValue().equalsBaseInfo(userConfig));
+            }
+        }
+
     }
 }

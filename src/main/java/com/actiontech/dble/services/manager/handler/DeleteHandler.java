@@ -26,7 +26,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -110,29 +109,19 @@ public final class DeleteHandler {
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
-                handleConfigException(e, service, managerTable);
+                service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
+                LOGGER.warn("Delete failure.The reason is " + e);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {
-            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(rowSize);
         ok.write(service.getConnection());
-    }
-
-    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
-        try {
-            managerTable.rollbackXmlFile();
-        } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
-        }
-        service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
     }
 }

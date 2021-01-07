@@ -10,14 +10,9 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.values.ConfStatus;
-import com.actiontech.dble.config.ConfigInitializer;
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.*;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -39,6 +34,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +101,14 @@ public final class ReloadConfig {
             lock.writeLock().lock();
             try {
                 //step 2 reload the local config file
-                if (!reloadAll(loadAllMode)) {
+                boolean reloadResult;
+                if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
+                        confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
+                    reloadResult = reloadByConfig(loadAllMode, true);
+                } else {
+                    reloadResult = reloadByLocalXml(loadAllMode);
+                }
+                if (!reloadResult) {
                     writeSpecialError(service, "Reload interruputed by others,config should be reload");
                     return;
                 }
@@ -155,10 +158,16 @@ public final class ReloadConfig {
                 writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
                 return;
             }
-            boolean reloadFlag = reloadAll(loadAllMode);
-            if (reloadFlag && returnFlag) {
+            boolean reloadResult;
+            if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
+                    confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
+                reloadResult = reloadByConfig(loadAllMode, true);
+            } else {
+                reloadResult = reloadByLocalXml(loadAllMode);
+            }
+            if (reloadResult && returnFlag) {
                 writeOKResult(service);
-            } else if (!reloadFlag) {
+            } else if (!reloadResult) {
                 writeSpecialError(service, "Reload interruputed by others,metadata should be reload");
             }
         } finally {
@@ -170,7 +179,7 @@ public final class ReloadConfig {
 
     private static void writeOKResult(ManagerService service) {
         if (LOGGER.isInfoEnabled()) {
-            ReloadLogHelper.info("send ok package to client " + String.valueOf(service), LOGGER);
+            ReloadLogHelper.info("send ok package to client " + service, LOGGER);
         }
 
         OkPacket ok = new OkPacket();
@@ -203,7 +212,28 @@ public final class ReloadConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    public static boolean reloadAll(final int loadAllMode) throws Exception {
+    @Deprecated
+    public static boolean reloadByLocalXml(final int loadAllMode) throws Exception {
+        return reload(loadAllMode, null, null, null, null);
+    }
+
+    public static boolean reloadByConfig(final int loadAllMode, boolean isWriteToLocal) throws Exception {
+        String userConfig = DbleTempConfig.getInstance().getUserConfig();
+        userConfig = StringUtil.isBlank(userConfig) ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
+        String dbConfig = DbleTempConfig.getInstance().getDbConfig();
+        dbConfig = StringUtil.isBlank(dbConfig) ? DbleServer.getInstance().getConfig().getDbConfig() : dbConfig;
+        String shardingConfig = DbleTempConfig.getInstance().getShardingConfig();
+        shardingConfig = StringUtil.isBlank(shardingConfig) ? DbleServer.getInstance().getConfig().getShardingConfig() : shardingConfig;
+        String sequenceConfig = DbleTempConfig.getInstance().getSequenceConfig();
+        sequenceConfig = StringUtil.isBlank(sequenceConfig) ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
+        boolean reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
+        DbleTempConfig.getInstance().clean();
+        //sync json to local
+        DbleServer.getInstance().getConfig().syncJsonToLocal(isWriteToLocal);
+        return reloadResult;
+    }
+
+    private static boolean reload(final int loadAllMode, String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-reload");
         try {
             /*
@@ -214,7 +244,11 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
             ConfigInitializer loader;
             try {
-                loader = new ConfigInitializer(false);
+                if (null == userConfig && null == dbConfig && null == shardingConfig && null == sequenceConfig) {
+                    loader = new ConfigInitializer(false);
+                } else {
+                    loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
+                }
             } catch (Exception e) {
                 throw new Exception(e);
             }
@@ -269,10 +303,10 @@ public final class ReloadConfig {
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-                    serverConfig.reviseLowerCase();
+                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
                 } else {
-                    serverConfig.loadSequence();
+                    serverConfig.loadSequence(loader.getSequenceConfig());
                     serverConfig.selfChecking0();
                 }
             }
@@ -307,7 +341,8 @@ public final class ReloadConfig {
                 boolean result;
                 try {
                     result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions);
+                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
+                            loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
                         initFailed(newDbGroups);
@@ -378,10 +413,10 @@ public final class ReloadConfig {
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-                    serverConfig.reviseLowerCase();
+                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
                 } else {
-                    serverConfig.loadSequence();
+                    serverConfig.loadSequence(loader.getSequenceConfig());
                     serverConfig.selfChecking0();
                 }
             }
@@ -404,7 +439,8 @@ public final class ReloadConfig {
                 boolean result;
                 try {
                     result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions);
+                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
+                            loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
                     CronScheduler.getInstance().init(config.getSchemas());
                     if (!result) {
                         initFailed(newDbGroups);

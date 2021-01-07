@@ -25,7 +25,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -67,6 +66,7 @@ public final class InsertHandler {
             if (rowSize != 0) {
                 ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
             }
+            managerTable.afterExecute();
         } catch (SQLException e) {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
@@ -75,15 +75,14 @@ public final class InsertHandler {
             return;
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
-                //reload fail
-                handleConfigException(e, service, managerTable);
+                service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
+                LOGGER.warn("Insert failure.The reason is ", e);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {
-            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
         writeOkPacket(1, rowSize, managerTable.getMsg(), service);
@@ -174,15 +173,5 @@ public final class InsertHandler {
             return null;
         }
         return (ManagerWritableTable) managerBaseTable;
-    }
-
-    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
-        try {
-            managerTable.rollbackXmlFile();
-        } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
-        }
-        service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
     }
 }

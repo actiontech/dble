@@ -30,7 +30,6 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -118,14 +117,14 @@ public final class UpdateHandler {
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
-                handleConfigException(e, service, managerTable);
+                service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
+                LOGGER.warn("Update failure.The reason is ", e);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {
-            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
         OkPacket ok = new OkPacket();
@@ -192,15 +191,5 @@ public final class UpdateHandler {
         }
         columnName = StringUtil.removeBackQuote(columnName);
         return columnName;
-    }
-
-    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
-        try {
-            managerTable.rollbackXmlFile();
-        } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
-        }
-        service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
     }
 }

@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2021 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.converter;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
@@ -45,10 +49,10 @@ import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL
 public class ShardingConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShardingConverter.class);
 
-    private Map<String, com.actiontech.dble.backend.datasource.ShardingNode> shardingNodeMap = Maps.newHashMap();
-    private final Map<String, AbstractPartitionAlgorithm> functionMap = Maps.newHashMap();
-    private final Map<String, SchemaConfig> schemaConfigMap = Maps.newHashMap();
-    private final Map<ERTable, Set<ERTable>> erRelations = Maps.newHashMap();
+    private Map<String, com.actiontech.dble.backend.datasource.ShardingNode> shardingNodeMap = Maps.newLinkedHashMap();
+    private final Map<String, AbstractPartitionAlgorithm> functionMap = Maps.newLinkedHashMap();
+    private final Map<String, SchemaConfig> schemaConfigMap = Maps.newLinkedHashMap();
+    private final Map<ERTable, Set<ERTable>> erRelations = Maps.newLinkedHashMap();
     private final AtomicInteger tableIndex = new AtomicInteger(0);
     private final Gson gson;
 
@@ -107,7 +111,7 @@ public class ShardingConverter {
         List<Function> functionList = shardings.getFunction();
         removeFileContent(functionList);
         List<Schema> schemaList = shardings.getSchema();
-        Map<String, ShardingNodeConfig> shardingNodeConfigMap = Maps.newHashMap();
+        Map<String, ShardingNodeConfig> shardingNodeConfigMap = Maps.newLinkedHashMap();
         List<ErrorInfo> errorInfos = new ArrayList<>();
         if (shardings.getVersion() != null && !Versions.CONFIG_VERSION.equals(shardings.getVersion())) {
             if (problemReporter != null) {
@@ -171,7 +175,7 @@ public class ShardingConverter {
     }
 
     private void schemaListToMap(List<Schema> schemaList, Map<String, ShardingNodeConfig> shardingNodeConfigMap, ProblemReporter problemReporter) {
-        Map<String, Set<ERTable>> funcNodeERMap = Maps.newHashMap();
+        Map<String, Set<ERTable>> funcNodeERMap = Maps.newLinkedHashMap();
         for (com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema schema : schemaList) {
             String schemaName = schema.getName();
             String schemaShardingNode = schema.getShardingNode();
@@ -188,7 +192,7 @@ public class ShardingConverter {
                 schemaShardingNode = null;
             }
             //load tables from sharding
-            Map<String, BaseTableConfig> tableConfigMap = Maps.newHashMap();
+            Map<String, BaseTableConfig> tableConfigMap = Maps.newLinkedHashMap();
             if (this.schemaConfigMap.containsKey(schemaName)) {
                 throw new ConfigException("schema " + schemaName + " duplicated!");
             }
@@ -216,7 +220,7 @@ public class ShardingConverter {
         makeAllErRelations(funcNodeERMap);
     }
 
-    private void removeFileContent(List<Function> functionList) {
+    public static void removeFileContent(List<Function> functionList) {
         if (functionList == null) {
             return;
         }

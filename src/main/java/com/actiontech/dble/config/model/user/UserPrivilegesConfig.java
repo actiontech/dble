@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.model.user;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,15 @@ public class UserPrivilegesConfig {
         schemaPrivileges = newSchemaPrivileges;
     }
 
+
+    public boolean equalsBaseInfo(UserPrivilegesConfig userPrivilegesConfig) {
+        boolean equalTableInfo1 = this.schemaPrivileges.entrySet().stream().allMatch(schemaPrivilegeEntry -> null != userPrivilegesConfig.getSchemaPrivilege(schemaPrivilegeEntry.getKey()) && userPrivilegesConfig.getSchemaPrivilege(schemaPrivilegeEntry.getKey()).equalsBaseInfo(schemaPrivilegeEntry.getValue()));
+        boolean equalTableInfo2 = userPrivilegesConfig.getSchemaPrivileges().entrySet().stream().allMatch(schemaPrivilegeEntry -> null != this.schemaPrivileges.get(schemaPrivilegeEntry.getKey()) && this.schemaPrivileges.get(schemaPrivilegeEntry.getKey()).equalsBaseInfo(schemaPrivilegeEntry.getValue()));
+        return this.check == userPrivilegesConfig.isCheck() &&
+                equalTableInfo1 &&
+                equalTableInfo2;
+    }
+
     public static class SchemaPrivilege {
 
         private int[] dml = new int[]{0, 0, 0, 0};
@@ -89,6 +99,15 @@ public class UserPrivilegesConfig {
         public Set<String> getTables() {
             return tablePrivileges.keySet();
         }
+
+
+        public boolean equalsBaseInfo(SchemaPrivilege schemaPrivilege) {
+            boolean equalTableInfo1 = this.tablePrivileges.entrySet().stream().allMatch(tablePrivilegeEntry -> null != schemaPrivilege.getTablePrivilege(tablePrivilegeEntry.getKey()) && schemaPrivilege.getTablePrivilege(tablePrivilegeEntry.getKey()).equalsBaseInfo(tablePrivilegeEntry.getValue()));
+            boolean equalTableInfo2 = schemaPrivilege.getTablePrivileges().entrySet().stream().allMatch(tablePrivilegeEntry -> null != this.tablePrivileges.get(tablePrivilegeEntry.getKey()) && this.tablePrivileges.get(tablePrivilegeEntry.getKey()).equalsBaseInfo(tablePrivilegeEntry.getValue()));
+            return Arrays.equals(this.dml, schemaPrivilege.getDml()) &&
+                    equalTableInfo1 &&
+                    equalTableInfo2;
+        }
     }
 
     public static class TablePrivilege {
@@ -100,6 +119,10 @@ public class UserPrivilegesConfig {
 
         public void setDml(int[] dml) {
             this.dml = dml;
+        }
+
+        public boolean equalsBaseInfo(TablePrivilege tablePrivilege) {
+            return Arrays.equals(this.dml, tablePrivilege.getDml());
         }
     }
 }

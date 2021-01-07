@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.model.user;
 
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
 
 public abstract class ServerUserConfig extends UserConfig {
@@ -23,6 +24,21 @@ public abstract class ServerUserConfig extends UserConfig {
 
     public WallProvider getBlacklist() {
         return blacklist;
+    }
+
+
+    public boolean equalsBaseInfo(ServerUserConfig serverUserConfig) {
+        return super.equalsBaseInfo(serverUserConfig) &&
+                StringUtil.equalsWithEmpty(this.tenant, serverUserConfig.getTenant()) &&
+                isEquals(this.blacklist, serverUserConfig.getBlacklist());
+    }
+
+
+    private boolean isEquals(WallProvider o1, WallProvider o2) {
+        if (o1 == null) {
+            return o2 == null;
+        }
+        return o1 == o2 || o1.getAttributes().equals(o2.getAttributes());
     }
 
 }

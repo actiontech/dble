@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2021 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.converter;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
@@ -37,7 +41,7 @@ public class DBConverter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DBConverter.class);
 
-    private final Map<String, PhysicalDbGroup> dbGroupMap = Maps.newHashMap();
+    private final Map<String, PhysicalDbGroup> dbGroupMap = Maps.newLinkedHashMap();
 
     public static String dbXmlToJson() throws JAXBException, XMLStreamException {
         XmlProcessBase xmlProcess = new XmlProcessBase();

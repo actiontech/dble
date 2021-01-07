@@ -104,7 +104,7 @@ public final class ReloadConfig {
                 boolean reloadResult;
                 if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
                         confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                    reloadResult = reloadByConfig(loadAllMode);
+                    reloadResult = reloadByConfig(loadAllMode, true);
                 } else {
                     reloadResult = reloadByLocalXml(loadAllMode);
                 }
@@ -135,11 +135,6 @@ public final class ReloadConfig {
                     writeErrorResultForCluster(service, errorMsg);
                     return;
                 }
-                if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
-                        confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                    //sync json to local
-                    DbleServer.getInstance().getConfig().syncJsonToLocal(true);
-                }
                 if (returnFlag) {
                     writeOKResult(service);
                 }
@@ -166,9 +161,7 @@ public final class ReloadConfig {
             boolean reloadResult;
             if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
                     confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                reloadResult = reloadByConfig(loadAllMode);
-                //sync json to local
-                DbleServer.getInstance().getConfig().syncJsonToLocal(true);
+                reloadResult = reloadByConfig(loadAllMode, true);
             } else {
                 reloadResult = reloadByLocalXml(loadAllMode);
             }
@@ -224,7 +217,7 @@ public final class ReloadConfig {
         return reload(loadAllMode, null, null, null, null);
     }
 
-    public static boolean reloadByConfig(final int loadAllMode) throws Exception {
+    public static boolean reloadByConfig(final int loadAllMode, boolean isWriteToLocal) throws Exception {
         String userConfig = DbleTempConfig.getInstance().getUserConfig();
         userConfig = StringUtil.isBlank(userConfig) ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
         String dbConfig = DbleTempConfig.getInstance().getDbConfig();
@@ -235,6 +228,8 @@ public final class ReloadConfig {
         sequenceConfig = StringUtil.isBlank(sequenceConfig) ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
         boolean reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
         DbleTempConfig.getInstance().clean();
+        //sync json to local
+        DbleServer.getInstance().getConfig().syncJsonToLocal(isWriteToLocal);
         return reloadResult;
     }
 

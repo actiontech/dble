@@ -263,12 +263,10 @@ public final class ClusterLogic {
                     return;
                 }
                 try {
-                    boolean result = ReloadConfig.reloadByConfig(Integer.parseInt(params));
+                    boolean result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
                     if (!checkLocalResult(result)) {
                         return;
                     }
-                    //sync json to local
-                    DbleServer.getInstance().getConfig().syncJsonToLocal(false);
                 } catch (Exception e) {
                     LOGGER.warn("reload config for cluster error: ", e);
                     throw e;

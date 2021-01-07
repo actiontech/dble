@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2021 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.converter;
 
 import com.actiontech.dble.cluster.ClusterLogic;
@@ -38,8 +42,8 @@ public class UserConverter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserConverter.class);
     private final Gson gson;
-    private final Map<UserName, UserConfig> userConfigMap = Maps.newHashMap();
-    private final Map<String, Properties> blackListConfigMap = Maps.newHashMap();
+    private final Map<UserName, UserConfig> userConfigMap = Maps.newLinkedHashMap();
+    private final Map<String, Properties> blackListConfigMap = Maps.newLinkedHashMap();
     private final AtomicInteger userId = new AtomicInteger(0);
 
     public UserConverter() {
@@ -209,14 +213,13 @@ public class UserConverter {
     }
 
     private UserPrivilegesConfig loadPrivilegesConfig(Privileges privileges, UserConfig userConfig) {
-        UserPrivilegesConfig privilegesConfig = null;
         List<Schema> schemaList = null == privileges ? Lists.newArrayList() : Optional.ofNullable(privileges.getSchema()).orElse(Collections.EMPTY_LIST);
         boolean check = null == privileges ? false : Optional.ofNullable(privileges.getCheck()).orElse(false);
-
-        if (!schemaList.isEmpty()) {
-            privilegesConfig = new UserPrivilegesConfig();
-            privilegesConfig.setCheck(check);
+        if (schemaList.isEmpty()) {
+            return null;
         }
+        UserPrivilegesConfig privilegesConfig = new UserPrivilegesConfig();
+        privilegesConfig.setCheck(check);
         for (Schema schema : schemaList) {
             String schemaName = schema.getName();
             String schemaDml = schema.getDml();
@@ -262,7 +265,7 @@ public class UserConverter {
     }
 
     private Map<String, WallProvider> blackListToMap(List<BlackList> blacklist, ProblemReporter problemReporter) throws InvocationTargetException, IllegalAccessException {
-        Map<String, WallProvider> blackListMap = Maps.newHashMap();
+        Map<String, WallProvider> blackListMap = Maps.newLinkedHashMap();
         for (BlackList blackList : blacklist) {
             String name = blackList.getName();
             List<Property> propertyList = blackList.getProperty();

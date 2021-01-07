@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2021 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.converter;
 
 import com.actiontech.dble.route.util.PropertiesUtil;

@@ -15,6 +15,9 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.util.CollectionUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import java.util.*;
 
@@ -31,7 +34,7 @@ public final class FilterUtils {
     public static List<Item> splitFilter(Item filter) {
         if (filter == null)
             throw new RuntimeException("check filter before split");
-        List<Item> filterList = new ArrayList<>();
+        Set<Item> filterSet = Sets.newHashSet();
         if (filter.type() == Item.ItemType.COND_ITEM) {
             ItemCond cond = (ItemCond) filter;
             if (cond.functype() == Functype.COND_AND_FUNC) {
@@ -40,7 +43,7 @@ public final class FilterUtils {
                     if (subFilter == null)
                         continue;
                     List<Item> subSplits = splitFilter(subFilter);
-                    filterList.addAll(subSplits);
+                    filterSet.addAll(subSplits);
                 }
             } else if (cond.functype() == Functype.COND_OR_FUNC) {
 
@@ -60,17 +63,17 @@ public final class FilterUtils {
                         ItemCondOr x = new ItemCondOr(entry.getValue());
                         x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
                         x.setWithUnValAble(true);
-                        filterList.add(x);
+                        filterSet.add(x);
                     }
                 }
-                filterList.add(cond);
+                filterSet.add(cond);
             } else {
-                filterList.add(cond);
+                filterSet.add(cond);
             }
         } else {
-            filterList.add(filter);
+            filterSet.add(filter);
         }
-        return filterList;
+        return Lists.newArrayList(filterSet);
     }
 
     /**
@@ -99,6 +102,9 @@ public final class FilterUtils {
         for (PlanNode refertTable : self.getReferTables()) { // Traversing related tables
             if (refertTable instanceof TableNode) {
                 String tableName = ((TableNode) refertTable).getTableName();
+                if (!StringUtil.isEmpty(refertTable.getAlias())) {
+                    tableName += refertTable.getAlias();
+                }
 
                 //this loop is to check wether the table has filter in every Subconditions (....where subcondition1 or subcondition2 )
                 for (List<Item> singleList : saveSet) {
@@ -110,7 +116,11 @@ public final class FilterUtils {
                         if (x.getReferTables().size() == 1) {
                             for (PlanNode backTable : x.getReferTables()) {
                                 if (backTable instanceof TableNode) {
-                                    if (((TableNode) backTable).getTableName().equals(tableName)) {
+                                    String backTableName = ((TableNode) backTable).getTableName();
+                                    if (!StringUtil.isEmpty(backTable.getAlias())) {
+                                        backTableName += backTable.getAlias();
+                                    }
+                                    if (backTableName.equals(tableName)) {
                                         hasOutTable = true;
                                         if (!itemMapForSingle.containsKey(tableName)) {
                                             itemMapForSingle.put(tableName, new ArrayList<Item>());

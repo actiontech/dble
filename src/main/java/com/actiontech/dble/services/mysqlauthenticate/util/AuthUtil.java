@@ -19,9 +19,11 @@ import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.IPAddressUtil;
+import com.actiontech.dble.util.StringUtil;
 
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 import java.util.Set;
 
 public final class AuthUtil {
@@ -82,7 +84,7 @@ public final class AuthUtil {
                 }
             } else if (userConfig instanceof RwSplitUserConfig) {
                 // check RwSplitUserConfig
-                switch (checkDatabase(schema)) {
+                switch (checkRwsplitUserSchema(schema)) {
                     case ErrorCode.ER_BAD_DB_ERROR:
                         return "Unknown database '" + schema + "'";
                     case ErrorCode.ER_DBACCESS_DENIED_ERROR:
@@ -187,15 +189,19 @@ public final class AuthUtil {
         }
     }
 
-    private static int checkDatabase(String database) {
-        if (database == null) {
+    private static int checkRwsplitUserSchema(String schema) {
+        if (schema == null) {
             return 0;
         }
-        Set<String> databases = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute();
-        if (!databases.contains(database)) {
-            return ErrorCode.ER_BAD_DB_ERROR;
+        boolean exist;
+        Set<String> schemas = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute();
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            Optional<String> result = schemas.stream().filter(item -> StringUtil.equals(item.toLowerCase(), schema.toLowerCase())).findFirst();
+            exist = result.isPresent();
+        } else {
+            exist = schemas.contains(schema);
         }
-        return 0;
+        return exist ? 0 : ErrorCode.ER_BAD_DB_ERROR;
     }
 
     private static int checkManagerSchema(String schema) {

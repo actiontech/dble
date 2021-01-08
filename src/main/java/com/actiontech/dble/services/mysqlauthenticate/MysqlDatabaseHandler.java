@@ -101,7 +101,7 @@ public class MysqlDatabaseHandler {
                 List<Map<String, String>> rows = result.getResult();
                 for (Map<String, String> row : rows) {
                     String databaseName = row.get(mysqlShowDataBasesCol);
-                    databases.add(databaseName.toLowerCase());
+                    databases.add(databaseName);
                 }
             }
             handleFinished();

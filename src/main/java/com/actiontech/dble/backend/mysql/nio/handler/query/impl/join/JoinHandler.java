@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.join;
 
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -22,6 +21,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -231,6 +231,10 @@ public class JoinHandler extends OwnThreadDMLHandler {
             }
             session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, isLeft, service);
+        } catch (MySQLOutPutException e) {
+            String msg = e.getLocalizedMessage();
+            LOGGER.info(msg, e);
+            session.onQueryError(msg.getBytes());
         } catch (Exception e) {
             String msg = "join thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

@@ -38,8 +38,8 @@ public class MysqlDatabaseHandler {
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         PhysicalDbInstance ds = getPhysicalDbInstance();
-        OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
         if (ds != null) {
+            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {

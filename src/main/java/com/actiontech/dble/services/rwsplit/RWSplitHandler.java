@@ -27,14 +27,14 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
     /**
-    When client send one request. dble should return one and only one response.
-    But , maybe OK event and connection closed event are run in parallel.
-    so we need use synchronized and write2Client to prevent conflict.
+     * When client send one request. dble should return one and only one response.
+     * But , maybe OK event and connection closed event are run in parallel.
+     * so we need use synchronized and write2Client to prevent conflict.
      */
     private boolean write2Client = false;
     private final Callback callback;
     /**
-    If there are more packets next.This flag in would be set.
+     * If there are more packets next.This flag in would be set.
      */
     private static final int HAS_MORE_RESULTS = 0x08;
 
@@ -176,7 +176,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
                 }
                 buffer = frontedConnection.writeToBuffer(eof, buffer);
+                /*
+                multi statement all cases are as follows:
+                1. if an resultSet is followed by an resultSet. buffer will re-assign in fieldEofResponse()
+                2. if an resultSet is followed by an okResponse. okResponse() send directly without use buffer.
+                3. if an resultSet is followed by  an errorResponse. buffer will be used if it is not null.
+
+                We must prevent  same buffer called connection.write() twice.
+                According to the above, you need write buffer immediately and set buffer to null.
+                 */
                 frontedConnection.write(buffer);
+                buffer = null;
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
                     write2Client = true;
                 }

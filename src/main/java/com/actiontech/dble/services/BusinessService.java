@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -90,7 +90,7 @@ public abstract class BusinessService extends FrontEndService {
                     }
                     break;
                 case CHARSET:
-                    this.setCharacterSet(variable.getValue());
+                    this.setNames(variable.getValue(), "@@session.collation_database");
                     break;
                 case NAMES:
                     String[] charsetAndCollate = variable.getValue().split(":");

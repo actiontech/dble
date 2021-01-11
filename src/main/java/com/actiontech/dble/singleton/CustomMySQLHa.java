@@ -1,23 +1,32 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.util.IOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 
 // only work for linux
 public final class CustomMySQLHa {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomMySQLHa.class);
     private static final CustomMySQLHa INSTANCE = new CustomMySQLHa();
-    private Process process;
+    /**
+     * notice:
+     * 1. this {@code process} variable is null before first init. once this set to notNull. It won't set to be null again.
+     * 2. this {@code process} variable isn't thread safe.
+     */
+    private volatile Process process;
 
     private CustomMySQLHa() {
     }
@@ -27,13 +36,13 @@ public final class CustomMySQLHa {
     }
 
     // return null if success
-    public String start() {
+    public synchronized String start() {
         if (SystemConfig.getInstance().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             LOGGER.debug(msg);
             return msg;
         }
-        if (process != null && process.isAlive()) {
+        if (isProcessAlive()) {
             return "python process exists";
         }
         String exe = "python3";
@@ -44,21 +53,57 @@ public final class CustomMySQLHa {
         }
         try {
             process = Runtime.getRuntime().exec(cmdArr);
-            if (!process.isAlive()) {
-                String msg = "starting simple_ha_switch error " + process.exitValue();
-                LOGGER.warn(msg);
-                return msg;
+            synchronized (process) {
+                /*
+                wait for a while to catch most of bootstrap errors.
+                 */
+                final boolean nonTimeout = process.waitFor(200, TimeUnit.MILLISECONDS);
+                if (nonTimeout) {
+                    String msg;
+                    final int exitValue = process.exitValue();
+                    if (exitValue != 0) {
+                        msg = "starting simple_ha_switch error with exitCode:" + exitValue;
+                        LOGGER.warn("{},script error log :`{}`", msg, IOUtil.convertStreamToString(process.getErrorStream(), Charset.defaultCharset()));
+                        msg += ", view logs for more details";
+                    } else {
+                        msg = "starting simple_ha_switch exit with exitCode:" + exitValue;
+                        LOGGER.warn(msg);
+                    }
+                    return msg;
+                }
             }
-        } catch (IOException e) {
-            String msg = "starting simple_ha_switch occurred IOException";
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                try {
+                    synchronized (process) {
+                        /*
+                        waitFor() will call process.wait()
+                        wait() will release the synchronized lock of 'process'.
+                         */
+                        final int exitValue = process.waitFor();
+
+                        if (exitValue != 0) {
+                            LOGGER.warn("starting simple_ha_switch error with exitCode:{},script error log is `{}`", exitValue, IOUtil.convertStreamToString(process.getErrorStream(), Charset.defaultCharset()));
+                        }
+                    }
+
+                } catch (InterruptedException | IOException e) {
+                    String msg = "starting simple_ha_switch occurred IOException";
+                    LOGGER.warn(msg, e);
+                }
+
+            });
+
+        } catch (IOException | InterruptedException e) {
+            String msg = "starting simple_ha_switch occurred " + e.getClass().getSimpleName();
             LOGGER.warn(msg, e);
+            msg += ", view logs for more details";
             return msg;
         }
         return null;
     }
 
     // return null if success
-    public String stop(boolean byHook) {
+    public synchronized String stop(boolean byHook) {
         if (SystemConfig.getInstance().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             if (byHook) {
@@ -68,7 +113,7 @@ public final class CustomMySQLHa {
             }
             return msg;
         }
-        if (process == null || !process.isAlive()) {
+        if (!isProcessAlive()) {
             String msg = "python process does not exists";
             if (byHook) {
                 System.out.println(msg);
@@ -93,7 +138,11 @@ public final class CustomMySQLHa {
             } else {
                 LOGGER.debug(msg);
             }
-            process = null;
+            synchronized (process) {
+                //Maybe this destroy operation is redundant. Not 100% sure.
+                process.destroyForcibly();
+                process.waitFor();
+            }
             if (returnCode != 0) {
                 return msg;
             } else {
@@ -119,19 +168,29 @@ public final class CustomMySQLHa {
     }
 
     public boolean isProcessAlive() {
-        return process != null && process.isAlive();
+        if (process != null) {
+            synchronized (process) {
+                return process.isAlive();
+            }
+        }
+        return false;
     }
 
     private long getPidOfLinux(boolean byHook) {
         long pid = -1;
 
         try {
-            if (process.getClass().getName().equals("java.lang.UNIXProcess")) {
-                Field f = process.getClass().getDeclaredField("pid");
-                f.setAccessible(true);
-                pid = f.getLong(process);
-                f.setAccessible(false);
+            if (process != null) {
+                synchronized (process) {
+                    if (process.getClass().getName().equals("java.lang.UNIXProcess")) {
+                        Field f = process.getClass().getDeclaredField("pid");
+                        f.setAccessible(true);
+                        pid = f.getLong(process);
+                        f.setAccessible(false);
+                    }
+                }
             }
+
         } catch (Exception e) {
             if (byHook) {
                 System.out.println("getPidOfLinux failed:" + e);

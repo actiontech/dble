@@ -328,6 +328,7 @@ public class ShardingService extends BusinessService {
             shardingSQLHandler.routeEndExecuteSQL(sql, type, schemaConfig);
 
         } catch (Exception e) {
+            LOGGER.warn("execute sql cause error", e);
             writeErrMessage(ErrorCode.ER_YES, e.getMessage());
         }
     }

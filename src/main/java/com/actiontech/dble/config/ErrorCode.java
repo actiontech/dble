@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
+* Copyright (C) 2016-2021 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -543,5 +543,6 @@ public final class ErrorCode {
     public static final int ER_DROP_PARTITION_WHEN_FK_DEFINED = 1493;
     public static final int ER_PLUGIN_IS_NOT_LOADED = 1494;
     public static final int ER_USER_READ_ONLY = 1495;
+    public static final int ER_WRONG_PARAMCOUNT_TO_NATIVE_FCT = 1582;
     public static final int ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION = 1792;
 }

@@ -1,0 +1,74 @@
+version: '2'
+networks:
+    net:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.18.0.0/16
+                  gateway: 172.18.0.253
+services:
+    mysql-m:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: rwSplit-mysql-m
+        privileged: true
+        stdin_open: true
+        tty: true
+        ports:
+            - "33071:3306"
+        volumes:
+            - "./master/cnf:/etc/mysql/extend.conf.d"
+            - "./master/script:/docker-entrypoint-initdb.d"
+        networks:
+            net:
+                ipv4_address: 172.18.0.2
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    mysql-s:
+        build:
+            context: ../mysql-image
+        image: actiontech-mysql:1.0.0
+        container_name: rwSplit-mysql-s
+        privileged: true
+        stdin_open: true
+        tty: true
+        depends_on:
+            - mysql-m
+        ports:
+            - "33072:3306"
+        volumes:
+            - "./slave/cnf:/etc/mysql/extend.conf.d"
+            - "./slave/script:/docker-entrypoint-initdb.d"
+        networks:
+            net:
+                ipv4_address: 172.18.0.3
+        environment:
+            MYSQL_ROOT_PASSWORD: 123456
+            MYSQL_MASTER_SERVICE_HOST: rwSplit-mysql-m
+            MYSQL_REPLICATION_USER: repl
+            MYSQL_REPLICATION_PASSWORD: 123456
+    dble-server:
+        build:
+            context: ../dble-image
+        image: actiontech-dble:latest
+        container_name: dble-server
+        hostname: dble-server
+        privileged: true
+        stdin_open: true
+        tty: true
+        volumes:
+            - "./conf:/opt/dble/extend.conf.d"
+            - "./logs:/opt/dble/logs"
+        command: ["/opt/dble/bin/wait-for-it.sh", "rwSplit-mysql-m:3306","--","/opt/dble/bin/docker_init_start.sh"]
+        ports:
+            - "8066:8066"
+            - "9066:9066"
+        depends_on:
+            - "mysql-m"
+            - "mysql-s"
+        networks:
+            net:
+              ipv4_address: 172.18.0.5

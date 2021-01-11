@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 package com.actiontech.dble.backend.mysql.nio.handler;
@@ -16,6 +16,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -216,6 +217,10 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             }
             doSqlStat();
             outputHandler.rowEofResponse(null, false, null);
+        } catch (MySQLOutPutException e) {
+            String msg = e.getLocalizedMessage();
+            LOGGER.info(msg, e);
+            session.onQueryError(msg.getBytes());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

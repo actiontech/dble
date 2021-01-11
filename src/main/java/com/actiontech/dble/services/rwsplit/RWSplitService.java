@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,8 +33,11 @@ public class RWSplitService extends BusinessService {
     private volatile boolean isLocked;
     private volatile boolean inLoadData;
     private volatile boolean inPrepare;
+    private volatile boolean usingTmpTable = false;
+    private Set<String/* tableName */> tmpTableSet;
 
     private volatile String executeSql;
+    private volatile byte[] executeSqlBytes;
     // only for test
     private volatile String expectedDest;
 
@@ -179,6 +184,7 @@ public class RWSplitService extends BusinessService {
                 }
             }
             executeSql = sql;
+            executeSqlBytes = data;
             queryHandler.query(sql);
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
@@ -232,6 +238,9 @@ public class RWSplitService extends BusinessService {
         this.executeSql = executeSql;
     }
 
+    public byte[] getExecuteSqlBytes() {
+        return executeSqlBytes;
+    }
 
     public boolean isLocked() {
         return isLocked;
@@ -252,6 +261,22 @@ public class RWSplitService extends BusinessService {
     public boolean isInPrepare() {
         return inPrepare;
     }
+
+    public boolean isUsingTmpTable() {
+        return usingTmpTable;
+    }
+
+    public void setUsingTmpTable(boolean usingTmpTable) {
+        this.usingTmpTable = usingTmpTable;
+    }
+
+    public Set<String> getTmpTableSet() {
+        if (tmpTableSet == null) {
+            tmpTableSet = new HashSet<>();
+        }
+        return tmpTableSet;
+    }
+
 
     public void setInPrepare(boolean inPrepare) {
         this.inPrepare = inPrepare;

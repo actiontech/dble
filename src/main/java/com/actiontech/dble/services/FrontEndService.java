@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -25,6 +25,7 @@ public abstract class FrontEndService extends VariablesService {
     protected UserName user;
     protected UserConfig userConfig;
     protected final CommandCount commands;
+    protected long clientCapabilities;
 
     public FrontEndService(AbstractConnection connection) {
         super(connection);
@@ -33,6 +34,7 @@ public abstract class FrontEndService extends VariablesService {
 
     public void initFromAuthInfo(AuthResultInfo info) {
         AuthPacket auth = info.getMysqlAuthPacket();
+        clientCapabilities = auth.getClientFlags();
         this.user = new UserName(auth.getUser(), auth.getTenant());
         this.schema = info.getMysqlAuthPacket().getDatabase();
         this.userConfig = info.getUserConfig();
@@ -75,5 +77,9 @@ public abstract class FrontEndService extends VariablesService {
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public long getClientCapabilities() {
+        return clientCapabilities;
     }
 }

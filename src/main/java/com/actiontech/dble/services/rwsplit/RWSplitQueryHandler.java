@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.rwsplit;
 
+import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
@@ -7,6 +8,7 @@ import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
+import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
@@ -29,6 +31,16 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
             session.getService().queryCount();
+            if (RwSplitServerParse.isMultiStatement(sql)) {
+                if ((session.getService().getClientCapabilities() & Capabilities.CLIENT_MULTI_STATEMENTS) == 0) {
+                    LOGGER.warn("use multi-query without set CLIENT_MULTI_STATEMENTS flag");
+                    session.getService().writeErrMessage(ErrorCode.ERR_WRONG_USED, "Your client must enable multi-query param . For example in jdbc,you should set allowMultiQueries=true in URL.");
+                    return;
+                }
+                session.getService().singleTransactionsCount();
+                session.execute(true, null);
+                return;
+            }
             int rs = RwSplitServerParse.parse(sql);
             int hintLength = RouteService.isHintSql(sql);
             int sqlType = rs & 0xff;
@@ -87,6 +99,12 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.HELP:
                         session.execute(null, null);
+                        break;
+                    case RwSplitServerParse.CREATE_TEMPORARY_TABLE:
+                        TempTableHandler.handleCreate(sql, session.getService(), rs >>> 8);
+                        break;
+                    case RwSplitServerParse.DROP_TEMPORARY_TABLE:
+                        TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
                         break;
                     default:
                         // 1. DDL

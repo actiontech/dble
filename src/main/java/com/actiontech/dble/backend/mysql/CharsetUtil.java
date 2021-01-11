@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql;
 
 import com.actiontech.dble.config.model.SystemConfig;
@@ -22,6 +22,7 @@ public final class CharsetUtil {
     private static final Map<String, CollationInfo> COLLATION_TO_INDEX = new HashMap<>(307);
     private static final Map<String, CollationInfo> CHARSET_TO_DEFAULT_COLLATION = new HashMap<>(41);
     private static final Map<String, String> CHARSET_TO_JAVA = new HashMap<>();
+    private static final int COLLATION_INDEX = SystemConfig.getInstance().getFakeMySQLVersion().startsWith("8") ? 225 : 45;
 
     static {
 
@@ -350,8 +351,8 @@ public final class CharsetUtil {
 
     public static String getCharset(int index) {
         if (index >= INDEX_TO_COLLATION.length || INDEX_TO_COLLATION[index] == null) {
-            LOGGER.info("can't find collation index " + index);
-            return null;
+            index = COLLATION_INDEX;
+            LOGGER.info("use default collation index " + index);
         }
         return INDEX_TO_COLLATION[index].getCharset();
     }
@@ -426,8 +427,8 @@ public final class CharsetUtil {
 
     public static boolean isCaseInsensitive(int index) {
         if (index >= INDEX_TO_COLLATION.length || INDEX_TO_COLLATION[index] == null) {
-            LOGGER.info("can't find collation index " + index);
-            return false;
+            index = COLLATION_INDEX;
+            LOGGER.info("use default collation index " + index);
         }
         CollationInfo info = INDEX_TO_COLLATION[index];
         return info.getCollation().endsWith("_ci");

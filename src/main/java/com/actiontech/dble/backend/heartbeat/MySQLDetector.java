@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -140,7 +140,8 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             KeyVariables variables = task.call();
             if (variables == null ||
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
-                    variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize()) {
+                    variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize() ||
+                    Integer.parseInt(variables.getVersion().substring(0, 1)) < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
                 String url = heartbeat.getSource().getConfig().getUrl();
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                 String errMsg;
@@ -148,6 +149,8 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     errMsg = "GetAndSyncDbInstanceKeyVariables failed";
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
+                } else if (Integer.parseInt(variables.getVersion().substring(0, 1)) < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
+                    errMsg = "this dbInstance[=" + url + "]'s version[=" + variables.getVersion() + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "]";
                 } else {
                     errMsg = "this dbInstance[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();
                 }

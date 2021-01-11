@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -492,7 +492,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         this.accept(x.getWithSubQuery());
+
+        Set<Pair<String, Pair<String, String>>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
+        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        selectSchemaTables.clear();
         this.accept(x.getQuery());
+        selectSchemaTables.addAll(tmpSelectSchemaTables);
+        tmpSelectSchemaTables.clear();
+
         this.accept(x.getOrderBy());
         return false;
     }

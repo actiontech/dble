@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -465,6 +465,7 @@ public class NonBlockingSession extends Session {
                         this.complexRrs = rrs;
                         executeMultiSelect(rrs);
                     } catch (MySQLOutPutException e) {
+                        LOGGER.warn("execute complex sql cause error", e);
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                     }
                 } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -199,6 +199,7 @@ public final class ConfigUtil {
             Set<String> firstGroup = new HashSet<>();
             Set<String> secondGroup = new HashSet<>();
             int minNodePacketSize = Integer.MAX_VALUE;
+            int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
             for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
                 String dataSourceName = entry.getKey();
                 Future<KeyVariables> future = entry.getValue();
@@ -212,12 +213,17 @@ public final class ConfigUtil {
                         secondGroup.add(dataSourceName);
                     }
                     minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
+                    int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
+                    minVersion = minVersion < version ? minVersion : version;
                 }
             }
             if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
                 SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
                 msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
                 LOGGER.warn(msg);
+            }
+            if (minVersion < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
+                throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
             }
             if (secondGroup.size() != 0) {
                 // if all datasoure's lower case are not equal, throw exception

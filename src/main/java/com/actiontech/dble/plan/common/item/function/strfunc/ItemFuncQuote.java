@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -30,6 +30,7 @@ public class ItemFuncQuote extends ItemStrFunc {
             return EMPTY;
         }
         StringBuilder newSb = new StringBuilder();
+        newSb.append("'");
         for (char c : old.toCharArray()) {
             switch (c) {
                 case 0:
@@ -43,6 +44,7 @@ public class ItemFuncQuote extends ItemStrFunc {
                     break;
             }
         }
+        newSb.append("'");
         return newSb.toString();
     }
 

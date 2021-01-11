@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -126,6 +126,12 @@ public final class RwSplitServerParse extends ServerParse {
             break;
         }
         return rt;
+    }
+
+
+    public static boolean isMultiStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        return index + 1 < sql.length() && !ParseUtil.isEOF(sql, index);
     }
 
     // INSERT' ' | INSTALL '  '

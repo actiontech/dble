@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -27,6 +27,7 @@ import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
@@ -110,6 +111,7 @@ public final class ShowTables {
         }
         RouterUtil.routeToSingleNode(rrs, node);
         ShowTablesHandler showTablesHandler = new ShowTablesHandler(rrs, shardingService.getSession2(), info);
+        shardingService.getSession2().setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
         showTablesHandler.execute();
     }
 

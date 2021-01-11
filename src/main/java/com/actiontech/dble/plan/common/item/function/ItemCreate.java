@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -282,9 +282,10 @@ public class ItemCreate {
     }
 
     public ItemFunc createNativeFunc(String funcName, List<Item> args, int charsetIndex) {
-        ItemFunc nf = nativFuncs.get(funcName.toUpperCase());
+        final String funName = funcName.toUpperCase();
+        ItemFunc nf = nativFuncs.get(funName);
         nf.setCharsetIndex(charsetIndex);
-        return nf.nativeConstruct(args);
+        return nf.nativeConstruct(new ItemListDelegate(args, funName));
     }
 
     public ItemFuncInner createInnerFunc(String funcName, List<Item> args, int charsetIndex) {

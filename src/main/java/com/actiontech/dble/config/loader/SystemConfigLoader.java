@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -124,6 +124,10 @@ public final class SystemConfigLoader {
         Properties systemDynamic = readBootStrapDynamicConf();
         for (Map.Entry<Object, Object> item : systemDynamic.entrySet()) {
             system.put(item.getKey(), item.getValue());
+        }
+        //must be first
+        if (null != system && !StringUtil.isEmpty(system.getProperty("fakeMySQLVersion"))) {
+            systemConfig.setFakeMySQLVersion(system.getProperty("fakeMySQLVersion"));
         }
         ParameterMapping.mapping(systemConfig, system, StartProblemReporter.getInstance());
         if (system.size() > 0) {

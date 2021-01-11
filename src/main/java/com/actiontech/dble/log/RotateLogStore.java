@@ -223,8 +223,8 @@ public class RotateLogStore {
         }
     }
 
-    public class RotateStrategy {
-        private SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM/MM-dd");
+    public static class RotateStrategy {
+        private static SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM/MM-dd");
 
         private boolean rollover(LogFileManager manager) {
             manager.closeFileStream();

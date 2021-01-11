@@ -36,7 +36,7 @@ public final class GeneralLogProcessor {
         }
     }
 
-    public synchronized void enable() throws IOException {
+    public void enable() throws IOException {
         if (!enable) {
             this.logFileManager = RotateLogStore.getInstance().createFileManager(GeneralLog.getInstance().getGeneralLogFile(), GeneralLog.getInstance().getGeneralLogFileSize());
             this.logDelegate = new GeneralLogDisruptor(logFileManager, GeneralLog.getInstance().getGeneralLogQueueSize());
@@ -48,7 +48,7 @@ public final class GeneralLogProcessor {
         }
     }
 
-    public synchronized void disable() {
+    public void disable() {
         if (enable) {
             if (logDelegate != null) {
                 logDelegate.stop();

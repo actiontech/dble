@@ -24,6 +24,7 @@ public final class ManagerParseReload {
     public static final int SLOW_QUERY_TIME = 9;
     public static final int SLOW_QUERY_FLUSH_PERIOD = 10;
     public static final int SLOW_QUERY_FLUSH_SIZE = 11;
+    public static final int GENERAL_LOG_FILE = 12;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -62,6 +63,9 @@ public final class ManagerParseReload {
                 case 'M':
                 case 'm':
                     return reload2MCheck(stmt, offset);
+                case 'G':
+                case 'g':
+                    return reload2GCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -135,6 +139,48 @@ public final class ManagerParseReload {
                     return reload2SLCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // RELOAD @@G
+    private static int reload2GCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'E':
+                case 'e':
+                    return reload2GeCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // reload @@general_log.file
+    private static int reload2GeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "NERAL_LOG_FILE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            char c13 = stmt.charAt(++offset);
+            char c14 = stmt.charAt(++offset);
+            if ((c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'R' || c3 == 'r') && (c4 == 'A' || c4 == 'a') && (c5 == 'L' || c5 == 'l') &&
+                    (c6 == '_') && (c7 == 'L' || c7 == 'l') && (c8 == 'O' || c8 == 'o') &&
+                    (c9 == 'G' || c9 == 'g') && (c10 == '_') && (c11 == 'F' || c11 == 'f') &&
+                    (c12 == 'I' || c12 == 'i') && (c13 == 'L' || c13 == 'l') && (c14 == 'E' || c14 == 'e')) {
+                return (offset << 8) | GENERAL_LOG_FILE;
             }
         }
         return OTHER;

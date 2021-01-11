@@ -4,6 +4,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
@@ -90,6 +91,8 @@ public class RWSplitService extends BusinessService {
 
     @Override
     protected void handleInnerData(byte[] data) {
+        // TODO need to consider COM_STMT_EXECUTE
+        GeneralLogHelper.putGLog(this, data);
         // if the statement is load data, directly push down
         if (inLoadData) {
             session.execute(true, data, (isSuccess, rwSplitService) -> {

@@ -8,11 +8,13 @@ import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.services.FrontEndService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
 import com.actiontech.dble.singleton.TraceManager;
@@ -79,6 +81,11 @@ public class MySQLFrontAuthService extends AuthService {
                 MySQLPacket packet = new OkPacket();
                 packet.setPacketId(needAuthSwitched ? 4 : 2);
                 packet.write(connection);
+                String schema;
+                GeneralLogHelper.putGLog(connection.getId(), MySQLPacket.TO_STRING.get(MySQLPacket.COM_CONNECT),
+                        info.getUserConfig().getName() + "@" + connection.getHost() +
+                                " on " + (schema = (schema = ((FrontEndService) service).getSchema()) == null ? "" : schema) +
+                                " using TCP/IP");
             } else {
                 writeOutErrorMessage(info.getErrorMsg());
             }

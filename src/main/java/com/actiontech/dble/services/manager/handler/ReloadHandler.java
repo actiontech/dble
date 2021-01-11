@@ -49,6 +49,9 @@ public final class ReloadHandler {
                 String whereCondition = stmt.substring(rs >>> SHIFT).trim();
                 ReloadMetaData.execute(service, whereCondition);
                 break;
+            case ManagerParseReload.GENERAL_LOG_FILE:
+                GeneralLogCf.ReloadGeneralLogFile.execute(service, ParseUtil.parseString(stmt));
+                break;
             default:
                 service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

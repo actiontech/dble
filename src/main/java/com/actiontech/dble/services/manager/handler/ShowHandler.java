@@ -138,6 +138,9 @@ public final class ShowHandler {
                 boolean isClearSlow = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLSlow.execute(service, isClearSlow);
                 break;
+            case ManagerParseShow.GENERAL_LOG:
+                GeneralLogCf.ShowGeneralLog.execute(service);
+                break;
             case ManagerParseShow.SQL_HIGH:
                 boolean isClearHigh = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLHigh.execute(service, isClearHigh);

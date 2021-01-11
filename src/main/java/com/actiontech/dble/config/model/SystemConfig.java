@@ -154,6 +154,13 @@ public final class SystemConfig {
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
     private int sqlSlowTime = 100; //ms
+
+    //general log
+    private int enableGeneralLog = 0;
+    private String generalLogFile = "general/general.log";
+    private int generalLogFileSize = 16; //mb
+    private int generalLogQueueSize = 4096;
+
     //alert switch
     private int enableAlert = 1;
     //load data
@@ -166,6 +173,51 @@ public final class SystemConfig {
     private boolean useOuterHa = true;
     private String traceEndPoint = null;
     private String fakeMySQLVersion = "5.7.21";
+
+
+    public int getEnableGeneralLog() {
+        return enableGeneralLog;
+    }
+
+    public void setEnableGeneralLog(int enableGeneralLog) {
+        this.enableGeneralLog = enableGeneralLog;
+    }
+
+    public String getGeneralLogFile() {
+        return generalLogFile;
+    }
+
+    public void setGeneralLogFile(String generalLogFile) {
+        if (!generalLogFile.startsWith(String.valueOf(File.separatorChar))) {
+            generalLogFile = (this.getHomePath() + File.separatorChar + generalLogFile).replaceAll(File.separator + "+", File.separator);
+        }
+        this.generalLogFile = generalLogFile;
+    }
+
+    public int getGeneralLogFileSize() {
+        return generalLogFileSize;
+    }
+
+    public void setGeneralLogFileSize(int generalLogFileSize) {
+        if (generalLogFileSize > 0) {
+            this.generalLogFileSize = generalLogFileSize;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "generalLogFileSize", generalLogFileSize, this.generalLogFileSize));
+        }
+    }
+
+    public int getGeneralLogQueueSize() {
+        return generalLogQueueSize;
+    }
+
+    public void setGeneralLogQueueSize(int generalLogQueueSize) {
+        if (generalLogQueueSize < 1 || Integer.bitCount(generalLogQueueSize) != 1) {
+            problemReporter.warn("Property [ generalLogQueueSize ] '" + generalLogQueueSize + "' in bootstrap.cnf is illegal, size must not be less than 1 and must be a power of 2, you may need use the default value " + this.generalLogQueueSize + " replaced");
+        } else {
+            this.generalLogQueueSize = generalLogQueueSize;
+        }
+
+    }
 
     public int getTransactionRotateSize() {
         return transactionRotateSize;
@@ -1290,6 +1342,10 @@ public final class SystemConfig {
                 ", traceEndPoint=" + traceEndPoint +
                 ", maxHeapTableSize=" + maxHeapTableSize +
                 ", heapTableBufferChunkSize=" + heapTableBufferChunkSize +
+                ", enableGeneralLog=" + enableGeneralLog +
+                ", generalLogFile=" + generalLogFile +
+                ", generalLogFileSize=" + generalLogFileSize +
+                ", generalLogQueueSize=" + generalLogQueueSize +
                 "]";
     }
 }

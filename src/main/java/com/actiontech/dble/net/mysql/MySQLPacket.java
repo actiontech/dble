@@ -10,6 +10,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 
 /**
  * @author mycat
@@ -241,5 +242,30 @@ public abstract class MySQLPacket {
     }
 
     public void markMoreResultsExists() {
+    }
+
+    public static final HashMap<Byte, String> TO_STRING = new HashMap(18);
+
+    static {
+        // see: mysql-5.7.20/sql/sql_parse.cc
+        TO_STRING.put(COM_SLEEP, "Sleep");
+        TO_STRING.put(COM_QUIT, "Quit");
+        TO_STRING.put(COM_INIT_DB, "Init DB");
+        TO_STRING.put(COM_QUERY, "Query");
+        TO_STRING.put(COM_FIELD_LIST, "Field List");
+        TO_STRING.put(COM_CONNECT, "Connect");
+        TO_STRING.put(COM_PROCESS_KILL, "Kill");
+        TO_STRING.put(COM_PING, "Ping");
+        TO_STRING.put(COM_DELAYED_INSERT, "Delayed insert");
+        TO_STRING.put(COM_CHANGE_USER, "Change user");
+        TO_STRING.put(COM_REGISTER_SLAVE, "Register Slave");
+        TO_STRING.put(COM_STMT_PREPARE, "Prepare");
+        TO_STRING.put(COM_STMT_EXECUTE, "Execute");
+        TO_STRING.put(COM_STMT_SEND_LONG_DATA, "Long Data");
+        TO_STRING.put(COM_STMT_CLOSE, "Close stmt");
+        TO_STRING.put(COM_STMT_RESET, "Reset stmt");
+        TO_STRING.put(COM_SET_OPTION, "Set option");
+        TO_STRING.put(COM_RESET_CONNECTION, "Reset Connection");
+        TO_STRING.put(COM_HEARTBEAT, "Heartbeat");
     }
 }

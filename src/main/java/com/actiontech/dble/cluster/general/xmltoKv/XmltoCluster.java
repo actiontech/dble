@@ -10,7 +10,6 @@ import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 
 
 /**
@@ -40,17 +39,15 @@ public final class XmltoCluster {
     private static void initFileToUcore(AbstractConsulSender sender) throws Exception {
         ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener(sender);
 
-        XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        new XmlDbLoader(xmlProcess, ucoreListen);
+        new XmlDbLoader(ucoreListen);
 
-        new XmlShardingLoader(xmlProcess, ucoreListen);
+        new XmlShardingLoader(ucoreListen);
 
-        new XmlUserLoader(xmlProcess, ucoreListen);
+        new XmlUserLoader(ucoreListen);
 
         new SequencePropertiesLoader(ucoreListen);
 
-        xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
         new DbGroupHaResponse().notifyCluster();
     }

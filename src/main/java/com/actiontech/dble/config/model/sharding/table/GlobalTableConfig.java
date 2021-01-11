@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.config.model.sharding.table;
 
+import com.actiontech.dble.util.StringUtil;
+
 import java.util.List;
 
 public class GlobalTableConfig extends BaseTableConfig {
@@ -35,5 +37,13 @@ public class GlobalTableConfig extends BaseTableConfig {
     @Override
     public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
         return new GlobalTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes, this.cron, this.checkClass, this.globalCheck);
+    }
+
+
+    public boolean equalsBaseInfo(GlobalTableConfig globalTableConfig) {
+        return super.equalsBaseInfo(globalTableConfig) &&
+                this.globalCheck == globalTableConfig.isGlobalCheck() &&
+                StringUtil.equalsWithEmpty(this.cron, globalTableConfig.getCron()) &&
+                StringUtil.equalsWithEmpty(this.checkClass, globalTableConfig.getCheckClass());
     }
 }

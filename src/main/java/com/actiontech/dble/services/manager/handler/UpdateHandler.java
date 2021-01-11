@@ -5,8 +5,13 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -30,7 +35,6 @@ import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -46,59 +50,26 @@ public final class UpdateHandler {
             service.writeErrMessage("42000", "You have an error in your SQL syntax", ErrorCode.ER_PARSE_ERROR);
             return;
         }
-        if (update.getLimit() != null || update.isIgnore() || update.isLowPriority() || update.getOrderBy() != null) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update with syntax :[LOW_PRIORITY] [IGNORE] ... [ORDER BY ...] [LIMIT row_count]");
+        ManagerWritableTable managerTable = getWritableTable(update, service);
+        if (null == managerTable) {
             return;
         }
-        if (update.getWhere() == null) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update without WHERE");
-            return;
+        DistributeLock distributeLock = null;
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            if (!distributeLock.acquire()) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                return;
+            }
+            LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
         }
-        SQLTableSource tableSource = update.getTableSource();
-        if (tableSource instanceof SQLJoinTableSource) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update Multiple-Table ");
-            return;
-        }
-        SQLExprTableSource singleTableSource = (SQLExprTableSource) tableSource;
-        if (singleTableSource.getAlias() != null) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update with alias");
-            return;
-        }
-        if (singleTableSource.getPartitionSize() != 0) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update with [PARTITION (partition_name [, partition_name] ...)]");
-            return;
-        }
-        ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
-        update.accept(visitor);
-        if (visitor.getNotSupportMsg() != null) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, visitor.getNotSupportMsg());
-            return;
-        } else if (visitor.getFirstClassSubQueryList().size() > 0) {
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support sub-query");
-            return;
-        }
-        SchemaUtil.SchemaInfo schemaInfo;
-        try {
-            schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), singleTableSource);
-        } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
-        }
-        ManagerBaseTable managerBaseTable = ManagerSchemaInfo.getInstance().getTables().get(schemaInfo.getTable());
-        if (!managerBaseTable.isWritable()) {
-            service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
-            return;
-        }
-        ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
-
         LinkedHashMap<String, String> values;
         try {
-            values = getUpdateValues(schemaInfo, managerTable, update.getItems());
+            values = getUpdateValues(managerTable, update.getItems());
         } catch (SQLException e) {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
-
         int rowSize;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
@@ -118,20 +89,71 @@ public final class UpdateHandler {
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
-                handleConfigException(e, service, managerTable);
+                service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
+                LOGGER.warn("Update failure.The reason is ", e);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {
-            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
+            if (distributeLock != null) {
+                distributeLock.release();
+            }
         }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(rowSize);
         ok.write(service.getConnection());
+    }
+
+
+    public ManagerWritableTable getWritableTable(MySqlUpdateStatement update, ManagerService service) {
+        if (update.getLimit() != null || update.isIgnore() || update.isLowPriority() || update.getOrderBy() != null) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update with syntax :[LOW_PRIORITY] [IGNORE] ... [ORDER BY ...] [LIMIT row_count]");
+            return null;
+        }
+        if (update.getWhere() == null) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update without WHERE");
+            return null;
+        }
+        SQLTableSource tableSource = update.getTableSource();
+        if (tableSource instanceof SQLJoinTableSource) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update Multiple-Table ");
+            return null;
+        }
+        SQLExprTableSource singleTableSource = (SQLExprTableSource) tableSource;
+        if (singleTableSource.getAlias() != null) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update with alias");
+            return null;
+        }
+        if (singleTableSource.getPartitionSize() != 0) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support update with [PARTITION (partition_name [, partition_name] ...)]");
+            return null;
+        }
+        ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
+        update.accept(visitor);
+        if (visitor.getNotSupportMsg() != null) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, visitor.getNotSupportMsg());
+            return null;
+        } else if (visitor.getFirstClassSubQueryList().size() > 0) {
+            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support sub-query");
+            return null;
+        }
+        SchemaUtil.SchemaInfo schemaInfo;
+        try {
+            schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), singleTableSource);
+        } catch (SQLException e) {
+            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            return null;
+        }
+        ManagerBaseTable managerBaseTable = ManagerSchemaInfo.getInstance().getTables().get(schemaInfo.getTable());
+        if (!managerBaseTable.isWritable()) {
+            service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
+            return null;
+        }
+        return (ManagerWritableTable) managerBaseTable;
     }
 
     private int updateRows(ManagerService service, ManagerWritableTable managerTable, Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws Exception {
@@ -145,11 +167,10 @@ public final class UpdateHandler {
         return rowSize;
     }
 
-    private LinkedHashMap<String, String> getUpdateValues(SchemaUtil.SchemaInfo schemaInfo,
-                                                          ManagerWritableTable managerTable, List<SQLUpdateSetItem> updateItems) throws SQLException {
+    private LinkedHashMap<String, String> getUpdateValues(ManagerWritableTable managerTable, List<SQLUpdateSetItem> updateItems) throws SQLException {
         LinkedHashMap<String, String> values = new LinkedHashMap<>(updateItems.size());
         for (SQLUpdateSetItem item : updateItems) {
-            String columnName = getColumnName(item.getColumn().toString().toLowerCase(), schemaInfo.getTable());
+            String columnName = getColumnName(item.getColumn().toString().toLowerCase(), managerTable.getTableName());
             if (managerTable.getColumnType(columnName) == null) {
                 throw new SQLException("Unknown column '" + columnName + "' in 'field list'", "42S22", ErrorCode.ER_BAD_FIELD_ERROR);
             }
@@ -192,15 +213,5 @@ public final class UpdateHandler {
         }
         columnName = StringUtil.removeBackQuote(columnName);
         return columnName;
-    }
-
-    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
-        try {
-            managerTable.rollbackXmlFile();
-        } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
-        }
-        service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
     }
 }

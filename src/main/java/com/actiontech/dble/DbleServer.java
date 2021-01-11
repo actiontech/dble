@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
+import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -113,7 +114,7 @@ public final class DbleServer {
 
     public void startup() throws Exception {
         LOGGER.info("===========================================DBLE SERVER STARTING===================================");
-        this.config = new ServerConfig();
+        initServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
 
@@ -258,8 +259,20 @@ public final class DbleServer {
         LOGGER.info("====================================CronScheduler started=========================================");
 
         CustomMySQLHa.getInstance().start();
+
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
+    }
+
+    private void initServerConfig() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            this.config = new ServerConfig(DbleTempConfig.getInstance().getUserConfig(), DbleTempConfig.getInstance().getDbConfig(),
+                    DbleTempConfig.getInstance().getShardingConfig(), DbleTempConfig.getInstance().getSequenceConfig());
+            DbleTempConfig.getInstance().clean();
+            this.config.syncJsonToLocal(true);
+        } else {
+            this.config = new ServerConfig();
+        }
     }
 
     private void initAioProcessor(int processorCount) throws IOException {
@@ -386,10 +399,10 @@ public final class DbleServer {
 
     private void reviseSchemas() {
         if (systemVariables.isLowerCaseTableNames()) {
-            config.reviseLowerCase();
+            config.reviseLowerCase(DbleTempConfig.getInstance().getSequenceConfig());
             ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getShardingNodes());
         } else {
-            config.loadSequence();
+            config.loadSequence(DbleTempConfig.getInstance().getSequenceConfig());
             config.selfChecking0();
         }
     }

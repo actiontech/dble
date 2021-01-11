@@ -108,4 +108,30 @@ public final class PartitionByJumpConsistentHash extends AbstractPartitionAlgori
     public int getPartitionCount() {
         return partitionCount;
     }
+
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PartitionByJumpConsistentHash other = (PartitionByJumpConsistentHash) o;
+        return other.partitionCount == this.partitionCount &&
+                other.hashSliceStart == this.hashSliceStart &&
+                other.hashSliceEnd == this.hashSliceEnd;
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = -1;
+        if (partitionCount != 0) {
+            hashCode *= partitionCount;
+        }
+        if (hashSliceEnd - hashSliceStart != 0) {
+            hashCode *= (hashSliceEnd - hashSliceStart);
+        }
+        return hashCode;
+    }
+
 }

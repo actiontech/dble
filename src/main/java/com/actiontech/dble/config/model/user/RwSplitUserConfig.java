@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.model.user;
 
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
 
 public class RwSplitUserConfig extends ServerUserConfig {
@@ -19,5 +20,10 @@ public class RwSplitUserConfig extends ServerUserConfig {
         return dbGroup;
     }
 
+
+    public boolean equalsBaseInfo(RwSplitUserConfig rwSplitUserConfig) {
+        return super.equalsBaseInfo(rwSplitUserConfig) &&
+                StringUtil.equalsWithEmpty(this.dbGroup, rwSplitUserConfig.getDbGroup());
+    }
 
 }

@@ -5,8 +5,13 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -86,6 +91,16 @@ public final class DeleteHandler {
             service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return;
         }
+
+        DistributeLock distributeLock = null;
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            if (!distributeLock.acquire()) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                return;
+            }
+            LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+        }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         int rowSize;
         boolean lockFlag = managerTable.getLock().tryLock();
@@ -118,6 +133,9 @@ public final class DeleteHandler {
             return;
         } finally {
             managerTable.getLock().unlock();
+            if (distributeLock != null) {
+                distributeLock.release();
+            }
         }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);

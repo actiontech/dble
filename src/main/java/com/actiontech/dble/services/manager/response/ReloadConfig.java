@@ -85,12 +85,16 @@ public final class ReloadConfig {
     private static void reloadWithCluster(ManagerService service, int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
         try {
-            DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
-                return;
+            DistributeLock distributeLock = null;
+            if (!confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) && !confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) &&
+                    !confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
+                distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+                if (!distributeLock.acquire()) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                    return;
+                }
+                LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
             }
-            LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
             ClusterDelayProvider.delayAfterReloadLock();
             if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
                 writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
@@ -141,7 +145,9 @@ public final class ReloadConfig {
             } finally {
                 lock.writeLock().unlock();
                 ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
-                distributeLock.release();
+                if (distributeLock != null) {
+                    distributeLock.release();
+                }
             }
         } finally {
             TraceManager.finishSpan(service, traceObject);

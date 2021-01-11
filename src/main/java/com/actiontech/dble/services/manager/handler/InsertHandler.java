@@ -5,8 +5,13 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -48,6 +53,15 @@ public final class InsertHandler {
         if (null == managerTable) {
             return;
         }
+        DistributeLock distributeLock = null;
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            if (!distributeLock.acquire()) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                return;
+            }
+            LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+        }
         List<String> columns = getColumn(insert, managerTable, service);
         if (null == columns) {
             return;
@@ -84,6 +98,9 @@ public final class InsertHandler {
             return;
         } finally {
             managerTable.getLock().unlock();
+            if (distributeLock != null) {
+                distributeLock.release();
+            }
         }
         writeOkPacket(1, rowSize, managerTable.getMsg(), service);
     }

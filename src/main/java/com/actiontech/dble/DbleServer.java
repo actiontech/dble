@@ -259,20 +259,17 @@ public final class DbleServer {
         LOGGER.info("====================================CronScheduler started=========================================");
 
         CustomMySQLHa.getInstance().start();
-        LOGGER.info("====================================sync config to xml=========================================");
 
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            this.config.syncJsonToLocal(true);
-        }
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
     }
 
-    private void initServerConfig() {
+    private void initServerConfig() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             this.config = new ServerConfig(DbleTempConfig.getInstance().getUserConfig(), DbleTempConfig.getInstance().getDbConfig(),
                     DbleTempConfig.getInstance().getShardingConfig(), DbleTempConfig.getInstance().getSequenceConfig());
             DbleTempConfig.getInstance().clean();
+            this.config.syncJsonToLocal(true);
         } else {
             this.config = new ServerConfig();
         }

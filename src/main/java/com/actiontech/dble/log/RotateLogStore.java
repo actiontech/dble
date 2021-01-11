@@ -224,8 +224,6 @@ public class RotateLogStore {
     }
 
     public static class RotateStrategy {
-        private static SimpleDateFormat dataFormat = new SimpleDateFormat("yyyy-MM/MM-dd");
-
         private boolean rollover(LogFileManager manager) {
             manager.closeFileStream();
             File currentFile = new File(manager.getFileName());
@@ -243,7 +241,7 @@ public class RotateLogStore {
         }
 
         private String[] getRenameInfo(String parentPath, String name, String suffix, long time) {
-            String[] str = dataFormat.format(new Date(time)).split("/");
+            String[] str = new SimpleDateFormat("yyyy-MM/MM-dd").format(new Date(time)).split("/");
             StringBuffer filePatternSbStr = new StringBuffer();
             filePatternSbStr.append(name);
             filePatternSbStr.append("-");

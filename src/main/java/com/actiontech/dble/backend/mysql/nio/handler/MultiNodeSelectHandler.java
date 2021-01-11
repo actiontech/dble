@@ -5,8 +5,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -21,6 +20,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
@@ -40,14 +40,14 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     private final int queueSize;
     private Map<MySQLResponseService, BlockingQueue<HeapItem>> queues;
     private RowDataComparator rowComparator;
-    private OutputHandler outputHandler;
+    private DMLResponseHandler outputHandler;
     private volatile boolean noNeedRows = false;
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
         this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
-        outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+        outputHandler = FinalHandlerFactory.createFinalHandler(session);
     }
 
     @Override

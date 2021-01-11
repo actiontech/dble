@@ -83,7 +83,7 @@ public class NonBlockingSession extends Session {
     private SavePointHandler savePointHandler;
     private TransactionHandlerManager transactionManager;
 
-    private boolean prepared;
+
     private volatile boolean needWaitFinished = false;
 
     // kill query
@@ -934,13 +934,6 @@ public class NonBlockingSession extends Session {
         return transactionManager.getSessionXaID();
     }
 
-    public boolean isPrepared() {
-        return prepared;
-    }
-
-    public void setPrepared(boolean prepared) {
-        this.prepared = prepared;
-    }
 
     public MySQLResponseService freshConn(BackendConnection errConn, ResponseHandler queryHandler) {
         for (final RouteResultsetNode node : this.getTargetKeys()) {

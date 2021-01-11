@@ -24,6 +24,7 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
@@ -78,6 +79,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
         this.leftFieldPackets = new ArrayList<>();
         this.rightFieldPackets = new ArrayList<>();
         this.otherJoinOn = otherJoinOn;
+        if (session instanceof NonBlockingSession) {
+            ((NonBlockingSession) session).getShardingService().getRequestScope().setUsingJoin(true);
+        }
     }
 
     @Override

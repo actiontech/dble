@@ -70,7 +70,7 @@ public class RotateLogStore {
 
         public LogFileManager(String fileName, int maxFileSize, RandomAccessFile raf, long size, long initialTime, boolean initFileExists) {
             this.fileName = fileName;
-            this.maxFileSize = maxFileSize * 1024 * 1024;
+            this.maxFileSize = 1024L * 1024 * maxFileSize;
             this.randomAccessFile = raf;
             this.size = size;
             this.initialTime = initialTime;

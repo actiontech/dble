@@ -3,7 +3,7 @@ package com.actiontech.dble.log.general;
 
 import com.actiontech.dble.log.RotateLogStore;
 import com.actiontech.dble.server.status.GeneralLog;
-import com.actiontech.dble.services.FrontEndService;
+import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,7 @@ public final class GeneralLogProcessor {
         }
     }
 
-    public void putGeneralLog(FrontEndService service, byte[] data) {
+    public void putGeneralLog(FrontendService service, byte[] data) {
         if (enable && GeneralLog.getInstance().isEnableGeneralLog()) {
             GeneralLogEntry entry = new GeneralLogEntry(service.getConnection().getId(), data, service.getCharset().getClient());
             if (!logDelegate.tryEnqueue(entry)) {

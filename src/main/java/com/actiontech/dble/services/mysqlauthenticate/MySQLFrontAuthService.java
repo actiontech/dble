@@ -92,7 +92,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 String schema;
                 GeneralLogHelper.putGLog(connection.getId(), MySQLPacket.TO_STRING.get(MySQLPacket.COM_CONNECT),
                         info.getUserConfig().getName() + "@" + connection.getHost() +
-                                " on " + (schema = (schema = ((FrontEndService) service).getSchema()) == null ? "" : schema) +
+                                " on " + (schema = (schema = ((FrontendService) service).getSchema()) == null ? "" : schema) +
                                 " using TCP/IP");
             } else {
                 writeOutErrorMessage(info.getErrorMsg());

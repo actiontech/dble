@@ -30,6 +30,7 @@ public class ItemFuncQuote extends ItemStrFunc {
             return EMPTY;
         }
         StringBuilder newSb = new StringBuilder();
+        newSb.append("'");
         for (char c : old.toCharArray()) {
             switch (c) {
                 case 0:
@@ -43,6 +44,7 @@ public class ItemFuncQuote extends ItemStrFunc {
                     break;
             }
         }
+        newSb.append("'");
         return newSb.toString();
     }
 

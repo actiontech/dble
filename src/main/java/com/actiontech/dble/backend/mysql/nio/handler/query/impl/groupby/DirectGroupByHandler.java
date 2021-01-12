@@ -15,15 +15,16 @@ import com.actiontech.dble.backend.mysql.store.GroupByLocalResult;
 import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
@@ -172,6 +173,10 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             }
             session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, sqlResponseService);
+        } catch (MySQLOutPutException e) {
+            String msg = e.getLocalizedMessage();
+            LOGGER.info(msg, e);
+            session.onQueryError(msg.getBytes());
         } catch (Exception e) {
             String msg = "group by thread is error," + e.getLocalizedMessage();
             LOGGER.info(msg, e);

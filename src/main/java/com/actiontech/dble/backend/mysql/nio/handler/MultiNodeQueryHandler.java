@@ -21,7 +21,9 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -38,6 +40,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+
+import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
 
 /**
  * @author mycat
@@ -61,6 +65,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private final boolean modifiedSQL;
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> shardingNodePauseInfo; // only for debug
+    private RequestScope requestScope;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -77,6 +82,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.sessionAutocommit = session.getShardingService().isAutocommit();
         this.modifiedSQL = rrs.getNodes()[0].isModifySQL();
         initDebugInfo();
+        requestScope = session.getShardingService().getRequestScope();
     }
 
     @Override
@@ -281,6 +287,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            return;
+        }
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + service);
@@ -378,6 +387,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.netOutBytes += eof.length;
+
         if (errorResponse.get()) {
             return;
         }
@@ -391,12 +401,22 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 session.releaseConnectionIfSafe((MySQLResponseService) service, false);
             }
         }
+
         boolean zeroReached;
         lock.lock();
         try {
             unResponseRrns.remove(rNode);
             zeroReached = canResponse();
             if (zeroReached) {
+                if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+                    requestScope.getCurrentPreparedStatement().onPrepareOk(fieldCount);
+                    return;
+                }
+                if (requestScope.isUsingCursor()) {
+                    requestScope.getCurrentPreparedStatement().getCursorCache().done();
+                    session.getShardingService().writeDirectly(byteBuffer);
+                    return;
+                }
                 this.resultSize += eof.length;
                 if (!rrs.isCallStatement()) {
                     if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLocked()) { // clear all connections
@@ -431,6 +451,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
         this.netOutBytes += row.length;
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            return false;
+        }
         if (errorResponse.get()) {
             // the connection has been closed or set to "txInterrupt" properly
             //in tryErrorFinished() method! If we close it here, it can
@@ -463,13 +486,19 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
-                row[3] = (byte) session.getShardingService().nextPacketId();
+                if (!requestScope.isUsingCursor()) {
+                    row[3] = (byte) session.getShardingService().nextPacketId();
+                }
                 rowDataPk.read(row);
-                if (session.isPrepared()) {
-                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                    binRowDataPk.read(fieldPackets, rowDataPk);
-                    binRowDataPk.setPacketId(rowDataPk.getPacketId());
-                    byteBuffer = binRowDataPk.write(byteBuffer, session.getShardingService(), true);
+                if (requestScope.isPrepared()) {
+                    if (requestScope.isUsingCursor()) {
+                        requestScope.getCurrentPreparedStatement().getCursorCache().add(rowDataPk);
+                    } else {
+                        BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                        binRowDataPk.read(fieldPackets, rowDataPk);
+                        binRowDataPk.setPacketId(rowDataPk.getPacketId());
+                        byteBuffer = binRowDataPk.write(byteBuffer, session.getShardingService(), true);
+                    }
                 } else {
                     byteBuffer = rowDataPk.write(byteBuffer, session.getShardingService(), true);
                 }
@@ -529,6 +558,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (byteBuffer == null) {
             return;
         }
+        if (requestScope.isUsingCursor()) {
+            return;
+        }
         EOFRowPacket eofRowPacket = new EOFRowPacket();
         eofRowPacket.read(eof);
         eofRowPacket.setPacketId((byte) session.getShardingService().nextPacketId());
@@ -562,7 +594,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         ShardingService service = session.getShardingService();
         fieldCount = fields.size();
-        header[3] = (byte) session.getShardingService().nextPacketId();
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            return;
+        }
+        header[3] = (byte) service.nextPacketId();
         byteBuffer = service.writeToBuffer(header, byteBuffer);
 
         if (!errorResponse.get()) {
@@ -584,7 +619,17 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 fieldPkg.setPacketId(session.getShardingService().nextPacketId());
                 byteBuffer = fieldPkg.write(byteBuffer, service, false);
             }
+            if (requestScope.isUsingCursor()) {
+                requestScope.getCurrentPreparedStatement().initCursor(session, this, fields.size(), fieldPackets);
+            }
+
             eof[3] = (byte) session.getShardingService().nextPacketId();
+            if (requestScope.isUsingCursor()) {
+                byte statusFlag = 0;
+                statusFlag |= service.getSession2().getShardingService().isAutocommit() ? 2 : 1;
+                statusFlag |= SERVER_STATUS_CURSOR_EXISTS;
+                eof[7] = statusFlag;
+            }
             byteBuffer = service.writeToBuffer(eof, byteBuffer);
         }
     }

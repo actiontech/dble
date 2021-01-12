@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.config.model.sharding.table;
 
+import com.actiontech.dble.util.StringUtil;
+
 import java.util.List;
 
 public class ChildTableConfig extends BaseTableConfig {
@@ -127,6 +129,24 @@ public class ChildTableConfig extends BaseTableConfig {
 
     public ShardingTableConfig getDirectRouteTC() {
         return directRouteTC;
+    }
+
+
+    public boolean equalsBaseInfo(ChildTableConfig childTableConfig) {
+        return super.equalsBaseInfo(childTableConfig) &&
+                this.parentTC.equalsBaseInfo(childTableConfig.getParentTC()) &&
+                StringUtil.equalsWithEmpty(this.joinColumn, childTableConfig.getJoinColumn()) &&
+                StringUtil.equalsWithEmpty(this.parentColumn, childTableConfig.getParentColumn()) &&
+                StringUtil.equalsWithEmpty(this.incrementColumn, childTableConfig.getIncrementColumn()) &&
+                StringUtil.equalsWithEmpty(this.locateRTableKeySql, childTableConfig.getLocateRTableKeySql()) &&
+                isEquals(this.directRouteTC, childTableConfig.getDirectRouteTC());
+    }
+
+    private boolean isEquals(ShardingTableConfig o1, ShardingTableConfig o2) {
+        if (o1 == null) {
+            return o2 == null;
+        }
+        return o1 == o2 || o1.equalsBaseInfo(o2);
     }
 
 }

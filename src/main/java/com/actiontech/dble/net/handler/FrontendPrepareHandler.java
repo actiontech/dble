@@ -24,4 +24,6 @@ public interface FrontendPrepareHandler {
 
     void clear();
 
+    void fetch(byte[] data);
+
 }

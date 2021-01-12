@@ -83,7 +83,7 @@ public class NonBlockingSession extends Session {
     private SavePointHandler savePointHandler;
     private TransactionHandlerManager transactionManager;
 
-    private boolean prepared;
+
     private volatile boolean needWaitFinished = false;
 
     // kill query
@@ -465,6 +465,7 @@ public class NonBlockingSession extends Session {
                         this.complexRrs = rrs;
                         executeMultiSelect(rrs);
                     } catch (MySQLOutPutException e) {
+                        LOGGER.warn("execute complex sql cause error", e);
                         shardingService.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                     }
                 } else {
@@ -933,13 +934,6 @@ public class NonBlockingSession extends Session {
         return transactionManager.getSessionXaID();
     }
 
-    public boolean isPrepared() {
-        return prepared;
-    }
-
-    public void setPrepared(boolean prepared) {
-        this.prepared = prepared;
-    }
 
     public MySQLResponseService freshConn(BackendConnection errConn, ResponseHandler queryHandler) {
         for (final RouteResultsetNode node : this.getTargetKeys()) {

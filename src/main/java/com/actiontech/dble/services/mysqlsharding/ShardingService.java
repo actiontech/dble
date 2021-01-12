@@ -3,6 +3,7 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
+import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -13,8 +14,10 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.ServerSptPrepare;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
@@ -27,6 +30,7 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
@@ -68,6 +72,7 @@ public class ShardingService extends BusinessService {
 
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
+    protected String executeSql;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
@@ -76,9 +81,11 @@ public class ShardingService extends BusinessService {
     private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
+    private volatile boolean multiStatementAllow = false;
     private final NonBlockingSession session;
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
+    private volatile RequestScope requestScope;
 
     public ShardingService(AbstractConnection connection) {
         super(connection);
@@ -90,6 +97,11 @@ public class ShardingService extends BusinessService {
         session.setRowCount(0);
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
+        this.proto = new MySQLProtoHandlerImpl();
+    }
+
+    public RequestScope getRequestScope() {
+        return requestScope;
     }
 
     @Override
@@ -188,8 +200,9 @@ public class ShardingService extends BusinessService {
     }
 
     @Override
-    protected void beforeHandlingTask() {
+    protected void taskToTotalQueue(ServiceTask task) {
         session.setRequestTime();
+        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
     @Override
@@ -200,87 +213,85 @@ public class ShardingService extends BusinessService {
             sc.changeUserAuthSwitch(data, changeUserPacket);
             return;
         }*/
-
-        if (loadDataInfileHandler.isStart()) {
-            if (isEndOfDataFile(data)) {
-                loadDataInfileHandler.end(data[3]);
-            } else {
-                loadDataInfileHandler.handle(data);
+        try (RequestScope requestScope = new RequestScope()) {
+            this.requestScope = requestScope;
+            switch (data[4]) {
+                case MySQLPacket.COM_INIT_DB:
+                    commands.doInitDB();
+                    protoLogicHandler.initDB(data);
+                    break;
+                case MySQLPacket.COM_QUERY:
+                    commands.doQuery();
+                    protoLogicHandler.query(data);
+                    break;
+                case MySQLPacket.COM_PING:
+                    commands.doPing();
+                    Ping.response(connection);
+                    break;
+                case MySQLPacket.COM_HEARTBEAT:
+                    commands.doHeartbeat();
+                    Heartbeat.response(connection, data);
+                    break;
+                case MySQLPacket.COM_QUIT:
+                    commands.doQuit();
+                    connection.close("quit cmd");
+                    break;
+                case MySQLPacket.COM_STMT_PREPARE:
+                    commands.doStmtPrepare();
+                    String prepareSql = protoLogicHandler.stmtPrepare(data);
+                    // record SQL
+                    if (prepareSql != null) {
+                        this.setExecuteSql(prepareSql);
+                        prepareHandler.prepare(prepareSql);
+                    }
+                    break;
+                case MySQLPacket.COM_STMT_SEND_LONG_DATA:
+                    commands.doStmtSendLongData();
+                    blobDataQueue.offer(data);
+                    break;
+                case MySQLPacket.COM_STMT_CLOSE:
+                    commands.doStmtClose();
+                    stmtClose(data);
+                    break;
+                case MySQLPacket.COM_STMT_RESET:
+                    commands.doStmtReset();
+                    blobDataQueue.clear();
+                    prepareHandler.reset(data);
+                    break;
+                case MySQLPacket.COM_STMT_EXECUTE:
+                    commands.doStmtExecute();
+                    this.stmtExecute(data, blobDataQueue);
+                    break;
+                case MySQLPacket.COM_STMT_FETCH:
+                    commands.doStmtFetch();
+                    this.stmtFetch(data);
+                    break;
+                case MySQLPacket.COM_SET_OPTION:
+                    commands.doOther();
+                    protoLogicHandler.setOption(data);
+                    break;
+                case MySQLPacket.COM_CHANGE_USER:
+                    commands.doOther();
+                    /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
+                    sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
+                    break;
+                case MySQLPacket.COM_RESET_CONNECTION:
+                    commands.doOther();
+                    protoLogicHandler.resetConnection();
+                    break;
+                case MySQLPacket.COM_FIELD_LIST:
+                    commands.doOther();
+                    protoLogicHandler.fieldList(data);
+                    break;
+                case MySQLPacket.COM_PROCESS_KILL:
+                    commands.doKill();
+                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                    break;
+                default:
+                    commands.doOther();
+                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
             }
-            return;
-        }
 
-        switch (data[4]) {
-            case MySQLPacket.COM_INIT_DB:
-                commands.doInitDB();
-                protoLogicHandler.initDB(data);
-                break;
-            case MySQLPacket.COM_QUERY:
-                commands.doQuery();
-                protoLogicHandler.query(data);
-                break;
-            case MySQLPacket.COM_PING:
-                commands.doPing();
-                Ping.response(connection);
-                break;
-            case MySQLPacket.COM_HEARTBEAT:
-                commands.doHeartbeat();
-                Heartbeat.response(connection, data);
-                break;
-            case MySQLPacket.COM_QUIT:
-                commands.doQuit();
-                connection.close("quit cmd");
-                break;
-            case MySQLPacket.COM_STMT_PREPARE:
-                commands.doStmtPrepare();
-                String prepareSql = protoLogicHandler.stmtPrepare(data);
-                // record SQL
-                if (prepareSql != null) {
-                    this.setExecuteSql(prepareSql);
-                    prepareHandler.prepare(prepareSql);
-                }
-                break;
-            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
-                commands.doStmtSendLongData();
-                blobDataQueue.offer(data);
-                break;
-            case MySQLPacket.COM_STMT_CLOSE:
-                commands.doStmtClose();
-                stmtClose(data);
-                break;
-            case MySQLPacket.COM_STMT_RESET:
-                commands.doStmtReset();
-                blobDataQueue.clear();
-                prepareHandler.reset(data);
-                break;
-            case MySQLPacket.COM_STMT_EXECUTE:
-                commands.doStmtExecute();
-                this.stmtExecute(data, blobDataQueue);
-                break;
-            case MySQLPacket.COM_SET_OPTION:
-                commands.doOther();
-                protoLogicHandler.setOption(data);
-                break;
-            case MySQLPacket.COM_CHANGE_USER:
-                commands.doOther();
-                /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
-                sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
-                break;
-            case MySQLPacket.COM_RESET_CONNECTION:
-                commands.doOther();
-                protoLogicHandler.resetConnection();
-                break;
-            case MySQLPacket.COM_FIELD_LIST:
-                commands.doOther();
-                protoLogicHandler.fieldList(data);
-                break;
-            case MySQLPacket.COM_PROCESS_KILL:
-                commands.doKill();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-                break;
-            default:
-                commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
     }
 
@@ -317,6 +328,7 @@ public class ShardingService extends BusinessService {
             shardingSQLHandler.routeEndExecuteSQL(sql, type, schemaConfig);
 
         } catch (Exception e) {
+            LOGGER.warn("execute sql cause error", e);
             writeErrMessage(ErrorCode.ER_YES, e.getMessage());
         }
     }
@@ -330,6 +342,14 @@ public class ShardingService extends BusinessService {
         }
         if (prepareHandler != null) {
             prepareHandler.execute(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtFetch(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.fetch(data);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
         }
@@ -396,20 +416,24 @@ public class ShardingService extends BusinessService {
         this.multiStatementAllow = info.getMysqlAuthPacket().isMultStatementAllow();
     }
 
-    @Override
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
+        if (session.isDiscard() || session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
+    protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        markFinished();
+        super.writeErrMessage(id, vendorCode, sqlState, msg);
+    }
+
     public void markFinished() {
         if (session != null) {
             session.setStageFinished();
-            if (session.isDiscard() || session.isKilled()) {
-                session.setKilled(false);
-                session.setDiscard(false);
-            }
         }
     }
 
@@ -478,6 +502,7 @@ public class ShardingService extends BusinessService {
         if (loadDataInfileHandler != null) {
             try {
                 loadDataInfileHandler.clear();
+                proto = new LoadDataProtoHandlerImpl(loadDataInfileHandler);
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 LOGGER.info("load data error", e);
@@ -537,7 +562,6 @@ public class ShardingService extends BusinessService {
     @Override
     public void write(MySQLPacket packet) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
-        markFinished();
         if (packet.isEndOfSession()) {
             //error finished do resource clean up
             session.resetMultiStatementStatus();
@@ -568,7 +592,6 @@ public class ShardingService extends BusinessService {
     @Override
     public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
-        markFinished();
         if (packet.isEndOfSession()) {
             //error finished do resource clean up
             session.resetMultiStatementStatus();
@@ -602,7 +625,7 @@ public class ShardingService extends BusinessService {
         }
     }
 
-    @Override
+
     public void cleanup() {
         super.cleanup();
         if (session != null) {
@@ -611,6 +634,9 @@ public class ShardingService extends BusinessService {
         }
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
+        }
+        if (prepareHandler != null) {
+            prepareHandler.clear();
         }
     }
 
@@ -642,6 +668,10 @@ public class ShardingService extends BusinessService {
         this.txInterruptMsg = txInterruptMsg;
     }
 
+    public String getExecuteSql() {
+        return executeSql;
+    }
+
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
@@ -649,6 +679,18 @@ public class ShardingService extends BusinessService {
             //not a xa transaction ,close it
             session.kill();
         }
+    }
+
+    public void setExecuteSql(String executeSql) {
+        this.executeSql = executeSql;
+    }
+
+    public boolean isMultiStatementAllow() {
+        return multiStatementAllow;
+    }
+
+    public void setMultiStatementAllow(boolean multiStatementAllow) {
+        this.multiStatementAllow = multiStatementAllow;
     }
 
     public NonBlockingSession getSession2() {
@@ -703,12 +745,12 @@ public class ShardingService extends BusinessService {
         return sptprepare;
     }
 
-    private boolean isEndOfDataFile(byte[] data) {
-        return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
+    public void resetProto() {
+        this.proto = new MySQLProtoHandlerImpl();
     }
 
     public String toString() {
-        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
+        return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
     }
 }

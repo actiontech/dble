@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.model.sharding.table;
 
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.List;
 
@@ -16,7 +17,7 @@ public class ShardingTableConfig extends BaseTableConfig {
     private final boolean sqlRequiredSharding;
 
     public ShardingTableConfig(String name, int maxLimit, List<String> shardingNodes, String incrementColumn,
-                                AbstractPartitionAlgorithm function, String shardingColumn, boolean sqlRequiredSharding) {
+                               AbstractPartitionAlgorithm function, String shardingColumn, boolean sqlRequiredSharding) {
         super(name, maxLimit, shardingNodes);
         this.incrementColumn = incrementColumn;
         this.function = function;
@@ -45,5 +46,14 @@ public class ShardingTableConfig extends BaseTableConfig {
     public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
         return new ShardingTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes,
                 this.incrementColumn, this.function, this.shardingColumn, this.sqlRequiredSharding);
+    }
+
+
+    public boolean equalsBaseInfo(ShardingTableConfig shardingTableConfig) {
+        return super.equalsBaseInfo(shardingTableConfig) &&
+                StringUtil.equalsWithEmpty(this.incrementColumn, shardingTableConfig.getIncrementColumn()) &&
+                this.function.equals(shardingTableConfig.getFunction()) &&
+                StringUtil.equalsWithEmpty(this.shardingColumn, shardingTableConfig.getShardingColumn()) &&
+                this.sqlRequiredSharding == shardingTableConfig.isSqlRequiredSharding();
     }
 }

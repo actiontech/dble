@@ -164,7 +164,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
                 }
                 buffer = frontedConnection.writeToBuffer(eof, buffer);
+                /*
+                multi statement all cases are as follows:
+                1. if an resultSet is followed by an resultSet. buffer will re-assign in fieldEofResponse()
+                2. if an resultSet is followed by an okResponse. okResponse() send directly without use buffer.
+                3. if an resultSet is followed by  an errorResponse. buffer will be used if it is not null.
+
+                We must prevent  same buffer called connection.write() twice.
+                According to the above, you need write buffer immediately and set buffer to null.
+                 */
                 frontedConnection.write(buffer);
+                buffer = null;
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
                     write2Client = true;
                 }

@@ -461,7 +461,7 @@ public class PhysicalDbGroup {
             heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
         }
         LOGGER.warn(heartbeatError);
-        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", config.getInstanceName() + "-" + dbGroupConfig.getName());
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", config.getId(), labels);
         throw new IOException(heartbeatError);
     }

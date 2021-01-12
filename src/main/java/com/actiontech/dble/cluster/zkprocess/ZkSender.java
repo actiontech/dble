@@ -10,7 +10,6 @@ import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -114,19 +113,17 @@ public class ZkSender implements ClusterSender {
     @Override
     public void writeConfToCluster() throws Exception {
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
-        XmlProcessBase xmlProcess = new XmlProcessBase();
 
         // xmltozk for sharding
-        new ShardingXmlToZKLoader(zkListen, xmlProcess);
+        new ShardingXmlToZKLoader(zkListen);
         // xmltozk for db
-        new DbXmlToZkLoader(zkListen, xmlProcess);
+        new DbXmlToZkLoader(zkListen);
         // xmltozk for user
-        new UserXmlToZkLoader(zkListen, xmlProcess);
+        new UserXmlToZkLoader(zkListen);
         new SequenceToZkLoader(zkListen);
 
         new DbGroupStatusToZkLoader(zkListen);
 
-        xmlProcess.initJaxbClass();
         zkListen.initAllNode();
         zkListen.clearInited();
     }

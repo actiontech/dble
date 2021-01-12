@@ -12,11 +12,12 @@ import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.backend.mysql.store.SortedLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.net.Session;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
@@ -128,6 +129,10 @@ public class OrderByHandler extends OwnThreadDMLHandler {
             recordElapsedTime("order read end:");
             session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, service);
+        } catch (MySQLOutPutException e) {
+            String msg = e.getLocalizedMessage();
+            LOGGER.info(msg, e);
+            session.onQueryError(msg.getBytes());
         } catch (Exception e) {
             String msg = "OrderBy thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

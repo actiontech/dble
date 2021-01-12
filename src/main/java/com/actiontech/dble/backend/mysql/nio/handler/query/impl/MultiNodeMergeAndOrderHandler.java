@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -205,6 +206,10 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
             }
             session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, queues.keySet().iterator().next());
+        } catch (MySQLOutPutException e) {
+            String msg = e.getLocalizedMessage();
+            LOGGER.info(msg, e);
+            session.onQueryError(msg.getBytes());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

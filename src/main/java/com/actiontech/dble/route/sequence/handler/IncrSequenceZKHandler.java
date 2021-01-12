@@ -7,6 +7,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.util.KVPathUtil;
@@ -50,20 +51,36 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     private Properties props;
 
     public void load(boolean isLowerCaseTableNames) {
-        props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME, isLowerCaseTableNames);
+        this.props = PropertiesUtil.loadProps(ConfigFileName.SEQUENCE_FILE_NAME, isLowerCaseTableNames);
         String zkAddress = ClusterConfig.getInstance().getClusterIP();
         if (zkAddress == null) {
             throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
         }
         try {
-            initializeZK(props, zkAddress);
+            initializeZK(this.props, zkAddress);
+        } catch (Exception e) {
+            LOGGER.warn("Error caught while initializing ZK:" + e.getCause());
+        }
+    }
+
+    @Override
+    public void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+        SequenceConverter sequenceConverter = new SequenceConverter();
+        this.props = sequenceConverter.jsonToProperties(sequenceJson);
+        this.props = PropertiesUtil.handleLowerCase(this.props, isLowerCaseTableNames);
+        String zkAddress = ClusterConfig.getInstance().getClusterIP();
+        if (zkAddress == null) {
+            throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
+        }
+        try {
+            initializeZK(this.props, zkAddress);
         } catch (Exception e) {
             LOGGER.warn("Error caught while initializing ZK:" + e.getCause());
         }
     }
 
     private void threadLocalLoad() throws Exception {
-        Enumeration<?> enu = props.propertyNames();
+        Enumeration<?> enu = this.props.propertyNames();
         while (enu.hasMoreElements()) {
             String key = (String) enu.nextElement();
             if (key.endsWith(KEY_MIN_NAME)) {
@@ -103,11 +120,11 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
             Stat stat = this.client.checkExists().forPath(seqPath);
 
             if (stat == null || (stat.getDataLength() == 0)) {
-                paraValMap.put(table + KEY_MIN_NAME, props.getProperty(key));
-                paraValMap.put(table + KEY_MAX_NAME, props.getProperty(table + KEY_MAX_NAME));
-                paraValMap.put(table + KEY_CUR_NAME, props.getProperty(table + KEY_CUR_NAME));
+                paraValMap.put(table + KEY_MIN_NAME, this.props.getProperty(key));
+                paraValMap.put(table + KEY_MAX_NAME, this.props.getProperty(table + KEY_MAX_NAME));
+                paraValMap.put(table + KEY_CUR_NAME, this.props.getProperty(table + KEY_CUR_NAME));
                 try {
-                    String val = props.getProperty(table + KEY_MIN_NAME);
+                    String val = this.props.getProperty(table + KEY_MIN_NAME);
                     client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(PATH + table + SEQ, val.getBytes());
                 } catch (Exception e) {
                     LOGGER.debug("Node exists! Maybe other instance is initializing!");
@@ -150,13 +167,13 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 }
 
                 if (paraValMap.get(prefixName + KEY_MAX_NAME) == null) {
-                    paraValMap.put(prefixName + KEY_MAX_NAME, props.getProperty(prefixName + KEY_MAX_NAME));
+                    paraValMap.put(prefixName + KEY_MAX_NAME, this.props.getProperty(prefixName + KEY_MAX_NAME));
                 }
                 if (paraValMap.get(prefixName + KEY_MIN_NAME) == null) {
-                    paraValMap.put(prefixName + KEY_MIN_NAME, props.getProperty(prefixName + KEY_MIN_NAME));
+                    paraValMap.put(prefixName + KEY_MIN_NAME, this.props.getProperty(prefixName + KEY_MIN_NAME));
                 }
                 if (paraValMap.get(prefixName + KEY_CUR_NAME) == null) {
-                    paraValMap.put(prefixName + KEY_CUR_NAME, props.getProperty(prefixName + KEY_CUR_NAME));
+                    paraValMap.put(prefixName + KEY_CUR_NAME, this.props.getProperty(prefixName + KEY_CUR_NAME));
                 }
 
                 long period = Long.parseLong(paraValMap.get(prefixName + KEY_MAX_NAME)) - Long.parseLong(paraValMap.get(prefixName + KEY_MIN_NAME));

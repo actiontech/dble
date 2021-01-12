@@ -1,11 +1,13 @@
 package com.actiontech.dble.config.util;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
+import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,7 @@ public class DbXmlWriteJob implements Runnable {
                 }
             }
             HaConfigManager.getInstance().write(dbGroups, reloadIndex);
+            DbleServer.getInstance().getConfig().setDbConfig(DBConverter.dbBeanToJson(dbGroups));
         } catch (Exception e) {
             errorMessage = e.getMessage();
             HaConfigManager.getInstance().log("get error from SchemaWriteJob", e);

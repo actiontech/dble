@@ -3,15 +3,19 @@ package com.actiontech.dble.services.manager.information.tables;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.zkprocess.entity.Users;
+import com.actiontech.dble.cluster.zkprocess.entity.user.RwSplitUser;
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.loader.xml.XMLUserLoader;
+import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.IPAddressUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -114,37 +118,90 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
 
     @Override
     public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
-        for (LinkedHashMap<String, String> row : rows) {
-            check(row);
-        }
-        //write to configuration
-        List<LinkedHashMap<String, String>> tempRowList = rows.stream().map(this::transformRow).collect(Collectors.toList());
-        XMLUserLoader xmlUserLoader = new XMLUserLoader();
-        xmlUserLoader.insertRwSplitUser(tempRowList, getXmlFilePath());
+        List<RwSplitUser> rwSplitUserList = rows.stream().map(this::transformRowToUser).collect(Collectors.toList());
+
+        UserConverter userConverter = new UserConverter();
+        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        Users users = userConverter.userJsonToBean(userConfig);
+
+        checkLogicalUniqueKeyDuplicate(users, rwSplitUserList);
+
+        users.getUser().addAll(rwSplitUserList);
+        userConfig = userConverter.userBeanToJson(users);
+        DbleTempConfig.getInstance().setUserConfig(userConfig);
         return rows.size();
     }
 
+
     @Override
-    public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
-        check(values);
-        //write to configuration
-        List<LinkedHashMap<String, String>> tempRowList = affectPks.stream().map(this::transformRow).collect(Collectors.toList());
-        XMLUserLoader xmlUserLoader = new XMLUserLoader();
-        xmlUserLoader.updateRwSplitUser(tempRowList, transformRow(values), getXmlFilePath());
+    public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) {
+        affectPks.forEach(affectPk -> {
+            if (Boolean.FALSE.toString().equalsIgnoreCase(affectPk.get(COLUMN_ENCRYPT_CONFIGURED))) {
+                String password = DecryptUtil.decrypt(true, affectPk.get(COLUMN_USERNAME), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
+                affectPk.put(COLUMN_PASSWORD_ENCRYPT, password);
+            }
+            affectPk.putAll(values);
+        });
+        List<RwSplitUser> rwSplitUserList = affectPks.stream().map(this::transformRowToUser).collect(Collectors.toList());
+
+        UserConverter userConverter = new UserConverter();
+        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        Users users = userConverter.userJsonToBean(userConfig);
+
+        updateList(users, rwSplitUserList, false);
+        userConfig = userConverter.userBeanToJson(users);
+        DbleTempConfig.getInstance().setUserConfig(userConfig);
+
         return affectPks.size();
     }
 
     @Override
-    public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) throws SQLException {
-        //write to configuration
-        List<LinkedHashMap<String, String>> tempRowList = affectPks.stream().map(this::transformRow).collect(Collectors.toList());
-        XMLUserLoader xmlUserLoader = new XMLUserLoader();
-        xmlUserLoader.deleteRwSplitUser(tempRowList, getXmlFilePath());
+    public int deleteRows(Set<LinkedHashMap<String, String>> affectPks) {
+        List<RwSplitUser> rwSplitUserList = affectPks.stream().map(this::transformRowToUser).collect(Collectors.toList());
+
+        UserConverter userConverter = new UserConverter();
+        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        Users users = userConverter.userJsonToBean(userConfig);
+
+        updateList(users, rwSplitUserList, true);
+        userConfig = userConverter.userBeanToJson(users);
+        DbleTempConfig.getInstance().setUserConfig(userConfig);
         return affectPks.size();
     }
 
 
-    private void check(LinkedHashMap<String, String> tempRowMap) throws SQLException {
+    private void checkLogicalUniqueKeyDuplicate(Users users, List<RwSplitUser> rwSplitUserList) throws SQLException {
+        List<RwSplitUser> sourceList = users.getUser().stream().filter(user -> user instanceof RwSplitUser).map(user -> (RwSplitUser) user).collect(Collectors.toList());
+        for (RwSplitUser rwSplitUser : rwSplitUserList) {
+            boolean isExist = sourceList.stream().anyMatch(sourceUser -> StringUtil.equals(sourceUser.getName(), rwSplitUser.getName()) && StringUtil.equals(sourceUser.getTenant(), rwSplitUser.getTenant()));
+            if (isExist) {
+                String msg = String.format("Duplicate entry '%s-%s-%s'for logical unique '%s-%s-%s'", rwSplitUser.getName(),
+                        StringUtil.isEmpty(rwSplitUser.getTenant()) ? null : "tenant", rwSplitUser.getTenant(), COLUMN_USERNAME, COLUMN_CONN_ATTR_KEY, COLUMN_CONN_ATTR_VALUE);
+                throw new SQLException(msg, "42S22", ErrorCode.ER_DUP_ENTRY);
+            }
+        }
+    }
+
+    private void updateList(Users users, List<RwSplitUser> rwSplitUserList, boolean isDelete) {
+        for (RwSplitUser rwSplitUser : rwSplitUserList) {
+            for (int i = 0; i < users.getUser().size(); i++) {
+                Object obj = users.getUser().get(i);
+                if (obj instanceof RwSplitUser) {
+                    RwSplitUser sourceUser = (RwSplitUser) obj;
+                    if (StringUtil.equals(sourceUser.getName(), rwSplitUser.getName()) && StringUtil.equals(sourceUser.getTenant(), rwSplitUser.getTenant())) {
+                        if (!isDelete) {
+                            users.getUser().set(i, rwSplitUser);
+                        } else {
+                            users.getUser().remove(i);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void check(LinkedHashMap<String, String> tempRowMap) {
         //check whiteIPs
         checkWhiteIPs(tempRowMap);
         //check db_group
@@ -169,42 +226,49 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         }
     }
 
-    private void checkDbGroup(LinkedHashMap<String, String> tempRowMap) throws SQLException {
+    private void checkDbGroup(LinkedHashMap<String, String> tempRowMap) {
         if (tempRowMap.containsKey(COLUMN_DB_GROUP)) {
             Map<String, PhysicalDbGroup> dbGroupMap = DbleServer.getInstance().getConfig().getDbGroups();
             boolean isExist = dbGroupMap.keySet().stream().anyMatch(groupName -> StringUtil.equals(groupName, tempRowMap.get(COLUMN_DB_GROUP)));
             if (!isExist) {
-                throw new SQLException("Column 'db_group' value '" + tempRowMap.get(COLUMN_DB_GROUP) + "' does not exist or not active.", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
+                throw new ConfigException("Column 'db_group' value '" + tempRowMap.get(COLUMN_DB_GROUP) + "' does not exist or not active.");
             }
         }
     }
 
-    private LinkedHashMap<String, String> transformRow(LinkedHashMap<String, String> map) {
+    private RwSplitUser transformRowToUser(LinkedHashMap<String, String> map) {
         if (null == map || map.isEmpty()) {
             return null;
         }
-        LinkedHashMap<String, String> xmlMap = Maps.newLinkedHashMap();
-        if (null != map.get(COLUMN_USERNAME)) {
-            xmlMap.put("name", map.get(COLUMN_USERNAME));
+        check(map);
+        RwSplitUser rwSplitUser = new RwSplitUser();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            switch (entry.getKey()) {
+                case COLUMN_USERNAME:
+                    rwSplitUser.setName(entry.getValue());
+                    break;
+                case COLUMN_PASSWORD_ENCRYPT:
+                    rwSplitUser.setPassword(entry.getValue());
+                    break;
+                case COLUMN_ENCRYPT_CONFIGURED:
+                    rwSplitUser.setUsingDecrypt(entry.getValue());
+                    break;
+                case COLUMN_CONN_ATTR_VALUE:
+                    rwSplitUser.setTenant(entry.getValue());
+                    break;
+                case COLUMN_WHITE_IPS:
+                    rwSplitUser.setWhiteIPs(entry.getValue());
+                    break;
+                case COLUMN_MAX_CONN_COUNT:
+                    rwSplitUser.setMaxCon(Integer.parseInt(entry.getValue()));
+                    break;
+                case COLUMN_DB_GROUP:
+                    rwSplitUser.setDbGroup(entry.getValue());
+                    break;
+                default:
+                    break;
+            }
         }
-        if (null != map.get(COLUMN_PASSWORD_ENCRYPT)) {
-            xmlMap.put("password", map.get(COLUMN_PASSWORD_ENCRYPT));
-        }
-        if (null != map.get(COLUMN_WHITE_IPS)) {
-            xmlMap.put("whiteIPs", map.get(COLUMN_WHITE_IPS));
-        }
-        if (null != map.get(COLUMN_MAX_CONN_COUNT)) {
-            xmlMap.put("maxCon", map.get(COLUMN_MAX_CONN_COUNT));
-        }
-        if (null != map.get(COLUMN_CONN_ATTR_VALUE)) {
-            xmlMap.put("tenant", map.get(COLUMN_CONN_ATTR_VALUE));
-        }
-        if (null != map.get(COLUMN_DB_GROUP)) {
-            xmlMap.put("dbGroup", map.get(COLUMN_DB_GROUP));
-        }
-        if (null != map.get(COLUMN_ENCRYPT_CONFIGURED)) {
-            xmlMap.put("usingDecrypt", map.get(COLUMN_ENCRYPT_CONFIGURED));
-        }
-        return xmlMap;
+        return rwSplitUser;
     }
 }

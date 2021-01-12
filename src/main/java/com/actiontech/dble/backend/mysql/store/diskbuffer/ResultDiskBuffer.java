@@ -127,6 +127,13 @@ public abstract class ResultDiskBuffer implements ResultExternal {
             this.readBuffer = pool.allocate();
         }
 
+        ResultDiskTape(BufferPool pool, FileStore file, int fieldCount, int maxReadMemorySize) {
+            this.pool = pool;
+            this.file = file;
+            this.fieldCount = fieldCount;
+            this.readBuffer = pool.allocate(maxReadMemorySize);
+        }
+
         public boolean isEnd() {
             return isReadAll();
         }

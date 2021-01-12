@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.config.model.sharding.table;
 
+import com.actiontech.dble.util.StringUtil;
+
 import java.util.List;
 
 public abstract class BaseTableConfig {
@@ -42,4 +44,18 @@ public abstract class BaseTableConfig {
     }
 
     public abstract BaseTableConfig lowerCaseCopy(BaseTableConfig parent);
+
+
+    public boolean equalsBaseInfo(BaseTableConfig baseTableConfig) {
+        return StringUtil.equalsWithEmpty(this.name, baseTableConfig.getName()) &&
+                this.maxLimit == baseTableConfig.getMaxLimit() &&
+                isEquals(this.shardingNodes, baseTableConfig.getShardingNodes());
+    }
+
+    private boolean isEquals(List<String> o1, List<String> o2) {
+        if (o1 == null) {
+            return o2 == null;
+        }
+        return o1 == o2 || o1.equals(o2);
+    }
 }

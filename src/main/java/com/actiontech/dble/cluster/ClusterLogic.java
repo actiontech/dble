@@ -27,6 +27,11 @@ import com.actiontech.dble.cluster.zkprocess.entity.user.BlackList;
 import com.actiontech.dble.cluster.zkprocess.entity.user.User;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
+import com.actiontech.dble.config.DbleTempConfig;
+import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.SequenceConverter;
+import com.actiontech.dble.config.converter.ShardingConverter;
+import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.ReloadManager;
@@ -35,6 +40,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.services.manager.response.ReloadConfig;
 import com.actiontech.dble.services.manager.response.ShowBinlogStatus;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -257,7 +263,7 @@ public final class ClusterLogic {
                     return;
                 }
                 try {
-                    boolean result = ReloadConfig.reloadAll(Integer.parseInt(params));
+                    boolean result = ReloadConfig.reloadByConfig(Integer.parseInt(params), false);
                     if (!checkLocalResult(result)) {
                         return;
                     }
@@ -389,41 +395,66 @@ public final class ClusterLogic {
         }
     }
 
-    public static void syncSequenceToCluster() throws Exception {
+    /**
+     * sequence
+     * properties -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncSequencePropsToCluster() throws Exception {
         if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-            JsonObject jsonObject = new JsonObject();
-            String sequenceConf = ConfFileRWUtils.readFile(ConfigFileName.SEQUENCE_FILE_NAME);
-            jsonObject.addProperty(ConfigFileName.SEQUENCE_FILE_NAME, sequenceConf);
-            ClusterHelper.setKV(ClusterPathUtil.getSequencesCommonPath(), (new Gson()).toJson(jsonObject));
+            String json = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
+            ClusterHelper.setKV(ClusterPathUtil.getSequencesCommonPath(), json);
             LOGGER.info("Sequence To cluster: " + ConfigFileName.SEQUENCE_FILE_NAME + " ,success");
         } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
-            JsonObject jsonObject = new JsonObject();
-            String sequenceDbConf = ConfFileRWUtils.readFile(ConfigFileName.SEQUENCE_DB_FILE_NAME);
-            jsonObject.addProperty(ConfigFileName.SEQUENCE_DB_FILE_NAME, sequenceDbConf);
-            ClusterHelper.setKV(ClusterPathUtil.getSequencesCommonPath(), (new Gson()).toJson(jsonObject));
+            String json = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
+            ClusterHelper.setKV(ClusterPathUtil.getSequencesCommonPath(), json);
             LOGGER.info("Sequence To cluster: " + ConfigFileName.SEQUENCE_DB_FILE_NAME + " ,success");
         }
     }
 
-    public static void syncSequenceToLocal(KvBean configValue) throws Exception {
+    /**
+     * sequence
+     * json -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncSequenceJsonToCluster() throws Exception {
+        String sequenceConfig = DbleServer.getInstance().getConfig().getSequenceConfig();
+        if (null == sequenceConfig) {
+            LOGGER.info("sequence config is null");
+            return;
+        }
+        ClusterHelper.setKV(ClusterPathUtil.getSequencesCommonPath(), sequenceConfig);
+        LOGGER.info("Sequence To cluster: " + sequenceConfig + " ,success");
+    }
+
+
+    public static void syncSequenceToLocal(String sequenceConfig, boolean isWriteToLocal) throws Exception {
+        String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
+        if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock) && !isWriteToLocal) {
+            return;
+        }
+        if (!StringUtil.isEmpty(sequenceConfig)) {
+            SequenceConverter sequenceConverter = new SequenceConverter();
+            Properties props = sequenceConverter.jsonToProperties(sequenceConfig);
+            PropertiesUtil.storeProps(props, sequenceConverter.getFileName());
+            LOGGER.info("Sequence To Local: " + sequenceConverter.getFileName() + " ,success");
+        } else {
+            LOGGER.warn("Sequence To Local: get empty value");
+        }
+    }
+
+    public static void syncSequenceJson(KvBean configValue) throws Exception {
+        LOGGER.info("start sync sequence json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
         String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
         }
-        if (!StringUtil.isEmpty(configValue.getValue())) {
-            JsonObject jsonObj = new JsonParser().parse(configValue.getValue()).getAsJsonObject();
-            if (jsonObj.get(ConfigFileName.SEQUENCE_FILE_NAME) != null) {
-                String sequenceConf = jsonObj.get(ConfigFileName.SEQUENCE_FILE_NAME).getAsString();
-                ConfFileRWUtils.writeFile(ConfigFileName.SEQUENCE_FILE_NAME, sequenceConf);
-                LOGGER.info("Sequence To Local: " + ConfigFileName.SEQUENCE_FILE_NAME + " ,success");
-            } else if (jsonObj.get(ConfigFileName.SEQUENCE_DB_FILE_NAME) != null) {
-                String sequenceConf = jsonObj.get(ConfigFileName.SEQUENCE_DB_FILE_NAME).getAsString();
-                ConfFileRWUtils.writeFile(ConfigFileName.SEQUENCE_DB_FILE_NAME, sequenceConf);
-                LOGGER.info("Sequence To Local: " + ConfigFileName.SEQUENCE_DB_FILE_NAME + " ,success");
-            }
-        } else {
-            LOGGER.warn("Sequence To Local: get empty value,path is" + configValue.getKey());
-        }
+
+        DbleTempConfig.getInstance().setSequenceConfig(configValue.getValue());
+
+        LOGGER.info("end sync sequence json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
     }
 
     private static void changeDbGroupByStatus(DBGroup dbGroup, List<DbInstanceStatus> statusList) {
@@ -490,73 +521,8 @@ public final class ClusterLogic {
 
     }
 
-    static String parseShardingXmlFileToJson(XmlProcessBase xmlParseBase, Gson gson, String path) throws JAXBException, XMLStreamException {
-        // xml file to bean
-        Shardings shardingBean;
-        try {
-            shardingBean = (Shardings) xmlParseBase.baseParseXmlToBean(path);
-        } catch (Exception e) {
-            LOGGER.warn("parseXmlToBean Exception", e);
-            throw e;
-        }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Xml to Shardings is :" + shardingBean);
-        }
-        // bean to json obj
-        JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty(ClusterPathUtil.VERSION, shardingBean.getVersion());
-
-        JsonArray schemaArray = new JsonArray();
-        for (Schema schema : shardingBean.getSchema()) {
-            if (schema.getTable() != null) {
-                JsonObject schemaJsonObj = gson.toJsonTree(schema).getAsJsonObject();
-                schemaJsonObj.remove("table");
-                JsonArray tableArray = new JsonArray();
-                for (Object table : schema.getTable()) {
-                    JsonElement tableElement = gson.toJsonTree(table, Table.class);
-                    tableArray.add(tableElement);
-                }
-                schemaJsonObj.add("table", gson.toJsonTree(tableArray));
-                schemaArray.add(gson.toJsonTree(schemaJsonObj));
-            } else {
-                schemaArray.add(gson.toJsonTree(schema));
-            }
-        }
-        jsonObj.add(ClusterPathUtil.SCHEMA, gson.toJsonTree(schemaArray));
-        jsonObj.add(ClusterPathUtil.SHARDING_NODE, gson.toJsonTree(shardingBean.getShardingNode()));
-        List<Function> functionList = shardingBean.getFunction();
-        readMapFileAddFunction(functionList);
-        jsonObj.add(ClusterPathUtil.FUNCTION, gson.toJsonTree(functionList));
-        //from json obj to string
-        return gson.toJson(jsonObj);
-    }
-
-    private static void readMapFileAddFunction(List<Function> functionList) {
-        List<Property> tempData = new ArrayList<>();
-        for (Function function : functionList) {
-            List<Property> proList = function.getProperty();
-            if (null != proList && !proList.isEmpty()) {
-                for (Property property : proList) {
-                    // if mapfile,read and save to json
-                    if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
-                        Property mapFilePro = new Property();
-                        mapFilePro.setName(property.getValue());
-                        try {
-                            mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
-                            tempData.add(mapFilePro);
-                        } catch (IOException e) {
-                            LOGGER.warn("readMapFile IOException", e);
-                        }
-                    }
-                }
-                proList.addAll(tempData);
-                tempData.clear();
-            }
-        }
-    }
-
-    static Shardings parseShardingJsonToBean(Gson gson, String jsonContent) {
+    public static Shardings parseShardingJsonToBean(Gson gson, String jsonContent) {
         //from string to json obj
         JsonObject jsonObject = new JsonParser().parse(jsonContent).getAsJsonObject();
 
@@ -603,7 +569,7 @@ public final class ClusterLogic {
         return shardingBean;
     }
 
-    static DbGroups parseDbGroupsJsonToBean(Gson gson, String jsonContent) {
+    public static DbGroups parseDbGroupsJsonToBean(Gson gson, String jsonContent) {
         DbGroups dbs = new DbGroups();
         JsonObject jsonObject = new JsonParser().parse(jsonContent).getAsJsonObject();
         JsonElement dbGroupsJson = jsonObject.get(ClusterPathUtil.DB_GROUP);
@@ -612,7 +578,9 @@ public final class ClusterLogic {
                     new TypeToken<List<DBGroup>>() {
                     }.getType());
             dbs.setDbGroup(dbGroupList);
-            syncHaStatusFromCluster(gson, dbs, dbGroupList);
+            if (ClusterConfig.getInstance().isClusterEnable()) {
+                syncHaStatusFromCluster(gson, dbs, dbGroupList);
+            }
         }
 
         JsonElement version = jsonObject.get(ClusterPathUtil.VERSION);
@@ -677,35 +645,8 @@ public final class ClusterLogic {
         return gson.toJson(jsonObj);
     }
 
-    static String parseUserXmlFileToJson(XmlProcessBase xmlParseBase, Gson gson, String path) throws JAXBException, XMLStreamException {
-        // xml file to bean
-        Users usersBean;
-        try {
-            usersBean = (Users) xmlParseBase.baseParseXmlToBean(path);
-        } catch (Exception e) {
-            LOGGER.warn("parseXmlToBean Exception", e);
-            throw e;
-        }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Xml to Shardings is :" + usersBean);
-        }
-        // bean to json obj
-        JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty(ClusterPathUtil.VERSION, usersBean.getVersion());
-
-        JsonArray userArray = new JsonArray();
-        for (Object user : usersBean.getUser()) {
-            JsonElement tableElement = gson.toJsonTree(user, User.class);
-            userArray.add(tableElement);
-        }
-        jsonObj.add(ClusterPathUtil.USER, gson.toJsonTree(userArray));
-        jsonObj.add(ClusterPathUtil.BLACKLIST, gson.toJsonTree(usersBean.getBlacklist()));
-        //from json obj to string
-        return gson.toJson(jsonObj);
-    }
-
-    static Users parseUserJsonToBean(Gson gson, String jsonContent) {
+    public static Users parseUserJsonToBean(Gson gson, String jsonContent) {
         //from string to json obj
         JsonObject jsonObject = new JsonParser().parse(jsonContent).getAsJsonObject();
 
@@ -830,13 +771,14 @@ public final class ClusterLogic {
         }
     }
 
-    public static void syncDbXmlToLocal(XmlProcessBase xmlParseBase, KvBean configValue) throws Exception {
-        LOGGER.info("cluster to local " + ConfigFileName.DB_XML + " start:" + configValue.getKey() + " " + configValue.getValue());
+    public static void syncDbXmlToLocal(XmlProcessBase xmlParseBase, String dbConfig, boolean isWriteToLocal) throws Exception {
+        LOGGER.info("cluster to local " + ConfigFileName.DB_XML + " start:" + dbConfig);
         String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
-        if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
+        if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock) && !isWriteToLocal) {
             return;
         }
-        DbGroups dbs = ClusterLogic.parseDbGroupsJsonToBean(new Gson(), configValue.getValue());
+
+        DbGroups dbs = ClusterLogic.parseDbGroupsJsonToBean(new Gson(), dbConfig);
 
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;
@@ -848,31 +790,86 @@ public final class ClusterLogic {
         LOGGER.info("cluster to local xml write :" + path + " is success");
     }
 
-    public static void syncDbXmlToCluster(XmlProcessBase xmlParseBase) throws Exception {
-        LOGGER.info(ConfigFileName.DB_XML + " local to cluster start");
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + ConfigFileName.DB_XML;
-        String json = parseDbGroupXmlFileToJson(xmlParseBase, new Gson(), path);
-        ClusterHelper.setKV(ClusterPathUtil.getDbConfPath(), json);
-        LOGGER.info("xml local to cluster write :" + path + " is success");
-    }
-
-    public static void syncShardingXmlToCluster(XmlProcessBase xmlParseBase, Gson gson) throws Exception {
-        LOGGER.info(ConfigFileName.SHARDING_XML + " local to cluster start");
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + ConfigFileName.SHARDING_XML;
-        String json = ClusterLogic.parseShardingXmlFileToJson(xmlParseBase, gson, path);
-        ClusterHelper.setKV(ClusterPathUtil.getConfShardingPath(), json);
-        LOGGER.info("xml local to cluster write :" + path + " is success");
-    }
-
-    public static void syncShardingXmlToLocal(KvBean configValue, XmlProcessBase xmlParseBase, Gson gson) throws Exception {
-        LOGGER.info("cluster to local " + ConfigFileName.SHARDING_XML + " start:" + configValue.getKey() + " " + configValue.getValue());
+    public static void syncDbJson(KvBean configValue) throws Exception {
+        LOGGER.info("start sync db json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
         String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
         }
 
+        DbleTempConfig.getInstance().setDbConfig(configValue.getValue());
+
+        LOGGER.info("end sync db json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
+    }
+
+    /**
+     * db
+     * xml -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncDbXmlToCluster() throws Exception {
+        LOGGER.info(ConfigFileName.DB_XML + " local to cluster start");
+        String json = DBConverter.dbXmlToJson();
+        ClusterHelper.setKV(ClusterPathUtil.getDbConfPath(), json);
+        LOGGER.info("xml local to cluster write is success");
+    }
+
+    /**
+     * db
+     * json -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncDbJsonToCluster() throws Exception {
+        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        if (null == dbConfig) {
+            LOGGER.info("db config is null");
+            return;
+        }
+        ClusterHelper.setKV(ClusterPathUtil.getDbConfPath(), dbConfig);
+        LOGGER.info("db json config to cluster write is success");
+    }
+
+    /**
+     * sharding
+     * xml -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncShardingXmlToCluster() throws Exception {
+        LOGGER.info(ConfigFileName.SHARDING_XML + " local to cluster start");
+        ShardingConverter shardingConverter = new ShardingConverter();
+        String json = shardingConverter.shardingXmlToJson();
+        ClusterHelper.setKV(ClusterPathUtil.getConfShardingPath(), json);
+        LOGGER.info("xml local to cluster write is success");
+    }
+
+    /**
+     * sharding
+     * json -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncShardingJsonToCluster() throws Exception {
+        String shardingConfig = DbleServer.getInstance().getConfig().getShardingConfig();
+        if (null == shardingConfig) {
+            LOGGER.info("sharding config is null");
+            return;
+        }
+        ClusterHelper.setKV(ClusterPathUtil.getConfShardingPath(), shardingConfig);
+        LOGGER.info("sharding json config to cluster write is success");
+    }
+
+    public static void syncShardingXmlToLocal(String shardingConfig, XmlProcessBase xmlParseBase, Gson gson, boolean isWriteToLocal) throws Exception {
+        LOGGER.info("cluster to local " + ConfigFileName.SHARDING_XML + " start:" + shardingConfig);
+        String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
+        if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock) && !isWriteToLocal) {
+            return;
+        }
+
         //the config Value in ucore is an all in one json config of the sharding.xml
-        Shardings sharding = ClusterLogic.parseShardingJsonToBean(gson, configValue.getValue());
+        Shardings sharding = ClusterLogic.parseShardingJsonToBean(gson, shardingConfig);
         ClusterLogic.writeMapFileAddFunction(sharding.getFunction());
 
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
@@ -886,23 +883,57 @@ public final class ClusterLogic {
     }
 
 
-    public static void syncUserXmlToCluster(XmlProcessBase xmlParseBase, Gson gson) throws Exception {
-        LOGGER.info(ConfigFileName.USER_XML + " local to cluster start");
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + ConfigFileName.USER_XML;
-        String json = ClusterLogic.parseUserXmlFileToJson(xmlParseBase, gson, path);
-        ClusterHelper.setKV(ClusterPathUtil.getUserConfPath(), json);
-        LOGGER.info("xml local to cluster write :" + path + " is success");
-    }
-
-    public static void syncUserXmlToLocal(KvBean configValue, XmlProcessBase xmlParseBase, Gson gson) throws Exception {
-        LOGGER.info("cluster to local " + ConfigFileName.USER_XML + " start:" + configValue.getKey() + " " + configValue.getValue());
+    public static void syncShardingJson(KvBean configValue) throws Exception {
+        LOGGER.info("start sync sharding json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
         String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
         }
 
+        DbleTempConfig.getInstance().setShardingConfig(configValue.getValue());
+
+        LOGGER.info("end sync sharding json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
+    }
+
+
+    /**
+     * user
+     * xml -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncUserXmlToCluster() throws Exception {
+        LOGGER.info(ConfigFileName.USER_XML + " local to cluster start");
+        String json = new UserConverter().userXmlToJson();
+        ClusterHelper.setKV(ClusterPathUtil.getUserConfPath(), json);
+        LOGGER.info("xml local to cluster write is success");
+    }
+
+    /**
+     * user
+     * json -> cluster
+     *
+     * @throws Exception
+     */
+    public static void syncUseJsonToCluster() throws Exception {
+        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        if (null == userConfig) {
+            LOGGER.info("user config is null");
+            return;
+        }
+        ClusterHelper.setKV(ClusterPathUtil.getUserConfPath(), userConfig);
+        LOGGER.info("user json config to cluster write is success");
+    }
+
+    public static void syncUserXmlToLocal(String userConfig, XmlProcessBase xmlParseBase, Gson gson, boolean isWriteToLocal) throws Exception {
+        LOGGER.info("cluster to local " + ConfigFileName.USER_XML + " start:" + userConfig);
+        String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
+        if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock) && !isWriteToLocal) {
+            return;
+        }
+
         //the config Value is an all in one json config of the user.xml
-        Users users = ClusterLogic.parseUserJsonToBean(gson, configValue.getValue());
+        Users users = ClusterLogic.parseUserJsonToBean(gson, userConfig);
 
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.USER_XML;
@@ -912,6 +943,18 @@ public final class ClusterLogic {
         xmlParseBase.baseParseAndWriteToXml(users, path, "user");
 
         LOGGER.info("cluster to local write :" + path + " is success");
+    }
+
+    public static void syncUserJson(KvBean configValue) throws Exception {
+        LOGGER.info("start sync user json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
+        String lock = ClusterHelper.getPathValue(ClusterPathUtil.getConfChangeLockPath());
+        if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
+            return;
+        }
+
+        DbleTempConfig.getInstance().setUserConfig(configValue.getValue());
+
+        LOGGER.info("end sync user json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
     }
 
     public static void syncDbGroupStatusToCluster() throws Exception {

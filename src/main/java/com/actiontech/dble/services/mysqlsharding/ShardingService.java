@@ -17,6 +17,7 @@ import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.ServerSptPrepare;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
@@ -84,6 +85,7 @@ public class ShardingService extends BusinessService {
     private final NonBlockingSession session;
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
+    private volatile RequestScope requestScope;
 
     public ShardingService(AbstractConnection connection) {
         super(connection);
@@ -96,6 +98,10 @@ public class ShardingService extends BusinessService {
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
         this.proto = new MySQLProtoHandlerImpl();
+    }
+
+    public RequestScope getRequestScope() {
+        return requestScope;
     }
 
     @Override
@@ -207,77 +213,85 @@ public class ShardingService extends BusinessService {
             sc.changeUserAuthSwitch(data, changeUserPacket);
             return;
         }*/
-        switch (data[4]) {
-            case MySQLPacket.COM_INIT_DB:
-                commands.doInitDB();
-                protoLogicHandler.initDB(data);
-                break;
-            case MySQLPacket.COM_QUERY:
-                commands.doQuery();
-                protoLogicHandler.query(data);
-                break;
-            case MySQLPacket.COM_PING:
-                commands.doPing();
-                Ping.response(connection);
-                break;
-            case MySQLPacket.COM_HEARTBEAT:
-                commands.doHeartbeat();
-                Heartbeat.response(connection, data);
-                break;
-            case MySQLPacket.COM_QUIT:
-                commands.doQuit();
-                connection.close("quit cmd");
-                break;
-            case MySQLPacket.COM_STMT_PREPARE:
-                commands.doStmtPrepare();
-                String prepareSql = protoLogicHandler.stmtPrepare(data);
-                // record SQL
-                if (prepareSql != null) {
-                    this.setExecuteSql(prepareSql);
-                    prepareHandler.prepare(prepareSql);
-                }
-                break;
-            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
-                commands.doStmtSendLongData();
-                blobDataQueue.offer(data);
-                break;
-            case MySQLPacket.COM_STMT_CLOSE:
-                commands.doStmtClose();
-                stmtClose(data);
-                break;
-            case MySQLPacket.COM_STMT_RESET:
-                commands.doStmtReset();
-                blobDataQueue.clear();
-                prepareHandler.reset(data);
-                break;
-            case MySQLPacket.COM_STMT_EXECUTE:
-                commands.doStmtExecute();
-                this.stmtExecute(data, blobDataQueue);
-                break;
-            case MySQLPacket.COM_SET_OPTION:
-                commands.doOther();
-                protoLogicHandler.setOption(data);
-                break;
-            case MySQLPacket.COM_CHANGE_USER:
-                commands.doOther();
-                /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
-                sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
-                break;
-            case MySQLPacket.COM_RESET_CONNECTION:
-                commands.doOther();
-                protoLogicHandler.resetConnection();
-                break;
-            case MySQLPacket.COM_FIELD_LIST:
-                commands.doOther();
-                protoLogicHandler.fieldList(data);
-                break;
-            case MySQLPacket.COM_PROCESS_KILL:
-                commands.doKill();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-                break;
-            default:
-                commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+        try (RequestScope requestScope = new RequestScope()) {
+            this.requestScope = requestScope;
+            switch (data[4]) {
+                case MySQLPacket.COM_INIT_DB:
+                    commands.doInitDB();
+                    protoLogicHandler.initDB(data);
+                    break;
+                case MySQLPacket.COM_QUERY:
+                    commands.doQuery();
+                    protoLogicHandler.query(data);
+                    break;
+                case MySQLPacket.COM_PING:
+                    commands.doPing();
+                    Ping.response(connection);
+                    break;
+                case MySQLPacket.COM_HEARTBEAT:
+                    commands.doHeartbeat();
+                    Heartbeat.response(connection, data);
+                    break;
+                case MySQLPacket.COM_QUIT:
+                    commands.doQuit();
+                    connection.close("quit cmd");
+                    break;
+                case MySQLPacket.COM_STMT_PREPARE:
+                    commands.doStmtPrepare();
+                    String prepareSql = protoLogicHandler.stmtPrepare(data);
+                    // record SQL
+                    if (prepareSql != null) {
+                        this.setExecuteSql(prepareSql);
+                        prepareHandler.prepare(prepareSql);
+                    }
+                    break;
+                case MySQLPacket.COM_STMT_SEND_LONG_DATA:
+                    commands.doStmtSendLongData();
+                    blobDataQueue.offer(data);
+                    break;
+                case MySQLPacket.COM_STMT_CLOSE:
+                    commands.doStmtClose();
+                    stmtClose(data);
+                    break;
+                case MySQLPacket.COM_STMT_RESET:
+                    commands.doStmtReset();
+                    blobDataQueue.clear();
+                    prepareHandler.reset(data);
+                    break;
+                case MySQLPacket.COM_STMT_EXECUTE:
+                    commands.doStmtExecute();
+                    this.stmtExecute(data, blobDataQueue);
+                    break;
+                case MySQLPacket.COM_STMT_FETCH:
+                    commands.doStmtFetch();
+                    this.stmtFetch(data);
+                    break;
+                case MySQLPacket.COM_SET_OPTION:
+                    commands.doOther();
+                    protoLogicHandler.setOption(data);
+                    break;
+                case MySQLPacket.COM_CHANGE_USER:
+                    commands.doOther();
+                    /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
+                    sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
+                    break;
+                case MySQLPacket.COM_RESET_CONNECTION:
+                    commands.doOther();
+                    protoLogicHandler.resetConnection();
+                    break;
+                case MySQLPacket.COM_FIELD_LIST:
+                    commands.doOther();
+                    protoLogicHandler.fieldList(data);
+                    break;
+                case MySQLPacket.COM_PROCESS_KILL:
+                    commands.doKill();
+                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+                    break;
+                default:
+                    commands.doOther();
+                    writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+            }
+
         }
     }
 
@@ -328,6 +342,14 @@ public class ShardingService extends BusinessService {
         }
         if (prepareHandler != null) {
             prepareHandler.execute(data);
+        } else {
+            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
+        }
+    }
+
+    public void stmtFetch(byte[] data) {
+        if (prepareHandler != null) {
+            prepareHandler.fetch(data);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
         }
@@ -612,6 +634,9 @@ public class ShardingService extends BusinessService {
         }
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
+        }
+        if (prepareHandler != null) {
+            prepareHandler.clear();
         }
     }
 

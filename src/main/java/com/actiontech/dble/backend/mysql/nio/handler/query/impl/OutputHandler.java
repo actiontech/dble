@@ -9,10 +9,11 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.net.Session;
+import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.statistic.stat.QueryResult;
@@ -23,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
 
 /*
  * send back to client handler
@@ -35,15 +38,17 @@ public class OutputHandler extends BaseDMLHandler {
     private boolean isBinary;
     private long netOutBytes;
     private long selectRows;
-    private final NonBlockingSession serverSession;
+    protected final NonBlockingSession serverSession;
+    protected RequestScope requestScope;
 
     public OutputHandler(long id, Session session) {
         super(id, session);
         serverSession = (NonBlockingSession) session;
         serverSession.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.isBinary = serverSession.isPrepared();
         this.buffer = serverSession.getSource().allocate();
+        this.requestScope = serverSession.getShardingService().getRequestScope();
+        this.isBinary = requestScope.isPrepared();
     }
 
     @Override
@@ -89,6 +94,9 @@ public class OutputHandler extends BaseDMLHandler {
         if (terminate.get()) {
             return;
         }
+        if (requestScope.isUsingCursor()) {
+            requestScope.getCurrentPreparedStatement().initCursor(serverSession, this, fieldPackets.size(), fieldPackets);
+        }
         lock.lock();
         try {
             if (terminate.get()) {
@@ -109,6 +117,12 @@ public class OutputHandler extends BaseDMLHandler {
             }
             EOFPacket ep = new EOFPacket();
             ep.setPacketId(serverSession.getShardingService().nextPacketId());
+            if (requestScope.isUsingCursor()) {
+                byte statusFlag = 0;
+                statusFlag |= serverSession.getShardingService().isAutocommit() ? 2 : 1;
+                statusFlag |= SERVER_STATUS_CURSOR_EXISTS;
+                ep.setStatus(statusFlag);
+            }
             this.netOutBytes += ep.calcPacketSize();
             buffer = ep.write(buffer, shardingService, true);
         } finally {
@@ -130,11 +144,15 @@ public class OutputHandler extends BaseDMLHandler {
             byte[] row;
 
             if (this.isBinary) {
-                BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
-                binRowPacket.read(this.fieldPackets, rowPacket);
-                binRowPacket.setPacketId(serverSession.getShardingService().nextPacketId());
-                this.netOutBytes += binRowPacket.calcPacketSize();
-                buffer = binRowPacket.write(buffer, serverSession.getShardingService(), true);
+                if (requestScope.isUsingCursor()) {
+                    requestScope.getCurrentPreparedStatement().getCursorCache().add(rowPacket);
+                } else {
+                    BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
+                    binRowPacket.read(this.fieldPackets, rowPacket);
+                    binRowPacket.setPacketId(serverSession.getShardingService().nextPacketId());
+                    this.netOutBytes += binRowPacket.calcPacketSize();
+                    buffer = binRowPacket.write(buffer, serverSession.getShardingService(), true);
+                }
             } else {
                 if (rowPacket != null) {
                     rowPacket.setPacketId(serverSession.getShardingService().nextPacketId());
@@ -162,6 +180,11 @@ public class OutputHandler extends BaseDMLHandler {
         }
         logger.debug("--------sql execute end!");
         ShardingService shardingService = serverSession.getShardingService();
+        if (requestScope.isUsingCursor()) {
+            requestScope.getCurrentPreparedStatement().getCursorCache().done();
+            serverSession.getShardingService().writeDirectly(buffer);
+            return;
+        }
         lock.lock();
         try {
             if (terminate.get()) {

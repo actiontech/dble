@@ -8,8 +8,6 @@
  */
 package com.actiontech.dble.plan.common.item.function.operator.cmpfunc;
 
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
@@ -48,9 +46,6 @@ public class ItemFuncStrcmp extends ItemBoolFunc2 {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        if (realArgs.size() < 2) {
-            throw new MySQLOutPutException(ErrorCode.ER_WRONG_PARAMCOUNT_TO_NATIVE_FCT, "42000", "Incorrect parameter count in the call to native function 'STRCMP'");
-        }
         return new ItemFuncStrcmp(realArgs.get(0), realArgs.get(1), this.charsetIndex);
     }
 }

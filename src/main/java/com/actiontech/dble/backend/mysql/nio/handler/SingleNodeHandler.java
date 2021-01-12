@@ -20,6 +20,8 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.RequestScope;
+import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -35,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
 
 /**
  * @author mycat
@@ -57,6 +61,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private volatile boolean connClosed = false;
     protected AtomicBoolean writeToClient = new AtomicBoolean(false);
 
+    private RequestScope requestScope;
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
@@ -68,6 +73,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             throw new IllegalArgumentException("session is null!");
         }
         this.session = session;
+        requestScope = session.getShardingService().getRequestScope();
+
     }
 
 
@@ -244,6 +251,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            return;
+        }
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
@@ -282,6 +292,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            requestScope.getCurrentPreparedStatement().onPrepareOk(fieldCount);
+            writeToClient.compareAndSet(false, true);
+            return;
+        }
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe((MySQLResponseService) service, false);
@@ -295,10 +310,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ShardingService shardingService = session.getShardingService();
         session.setResponseTime(true);
         doSqlStat();
+        if (requestScope.isUsingCursor()) {
+            requestScope.getCurrentPreparedStatement().getCursorCache().done();
+            session.getShardingService().writeDirectly(buffer);
+        }
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
-                eofRowPacket.write(buffer, shardingService);
+                if (!requestScope.isUsingCursor()) {
+                    eofRowPacket.write(buffer, shardingService);
+                }
             }
         } finally {
             lock.unlock();
@@ -331,6 +352,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
+        fieldCount = fields.size();
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            return;
+        }
 
         header[3] = (byte) session.getShardingService().nextPacketId();
 
@@ -362,8 +387,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
 
                 fieldCount = fieldPackets.size();
+                if (requestScope.isUsingCursor()) {
+                    requestScope.getCurrentPreparedStatement().initCursor(session, this, fields.size(), fieldPackets);
+                }
 
                 eof[3] = (byte) session.getShardingService().nextPacketId();
+                if (requestScope.isUsingCursor()) {
+                    byte statusFlag = 0;
+                    statusFlag |= session.getShardingService().isAutocommit() ? 2 : 1;
+                    statusFlag |= SERVER_STATUS_CURSOR_EXISTS;
+                    eof[7] = statusFlag;
+                }
                 buffer = shardingService.writeToBuffer(eof, buffer);
             }
         } finally {
@@ -376,6 +410,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += row.length;
         this.resultSize += row.length;
         this.selectRows++;
+        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+            return false;
+        }
         lock.lock();
         try {
             if (!writeToClient.get()) {
@@ -386,13 +423,19 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
 
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
-                row[3] = (byte) session.getShardingService().nextPacketId();
+                if (!requestScope.isUsingCursor()) {
+                    row[3] = (byte) session.getShardingService().nextPacketId();
+                }
                 rowDataPk.read(row);
-                if (session.isPrepared()) {
-                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                    binRowDataPk.read(fieldPackets, rowDataPk);
-                    binRowDataPk.setPacketId(rowDataPk.getPacketId());
-                    buffer = binRowDataPk.write(buffer, session.getShardingService(), true);
+                if (requestScope.isPrepared()) {
+                    if (requestScope.isUsingCursor()) {
+                        requestScope.getCurrentPreparedStatement().getCursorCache().add(rowDataPk);
+                    } else {
+                        BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                        binRowDataPk.read(fieldPackets, rowDataPk);
+                        binRowDataPk.setPacketId(rowDataPk.getPacketId());
+                        buffer = binRowDataPk.write(buffer, session.getShardingService(), true);
+                    }
                 } else {
                     buffer = rowDataPk.write(buffer, session.getShardingService(), true);
                 }

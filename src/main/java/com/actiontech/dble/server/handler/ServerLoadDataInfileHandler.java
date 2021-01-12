@@ -82,6 +82,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private int autoIncrementIndex = -1;
     private boolean appendAutoIncrementColumn = false;
 
+    private volatile boolean isStart = false;
+
     public ServerLoadDataInfileHandler(ShardingService service) {
         this.service = service;
     }
@@ -120,6 +122,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_database");
         loadData.setCharset(CharsetUtil.getJavaCharset(charset));
         loadData.setFileName(fileName);
+    }
+
+
+    @Override
+    public boolean isStart() {
+        return isStart;
     }
 
     @Override
@@ -192,6 +200,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         parseLoadDataPram();
+        isStart = true;
         if (statement.isLocal()) {
             //request file from client
             ByteBuffer buffer = service.allocate();
@@ -746,7 +755,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     public void clear() {
-        service.resetProto();
+        isStart = false;
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;

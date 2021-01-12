@@ -1,7 +1,6 @@
 package com.actiontech.dble.net.service;
 
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
@@ -14,7 +13,6 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,50 +23,63 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AbstractService implements Service {
 
-    protected AbstractConnection connection;
-    private AtomicInteger packetId;
-
-    protected ServiceTask currentTask = null;
-    private volatile boolean isSupportCompress = false;
-    protected volatile ProtoHandler proto;
-    protected final ConcurrentLinkedQueue<ServiceTask> taskQueue;
+    protected final AbstractConnection connection;
+    private final AtomicInteger packetId;
+    private final ProtoHandler proto;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
         this.proto = new MySQLProtoHandlerImpl();
-        this.taskQueue = new ConcurrentLinkedQueue<>();
         this.packetId = new AtomicInteger(0);
     }
 
     @Override
     public void handle(ByteBuffer dataBuffer) {
         this.sessionStart();
-        boolean hasReming = true;
+        boolean hasRemaining = true;
         int offset = 0;
-        while (hasReming) {
-            ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress);
+        while (hasRemaining) {
+            ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress());
             switch (result.getCode()) {
                 case REACH_END_BUFFER:
                     connection.readReachEnd();
                     byte[] packetData = result.getPacketData();
                     if (packetData != null) {
-                        taskCreate(packetData);
+                        if (!isSupportCompress()) {
+                            handleTask(new ServiceTask(packetData, this));
+                        } else {
+                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, new ConcurrentLinkedQueue<>());
+                            for (byte[] pack : packs) {
+                                if (pack.length != 0) {
+                                    handleTask(new ServiceTask(pack, this));
+                                }
+                            }
+                        }
                     }
                     dataBuffer.clear();
-                    hasReming = false;
+                    hasRemaining = false;
                     break;
                 case BUFFER_PACKET_UNCOMPLETE:
                     connection.compactReadBuffer(dataBuffer, result.getOffset());
-                    hasReming = false;
+                    hasRemaining = false;
                     break;
                 case BUFFER_NOT_BIG_ENOUGH:
                     connection.ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
-                    hasReming = false;
+                    hasRemaining = false;
                     break;
                 case STLL_DATA_REMING:
                     byte[] partData = result.getPacketData();
                     if (partData != null) {
-                        taskCreate(partData);
+                        if (!isSupportCompress()) {
+                            handleTask(new ServiceTask(partData, this));
+                        } else {
+                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(partData, new ConcurrentLinkedQueue<>());
+                            for (byte[] pack : packs) {
+                                if (pack.length != 0) {
+                                    handleTask(new ServiceTask(pack, this));
+                                }
+                            }
+                        }
                     }
                     offset = result.getOffset();
                     continue;
@@ -78,49 +89,10 @@ public abstract class AbstractService implements Service {
         }
     }
 
-    protected void taskCreate(byte[] packetData) {
-        if (beforeHandlingTask()) {
-            ServiceTask task = new ServiceTask(packetData, this);
-            taskQueue.offer(task);
-            taskToTotalQueue(task);
-        }
-    }
-
-    protected void taskMultiQueryCreate(byte[] packetData) {
-        if (beforeHandlingTask()) {
-            ServiceTask task = new ServiceTask(packetData, this, true);
-            taskQueue.offer(task);
-            taskToTotalQueue(task);
-        }
-    }
-
+    protected abstract void handleTask(ServiceTask task);
 
     protected void sessionStart() {
-        //
     }
-
-    @Override
-    public void execute(ServiceTask task) {
-        task.increasePriority();
-        handleData(task);
-    }
-
-    public void cleanup() {
-        synchronized (this) {
-            this.currentTask = null;
-        }
-        this.taskQueue.clear();
-        TraceManager.sessionFinish(this);
-    }
-
-    public void register() throws IOException {
-
-    }
-
-    public void consumerInternalData(ServiceTask task) {
-        throw new RuntimeException("function not support");
-    }
-
 
     public int nextPacketId() {
         return packetId.incrementAndGet();
@@ -147,6 +119,7 @@ public abstract class AbstractService implements Service {
     }
 
     public void writeDirectly(ByteBuffer buffer) {
+        markFinished();
         this.connection.write(buffer);
     }
 
@@ -161,16 +134,17 @@ public abstract class AbstractService implements Service {
         }
     }
 
-
     public void write(MySQLPacket packet) {
         if (packet.isEndOfSession() || packet.isEndOfQuery()) {
             TraceManager.sessionFinish(this);
         }
+        markFinished();
         packet.bufferWrite(connection);
     }
 
     public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
         buffer = packet.write(buffer, this, true);
+        markFinished();
         connection.write(buffer);
         if (packet.isEndOfSession() || packet.isEndOfQuery()) {
             TraceManager.sessionFinish(this);
@@ -180,7 +154,6 @@ public abstract class AbstractService implements Service {
     public void recycleBuffer(ByteBuffer buffer) {
         this.connection.getProcessor().getBufferPool().recycle(buffer);
     }
-
 
     public ByteBuffer writeBigPackageToBuffer(byte[] data, ByteBuffer buffer) {
         int srcPos;
@@ -222,74 +195,14 @@ public abstract class AbstractService implements Service {
         return connection.writeToBuffer(src, buffer);
     }
 
-    public boolean isSupportCompress() {
-        return isSupportCompress;
-    }
-
-    public void setSupportCompress(boolean supportCompress) {
-        isSupportCompress = supportCompress;
-    }
-
+    public abstract boolean isSupportCompress();
 
     public String toBriefString() {
         return "Service " + this.getClass() + " " + connection.getId();
     }
 
-    protected void taskToPriorityQueue(ServiceTask task) {
-        DbleServer.getInstance().getFrontPriorityQueue().offer(task);
-        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null));
-    }
-
-    protected void taskToTotalQueue(ServiceTask task) {
-        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
-    }
-
-    protected boolean beforeHandlingTask() {
-        return true;
-    }
-
-    public void handleData(ServiceTask task) {
-        ServiceTask executeTask = null;
-        if (connection.isClosed()) {
-            return;
-        }
-
-        synchronized (this) {
-            if (currentTask == null) {
-                executeTask = taskQueue.poll();
-                if (executeTask != null) {
-                    currentTask = executeTask;
-                }
-            }
-            if (currentTask != task) {
-                taskToPriorityQueue(task);
-            }
-        }
-
-        if (executeTask != null) {
-            byte[] data = executeTask.getOrgData();
-            if (data != null && !executeTask.isReuse()) {
-                this.setPacketId(data[3]);
-            }
-            if (isSupportCompress()) {
-                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, new ConcurrentLinkedQueue<>());
-                for (byte[] pack : packs) {
-                    if (pack.length != 0) {
-                        handleInnerData(pack);
-                    }
-                }
-            } else {
-                this.handleInnerData(data);
-                synchronized (this) {
-                    currentTask = null;
-                }
-            }
-        }
-    }
-
-    protected abstract void handleInnerData(byte[] data);
-
     public void writeOkPacket() {
+        markFinished();
         OkPacket ok = new OkPacket();
         byte packet = (byte) this.getPacketId().incrementAndGet();
         ok.read(OkPacket.OK);
@@ -310,6 +223,7 @@ public abstract class AbstractService implements Service {
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);
@@ -317,4 +231,8 @@ public abstract class AbstractService implements Service {
         err.setMessage(StringUtil.encode(msg, connection.getCharsetName().getResults()));
         err.write(connection);
     }
+
+    protected void markFinished() {
+    }
+
 }

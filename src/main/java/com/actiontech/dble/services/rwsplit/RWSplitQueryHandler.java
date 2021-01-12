@@ -103,7 +103,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     case RwSplitServerParse.CREATE_TEMPORARY_TABLE:
                         TempTableHandler.handleCreate(sql, session.getService(), rs >>> 8);
                         break;
-                    case RwSplitServerParse.DROP_TEMPORARY_TABLE:
+                    case RwSplitServerParse.DROP_TABLE:
                         TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
                         break;
                     default:

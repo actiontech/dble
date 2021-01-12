@@ -5,7 +5,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.services.FrontEndService;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
@@ -66,8 +66,8 @@ public class FrontendConnection extends AbstractConnection {
         if (isCleanUp.compareAndSet(false, true)) {
             super.cleanup();
             AbstractService service = getService();
-            if (service instanceof FrontEndService) {
-                ((FrontEndService) service).userConnectionCount();
+            if (service instanceof FrontendService) {
+                ((FrontendService) service).userConnectionCount();
             }
         }
     }
@@ -90,8 +90,8 @@ public class FrontendConnection extends AbstractConnection {
         return isManager;
     }
 
-    public FrontEndService getFrontEndService() {
-        return (FrontEndService) getService();
+    public FrontendService getFrontEndService() {
+        return (FrontendService) getService();
     }
 
     public boolean convertToFrontEndService() {

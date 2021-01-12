@@ -3,7 +3,6 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
-import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -14,7 +13,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
@@ -30,7 +28,6 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
-import com.actiontech.dble.services.mysqlsharding.handler.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
@@ -72,7 +69,6 @@ public class ShardingService extends BusinessService {
 
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    protected String executeSql;
     private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
@@ -81,7 +77,6 @@ public class ShardingService extends BusinessService {
     private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
-    private volatile boolean multiStatementAllow = false;
     private final NonBlockingSession session;
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
@@ -97,7 +92,6 @@ public class ShardingService extends BusinessService {
         session.setRowCount(0);
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
-        this.proto = new MySQLProtoHandlerImpl();
     }
 
     public RequestScope getRequestScope() {
@@ -200,9 +194,8 @@ public class ShardingService extends BusinessService {
     }
 
     @Override
-    protected void taskToTotalQueue(ServiceTask task) {
+    protected void beforeHandlingTask() {
         session.setRequestTime();
-        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
     @Override
@@ -214,6 +207,16 @@ public class ShardingService extends BusinessService {
             return;
         }*/
         try (RequestScope requestScope = new RequestScope()) {
+
+            if (loadDataInfileHandler.isStart()) {
+                if (isEndOfDataFile(data)) {
+                    loadDataInfileHandler.end(data[3]);
+                } else {
+                    loadDataInfileHandler.handle(data);
+                }
+                return;
+            }
+
             this.requestScope = requestScope;
             switch (data[4]) {
                 case MySQLPacket.COM_INIT_DB:
@@ -416,24 +419,20 @@ public class ShardingService extends BusinessService {
         this.multiStatementAllow = info.getMysqlAuthPacket().isMultStatementAllow();
     }
 
+    @Override
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
-        if (session.isDiscard() || session.isKilled()) {
-            session.setKilled(false);
-            session.setDiscard(false);
-        }
     }
 
     @Override
-    protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
-        markFinished();
-        super.writeErrMessage(id, vendorCode, sqlState, msg);
-    }
-
     public void markFinished() {
         if (session != null) {
             session.setStageFinished();
+            if (session.isDiscard() || session.isKilled()) {
+                session.setKilled(false);
+                session.setDiscard(false);
+            }
         }
     }
 
@@ -502,7 +501,6 @@ public class ShardingService extends BusinessService {
         if (loadDataInfileHandler != null) {
             try {
                 loadDataInfileHandler.clear();
-                proto = new LoadDataProtoHandlerImpl(loadDataInfileHandler);
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 LOGGER.info("load data error", e);
@@ -562,6 +560,7 @@ public class ShardingService extends BusinessService {
     @Override
     public void write(MySQLPacket packet) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
+        markFinished();
         if (packet.isEndOfSession()) {
             //error finished do resource clean up
             session.resetMultiStatementStatus();
@@ -592,6 +591,7 @@ public class ShardingService extends BusinessService {
     @Override
     public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
         boolean multiQueryFlag = session.multiStatementPacket(packet);
+        markFinished();
         if (packet.isEndOfSession()) {
             //error finished do resource clean up
             session.resetMultiStatementStatus();
@@ -625,7 +625,7 @@ public class ShardingService extends BusinessService {
         }
     }
 
-
+    @Override
     public void cleanup() {
         super.cleanup();
         if (session != null) {
@@ -668,10 +668,6 @@ public class ShardingService extends BusinessService {
         this.txInterruptMsg = txInterruptMsg;
     }
 
-    public String getExecuteSql() {
-        return executeSql;
-    }
-
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
@@ -679,18 +675,6 @@ public class ShardingService extends BusinessService {
             //not a xa transaction ,close it
             session.kill();
         }
-    }
-
-    public void setExecuteSql(String executeSql) {
-        this.executeSql = executeSql;
-    }
-
-    public boolean isMultiStatementAllow() {
-        return multiStatementAllow;
-    }
-
-    public void setMultiStatementAllow(boolean multiStatementAllow) {
-        this.multiStatementAllow = multiStatementAllow;
     }
 
     public NonBlockingSession getSession2() {
@@ -745,12 +729,12 @@ public class ShardingService extends BusinessService {
         return sptprepare;
     }
 
-    public void resetProto() {
-        this.proto = new MySQLProtoHandlerImpl();
+    private boolean isEndOfDataFile(byte[] data) {
+        return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
     }
 
     public String toString() {
-        return "Shardingservice[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
+        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
     }
 }

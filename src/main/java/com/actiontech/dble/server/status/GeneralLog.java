@@ -16,7 +16,7 @@ public final class GeneralLog {
         this.enableGeneralLog = SystemConfig.getInstance().getEnableGeneralLog() == 1;
         File file = new File(SystemConfig.getInstance().getGeneralLogFile());
         this.generalLogFile = file.getAbsolutePath();
-        this.generalLogFileSize = SystemConfig.getInstance().getGeneralLogFileSize() * 1024 * 1024;
+        this.generalLogFileSize = SystemConfig.getInstance().getGeneralLogFileSize();
         this.generalLogQueueSize = SystemConfig.getInstance().getGeneralLogQueueSize();
     }
 

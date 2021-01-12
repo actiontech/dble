@@ -166,7 +166,6 @@ public final class GeneralLogCf {
                     if (!filePath.equals(GeneralLog.getInstance().getGeneralLogFile())) {
                         WriteDynamicBootstrap.getInstance().changeValue("generalLogFile", filePath);
                         GeneralLog.getInstance().setGeneralLogFile(filePath);
-                        GeneralLogProcessor.getInstance().enable();
                     }
                     GeneralLogHelper.putGLog(FILE_HEADER);
                 } catch (Exception e) {

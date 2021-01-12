@@ -28,7 +28,7 @@ public class RotateLogStore {
         rotateStrategy = new RotateStrategy();
     }
 
-    public LogFileManager createFileManager(String name, long maxFileSize) throws IOException {
+    public LogFileManager createFileManager(String name, int maxFileSize) throws IOException {
         File file;
         RandomAccessFile raf = null;
         long currentSize = 0;
@@ -68,9 +68,9 @@ public class RotateLogStore {
         private Calendar cal;
         // private boolean initFileExists = false;
 
-        public LogFileManager(String fileName, long maxFileSize, RandomAccessFile raf, long size, long initialTime, boolean initFileExists) {
+        public LogFileManager(String fileName, int maxFileSize, RandomAccessFile raf, long size, long initialTime, boolean initFileExists) {
             this.fileName = fileName;
-            this.maxFileSize = maxFileSize;
+            this.maxFileSize = maxFileSize * 1024 * 1024;
             this.randomAccessFile = raf;
             this.size = size;
             this.initialTime = initialTime;

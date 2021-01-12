@@ -24,7 +24,6 @@ import java.io.UnsupportedEncodingException;
 public class ManagerService extends FrontendService {
 
     private final ManagerQueryHandler handler;
-    private volatile String executeSql;
     private final ManagerSession session;
     protected final CommandCount commands;
 

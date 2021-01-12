@@ -15,14 +15,14 @@ public class AuthResultInfo {
     private AuthPacket mysqlAuthPacket = null;
 
     public AuthResultInfo(String errorMsg, AuthPacket authPacket, UserConfig userConfig) {
-        this.success = errorMsg == null ? true : false;
+        this.success = errorMsg == null;
         this.errorMsg = errorMsg;
         this.userConfig = userConfig;
         this.mysqlAuthPacket = authPacket;
     }
 
     public AuthResultInfo(String errorMsg) {
-        this.success = errorMsg == null ? true : false;
+        this.success = errorMsg == null;
     }
 
     public boolean isSuccess() {

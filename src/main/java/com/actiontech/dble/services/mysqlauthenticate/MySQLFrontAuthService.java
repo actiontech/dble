@@ -14,7 +14,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.services.FrontEndService;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
 import com.actiontech.dble.singleton.TraceManager;
@@ -24,15 +24,23 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static com.actiontech.dble.services.mysqlauthenticate.PluginName.caching_sha2_password;
+import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_native_password;
+
 
 /**
  * Created by szf on 2020/6/18.
  */
-public class MySQLFrontAuthService extends AuthService {
+public class MySQLFrontAuthService extends FrontendService implements AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLFrontAuthService.class);
 
+    private static final PluginName[] MYSQL_DEFAULT_PLUGIN = {mysql_native_password, mysql_native_password, mysql_native_password, caching_sha2_password};
+
     private volatile AuthPacket authPacket;
+    private volatile byte[] seed;
+    private volatile boolean needAuthSwitched;
+    private volatile PluginName pluginName;
 
     public MySQLFrontAuthService(AbstractConnection connection) {
         super(connection);
@@ -113,12 +121,6 @@ public class MySQLFrontAuthService extends AuthService {
         }
     }
 
-    @Override
-    public void onConnectFailed(Throwable e) {
-
-    }
-
-
     private void greeting() {
         // generate auth data
         byte[] rand1 = RandomUtil.randomBytes(8);
@@ -155,10 +157,10 @@ public class MySQLFrontAuthService extends AuthService {
             PluginName name = PluginName.valueOf(auth.getAuthPlugin());
             if (pluginName != name) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("auth switch request client-plugin:[{}],server-plugin:[{}]->[{}]", name, pluginName, PluginName.mysql_native_password);
+                    LOGGER.debug("auth switch request client-plugin:[{}],server-plugin:[{}]->[{}]", name, pluginName, mysql_native_password);
                 }
                 needAuthSwitched = true;
-                this.pluginName = PluginName.mysql_native_password;
+                this.pluginName = mysql_native_password;
                 sendSwitchPacket(pluginName);
                 return;
             }
@@ -223,6 +225,25 @@ public class MySQLFrontAuthService extends AuthService {
         flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         flag |= Capabilities.CLIENT_CONNECT_ATTRS;
         return flag;
+    }
+
+    private PluginName getDefaultPluginName() {
+        String majorMySQLVersion = SystemConfig.getInstance().getFakeMySQLVersion();
+        if (majorMySQLVersion != null) {
+            String[] versions = majorMySQLVersion.split("\\.");
+            if (versions.length == 3) {
+                majorMySQLVersion = versions[0] + "." + versions[1];
+                for (int i = 0; i < SystemConfig.MYSQL_VERSIONS.length; i++) {
+                    // version is x.y.z ,just compare the x.y
+                    if (majorMySQLVersion.equals(SystemConfig.MYSQL_VERSIONS[i])) {
+                        return MYSQL_DEFAULT_PLUGIN[i];
+                    }
+                }
+            }
+        } else {
+            return mysql_native_password;
+        }
+        return null;
     }
 
 }

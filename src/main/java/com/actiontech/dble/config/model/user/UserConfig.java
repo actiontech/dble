@@ -86,4 +86,12 @@ public class UserConfig {
 
     public void isValidSchemaInfo(UserName user, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
     }
+
+    public boolean equalsBaseInfo(UserConfig userConfig) {
+        return StringUtil.equalsWithEmpty(this.name, userConfig.getName()) &&
+                StringUtil.equalsWithEmpty(this.password, userConfig.getPassword()) &&
+                this.isEncrypt == userConfig.isEncrypt() &&
+                this.maxCon == userConfig.getMaxCon() &&
+                this.whiteIPs.equals(userConfig.getWhiteIPs());
+    }
 }

@@ -27,13 +27,13 @@ public final class ClusterPathUtil {
     public static final String CONF_BASE_PATH = BASE_PATH + "conf" + SEPARATOR;
 
     //xml properties
-    static final String SCHEMA = "schema";
-    static final String DB_GROUP = "dbGroup";
-    static final String SHARDING_NODE = "shardingNode";
-    static final String BLACKLIST = "blacklist";
-    static final String VERSION = "version";
-    static final String FUNCTION = "function";
-    static final String USER = "user";
+    public static final String SCHEMA = "schema";
+    public static final String DB_GROUP = "dbGroup";
+    public static final String SHARDING_NODE = "shardingNode";
+    public static final String BLACKLIST = "blacklist";
+    public static final String VERSION = "version";
+    public static final String FUNCTION = "function";
+    public static final String USER = "user";
 
 
     public static final String SUCCESS = "success";

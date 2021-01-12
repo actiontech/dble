@@ -5,8 +5,13 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -26,7 +31,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,6 +91,16 @@ public final class DeleteHandler {
             service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return;
         }
+
+        DistributeLock distributeLock = null;
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            if (!distributeLock.acquire()) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                return;
+            }
+            LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+        }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         int rowSize;
         boolean lockFlag = managerTable.getLock().tryLock();
@@ -110,29 +124,22 @@ public final class DeleteHandler {
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
-                handleConfigException(e, service, managerTable);
+                service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
+                LOGGER.warn("Delete failure.The reason is " + e);
             } else {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
             return;
         } finally {
-            managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
+            if (distributeLock != null) {
+                distributeLock.release();
+            }
         }
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(rowSize);
         ok.write(service.getConnection());
-    }
-
-    private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
-        try {
-            managerTable.rollbackXmlFile();
-        } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
-        }
-        service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
     }
 }

@@ -7,16 +7,19 @@ package com.actiontech.dble.services;
 
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.statistic.CommandCount;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class BusinessService extends FrontEndService {
+public abstract class BusinessService extends FrontendService {
     protected volatile boolean txStarted;
+    protected final CommandCount commands;
     protected final AtomicLong queriesCounter = new AtomicLong(0);
     protected final AtomicLong transactionsCounter = new AtomicLong(0);
 
     public BusinessService(AbstractConnection connection) {
         super(connection);
+        this.commands = connection.getProcessor().getCommands();
     }
 
 
@@ -41,7 +44,6 @@ public abstract class BusinessService extends FrontEndService {
             transactionsCounter.incrementAndGet();
         }
     }
-
 
     public long getQueriesCounter() {
         return queriesCounter.get();
@@ -112,5 +114,7 @@ public abstract class BusinessService extends FrontEndService {
             handleVariable(autocommitItem);
         }
     }
+
     public abstract void handleVariable(MysqlVariable variable);
+
 }

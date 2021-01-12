@@ -42,4 +42,9 @@ public class ManagerUserConfig extends UserConfig {
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
     }
+
+    public boolean equalsBaseInfo(ManagerUserConfig managerUserConfig) {
+        return super.equalsBaseInfo(managerUserConfig) &&
+                this.readOnly == managerUserConfig.isReadOnly();
+    }
 }

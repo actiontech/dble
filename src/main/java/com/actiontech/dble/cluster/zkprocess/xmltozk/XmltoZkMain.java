@@ -7,7 +7,6 @@ package com.actiontech.dble.cluster.zkprocess.xmltozk;
 
 import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.util.KVPathUtil;
@@ -33,21 +32,17 @@ public final class XmltoZkMain {
     public static void initFileToZK() throws Exception {
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
-        XmlProcessBase xmlProcess = new XmlProcessBase();
+        new DbXmlToZkLoader(zkListen);
 
-        new DbXmlToZkLoader(zkListen, xmlProcess);
+        new ShardingXmlToZKLoader(zkListen);
 
-        new ShardingXmlToZKLoader(zkListen, xmlProcess);
-
-        new UserXmlToZkLoader(zkListen, xmlProcess);
+        new UserXmlToZkLoader(zkListen);
 
         new SequenceToZkLoader(zkListen);
 
         new OtherMsgTozkLoader(zkListen);
 
         new DbGroupStatusToZkLoader(zkListen);
-
-        xmlProcess.initJaxbClass();
 
         zkListen.initAllNode();
         zkListen.clearInited();

@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,5 +122,13 @@ public class ShardingNode {
             }
         }
         return master;
+    }
+
+
+    public boolean equalsBaseInfo(ShardingNode shardingNode) {
+        return StringUtil.equalsWithEmpty(this.name, shardingNode.getName()) &&
+                StringUtil.equalsWithEmpty(this.dbGroupName, shardingNode.getDbGroupName()) &&
+                StringUtil.equalsWithEmpty(this.database, shardingNode.getDatabase()) &&
+                this.dbGroup.equalsBaseInfo(shardingNode.getDbGroup());
     }
 }

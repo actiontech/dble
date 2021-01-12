@@ -27,14 +27,14 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
     /**
-    When client send one request. dble should return one and only one response.
-    But , maybe OK event and connection closed event are run in parallel.
-    so we need use synchronized and write2Client to prevent conflict.
+     * When client send one request. dble should return one and only one response.
+     * But , maybe OK event and connection closed event are run in parallel.
+     * so we need use synchronized and write2Client to prevent conflict.
      */
     private boolean write2Client = false;
     private final Callback callback;
     /**
-    If there are more packets next.This flag in would be set.
+     * If there are more packets next.This flag in would be set.
      */
     private static final int HAS_MORE_RESULTS = 0x08;
 
@@ -138,24 +138,12 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
     }
 
-    // this for prepared statement ok
-    @Override
-    public void fieldEofResponse(List<byte[]> fields, byte[] eof, MySQLResponseService service) {
-        synchronized (this) {
-            for (byte[] field : fields) {
-                field[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(field, buffer);
-            }
-            eof[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(eof, buffer);
-            frontedConnection.write(buffer);
-        }
-    }
-
-
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         synchronized (this) {
+            if (buffer == null) {
+                buffer = frontedConnection.allocate();
+            }
             row[3] = (byte) rwSplitService.nextPacketId();
             buffer = frontedConnection.writeToBuffer(row, buffer);
         }
@@ -176,7 +164,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
                 }
                 buffer = frontedConnection.writeToBuffer(eof, buffer);
+                /*
+                multi statement all cases are as follows:
+                1. if an resultSet is followed by an resultSet. buffer will re-assign in fieldEofResponse()
+                2. if an resultSet is followed by an okResponse. okResponse() send directly without use buffer.
+                3. if an resultSet is followed by  an errorResponse. buffer will be used if it is not null.
+
+                We must prevent  same buffer called connection.write() twice.
+                According to the above, you need write buffer immediately and set buffer to null.
+                 */
                 frontedConnection.write(buffer);
+                buffer = null;
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
                     write2Client = true;
                 }
@@ -211,34 +209,54 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void preparedOkResponse(byte[] ok, MySQLResponseService service) {
-        boolean executeResponse = service.syncAndExecute();
-        if (executeResponse) {
-            synchronized (this) {
-                if (buffer == null) {
-                    buffer = frontedConnection.allocate();
+    public void preparedOkResponse(byte[] ok, List<byte[]> fields, List<byte[]> params, MySQLResponseService service) {
+        synchronized (this) {
+            if (buffer == null) {
+                buffer = frontedConnection.allocate();
+            }
+            if (!write2Client) {
+                ok[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(ok, buffer);
+                if (fields != null) {
+                    for (byte[] field : fields) {
+                        field[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(field, buffer);
+                    }
                 }
-                if (!write2Client) {
-                    ok[3] = (byte) rwSplitService.nextPacketId();
-                    frontedConnection.write(ok);
-                    write2Client = true;
+                if (params != null) {
+                    for (byte[] param : params) {
+                        param[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(param, buffer);
+                    }
                 }
+                frontedConnection.write(buffer);
+                write2Client = true;
+                buffer = null;
             }
         }
     }
 
     @Override
-    public void paramEofResponse(List<byte[]> params, byte[] eof, MySQLResponseService service) {
+    public void preparedExecuteResponse(byte[] header, List<byte[]> fields, byte[] eof, MySQLResponseService service) {
         synchronized (this) {
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
-            for (byte[] field : params) {
-                field[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(field, buffer);
+            if (!write2Client) {
+                header[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(header, buffer);
+                if (fields != null) {
+                    for (byte[] field : fields) {
+                        field[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(field, buffer);
+                    }
+                }
+                eof[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.writeToBuffer(eof, buffer);
+                frontedConnection.write(buffer);
+                write2Client = true;
+                buffer = null;
             }
-            eof[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(eof, buffer);
         }
     }
 

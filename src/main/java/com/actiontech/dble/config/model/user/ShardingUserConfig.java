@@ -65,4 +65,18 @@ public class ShardingUserConfig extends ServerUserConfig {
             schemaInfo.setSchemaConfig(schemaConfig);
         }
     }
+
+    public boolean equalsBaseInfo(ShardingUserConfig shardingUserConfig) {
+        return super.equalsBaseInfo(shardingUserConfig) &&
+                this.readOnly == shardingUserConfig.isReadOnly() &&
+                this.schemas.equals(shardingUserConfig.getSchemas()) &&
+                isEquals(this.privilegesConfig, shardingUserConfig.getPrivilegesConfig());
+    }
+
+    private boolean isEquals(UserPrivilegesConfig o1, UserPrivilegesConfig o2) {
+        if (o1 == null) {
+            return o2 == null;
+        }
+        return o1 == o2 || o1.equalsBaseInfo(o2);
+    }
 }

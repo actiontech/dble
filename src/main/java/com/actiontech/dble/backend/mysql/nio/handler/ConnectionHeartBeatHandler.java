@@ -10,10 +10,10 @@ import com.actiontech.dble.backend.pool.util.TimerHolder;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +43,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     public boolean ping(long timeout) {
-        conn.getBackendService().ping();
+        conn.getService().writeDirectly(PingPacket.PING);
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
                 try {
@@ -54,12 +54,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             }
             return finished;
         } else {
-            heartbeatTimeout = TimerHolder.getTimer().newTimeout(new TimerTask() {
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    conn.businessClose("conn heart timeout");
-                }
-            }, timeout, TimeUnit.MILLISECONDS);
+            heartbeatTimeout = TimerHolder.getTimer().newTimeout(timeout1 -> conn.businessClose("conn heart timeout"), timeout, TimeUnit.MILLISECONDS);
             return true;
         }
     }

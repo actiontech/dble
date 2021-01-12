@@ -8,7 +8,6 @@ import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
@@ -21,8 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,10 +33,8 @@ public class RWSplitService extends BusinessService {
     private volatile boolean isLocked;
     private volatile boolean inLoadData;
     private volatile boolean inPrepare;
-    private volatile boolean usingTmpTable = false;
-    private Set<String/* tableName */> tmpTableSet;
+    private volatile Set<String/* schemaName.tableName */> tmpTableSet;
 
-    private volatile String executeSql;
     private volatile byte[] executeSqlBytes;
     // only for test
     private volatile String expectedDest;
@@ -85,11 +82,6 @@ public class RWSplitService extends BusinessService {
     }
 
     @Override
-    protected void taskToTotalQueue(ServiceTask task) {
-        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
-    }
-
-    @Override
     protected void handleInnerData(byte[] data) {
         // TODO need to consider COM_STMT_EXECUTE
         GeneralLogHelper.putGLog(this, data);
@@ -129,9 +121,10 @@ public class RWSplitService extends BusinessService {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
-                session.execute(true, data, (isSuccess, rwSplitService) -> {
-                    rwSplitService.setInPrepare(false);
-                });
+                session.execute(true, data, null);
+                // COM_STMT_CLOSE No response is sent back to the client.
+                inPrepare = false;
+                session.unbindIfSafe();
                 break;
             // connection
             case MySQLPacket.COM_QUIT:
@@ -232,15 +225,6 @@ public class RWSplitService extends BusinessService {
         return session;
     }
 
-    @Override
-    public String getExecuteSql() {
-        return executeSql;
-    }
-
-    public void setExecuteSql(String executeSql) {
-        this.executeSql = executeSql;
-    }
-
     public byte[] getExecuteSqlBytes() {
         return executeSqlBytes;
     }
@@ -266,16 +250,21 @@ public class RWSplitService extends BusinessService {
     }
 
     public boolean isUsingTmpTable() {
-        return usingTmpTable;
+        if (tmpTableSet == null) {
+            return false;
+        }
+        return !tmpTableSet.isEmpty();
     }
 
-    public void setUsingTmpTable(boolean usingTmpTable) {
-        this.usingTmpTable = usingTmpTable;
-    }
 
     public Set<String> getTmpTableSet() {
         if (tmpTableSet == null) {
-            tmpTableSet = new HashSet<>();
+            synchronized (this) {
+                if (tmpTableSet == null) {
+                    tmpTableSet = ConcurrentHashMap.newKeySet();
+                }
+                return tmpTableSet;
+            }
         }
         return tmpTableSet;
     }
@@ -295,6 +284,7 @@ public class RWSplitService extends BusinessService {
         connection.close(reason);
     }
 
+    @Override
     public void cleanup() {
         super.cleanup();
         if (session != null) {

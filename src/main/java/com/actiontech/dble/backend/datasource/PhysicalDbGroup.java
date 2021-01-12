@@ -447,7 +447,7 @@ public class PhysicalDbGroup {
         return true;
     }
 
-    boolean equalsBaseInfo(PhysicalDbGroup pool) {
+    public boolean equalsBaseInfo(PhysicalDbGroup pool) {
         return pool.getDbGroupConfig().getName().equals(this.dbGroupConfig.getName()) &&
                 pool.getDbGroupConfig().getHeartbeatSQL().equals(this.dbGroupConfig.getHeartbeatSQL()) &&
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&

@@ -18,4 +18,7 @@ public interface SequenceHandler {
 
     void load(boolean isLowerCaseTableNames);
 
+    default void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+    }
+
 }

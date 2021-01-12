@@ -6,6 +6,7 @@ import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
@@ -16,6 +17,7 @@ import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
+import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.RandomUtil;
 import org.slf4j.Logger;
@@ -190,6 +192,10 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         String errMsg = AuthUtil.auth(new UserName(authPacket.getUser(), authPacket.getTenant()), connection, seed, authPacket.getPassword(), authPacket.getDatabase(), pluginName, authPacket.getClientFlags());
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(new UserName(authPacket.getUser(), authPacket.getTenant()));
         checkForResult(new AuthResultInfo(errMsg, authPacket, userConfig));
+        boolean isFoundRows = Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & authPacket.getClientFlags());
+        if (!(userConfig instanceof ManagerUserConfig) && isFoundRows != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
+            LOGGER.warn("the client requested CLIENT_FOUND_ROWS capabilities is '{}', dble is configured as '{}',pls set the same.", isFoundRows ? "found rows" : "affect rows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() ? "found rows" : "affect rows");
+        }
     }
 
     private int getServerCapabilities() {

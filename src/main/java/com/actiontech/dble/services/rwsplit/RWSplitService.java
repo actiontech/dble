@@ -19,8 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,8 +32,7 @@ public class RWSplitService extends BusinessService {
     private volatile boolean isLocked;
     private volatile boolean inLoadData;
     private volatile boolean inPrepare;
-    private volatile boolean usingTmpTable = false;
-    private Set<String/* tableName */> tmpTableSet;
+    private volatile Set<String/* schemaName.tableName */> tmpTableSet;
 
     private volatile byte[] executeSqlBytes;
     // only for test
@@ -248,16 +247,21 @@ public class RWSplitService extends BusinessService {
     }
 
     public boolean isUsingTmpTable() {
-        return usingTmpTable;
+        if (tmpTableSet == null) {
+            return false;
+        }
+        return !tmpTableSet.isEmpty();
     }
 
-    public void setUsingTmpTable(boolean usingTmpTable) {
-        this.usingTmpTable = usingTmpTable;
-    }
 
     public Set<String> getTmpTableSet() {
         if (tmpTableSet == null) {
-            tmpTableSet = new HashSet<>();
+            synchronized (this) {
+                if (tmpTableSet == null) {
+                    tmpTableSet = ConcurrentHashMap.newKeySet();
+                }
+                return tmpTableSet;
+            }
         }
         return tmpTableSet;
     }

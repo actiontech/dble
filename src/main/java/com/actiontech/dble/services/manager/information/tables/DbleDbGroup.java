@@ -21,6 +21,7 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
@@ -251,10 +252,24 @@ public class DbleDbGroup extends ManagerWritableTable {
             }
             if (row.containsKey(COLUMN_RW_SPLIT_MODE) && !StringUtil.isEmpty(row.get(COLUMN_RW_SPLIT_MODE))) {
                 String rwSplitModeStr = row.get(COLUMN_RW_SPLIT_MODE);
-                int rwSplitMode = Integer.parseInt(rwSplitModeStr);
-                if (rwSplitMode > 2 || rwSplitMode < 0) {
-                    throw new ConfigException("rwSplitMode should be between 0 and 2!");
+                if (!StringUtil.isBlank(rwSplitModeStr)) {
+                    int rwSplitMode = IntegerUtil.parseInt(rwSplitModeStr);
+                    if (rwSplitMode > 2 || rwSplitMode < 0) {
+                        throw new ConfigException("rwSplitMode should be between 0 and 2!");
+                    }
                 }
+            }
+            String delayThresholdStr = row.get(COLUMN_DELAY_THRESHOLD);
+            String heartbeatTimeoutStr = row.get(COLUMN_HEARTBEAT_TIMEOUT);
+            String heartbeatRetryStr = row.get(COLUMN_HEARTBEAT_RETRY);
+            if (!StringUtil.isBlank(delayThresholdStr)) {
+                IntegerUtil.parseInt(delayThresholdStr);
+            }
+            if (!StringUtil.isBlank(heartbeatTimeoutStr)) {
+                IntegerUtil.parseInt(heartbeatTimeoutStr);
+            }
+            if (!StringUtil.isBlank(heartbeatRetryStr)) {
+                IntegerUtil.parseInt(heartbeatRetryStr);
             }
         }
     }

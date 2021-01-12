@@ -6,6 +6,7 @@ import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -40,13 +41,12 @@ public final class BusinessServiceFactory {
         return null;
     }
 
-
     public static AbstractService getBackendBusinessService(AuthResultInfo info, AbstractConnection connection) {
         MySQLResponseService service;
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            service = new MySQLCurrentResponseService(connection);
+            service = new MySQLCurrentResponseService((BackendConnection) connection);
         } else {
-            service = new MySQLResponseService(connection);
+            service = new MySQLResponseService((BackendConnection) connection);
         }
         return service;
     }

@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.handler;
 
 /**
@@ -17,6 +17,8 @@ public interface LoadDataInfileHandler {
     void handle(byte[] data);
 
     void end(byte packetId);
+
+    boolean isStart();
 
     void clear();
 }

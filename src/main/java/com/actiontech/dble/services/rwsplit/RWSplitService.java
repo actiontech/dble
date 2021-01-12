@@ -7,7 +7,6 @@ import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
@@ -36,7 +35,6 @@ public class RWSplitService extends BusinessService {
     private volatile boolean usingTmpTable = false;
     private Set<String/* tableName */> tmpTableSet;
 
-    private volatile String executeSql;
     private volatile byte[] executeSqlBytes;
     // only for test
     private volatile String expectedDest;
@@ -84,11 +82,6 @@ public class RWSplitService extends BusinessService {
     }
 
     @Override
-    protected void taskToTotalQueue(ServiceTask task) {
-        DbleServer.getInstance().getFrontHandlerQueue().offer(task);
-    }
-
-    @Override
     protected void handleInnerData(byte[] data) {
         // if the statement is load data, directly push down
         if (inLoadData) {
@@ -126,9 +119,10 @@ public class RWSplitService extends BusinessService {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
-                session.execute(true, data, (isSuccess, rwSplitService) -> {
-                    rwSplitService.setInPrepare(false);
-                });
+                session.execute(true, data, null);
+                // COM_STMT_CLOSE No response is sent back to the client.
+                inPrepare = false;
+                session.unbindIfSafe();
                 break;
             // connection
             case MySQLPacket.COM_QUIT:
@@ -229,15 +223,6 @@ public class RWSplitService extends BusinessService {
         return session;
     }
 
-    @Override
-    public String getExecuteSql() {
-        return executeSql;
-    }
-
-    public void setExecuteSql(String executeSql) {
-        this.executeSql = executeSql;
-    }
-
     public byte[] getExecuteSqlBytes() {
         return executeSqlBytes;
     }
@@ -292,6 +277,7 @@ public class RWSplitService extends BusinessService {
         connection.close(reason);
     }
 
+    @Override
     public void cleanup() {
         super.cleanup();
         if (session != null) {

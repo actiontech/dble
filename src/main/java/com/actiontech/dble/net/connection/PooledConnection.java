@@ -28,12 +28,7 @@ public abstract class PooledConnection extends AbstractConnection {
     public static final Comparator<PooledConnection> LAST_ACCESS_COMPARABLE;
 
     static {
-        LAST_ACCESS_COMPARABLE = new Comparator<PooledConnection>() {
-            @Override
-            public int compare(final PooledConnection entryOne, final PooledConnection entryTwo) {
-                return Long.compare(entryOne.lastTime, entryTwo.lastTime);
-            }
-        };
+        LAST_ACCESS_COMPARABLE = Comparator.comparingLong(entryOne -> entryOne.lastTime);
     }
 
     public PooledConnection(NetworkChannel channel, SocketWR socketWR) {

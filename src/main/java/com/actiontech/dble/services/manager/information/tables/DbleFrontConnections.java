@@ -12,7 +12,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.services.FrontEndService;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -113,7 +113,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         row.put("local_port", c.getLocalPort() + "");
         row.put("processor_id", c.getProcessor().getName());
 
-        FrontEndService service = (FrontEndService) (c.getService());
+        FrontendService service = (FrontendService) c.getService();
         row.put("user", service.getUser().getName());
         row.put("tenant", service.getUser().getTenant() == null ? "NULL" : service.getUser().getTenant());
 

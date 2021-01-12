@@ -8,6 +8,7 @@ import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -30,21 +31,18 @@ public abstract class AbstractConnection implements Connection {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractConnection.class);
 
     protected final NetworkChannel channel;
-
     protected final SocketWR socketWR;
+    protected final AtomicBoolean isClosed;
 
-    protected AtomicBoolean isClosed = new AtomicBoolean(false);
+    protected long id;
+    protected String host;
+    protected int localPort;
+    protected int port;
 
     private volatile AbstractService service;
     protected volatile IOProcessor processor;
 
     protected volatile String closeReason;
-
-    protected String host;
-    protected int localPort;
-    protected int port;
-
-    protected long id;
 
     protected volatile ByteBuffer readBuffer;
 
@@ -56,7 +54,7 @@ public abstract class AbstractConnection implements Connection {
     protected int maxPacketSize;
     protected volatile CharsetNames charsetName = new CharsetNames();
 
-    protected long startupTime;
+    protected final long startupTime;
     protected volatile long lastReadTime;
     protected volatile long lastWriteTime;
     protected long netInBytes;
@@ -66,11 +64,11 @@ public abstract class AbstractConnection implements Connection {
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
         this.socketWR = socketWR;
+        this.isClosed = new AtomicBoolean(false);
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;
     }
-
 
     public void onReadData(int got) {
         if (isClosed.get()) {
@@ -383,7 +381,9 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void register() throws IOException {
-        this.service.register();
+        if (service instanceof AuthService) {
+            ((AuthService) service).register();
+        }
     }
 
     public ConcurrentLinkedQueue<WriteOutTask> getWriteQueue() {

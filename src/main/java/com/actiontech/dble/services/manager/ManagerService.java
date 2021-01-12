@@ -1,7 +1,6 @@
 package com.actiontech.dble.services.manager;
 
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
@@ -11,26 +10,28 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.services.FrontEndService;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.CommandCount;
 
 import java.io.UnsupportedEncodingException;
 
 /**
  * Created by szf on 2020/6/28.
  */
-public class ManagerService extends FrontEndService {
+public class ManagerService extends FrontendService {
 
     private final ManagerQueryHandler handler;
     private volatile String executeSql;
     private final ManagerSession session;
+    protected final CommandCount commands;
 
     public ManagerService(AbstractConnection connection) {
         super(connection);
         this.handler = new ManagerQueryHandler(this);
-        this.proto = new MySQLProtoHandlerImpl();
         this.session = new ManagerSession(this);
+        this.commands = connection.getProcessor().getCommands();
     }
 
     @Override
@@ -70,11 +71,6 @@ public class ManagerService extends FrontEndService {
 
     public ManagerUserConfig getUserConfig() {
         return (ManagerUserConfig) userConfig;
-    }
-
-    @Override
-    public String getExecuteSql() {
-        return executeSql;
     }
 
     @Override

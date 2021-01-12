@@ -19,68 +19,22 @@ import java.util.Map;
  */
 public abstract class VariablesService extends AbstractService {
 
-    protected volatile Map<String, String> usrVariables = new LinkedHashMap<>();
-    protected volatile Map<String, String> sysVariables = new LinkedHashMap<>();
+    protected volatile Map<String, String> usrVariables;
+    protected volatile Map<String, String> sysVariables;
 
     protected volatile int txIsolation;
     protected volatile boolean autocommit;
+    protected volatile boolean isSupportCompress;
+    protected volatile boolean multiStatementAllow;
+
+    // protected volatile boolean isAuthorized;
 
     public VariablesService(AbstractConnection connection) {
         super(connection);
-        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+        this.usrVariables = new LinkedHashMap<>();
+        this.sysVariables = new LinkedHashMap<>();
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
-    }
-
-    public void setCollationConnection(String collation) {
-        connection.getCharsetName().setCollation(collation);
-    }
-
-    public void setCharacterResults(String name) {
-        connection.getCharsetName().setResults(name);
-    }
-
-    public void setCharacterConnection(String collationName) {
-        connection.getCharsetName().setCollation(collationName);
-    }
-
-    public void setNames(String name, String collationName) {
-        connection.getCharsetName().setNames(name, collationName);
-    }
-
-    public void setCharacterClient(String name) {
-        connection.getCharsetName().setClient(name);
-    }
-
-    public int getTxIsolation() {
-        return txIsolation;
-    }
-
-    public void setTxIsolation(int txIsolation) {
-        this.txIsolation = txIsolation;
-    }
-
-    public void setCharacterSet(String name) {
-        connection.setCharacterSet(name);
-    }
-
-    public CharsetNames getCharset() {
-        return connection.getCharsetName();
-    }
-
-    public boolean isAutocommit() {
-        return autocommit;
-    }
-
-    public void setAutocommit(boolean autocommit) {
-        this.autocommit = autocommit;
-    }
-
-    public Map<String, String> getSysVariables() {
-        return sysVariables;
-    }
-
-    public Map<String, String> getUsrVariables() {
-        return usrVariables;
+        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
     }
 
     public List<MysqlVariable> getAllVars() {
@@ -104,6 +58,80 @@ public abstract class VariablesService extends AbstractService {
             }
         }
         return variables;
+    }
+
+    // charset
+    public CharsetNames getCharset() {
+        return connection.getCharsetName();
+    }
+
+    public void setCharacterSet(String name) {
+        connection.setCharacterSet(name);
+    }
+
+    public void setCollationConnection(String collation) {
+        connection.getCharsetName().setCollation(collation);
+    }
+
+    public void setCharacterResults(String name) {
+        connection.getCharsetName().setResults(name);
+    }
+
+    public void setCharacterConnection(String collationName) {
+        connection.getCharsetName().setCollation(collationName);
+    }
+
+    public void setNames(String name, String collationName) {
+        connection.getCharsetName().setNames(name, collationName);
+    }
+
+    public void setCharacterClient(String name) {
+        connection.getCharsetName().setClient(name);
+    }
+
+    public Map<String, String> getUsrVariables() {
+        return usrVariables;
+    }
+
+    public Map<String, String> getSysVariables() {
+        return sysVariables;
+    }
+
+    // isolation
+    public int getTxIsolation() {
+        return txIsolation;
+    }
+
+    public void setTxIsolation(int txIsolation) {
+        this.txIsolation = txIsolation;
+    }
+
+    // autocommit
+    public boolean isAutocommit() {
+        return autocommit;
+    }
+
+    public void setAutocommit(boolean autocommit) {
+        this.autocommit = autocommit;
+    }
+
+    // supportCompress
+    @Override
+    public boolean isSupportCompress() {
+        return isSupportCompress;
+    }
+
+    public void setSupportCompress(boolean supportCompress) {
+        isSupportCompress = supportCompress;
+    }
+
+    // multiStatementAllow
+    public boolean isMultiStatementAllow() {
+        return multiStatementAllow;
+    }
+
+    public void setMultiStatementAllow(boolean multiStatementAllow) {
+        this.multiStatementAllow = multiStatementAllow;
     }
 
     public String getStringOfSysVariables() {

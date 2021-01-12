@@ -6,7 +6,6 @@ package com.actiontech.dble.net.service;
 public class ServiceTask {
 
     private final byte[] orgData;
-    private volatile boolean highPriority = false;
     private final boolean reuse;
     private final Service service;
 
@@ -22,21 +21,12 @@ public class ServiceTask {
         this.reuse = reuse;
     }
 
-
     public byte[] getOrgData() {
         return orgData;
     }
 
-    public boolean isHighPriority() {
-        return highPriority;
-    }
-
     public Service getService() {
         return service;
-    }
-
-    public void increasePriority() {
-        highPriority = true;
     }
 
     public boolean isReuse() {

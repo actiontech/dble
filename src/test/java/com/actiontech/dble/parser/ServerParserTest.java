@@ -5,10 +5,7 @@
  */
 package com.actiontech.dble.parser;
 
-import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.server.parser.ServerParseSelect;
-import com.actiontech.dble.server.parser.ServerParseShow;
-import com.actiontech.dble.server.parser.ServerParseStart;
+import com.actiontech.dble.server.parser.*;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -18,120 +15,121 @@ import org.junit.Test;
  */
 public class ServerParserTest {
 
+    ServerParse serverParse = ServerParseFactory.getShardingParser();
     @Test
     public void testIsBegin() {
-        Assert.assertEquals(ServerParse.BEGIN, ServerParse.parse("begin"));
-        Assert.assertEquals(ServerParse.BEGIN, ServerParse.parse("BEGIN"));
-        Assert.assertEquals(ServerParse.BEGIN, ServerParse.parse("BegIn"));
-        Assert.assertEquals(ServerParse.OTHER, ServerParse.parse("BegIn X"));
+        Assert.assertEquals(ServerParse.BEGIN, serverParse.parse("begin"));
+        Assert.assertEquals(ServerParse.BEGIN, serverParse.parse("BEGIN"));
+        Assert.assertEquals(ServerParse.BEGIN, serverParse.parse("BegIn"));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("BegIn X"));
     }
 
     @Test
     public void testIsCommit() {
-        Assert.assertEquals(ServerParse.COMMIT, ServerParse.parse("commit"));
-        Assert.assertEquals(ServerParse.COMMIT, ServerParse.parse("COMMIT"));
-        Assert.assertEquals(ServerParse.COMMIT, ServerParse.parse("cOmmiT "));
+        Assert.assertEquals(ServerParse.COMMIT, serverParse.parse("commit"));
+        Assert.assertEquals(ServerParse.COMMIT, serverParse.parse("COMMIT"));
+        Assert.assertEquals(ServerParse.COMMIT, serverParse.parse("cOmmiT "));
     }
 
 
     @Test
     public void testComment() {
-        Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, ServerParse.parse("/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */"));
-        Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, ServerParse.parse("/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */"));
-        Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, ServerParse.parse("/*!40101 SET @saved_cs_client     = @@character_set_client */"));
+        Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, serverParse.parse("/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */"));
+        Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, serverParse.parse("/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */"));
+        Assert.assertEquals(ServerParse.MYSQL_CMD_COMMENT, serverParse.parse("/*!40101 SET @saved_cs_client     = @@character_set_client */"));
 
-        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("/*SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */"));
-        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("/*SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */"));
-        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("/*SET @saved_cs_client     = @@character_set_client */"));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, serverParse.parse("/*SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */"));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, serverParse.parse("/*SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */"));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, serverParse.parse("/*SET @saved_cs_client     = @@character_set_client */"));
     }
 
     @Test
     public void testHintComment() {
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("/*#dble:sharding=DN1*/SELECT ..."));
-        Assert.assertEquals(ServerParse.UPDATE, 0xff & ServerParse.parse("/*#dble: sharding = DN1 */ UPDATE ..."));
-        Assert.assertEquals(ServerParse.DELETE, 0xff & ServerParse.parse("/*#dble: sql = SELECT id FROM user */ DELETE ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & serverParse.parse("/*#dble:sharding=DN1*/SELECT ..."));
+        Assert.assertEquals(ServerParse.UPDATE, 0xff & serverParse.parse("/*#dble: sharding = DN1 */ UPDATE ..."));
+        Assert.assertEquals(ServerParse.DELETE, 0xff & serverParse.parse("/*#dble: sql = SELECT id FROM user */ DELETE ..."));
     }
 
     @Test
     public void testOldHintComment() {
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("/*!dble:sharding=DN1*/SELECT ..."));
-        Assert.assertEquals(ServerParse.UPDATE, 0xff & ServerParse.parse("/*!dble: sharding = DN1 */ UPDATE ..."));
-        Assert.assertEquals(ServerParse.DELETE, 0xff & ServerParse.parse("/*!dble: sql = SELECT id FROM user */ DELETE ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & serverParse.parse("/*!dble:sharding=DN1*/SELECT ..."));
+        Assert.assertEquals(ServerParse.UPDATE, 0xff & serverParse.parse("/*!dble: sharding = DN1 */ UPDATE ..."));
+        Assert.assertEquals(ServerParse.DELETE, 0xff & serverParse.parse("/*!dble: sql = SELECT id FROM user */ DELETE ..."));
     }
 
     @Test
     public void testDoubleDashComment() {
-        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("--     "));
-        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("--\t    "));
-        Assert.assertEquals(ServerParse.OTHER, ServerParse.parse("- \n"));
-        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("--         select * from test"));
-        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("-- select *\n-- fdfadsfad\ninsert into test values(1)"));
-        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("--\tselect *\n-- fdfadsfad\ninsert into test values(1)"));
-        Assert.assertEquals(ServerParse.OTHER, ServerParse.parse("-- select *\nfdfadsfad\ninsert into test values(1)"));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, serverParse.parse("--     "));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, serverParse.parse("--\t    "));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("- \n"));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, serverParse.parse("--         select * from test"));
+        Assert.assertEquals(ServerParse.INSERT, serverParse.parse("-- select *\n-- fdfadsfad\ninsert into test values(1)"));
+        Assert.assertEquals(ServerParse.INSERT, serverParse.parse("--\tselect *\n-- fdfadsfad\ninsert into test values(1)"));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("-- select *\nfdfadsfad\ninsert into test values(1)"));
     }
 
     @Test
     public void testIsDelete() {
-        Assert.assertEquals(ServerParse.DELETE, ServerParse.parse("delete ..."));
-        Assert.assertEquals(ServerParse.DELETE, ServerParse.parse("DELETE ..."));
-        Assert.assertEquals(ServerParse.DELETE, ServerParse.parse("DeletE ..."));
+        Assert.assertEquals(ServerParse.DELETE, serverParse.parse("delete ..."));
+        Assert.assertEquals(ServerParse.DELETE, serverParse.parse("DELETE ..."));
+        Assert.assertEquals(ServerParse.DELETE, serverParse.parse("DeletE ..."));
     }
 
     @Test
     public void testIsInsert() {
-        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("insert ..."));
-        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("INSERT ..."));
-        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("InserT ..."));
+        Assert.assertEquals(ServerParse.INSERT, serverParse.parse("insert ..."));
+        Assert.assertEquals(ServerParse.INSERT, serverParse.parse("INSERT ..."));
+        Assert.assertEquals(ServerParse.INSERT, serverParse.parse("InserT ..."));
     }
 
     @Test
     public void testIsReplace() {
-        Assert.assertEquals(ServerParse.REPLACE, ServerParse.parse("replace ..."));
-        Assert.assertEquals(ServerParse.REPLACE, ServerParse.parse("REPLACE ..."));
-        Assert.assertEquals(ServerParse.REPLACE, ServerParse.parse("rEPLACe ..."));
+        Assert.assertEquals(ServerParse.REPLACE, serverParse.parse("replace ..."));
+        Assert.assertEquals(ServerParse.REPLACE, serverParse.parse("REPLACE ..."));
+        Assert.assertEquals(ServerParse.REPLACE, serverParse.parse("rEPLACe ..."));
     }
 
     @Test
     public void testIsRollback() {
-        Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("rollback"));
-        Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("rollback  work   /* dble_dest_expect:M */"));
-        Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("ROLLBACK"));
-        Assert.assertEquals(ServerParse.ROLLBACK, ServerParse.parse("rolLBACK "));
+        Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("rollback"));
+        Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("rollback  work   /* dble_dest_expect:M */"));
+        Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("ROLLBACK"));
+        Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("rolLBACK "));
     }
 
     @Test
     public void testIsSelect() {
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("select ..."));
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("SELECT ..."));
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("sELECt ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & serverParse.parse("select ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & serverParse.parse("SELECT ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & serverParse.parse("sELECt ..."));
     }
 
     @Test
     public void testIsSet() {
-        Assert.assertEquals(ServerParse.SET, 0xff & ServerParse.parse("set ..."));
-        Assert.assertEquals(ServerParse.SET, 0xff & ServerParse.parse("SET ..."));
-        Assert.assertEquals(ServerParse.SET, 0xff & ServerParse.parse("sEt ..."));
+        Assert.assertEquals(ServerParse.SET, 0xff & serverParse.parse("set ..."));
+        Assert.assertEquals(ServerParse.SET, 0xff & serverParse.parse("SET ..."));
+        Assert.assertEquals(ServerParse.SET, 0xff & serverParse.parse("sEt ..."));
     }
 
     @Test
     public void testIsShow() {
-        Assert.assertEquals(ServerParse.SHOW, 0xff & ServerParse.parse("show ..."));
-        Assert.assertEquals(ServerParse.SHOW, 0xff & ServerParse.parse("SHOW ..."));
-        Assert.assertEquals(ServerParse.SHOW, 0xff & ServerParse.parse("sHOw ..."));
+        Assert.assertEquals(ServerParse.SHOW, 0xff & serverParse.parse("show ..."));
+        Assert.assertEquals(ServerParse.SHOW, 0xff & serverParse.parse("SHOW ..."));
+        Assert.assertEquals(ServerParse.SHOW, 0xff & serverParse.parse("sHOw ..."));
     }
 
     @Test
     public void testIsStart() {
-        Assert.assertEquals(ServerParse.START, 0xff & ServerParse.parse("start ..."));
-        Assert.assertEquals(ServerParse.START, 0xff & ServerParse.parse("START ..."));
-        Assert.assertEquals(ServerParse.START, 0xff & ServerParse.parse("stART ..."));
+        Assert.assertEquals(ServerParse.START, 0xff & serverParse.parse("start ..."));
+        Assert.assertEquals(ServerParse.START, 0xff & serverParse.parse("START ..."));
+        Assert.assertEquals(ServerParse.START, 0xff & serverParse.parse("stART ..."));
     }
 
     @Test
     public void testIsUpdate() {
-        Assert.assertEquals(ServerParse.UPDATE, ServerParse.parse("update ..."));
-        Assert.assertEquals(ServerParse.UPDATE, ServerParse.parse("UPDATE ..."));
-        Assert.assertEquals(ServerParse.UPDATE, ServerParse.parse("UPDate ..."));
+        Assert.assertEquals(ServerParse.UPDATE, serverParse.parse("update ..."));
+        Assert.assertEquals(ServerParse.UPDATE, serverParse.parse("UPDATE ..."));
+        Assert.assertEquals(ServerParse.UPDATE, serverParse.parse("UPDate ..."));
     }
 
     @Test
@@ -157,30 +155,30 @@ public class ServerParserTest {
 
     @Test
     public void testIsKill() {
-        Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse(" kill  ..."));
-        Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("kill 111111 ..."));
-        Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("KILL  1335505632"));
+        Assert.assertEquals(ServerParse.KILL, 0xff & serverParse.parse(" kill  ..."));
+        Assert.assertEquals(ServerParse.KILL, 0xff & serverParse.parse("kill 111111 ..."));
+        Assert.assertEquals(ServerParse.KILL, 0xff & serverParse.parse("KILL  1335505632"));
     }
 
     @Test
     public void testIsKillQuery() {
-        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & ServerParse.parse(" kill query ..."));
-        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & ServerParse.parse("kill   query 111111 ..."));
-        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & ServerParse.parse("KILL QUERY 1335505632"));
+        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & serverParse.parse(" kill query ..."));
+        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & serverParse.parse("kill   query 111111 ..."));
+        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & serverParse.parse("KILL QUERY 1335505632"));
     }
 
     @Test
     public void testIsSavepoint() {
-        Assert.assertEquals(ServerParse.SAVEPOINT, ServerParse.parse(" savepoint  ..."));
-        Assert.assertEquals(ServerParse.SAVEPOINT, ServerParse.parse("SAVEPOINT "));
-        Assert.assertEquals(ServerParse.SAVEPOINT, ServerParse.parse(" SAVEpoint   a"));
+        Assert.assertEquals(ServerParse.SAVEPOINT, serverParse.parse(" savepoint  ..."));
+        Assert.assertEquals(ServerParse.SAVEPOINT, serverParse.parse("SAVEPOINT "));
+        Assert.assertEquals(ServerParse.SAVEPOINT, serverParse.parse(" SAVEpoint   a"));
     }
 
     @Test
     public void testIsUse() {
-        Assert.assertEquals(ServerParse.USE, 0xff & ServerParse.parse(" use  ..."));
-        Assert.assertEquals(ServerParse.USE, 0xff & ServerParse.parse("USE "));
-        Assert.assertEquals(ServerParse.USE, 0xff & ServerParse.parse(" Use   a"));
+        Assert.assertEquals(ServerParse.USE, 0xff & serverParse.parse(" use  ..."));
+        Assert.assertEquals(ServerParse.USE, 0xff & serverParse.parse("USE "));
+        Assert.assertEquals(ServerParse.USE, 0xff & serverParse.parse(" Use   a"));
     }
 
     @Ignore
@@ -369,30 +367,30 @@ public class ServerParserTest {
 
     @Test
     public void testLockTable() {
-        Assert.assertEquals(ServerParse.LOCK, ServerParse.parse("lock tables ttt write;"));
-        Assert.assertEquals(ServerParse.LOCK, ServerParse.parse(" lock tables ttt read;"));
-        Assert.assertEquals(ServerParse.LOCK, ServerParse.parse("lock tables"));
+        Assert.assertEquals(ServerParse.LOCK, serverParse.parse("lock tables ttt write;"));
+        Assert.assertEquals(ServerParse.LOCK, serverParse.parse(" lock tables ttt read;"));
+        Assert.assertEquals(ServerParse.LOCK, serverParse.parse("lock tables"));
     }
 
     @Test
     public void testUnlockTable() {
-        Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse("unlock tables"));
-        Assert.assertEquals(ServerParse.UNLOCK, ServerParse.parse(" unlock	 tables"));
+        Assert.assertEquals(ServerParse.UNLOCK, serverParse.parse("unlock tables"));
+        Assert.assertEquals(ServerParse.UNLOCK, serverParse.parse(" unlock	 tables"));
     }
 
 
     @Test
     public void testCreateView() {
-        Assert.assertEquals(ServerParse.CREATE_VIEW, ServerParse.parse("create view asdfasdf as asdfasdfasdfsdf"));
-        Assert.assertEquals(ServerParse.ALTER_VIEW, ServerParse.parse("ALTER view x_xx_xx as select * from suntest"));
-        Assert.assertEquals(ServerParse.REPLACE_VIEW, ServerParse.parse("create or replace  view x_xx_xx as select * from suntest"));
-        Assert.assertEquals(ServerParse.DROP_VIEW, ServerParse.parse("DROP  view x_xx_xx"));
-        Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create or replace viasdfasdfew asdfasdf as asdfasdfasdfsdf"));
-        Assert.assertEquals(ServerParse.DDL, ServerParse.parse("create   "));
+        Assert.assertEquals(ServerParse.CREATE_VIEW, serverParse.parse("create view asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.ALTER_VIEW, serverParse.parse("ALTER view x_xx_xx as select * from suntest"));
+        Assert.assertEquals(ServerParse.REPLACE_VIEW, serverParse.parse("create or replace  view x_xx_xx as select * from suntest"));
+        Assert.assertEquals(ServerParse.DROP_VIEW, serverParse.parse("DROP  view x_xx_xx"));
+        Assert.assertEquals(ServerParse.DDL, serverParse.parse("create or replace viasdfasdfew asdfasdf as asdfasdfasdfsdf"));
+        Assert.assertEquals(ServerParse.DDL, serverParse.parse("create   "));
     }
 
     @Test
     public void testDropPrepare() {
-        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, ServerParse.parse("DROP PREPARE stmt_name"));
+        Assert.assertEquals(ServerParse.SCRIPT_PREPARE, serverParse.parse("DROP PREPARE stmt_name"));
     }
 }

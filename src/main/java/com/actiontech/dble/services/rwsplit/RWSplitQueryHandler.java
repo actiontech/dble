@@ -8,6 +8,7 @@ import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -30,8 +31,9 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
+            RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
-            if (RwSplitServerParse.isMultiStatement(sql)) {
+            if (serverParse.isMultiStatement(sql)) {
                 if ((session.getService().getClientCapabilities() & Capabilities.CLIENT_MULTI_STATEMENTS) == 0) {
                     LOGGER.warn("use multi-query without set CLIENT_MULTI_STATEMENTS flag");
                     session.getService().writeErrMessage(ErrorCode.ERR_WRONG_USED, "Your client must enable multi-query param . For example in jdbc,you should set allowMultiQueries=true in URL.");
@@ -41,7 +43,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 session.execute(true, null);
                 return;
             }
-            int rs = RwSplitServerParse.parse(sql);
+            int rs = serverParse.parse(sql);
             int hintLength = RouteService.isHintSql(sql);
             int sqlType = rs & 0xff;
             if (hintLength >= 0) {
@@ -60,7 +62,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, null);
                         break;
                     case RwSplitServerParse.SELECT:
-                        int rs2 = RwSplitServerParse.parseSpecial(sqlType, sql);
+                        int rs2 = serverParse.parseSpecial(sqlType, sql);
                         if (rs2 == RwSplitServerParse.SELECT_FOR_UPDATE || rs2 == RwSplitServerParse.LOCK_IN_SHARE_MODE) {
                             session.execute(true, null);
                         } else {

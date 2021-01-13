@@ -2,6 +2,7 @@ package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.manager.dump.handler.StatementHandler;
 import com.actiontech.dble.services.manager.dump.handler.StatementHandlerManager;
 import com.actiontech.dble.util.TimeUtil;
@@ -64,8 +65,8 @@ public final class DumpFileExecutor implements Runnable {
                         }
                     }
                 }
-
-                int type = ServerParse.parse(stmt);
+                ServerParse serverParse = ServerParseFactory.getShardingParser();
+                int type = serverParse.parse(stmt);
                 // pre handle
                 if (preHandle(writer, type, stmt)) {
                     continue;

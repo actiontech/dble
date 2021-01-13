@@ -7,15 +7,17 @@ package com.actiontech.dble.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ServerParseTest {
 
+    ServerParse serverParse = ServerParseFactory.getShardingParser();
     @Test
     public void testDesc() {
         String sql = "desc a";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.DESCRIBE, sqlType);
     }
@@ -23,7 +25,7 @@ public class ServerParseTest {
     @Test
     public void testDescribe() {
         String sql = "describe a";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.DESCRIBE, sqlType);
     }
@@ -31,7 +33,7 @@ public class ServerParseTest {
     @Test
     public void testDelete() {
         String sql = "delete from a where id = 1";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.DELETE, sqlType);
     }
@@ -39,7 +41,7 @@ public class ServerParseTest {
     @Test
     public void testDroprepare() {
         String sql = "drop prepare stmt";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
     }
@@ -47,7 +49,7 @@ public class ServerParseTest {
     @Test
     public void testAnalyze() {
         String sql = "analyze table t1;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
     }
@@ -55,7 +57,7 @@ public class ServerParseTest {
     @Test
     public void testChecksum() {
         String sql = "checksum table table_name;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
     }
@@ -63,7 +65,7 @@ public class ServerParseTest {
     @Test
     public void testFlush() {
         String sql = "flush table table_name;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.FLUSH, sqlType);
     }
@@ -71,7 +73,7 @@ public class ServerParseTest {
     @Test
     public void testLoadindex() {
         String sql = "LOAD INDEX INTO CACHE t1;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
     }
@@ -79,7 +81,7 @@ public class ServerParseTest {
     @Test
     public void testOptimize() {
         String sql = "optimize table table_name;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
     }
@@ -87,7 +89,7 @@ public class ServerParseTest {
     @Test
     public void testRename() {
         String sql = "rename table table_name1 to table_name2;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
     }
@@ -95,7 +97,7 @@ public class ServerParseTest {
     @Test
     public void testRepair() {
         String sql = "repair table table_name;";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
     }
@@ -103,7 +105,7 @@ public class ServerParseTest {
     @Test
     public void testDeallocate() {
         String sql = "Deallocate prepare stmt";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
     }
@@ -111,7 +113,7 @@ public class ServerParseTest {
     @Test
     public void testInsert() {
         String sql = "insert into a(name) values ('zhangsan')";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.INSERT, sqlType);
     }
@@ -119,7 +121,7 @@ public class ServerParseTest {
     @Test
     public void testReplace() {
         String sql = "replace into t(id, update_time) select 1, now();  ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.REPLACE, sqlType);
     }
@@ -127,7 +129,7 @@ public class ServerParseTest {
     @Test
     public void testPrepare() {
         String sql = "prepare stmt from 'select * from aa where id=?'";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
     }
@@ -135,7 +137,7 @@ public class ServerParseTest {
     @Test
     public void testSet() {
         String sql = "SET @var_name = 'value';  ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SET, sqlType);
     }
@@ -143,7 +145,7 @@ public class ServerParseTest {
     @Test
     public void testShow() {
         String sql = "show full tables";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SHOW, sqlType);
     }
@@ -151,7 +153,7 @@ public class ServerParseTest {
     @Test
     public void testStart() {
         String sql = "start ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.START, sqlType);
     }
@@ -159,7 +161,7 @@ public class ServerParseTest {
     @Test
     public void testUpdate() {
         String sql = "update a set name='wdw' where id = 1";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.UPDATE, sqlType);
     }
@@ -167,7 +169,7 @@ public class ServerParseTest {
     @Test
     public void testKill() {
         String sql = "kill 1";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.KILL, sqlType);
     }
@@ -175,7 +177,7 @@ public class ServerParseTest {
     @Test
     public void testSavePoint() {
         String sql = "SAVEPOINT ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SAVEPOINT, sqlType);
     }
@@ -183,7 +185,7 @@ public class ServerParseTest {
     @Test
     public void testUse() {
         String sql = "use db1 ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.USE, sqlType);
     }
@@ -191,7 +193,7 @@ public class ServerParseTest {
     @Test
     public void testExplain() {
         String sql = "explain select * from a ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.EXPLAIN, sqlType);
     }
@@ -199,7 +201,7 @@ public class ServerParseTest {
     @Test
     public void testExecute() {
         String sql = "execute stmt using @f1, f2";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SCRIPT_PREPARE, sqlType);
     }
@@ -207,7 +209,7 @@ public class ServerParseTest {
     @Test
     public void testKillQuery() {
         String sql = "kill query 1102 ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.KILL_QUERY, sqlType);
     }
@@ -215,7 +217,7 @@ public class ServerParseTest {
     @Test
     public void testHelp() {
         String sql = "help contents ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.HELP, sqlType);
     }
@@ -233,7 +235,7 @@ public class ServerParseTest {
     @Test
     public void testCall() {
         String sql = "CALL demo_in_parameter(@p_in); ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.CALL, sqlType);
     }
@@ -241,7 +243,7 @@ public class ServerParseTest {
     @Test
     public void testRollback() {
         String sql = "rollback; ";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.ROLLBACK, sqlType);
     }
@@ -249,7 +251,7 @@ public class ServerParseTest {
     @Test
     public void testSelect() {
         String sql = "select * from a";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.SELECT, sqlType);
     }
@@ -257,7 +259,7 @@ public class ServerParseTest {
     @Test
     public void testBegin() {
         String sql = "begin";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         int sqlType = result & 0xff;
         Assert.assertEquals(ServerParse.BEGIN, sqlType);
     }
@@ -265,7 +267,7 @@ public class ServerParseTest {
     @Test
     public void testCommit() {
         String sql = "COMMIT 'nihao'";
-        int result = ServerParse.parse(sql);
+        int result = serverParse.parse(sql);
         Assert.assertEquals(ServerParse.OTHER, result);
     }
 

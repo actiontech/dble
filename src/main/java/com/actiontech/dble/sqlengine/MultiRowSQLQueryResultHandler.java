@@ -34,7 +34,7 @@ public class MultiRowSQLQueryResultHandler extends OneRawSQLQueryResultHandler {
     @Override
     public void finished(String shardingNode, boolean failed) {
         SQLQueryResult<List<Map<String, String>>> queryResult =
-                new SQLQueryResult<>(this.resultRows, !failed);
+                new SQLQueryResult<>(this.resultRows, !failed, this.resultRows.isEmpty());
         if (callback != null)
             this.callback.onResult(queryResult);
         else

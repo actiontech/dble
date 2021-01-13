@@ -20,6 +20,7 @@ import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -74,7 +75,12 @@ public final class ShowDataDistribution {
         }
         BaseTableConfig tableConfig = schemaConfig.getTables().get(schemaInfo[1]);
         if (tableConfig == null) {
-            service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn't exist");
+            final String defaultShardingNode = getDefaultShardingNode(schemaConfig);
+            if (defaultShardingNode == null) {
+                service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn't exist");
+            } else {
+                parserAndExecuteShowTables(service, defaultShardingNode, schemaInfo[1], name);
+            }
             return;
         } else if (tableConfig instanceof SingleTableConfig) {
             service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " is Single table");
@@ -136,6 +142,41 @@ public final class ShowDataDistribution {
 
         lastEof.write(buffer, service);
     }
+
+    private static String getDefaultShardingNode(SchemaConfig schema) {
+        String node = schema.getShardingNode();
+        return Strings.isNullOrEmpty(node) ? null : node;
+    }
+
+    private static void parserAndExecuteShowTables(ManagerService service, String shardingNode, String tableName, String fullName) {
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new CheckNoShardingTableExistListener(service, fullName));
+        SQLJob sqlJob = new SQLJob("show tables like  '" + tableName + "'", shardingNode, resultHandler, false);
+        sqlJob.run();
+    }
+
+    private static final class CheckNoShardingTableExistListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
+        ManagerService service;
+        String fullName;
+
+        private CheckNoShardingTableExistListener(ManagerService service, String fullName) {
+            this.service = service;
+            this.fullName = fullName;
+        }
+
+        @Override
+        public void onResult(SQLQueryResult<Map<String, String>> result) {
+            if (!result.isSuccess()) {
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "check NoSharding query failed.");
+            } else {
+                if (result.isZeroRow()) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "The table " + fullName + " doesn't exist");
+                } else {
+                    service.writeErrMessage(ErrorCode.ER_YES, "The table " + fullName + " is NoSharding table");
+                }
+            }
+        }
+    }
+
 
     private static class ShowDataDistributionListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         private ReentrantLock lock;

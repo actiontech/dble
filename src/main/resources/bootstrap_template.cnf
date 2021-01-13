@@ -94,7 +94,10 @@
 #-DbufferPoolPageNumber=256
 -DbufferPoolPageSize=2097152
 #-DmappedFileSize=2097152
-
+# used for temp table persistence of cursor , Temp table which size larger than that will save to disk.
+#-DmaxHeapTableSize=32768
+# used for temp table persistence of cursor, setting for read-buffer size.
+#-DheapTableBufferChunkSize=32768
 
 #  sql statistics
 #  1 means use SQL statistics, 0 means not

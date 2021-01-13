@@ -123,6 +123,9 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("maxCharsPerColumn", sysConfig.getMaxCharsPerColumn() + "", "The maximum number of characters allowed for per column when load data.The default value is 65535"));
         readOnlyParams.add(new ParamInfo("maxRowSizeToFile", sysConfig.getMaxRowSizeToFile() + "", "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000"));
         readOnlyParams.add(new ParamInfo("traceEndPoint", sysConfig.getTraceEndPoint() + "", "The trace Jaeger server endPoint"));
+        readOnlyParams.add(new ParamInfo("maxHeapTableSize", sysConfig.getMaxHeapTableSize() + "", "used for temp table persistence of cursor , Temp table which size larger than that will save to disk."));
+        readOnlyParams.add(new ParamInfo("heapTableBufferChunkSize", sysConfig.getHeapTableBufferChunkSize() + "", "used for temp table persistence of cursor, setting for read-buffer size."));
+
 
     }
 

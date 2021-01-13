@@ -15,6 +15,7 @@ import com.actiontech.dble.route.handler.HintHandler;
 import com.actiontech.dble.route.handler.HintHandlerFactory;
 import com.actiontech.dble.route.handler.HintSQLHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.StringUtil;
@@ -130,7 +131,8 @@ public final class RouteService {
             throw new SQLSyntaxErrorException(msg);
         }
         if (hintHandler instanceof HintSQLHandler) {
-            int hintSqlType = ServerParse.parse(hintInfo.getHintSQL()) & 0xff;
+            ServerParse serverParse = ServerParseFactory.getShardingParser();
+            int hintSqlType = serverParse.parse(hintInfo.getHintSQL()) & 0xff;
             rrs = hintHandler.route(schema, sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), hintSqlType, hintInfo.getHintMap());
             // HintSQLHandler will always send to master
             rrs.setRunOnSlave(false);

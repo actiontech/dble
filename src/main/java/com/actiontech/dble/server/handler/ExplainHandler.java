@@ -25,6 +25,7 @@ import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -96,7 +97,8 @@ public final class ExplainHandler {
     }
 
     private static boolean checkInnerCommand(String stmt) {
-        int newRes = ServerParse.parse(stmt);
+        ServerParse serverParse = ServerParseFactory.getShardingParser();
+        int newRes = serverParse.parse(stmt);
         int sqlType = newRes & 0xff;
         switch (sqlType) {
             case ServerParse.EXPLAIN:
@@ -137,7 +139,8 @@ public final class ExplainHandler {
     private static RouteResultset getRouteResultset(ShardingService service,
                                                     String stmt) {
         String db = service.getSchema();
-        int sqlType = ServerParse.parse(stmt) & 0xff;
+        ServerParse serverParse = ServerParseFactory.getShardingParser();
+        int sqlType = serverParse.parse(stmt) & 0xff;
         SchemaConfig schema = null;
         if (db != null) {
             schema = DbleServer.getInstance().getConfig().getSchemas().get(db);

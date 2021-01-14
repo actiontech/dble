@@ -15,10 +15,7 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
-import com.actiontech.dble.util.DecryptUtil;
-import com.actiontech.dble.util.IPAddressUtil;
-import com.actiontech.dble.util.ResourceUtil;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.*;
 import com.google.common.collect.Maps;
 
 import java.io.File;
@@ -260,7 +257,9 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                     rwSplitUser.setWhiteIPs(entry.getValue());
                     break;
                 case COLUMN_MAX_CONN_COUNT:
-                    rwSplitUser.setMaxCon(Integer.parseInt(entry.getValue()));
+                    if (!StringUtil.isBlank(entry.getValue())) {
+                        rwSplitUser.setMaxCon(IntegerUtil.parseInt(entry.getValue()));
+                    }
                     break;
                 case COLUMN_DB_GROUP:
                     rwSplitUser.setDbGroup(entry.getValue());

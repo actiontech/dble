@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.util;
 
+import com.actiontech.dble.config.util.ConfigException;
+
 /**
  * @author mycat
  */
@@ -79,6 +81,17 @@ public final class IntegerUtil {
         if (sign != 0) {
             buf[--charPos] = sign;
         }
+    }
+
+    public static int parseInt(String intStr) {
+        try {
+            if (!StringUtil.isBlank(intStr)) {
+                return Integer.parseInt(intStr);
+            }
+        } catch (NumberFormatException e) {
+            throw new ConfigException("incorrect integer value: '" + intStr + "'");
+        }
+        throw new ConfigException("incorrect integer value: 'null'");
     }
 
 }

@@ -136,7 +136,9 @@ public abstract class FrontendService extends VariablesService {
     }
 
     public void userConnectionCount() {
-        FrontendUserManager.getInstance().countDown(user, this instanceof ManagerService);
+        if (user != null) {
+            FrontendUserManager.getInstance().countDown(user, this instanceof ManagerService);
+        }
     }
 
     // current schema

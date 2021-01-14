@@ -1,10 +1,8 @@
 package com.actiontech.dble.net.response;
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
-import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.RequestFilePacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.util.ArrayList;
@@ -61,9 +59,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     @Override
     public void data(byte[] data) {
-        if (data[4] == RequestFilePacket.FIELD_COUNT) {
-            handleRequestPacket(data);
-        } else if (status == HEADER) {
+        if (status == HEADER) {
             status = FIELD;
             header = data;
             fields = new ArrayList<>((int) ByteUtil.readLength(data, 4));
@@ -113,12 +109,4 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         }
     }
 
-    private void handleRequestPacket(byte[] data) {
-        ResponseHandler respHand = service.getResponseHandler();
-        if (respHand instanceof LoadDataResponseHandler) {
-            ((LoadDataResponseHandler) respHand).requestDataResponse(data, service);
-        } else {
-            closeNoHandler();
-        }
-    }
 }

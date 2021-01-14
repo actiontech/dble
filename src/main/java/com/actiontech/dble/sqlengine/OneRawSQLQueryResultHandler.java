@@ -22,6 +22,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
     private Map<String, Integer> fetchColPosMap;
     private int fieldCount = 0;
     private Map<String, String> result = new HashMap<>();
+    private boolean zeroRow = true;
 
     public OneRawSQLQueryResultHandler(String[] fetchCols,
                                        SQLQueryResultListener<SQLQueryResult<Map<String, String>>> callBack) {
@@ -33,6 +34,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
     @Override
     public void onHeader(List<byte[]> fields) {
         result.clear();
+        zeroRow = true;
         fieldCount = fields.size();
         fetchColPosMap = new HashMap<>();
         for (String watchFd : fetchCols) {
@@ -41,7 +43,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
                 FieldPacket fieldPkg = new FieldPacket();
                 fieldPkg.read(field);
                 String fieldName = new String(fieldPkg.getName());
-                if (watchFd.equalsIgnoreCase(fieldName)) {
+                if ("*".equals(watchFd) || watchFd.equalsIgnoreCase(fieldName)) {
                     fetchColPosMap.put(fieldName, i);
                 }
             }
@@ -55,6 +57,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
         rowDataPkg.read(rowData);
         String variableName = "";
         String variableValue = "";
+        zeroRow = false;
         //if fieldcount is 2,it may be select x or show create table
         if (fieldCount == 2 && (fetchColPosMap.get("Variable_name") != null || fetchColPosMap.get("Value") != null)) {
             Integer ind = fetchColPosMap.get("Variable_name");
@@ -82,7 +85,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
 
     @Override
     public void finished(String shardingNode, boolean failed) {
-        SQLQueryResult<Map<String, String>> queryResult = new SQLQueryResult<>(this.result, !failed, shardingNode);
+        SQLQueryResult<Map<String, String>> queryResult = new SQLQueryResult<>(this.result, !failed, shardingNode, zeroRow);
         this.callback.onResult(queryResult);
     }
 

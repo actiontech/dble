@@ -11,19 +11,26 @@ public class SQLQueryResult<T> {
 
     private final String shardingNode;    // shardingNode or database name
     private String tableName;
+    private final boolean zeroRow;
 
-    public SQLQueryResult(T result, boolean success) {
+    public SQLQueryResult(T result, boolean success, boolean zeroRow) {
         super();
         this.result = result;
         this.success = success;
         this.shardingNode = null;
+        this.zeroRow = zeroRow;
     }
 
-    public SQLQueryResult(T result, boolean success, String shardingNode) {
+    public SQLQueryResult(T result, boolean success, String shardingNode, boolean zeroRow) {
         super();
         this.result = result;
         this.success = success;
         this.shardingNode = shardingNode;
+        this.zeroRow = zeroRow;
+    }
+
+    public boolean isZeroRow() {
+        return zeroRow;
     }
 
     public T getResult() {

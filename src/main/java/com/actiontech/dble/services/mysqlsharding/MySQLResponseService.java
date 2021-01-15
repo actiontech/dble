@@ -182,6 +182,11 @@ public class MySQLResponseService extends BackendService {
             }
             StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
                     service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
+                protocolResponseHandler = new LoadDataResponseHandler(this);
+            } else if (protocolResponseHandler != defaultResponseHandler) {
+                protocolResponseHandler = defaultResponseHandler;
+            }
             synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
@@ -210,12 +215,6 @@ public class MySQLResponseService extends BackendService {
         // syn and execute others
         if (session != null) {
             session.setBackendRequestTime(this.getConnection().getId());
-        }
-
-        if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
-            protocolResponseHandler = new LoadDataResponseHandler(this);
-        } else if (protocolResponseHandler != defaultResponseHandler) {
-            protocolResponseHandler = defaultResponseHandler;
         }
 
         // syn sharding

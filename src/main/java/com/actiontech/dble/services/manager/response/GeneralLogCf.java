@@ -32,7 +32,7 @@ public final class GeneralLogCf {
         public OnOffGeneralLog() {
         }
 
-        public static synchronized void execute(ManagerService service, boolean isOn) {
+        public static void execute(ManagerService service, boolean isOn) {
             LOCK.writeLock().lock();
             String onOffStatus = isOn ? "enable" : "disable";
             boolean isWrite = false;

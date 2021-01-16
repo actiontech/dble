@@ -27,9 +27,13 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     @Override
     public void ok(byte[] data) {
-        ResponseHandler respHand = service.getResponseHandler();
-        if (respHand != null) {
-            respHand.okResponse(data, service);
+        if (status != ROW) {
+            ResponseHandler respHand = service.getResponseHandler();
+            if (respHand != null) {
+                respHand.okResponse(data, service);
+            }
+        } else {
+            handleRowPacket(data);
         }
     }
 

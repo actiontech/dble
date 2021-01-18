@@ -1,11 +1,11 @@
 package com.actiontech.dble.net.response;
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
-import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.RequestFilePacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +16,8 @@ import java.util.List;
  * @author collapsar
  */
 public class DefaultResponseHandler implements ProtocolResponseHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResponseHandler.class);
 
     private volatile int status = HEADER;
     protected volatile byte[] header;
@@ -29,16 +31,25 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     @Override
     public void ok(byte[] data) {
-        ResponseHandler respHand = service.getResponseHandler();
-        if (respHand != null) {
-            respHand.okResponse(data, service);
+        if (status != ROW) {
+            ResponseHandler respHand = service.getResponseHandler();
+            if (respHand != null) {
+                respHand.okResponse(data, service);
+            }
+        } else {
+            handleRowPacket(data);
         }
     }
 
     @Override
     public void error(byte[] data) {
         final ResponseHandler respHand = service.getResponseHandler();
-        service.backendSpecialCleanUp();
+        service.setExecuting(false);
+        if (status != HEADER) {
+            service.setRowDataFlowing(false);
+            service.signal();
+            status = HEADER;
+        }
         if (respHand != null) {
             respHand.errorResponse(data, service);
         } else {
@@ -61,9 +72,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     @Override
     public void data(byte[] data) {
-        if (data[4] == RequestFilePacket.FIELD_COUNT) {
-            handleRequestPacket(data);
-        } else if (status == HEADER) {
+        if (status == HEADER) {
             status = FIELD;
             header = data;
             fields = new ArrayList<>((int) ByteUtil.readLength(data, 4));
@@ -76,6 +85,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     protected void closeNoHandler() {
         if (!service.getConnection().isClosed()) {
+            LOGGER.info("no handler bind in this service " + service);
             service.getConnection().close("no handler");
         }
     }
@@ -113,12 +123,4 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         }
     }
 
-    private void handleRequestPacket(byte[] data) {
-        ResponseHandler respHand = service.getResponseHandler();
-        if (respHand instanceof LoadDataResponseHandler) {
-            ((LoadDataResponseHandler) respHand).requestDataResponse(data, service);
-        } else {
-            closeNoHandler();
-        }
-    }
 }

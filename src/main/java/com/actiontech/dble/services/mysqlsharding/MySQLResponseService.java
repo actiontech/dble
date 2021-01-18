@@ -10,10 +10,7 @@ import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.net.response.DefaultResponseHandler;
-import com.actiontech.dble.net.response.ExecuteResponseHandler;
-import com.actiontech.dble.net.response.FetchResponseHandler;
-import com.actiontech.dble.net.response.PrepareResponseHandler;
+import com.actiontech.dble.net.response.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -78,6 +75,18 @@ public class MySQLResponseService extends BackendService {
     }
 
     //-------------------------------------- for rw ----------------------------------------------------
+    //  the purpose is to set old schema to null
+    private void changeUser() {
+        DbInstanceConfig config = connection.getInstance().getConfig();
+        connection.setService(new MySQLBackAuthService(connection, config.getUser(), config.getPassword(), connection.getBackendService().getResponseHandler()));
+        ChangeUserPacket changeUserPacket = new ChangeUserPacket(config.getUser());
+        changeUserPacket.setCharsetIndex(CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset()));
+        if (protocolResponseHandler != defaultResponseHandler) {
+            protocolResponseHandler = defaultResponseHandler;
+        }
+        changeUserPacket.bufferWrite(connection);
+    }
+
     public void execute(BusinessService service, String sql) {
         if (connection.getSchema() == null && connection.getOldSchema() != null) {
             // change user
@@ -107,6 +116,8 @@ public class MySQLResponseService extends BackendService {
                     protocolResponseHandler = new ExecuteResponseHandler(this, originPacket[9] == (byte) 0x01);
                 } else if (type == MySQLPacket.COM_STMT_FETCH) {
                     protocolResponseHandler = new FetchResponseHandler(this);
+                } else if (service.isInLoadData()) {
+                    protocolResponseHandler = new LoadDataResponseHandler(this);
                 } else if (protocolResponseHandler != defaultResponseHandler) {
                     protocolResponseHandler = defaultResponseHandler;
                 }
@@ -120,17 +131,23 @@ public class MySQLResponseService extends BackendService {
         }
     }
 
+    //-------------------------------------- for sharding ----------------------------------------------------
     public void execute(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn, "service-detail", this.compactInfo()), traceObject);
         try {
-            String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
             }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }
+            if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
+                protocolResponseHandler = new LoadDataResponseHandler(this);
+            } else if (protocolResponseHandler != defaultResponseHandler) {
+                protocolResponseHandler = defaultResponseHandler;
+            }
+            String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             StringBuilder synSQL = getSynSql(xaTxId, rrn,
                     service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
             synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
@@ -139,19 +156,6 @@ public class MySQLResponseService extends BackendService {
         }
     }
 
-    //  the purpose is to set old schema to null
-    private void changeUser() {
-        DbInstanceConfig config = connection.getInstance().getConfig();
-        connection.setService(new MySQLBackAuthService(connection, config.getUser(), config.getPassword(), connection.getBackendService().getResponseHandler()));
-        ChangeUserPacket changeUserPacket = new ChangeUserPacket(config.getUser());
-        changeUserPacket.setCharsetIndex(CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset()));
-        if (protocolResponseHandler != defaultResponseHandler) {
-            protocolResponseHandler = defaultResponseHandler;
-        }
-        changeUserPacket.bufferWrite(connection);
-    }
-
-    //-------------------------------------- for sharding ----------------------------------------------------
     public void query(String query) {
         query(query, this.autocommit);
     }
@@ -159,6 +163,9 @@ public class MySQLResponseService extends BackendService {
     public void query(String query, boolean isAutoCommit) {
         RouteResultsetNode rrn = new RouteResultsetNode("default", ServerParse.SELECT, query);
         StringBuilder synSQL = getSynSql(null, rrn, connection.getCharsetName(), this.txIsolation, isAutoCommit, usrVariables, sysVariables);
+        if (protocolResponseHandler != defaultResponseHandler) {
+            protocolResponseHandler = defaultResponseHandler;
+        }
         synAndDoExecute(synSQL, rrn.getStatement(), connection.getCharsetName());
     }
 
@@ -175,6 +182,11 @@ public class MySQLResponseService extends BackendService {
             }
             StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
                     service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
+                protocolResponseHandler = new LoadDataResponseHandler(this);
+            } else if (protocolResponseHandler != defaultResponseHandler) {
+                protocolResponseHandler = defaultResponseHandler;
+            }
             synAndDoExecuteMultiNode(synSQL, rrn, service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
@@ -204,6 +216,7 @@ public class MySQLResponseService extends BackendService {
         if (session != null) {
             session.setBackendRequestTime(this.getConnection().getId());
         }
+
         // syn sharding
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));

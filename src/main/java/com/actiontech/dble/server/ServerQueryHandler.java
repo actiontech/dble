@@ -11,6 +11,8 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.handler.*;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
+import com.actiontech.dble.server.parser.ShardingServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
@@ -63,9 +65,9 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 sql = sql.substring(0, ParseUtil.findNextBreak(sql));
             }
             this.service.setExecuteSql(sql);
-
-            int rs = ServerParse.parse(sql);
-            boolean isWithHint = ServerParse.startWithHint(sql);
+            ShardingServerParse serverParse = ServerParseFactory.getShardingParser();
+            int rs = serverParse.parse(sql);
+            boolean isWithHint = serverParse.startWithHint(sql);
             int sqlType = rs & 0xff;
             if (isWithHint) {
                 if (sqlType == ServerParse.INSERT || sqlType == ServerParse.DELETE || sqlType == ServerParse.UPDATE ||

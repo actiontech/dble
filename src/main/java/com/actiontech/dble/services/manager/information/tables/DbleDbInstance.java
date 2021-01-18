@@ -26,6 +26,7 @@ import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
 import com.actiontech.dble.services.manager.response.ShowHeartbeat;
 import com.actiontech.dble.util.DecryptUtil;
+import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.CaseFormat;
@@ -391,10 +392,14 @@ public class DbleDbInstance extends ManagerWritableTable {
                     dbInstance.setDisabled(entry.getValue());
                     break;
                 case COLUMN_MIN_CONN_COUNT:
-                    dbInstance.setMinCon(Integer.parseInt(entry.getValue()));
+                    if (!StringUtil.isBlank(entry.getValue())) {
+                        dbInstance.setMinCon(IntegerUtil.parseInt(entry.getValue()));
+                    }
                     break;
                 case COLUMN_MAX_CONN_COUNT:
-                    dbInstance.setMaxCon(Integer.parseInt(entry.getValue()));
+                    if (!StringUtil.isBlank(entry.getValue())) {
+                        dbInstance.setMaxCon(IntegerUtil.parseInt(entry.getValue()));
+                    }
                     break;
                 case COLUMN_READ_WEIGHT:
                     dbInstance.setReadWeight(entry.getValue());

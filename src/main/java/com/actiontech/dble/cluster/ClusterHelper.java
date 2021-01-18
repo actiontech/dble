@@ -2,6 +2,7 @@ package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.bean.KvBean;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -81,7 +82,7 @@ public final class ClusterHelper {
     }
 
     public static List<KvBean> getKVPath(String path) throws Exception {
-        return ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path);
+        return null == ClusterGeneralConfig.getInstance().getClusterSender() ? Collections.EMPTY_LIST : ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path);
     }
 
     public static void forceResumePause() throws Exception {

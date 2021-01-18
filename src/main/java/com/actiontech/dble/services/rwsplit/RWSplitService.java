@@ -9,7 +9,9 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
+import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
@@ -191,13 +193,14 @@ public class RWSplitService extends BusinessService {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
         try {
+            RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             inPrepare = true;
             String sql = mm.readString(getCharset().getClient());
-            int rs = ServerParse.parse(sql);
+            int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
             switch (sqlType) {
                 case ServerParse.SELECT:
-                    int rs2 = ServerParse.parseSpecial(sqlType, sql);
+                    int rs2 = serverParse.parseSpecial(sqlType, sql);
                     if (rs2 == ServerParse.SELECT_FOR_UPDATE || rs2 == ServerParse.LOCK_IN_SHARE_MODE) {
                         session.execute(true, data, null);
                     } else {

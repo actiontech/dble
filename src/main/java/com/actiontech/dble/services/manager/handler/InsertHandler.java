@@ -5,10 +5,12 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.values.ConfStatus;
+import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -97,6 +99,8 @@ public final class InsertHandler {
             }
             return;
         } finally {
+            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
             managerTable.getLock().unlock();
             if (distributeLock != null) {
                 distributeLock.release();

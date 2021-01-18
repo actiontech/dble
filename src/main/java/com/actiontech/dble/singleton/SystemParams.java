@@ -128,7 +128,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("traceEndPoint", sysConfig.getTraceEndPoint() + "", "The trace Jaeger server endPoint"));
         readOnlyParams.add(new ParamInfo("generalLogFileSize", GeneralLog.getInstance().getGeneralLogFileSize() + "M", "The max size of the general log file.The default value is 16M"));
         readOnlyParams.add(new ParamInfo("generalLogQueueSize", GeneralLog.getInstance().getGeneralLogQueueSize() + "", "Sets the queue size for consuming general log, value must not be less than 1 and must be a power of 2,The default value is 4069"));
-
+        readOnlyParams.add(new ParamInfo("maxHeapTableSize", sysConfig.getMaxHeapTableSize() + "", "used for temp table persistence of cursor , Temp table which size larger than that will save to disk."));
+        readOnlyParams.add(new ParamInfo("heapTableBufferChunkSize", sysConfig.getHeapTableBufferChunkSize() + "", "used for temp table persistence of cursor, setting for read-buffer size."));
     }
 
     public List<ParamInfo> getVolatileParams() {

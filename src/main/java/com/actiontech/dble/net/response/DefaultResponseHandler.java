@@ -4,6 +4,8 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.List;
  * @author collapsar
  */
 public class DefaultResponseHandler implements ProtocolResponseHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResponseHandler.class);
 
     private volatile int status = HEADER;
     protected volatile byte[] header;
@@ -40,7 +44,12 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     @Override
     public void error(byte[] data) {
         final ResponseHandler respHand = service.getResponseHandler();
-        service.backendSpecialCleanUp();
+        service.setExecuting(false);
+        if (status != HEADER) {
+            service.setRowDataFlowing(false);
+            service.signal();
+            status = HEADER;
+        }
         if (respHand != null) {
             respHand.errorResponse(data, service);
         } else {
@@ -76,6 +85,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     protected void closeNoHandler() {
         if (!service.getConnection().isClosed()) {
+            LOGGER.info("no handler bind in this service " + service);
             service.getConnection().close("no handler");
         }
     }

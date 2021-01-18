@@ -7,6 +7,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -206,6 +207,9 @@ public class ShardingService extends BusinessService {
             sc.changeUserAuthSwitch(data, changeUserPacket);
             return;
         }*/
+        if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
+            GeneralLogHelper.putGLog(this, data);
+        }
         try (RequestScope requestScope = new RequestScope()) {
 
             if (loadDataInfileHandler.isStart()) {

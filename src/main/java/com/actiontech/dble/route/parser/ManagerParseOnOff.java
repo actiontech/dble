@@ -18,6 +18,7 @@ public final class ManagerParseOnOff {
     public static final int ALERT = 2;
     public static final int CUSTOM_MYSQL_HA = 3;
     public static final int CAP_CLIENT_FOUND_ROWS = 4;
+    public static final int GENERAL_LOG = 5;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -50,6 +51,9 @@ public final class ManagerParseOnOff {
                 case 'C':
                 case 'c':
                     return cCheck(stmt, offset);
+                case 'G':
+                case 'g':
+                    return gCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -74,6 +78,16 @@ public final class ManagerParseOnOff {
             String prefix = stmt.substring(offset).toUpperCase();
             if (prefix.startsWith("SLOW_QUERY_LOG") && (stmt.length() == offset + 14 || ParseUtil.isEOF(stmt, offset + 14))) {
                 return SLOW_QUERY_LOG;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int gCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 10) {
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("GENERAL_LOG") && (stmt.length() == offset + 11 || ParseUtil.isEOF(stmt, offset + 11))) {
+                return GENERAL_LOG;
             }
         }
         return OTHER;

@@ -9,6 +9,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
@@ -90,6 +91,11 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 MySQLPacket packet = new OkPacket();
                 packet.setPacketId(needAuthSwitched ? 4 : 2);
                 packet.write(connection);
+                String schema;
+                GeneralLogHelper.putGLog(connection.getId(), MySQLPacket.TO_STRING.get(MySQLPacket.COM_CONNECT),
+                        info.getUserConfig().getName() + "@" + connection.getHost() +
+                                " on " + (schema = (schema = ((FrontendService) service).getSchema()) == null ? "" : schema) +
+                                " using TCP/IP");
             } else {
                 writeOutErrorMessage(info.getErrorMsg());
             }

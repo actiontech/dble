@@ -78,6 +78,7 @@ public final class ManagerParseShow {
     public static final int DATADISTRIBUTION_WHERE = 68;
     public static final int CONNECTION_POOL_PROPERTY = 69;
     public static final int CAP_CLIENT_FOUND_ROWS = 70;
+    public static final int GENERAL_LOG = 71;
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
@@ -224,6 +225,9 @@ public final class ManagerParseShow {
                 case 'W':
                 case 'w':
                     return show2WCheck(stmt, offset);
+                case 'G':
+                case 'g':
+                    return show2GCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -791,6 +795,40 @@ public final class ManagerParseShow {
                     return OTHER;
                 }
                 return SHOW_RELOAD;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2GCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'E':
+                case 'e':
+                    return show2GeCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2GeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "NERAL_LOG".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            if (stmt.length() == offset + 1 && (c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'R' || c3 == 'r') && (c4 == 'A' || c4 == 'a') && (c5 == 'L' || c5 == 'l') &&
+                    (c6 == '_') && (c7 == 'L' || c7 == 'l') && (c8 == 'O' || c8 == 'o') &&
+                    (c9 == 'G' || c9 == 'g')) {
+                return GENERAL_LOG;
             }
         }
         return OTHER;

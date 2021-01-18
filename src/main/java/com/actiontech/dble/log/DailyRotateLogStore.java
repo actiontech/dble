@@ -56,7 +56,7 @@ public class DailyRotateLogStore {
 
     public void open() throws IOException {
         File f = new File(fileName);
-        createDirectories(f.getAbsoluteFile().getParentFile().getAbsolutePath());
+        FileUtils.makeParentDirs(f);
         if (now == null) {
             if (f.exists() && System.currentTimeMillis() > f.lastModified()) {
                 now = new Date(f.lastModified());
@@ -80,17 +80,6 @@ public class DailyRotateLogStore {
                 channel.close();
             } catch (IOException e) {
                 //ignore error
-            }
-        }
-    }
-
-    public void createDirectories(String dir) {
-        if (dir != null) {
-            File f = new File(dir);
-            if (!f.exists()) {
-                String parent = f.getParent();
-                createDirectories(parent);
-                f.mkdir();
             }
         }
     }

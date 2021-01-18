@@ -20,6 +20,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.log.general.GeneralLogProcessor;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.IOProcessor;
@@ -71,6 +72,7 @@ public final class DbleServer {
 
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
+    private GeneralLogProcessor generalLogProcessor;
 
     private AsynchronousChannelGroup[] asyncChannelGroups;
     private AtomicInteger channelIndex = new AtomicInteger();
@@ -220,6 +222,12 @@ public final class DbleServer {
             txnLogProcessor = new TxnLogProcessor();
             txnLogProcessor.setName("TxnLogProcessor");
             txnLogProcessor.start();
+        }
+
+        // general log
+        generalLogProcessor = GeneralLogProcessor.getInstance();
+        if (SystemConfig.getInstance().getEnableGeneralLog() == 1) {
+            generalLogProcessor.start();
         }
 
         SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
@@ -665,6 +673,10 @@ public final class DbleServer {
 
     public TxnLogProcessor getTxnLogProcessor() {
         return txnLogProcessor;
+    }
+
+    public GeneralLogProcessor getGeneralLogProcessor() {
+        return generalLogProcessor;
     }
 
     public ExecutorService getBusinessExecutor() {

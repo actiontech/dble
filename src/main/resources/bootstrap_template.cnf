@@ -161,3 +161,12 @@
 #enableFlowControl=false
 #flowControlStartThreshold=4096
 #flowControlStopThreshold=256
+
+#  if enable the general log
+#-DenableGeneralLog=1
+#  general log file path
+#-DgeneralLogFile=general/general.log
+#  maximum value of file, unit is mb
+#-DgeneralLogFileSize=16
+#  the queue size must not be less than 1 and must be a power of 2
+#-DgeneralLogQueueSize=4096

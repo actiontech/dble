@@ -19,7 +19,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultResponseHandler.class);
 
-    private volatile int status = HEADER;
+    private volatile int status = INITIAL;
     protected volatile byte[] header;
     protected volatile List<byte[]> fields;
 
@@ -31,11 +31,13 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
 
     @Override
     public void ok(byte[] data) {
-        if (status != ROW) {
+        if (status == INITIAL) {
             ResponseHandler respHand = service.getResponseHandler();
             if (respHand != null) {
                 respHand.okResponse(data, service);
             }
+        } else if (status == FIELD) {
+            fields.add(data);
         } else {
             handleRowPacket(data);
         }
@@ -45,10 +47,10 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     public void error(byte[] data) {
         final ResponseHandler respHand = service.getResponseHandler();
         service.setExecuting(false);
-        if (status != HEADER) {
+        if (status != INITIAL) {
             service.setRowDataFlowing(false);
             service.signal();
-            status = HEADER;
+            status = INITIAL;
         }
         if (respHand != null) {
             respHand.errorResponse(data, service);
@@ -65,14 +67,14 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         } else if (eof.length > MySQLPacket.MAX_EOF_SIZE) {
             handleRowPacket(eof);
         } else {
-            status = HEADER;
+            status = INITIAL;
             handleRowEofPacket(eof);
         }
     }
 
     @Override
     public void data(byte[] data) {
-        if (status == HEADER) {
+        if (status == INITIAL) {
             status = FIELD;
             header = data;
             fields = new ArrayList<>((int) ByteUtil.readLength(data, 4));

@@ -2,7 +2,8 @@ package com.actiontech.dble.net.response;
 
 public interface ProtocolResponseHandler {
 
-    int HEADER = 0;
+    int INITIAL = -1;
+
     int FIELD = 1;
     int ROW = 2;
 

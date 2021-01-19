@@ -88,6 +88,13 @@ public final class AuthUtil {
                     default:
                         break;
                 }
+            } else if (userConfig instanceof ManagerUserConfig) {
+                switch (checkManagerSchema(schema)) {
+                    case ErrorCode.ER_BAD_DB_ERROR:
+                        return "Unknown database '" + schema + "'";
+                    default:
+                        break;
+                }
             }
 
             //check maxconnection

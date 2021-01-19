@@ -15,7 +15,7 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowColumnsStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowColumnsStatement;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,7 +48,7 @@ public final class ShowColumns {
             }
 
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-            MySqlShowColumnsStatement showColumnsStatement = (MySqlShowColumnsStatement) statement;
+            SQLShowColumnsStatement showColumnsStatement = (SQLShowColumnsStatement) statement;
             String table = StringUtil.removeBackQuote(showColumnsStatement.getTable().getSimpleName());
             SQLName database = showColumnsStatement.getDatabase();
             String schema = database == null ? shardingService.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());

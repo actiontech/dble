@@ -243,12 +243,12 @@ public class PushDownVisitor extends MysqlVisitor {
                 continue;
             if (col.type().equals(Item.ItemType.SUM_FUNC_ITEM)) {
                 ItemSum funCol = (ItemSum) col;
-                String funName = funCol.funcName().toUpperCase();
+                String funName = funCol.funcName();
                 ItemSum.SumFuncType i = funCol.sumType();
                 if (i == ItemSum.SumFuncType.AVG_FUNC) {
-                    String colNameSum = colName.replace(funName + "(", "SUM(");
+                    String colNameSum = replace(colName, funName + "(", "SUM(");
                     colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
-                    String colNameCount = colName.replace(funName + "(", "COUNT(");
+                    String colNameCount = replace(colName, funName + "(", "COUNT(");
                     colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
                     sqlBuilder.append(colNameSum).append(",").append(colNameCount).append(",");
                     continue;
@@ -259,11 +259,11 @@ public class PushDownVisitor extends MysqlVisitor {
                     } else {
                         toReplace = "(VAR_SAMP\\()|(VAR_POP\\()|(VARIANCE\\()";
                     }
-                    String colNameCount = colName.replaceAll(toReplace, "COUNT(");
+                    String colNameCount = replaceAll(colName, toReplace, "COUNT(");
                     colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
-                    String colNameSum = colName.replaceAll(toReplace, "SUM(");
+                    String colNameSum = replaceAll(colName, toReplace, "SUM(");
                     colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
-                    String colNameVar = colName.replaceAll(toReplace, "VARIANCE(");
+                    String colNameVar = replaceAll(colName, toReplace, "VARIANCE(");
                     colNameVar = colNameVar.replace(getMadeAggAlias(funName), getMadeAggAlias("VARIANCE"));
                     sqlBuilder.append(colNameCount).append(",").append(colNameSum).append(",").append(colNameVar).append(",");
                     continue;
@@ -274,6 +274,22 @@ public class PushDownVisitor extends MysqlVisitor {
         }
         sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
     }
+
+    private String replace(String colName, String regex, String replacement) {
+        String res;
+        if (colName.contains(regex)) {
+            res = colName.replace(regex, replacement);
+        } else {
+            res = colName.replace(regex.toLowerCase(), replacement);
+        }
+        return res;
+    }
+
+    private String replaceAll(String colName, String regex, String replacement) {
+        String res = colName.replaceAll(regex, replacement).replaceAll(regex.toLowerCase(), replacement);
+        return res;
+    }
+
 
     private void buildGroupBy(PlanNode query) {
         if (nodeHasGroupBy(query)) {

@@ -63,7 +63,7 @@ public class TestMySQLItemVisitor {
         MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, utf8Charset, null, null);
         q.accept(v);
         Item item = v.getItem();
-        Assert.assertEquals(true, "COUNT(*) > 1".equals(item.getItemName()));
+        Assert.assertEquals(true, "count(*) > 1".equals(item.getItemName()));
     }
 
     @Test
@@ -113,7 +113,7 @@ public class TestMySQLItemVisitor {
         MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, utf8Charset,null, null);
         items.get(0).accept(v);
         Item item = v.getItem();
-        Assert.assertEquals(true, "SUM(col1)".equals(item.getItemName()));
+        Assert.assertEquals(true, "sum(col1)".equals(item.getItemName()));
     }
 
     //TODO:SELECTITEM(function)

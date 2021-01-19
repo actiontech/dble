@@ -17,7 +17,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateViewStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowCreateViewStatement;
 
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -57,7 +57,7 @@ public final class ShowCreateView {
 
     public static void response(ShardingService service, String stmt) {
         try {
-            MySqlShowCreateViewStatement statement = (MySqlShowCreateViewStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLShowCreateViewStatement statement = (SQLShowCreateViewStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
             String schema = null;
             String view = null;
             if (statement.getName() instanceof SQLPropertyExpr) {

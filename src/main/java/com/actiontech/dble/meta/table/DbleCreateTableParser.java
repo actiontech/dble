@@ -1400,32 +1400,29 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                 subPartitionByClause = range;
             }
 
-            if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITION)) {
-                lexer.nextToken();
-                acceptIdentifier("OPTIONS");
-                this.exprParser.parseAssignItem(subPartitionByClause.getOptions(), subPartitionByClause);
-            }
-
-            if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITIONS)) {
-                lexer.nextToken();
-                Number intValue = lexer.integerValue();
-                SQLNumberExpr numExpr = new SQLNumberExpr(intValue);
-                subPartitionByClause.setSubPartitionsCount(numExpr);
-                lexer.nextToken();
-            } else if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS)) { // ADB
-                lexer.nextToken();
-                subPartitionByClause.setSubPartitionsCount((SQLIntegerExpr) exprParser.expr());
-                subPartitionByClause.getAttributes().put("adb.partitons", true);
-            }
-
-            if (lexer.identifierEquals(FnvHash.Constants.LIFECYCLE)) {
-                lexer.nextToken();
-                subPartitionByClause.setLifecycle((SQLIntegerExpr) exprParser.expr());
-            }
-
             if (subPartitionByClause != null) {
-                subPartitionByClause.setLinear(linear);
+                if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITION)) {
+                    lexer.nextToken();
+                    acceptIdentifier("OPTIONS");
+                    this.exprParser.parseAssignItem(subPartitionByClause.getOptions(), subPartitionByClause);
+                }
+                if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITIONS)) {
+                    lexer.nextToken();
+                    Number intValue = lexer.integerValue();
+                    SQLNumberExpr numExpr = new SQLNumberExpr(intValue);
+                    subPartitionByClause.setSubPartitionsCount(numExpr);
+                    lexer.nextToken();
+                } else if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS)) { // ADB
+                    lexer.nextToken();
+                    subPartitionByClause.setSubPartitionsCount((SQLIntegerExpr) exprParser.expr());
+                    subPartitionByClause.getAttributes().put("adb.partitons", true);
+                }
 
+                if (lexer.identifierEquals(FnvHash.Constants.LIFECYCLE)) {
+                    lexer.nextToken();
+                    subPartitionByClause.setLifecycle((SQLIntegerExpr) exprParser.expr());
+                }
+                subPartitionByClause.setLinear(linear);
                 clause.setSubPartitionBy(subPartitionByClause);
             }
         }

@@ -305,7 +305,11 @@ public abstract class BackendService extends AbstractService {
     }
 
     protected void addSyncContext() {
-        this.statusSync.synCmdCount.incrementAndGet();
+        if (statusSync == null) {
+            statusSync = new StatusSync(1);
+        } else {
+            this.statusSync.synCmdCount.incrementAndGet();
+        }
     }
 
     protected StringBuilder getSynSql(CharsetNames clientCharset, Integer clientTxIsolation, boolean expectAutocommit,
@@ -455,6 +459,19 @@ public abstract class BackendService extends AbstractService {
         private final AtomicInteger synCmdCount;
         private final Map<String, String> usrVariables = new LinkedHashMap<>();
         private final Map<String, String> sysVariables = new LinkedHashMap<>();
+
+        /**
+         * only for xa
+         *
+         * @param synCount
+         */
+        StatusSync(int synCount) {
+            this.schema = null;
+            this.clientCharset = null;
+            this.txIsolation = null;
+            this.autocommit = null;
+            this.synCmdCount = new AtomicInteger(synCount);
+        }
 
         StatusSync(String schema,
                    CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,

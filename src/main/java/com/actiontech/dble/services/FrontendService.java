@@ -66,7 +66,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.multiStatementAllow = auth.isMultStatementAllow();
-        this.maxPacketSize = SystemConfig.getInstance().getMaxPacketSize();
     }
 
     /**

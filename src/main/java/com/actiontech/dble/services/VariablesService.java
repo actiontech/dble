@@ -25,9 +25,6 @@ public class VariablesService {
     protected volatile int txIsolation;
     protected volatile boolean autocommit;
     protected volatile boolean multiStatementAllow;
-    protected volatile int maxPacketSize;
-
-    // protected volatile boolean isAuthorized;
 
     public VariablesService() {
         this.usrVariables = new LinkedHashMap<>();

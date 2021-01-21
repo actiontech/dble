@@ -77,7 +77,6 @@ public abstract class BackendService extends AbstractService {
             this.txIsolation = -1;
         }
         this.multiStatementAllow = true;
-        this.maxPacketSize = SystemConfig.getInstance().getMaxPacketSize();
     }
 
     /**

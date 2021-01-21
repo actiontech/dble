@@ -315,12 +315,6 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <includes>
-                    <include>*.dtd</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-                <includes>
                     <include>*.xsd</include>
                 </includes>
             </resource>
@@ -342,7 +336,6 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>*_template.xml</include>
-                    <include>*.dtd</include>
                     <include>*.xsd</include>
                     <include>*.txt</include>
                 </includes>

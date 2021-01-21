@@ -35,7 +35,7 @@ public class TableHandler extends DefaultHandler {
             tableName = StringUtil.removeBackQuote(((SQLDropTableStatement) sqlStatement).getTableSources().get(0).getName().getSimpleName());
             context.setTable(tableName);
         } else if (sqlStatement instanceof MySqlLockTableStatement) {
-            tableName = StringUtil.removeBackQuote(((MySqlLockTableStatement) sqlStatement).getTableSource().getName().getSimpleName());
+            tableName = StringUtil.removeBackQuote(((MySqlLockTableStatement) sqlStatement).getItems().get(0).getTableSource().getName().getSimpleName());
             context.setTable(tableName);
         }
         return null;

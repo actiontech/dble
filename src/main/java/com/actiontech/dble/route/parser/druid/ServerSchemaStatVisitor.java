@@ -935,6 +935,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 name = name.toLowerCase();
                 value = value.toLowerCase();
             }
+            // remove alias
+            String space = " ";
+            if (name.contains(space)) {
+                name = name.substring(0, name.indexOf(space));
+            }
+
+            if (value.contains(space)) {
+                value = value.substring(0, value.indexOf(space));
+            }
             aliasMap.put(name, value);
 
             String[] tmpArray = value.split("\\.");

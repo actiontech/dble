@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.statistic.stat;
 
+import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
 class StatSqlParser {
@@ -21,8 +22,7 @@ class StatSqlParser {
     }
 
     public String mergeSql(String sql) {
-
-        String newSql = ParameterizedOutputVisitorUtils.parameterize(sql, "mysql");
+        String newSql = ParameterizedOutputVisitorUtils.parameterize(sql, DbType.mysql);
         return fixSql(newSql);
     }
 

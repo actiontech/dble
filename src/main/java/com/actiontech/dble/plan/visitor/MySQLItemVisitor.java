@@ -47,7 +47,6 @@ import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
@@ -345,7 +344,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     @Override
-    public void endVisit(MySqlExtractExpr x) {
+    public void endVisit(SQLExtractExpr x) {
         item = new ItemExtract(getItem(x.getValue()), x.getUnit(), this.charsetIndex);
         initName(x);
     }
@@ -569,6 +568,28 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             case "STDDEV":
                 item = new ItemSumStd(args, 0, false, null, this.charsetIndex);
                 break;
+            case "STD":
+            case "STDDEV_POP":
+                item = new ItemSumStd(args, 0, false, null, this.charsetIndex);
+                break;
+            case "STDDEV_SAMP":
+                item = new ItemSumStd(args, 1, false, null, this.charsetIndex);
+                break;
+            case "BIT_AND":
+                item = new ItemSumAnd(args, false, null, this.charsetIndex);
+                break;
+            case "BIT_OR":
+                item = new ItemSumOr(args, false, null, this.charsetIndex);
+                break;
+            case "BIT_XOR":
+                item = new ItemSumXor(args, false, null, this.charsetIndex);
+                break;
+            case "VAR_SAMP":
+                item = new ItemSumVariance(args, 1, false, null, this.charsetIndex);
+                break;
+            case "VARIANCE":
+                item = new ItemSumVariance(args, 0, false, null, this.charsetIndex);
+                break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported " + funcName);
         }
@@ -662,29 +683,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getParameters().get(0);
                 item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName().toUpperCase()), this.charsetIndex);
                 break;
-            case "VAR_SAMP":
-                item = new ItemSumVariance(args, 1, false, null, this.charsetIndex);
-                break;
+
             case "VAR_POP":
-            case "VARIANCE":
                 item = new ItemSumVariance(args, 0, false, null, this.charsetIndex);
                 break;
             case "STD":
             case "STDDEV":
             case "STDDEV_POP":
                 item = new ItemSumStd(args, 0, false, null, this.charsetIndex);
-                break;
-            case "STDDEV_SAMP":
-                item = new ItemSumStd(args, 1, false, null, this.charsetIndex);
-                break;
-            case "BIT_AND":
-                item = new ItemSumAnd(args, false, null, this.charsetIndex);
-                break;
-            case "BIT_OR":
-                item = new ItemSumOr(args, false, null, this.charsetIndex);
-                break;
-            case "BIT_XOR":
-                item = new ItemSumXor(args, false, null, this.charsetIndex);
                 break;
             case "IF":
                 item = new ItemFuncIf(args, this.charsetIndex);

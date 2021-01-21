@@ -15,8 +15,7 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowIndexesStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowKeysStatement;
+import com.alibaba.druid.sql.ast.statement.SQLShowIndexesStatement;
 
 import java.util.regex.Pattern;
 
@@ -50,35 +49,21 @@ public final class ShowIndex {
             StringBuilder sql = new StringBuilder();
             boolean changeSQL = false;
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-            if (statement instanceof MySqlShowIndexesStatement) {
-                MySqlShowIndexesStatement mySqlShowIndexesStatement = (MySqlShowIndexesStatement) statement;
-                table = StringUtil.removeBackQuote(mySqlShowIndexesStatement.getTable().getSimpleName());
-                SQLName database = mySqlShowIndexesStatement.getDatabase();
+            if (statement instanceof SQLShowIndexesStatement) {
+                SQLShowIndexesStatement sqlShowIndexesStatement = (SQLShowIndexesStatement) statement;
+                table = StringUtil.removeBackQuote(sqlShowIndexesStatement.getTable().getName().getSimpleName());
+                SQLName database = sqlShowIndexesStatement.getDatabase();
                 schema = database == null ? shardingService.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());
                 if (schema == null) {
                     shardingService.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
                     return;
                 }
-                if (mySqlShowIndexesStatement.getDatabase() != null) {
-                    mySqlShowIndexesStatement.setDatabase(null);
-                    sql.append(mySqlShowIndexesStatement.toString());
+                if (sqlShowIndexesStatement.getDatabase() != null) {
+                    sqlShowIndexesStatement.setDatabase(null);
+                    sql.append(sqlShowIndexesStatement.toString());
                     changeSQL = true;
                 }
 
-            } else if (statement instanceof MySqlShowKeysStatement) {
-                MySqlShowKeysStatement mySqlShowKeysStatement = (MySqlShowKeysStatement) statement;
-                table = StringUtil.removeBackQuote(mySqlShowKeysStatement.getTable().getSimpleName());
-                SQLName database = mySqlShowKeysStatement.getDatabase();
-                schema = database == null ? shardingService.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());
-                if (schema == null) {
-                    shardingService.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
-                    return;
-                }
-                if (mySqlShowKeysStatement.getDatabase() != null) {
-                    mySqlShowKeysStatement.setDatabase(null);
-                    sql.append(mySqlShowKeysStatement.toString());
-                    changeSQL = true;
-                }
             } else {
                 shardingService.writeErrMessage(ErrorCode.ER_PARSE_ERROR, stmt);
                 return;

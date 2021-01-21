@@ -15,8 +15,8 @@ import com.actiontech.dble.plan.common.ptr.LongPtr;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MyTime;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLExtractExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -200,7 +200,7 @@ public class ItemExtract extends ItemIntFunc {
 
     @Override
     public SQLExpr toExpression() {
-        MySqlExtractExpr extract = new MySqlExtractExpr();
+        SQLExtractExpr extract = new SQLExtractExpr();
         extract.setValue(args.get(0).toExpression());
         extract.setUnit(intType);
         return extract;

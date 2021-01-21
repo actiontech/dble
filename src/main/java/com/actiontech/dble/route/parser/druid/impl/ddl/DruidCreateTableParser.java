@@ -13,15 +13,13 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.alibaba.druid.sql.ast.SQLObject;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 
 import java.sql.SQLException;
@@ -40,11 +38,10 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
-
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, createStmt.getTableSource());
         TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
-        if (tableMeta != null && !createStmt.isIfNotExiists()) {
+        if (tableMeta != null && !createStmt.isIfNotExists()) {
             String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' or table meta already exists";
             throw new SQLException(msg, "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }
@@ -78,30 +75,30 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         return schemaInfo.getSchemaConfig();
     }
 
-    private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
+    private void sharingTableCheckHelp(SQLAssignItem sqlAssignItem, MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
+        String sqlAssignItemTarget = sqlAssignItem.getTarget().toString();
+        String sqlAssignItemValue = sqlAssignItem.getValue().toString();
         //ALLOW InnoDB ONLY
-        SQLObject engine = createStmt.getTableOptions().get("ENGINE");
-        if (engine != null) {
-            String strEngine;
-            if (engine instanceof SQLCharExpr) {
-                strEngine = ((SQLCharExpr) engine).getText();
-            } else if (engine instanceof SQLIdentifierExpr) {
-                strEngine = ((SQLIdentifierExpr) engine).getSimpleName();
-            } else {
-                strEngine = engine.toString();
-            }
-            if (!"InnoDB".equalsIgnoreCase(strEngine)) {
-                String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
-                LOGGER.info(msg);
-                throw new SQLNonTransientException(msg);
-            }
+        if (StringUtil.equals("ENGINE", sqlAssignItemTarget) && !"InnoDB".equalsIgnoreCase(sqlAssignItemValue)) {
+            String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
+            LOGGER.info(msg);
+            throw new SQLNonTransientException(msg);
         }
-
         //DISABLE DATA DIRECTORY
-        if (createStmt.getTableOptions().get("DATA DIRECTORY") != null) {
+        if (StringUtil.equals("DATA DIRECTORY", sqlAssignItemTarget)) {
             String msg = "create table with DATA DIRECTORY  not supported:" + createStmt;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
+
+
     }
+
+    private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
+        if (createStmt.getTableOptions().size() == 0) return;
+        for (SQLAssignItem sqlAssignItem : createStmt.getTableOptions()) {
+            sharingTableCheckHelp(sqlAssignItem, createStmt);
+        }
+    }
+
 }

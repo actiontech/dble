@@ -1,15 +1,15 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.ResourceUtil;
@@ -18,9 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -99,36 +99,35 @@ public final class ConfFileHandler {
     }
 
     private static void checkXMLFile(String xmlFileName, byte[] data)
-            throws ParserConfigurationException, SAXException, IOException {
-        InputStream dtdStream = new ByteArrayInputStream(new byte[0]);
+            throws SAXException, IOException {
+        InputStream xsdStream = new ByteArrayInputStream(new byte[0]);
         File confDir = new File(SystemConfig.getInstance().getHomePath(), "conf");
         switch (xmlFileName) {
             case ConfigFileName.SHARDING_XML:
-                dtdStream = ResourceUtil.getResourceAsStream("/sharding.dtd");
-                if (dtdStream == null) {
-                    dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                            confDir, "sharding.dtd")));
+                xsdStream = ResourceUtil.getResourceAsStreamFromRoot(ConfigFileName.SHARDING_XSD);
+                if (xsdStream == null) {
+                    xsdStream = new ByteArrayInputStream(readFileByBytes(new File(
+                            confDir, ConfigFileName.SHARDING_XSD)));
                 }
-
                 break;
             case ConfigFileName.DB_XML:
-                dtdStream = ResourceUtil.getResourceAsStream("/db.dtd");
-                if (dtdStream == null) {
-                    dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                            confDir, "db.dtd")));
+                xsdStream = ResourceUtil.getResourceAsStreamFromRoot(ConfigFileName.DB_XSD);
+                if (xsdStream == null) {
+                    xsdStream = new ByteArrayInputStream(readFileByBytes(new File(
+                            confDir, ConfigFileName.DB_XSD)));
                 }
                 break;
             case ConfigFileName.USER_XML:
-                dtdStream = ResourceUtil.getResourceAsStream("/user.dtd");
-                if (dtdStream == null) {
-                    dtdStream = new ByteArrayInputStream(readFileByBytes(new File(
-                            confDir, "user.dtd")));
+                xsdStream = ResourceUtil.getResourceAsStreamFromRoot(ConfigFileName.USER_XSD);
+                if (xsdStream == null) {
+                    xsdStream = new ByteArrayInputStream(readFileByBytes(new File(
+                            confDir, ConfigFileName.USER_XSD)));
                 }
                 break;
             default:
                 break;
         }
-        ConfigUtil.getDocument(dtdStream, new ByteArrayInputStream(data));
+        XmlProcessBase.validate(new ByteArrayInputStream(data), xsdStream);
     }
 
     private static byte[] readFileByBytes(File fileName) {
@@ -163,7 +162,7 @@ public final class ConfFileHandler {
         BufferedOutputStream buff = null;
         boolean suc = false;
         try {
-            byte[] fileData = content.getBytes("UTF-8");
+            byte[] fileData = content.getBytes(StandardCharsets.UTF_8);
             if (fileName.endsWith(".xml")) {
                 checkXMLFile(fileName, fileData);
             }

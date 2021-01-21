@@ -19,7 +19,7 @@ public class SequenceConverter {
 
     public static String sequencePropsToJson(String fileName) {
         JsonObject jsonObject = new JsonObject();
-        Properties properties = PropertiesUtil.loadProps(fileName);
+        Map<String, String> properties = PropertiesUtil.getOrderedProperties(fileName);
         jsonObject.addProperty(fileName, (new Gson()).toJson(properties));
         return (new Gson()).toJson(jsonObject);
     }

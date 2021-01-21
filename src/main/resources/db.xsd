@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:dble="http://dble.cloud/" elementFormDefault="qualified"
+           targetNamespace="http://dble.cloud/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:import schemaLocation="db_detail.xsd"/>
+    <xs:element name="db">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="dbGroup"/>
+            </xs:sequence>
+            <xs:attribute name="version" type="xs:decimal"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

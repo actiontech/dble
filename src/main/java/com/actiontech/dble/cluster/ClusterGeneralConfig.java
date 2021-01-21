@@ -10,7 +10,6 @@ import com.actiontech.dble.cluster.general.impl.ushard.UshardSender;
 import com.actiontech.dble.cluster.zkprocess.ZkSender;
 import com.actiontech.dble.config.model.ClusterConfig;
 
-import java.io.IOException;
 
 import static com.actiontech.dble.cluster.ClusterController.*;
 
@@ -57,7 +56,7 @@ public final class ClusterGeneralConfig {
     }
 
 
-    static void initData() throws IOException {
+    static void initData() throws Exception {
         INSTANCE.clusterSender.initCluster();
     }
 

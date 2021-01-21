@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="dbGroup">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="heartbeat">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute name="errorRetryCount" type="xs:nonNegativeInteger"/>
+                                <xs:attribute name="timeout" type="xs:nonNegativeInteger"/>
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element maxOccurs="unbounded" name="dbInstance">
+                    <xs:complexType mixed="true">
+                        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                            <xs:element name="property">
+                                <xs:complexType>
+                                    <xs:simpleContent>
+                                        <xs:extension base="xs:boolean">
+                                            <xs:attribute name="name" type="xs:string" use="required"/>
+                                        </xs:extension>
+                                    </xs:simpleContent>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="url" type="xs:string" use="required"/>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="user" type="xs:string" use="required"/>
+                        <xs:attribute name="password" type="xs:string" use="required"/>
+                        <xs:attribute name="maxCon" type="xs:nonNegativeInteger" use="required"/>
+                        <xs:attribute name="minCon" type="xs:nonNegativeInteger" use="required"/>
+                        <xs:attribute name="primary" type="xs:boolean"/>
+                        <xs:attribute name="readWeight" type="xs:nonNegativeInteger"/>
+                        <xs:attribute name="id" type="xs:string"/>
+                        <xs:attribute name="usingDecrypt" type="xs:boolean"/>
+                        <xs:attribute name="disabled" type="xs:boolean"/>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="rwSplitMode" use="required">
+                <xs:simpleType>
+                    <xs:restriction base="xs:nonNegativeInteger">
+                        <xs:enumeration value="0"/>
+                        <xs:enumeration value="1"/>
+                        <xs:enumeration value="2"/>
+                    </xs:restriction>
+                </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="delayThreshold" type="xs:integer"/>
+            <xs:attribute name="disableHA" type="xs:boolean"/>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

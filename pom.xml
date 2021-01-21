@@ -319,6 +319,12 @@
                 </includes>
             </resource>
             <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>*.xsd</include>
+                </includes>
+            </resource>
+            <resource>
                 <directory>${basedir}</directory>
                 <includes>
                     <include>${version.file}</include>
@@ -337,6 +343,7 @@
                 <includes>
                     <include>*_template.xml</include>
                     <include>*.dtd</include>
+                    <include>*.xsd</include>
                     <include>*.txt</include>
                 </includes>
             </testResource>

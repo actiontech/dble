@@ -21,7 +21,7 @@ public class ZookeeperProcessListen {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZookeeperProcessListen.class);
 
-    private Set<NotifyService> initCache = new HashSet<>();
+    private final Set<NotifyService> initCache = new HashSet<>();
 
     public void addToInit(NotifyService service) {
         initCache.add(service);
@@ -32,7 +32,7 @@ public class ZookeeperProcessListen {
     }
 
 
-    public void initAllNode() {
+    public void initAllNode() throws Exception {
         Iterator<NotifyService> notifyIter = initCache.iterator();
         NotifyService item;
         while (notifyIter.hasNext()) {
@@ -41,6 +41,7 @@ public class ZookeeperProcessListen {
                 item.notifyProcess();
             } catch (Exception e) {
                 LOGGER.warn("ZookeeperProcessListen initAllNode :" + item + ";error:Exception info:", e);
+                throw e;
             }
         }
     }

@@ -6,9 +6,12 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
+import com.google.common.base.Strings;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -29,6 +32,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     private Boolean runOnSlave = null;
     private AtomicLong multiplexNum;
     private boolean isForUpdate = false;
+    private volatile byte flag;
 
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
@@ -39,6 +43,15 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         this.statementHash = srcStatement.hashCode();
         this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
         this.multiplexNum = new AtomicLong(0);
+        flag = 0;
+    }
+
+    public byte getFlag() {
+        return flag;
+    }
+
+    public void setFlag(byte flag) {
+        this.flag = flag;
     }
 
     public boolean isForUpdate() {
@@ -124,6 +137,9 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
 
     @Override
     public int hashCode() {
+        if (LoadDataBatch.getInstance().isEnableBatchLoadData() && !Objects.isNull(loadData) && !Strings.isNullOrEmpty(loadData.getFileName())) {
+            return loadData.getFileName().hashCode();
+        }
         return name.hashCode();
     }
 

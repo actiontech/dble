@@ -165,6 +165,7 @@ public final class SystemConfig {
     private int enableAlert = 1;
     //load data
     private int maxRowSizeToFile = 10000;
+    private int enableBatchLoadData = 0;
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
 
     private boolean enableFlowControl = false;
@@ -1257,6 +1258,13 @@ public final class SystemConfig {
     public void setHeapTableBufferChunkSize(int heapTableBufferChunkSize) {
         this.heapTableBufferChunkSize = heapTableBufferChunkSize;
     }
+    public int getEnableBatchLoadData() {
+        return enableBatchLoadData;
+    }
+
+    public void setEnableBatchLoadData(int enableBatchLoadData) {
+        this.enableBatchLoadData = enableBatchLoadData;
+    }
 
     @Override
     public String toString() {
@@ -1333,6 +1341,7 @@ public final class SystemConfig {
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
+                ",enableBatchLoadData=" + enableBatchLoadData +
                 ", xaRetryCount=" + xaRetryCount +
                 ", enableFlowControl=" + enableFlowControl +
                 ", flowControlStartThreshold=" + flowControlStartThreshold +

@@ -79,6 +79,7 @@ public final class ManagerParseShow {
     public static final int CONNECTION_POOL_PROPERTY = 69;
     public static final int CAP_CLIENT_FOUND_ROWS = 70;
     public static final int GENERAL_LOG = 71;
+    public static final int LOAD_DATA_FAIL = 72;
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
@@ -201,6 +202,9 @@ public final class ManagerParseShow {
                 case 'H':
                 case 'h':
                     return show2HCheck(stmt, offset);
+                case 'L':
+                case 'l':
+                    return show2LCheck(stmt, offset);
                 case 'P':
                 case 'p':
                     return show2PCheck(stmt, offset);
@@ -715,6 +719,32 @@ public final class ManagerParseShow {
                     return OTHER;
                 }
                 return HELP;
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@LOAD_DATA.FAIL
+    private static int show2LCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OAD_DATA.FAIL".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            char c13 = stmt.charAt(++offset);
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'A' || c2 == 'a') && (c3 == 'D' || c3 == 'd') && (c4 == '_') &&
+                    (c5 == 'D' || c5 == 'd') && (c6 == 'A' || c6 == 'a') && (c7 == 'T' || c7 == 't') && (c8 == 'A' || c8 == 'a') && (c9 == '.') &&
+                    (c10 == 'F' || c10 == 'f') && (c11 == 'A' || c11 == 'a') && (c12 == 'I' || c12 == 'i') && (c13 == 'L' || c13 == 'l') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return LOAD_DATA_FAIL;
             }
         }
         return OTHER;

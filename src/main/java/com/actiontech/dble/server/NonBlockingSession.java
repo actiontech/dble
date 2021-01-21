@@ -37,6 +37,7 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
@@ -550,6 +551,9 @@ public class NonBlockingSession extends Session {
                 setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
             } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
                 executableHandler = new MultiNodeSelectHandler(rrs, this);
+                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP);
+            } else if (ServerParse.LOAD_DATA_INFILE_SQL == rrs.getSqlType() && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
+                executableHandler = new MultiNodeLoadDataHandler(rrs, this);
                 setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_GROUP);
             } else {
                 executableHandler = new MultiNodeQueryHandler(rrs, this);

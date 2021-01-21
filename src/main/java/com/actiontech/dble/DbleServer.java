@@ -37,6 +37,7 @@ import com.actiontech.dble.net.impl.nio.NIOConnector;
 import com.actiontech.dble.net.impl.nio.NIOReactorPool;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
@@ -174,6 +175,11 @@ public final class DbleServer {
         if (SystemConfig.getInstance().getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
+
+        if (SystemConfig.getInstance().getEnableBatchLoadData() == 1) {
+            LoadDataBatch.getInstance().setEnableBatchLoadData(true);
+        }
+
 
         LOGGER.info("==============================Connection  Connector&Acceptor init start===========================");
         // startup manager

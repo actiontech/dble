@@ -11,6 +11,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
+import com.google.common.base.Strings;
 
 import java.io.*;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.List;
  * Created by nange on 2015/3/31.
  */
 public final class LoadDataUtil {
+
     private LoadDataUtil() {
     }
 
@@ -30,7 +32,7 @@ public final class LoadDataUtil {
         service.setExecuting(false);
         BufferedInputStream in = null;
         try {
-            if (loadDataData != null && loadDataData.size() > 0) {
+            if (loadDataData != null && loadDataData.size() > 0 && Strings.isNullOrEmpty(loadData.getFileName())) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 for (String loadDataDataLine : loadDataData) {
                     String s = loadDataDataLine + loadData.getLineTerminatedBy();

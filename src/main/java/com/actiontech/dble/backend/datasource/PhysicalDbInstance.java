@@ -17,6 +17,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.factory.MySQLConnectionFactory;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.singleton.TraceManager;
@@ -26,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
@@ -116,6 +118,44 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public void createConnectionSkipPool(String schema, ResponseHandler handler) {
         connectionPool.newConnection(schema, handler);
+    }
+
+    public void getConnection(final String schema, final ResponseHandler handler,
+                              final Object attachment, boolean mustWrite, Set<RouteResultsetNode> unResponseRrns) throws IOException {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-db-instance");
+        AbstractService service = TraceManager.getThreadService();
+        try {
+            if (mustWrite && readInstance) {
+                throw new IOException("primary dbInstance switched");
+            }
+            BackendConnection con = getConnection(schema, handler, attachment);
+            if (con != null) {
+                if (!StringUtil.equals(con.getSchema(), schema)) {
+                    // need do sharding syn in before sql send
+                    con.setSchema(schema);
+                }
+                TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
+                con.getBackendService().setAttachment(attachment);
+                handler.connectionAcquired(con);
+            } else {
+                unResponseRrns.remove(attachment);
+            }
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
+    }
+
+    private BackendConnection getConnection(final String schema, final ResponseHandler handler,
+                                            final Object attachment) {
+
+        BackendConnection con;
+        con = (BackendConnection) connectionPool.borrowDirectly(schema);
+        try {
+            con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+        } catch (IOException e) {
+            handler.connectionError(e, attachment);
+        }
+        return con;
     }
 
     public void getConnection(final String schema, final ResponseHandler handler,

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author mycat
@@ -62,6 +63,8 @@ public final class RouteResultset implements Serializable {
     // if force slave set runOnSlave,default null means not effect
     private Boolean runOnSlave = null;
     private String[] groupByCols;
+
+    private Map<String, List<RouteResultsetNode>> multiRouteResultSetNodeMap;
 
     private boolean isForUpdate = false;
 
@@ -334,4 +337,11 @@ public final class RouteResultset implements Serializable {
         this.alwaysFalse = alwaysFalse;
     }
 
+    public Map<String, List<RouteResultsetNode>> getMultiRouteResultSetNodeMap() {
+        return multiRouteResultSetNodeMap;
+    }
+
+    public void setMultiRouteResultSetNodeMap(Map<String, List<RouteResultsetNode>> multiRouteResultSetNodeMap) {
+        this.multiRouteResultSetNodeMap = multiRouteResultSetNodeMap;
+    }
 }

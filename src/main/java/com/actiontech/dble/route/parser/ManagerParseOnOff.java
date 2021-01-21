@@ -19,6 +19,8 @@ public final class ManagerParseOnOff {
     public static final int CUSTOM_MYSQL_HA = 3;
     public static final int CAP_CLIENT_FOUND_ROWS = 4;
     public static final int GENERAL_LOG = 5;
+    public static final int LOAD_DATA_BATCH = 6;
+
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -54,6 +56,9 @@ public final class ManagerParseOnOff {
                 case 'G':
                 case 'g':
                     return gCheck(stmt, offset);
+                case 'L':
+                case 'l':
+                    return lCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -67,6 +72,17 @@ public final class ManagerParseOnOff {
             String prefix = stmt.substring(offset).toUpperCase();
             if (prefix.startsWith("ALERT") && (stmt.length() == offset + 5 || ParseUtil.isEOF(stmt, offset + 5))) {
                 return ALERT;
+            }
+        }
+        return OTHER;
+    }
+
+    // enable/disable  @@load_data_batch;
+    private static int lCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 14) {
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("LOAD_DATA_BATCH") && (stmt.length() == offset + 15 || ParseUtil.isEOF(stmt, offset + 14))) {
+                return LOAD_DATA_BATCH;
             }
         }
         return OTHER;

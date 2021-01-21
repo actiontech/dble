@@ -14,6 +14,7 @@ public final class ManagerParseRollback {
 
     public static final int OTHER = -1;
     public static final int CONFIG = 1;
+    public static final int LOAD_DATA = 2;
 
     public static int parse(String stmt, int offset) {
         int i = offset;

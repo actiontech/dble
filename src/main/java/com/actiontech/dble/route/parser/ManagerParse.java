@@ -46,6 +46,7 @@ public final class ManagerParse {
     public static final int UPDATE = 29;
     public static final int FRESH_CONN = 30;
     public static final int USE = 31;
+    public static final int KILL_LOAD_DATA = 32;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -711,8 +712,32 @@ public final class ManagerParse {
                 case 'X':
                 case 'x':
                     return killXASession(stmt, offset);
+                case 'L':
+                case 'l':
+                    return killLoadData(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int killLoadData(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'A' || c2 == 'a') && (c3 == 'D' || c3 == 'd') && (c4 == '_') && (c5 == 'D' || c5 == 'd') &&
+                    (c6 == 'A' || c6 == 'a') && (c7 == 'T' || c7 == 't') && (c8 == 'A' || c8 == 'a')) {
+                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+                    return OTHER;
+                }
+                return KILL_LOAD_DATA;
             }
         }
         return OTHER;

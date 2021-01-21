@@ -271,4 +271,14 @@ public final class BtraceClusterDelay {
         BTraceUtils.print(" for order __________________________ ");
         Thread.sleep(10000L);
     }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayBeforeLoadData"
+    )
+    public static void delayBeforeLoadData(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayBeforeLoadData");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(30000L);
+    }
 }

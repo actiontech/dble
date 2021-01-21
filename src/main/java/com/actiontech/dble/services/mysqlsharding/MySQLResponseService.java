@@ -14,6 +14,7 @@ import com.actiontech.dble.net.response.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by szf on 2020/6/29.
@@ -333,6 +335,61 @@ public class MySQLResponseService extends BackendService {
 
     public String compactInfo() {
         return "MySQLConnection host=" + connection.getHost() + ", port=" + connection.getPort() + ", schema=" + connection.getSchema();
+    }
+
+    public void executeMultiNodeByLoadData(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-load-data-result");
+        TraceManager.log(ImmutableMap.of("route-result-load-data--set", rrn.toString(), "service-detail", this.toString()), traceObject);
+        try {
+            String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
+            if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
+                service.setTxStart(true);
+            if (rrn.getSqlType() == ServerParse.DDL) {
+            }
+                isDDL = true;
+            }
+            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
+                    service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            synAndDoExecuteMultiNodeByLoadData(synSQL, rrn, service.getCharset());
+        } finally {
+            TraceManager.finishSpan(this, traceObject);
+
+    }
+        }
+    private void synAndDoExecuteMultiNodeByLoadData(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("send cmd by WriteToBackendExecutor to conn[" + this + "]");
+        }
+        if (synSQL == null) {
+            // not need syn connection
+            if (session != null) {
+                session.setBackendRequestTime(this.getConnection().getId());
+            }
+            DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
+            waitResult(rrn, clientCharset);
+            return;
+        }
+        // syn sharding
+        List<WriteToBackendTask> taskList = new ArrayList<>(1);
+        // and our query sql to multi command at last
+        // syn and execute others
+        synSQL.append(rrn.getStatement()).append(";");
+        if (session != null) {
+            session.setBackendRequestTime(this.getConnection().getId());
+        }
+        taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
+        DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
+        // waiting syn result...
+        waitResult(rrn, clientCharset);
+    }
+
+    private void waitResult(RouteResultsetNode rrn, CharsetNames clientCharset) {
+        while (rrn.getFlag() == 0 && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
+            LockSupport.parkNanos(100);
+        }
+        if (rrn.getFlag() == 2) {
+            sendQueryCmdTask("show warnings;", clientCharset).execute();
+        }
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {

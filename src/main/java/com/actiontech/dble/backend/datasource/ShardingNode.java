@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Set;
 
 public class ShardingNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingNode.class);
@@ -81,6 +82,19 @@ public class ShardingNode {
         if (schema != null && !schema.equals(this.database)) {
             throw new RuntimeException("invalid param ,connection request db is :" + schema +
                     " and schema db is " + this.database);
+        }
+    }
+
+    public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
+                              ResponseHandler handler, Object attachment, Set<RouteResultsetNode> unResponseRrns) throws Exception {
+
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
+        try {
+            checkRequest(schema);
+            PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate());
+            instance.getConnection(schema, handler, attachment, isMustWrite, unResponseRrns);
+        } finally {
+            TraceManager.finishSpan(traceObject);
         }
     }
 

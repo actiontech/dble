@@ -69,6 +69,9 @@ public class ManagerQueryHandler {
                     String tableInfo = sql.substring(rs >>> SHIFT).trim();
                     KillDdlLock.response(sql, tableInfo, service);
                     break;
+                case ManagerParse.KILL_LOAD_DATA:
+                    KillLoadData.response(service);
+                    break;
                 case ManagerParse.OFFLINE:
                     Offline.execute(service);
                     break;

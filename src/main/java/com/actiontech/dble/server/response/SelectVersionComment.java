@@ -1,16 +1,15 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.FrontendService;
 
 import java.nio.ByteBuffer;
 
@@ -26,7 +25,7 @@ public final class SelectVersionComment {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    public static void response(AbstractService service) {
+    public static void response(FrontendService service) {
 
         HEADER.setPacketId(service.nextPacketId());
         FIELDS[0] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
@@ -58,14 +57,6 @@ public final class SelectVersionComment {
         lastEof.setPacketId(service.nextPacketId());
 
         lastEof.write(buffer, service);
-    }
-
-
-    public static byte setCurrentPacket(AbstractService service) {
-        if (service instanceof ShardingService) {
-            return (byte) ((ShardingService) service).getSession2().getPacketId().get();
-        }
-        return 0;
     }
 
 }

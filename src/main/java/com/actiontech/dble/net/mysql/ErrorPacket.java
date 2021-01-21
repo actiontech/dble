@@ -109,7 +109,7 @@ public class ErrorPacket extends MySQLPacket {
     @Override
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = c.allocate();
-        buffer = this.write(buffer, (AbstractService) c.getService(), true);
+        buffer = this.write(buffer, c.getService(), true);
         c.write(buffer);
     }
 

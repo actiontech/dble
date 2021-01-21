@@ -62,6 +62,7 @@ public class FrontendConnection extends AbstractConnection {
         ((ShardingService) this.getService()).getSession2().stopFlowControl();
     }
 
+    @Override
     public void cleanup() {
         if (isCleanUp.compareAndSet(false, true)) {
             super.cleanup();

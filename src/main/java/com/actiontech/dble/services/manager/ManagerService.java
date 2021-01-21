@@ -21,23 +21,20 @@ import java.io.UnsupportedEncodingException;
 /**
  * Created by szf on 2020/6/28.
  */
-public class ManagerService extends FrontendService {
+public class ManagerService extends FrontendService<ManagerUserConfig> {
 
     private final ManagerQueryHandler handler;
     private final ManagerSession session;
+
     protected final CommandCount commands;
 
-    public ManagerService(AbstractConnection connection) {
-        super(connection);
+
+    public ManagerService(AbstractConnection connection, AuthResultInfo info) {
+        super(connection, info);
         this.handler = new ManagerQueryHandler(this);
+        this.handler.setReadOnly(userConfig.isReadOnly());
         this.session = new ManagerSession(this);
         this.commands = connection.getProcessor().getCommands();
-    }
-
-    @Override
-    public void initFromAuthInfo(AuthResultInfo info) {
-        super.initFromAuthInfo(info);
-        this.handler.setReadOnly(((ManagerUserConfig) userConfig).isReadOnly());
     }
 
     @Override
@@ -51,7 +48,7 @@ public class ManagerService extends FrontendService {
             case MySQLPacket.COM_QUERY:
                 commands.doQuery();
                 try {
-                    handler.query(getCommand(data, this.getConnection().getCharsetName()));
+                    handler.query(getCommand(data, charsetName));
                 } catch (UnsupportedEncodingException e) {
                     writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + this.getConnection().getCharsetName().getClient() + "'");
                 }
@@ -70,11 +67,11 @@ public class ManagerService extends FrontendService {
         }
     }
 
-    public ManagerUserConfig getUserConfig() {
-        return (ManagerUserConfig) userConfig;
+    @Override
+    protected void beforeHandlingTask() {
+        TraceManager.sessionStart(this, "manager-server-start");
     }
 
-    @Override
     public void killAndClose(String reason) {
         connection.close(reason);
     }
@@ -98,10 +95,6 @@ public class ManagerService extends FrontendService {
 
     public String toBriefString() {
         return "managerService";
-    }
-
-    protected void sessionStart() {
-        TraceManager.sessionStart(this, "manager-server-start");
     }
 
     public FrontendConnection getConnection() {

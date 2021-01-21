@@ -43,6 +43,14 @@ public class ManagerUserConfig extends UserConfig {
         }
     }
 
+    @Override
+    public int checkSchema(String schema) {
+        if (schema != null && !ManagerSchemaInfo.SCHEMA_NAME.equals(schema.toLowerCase())) {
+            return ErrorCode.ER_BAD_DB_ERROR;
+        }
+        return 0;
+    }
+
     public boolean equalsBaseInfo(ManagerUserConfig managerUserConfig) {
         return super.equalsBaseInfo(managerUserConfig) &&
                 this.readOnly == managerUserConfig.isReadOnly();

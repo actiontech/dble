@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.response.ProtocolResponseHandler;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.singleton.TraceManager;
@@ -33,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-public abstract class BackendService extends VariablesService {
+public abstract class BackendService extends AbstractService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BackendService.class);
 
     // received data
@@ -66,14 +67,17 @@ public abstract class BackendService extends VariablesService {
         this.isHandling = new AtomicBoolean(false);
         // variables
         this.autocommitSynced = connection.getInstance().isAutocommitSynced();
+        this.isolationSynced = connection.getInstance().isIsolationSynced();
+        initCharacterSet(SystemConfig.getInstance().getCharset());
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
-        this.isolationSynced = connection.getInstance().isIsolationSynced();
         if (isolationSynced) {
             this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
             this.txIsolation = -1;
         }
+        this.multiStatementAllow = true;
+        this.maxPacketSize = SystemConfig.getInstance().getMaxPacketSize();
     }
 
     /**
@@ -82,7 +86,7 @@ public abstract class BackendService extends VariablesService {
      * @param task task contains mysql packet
      */
     @Override
-    public void handleTask(ServiceTask task) {
+    public void handle(ServiceTask task) {
         if (beforeHandlingTask()) {
             if (task != null) {
                 taskQueue.offer(task);
@@ -97,7 +101,7 @@ public abstract class BackendService extends VariablesService {
                     } finally {
                         isHandling.set(false);
                         if (taskQueue.size() > 0) {
-                            handleTask(null);
+                            handle(null);
                         }
                     }
                 });
@@ -123,7 +127,7 @@ public abstract class BackendService extends VariablesService {
         } finally {
             isHandling.set(false);
             if (taskQueue.size() > 0) {
-                handleTask(task);
+                handle(task);
             }
         }
     }
@@ -270,7 +274,7 @@ public abstract class BackendService extends VariablesService {
         }
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
-        this.connection.initCharacterSet(SystemConfig.getInstance().getCharset());
+        this.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
         this.sysVariables.put("sql_mode", null);
@@ -311,7 +315,7 @@ public abstract class BackendService extends VariablesService {
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
         int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
-        int charsetSyn = connection.getCharsetName().equals(clientCharset) ? 0 : 1;
+        int charsetSyn = charsetName.equals(clientCharset) ? 0 : 1;
         int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + setSqlFlag;
@@ -486,7 +490,7 @@ public abstract class BackendService extends VariablesService {
                 service.connection.setOldSchema(schema);
             }
             if (clientCharset != null) {
-                service.connection.setCharsetName(clientCharset);
+                service.setCharsetName(clientCharset);
             }
             if (txIsolation != null) {
                 service.txIsolation = txIsolation;
@@ -494,8 +498,8 @@ public abstract class BackendService extends VariablesService {
             if (autocommit != null) {
                 service.autocommit = autocommit;
             }
-            service.sysVariables = sysVariables;
-            service.usrVariables = usrVariables;
+            service.sysVariables.putAll(sysVariables);
+            service.usrVariables.putAll(usrVariables);
         }
     }
 

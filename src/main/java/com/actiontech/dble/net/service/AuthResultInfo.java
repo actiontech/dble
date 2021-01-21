@@ -1,6 +1,7 @@
 package com.actiontech.dble.net.service;
 
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.AuthPacket;
 
 /**
@@ -10,13 +11,15 @@ public class AuthResultInfo {
 
     private boolean success;
     private String errorMsg;
+    private UserName user;
     private UserConfig userConfig;
 
     private AuthPacket mysqlAuthPacket = null;
 
-    public AuthResultInfo(String errorMsg, AuthPacket authPacket, UserConfig userConfig) {
+    public AuthResultInfo(String errorMsg, AuthPacket authPacket, UserName user, UserConfig userConfig) {
         this.success = errorMsg == null;
         this.errorMsg = errorMsg;
+        this.user = user;
         this.userConfig = userConfig;
         this.mysqlAuthPacket = authPacket;
     }
@@ -33,6 +36,13 @@ public class AuthResultInfo {
         return errorMsg;
     }
 
+    public UserName getUser() {
+        return user;
+    }
+
+    public void setUser(UserName user) {
+        this.user = user;
+    }
 
     public UserConfig getUserConfig() {
         return userConfig;

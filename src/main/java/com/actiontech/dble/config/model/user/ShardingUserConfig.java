@@ -79,4 +79,23 @@ public class ShardingUserConfig extends ServerUserConfig {
         }
         return o1 == o2 || o1.equalsBaseInfo(o2);
     }
+
+    @Override
+    public int checkSchema(String schema) {
+        if (schema == null) {
+            return 0;
+        }
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            schema = schema.toLowerCase();
+        }
+        if (!DbleServer.getInstance().getConfig().getSchemas().containsKey(schema)) {
+            return ErrorCode.ER_BAD_DB_ERROR;
+        }
+        if (schemas.contains(schema)) {
+            return 0;
+        } else {
+            return ErrorCode.ER_DBACCESS_DENIED_ERROR;
+        }
+    }
+
 }

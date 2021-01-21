@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.mysqlauthenticate;
 
 import java.security.MessageDigest;
@@ -17,7 +17,7 @@ public final class SecurityUtil {
     private SecurityUtil() {
     }
 
-    public static byte[] scramble256(byte[] pass, byte[] seed) throws NoSuchAlgorithmException {
+    public static byte[] scramble256(byte[] pass, byte[] seed) {
         try {
             int cachingSha2DigestLength = 32;
             MessageDigest md = MessageDigest.getInstance("SHA-256");

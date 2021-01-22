@@ -1,5 +1,6 @@
 package com.actiontech.dble.log.general;
 
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.log.RotateLogStore;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -25,6 +26,7 @@ public class GeneralLogDisruptor {
     }
 
     public void start() {
+        GeneralProvider.getGeneralLogQueueSize(ringBufferSize);
         this.fileManager.init();
         this.eventFactory = EVENTFACTORY;
         this.translator = TRANSLATOR;

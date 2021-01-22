@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -22,7 +23,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class GeneralLogCf {
     private static final Logger LOGGER = LoggerFactory.getLogger(GeneralLogCf.class);
-    private static final String FILE_HEADER = "/FAKE_PATH/mysqld, Version: FAKE_VERSION. started with:\n" +
+    public static final String FILE_HEADER = "/FAKE_PATH/mysqld, Version: FAKE_VERSION. started with:\n" +
             "Tcp port: 3320  Unix socket: FAKE_SOCK\n" +
             "Time                 Id Command    Argument\n";
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
@@ -34,19 +35,23 @@ public final class GeneralLogCf {
 
         public static void execute(ManagerService service, boolean isOn) {
             LOCK.writeLock().lock();
+            GeneralProvider.onOffGeneralLog();
             String onOffStatus = isOn ? "enable" : "disable";
             boolean isWrite = false;
             try {
                 WriteDynamicBootstrap.getInstance().changeValue("enableGeneralLog", isOn ? "1" : "0");
                 isWrite = true;
                 if (isOn) {
-                    if (!GeneralLogProcessor.getInstance().isEnable())
-                        GeneralLogHelper.putGLog(FILE_HEADER);
+                    boolean e = GeneralLogProcessor.getInstance().isEnable();
+                    GeneralLog.getInstance().setEnableGeneralLog(isOn);
                     GeneralLogProcessor.getInstance().enable();
+                    if (!e) {
+                        GeneralLogHelper.putGLog(FILE_HEADER);
+                    }
                 } else {
+                    GeneralLog.getInstance().setEnableGeneralLog(isOn);
                     GeneralLogProcessor.getInstance().disable();
                 }
-                GeneralLog.getInstance().setEnableGeneralLog(isOn);
                 LOGGER.info(service + " " + onOffStatus + " general_log success by manager");
 
                 OkPacket ok = new OkPacket();
@@ -99,6 +104,7 @@ public final class GeneralLogCf {
 
         public static void execute(ManagerService service) {
             LOCK.readLock().lock();
+            GeneralProvider.showGeneralLog();
             try {
                 ByteBuffer buffer = service.allocate();
                 // write header
@@ -145,6 +151,7 @@ public final class GeneralLogCf {
 
         public static void execute(ManagerService service, String filePath) {
             LOCK.writeLock().lock();
+            GeneralProvider.updateGeneralLogFile();
             try {
                 try {
                     filePath = StringUtil.removeAllApostrophe(filePath.trim()).trim();

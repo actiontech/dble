@@ -164,7 +164,7 @@ public final class SystemConfig {
     //alert switch
     private int enableAlert = 1;
     //load data
-    private int maxRowSizeToFile = 10000;
+    private int maxRowSizeToFile = 100000;
     private int enableBatchLoadData = 0;
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
 

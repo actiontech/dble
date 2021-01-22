@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.services.mysqlauthenticate.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
@@ -17,7 +16,6 @@ import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
-import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.IPAddressUtil;
@@ -72,9 +70,7 @@ public final class AuthUtil {
                         break;
                 }
 
-                if ((Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & clientFlags)) != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
-                    return "The client requested CLIENT_FOUND_ROWS capabilities does not match, in the manager use show @@cap_client_found_rows check latest status.";
-                }
+
             } else if (userConfig instanceof ManagerUserConfig) {
                 switch (checkManagerSchema(schema)) {
                     case ErrorCode.ER_BAD_DB_ERROR:

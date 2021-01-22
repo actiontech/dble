@@ -37,11 +37,11 @@ public final class GeneralLogCf {
         }
 
         public static void execute(ManagerService service, boolean isOn) {
-            LOCK.writeLock().lock();
-            GeneralProvider.onOffGeneralLog();
             String onOffStatus = isOn ? "enable" : "disable";
             boolean isWrite = false;
             try {
+                LOCK.writeLock().lock();
+                GeneralProvider.onOffGeneralLog();
                 WriteDynamicBootstrap.getInstance().changeValue("enableGeneralLog", isOn ? "1" : "0");
                 isWrite = true;
                 if (isOn) {
@@ -106,9 +106,9 @@ public final class GeneralLogCf {
         }
 
         public static void execute(ManagerService service) {
-            LOCK.readLock().lock();
-            GeneralProvider.showGeneralLog();
             try {
+                LOCK.readLock().lock();
+                GeneralProvider.showGeneralLog();
                 ByteBuffer buffer = service.allocate();
                 // write header
                 buffer = HEADER.write(buffer, service, true);
@@ -153,46 +153,45 @@ public final class GeneralLogCf {
         }
 
         public static void execute(ManagerService service, String filePath) {
-            LOCK.writeLock().lock();
-            GeneralProvider.updateGeneralLogFile();
             try {
-                try {
-                    filePath = StringUtil.removeAllApostrophe(filePath.trim()).trim();
-                    if (!filePath.startsWith(String.valueOf(File.separatorChar))) {
-                        filePath = SystemConfig.getInstance().getHomePath() + File.separatorChar + filePath;
-                    }
-                    File newFilePath = new File(filePath);
-                    filePath = newFilePath.getAbsolutePath();
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("start create general log file {}", filePath);
-                    }
-                    if (!isSuccessCreateFile(newFilePath)) {
-                        service.writeErrMessage(ErrorCode.ER_YES, "please check the permissions for the file path.");
-                        return;
-                    }
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("end create general log file");
-                    }
-                    if (!filePath.equals(GeneralLog.getInstance().getGeneralLogFile())) {
-                        WriteDynamicBootstrap.getInstance().changeValue("generalLogFile", filePath);
-                        GeneralLog.getInstance().setGeneralLogFile(filePath);
-                    }
-                    GeneralLogHelper.putGLog(FILE_HEADER);
-                } catch (Exception e) {
-                    String msg = "reload general log path failed";
-                    LOGGER.warn(service + " " + msg + " exception：" + e);
-                    service.writeErrMessage(ErrorCode.ER_YES, msg);
+                LOCK.writeLock().lock();
+                GeneralProvider.updateGeneralLogFile();
+                filePath = StringUtil.removeAllApostrophe(filePath.trim()).trim();
+                if (!filePath.startsWith(String.valueOf(File.separatorChar))) {
+                    filePath = SystemConfig.getInstance().getHomePath() + File.separatorChar + filePath;
+                }
+                File newFilePath = new File(filePath);
+                filePath = newFilePath.getAbsolutePath();
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("start create general log file {}", filePath);
+                }
+                if (!isSuccessCreateFile(newFilePath)) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "please check the permissions for the file path.");
                     return;
                 }
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("end create general log file");
+                }
+                if (!filePath.equals(GeneralLog.getInstance().getGeneralLogFile())) {
+                    WriteDynamicBootstrap.getInstance().changeValue("generalLogFile", filePath);
+                    GeneralLog.getInstance().setGeneralLogFile(filePath);
+                }
+                GeneralLogHelper.putGLog(FILE_HEADER);
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(1);
                 ok.setAffectedRows(1);
                 ok.setServerStatus(2);
                 ok.setMessage(("reload general log path success").getBytes());
                 ok.write(service.getConnection());
+            } catch (Exception e) {
+                String msg = "reload general log path failed";
+                LOGGER.warn(service + " " + msg + " exception：" + e);
+                service.writeErrMessage(ErrorCode.ER_YES, msg);
+                return;
             } finally {
                 LOCK.writeLock().unlock();
             }
+
         }
 
         private static boolean isSuccessCreateFile(File file) {

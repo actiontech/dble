@@ -234,7 +234,7 @@ public class StatisticListener {
             if (init && frontendSqlEntry != null) {
                 RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
                 String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
-                if (frontendSqlEntry != null && frontendSqlEntry.getBackendSqlEntry(key) != null) {
+                if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
                     frontendSqlEntry.getBackendSqlEntry(key).setRows(rows);
                     frontendSqlEntry.addExaminedRows(rows);
                 }
@@ -245,7 +245,7 @@ public class StatisticListener {
             if (init && frontendSqlEntry != null) {
                 RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
                 String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
-                if (frontendSqlEntry != null && frontendSqlEntry.getBackendSqlEntry(key) != null) {
+                if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
                     frontendSqlEntry.getBackendSqlEntry(key).addRows();
                     frontendSqlEntry.addExaminedRows();
                 }
@@ -256,7 +256,7 @@ public class StatisticListener {
             if (init && frontendSqlEntry != null) {
                 RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
                 String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
-                if (frontendSqlEntry != null && frontendSqlEntry.getBackendSqlEntry(key) != null) {
+                if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
                     frontendSqlEntry.getBackendSqlEntry(key).setAllEndTime(System.nanoTime());
                     pushBackendSql(frontendSqlEntry.getBackendSqlEntry(key));
                 }

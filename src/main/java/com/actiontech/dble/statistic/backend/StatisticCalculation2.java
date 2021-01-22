@@ -23,7 +23,7 @@ public class StatisticCalculation2 implements StatisticDataHandler {
     public void check() {
         synchronized (records) {
             int removeIndex;
-            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getstatisticTableSize()) > 0) {
+            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getStatisticTableSize()) > 0) {
                 Iterator<String> iterator = records.keySet().iterator();
                 while (removeIndex-- > 0) {
                     iterator.next();

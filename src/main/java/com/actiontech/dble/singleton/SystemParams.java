@@ -149,7 +149,7 @@ public final class SystemParams {
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log,The default value is ./general/general.log"));
 
         params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() + "", "Enable statistic sql"));
-        params.add(new ParamInfo("statisticTableSize", StatisticManager.getInstance().getstatisticTableSize() + "", "Statistic table size"));
+        params.add(new ParamInfo("statisticTableSize", StatisticManager.getInstance().getStatisticTableSize() + "", "Statistic table size"));
         return params;
     }
 }

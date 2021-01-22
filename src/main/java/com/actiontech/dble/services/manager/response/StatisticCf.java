@@ -42,7 +42,7 @@ public class StatisticCf {
         public static void execute(ManagerService service, String value) {
             LOCK.writeLock().lock();
             try {
-                StatisticManager.getInstance().setstatisticTableSize(Integer.parseInt(value));
+                StatisticManager.getInstance().setStatisticTableSize(Integer.parseInt(value));
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(1);
                 ok.setAffectedRows(1);
@@ -106,7 +106,7 @@ public class StatisticCf {
 
                 RowDataPacket row2 = new RowDataPacket(FIELD_COUNT);
                 row2.add(StringUtil.encode("statistic_table_size", service.getCharset().getResults()));
-                row2.add(StringUtil.encode(String.valueOf(StatisticManager.getInstance().getstatisticTableSize()), service.getCharset().getResults()));
+                row2.add(StringUtil.encode(String.valueOf(StatisticManager.getInstance().getStatisticTableSize()), service.getCharset().getResults()));
                 row2.setPacketId(++packetId);
                 buffer = row2.write(buffer, service, true);
 

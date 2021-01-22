@@ -11,7 +11,7 @@ import java.util.Map;
 
 public final class StatisticManager {
     private static final StatisticManager INSTANCE = new StatisticManager();
-    private static StatisticDisruptor disruptor;
+    private StatisticDisruptor disruptor;
     private static Map<String, StatisticDataHandler> statisticDataHandlers = new HashMap<>(8);
     private static StatisticListener statisticListener = StatisticListener.getInstance();
     private boolean isStart = false;
@@ -71,11 +71,11 @@ public final class StatisticManager {
         }
     }
 
-    public int getstatisticTableSize() {
+    public int getStatisticTableSize() {
         return statisticTableSize;
     }
 
-    public void setstatisticTableSize(int statisticTableSize) {
+    public void setStatisticTableSize(int statisticTableSize) {
         this.statisticTableSize = statisticTableSize;
     }
 

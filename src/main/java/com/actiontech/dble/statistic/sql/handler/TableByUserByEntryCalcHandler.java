@@ -1,23 +1,28 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.handler;
 
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
+import com.actiontech.dble.statistic.sql.StatisticEvent;
+import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
+import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class StatisticCalculation2 implements StatisticDataHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticCalculation2.class);
+public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TableByUserByEntryCalcHandler.class);
 
     // key：
-    Map<String, Record2> records = new LinkedHashMap<>(1024);
+    Map<String, Record> records = new LinkedHashMap<>(1024);
     int entryId = 0;
 
     @Override
-    public void onEvent(Event event, long l, boolean b) throws Exception {
+    public void onEvent(StatisticEvent statisticEvent, long l, boolean b) throws Exception {
         // LOGGER.info("consuming:{}", event.getEntry().toString());
         check();
-        handle(event.getEntry());
+        handle(statisticEvent.getEntry());
     }
 
     public void check() {
@@ -50,10 +55,10 @@ public class StatisticCalculation2 implements StatisticDataHandler {
 
     private void toRecord(String table, StatisticFrontendSqlEntry fEntry) {
         String key = fEntry.getFrontend().getUser() + "-" + table;
-        Record2 currRecord;
+        Record currRecord;
         boolean isNew = true;
         if (isNew = ((currRecord = records.get(key)) == null)) {
-            currRecord = new StatisticCalculation2.Record2(++entryId, fEntry.getFrontend(), table);
+            currRecord = new Record(++entryId, fEntry.getFrontend(), table);
         }
         switch (fEntry.getSqlType()) {
             case 4:
@@ -79,7 +84,7 @@ public class StatisticCalculation2 implements StatisticDataHandler {
 
 
     @Override
-    public Map<String, Record2> getList() {
+    public Map<String, Record> getList() {
         return new HashMap<>(records);
     }
 
@@ -96,7 +101,7 @@ public class StatisticCalculation2 implements StatisticDataHandler {
         }
     }
 
-    public class Record2 {
+    public static class Record {
         int entry;
         String user;
         String table;
@@ -119,7 +124,7 @@ public class StatisticCalculation2 implements StatisticDataHandler {
 
         long lastUpdateTime = 0L;
 
-        public Record2(int entry, FrontendInfo frontend, String table) {
+        public Record(int entry, FrontendInfo frontend, String table) {
             this.entry = entry;
             user = frontend.getUser();
             this.table = table;

@@ -1,5 +1,7 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql;
 
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventTranslatorOneArg;
@@ -13,9 +15,9 @@ import org.slf4j.LoggerFactory;
 public class StatisticDisruptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticDisruptor.class);
 
-    private Disruptor<Event> disruptor;
-    private EventFactory<Event> eventFactory;
-    private EventTranslatorOneArg<Event, StatisticEntry> translator;
+    private Disruptor<StatisticEvent> disruptor;
+    private EventFactory<StatisticEvent> eventFactory;
+    private EventTranslatorOneArg<StatisticEvent, StatisticEntry> translator;
 
     public StatisticDisruptor(int ringBufferSize, StatisticDataHandler... dataHandler) {
         eventFactory = EVENTFACTORY;
@@ -27,7 +29,7 @@ public class StatisticDisruptor {
     }
 
     public boolean stop() {
-        final Disruptor<Event> temp = disruptor;
+        final Disruptor<StatisticEvent> temp = disruptor;
         if (temp == null) {
             return true;
         }
@@ -47,17 +49,17 @@ public class StatisticDisruptor {
         return true;
     }
 
-    private static final EventFactory<Event> EVENTFACTORY = new EventFactory<Event>() {
+    private static final EventFactory<StatisticEvent> EVENTFACTORY = new EventFactory<StatisticEvent>() {
         @Override
-        public Event newInstance() {
-            return new Event();
+        public StatisticEvent newInstance() {
+            return new StatisticEvent();
         }
     };
 
-    private static final EventTranslatorOneArg<Event, StatisticEntry> TRANSLATOR = new EventTranslatorOneArg<Event, StatisticEntry>() {
+    private static final EventTranslatorOneArg<StatisticEvent, StatisticEntry> TRANSLATOR = new EventTranslatorOneArg<StatisticEvent, StatisticEntry>() {
         @Override
-        public void translateTo(Event event, long l, StatisticEntry entry) {
-            event.setEntry(entry);
+        public void translateTo(StatisticEvent statisticEvent, long l, StatisticEntry entry) {
+            statisticEvent.setEntry(entry);
         }
     };
 

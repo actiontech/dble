@@ -5,7 +5,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.statistic.backend.StatisticManager;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;

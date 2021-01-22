@@ -15,7 +15,7 @@ import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.parser.ShardingServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.backend.StatisticListener;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

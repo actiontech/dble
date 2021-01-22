@@ -3,9 +3,9 @@ package com.actiontech.dble.services.manager.information.tables.statistic;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
-import com.actiontech.dble.statistic.backend.StatisticCalculation2;
-import com.actiontech.dble.statistic.backend.StatisticDataHandler;
-import com.actiontech.dble.statistic.backend.StatisticManager;
+import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.google.common.collect.Maps;
 
 import java.util.*;
@@ -97,7 +97,7 @@ public class TableByUserByEntry extends ManagerBaseTable {
         if (dataHandler == null) {
             return list;
         }
-        Map<String, StatisticCalculation2.Record2> recordMap = (Map<String, StatisticCalculation2.Record2>) dataHandler.getList();
+        Map<String, TableByUserByEntryCalcHandler.Record> recordMap = (Map<String, TableByUserByEntryCalcHandler.Record>) dataHandler.getList();
         recordMap.entrySet().stream().sorted(Comparator.comparingInt(a -> a.getValue().getEntry())).forEach(v -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_ENTRY, String.valueOf(v.getValue().getEntry()));

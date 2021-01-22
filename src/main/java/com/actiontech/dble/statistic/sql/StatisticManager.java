@@ -1,9 +1,14 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.manager.information.tables.statistic.AssociateTablesByEntryByUser;
 import com.actiontech.dble.services.manager.information.tables.statistic.FrontendByBackendByEntryByUser;
 import com.actiontech.dble.services.manager.information.tables.statistic.TableByUserByEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
+import com.actiontech.dble.statistic.sql.handler.FrontendByBackendByEntryByUserCalcHandler;
+import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
+import com.actiontech.dble.statistic.sql.handler.AssociateTablesByEntryByUserCalcHandler;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,9 +34,9 @@ public final class StatisticManager {
     }
 
     static {
-        statisticDataHandlers.put(FrontendByBackendByEntryByUser.TABLE_NAME, new StatisticCalculation());
-        statisticDataHandlers.put(TableByUserByEntry.TABLE_NAME, new StatisticCalculation2());
-        statisticDataHandlers.put(AssociateTablesByEntryByUser.TABLE_NAME, new StatisticCalculation3());
+        statisticDataHandlers.put(FrontendByBackendByEntryByUser.TABLE_NAME, new FrontendByBackendByEntryByUserCalcHandler());
+        statisticDataHandlers.put(TableByUserByEntry.TABLE_NAME, new TableByUserByEntryCalcHandler());
+        statisticDataHandlers.put(AssociateTablesByEntryByUser.TABLE_NAME, new AssociateTablesByEntryByUserCalcHandler());
         // TODO other handler ....
     }
 

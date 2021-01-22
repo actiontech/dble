@@ -1,4 +1,4 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
@@ -11,6 +11,10 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
+import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
@@ -128,6 +132,10 @@ public class StatisticListener {
             onTxEnd(1);
         }
 
+        public void onTxEndByInterrupt() {
+            onTxEnd(2);
+        }
+
         // set：0
         // commit：1
         private void onTxEnd(int endType) {
@@ -211,7 +219,6 @@ public class StatisticListener {
                         ((MySQLInstance) connection.getInstance()).getName(), connection.getHost(), connection.getPort(), node.getName(),
                         node.getSqlType(), node.getStatement(), System.nanoTime());
 
-                //if (shardingService.isTxStart() || !shardingService.isAutocommit()) {
                 if (txEntry != null) {
                     entry.setTxId(shardingService.getXid());
                 }

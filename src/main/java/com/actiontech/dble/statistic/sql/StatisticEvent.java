@@ -1,6 +1,8 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql;
 
-public class Event {
+import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
+
+public class StatisticEvent {
 
     private StatisticEntry entry;
 

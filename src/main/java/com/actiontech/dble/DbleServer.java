@@ -43,7 +43,7 @@ import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.factorys.ManagerConnectionFactory;
 import com.actiontech.dble.services.factorys.ServerConnectionFactory;
 import com.actiontech.dble.singleton.*;
-import com.actiontech.dble.statistic.backend.StatisticManager;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.TimeUtil;

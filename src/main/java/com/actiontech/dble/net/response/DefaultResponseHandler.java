@@ -7,7 +7,7 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.actiontech.dble.statistic.backend.StatisticListener;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.statistic.backend.StatisticListener;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
 import org.slf4j.Logger;

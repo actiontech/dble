@@ -8,8 +8,8 @@ package com.actiontech.dble.services.manager.information;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.statistic.backend.StatisticDataHandler;
-import com.actiontech.dble.statistic.backend.StatisticManager;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.*;

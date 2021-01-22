@@ -1,4 +1,4 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.entry;
 
 public final class StatisticBackendSqlEntry extends StatisticEntry {
     //private String originalSql;

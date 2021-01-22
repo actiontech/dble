@@ -1,4 +1,4 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.entry;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -1,25 +1,28 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.handler;
 
+import com.actiontech.dble.statistic.sql.StatisticEvent;
+import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
+import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class StatisticCalculation implements StatisticDataHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticCalculation.class);
+public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendByBackendByEntryByUserCalcHandler.class);
 
     Map<String, Record> records = new LinkedHashMap<>(1024);
     int entryId = 0;
 
-    public StatisticCalculation() {
-    }
-
     @Override
-    public void onEvent(Event event, long l, boolean b) throws Exception {
+    public void onEvent(StatisticEvent statisticEvent, long l, boolean b) {
         // LOGGER.info("consuming:{}", event.getEntry().toString());
         check();
-        handle(event.getEntry());
+        handle(statisticEvent.getEntry());
     }
 
     public void check() {
@@ -101,7 +104,7 @@ public class StatisticCalculation implements StatisticDataHandler {
     }
 
     // sql_statistic_by_frontend_by_backend_by_entry_by_user
-    public class Record {
+    public static class Record {
         int entry;
         FrontendInfo frontend;
         StatisticEntry.BackendInfo backend;

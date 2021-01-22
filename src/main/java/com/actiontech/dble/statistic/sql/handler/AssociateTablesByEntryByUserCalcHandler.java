@@ -1,22 +1,27 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.handler;
 
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
+import com.actiontech.dble.statistic.sql.StatisticEvent;
+import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
+import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
+import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class StatisticCalculation3 implements StatisticDataHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticCalculation3.class);
+public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AssociateTablesByEntryByUserCalcHandler.class);
 
-    Map<String, Record3> records = new LinkedHashMap<>(1024);
+    Map<String, Record> records = new LinkedHashMap<>(1024);
     int entryId = 0;
 
     @Override
-    public void onEvent(Event event, long l, boolean b) throws Exception {
+    public void onEvent(StatisticEvent statisticEvent, long l, boolean b) throws Exception {
         // LOGGER.info("consuming:{}", event.getEntry().toString());
         check();
-        handle(event.getEntry());
+        handle(statisticEvent.getEntry());
     }
 
     public void check() {
@@ -40,10 +45,10 @@ public class StatisticCalculation3 implements StatisticDataHandler {
                 if (!tableList.isEmpty()) {
                     String tables = String.join(",", tableList);
                     String key = fEntry.getFrontend().getUser() + "-" + tables;
-                    Record3 currRecord;
+                    Record currRecord;
                     boolean isNew = true;
                     if (isNew = ((currRecord = records.get(key)) == null)) {
-                        currRecord = new Record3(++entryId, fEntry.getFrontend(), tables);
+                        currRecord = new Record(++entryId, fEntry.getFrontend(), tables);
                     }
                     currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
                     if (isNew) {
@@ -55,7 +60,7 @@ public class StatisticCalculation3 implements StatisticDataHandler {
     }
 
     @Override
-    public Map<String, Record3> getList() {
+    public Map<String, Record> getList() {
         return new HashMap<>(records);
     }
 
@@ -67,7 +72,7 @@ public class StatisticCalculation3 implements StatisticDataHandler {
         }
     }
 
-    public class Record3 {
+    public static class Record {
         int entry;
         String user;
         String tables;
@@ -78,7 +83,7 @@ public class StatisticCalculation3 implements StatisticDataHandler {
         long selectTime = 0L;
         long lastUpdateTime = 0L;
 
-        public Record3(int entry, FrontendInfo frontend, String tables) {
+        public Record(int entry, FrontendInfo frontend, String tables) {
             this.entry = entry;
             user = frontend.getUser();
             this.tables = tables;

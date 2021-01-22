@@ -7,7 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.statistic.backend.StatisticListener;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import java.util.Optional;
 

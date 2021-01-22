@@ -3,9 +3,9 @@ package com.actiontech.dble.services.manager.information.tables.statistic;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
-import com.actiontech.dble.statistic.backend.StatisticCalculation;
-import com.actiontech.dble.statistic.backend.StatisticDataHandler;
-import com.actiontech.dble.statistic.backend.StatisticManager;
+import com.actiontech.dble.statistic.sql.handler.FrontendByBackendByEntryByUserCalcHandler;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.google.common.collect.Maps;
 
 import java.util.*;
@@ -122,7 +122,7 @@ public class FrontendByBackendByEntryByUser extends ManagerBaseTable {
         if (dataHandler == null) {
             return list;
         }
-        Map<String, StatisticCalculation.Record> recordMap = (Map<String, StatisticCalculation.Record>) dataHandler.getList();
+        Map<String, FrontendByBackendByEntryByUserCalcHandler.Record> recordMap = (Map<String, FrontendByBackendByEntryByUserCalcHandler.Record>) dataHandler.getList();
         recordMap.entrySet().
                 stream().
                 sorted(Comparator.comparingInt(a -> a.getValue().getEntry())).

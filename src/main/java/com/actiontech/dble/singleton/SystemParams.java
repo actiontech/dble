@@ -13,7 +13,7 @@ import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.SlowQueryLog;
-import com.actiontech.dble.statistic.backend.StatisticManager;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 
 import java.util.ArrayList;
 import java.util.List;

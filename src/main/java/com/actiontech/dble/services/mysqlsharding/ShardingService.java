@@ -34,7 +34,7 @@ import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
-import com.actiontech.dble.statistic.backend.StatisticListener;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -389,6 +389,7 @@ public class ShardingService extends BusinessService {
 
     public void setTxInterrupt(String msg) {
         if ((!autocommit || txStarted) && !txInterrupted) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByInterrupt());
             txInterrupted = true;
             this.txInterruptMsg = "Transaction error, need to rollback.Reason:[" + msg + "]";
         }

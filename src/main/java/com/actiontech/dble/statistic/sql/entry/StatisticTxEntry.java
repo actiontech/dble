@@ -1,4 +1,4 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.entry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ public class StatisticTxEntry extends StatisticEntry {
     private int endType = 0;
 
     public StatisticTxEntry(FrontendInfo frontendInfo, long txId, int startType, long startTime) {
-        super(frontendInfo, 99, txId, startTime);
+        super(frontendInfo, -1, txId, startTime);
         this.startType = startType;
     }
 

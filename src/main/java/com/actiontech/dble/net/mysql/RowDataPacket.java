@@ -14,7 +14,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 
 import com.actiontech.dble.singleton.BufferPoolManager;
-import com.actiontech.dble.statistic.backend.StatisticListener;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import java.nio.ByteBuffer;
 import java.util.*;

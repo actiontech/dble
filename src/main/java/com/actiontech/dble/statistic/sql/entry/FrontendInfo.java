@@ -1,4 +1,4 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.entry;
 
 public class FrontendInfo {
     String user;

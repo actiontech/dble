@@ -1,10 +1,8 @@
-package com.actiontech.dble.statistic.backend;
+package com.actiontech.dble.statistic.sql.entry;
 
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 
 public class StatisticEntry {
-    private static ServerParse serverParse = ServerParseFactory.getShardingParser();
     private FrontendInfo frontend;
     private int sqlType = -99;
     private long rows = 0L;
@@ -96,7 +94,7 @@ public class StatisticEntry {
         return allEndTime - startTime;
     }
 
-    public class BackendInfo {
+    public static class BackendInfo {
         String name; // db_instance
         String host;
         int port;

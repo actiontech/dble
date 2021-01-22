@@ -223,6 +223,9 @@ public final class SystemConfig {
     }
 
     public void setGeneralLogFile(String generalLogFile) {
+        if (!generalLogFile.startsWith(String.valueOf(File.separatorChar))) {
+            generalLogFile = (this.getHomePath() + File.separatorChar + generalLogFile).replaceAll(File.separator + "+", File.separator);
+        }
         this.generalLogFile = generalLogFile;
     }
 

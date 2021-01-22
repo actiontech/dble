@@ -28,6 +28,9 @@ public final class GeneralLogCf {
             "Time                 Id Command    Argument\n";
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
 
+    private GeneralLogCf() {
+    }
+
     // on/off
     public static class OnOffGeneralLog {
         public OnOffGeneralLog() {

@@ -20,6 +20,7 @@ public final class LoadDataBatch {
 
     private LoadDataBatch() {
         size = SystemConfig.getInstance().getMaxRowSizeToFile();
+        enableBatchLoadData = SystemConfig.getInstance().getEnableBatchLoadData() == 1 ? true : false;
     }
 
     private enum Singleton {

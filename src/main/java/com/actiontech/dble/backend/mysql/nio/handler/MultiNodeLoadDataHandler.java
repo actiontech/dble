@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -94,7 +94,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         packet = null;
         errorCount = 0;
         unResponseRrns.clear();
-        // responseRrnList.clear();
         LoadDataBatch.getInstance().clean();
     }
 
@@ -228,7 +227,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             if (LoadDataBatch.getInstance().isEnableBatchLoadData()) {
                 unResponseRrns.add(rNode);
                 dnSet.add(rNode.getName());
-                rNode.setFlag((byte) 2);
+                rNode.setFlag((byte) 1);
             }
             session.getTargetMap().remove(rNode);
             ((MySQLResponseService) service).setResponseHandler(null);
@@ -250,7 +249,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         if (LoadDataBatch.getInstance().isEnableBatchLoadData()) {
             unResponseRrns.remove(rrn);
             dnSet.add(rrn.getName());
-            rrn.setFlag((byte) 2);
+            rrn.setFlag((byte) 1);
         }
         session.resetMultiStatementStatus();
         lock.lock();
@@ -282,7 +281,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         try {
             RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             unResponseRrns.remove(rrn);
-            rrn.setFlag((byte) 2);
+            rrn.setFlag((byte) 1);
             if (!isFail()) {
                 err = errPacket;
                 setFail(new String(err.getMessage()));
@@ -462,7 +461,9 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         lock.lock();
         try {
             String str = StringUtil.toString(row, 32);
-            LoadDataBatch.getInstance().getWarnings().add(str);
+            if (str.toLowerCase().contains("warning")) {
+                LoadDataBatch.getInstance().getWarnings().add(str);
+            }
         } finally {
             lock.unlock();
         }

@@ -218,7 +218,7 @@ public class MySQLResponseService extends BackendService {
         if (session != null) {
             session.setBackendRequestTime(this.getConnection().getId());
         }
-
+        sendQueryCmdTask("show warnings;", clientCharset).execute();
         // syn sharding
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
@@ -338,24 +338,30 @@ public class MySQLResponseService extends BackendService {
     }
 
     public void executeMultiNodeByLoadData(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
-        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-load-data-result");
-        TraceManager.log(ImmutableMap.of("route-result-load-data--set", rrn.toString(), "service-detail", this.toString()), traceObject);
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-result");
+        TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
-            if (rrn.getSqlType() == ServerParse.DDL) {
             }
+            if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }
             StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
                     service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
+                protocolResponseHandler = new LoadDataResponseHandler(this);
+            } else if (protocolResponseHandler != defaultResponseHandler) {
+                protocolResponseHandler = defaultResponseHandler;
+            }
             synAndDoExecuteMultiNodeByLoadData(synSQL, rrn, service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
 
-    }
         }
+    }
+
     private void synAndDoExecuteMultiNodeByLoadData(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("send cmd by WriteToBackendExecutor to conn[" + this + "]");
@@ -389,6 +395,8 @@ public class MySQLResponseService extends BackendService {
         }
         if (rrn.getFlag() == 2) {
             sendQueryCmdTask("show warnings;", clientCharset).execute();
+        } else {
+            return;
         }
     }
 

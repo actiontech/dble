@@ -1341,6 +1341,7 @@ public final class SystemConfig {
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
+                ", enableBatchLoadData" + enableBatchLoadData +
                 ",enableBatchLoadData=" + enableBatchLoadData +
                 ", xaRetryCount=" + xaRetryCount +
                 ", enableFlowControl=" + enableFlowControl +

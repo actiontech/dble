@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.statistic.backend.StatisticManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -130,6 +131,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("generalLogQueueSize", GeneralLog.getInstance().getGeneralLogQueueSize() + "", "Sets the queue size for consuming general log, value must not be less than 1 and must be a power of 2,The default value is 4069"));
         readOnlyParams.add(new ParamInfo("maxHeapTableSize", sysConfig.getMaxHeapTableSize() + "", "used for temp table persistence of cursor , Temp table which size larger than that will save to disk."));
         readOnlyParams.add(new ParamInfo("heapTableBufferChunkSize", sysConfig.getHeapTableBufferChunkSize() + "", "used for temp table persistence of cursor, setting for read-buffer size."));
+        readOnlyParams.add(new ParamInfo("statisticQueueSize", StatisticManager.getInstance().getStatisticQueueSize() + "", "used for temp table persistence of cursor, setting for read-buffer size."));
     }
 
     public List<ParamInfo> getVolatileParams() {
@@ -145,6 +147,9 @@ public final class SystemParams {
         params.add(new ParamInfo("capClientFoundRows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows,The default value is false"));
         params.add(new ParamInfo("enableGeneralLog", GeneralLog.getInstance().isEnableGeneralLog() + "", "Enable general log"));
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log,The default value is ./general/general.log"));
+
+        params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() + "", "Enable statistic sql"));
+        params.add(new ParamInfo("statisticTableSize", StatisticManager.getInstance().getstatisticTableSize() + "", "Statistic table size"));
         return params;
     }
 }

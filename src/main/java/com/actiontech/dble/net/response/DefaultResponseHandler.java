@@ -3,12 +3,15 @@ package com.actiontech.dble.net.response;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.actiontech.dble.statistic.backend.StatisticListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * for select and dml response packet
@@ -34,6 +37,11 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         if (status == INITIAL) {
             ResponseHandler respHand = service.getResponseHandler();
             if (respHand != null) {
+                if (service.getSession() != null) {
+                    OkPacket ok = new OkPacket();
+                    ok.read(data);
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onBackendSqlSetRows(service, ok.getAffectedRows()));
+                }
                 respHand.okResponse(data, service);
             }
         } else if (status == FIELD) {
@@ -53,6 +61,9 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
             status = INITIAL;
         }
         if (respHand != null) {
+            Optional.ofNullable(service.getSession()).ifPresent(e ->
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r ->
+                            r.onBackendSqlEnd(service)));
             respHand.errorResponse(data, service);
         } else {
             closeNoHandler();
@@ -88,6 +99,9 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     protected void closeNoHandler() {
         if (!service.getConnection().isClosed()) {
             LOGGER.info("no handler bind in this service " + service);
+            Optional.ofNullable(service.getSession()).ifPresent(e ->
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r ->
+                            r.onBackendSqlEnd(service)));
             service.getConnection().close("no handler");
         }
     }
@@ -106,6 +120,9 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         //LOGGER.info("get into rowing data " + data.length);
         ResponseHandler respHand = service.getResponseHandler();
         if (respHand != null) {
+            if (service.getSession() != null) {
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onBackendSqlAddRows(service));
+            }
             respHand.rowResponse(data, null, false, service);
         } else {
             closeNoHandler();

@@ -14,12 +14,10 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 
 import com.actiontech.dble.singleton.BufferPoolManager;
+import com.actiontech.dble.statistic.backend.StatisticListener;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * From server to client. One packet for each row in the result set.
@@ -91,6 +89,7 @@ public class RowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, AbstractService service,
                             boolean writeSocketIfFull) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onFrontendAddRows());
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;

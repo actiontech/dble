@@ -46,6 +46,7 @@ public final class ManagerParse {
     public static final int UPDATE = 29;
     public static final int FRESH_CONN = 30;
     public static final int USE = 31;
+    public static final int TRUNCATE_TABLE = 32;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -92,8 +93,51 @@ public final class ManagerParse {
                 case 'U':
                 case 'u':
                     return uCheck(stmt, i);
+                case 'T':
+                case 't':
+                    return tCheck(stmt, i);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // truncate table
+    private static int tCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 8) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'R' || c1 == 'r') &&
+                    (c2 == 'U' || c2 == 'u') &&
+                    (c3 == 'N' || c3 == 'n') &&
+                    (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'A' || c5 == 'a') &&
+                    (c6 == 'T' || c6 == 't') &&
+                    (c7 == 'E' || c7 == 'e') &&
+                    (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
+                if (stmt.length() > offset + 6) {
+                    char c9 = stmt.charAt(++offset);
+                    char c10 = stmt.charAt(++offset);
+                    char c11 = stmt.charAt(++offset);
+                    char c12 = stmt.charAt(++offset);
+                    char c13 = stmt.charAt(++offset);
+                    char c14 = stmt.charAt(++offset);
+                    if ((c9 == 'T' || c9 == 't') &&
+                            (c10 == 'A' || c10 == 'a') &&
+                            (c11 == 'B' || c11 == 'b') &&
+                            (c12 == 'L' || c12 == 'l') &&
+                            (c13 == 'E' || c13 == 'e') &&
+                            (c14 == ' ' || c8 == '\t' || c14 == '\r' || c14 == '\n')) {
+                        return (offset << 8) | TRUNCATE_TABLE;
+                    }
+                }
             }
         }
         return OTHER;

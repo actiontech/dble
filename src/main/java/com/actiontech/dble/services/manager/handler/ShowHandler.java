@@ -269,6 +269,9 @@ public final class ShowHandler {
                     ShowConnectionSQLStatus.execute(service, id);
                 }
                 break;
+            case ManagerParseShow.STATISTIC:
+                StatisticCf.Show.execute(service);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();

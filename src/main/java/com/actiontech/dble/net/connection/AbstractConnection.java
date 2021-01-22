@@ -9,6 +9,7 @@ import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.statistic.backend.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -89,6 +90,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     public void close(String reason) {
+        StatisticListener.getInstance().remove(service);
         if (isClosed.compareAndSet(false, true)) {
             closeSocket();
             LOGGER.info("connection id close for reason " + reason + " with connection " + toString());

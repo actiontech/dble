@@ -174,6 +174,41 @@ public final class SystemConfig {
     private String traceEndPoint = null;
     private String fakeMySQLVersion = "5.7.21";
 
+    private int enableStatistic = 0;
+    private int statisticTableSize = 1024;
+    private int statisticQueueSize = 4096;
+
+    public int getEnableStatistic() {
+        return enableStatistic;
+    }
+
+    public void setEnableStatistic(int enableStatistic) {
+        this.enableStatistic = enableStatistic;
+    }
+
+    public int getStatisticTableSize() {
+        return statisticTableSize;
+    }
+
+    public void setStatisticTableSize(int statisticTableSize) {
+        if (statisticTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "statisticTableSize", statisticTableSize, this.statisticTableSize));
+        } else {
+            this.statisticTableSize = statisticTableSize;
+        }
+    }
+
+    public int getStatisticQueueSize() {
+        return statisticQueueSize;
+    }
+
+    public void setStatisticQueueSize(int statisticQueueSize) {
+        if (statisticQueueSize < 1 || Integer.bitCount(statisticQueueSize) != 1) {
+            problemReporter.warn("Property [ statisticQueueSize ] '" + statisticQueueSize + "' in bootstrap.cnf is illegal, size must not be less than 1 and must be a power of 2, you may need use the default value " + this.statisticQueueSize + " replaced");
+        } else {
+            this.statisticQueueSize = statisticQueueSize;
+        }
+    }
 
     public int getEnableGeneralLog() {
         return enableGeneralLog;
@@ -188,9 +223,6 @@ public final class SystemConfig {
     }
 
     public void setGeneralLogFile(String generalLogFile) {
-        if (!generalLogFile.startsWith(String.valueOf(File.separatorChar))) {
-            generalLogFile = (this.getHomePath() + File.separatorChar + generalLogFile).replaceAll(File.separator + "+", File.separator);
-        }
         this.generalLogFile = generalLogFile;
     }
 

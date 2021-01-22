@@ -13,6 +13,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -33,6 +34,7 @@ import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
+import com.actiontech.dble.statistic.backend.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -46,6 +48,7 @@ import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -117,6 +120,9 @@ public class ShardingService extends BusinessService {
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
+                    if (!autocommit) {
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
+                    }
                     if (!autocommit && session.getTargetCount() > 0) {
                         session.implicitCommit(() -> {
                             autocommit = true;
@@ -129,6 +135,9 @@ public class ShardingService extends BusinessService {
                     autocommit = true;
                 } else {
                     if (autocommit) {
+                        if (!txStarted) {
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
+                        }
                         autocommit = false;
                         txStarted = true;
                         TxnLogHelper.putTxnLog(this, executeSql);
@@ -421,12 +430,16 @@ public class ShardingService extends BusinessService {
     public void initFromAuthInfo(AuthResultInfo info) {
         super.initFromAuthInfo(info);
         this.multiStatementAllow = info.getMysqlAuthPacket().isMultStatementAllow();
+        StatisticListener.getInstance().register(session);
     }
 
     @Override
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
+        //if (vendorCode == ErrorCode.ER_PARSE_ERROR) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlClose());
+        //}
     }
 
     @Override
@@ -437,6 +450,7 @@ public class ShardingService extends BusinessService {
                 session.setKilled(false);
                 session.setDiscard(false);
             }
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
         }
     }
 
@@ -447,7 +461,11 @@ public class ShardingService extends BusinessService {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
-            txStarted = true;
+            setTxStart(true);
+            if (autocommit) {
+                getAndIncrementXid();
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(getSession2())).ifPresent(r -> r.onTxStartByBegin(this));
+            }
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }
@@ -469,7 +487,9 @@ public class ShardingService extends BusinessService {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
-            TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
+            if (this.isTxStart() || !this.isAutocommit()) {
+                TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
+            }
             session.commit();
         }
     }
@@ -563,6 +583,9 @@ public class ShardingService extends BusinessService {
 
     @Override
     public void write(MySQLPacket packet) {
+        if (packet instanceof OkPacket) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+        }
         boolean multiQueryFlag = session.multiStatementPacket(packet);
         markFinished();
         if (packet.isEndOfSession()) {
@@ -675,6 +698,7 @@ public class ShardingService extends BusinessService {
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
+        StatisticListener.getInstance().remove(session);
         if (!isTxStart() || session.getTransactionManager().getXAStage() == null) {
             //not a xa transaction ,close it
             session.kill();

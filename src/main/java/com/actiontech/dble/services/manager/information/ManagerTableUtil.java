@@ -21,8 +21,14 @@ import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.stat.TableStat;
+
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -115,5 +121,24 @@ public final class ManagerTableUtil {
             affectPks.add(affectPk);
         }
         return affectPks;
+    }
+
+    public static List<String> getTables(String defaultSchema, String sql) {
+        SQLStatementParser parser = new MySqlStatementParser(sql);
+        SQLStatement sqlStatement = parser.parseStatement();
+        MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
+        sqlStatement.accept(visitor);
+        Map<TableStat.Name, TableStat> tables = visitor.getTables();
+        List<String> allTableName = new ArrayList<>();
+        String tableName = null;
+        for (TableStat.Name t : tables.keySet()) {
+            // dual don't join
+            if ((tableName = t.getName().replace("`", "")).indexOf(".") > -1) {
+                allTableName.add(tableName);
+            } else {
+                allTableName.add(defaultSchema + "." + tableName);
+            }
+        }
+        return allTableName;
     }
 }

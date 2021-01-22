@@ -14,7 +14,9 @@ public final class RollBackHandler {
     }
 
     public static void handle(String stmt, ShardingService service) {
-        TxnLogHelper.putTxnLog(service, stmt);
+        if (service.isTxStart() || !service.isAutocommit()) {
+            TxnLogHelper.putTxnLog(service, stmt);
+        }
         service.transactionsCount();
         service.rollback();
     }

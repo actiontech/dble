@@ -19,16 +19,14 @@ import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.backend.StatisticListener;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -138,6 +136,7 @@ public class MySQLResponseService extends BackendService {
         try {
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
+                //Optional.ofNullable(StatisticListener2.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStartByBegin(service));
             }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
@@ -176,6 +175,7 @@ public class MySQLResponseService extends BackendService {
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStartByBegin(service));
             }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
@@ -201,7 +201,7 @@ public class MySQLResponseService extends BackendService {
         if (synSQL == null) {
             // not need syn connection
             if (session != null) {
-                session.setBackendRequestTime(this.getConnection().getId());
+                session.setBackendRequestTime(this);
             }
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             return;
@@ -214,7 +214,7 @@ public class MySQLResponseService extends BackendService {
         synSQL.append(rrn.getStatement()).append(";");
         // syn and execute others
         if (session != null) {
-            session.setBackendRequestTime(this.getConnection().getId());
+            session.setBackendRequestTime(this);
         }
 
         // syn sharding
@@ -233,7 +233,7 @@ public class MySQLResponseService extends BackendService {
             if (synSQL == null) {
                 // not need syn connection
                 if (session != null) {
-                    session.setBackendRequestTime(this.getConnection().getId());
+                    session.setBackendRequestTime(this);
                 }
                 sendQueryCmd(sql, clientCharset);
                 return;
@@ -246,7 +246,7 @@ public class MySQLResponseService extends BackendService {
             synSQL.append(sql).append(";");
             // syn and execute others
             if (session != null) {
-                session.setBackendRequestTime(this.getConnection().getId());
+                session.setBackendRequestTime(this);
             }
             this.sendQueryCmd(synSQL.toString(), clientCharset);
             // waiting syn result...

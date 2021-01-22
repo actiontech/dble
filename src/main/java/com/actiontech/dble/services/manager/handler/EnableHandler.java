@@ -32,6 +32,9 @@ public final class EnableHandler {
             case ManagerParseOnOff.GENERAL_LOG:
                 GeneralLogCf.OnOffGeneralLog.execute(service, true);
                 break;
+            case ManagerParseOnOff.STATISTIC:
+                StatisticCf.OnOff.execute(service, true);
+                break;
             default:
                 service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

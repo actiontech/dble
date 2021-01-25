@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.response;
 
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
@@ -28,6 +29,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -128,8 +130,9 @@ public final class DryRun {
                     serverConfig.loadSequence(loader.getSequenceConfig());
                     serverConfig.selfChecking0();
                 }
+                Map<String, Set<String>> schemaMap = getExistSchemas(serverConfig);
                 //table exists check ,if the vars can not be touch ,the table check has no meaning
-                tableExistsCheck(list, serverConfig, newSystemVariables.isLowerCaseTableNames());
+                tableExistsCheck(list, serverConfig, newSystemVariables.isLowerCaseTableNames(), schemaMap);
             } catch (Exception e) {
                 list.add(new ErrorInfo("Xml", "ERROR", e.getMessage()));
             }
@@ -155,12 +158,22 @@ public final class DryRun {
         }
     }
 
+    private static Map<String, Set<String>> getExistSchemas(ServerConfig serverConfig) {
+        Map<String, Set<String>> schemaMap = new HashMap<>();
+        MysqlDatabaseHandler databaseHandler = new MysqlDatabaseHandler(serverConfig.getDbGroups());
+        List<PhysicalDbInstance> physicalDbInstances = databaseHandler.getPhysicalDbInstances();
+        physicalDbInstances.forEach(ds -> {
+            Set<String> schemaSet = databaseHandler.execute(ds);
+            schemaMap.put(ds.getDbGroup().getGroupName(), schemaSet);
+        });
+        return schemaMap;
+    }
 
-    private static void tableExistsCheck(List<ErrorInfo> list, ServerConfig serverConfig, boolean isLowerCase) {
+    private static void tableExistsCheck(List<ErrorInfo> list, ServerConfig serverConfig, boolean isLowerCase, Map<String, Set<String>> schemaMap) {
         //get All the exists table from all shardingNode
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("table-exists-check");
         try {
-            Map<String, Set<String>> tableMap = showShardingNodeTable(serverConfig, isLowerCase, list);
+            Map<String, Set<String>> tableMap = showShardingNodeTable(serverConfig, isLowerCase, list, schemaMap);
 
             for (SchemaConfig schema : serverConfig.getSchemas().values()) {
                 for (BaseTableConfig table : schema.getTables().values()) {
@@ -182,12 +195,32 @@ public final class DryRun {
         }
     }
 
-    private static Map<String, Set<String>> showShardingNodeTable(ServerConfig serverConfig, boolean isLowerCase, List<ErrorInfo> list) {
+    private static Map<String, Set<String>> showShardingNodeTable(ServerConfig serverConfig, boolean isLowerCase, List<ErrorInfo> list, Map<String, Set<String>> schemaMap) {
         Map<String, Set<String>> result = new ConcurrentHashMap<>();
         AtomicInteger counter = new AtomicInteger(serverConfig.getShardingNodes().size());
         for (ShardingNode shardingNode : serverConfig.getShardingNodes().values()) {
-            DryRunGetNodeTablesHandler showTablesHandler = new DryRunGetNodeTablesHandler(counter, shardingNode, result, isLowerCase, list);
-            showTablesHandler.execute();
+            String dbGroupName = shardingNode.getDbGroupName();
+            String databaseName = shardingNode.getDatabase();
+            if (schemaMap.containsKey(dbGroupName)) {
+                Set<String> schemaSet = schemaMap.get(dbGroupName);
+                boolean exist;
+                if (isLowerCase) {
+                    Optional<String> existSchema = schemaSet.stream().filter(schema -> StringUtil.equals(schema.toLowerCase(), databaseName)).findFirst();
+                    exist = existSchema.isPresent();
+                } else {
+                    exist = schemaSet.contains(databaseName);
+                }
+                if (exist) {
+                    DryRunGetNodeTablesHandler showTablesHandler = new DryRunGetNodeTablesHandler(counter, shardingNode, result, isLowerCase, list);
+                    showTablesHandler.execute();
+                } else {
+                    counter.decrementAndGet();
+                    list.add(new ErrorInfo("Meta", "WARNING", "Database " + shardingNode.getDatabase() + " doesn't exists in dbGroup[" + shardingNode.getDbGroupName() + "]"));
+                }
+            } else {
+                counter.decrementAndGet();
+                list.add(new ErrorInfo("Meta", "WARNING", "Database " + shardingNode.getDatabase() + " doesn't exists in dbGroup[" + shardingNode.getDbGroupName() + "]"));
+            }
         }
         while (counter.get() != 0) {
             LockSupport.parkNanos(1000L);

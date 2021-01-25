@@ -72,45 +72,58 @@ public final class PauseStart {
             }
         }
 
-        //clusterPauseNotice
-        if (!PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit)) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
+        if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "other instance is in operation");
             return;
         }
 
 
-        if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
-            //the error message can only show in single mod
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
-            return;
-        }
+        try {
+            try {
+                //clusterPauseNotice
+                PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit);
+            } catch (Exception e) {
+                LOGGER.warn("", e);
+                service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+                return;
+            }
 
-        //self pause the shardingNode
-        long timeOut = Long.parseLong(ma.group(2)) * 1000;
-        long beginTime = System.currentTimeMillis();
-        boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
 
-        LOGGER.info("wait finished " + recycleFinish);
-        if (!recycleFinish) {
-            if (PauseShardingNodeManager.getInstance().tryResume()) {
+            if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
+                //the error message can only show in single mod
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
+                return;
+            }
+
+            //self pause the shardingNode
+            long timeOut = Long.parseLong(ma.group(2)) * 1000;
+            long beginTime = System.currentTimeMillis();
+            boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
+
+            LOGGER.info("wait finished " + recycleFinish);
+            if (!recycleFinish) {
+                if (PauseShardingNodeManager.getInstance().tryResume()) {
+                    try {
+                        PauseShardingNodeManager.getInstance().resumeCluster();
+                    } catch (Exception e) {
+                        LOGGER.warn("resume cause error", e);
+                    }
+                    service.writeErrMessage(ErrorCode.ER_YES, "The backend connection recycle failure,try it later");
+                } else {
+                    service.writeErrMessage(ErrorCode.ER_YES, "Pause resume when recycle connection ,pause revert");
+                }
+            } else {
                 try {
-                    PauseShardingNodeManager.getInstance().resumeCluster();
+                    if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
+                        OK.write(service.getConnection());
+                    }
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage());
+                    service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
                 }
-                service.writeErrMessage(1003, "The backend connection recycle failure, try it later");
-            } else {
-                service.writeErrMessage(1003, "Pause resume when recycle connection, pause revert");
             }
-        } else {
-            try {
-                if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
-                    OK.write(service.getConnection());
-                }
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
-                service.writeErrMessage(1003, e.getMessage());
-            }
+        } finally {
+            PauseShardingNodeManager.getInstance().releaseDistributeLock();
         }
     }
 

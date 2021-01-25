@@ -79,12 +79,15 @@ public class UserConfig {
         return whiteIPs;
     }
 
-
     public int getMaxCon() {
         return maxCon;
     }
 
     public void isValidSchemaInfo(UserName user, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
+    }
+
+    public int checkSchema(String schema) {
+        return 0;
     }
 
     public boolean equalsBaseInfo(UserConfig userConfig) {

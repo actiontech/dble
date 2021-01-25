@@ -3,7 +3,6 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.response.FieldList;
 import org.slf4j.Logger;
@@ -88,39 +87,11 @@ public class MySQLProtoLogicHandler {
         return sql;
     }
 
-    public void setOption(byte[] data) {
-        MySQLMessage mm = new MySQLMessage(data); //see sql\protocol_classic.cc parse_packet
-        if (mm.length() == 7) {
-            mm.position(5);
-            int optCommand = mm.readUB2();
-            if (optCommand == 0) {
-                service.setMultiStatementAllow(true);
-                service.writeDirectly(EOFPacket.EOF);
-                return;
-            } else if (optCommand == 1) {
-                service.setMultiStatementAllow(false);
-                service.writeDirectly(EOFPacket.EOF);
-                return;
-            }
-        }
-        service.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
-    }
-
-
-    public void resetConnection() {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("resetConnection request");
-        }
-        service.innerCleanUp();
-        service.writeDirectly(OkPacket.OK);
-    }
-
     public void fieldList(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
         FieldList.response(service, mm.readStringWithNull());
     }
-
 
     public byte[] getMultiQueryData() {
         return multiQueryData;

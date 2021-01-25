@@ -7,112 +7,110 @@ package com.actiontech.dble.services.mysqlauthenticate.util;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.user.*;
-import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.config.model.user.ManagerUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
-import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
+import com.actiontech.dble.net.mysql.AuthPacket;
+import com.actiontech.dble.net.mysql.ChangeUserPacket;
+import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.services.mysqlauthenticate.PluginName;
 import com.actiontech.dble.services.mysqlauthenticate.SecurityUtil;
 import com.actiontech.dble.singleton.FrontendUserManager;
-import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.IPAddressUtil;
-import com.actiontech.dble.util.StringUtil;
 
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Optional;
 import java.util.Set;
 
 public final class AuthUtil {
     private AuthUtil() {
     }
 
-    public static String auth(UserName user, AbstractConnection connection, byte[] seed, byte[] password, String schema, PluginName plugin, long clientFlags) {
-        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(connection.getService(), "user-auth-for-right&password");
-        try {
-            UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
-            if (userConfig == null) {
-                return "Access denied for user '" + user + "' with host '" + connection.getHost() + "'";
-            }
-
-            FrontendConnection fcon = (FrontendConnection) connection;
-
-            //normal user login into manager port
-            if (fcon.isManager() && !(userConfig instanceof ManagerUserConfig)) {
-                return "Access denied for user '" + user + "'";
-            } else if (!fcon.isManager() && userConfig instanceof ManagerUserConfig) {
-                //manager user login into server port
-                return "Access denied for manager user '" + user + "'";
-            }
-
-            if (!checkWhiteIPs(fcon, userConfig.getWhiteIPs())) {
-                return "Access denied for user '" + user + "' with host '" + fcon.getHost() + "'";
-            }
-
-            // check password
-            if (!checkPassword(seed, password, userConfig.getPassword(), plugin)) {
-                return "Access denied for user '" + user + "', because password is incorrect";
-            }
-
-            if (!DbleServer.getInstance().getConfig().isFullyConfigured() && !fcon.isManager()) {
-                return "Access denied for user '" + user + "', because there are some empty dbGroup/fake dbInstance";
-            }
-
-            if (userConfig instanceof ShardingUserConfig) {
-                // check sharding
-                switch (checkSchema(schema, (ShardingUserConfig) userConfig)) {
-                    case ErrorCode.ER_BAD_DB_ERROR:
-                        return "Unknown database '" + schema + "'";
-                    case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                        return "Access denied for user '" + user + "' to database '" + schema + "'";
-                    default:
-                        break;
-                }
-
-
-            } else if (userConfig instanceof ManagerUserConfig) {
-                switch (checkManagerSchema(schema)) {
-                    case ErrorCode.ER_BAD_DB_ERROR:
-                        return "Unknown database '" + schema + "'";
-                    default:
-                        break;
-                }
-            } else if (userConfig instanceof RwSplitUserConfig) {
-                // check RwSplitUserConfig
-                switch (checkRwsplitUserSchema(schema)) {
-                    case ErrorCode.ER_BAD_DB_ERROR:
-                        return "Unknown database '" + schema + "'";
-                    case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                        return "Access denied for user '" + user + "' to database '" + schema + "'";
-                    default:
-                        break;
-                }
-            }
-
-            //check maxconnection
-            int userLimit = userConfig.getMaxCon();
-            switch (FrontendUserManager.getInstance().maxConnectionCheck(user, userLimit, userConfig instanceof ManagerUserConfig)) {
-                case SERVER_MAX:
-                    return "Access denied for user '" + user + "',too many connections for dble server";
-                case USER_MAX:
-                    return "Access denied for user '" + user + "',too many connections for this user";
-                default:
-                    break;
-            }
-
-            return null;
-        } finally {
-            TraceManager.finishSpan(connection.getService(), traceObject);
+    public static AuthResultInfo auth(FrontendConnection fconn, byte[] seed, PluginName plugin, AuthPacket authPacket) {
+        UserName user = new UserName(authPacket.getUser(), authPacket.getTenant());
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+        if (userConfig == null) {
+            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
         }
+        //normal user login into manager port
+        if (fconn.isManager() && !(userConfig instanceof ManagerUserConfig)) {
+            return new AuthResultInfo("Access denied for user '" + user + "'");
+        } else if (!fconn.isManager() && userConfig instanceof ManagerUserConfig) {
+            //manager user login into server port
+            return new AuthResultInfo("Access denied for manager user '" + user + "'");
+        }
+        if (!checkWhiteIPs(fconn.getHost(), userConfig.getWhiteIPs())) {
+            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+        }
+        // check password
+        if (!checkPassword(seed, authPacket.getPassword(), userConfig.getPassword(), plugin)) {
+            return new AuthResultInfo("Access denied for user '" + user + "', because password is incorrect");
+        }
+        if (!DbleServer.getInstance().getConfig().isFullyConfigured()) {
+            return new AuthResultInfo("Access denied for user '" + user + "', because there are some empty dbGroup/fake dbInstance");
+        }
+        // check schema
+        final String schema = authPacket.getDatabase();
+        switch (userConfig.checkSchema(schema)) {
+            case ErrorCode.ER_BAD_DB_ERROR:
+                return new AuthResultInfo("Unknown database '" + schema + "'");
+            case ErrorCode.ER_DBACCESS_DENIED_ERROR:
+                return new AuthResultInfo("Access denied for user '" + user + "' to database '" + schema + "'");
+            default:
+                break;
+        }
+        //check max connection
+        switch (FrontendUserManager.getInstance().maxConnectionCheck(user, userConfig.getMaxCon(), fconn.isManager())) {
+            case SERVER_MAX:
+                return new AuthResultInfo("Access denied for user '" + user + "',too many connections for dble server");
+            case USER_MAX:
+                return new AuthResultInfo("Access denied for user '" + user + "',too many connections for this user");
+            default:
+                break;
+        }
+        return new AuthResultInfo(null, authPacket, user, userConfig);
     }
 
-    private static boolean checkWhiteIPs(FrontendConnection source, Set<String> whiteIPs) {
+    public static AuthResultInfo auth(FrontendConnection fconn, byte[] seed, PluginName plugin, ChangeUserPacket changeUserPacket) {
+        UserName user = new UserName(changeUserPacket.getUser(), changeUserPacket.getTenant());
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+        if (userConfig == null) {
+            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+        }
+        //normal user login into manager port
+        if (fconn.isManager() && !(userConfig instanceof ManagerUserConfig)) {
+            return new AuthResultInfo("Access denied for user '" + user + "'");
+        } else if (!fconn.isManager() && userConfig instanceof ManagerUserConfig) {
+            //manager user login into server port
+            return new AuthResultInfo("Access denied for manager user '" + user + "'");
+        }
+        if (!checkWhiteIPs(fconn.getHost(), userConfig.getWhiteIPs())) {
+            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+        }
+        // check password
+        if (!checkPassword(seed, changeUserPacket.getPassword(), userConfig.getPassword(), plugin)) {
+            return new AuthResultInfo("Access denied for user '" + user + "', because password is incorrect");
+        }
+        // check schema
+        final String schema = changeUserPacket.getDatabase();
+        switch (userConfig.checkSchema(schema)) {
+            case ErrorCode.ER_BAD_DB_ERROR:
+                return new AuthResultInfo("Unknown database '" + schema + "'");
+            case ErrorCode.ER_DBACCESS_DENIED_ERROR:
+                return new AuthResultInfo("Access denied for user '" + user + "' to database '" + schema + "'");
+            default:
+                break;
+        }
+
+        return new AuthResultInfo(null, null, user, userConfig);
+    }
+
+    private static boolean checkWhiteIPs(String host, Set<String> whiteIPs) {
         // whether to check
         if (null == whiteIPs || whiteIPs.size() == 0) {
             return true;
         }
-        String host = source.getHost();
         return whiteIPs.stream().anyMatch(e -> {
             try {
                 return IPAddressUtil.match(host, e);
@@ -122,9 +120,7 @@ public final class AuthUtil {
         });
     }
 
-
     private static boolean checkPassword(byte[] seed, byte[] password, String pass, PluginName name) {
-
         // check null
         if (pass == null || pass.length() == 0) {
             return password == null || password.length == 0;
@@ -161,46 +157,6 @@ public final class AuthUtil {
         }
 
         return true;
-    }
-
-    private static int checkSchema(String schema, ShardingUserConfig userConfig) {
-        if (schema == null) {
-            return 0;
-        }
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            schema = schema.toLowerCase();
-        }
-        if (!DbleServer.getInstance().getConfig().getSchemas().containsKey(schema)) {
-            return ErrorCode.ER_BAD_DB_ERROR;
-        }
-
-        if (userConfig.getSchemas().contains(schema)) {
-            return 0;
-        } else {
-            return ErrorCode.ER_DBACCESS_DENIED_ERROR;
-        }
-    }
-
-    private static int checkRwsplitUserSchema(String schema) {
-        if (schema == null) {
-            return 0;
-        }
-        boolean exist;
-        Set<String> schemas = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute();
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            Optional<String> result = schemas.stream().filter(item -> StringUtil.equals(item.toLowerCase(), schema.toLowerCase())).findFirst();
-            exist = result.isPresent();
-        } else {
-            exist = schemas.contains(schema);
-        }
-        return exist ? 0 : ErrorCode.ER_BAD_DB_ERROR;
-    }
-
-    private static int checkManagerSchema(String schema) {
-        if (schema != null && !ManagerSchemaInfo.SCHEMA_NAME.equals(schema.toLowerCase())) {
-            return ErrorCode.ER_BAD_DB_ERROR;
-        }
-        return 0;
     }
 
 }

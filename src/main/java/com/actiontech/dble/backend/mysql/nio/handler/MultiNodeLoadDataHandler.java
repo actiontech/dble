@@ -57,7 +57,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
     private long insertId;
-    private List<FieldPacket> fieldPackets = new ArrayList<>();
     protected volatile ByteBuffer byteBuffer;
     protected Set<MySQLResponseService> closedConnSet;
     private final boolean modifiedSQL;
@@ -174,7 +173,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         node.setRunOnSlave(rrs.getRunOnSlave());
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
         LOGGER.debug("[doConnection] node + " + node.toString());
-        dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), sessionAutocommit, node, this, node, unResponseRrns);
+        dn.syncGetConnection(dn.getDatabase(), session.getShardingService().isTxStart(), sessionAutocommit, node, this, node);
     }
 
 
@@ -184,7 +183,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
-        conn.getBackendService().executeMultiNodeByLoadData(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart() && !node.isModifySQL());
+        conn.getBackendService().executeMultiNodeForLoadData(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart() && !node.isModifySQL());
     }
 
 
@@ -389,18 +388,18 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 if (errorCount > 0 && unResponseRrns.size() == 0) {
                     LoadDataBatch.getInstance().getErrorSize().set(1);
                     specialOkResponse();
-                    return;
                 } else if (errorCount > 0 && unResponseRrns.size() > 0) {
                     LoadDataBatch.getInstance().getErrorSize().decrementAndGet();
-                    return;
+                } else {
+                    ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
+                    shardingService.getLoadDataInfileHandler().clear();
+                    transformOkPackage(ok, shardingService, insertId);
+                    doSqlStat();
+                    deleteErrorFile();
+                    LoadDataBatch.getInstance().getSuccessFileNames().clear();
+                    handleEndPacket(ok, AutoTxOperation.COMMIT, true);
                 }
-                ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
-                shardingService.getLoadDataInfileHandler().clear();
-                transformOkPackage(ok, shardingService, insertId);
-                doSqlStat();
-                deleteErrorFile();
-                LoadDataBatch.getInstance().getSuccessFileNames().clear();
-                handleEndPacket(ok, AutoTxOperation.COMMIT, true);
+
             } finally {
                 lock.unlock();
             }

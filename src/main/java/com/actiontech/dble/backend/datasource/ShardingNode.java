@@ -85,14 +85,14 @@ public class ShardingNode {
         }
     }
 
-    public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
-                              ResponseHandler handler, Object attachment, Set<RouteResultsetNode> unResponseRrns) throws Exception {
+    public void syncGetConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
+                              ResponseHandler handler, Object attachment) throws Exception {
 
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-sharding-node");
         try {
             checkRequest(schema);
             PhysicalDbInstance instance = dbGroup.select(canRunOnMaster(rrs, !isMustWrite && autoCommit), rrs.isForUpdate());
-            instance.getConnection(schema, handler, attachment, isMustWrite, unResponseRrns);
+            instance.syncGetConnection(schema, handler, attachment, isMustWrite);
         } finally {
             TraceManager.finishSpan(traceObject);
         }

@@ -218,7 +218,6 @@ public class MySQLResponseService extends BackendService {
         if (session != null) {
             session.setBackendRequestTime(this.getConnection().getId());
         }
-        sendQueryCmdTask("show warnings;", clientCharset).execute();
         // syn sharding
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
@@ -337,7 +336,7 @@ public class MySQLResponseService extends BackendService {
         return "MySQLConnection host=" + connection.getHost() + ", port=" + connection.getPort() + ", schema=" + connection.getSchema();
     }
 
-    public void executeMultiNodeByLoadData(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
+    public void executeMultiNodeForLoadData(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
@@ -355,14 +354,14 @@ public class MySQLResponseService extends BackendService {
             } else if (protocolResponseHandler != defaultResponseHandler) {
                 protocolResponseHandler = defaultResponseHandler;
             }
-            synAndDoExecuteMultiNodeByLoadData(synSQL, rrn, service.getCharset());
+            synAndDoExecuteMultiNodeForLoadData(synSQL, rrn, service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
 
         }
     }
 
-    private void synAndDoExecuteMultiNodeByLoadData(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+    private void synAndDoExecuteMultiNodeForLoadData(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("send cmd by WriteToBackendExecutor to conn[" + this + "]");
         }
@@ -372,7 +371,7 @@ public class MySQLResponseService extends BackendService {
                 session.setBackendRequestTime(this.getConnection().getId());
             }
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
-            waitResult(rrn, clientCharset);
+            waitSyncResult(rrn, clientCharset);
             return;
         }
         // syn sharding
@@ -386,18 +385,7 @@ public class MySQLResponseService extends BackendService {
         taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
         DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
         // waiting syn result...
-        waitResult(rrn, clientCharset);
-    }
-
-    private void waitResult(RouteResultsetNode rrn, CharsetNames clientCharset) {
-        while (rrn.getFlag() == 0 && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
-            LockSupport.parkNanos(100);
-        }
-        if (rrn.getFlag() == 2) {
-            sendQueryCmdTask("show warnings;", clientCharset).execute();
-        } else {
-            return;
-        }
+        waitSyncResult(rrn, clientCharset);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
@@ -412,6 +400,17 @@ public class MySQLResponseService extends BackendService {
         isExecuting = true;
         connection.setLastTime(TimeUtil.currentTimeMillis());
         return new WriteToBackendTask(this, packet);
+    }
+
+    private void waitSyncResult(RouteResultsetNode rrn, CharsetNames clientCharset) {
+        while (rrn.getFlag() == 0 && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
+            LockSupport.parkNanos(100);
+        }
+        if (rrn.getFlag() == 2) {
+            sendQueryCmdTask("show warnings;", clientCharset).execute();
+        } else {
+            return;
+        }
     }
 
     public void rollback() {

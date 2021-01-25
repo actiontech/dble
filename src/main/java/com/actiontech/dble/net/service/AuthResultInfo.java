@@ -8,25 +8,23 @@ import com.actiontech.dble.net.mysql.AuthPacket;
  */
 public class AuthResultInfo {
 
-    private boolean success;
     private String errorMsg;
     private UserConfig userConfig;
 
     private AuthPacket mysqlAuthPacket = null;
 
     public AuthResultInfo(String errorMsg, AuthPacket authPacket, UserConfig userConfig) {
-        this.success = errorMsg == null ? true : false;
         this.errorMsg = errorMsg;
         this.userConfig = userConfig;
         this.mysqlAuthPacket = authPacket;
     }
 
     public AuthResultInfo(String errorMsg) {
-        this.success = errorMsg == null ? true : false;
+        this.errorMsg = errorMsg;
     }
 
     public boolean isSuccess() {
-        return success;
+        return errorMsg == null;
     }
 
     public String getErrorMsg() {

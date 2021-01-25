@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.mysqlauthenticate;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
@@ -10,6 +11,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -57,6 +59,11 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         // fake for skipping handshake
         connection.setOldSchema(null);
         this.seed = new byte[0];
+    }
+
+    @Override
+    protected boolean beforeHandlingTask() {
+        return true;
     }
 
     @Override
@@ -196,6 +203,19 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
     @Override
     public void register() throws IOException {
         connection.getSocketWR().asyncRead();
+    }
+
+    @Override
+    protected void doHandle(ServiceTask task) {
+        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
+            if (isHandling.compareAndSet(false, true)) {
+                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
+            }
+        } else {
+            if (isHandling.compareAndSet(false, true)) {
+                super.doHandle(null);
+            }
+        }
     }
 
     @Override

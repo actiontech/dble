@@ -87,7 +87,7 @@ public final class ShowDbleProcessList {
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc == null || !fc.convertToFrontEndService()) {
+                if (fc == null || !fc.isAuthorized()) {
                     break;
                 }
                 /*

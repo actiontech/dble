@@ -87,30 +87,30 @@ public abstract class BackendService extends AbstractService {
     @Override
     public void handle(ServiceTask task) {
         if (beforeHandlingTask()) {
-            if (task != null) {
-                taskQueue.offer(task);
-            }
-            if (isHandling.compareAndSet(false, true)) {
-                Executor executor = getExecutor();
-                executor.execute(() -> {
-                    try {
-                        handleTaskQueue();
-                    } catch (Exception e) {
-                        handleDataError(e);
-                    } finally {
-                        isHandling.set(false);
-                        if (taskQueue.size() > 0) {
-                            handle(null);
-                        }
-                    }
-                });
-            }
+            taskQueue.offer(task);
+            doHandle(task);
         }
     }
 
-    protected boolean beforeHandlingTask() {
-        return true;
+    protected void doHandle(ServiceTask task) {
+        if (isHandling.compareAndSet(false, true)) {
+            Executor executor = getExecutor();
+            executor.execute(() -> {
+                try {
+                    handleTaskQueue();
+                } catch (Exception e) {
+                    handleDataError(e);
+                } finally {
+                    isHandling.set(false);
+                    if (taskQueue.size() > 0) {
+                        doHandle(null);
+                    }
+                }
+            });
+        }
     }
+
+    protected abstract boolean beforeHandlingTask();
 
     /**
      * used when Performance Mode
@@ -126,7 +126,7 @@ public abstract class BackendService extends AbstractService {
         } finally {
             isHandling.set(false);
             if (taskQueue.size() > 0) {
-                handle(task);
+                doHandle(task);
             }
         }
     }

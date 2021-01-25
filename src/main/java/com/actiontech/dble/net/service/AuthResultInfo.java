@@ -9,7 +9,6 @@ import com.actiontech.dble.net.mysql.AuthPacket;
  */
 public class AuthResultInfo {
 
-    private boolean success;
     private String errorMsg;
     private UserName user;
     private UserConfig userConfig;
@@ -17,7 +16,6 @@ public class AuthResultInfo {
     private AuthPacket mysqlAuthPacket = null;
 
     public AuthResultInfo(String errorMsg, AuthPacket authPacket, UserName user, UserConfig userConfig) {
-        this.success = errorMsg == null;
         this.errorMsg = errorMsg;
         this.user = user;
         this.userConfig = userConfig;
@@ -25,11 +23,11 @@ public class AuthResultInfo {
     }
 
     public AuthResultInfo(String errorMsg) {
-        this.success = errorMsg == null;
+        this.errorMsg = errorMsg;
     }
 
     public boolean isSuccess() {
-        return success;
+        return errorMsg == null;
     }
 
     public String getErrorMsg() {

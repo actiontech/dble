@@ -52,6 +52,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         this.session = new RWSplitNonBlockingSession(this);
         this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(userConfig.getDbGroup()));
         this.queryHandler = new RWSplitQueryHandler(session);
+        txChainBegin = true;
     }
 
     @Override

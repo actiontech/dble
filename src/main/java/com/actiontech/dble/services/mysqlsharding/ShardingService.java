@@ -67,7 +67,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private final MySQLProtoLogicHandler protoLogicHandler;
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
@@ -687,14 +686,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     private boolean isEndOfDataFile(byte[] data) {
         return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
-    }
-
-    public boolean isTxChainBegin() {
-        return txChainBegin;
-    }
-
-    public void setTxChainBegin(boolean txChainBegin) {
-        this.txChainBegin = txChainBegin;
     }
 
     public String toString() {

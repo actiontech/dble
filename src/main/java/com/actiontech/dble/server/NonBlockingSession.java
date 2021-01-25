@@ -918,11 +918,7 @@ public class NonBlockingSession extends Session {
             transactionManager.setRetryXa(true);
         }
         needWaitFinished = false;
-        if (shardingService.isTxChainBegin()) {
-            shardingService.setTxChainBegin(false);
-        } else {
-            shardingService.setTxStart(false);
-        }
+        shardingService.setTxStart(false);
         shardingService.getAndIncrementXid();
     }
 

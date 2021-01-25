@@ -79,6 +79,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
+    private volatile boolean ignoreIsStart = false;
 
     public ShardingService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -430,6 +431,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         } else {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
+            ignoreIsStart = true;
             session.commit();
             txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
@@ -687,6 +689,14 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     private boolean isEndOfDataFile(byte[] data) {
         return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
+    }
+
+    public boolean isIgnoreIsStart() {
+        return ignoreIsStart;
+    }
+
+    public void setIgnoreIsStart(boolean ignoreIsStart) {
+        this.ignoreIsStart = ignoreIsStart;
     }
 
     public String toString() {

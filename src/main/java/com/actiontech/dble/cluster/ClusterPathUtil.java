@@ -161,6 +161,9 @@ public final class ClusterPathUtil {
     }
 
     public static String getPauseResultNodePath() {
+        /*
+        this node will be created on pause operation, and deleted on resume operation
+         */
         return CONF_BASE_PATH + "migration" + SEPARATOR + "pause";
     }
 

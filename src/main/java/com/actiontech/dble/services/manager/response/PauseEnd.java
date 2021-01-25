@@ -7,10 +7,8 @@ package com.actiontech.dble.services.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
@@ -53,18 +51,21 @@ public final class PauseEnd {
                     return;
                 }
 
-                PauseInfo pauseInfo = new PauseInfo(value);
-                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
+
+                if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
+                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "other instance is in operation");
                     return;
                 }
 
-                if (!PauseShardingNodeManager.getInstance().tryResume()) {
-                    OK.setMessage(("No shardingNode paused, But still notify cluster").getBytes());
-                    return;
+                try {
+                    if (!PauseShardingNodeManager.getInstance().tryResume()) {
+                        OK.setMessage(("No shardingNode paused, But still notify cluster").getBytes());
+                        return;
+                    }
+                    PauseShardingNodeManager.getInstance().resumeCluster();
+                } finally {
+                    PauseShardingNodeManager.getInstance().releaseDistributeLock();
                 }
-
-                PauseShardingNodeManager.getInstance().resumeCluster();
             } catch (Exception e) {
                 LOGGER.warn("resume failed", e);
                 service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());

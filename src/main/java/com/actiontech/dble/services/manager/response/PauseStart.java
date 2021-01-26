@@ -108,9 +108,9 @@ public final class PauseStart {
                     } catch (Exception e) {
                         LOGGER.warn("resume cause error", e);
                     }
-                    service.writeErrMessage(ErrorCode.ER_YES, "The backend connection recycle failure,try it later");
+                    service.writeErrMessage(ErrorCode.ER_YES, "The backend connection recycle failure, try it later");
                 } else {
-                    service.writeErrMessage(ErrorCode.ER_YES, "Pause resume when recycle connection ,pause revert");
+                    service.writeErrMessage(ErrorCode.ER_YES, "Pause resume when recycle connection, pause revert");
                 }
             } else {
                 try {

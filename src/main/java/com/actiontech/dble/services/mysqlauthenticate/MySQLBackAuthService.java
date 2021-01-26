@@ -207,13 +207,11 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
 
     @Override
     protected void doHandle(ServiceTask task) {
-        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            if (isHandling.compareAndSet(false, true)) {
-                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
-            }
+        if (SystemConfig.getInstance().getUsePerformanceMode() != 1) {
+            super.doHandle(null);
         } else {
             if (isHandling.compareAndSet(false, true)) {
-                super.doHandle(null);
+                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }
         }
     }

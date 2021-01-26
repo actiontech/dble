@@ -10,6 +10,7 @@ public class DumpFileConfig {
     private String writePath;
     private int writeQueueSize = 500;
     private int maxValues = 4000;
+    private int threadNum;
 
     private boolean isIgnore = false;
 
@@ -70,5 +71,13 @@ public class DumpFileConfig {
 
     public void setIgnore(boolean ignore) {
         isIgnore = ignore;
+    }
+
+    public int getThreadNum() {
+        return threadNum;
+    }
+
+    public void setThreadNum(int threadNum) {
+        this.threadNum = threadNum;
     }
 }

@@ -2,7 +2,10 @@ package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.dump.handler.InsertHandler;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.NameableExecutor;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +14,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.locks.LockSupport;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -23,14 +28,17 @@ public final class DumpFileReader {
     public static final Pattern CREATE_VIEW = Pattern.compile("CREATE\\s+VIEW\\s+`?([a-zA-Z_0-9\\-_]+)`?\\s+", Pattern.CASE_INSENSITIVE);
     public static final Pattern CREATE_VIEW1 = Pattern.compile("CREATE\\s+ALGORITHM", Pattern.CASE_INSENSITIVE);
     private StringBuilder tempStr = new StringBuilder(200);
-    private BlockingQueue<String> readQueue;
+    private final BlockingQueue<String> ddlQueue;
+    private final BlockingQueue<String> insertQueue;
     private FileChannel fileChannel;
     private long fileLength;
     private long readLength;
     private int readPercent;
+    private NameableExecutor nameableExecutor;
 
-    public DumpFileReader(BlockingQueue<String> queue) {
-        this.readQueue = queue;
+    public DumpFileReader(BlockingQueue<String> queue, BlockingQueue<String> insertQueue) {
+        this.ddlQueue = queue;
+        this.insertQueue = insertQueue;
     }
 
     public void open(String fileName) throws IOException {
@@ -38,7 +46,8 @@ public final class DumpFileReader {
         this.fileLength = this.fileChannel.size();
     }
 
-    public void start(ManagerService service, DumpFileExecutor executor) throws IOException, InterruptedException {
+    public void start(ManagerService service, NameableExecutor executor) throws IOException, InterruptedException {
+        this.nameableExecutor = executor;
         LOGGER.info("begin to read dump file.");
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("dump-file-read");
         try {
@@ -47,12 +56,7 @@ public final class DumpFileReader {
             while (byteRead != -1) {
                 if (service.getConnection().isClosed()) {
                     LOGGER.info("finish to read dump file, because the connection is closed.");
-                    executor.getContext().addError("finish to read dump file, because the connection is closed.");
-                    executor.stop();
-                    return;
-                }
-                if (executor.isStop()) {
-                    LOGGER.info("finish to read dump file, because executor is stop.");
+                    nameableExecutor.shutdownNow();
                     return;
                 }
                 readLength += byteRead;
@@ -65,11 +69,11 @@ public final class DumpFileReader {
                 buffer.clear();
                 byteRead = fileChannel.read(buffer);
             }
-            if (tempStr != null) {
-                this.readQueue.put(tempStr.toString());
+            if (null != tempStr && !StringUtil.isBlank(tempStr.toString())) {
+                putSql(tempStr.toString());
                 this.tempStr = null;
             }
-            this.readQueue.put(EOF);
+            putSql(EOF);
         } finally {
             TraceManager.finishSpan(traceObject);
             try {
@@ -91,15 +95,17 @@ public final class DumpFileReader {
         int len = lines.length - 1;
 
         int i = 0;
-        if (len > 0 && tempStr != null) {
+        if (len > 0 && tempStr != null && !StringUtil.isBlank(tempStr.toString())) {
             tempStr.append(lines[0]);
-            this.readQueue.put(tempStr.toString());
+            putSql(tempStr.toString());
             tempStr = null;
             i = 1;
         }
 
         for (; i < len; i++) {
-            this.readQueue.put(lines[i]);
+            if (!StringUtil.isBlank(lines[i])) {
+                putSql(lines[i]);
+            }
         }
 
         if (!endWithEOF) {
@@ -109,14 +115,33 @@ public final class DumpFileReader {
                 tempStr.append(lines[len]);
             }
         } else {
-            if (tempStr != null) {
+            if (tempStr != null && !StringUtil.isBlank(tempStr.toString())) {
                 tempStr.append(lines[len]);
-                this.readQueue.put(tempStr.toString());
+                putSql(tempStr.toString());
                 tempStr = null;
             } else {
-                this.readQueue.put(lines[len]);
+                if (!StringUtil.isBlank(lines[len])) {
+                    putSql(lines[len]);
+                }
             }
         }
     }
 
+    public void putSql(String sql) throws InterruptedException {
+        if (StringUtil.isBlank(sql)) {
+            return;
+        }
+        Matcher matcher = InsertHandler.INSERT_STMT.matcher(sql);
+        if (matcher.find()) {
+            while (!this.ddlQueue.isEmpty() && !this.nameableExecutor.isShutdown()) {
+                LockSupport.parkNanos(1000);
+            }
+            this.insertQueue.put(sql);
+        } else {
+            while (!this.insertQueue.isEmpty() && !this.nameableExecutor.isShutdown()) {
+                LockSupport.parkNanos(1000);
+            }
+            this.ddlQueue.put(sql);
+        }
+    }
 }

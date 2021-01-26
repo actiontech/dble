@@ -4,6 +4,8 @@ import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.manager.dump.DumpException;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -24,63 +26,66 @@ import java.util.regex.Pattern;
 
 public class InsertHandler extends DefaultHandler {
 
-    private static final Pattern INSERT_STMT = Pattern.compile("insert\\s+(ignore\\s+)?into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
+    public static final Pattern INSERT_STMT = Pattern.compile("insert\\s+(ignore\\s+)?into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
     private final ShardingValuesHandler shardingValuesHandler = new ShardingValuesHandler();
     private final DefaultValuesHandler defaultValuesHandler = new DefaultValuesHandler();
-    private DefaultValuesHandler valuesHandler;
-    private String currentTable;
 
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws DumpException, SQLNonTransientException {
+        DumpFileContext fileContext = new DumpFileContext().copyOf(context);
         // get table name simply
+        int type = ServerParseFactory.getShardingParser().parse(stmt);
         String table = null;
         Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
         if (matcher.find()) {
             table = matcher.group(2);
         }
-        context.setTable(table);
-        if (table != null && table.equalsIgnoreCase(currentTable)) {
-            if (context.isSkipContext() || !(context.getTableConfig() instanceof ShardingTableConfig)) {
-                return null;
-            }
-            return RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-        } else {
-            currentTable = table;
-        }
+        fileContext.setTable(table);
 
-        if (context.isSkipContext() || !(context.getTableConfig() instanceof ShardingTableConfig)) {
+        if (fileContext.isSkipContext() || !(fileContext.getTableConfig() instanceof ShardingTableConfig)) {
+            if (!fileContext.isSkipContext() || type == ServerParse.UNLOCK) {
+                try {
+                    handleSQL(fileContext, stmt);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             return null;
         }
 
         MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
         // check columns from insert columns
-        checkColumns(context, insert.getColumns());
+        checkColumns(fileContext, insert.getColumns());
         // add
         StringBuilder insertHeader = new StringBuilder("INSERT ");
-        if (insert.isIgnore() || context.getConfig().isIgnore()) {
+        if (insert.isIgnore() || fileContext.getConfig().isIgnore()) {
             insert.setIgnore(true);
             insertHeader.append("IGNORE ");
         }
         insertHeader.append("INTO ");
         insertHeader.append("`");
-        insertHeader.append(context.getTable());
+        insertHeader.append(fileContext.getTable());
         insertHeader.append("`");
         if (!CollectionUtil.isEmpty(insert.getColumns())) {
             insertHeader.append(insert.getColumns().toString());
         }
-        insertHeader.append(" VALUES");
-        if (context.getTableConfig() instanceof ShardingTableConfig) {
-            shardingValuesHandler.reset();
+        insertHeader.append(" VALUES ");
+        DefaultValuesHandler valuesHandler;
+        if (fileContext.getTableConfig() instanceof ShardingTableConfig) {
             valuesHandler = shardingValuesHandler;
         } else {
             valuesHandler = defaultValuesHandler;
         }
         valuesHandler.setInsertHeader(insertHeader);
+        try {
+            handleStatement(fileContext, insert, valuesHandler);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return insert;
     }
 
-    @Override
-    public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
+    public void handleStatement(DumpFileContext context, SQLStatement sqlStatement, DefaultValuesHandler valuesHandler) throws InterruptedException {
         MySqlInsertStatement insert = (MySqlInsertStatement) sqlStatement;
         SQLInsertStatement.ValuesClause valueClause;
 
@@ -97,8 +102,7 @@ public class InsertHandler extends DefaultHandler {
         valuesHandler.postProcess(context);
     }
 
-    @Override
-    public void handle(DumpFileContext context, String stmt) throws InterruptedException {
+    public void handleSQL(DumpFileContext context, String stmt) throws InterruptedException {
         if (context.getConfig().isIgnore()) {
             Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
             if (matcher.find() && matcher.group(1) == null) {
@@ -106,6 +110,16 @@ public class InsertHandler extends DefaultHandler {
             }
         }
         super.handle(context, stmt);
+    }
+
+    @Override
+    public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
+
+    }
+
+    @Override
+    public void handle(DumpFileContext context, String stmt) throws InterruptedException {
+
     }
 
     private void processIncrementColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
@@ -130,8 +144,6 @@ public class InsertHandler extends DefaultHandler {
      *
      * @param context context
      * @param columns columns
-     * @throws DumpException
-     * @throws SQLNonTransientException
      */
     private void checkColumns(DumpFileContext context, List<SQLExpr> columns) throws DumpException, SQLNonTransientException {
         int partitionColumnIndex = context.getPartitionColumnIndex();

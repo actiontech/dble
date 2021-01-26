@@ -37,7 +37,7 @@ public class SchemaHandler extends DefaultHandler {
         String schema = context.getSchema();
         Map<String, ShardingNode> dbs = DbleServer.getInstance().getConfig().getShardingNodes();
         for (String shardingNode : context.getAllShardingNodes()) {
-            context.getWriter().write(shardingNode, stmt.replace("`" + schema + "`", "`" + dbs.get(shardingNode).getDatabase() + "`"), false, true);
+            context.getWriter().write(shardingNode, stmt.replace("`" + schema + "`", "`" + dbs.get(shardingNode).getDatabase() + "`"));
         }
     }
 

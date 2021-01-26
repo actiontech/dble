@@ -77,12 +77,16 @@ public class PauseInfo {
     }
 
     public PauseInfo(String value) {
-        String[] s = value.split(split);
-        this.from = s[0];
-        this.type = s[1];
-        this.shardingNodes = s[2];
-        this.connectionTimeOut = Integer.parseInt(s[3]);
-        this.queueLimit = Integer.parseInt(s[4]);
+        try {
+            String[] s = value.split(split);
+            this.from = s[0];
+            this.type = s[1];
+            this.shardingNodes = s[2];
+            this.connectionTimeOut = Integer.parseInt(s[3]);
+            this.queueLimit = Integer.parseInt(s[4]);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Construct PauseInfo from string cause error. The value is " + value);
+        }
     }
 
     public String toString() {

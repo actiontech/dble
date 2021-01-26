@@ -1,6 +1,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -23,6 +24,7 @@ public final class ClusterHelper {
         ClusterGeneralConfig.getInstance().getClusterSender().createSelfTempNode(path, value);
     }
 
+    @Nullable
     public static KvBean getKV(String path) throws Exception {
         if (ClusterGeneralConfig.getInstance().getClusterSender() == null) {
             return null;

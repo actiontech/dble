@@ -204,8 +204,10 @@ public final class PauseShardingNodeManager {
                 shardingNodes = null;
                 pauseMap.clear();
                 pauseThreadPool.continueExec();
+                LOGGER.debug("resume self done with return value {}", true);
                 return true;
             }
+            LOGGER.debug("resume self done with return value {}", false);
             return false;
         } finally {
             pauseLock.unlock();
@@ -250,7 +252,11 @@ public final class PauseShardingNodeManager {
     public void clusterPauseNotice(String shardingNode, int timeOut, int queueLimit) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             final KvBean pauseResultNode = ClusterHelper.getKV(ClusterPathUtil.getPauseResultNodePath());
-            if (pauseResultNode != null) {
+            if (pauseResultNode != null && Strings.isNotEmpty(pauseResultNode.getValue())) {
+                final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
+                if ((!Objects.equals(shardingNode, pauseInfo.getShardingNodes())) || (!Objects.equals(timeOut, pauseInfo.getConnectionTimeOut()) || (!Objects.equals(queueLimit, pauseInfo.getQueueLimit())))) {
+                    throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You can't run different PAUSE commands at the same time. Please resume previous PAUSE command first.");
+                }
                 if (isSelfPause(pauseResultNode)) {
                     throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You are paused cluster already");
                 } else {
@@ -259,6 +265,7 @@ public final class PauseShardingNodeManager {
             }
             ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(),
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
+            LOGGER.debug("set cluster status for notice done.");
         }
     }
 
@@ -308,6 +315,7 @@ public final class PauseShardingNodeManager {
 
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
+            LOGGER.debug("resumed cluster");
         }
 
     }
@@ -315,6 +323,8 @@ public final class PauseShardingNodeManager {
     public void releaseDistributeLock() {
         if (distributeLock != null) {
             distributeLock.release();
+            //not take effect immediately
+            LOGGER.debug("release Pause lock");
             distributeLock = null;
         }
     }
@@ -327,6 +337,7 @@ public final class PauseShardingNodeManager {
             if (!templock.acquire()) {
                 return false;
             }
+            LOGGER.debug("fetched Pause lock");
             distributeLock = templock;
         }
         return true;

@@ -120,9 +120,9 @@ public final class SetHandler {
     private static MysqlVariable handleTransaction(MySqlSetTransactionStatement setStatement) throws SQLSyntaxErrorException {
         //always single
         MysqlVariable item;
-        if (setStatement.getGlobal() == null) {
+        if (setStatement.getGlobal() == null && setStatement.getSession() == null) {
             throw new SQLSyntaxErrorException("setting transaction without any SESSION or GLOBAL keyword is not supported now");
-        } else if (setStatement.getGlobal()) {
+        } else if (setStatement.getGlobal() != null && setStatement.getGlobal()) {
             throw new SQLSyntaxErrorException("setting GLOBAL value is not supported");
         } else if (setStatement.getAccessModel() != null) {
             if (setStatement.getAccessModel().equals("ONLY")) {

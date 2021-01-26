@@ -73,7 +73,7 @@ public final class PauseStart {
         }
 
         if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "other instance is in operation");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node is doing pause operation concurrently");
             return;
         }
 

@@ -397,6 +397,14 @@ public abstract class AbstractConnection implements Connection {
             service.cleanup();
         }
 
+        if (!decompressUnfinishedDataQueue.isEmpty()) {
+            decompressUnfinishedDataQueue.clear();
+        }
+
+        if (!compressUnfinishedDataQueue.isEmpty()) {
+            compressUnfinishedDataQueue.clear();
+        }
+
         WriteOutTask task;
         while ((task = writeQueue.poll()) != null) {
             recycle(task.getBuffer());

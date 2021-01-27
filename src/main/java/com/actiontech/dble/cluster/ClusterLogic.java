@@ -433,7 +433,8 @@ public final class ClusterLogic {
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock) && !isWriteToLocal) {
             return;
         }
-        if (!StringUtil.isEmpty(sequenceConfig)) {
+        boolean loadByCluster = ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL || ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT;
+        if (loadByCluster && !StringUtil.isEmpty(sequenceConfig)) {
             SequenceConverter sequenceConverter = new SequenceConverter();
             Properties props = sequenceConverter.jsonToProperties(sequenceConfig);
             PropertiesUtil.storeProps(props, sequenceConverter.getFileName());

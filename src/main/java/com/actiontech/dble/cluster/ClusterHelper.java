@@ -60,6 +60,7 @@ public final class ClusterHelper {
         ClusterLogic.syncDbJsonToCluster();
         ClusterLogic.syncShardingJsonToCluster();
         ClusterLogic.syncUseJsonToCluster();
+        ClusterLogic.syncDbGroupStatusToCluster();
     }
 
     public static String getPathValue(String path) throws Exception {

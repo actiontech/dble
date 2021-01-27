@@ -20,7 +20,7 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLShowCreateViewStatement;
 
 import java.nio.ByteBuffer;
-import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 
 /**
  * Created by szf on 2017/12/15.
@@ -71,34 +71,33 @@ public final class ShowCreateView {
                 view = statement.getName().toString();
             }
             sendOutTheViewInfo(service, schema, view);
-        } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+        } catch (SQLSyntaxErrorException syntaxExe) {
+            service.writeErrMessage("42000", syntaxExe.getMessage(), ErrorCode.ER_PARSE_ERROR);
         }
     }
 
     public static void response(ShardingService service, String schema, String viewName) {
-        try {
-            sendOutTheViewInfo(service, schema, viewName);
-        } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-        }
+        sendOutTheViewInfo(service, schema, viewName);
     }
 
-    public static void sendOutTheViewInfo(ShardingService service, String schema, String viewName) throws SQLException {
+    public static void sendOutTheViewInfo(ShardingService service, String schema, String viewName) {
         //check if the view or sharding doesn't exist
         if (schema == null || "".equals(schema)) {
-            throw new SQLException("No database selected", "3D000", ErrorCode.ER_NO_DB_ERROR);
+            service.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+            return;
         }
 
         schema = StringUtil.removeBackQuote(schema);
         SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema);
         if (schemaMeta == null) {
-            throw new SQLException("Table '" + schema + "." + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            service.writeErrMessage("42S02", "Table '" + schema + "." + viewName + "' doesn't exist", ErrorCode.ER_NO_SUCH_TABLE);
+            return;
         }
         viewName = StringUtil.removeBackQuote(viewName);
         ViewMeta view = schemaMeta.getViewMetas().get(viewName);
         if (view == null) {
-            throw new SQLException("Table '" + schema + "." + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            service.writeErrMessage("42S02", "Table '" + schema + "." + viewName + "' doesn't exist", ErrorCode.ER_NO_SUCH_TABLE);
+            return;
         }
 
         ByteBuffer buffer = service.allocate();
@@ -125,9 +124,9 @@ public final class ShowCreateView {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(view.getViewName(), charset));
         if (view.getViewColumnMeta() != null && view.getViewColumnMeta().size() > 0) {
-            row.add(StringUtil.encode("create view " + view.getViewName() + view.getViewColumnMetaString() + " as " + view.getSelectSql(), charset));
+            row.add(StringUtil.encode("create view " + view.getViewName() + view.getViewColumnMetaString() + " as" + view.getSelectSql(), charset));
         } else {
-            row.add(StringUtil.encode("create view " + view.getViewName() + " as " + view.getSelectSql(), charset));
+            row.add(StringUtil.encode("create view " + view.getViewName() + " as" + view.getSelectSql(), charset));
         }
         row.add(StringUtil.encode(charset, charset));
         row.add(StringUtil.encode(collationConnection, charset));

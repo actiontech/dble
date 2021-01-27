@@ -1033,7 +1033,7 @@ public class ShardingServerParse extends AbstractServerParse {
                         case 'W':
                             return rollbackWorkCheck(stmt, offset);
                         default:
-                            break;
+                            return OTHER;
                     }
                 }
                 return ROLLBACK;

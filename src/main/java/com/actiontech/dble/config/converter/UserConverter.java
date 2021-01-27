@@ -15,7 +15,6 @@ import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
@@ -32,19 +31,22 @@ import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 public class UserConverter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserConverter.class);
+    public static final String TYPE_MANAGER_USER = "managerUser";
+    public static final String TYPE_SHARDING_USER = "shardingUser";
+    public static final String TYPE_RWSPLIT_USER = "rwSplitUser";
     private final Gson gson;
     private final Map<UserName, UserConfig> userConfigMap = Maps.newLinkedHashMap();
     private final Map<String, Properties> blackListConfigMap = Maps.newLinkedHashMap();
     private final AtomicInteger userId = new AtomicInteger(0);
+    private static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
 
     public UserConverter() {
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -72,13 +74,11 @@ public class UserConverter {
         return this.gson.toJson(jsonObj);
     }
 
-    public String userXmlToJson() throws JAXBException, XMLStreamException {
+    public String userXmlToJson() throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Users.class);
         xmlProcess.initJaxbClass();
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + ConfigFileName.USER_XML;
-        String json = parseUserXmlFileToJson(xmlProcess, path);
-        return json;
+        return parseUserXmlFileToJson(xmlProcess);
     }
 
     public void userJsonToMap(String userJson, ProblemReporter problemReporter) {
@@ -104,11 +104,11 @@ public class UserConverter {
         }
     }
 
-    private String parseUserXmlFileToJson(XmlProcessBase xmlParseBase, String path) throws JAXBException, XMLStreamException {
+    private String parseUserXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
         // xml file to bean
         Users usersBean;
         try {
-            usersBean = (Users) xmlParseBase.baseParseXmlToBean(path);
+            usersBean = (Users) xmlParseBase.baseParseXmlToBean(ConfigFileName.USER_XML, ConfigFileName.USER_XSD);
         } catch (Exception e) {
             LOGGER.warn("parseXmlToBean Exception", e);
             throw e;
@@ -213,8 +213,8 @@ public class UserConverter {
     }
 
     private UserPrivilegesConfig loadPrivilegesConfig(Privileges privileges, UserConfig userConfig) {
-        List<Schema> schemaList = null == privileges ? Lists.newArrayList() : Optional.ofNullable(privileges.getSchema()).orElse(Collections.EMPTY_LIST);
-        boolean check = null == privileges ? false : Optional.ofNullable(privileges.getCheck()).orElse(false);
+        List<Schema> schemaList = null == privileges ? Lists.newArrayList() : Optional.ofNullable(privileges.getSchema()).orElse(Lists.newArrayList());
+        boolean check = null != privileges && Optional.ofNullable(privileges.getCheck()).orElse(false);
         if (schemaList.isEmpty()) {
             return null;
         }
@@ -224,7 +224,7 @@ public class UserConverter {
             String schemaName = schema.getName();
             String schemaDml = schema.getDml();
 
-            if (!XMLUserLoader.DML_PATTERN.matcher(schemaDml).matches())
+            if (!DML_PATTERN.matcher(schemaDml).matches())
                 throw new ConfigException("User [" + userConfig.getName() + "]'s schema [" + schemaName + "]'s privilege's dml is not correct");
             int[] dml1Array = new int[schemaDml.length()];
             for (int offset1 = 0; offset1 < schemaDml.length(); offset1++) {
@@ -238,7 +238,7 @@ public class UserConverter {
                 String tableDml = table.getDml();
                 UserPrivilegesConfig.TablePrivilege tablePrivilege = new UserPrivilegesConfig.TablePrivilege();
 
-                if (!XMLUserLoader.DML_PATTERN.matcher(tableDml).matches())
+                if (!DML_PATTERN.matcher(tableDml).matches())
                     throw new ConfigException("User [" + userConfig.getName() + "]'s schema [" + schemaName + "]'s table [" + tableDml + "]'s privilege's dml is not correct");
                 int[] dml2Array = new int[tableDml.length()];
                 for (int offset2 = 0; offset2 < tableDml.length(); offset2++) {

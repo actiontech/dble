@@ -78,7 +78,7 @@ public class ServerConfig {
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
-        confInitNew = new ConfigInitializer(false);
+        confInitNew = new ConfigInitializer();
         this.users = confInitNew.getUsers();
         this.dbGroups = confInitNew.getDbGroups();
 

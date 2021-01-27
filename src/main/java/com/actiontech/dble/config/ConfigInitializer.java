@@ -14,13 +14,9 @@ import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
 import com.actiontech.dble.config.helper.TestSchemasTask;
 import com.actiontech.dble.config.helper.TestTask;
-import com.actiontech.dble.config.loader.xml.XMLDbLoader;
-import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
-import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
-import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
@@ -29,13 +25,10 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.util.*;
 
 /**
@@ -58,36 +51,11 @@ public class ConfigInitializer implements ProblemReporter {
     private String userConfig;
     private String sequenceConfig;
 
-    private List<ErrorInfo> errorInfos = new ArrayList<>();
+    private final List<ErrorInfo> errorInfos = new ArrayList<>();
 
-    public ConfigInitializer(boolean lowerCaseNames) {
+    public ConfigInitializer() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("load-config-file");
         try {
-            //load user.xml
-            XMLUserLoader userLoader = new XMLUserLoader(null, this);
-            this.users = userLoader.getUsers();
-            this.blacklistConfig = userLoader.getBlacklistConfig();
-
-            //load db.xml
-            XMLDbLoader dbLoader = new XMLDbLoader(null, this);
-            this.dbGroups = dbLoader.getDbGroups();
-
-            if (userLoader.isContainsShardingUser()) {
-                //load sharding.xml
-                XMLShardingLoader shardingLoader = new XMLShardingLoader(lowerCaseNames, this);
-                this.schemas = shardingLoader.getSchemas();
-                this.erRelations = shardingLoader.getErRelations();
-                this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
-                this.functions = shardingLoader.getFunctions();
-
-                deleteUselessShardingNode();
-            } else {
-                this.schemas = Collections.EMPTY_MAP;
-                this.erRelations = Collections.EMPTY_MAP;
-                this.shardingNodes = Collections.EMPTY_MAP;
-                this.functions = Collections.EMPTY_MAP;
-            }
-
             //sync json
             this.userConfig = new UserConverter().userXmlToJson();
             this.dbConfig = DBConverter.dbXmlToJson();
@@ -97,9 +65,8 @@ public class ConfigInitializer implements ProblemReporter {
                 this.sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
             }
             this.shardingConfig = new ShardingConverter().shardingXmlToJson();
-            checkRwSplitDbGroup();
-            checkWriteDbInstance();
-        } catch (JAXBException | XMLStreamException e) {
+            init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig);
+        } catch (Exception e) {
             throw new ConfigException(e);
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -107,32 +74,37 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     public ConfigInitializer(String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) {
+        init(userConfig, dbConfig, shardingConfig, sequenceConfig);
+    }
+
+    private void init(String userJson, String dbJson, String shardingJson, String sequenceJson) {
         //user
         UserConverter userConverter = new UserConverter();
-        userConverter.userJsonToMap(userConfig, this);
+        userConverter.userJsonToMap(userJson, this);
         this.users = userConverter.getUserConfigMap();
         this.blacklistConfig = userConverter.getBlackListConfigMap();
-        this.userConfig = userConfig;
+        this.userConfig = userJson;
 
         //db
         DBConverter dbConverter = new DBConverter();
-        dbConverter.dbJsonToMap(dbConfig, this);
+        dbConverter.dbJsonToMap(dbJson, this);
         this.dbGroups = dbConverter.getDbGroupMap();
-        this.dbConfig = dbConfig;
+        this.dbConfig = dbJson;
 
         //sharding
         ShardingConverter shardingConverter = new ShardingConverter();
-        shardingConverter.shardingJsonToMap(shardingConfig, dbConverter.getDbGroupMap(), sequenceConfig, this);
+        shardingConverter.shardingJsonToMap(shardingJson, dbConverter.getDbGroupMap(), sequenceJson, this);
         this.schemas = shardingConverter.getSchemaConfigMap();
         this.erRelations = shardingConverter.getErRelations();
         this.shardingNodes = shardingConverter.getShardingNodeMap();
         this.functions = shardingConverter.getFunctionMap();
-        this.shardingConfig = shardingConfig;
-        this.sequenceConfig = sequenceConfig;
+        this.shardingConfig = shardingJson;
+        this.sequenceConfig = sequenceJson;
 
         checkRwSplitDbGroup();
         checkWriteDbInstance();
     }
+
 
     @Override
     public void warn(String problem) {
@@ -172,51 +144,9 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private boolean checkDbInstanceFake(PhysicalDbInstance source) {
-        if (("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equals(source.getConfig().getIp()) ||
+        return ("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equals(source.getConfig().getIp()) ||
                 "0:0:0:0:0:0:0:1".equals(source.getConfig().getIp()) || "::1".equals(source.getConfig().getIp())) &&
-                (source.getConfig().getPort() == SystemConfig.getInstance().getServerPort() || source.getConfig().getPort() == SystemConfig.getInstance().getManagerPort())) {
-            return true;
-        }
-        return false;
-    }
-
-    private void deleteUselessShardingNode() {
-        if (schemas.size() == 0) {
-            errorInfos.add(new ErrorInfo("Xml", "WARNING", "No sharding available"));
-        }
-        Set<String> allUseShardingNode = new HashSet<>();
-        for (SchemaConfig sc : schemas.values()) {
-            // check shardingNode / dbGroup
-            Set<String> shardingNodeNames = sc.getAllShardingNodes();
-            allUseShardingNode.addAll(shardingNodeNames);
-        }
-
-        // add global sequence node when it is some dedicated servers */
-        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
-            IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
-            redundancy.load(false);
-            allUseShardingNode.addAll(redundancy.getShardingNodes());
-        }
-
-        //delete redundancy shardingNode
-        Iterator<Map.Entry<String, ShardingNode>> iterator = this.shardingNodes.entrySet().iterator();
-        PhysicalDbGroup shardingNodeGroup;
-        while (iterator.hasNext()) {
-            Map.Entry<String, ShardingNode> entry = iterator.next();
-            String shardingNodeName = entry.getKey();
-            if (allUseShardingNode.contains(shardingNodeName)) {
-                shardingNodeGroup = entry.getValue().getDbGroup();
-                if (shardingNodeGroup != null) {
-                    shardingNodeGroup.setShardingUseless(false);
-                } else {
-                    throw new ConfigException("dbGroup not exists " + entry.getValue().getDbGroupName());
-                }
-            } else {
-                LOGGER.info("shardingNode " + shardingNodeName + " is useless,server will ignore it");
-                errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));
-                iterator.remove();
-            }
-        }
+                (source.getConfig().getPort() == SystemConfig.getInstance().getServerPort() || source.getConfig().getPort() == SystemConfig.getInstance().getManagerPort());
     }
 
     private void checkRwSplitDbGroup() {
@@ -373,16 +303,6 @@ public class ConfigInitializer implements ProblemReporter {
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
         return erRelations;
-    }
-
-    private Map<String, ShardingNode> initShardingNodes(Map<String, ShardingNodeConfig> nodeConf) {
-        Map<String, ShardingNode> nodes = new HashMap<>(nodeConf.size());
-        for (ShardingNodeConfig conf : nodeConf.values()) {
-            PhysicalDbGroup pool = this.dbGroups.get(conf.getDbGroupName());
-            ShardingNode shardingNode = new ShardingNode(conf.getDbGroupName(), conf.getName(), conf.getDatabase(), pool);
-            nodes.put(shardingNode.getName(), shardingNode);
-        }
-        return nodes;
     }
 
     public boolean isFullyConfigured() {

@@ -27,11 +27,12 @@ public class ZkSender implements ClusterSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkSender.class);
 
     @Override
-    public void initCluster() {
+    public void initCluster() throws Exception {
         try {
             ZktoXmlMain.loadZkToFile();
         } catch (Exception e) {
             LOGGER.error("error:", e);
+            throw e;
         }
     }
 
@@ -145,7 +146,7 @@ public class ZkSender implements ClusterSender {
     }
 
     @Override
-    public void forceResumePause() throws Exception {
+    public void forceResumePause() {
         ZktoXmlMain.getPauseShardingNodeListener().notifyCluster();
     }
 }

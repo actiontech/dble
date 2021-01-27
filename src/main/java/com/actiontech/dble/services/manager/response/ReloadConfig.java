@@ -251,7 +251,7 @@ public final class ReloadConfig {
             ConfigInitializer loader;
             try {
                 if (null == userConfig && null == dbConfig && null == shardingConfig && null == sequenceConfig) {
-                    loader = new ConfigInitializer(false);
+                    loader = new ConfigInitializer();
                 } else {
                     loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
                 }

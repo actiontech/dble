@@ -10,8 +10,7 @@ import com.actiontech.dble.route.sequence.handler.IncrSequenceHandler;
 import com.actiontech.dble.util.ResourceUtil;
 
 import java.io.*;
-import java.util.Enumeration;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * PropertiesUtil
@@ -22,6 +21,11 @@ import java.util.Properties;
  */
 public final class PropertiesUtil {
     private PropertiesUtil() {
+    }
+
+    public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames) {
+        Properties props = loadProps(propsFile);
+        return handleLowerCase(props, isLowerCaseTableNames);
     }
 
     public static Properties loadProps(String propsFile) {
@@ -37,11 +41,22 @@ public final class PropertiesUtil {
         return props;
     }
 
-    public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames) {
-        Properties props = loadProps(propsFile);
-        return handleLowerCase(props, isLowerCaseTableNames);
+    public static Map<String, String> getOrderedProperties(String propsFile) {
+        try (InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile)) {
+            if (inp == null) {
+                throw new java.lang.RuntimeException("sequence properties not found " + propsFile);
+            }
+            Map<String, String> mp = new LinkedHashMap<>();
+            (new Properties() {
+                public synchronized Object put(Object key, Object value) {
+                    return mp.put((String) key, (String) value);
+                }
+            }).load(inp);
+            return mp;
+        } catch (IOException e) {
+            throw new java.lang.RuntimeException(e);
+        }
     }
-
 
     public static Properties handleLowerCase(Properties props, boolean isLowerCaseTableNames) {
         if (isLowerCaseTableNames) {
@@ -62,7 +77,6 @@ public final class PropertiesUtil {
             return props;
         }
     }
-
 
     public static void storeProps(Properties props, String propsFile) {
         try (OutputStream os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile)) {

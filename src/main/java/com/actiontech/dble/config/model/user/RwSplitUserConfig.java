@@ -38,7 +38,7 @@ public class RwSplitUserConfig extends ServerUserConfig {
             return 0;
         }
         boolean exist;
-        Set<String> schemas = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute();
+        Set<String> schemas = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute(dbGroup);
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             Optional<String> result = schemas.stream().filter(item -> StringUtil.equals(item.toLowerCase(), schema.toLowerCase())).findFirst();
             exist = result.isPresent();

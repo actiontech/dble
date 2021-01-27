@@ -67,7 +67,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private final MySQLProtoLogicHandler protoLogicHandler;
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 

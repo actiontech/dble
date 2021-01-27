@@ -11,6 +11,7 @@ import com.actiontech.dble.server.variables.MysqlVariable;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class BusinessService extends FrontEndService {
+    protected volatile boolean txChainBegin;
     protected volatile boolean txStarted;
     protected final AtomicLong queriesCounter = new AtomicLong(0);
     protected final AtomicLong transactionsCounter = new AtomicLong(0);
@@ -25,7 +26,11 @@ public abstract class BusinessService extends FrontEndService {
     }
 
     public void setTxStart(boolean txStart) {
-        this.txStarted = txStart;
+        if (!txStart && txChainBegin) {
+            txChainBegin = false;
+        } else {
+            this.txStarted = txStart;
+        }
     }
 
     public void queryCount() {

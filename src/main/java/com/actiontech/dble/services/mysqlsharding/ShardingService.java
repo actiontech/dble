@@ -72,7 +72,6 @@ public class ShardingService extends BusinessService {
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
     protected String executeSql;
-    private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
@@ -613,14 +612,6 @@ public class ShardingService extends BusinessService {
 
     protected void sessionStart() {
         TraceManager.sessionStart(this, "sharding-server-start");
-    }
-
-    public boolean isTxChainBegin() {
-        return txChainBegin;
-    }
-
-    public void setTxChainBegin(boolean txChainBegin) {
-        this.txChainBegin = txChainBegin;
     }
 
     public boolean isTxInterrupted() {

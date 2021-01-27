@@ -262,6 +262,11 @@ public class RWSplitService extends BusinessService {
     }
 
     @Override
+    public void setTxStart(boolean txStart) {
+        this.txStarted = txStart;
+    }
+
+    @Override
     public void killAndClose(String reason) {
         session.close(reason);
         connection.close(reason);

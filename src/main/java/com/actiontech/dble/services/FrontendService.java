@@ -20,15 +20,11 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendService.class);
 
     private ServiceTask currentTask = null;
     private final AtomicInteger packetId;

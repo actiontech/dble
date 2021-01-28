@@ -29,6 +29,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.bind.UnmarshalException;
 import java.util.*;
 
 /**
@@ -67,6 +68,9 @@ public class ConfigInitializer implements ProblemReporter {
             this.shardingConfig = new ShardingConverter().shardingXmlToJson();
             init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig);
         } catch (Exception e) {
+            if (e instanceof UnmarshalException) {
+                throw new ConfigException(((UnmarshalException) e).getLinkedException());
+            }
             throw new ConfigException(e);
         } finally {
             TraceManager.finishSpan(traceObject);

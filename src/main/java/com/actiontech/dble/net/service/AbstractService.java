@@ -10,11 +10,13 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -223,6 +225,7 @@ public abstract class AbstractService implements Service {
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlClose());
         markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);

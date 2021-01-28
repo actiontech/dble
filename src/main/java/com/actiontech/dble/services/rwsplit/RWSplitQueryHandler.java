@@ -10,11 +10,15 @@ import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
+import com.actiontech.dble.services.rwsplit.handle.XaHandler;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 public class RWSplitQueryHandler implements FrontendQueryHandler {
 
@@ -30,6 +34,8 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlStart());
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
         try {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
@@ -86,13 +92,25 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:
-                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setTxStart(true));
+                        session.execute(true, (isSuccess, rwSplitService) -> {
+                            if (rwSplitService.isTxStart() || !rwSplitService.isAutocommit()) {
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEndBySet());
+                            }
+                            rwSplitService.getAndIncrementTxId();
+                            rwSplitService.setTxStart(true);
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByBegin(rwSplitService));
+                        });
                         break;
                     case RwSplitServerParse.COMMIT:
                     case RwSplitServerParse.ROLLBACK:
                         session.execute(true, (isSuccess, rwSplitService) -> {
                             rwSplitService.setTxStart(false);
                             session.getService().singleTransactionsCount();
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEndBySet());
+                            if (!rwSplitService.isAutocommit()) {
+                                rwSplitService.getAndIncrementTxId();
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByBegin(rwSplitService));
+                            }
                         });
                         break;
                     case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
@@ -107,6 +125,13 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.DROP_TABLE:
                         TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
+                        break;
+                    case RwSplitServerParse.XA_START:
+                        XaHandler.xaStart(sql, session.getService(), rs >>> 8);
+                        break;
+                    case RwSplitServerParse.XA_COMMIT:
+                    case RwSplitServerParse.XA_ROLLBACK:
+                        XaHandler.xaFinish(session.getService());
                         break;
                     default:
                         // 1. DDL

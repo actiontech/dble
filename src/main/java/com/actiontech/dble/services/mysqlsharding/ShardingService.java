@@ -73,7 +73,6 @@ public class ShardingService extends BusinessService {
 
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
@@ -85,6 +84,7 @@ public class ShardingService extends BusinessService {
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
+    protected volatile boolean setNoAutoCommit = false;
 
     public ShardingService(AbstractConnection connection) {
         super(connection);
@@ -124,6 +124,7 @@ public class ShardingService extends BusinessService {
                         Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
                     }
                     if (!autocommit && session.getTargetCount() > 0) {
+                        setNoAutoCommit = true;
                         session.implicitCommit(() -> {
                             autocommit = true;
                             txStarted = false;
@@ -389,7 +390,7 @@ public class ShardingService extends BusinessService {
 
     public void setTxInterrupt(String msg) {
         if ((!autocommit || txStarted) && !txInterrupted) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByInterrupt());
+            //Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByInterrupt());
             txInterrupted = true;
             this.txInterruptMsg = "Transaction error, need to rollback.Reason:[" + msg + "]";
         }
@@ -438,9 +439,6 @@ public class ShardingService extends BusinessService {
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
-        //if (vendorCode == ErrorCode.ER_PARSE_ERROR) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlClose());
-        //}
     }
 
     @Override
@@ -462,11 +460,7 @@ public class ShardingService extends BusinessService {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
-            setTxStart(true);
-            if (autocommit) {
-                getAndIncrementXid();
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(getSession2())).ifPresent(r -> r.onTxStartByBegin(this));
-            }
+            txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }
@@ -672,14 +666,6 @@ public class ShardingService extends BusinessService {
         TraceManager.sessionStart(this, "sharding-server-start");
     }
 
-    public boolean isTxChainBegin() {
-        return txChainBegin;
-    }
-
-    public void setTxChainBegin(boolean txChainBegin) {
-        this.txChainBegin = txChainBegin;
-    }
-
     public boolean isTxInterrupted() {
         return txInterrupted;
     }
@@ -760,6 +746,14 @@ public class ShardingService extends BusinessService {
 
     private boolean isEndOfDataFile(byte[] data) {
         return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
+    }
+
+    public boolean isSetNoAutoCommit() {
+        return setNoAutoCommit;
+    }
+
+    public void setSetNoAutoCommit(boolean setNoAutoCommit) {
+        this.setNoAutoCommit = setNoAutoCommit;
     }
 
     public String toString() {

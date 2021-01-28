@@ -42,7 +42,7 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
             StatisticFrontendSqlEntry fEntry = ((StatisticFrontendSqlEntry) entry);
             if (fEntry.getSqlType() == 7) {
                 List<String> tableList = ManagerTableUtil.getTables(fEntry.getSchema(), fEntry.getSql());
-                if (!tableList.isEmpty()) {
+                if (!tableList.isEmpty() && tableList.size() > 1) {
                     String tables = String.join(",", tableList);
                     String key = fEntry.getFrontend().getUser() + "-" + tables;
                     Record currRecord;

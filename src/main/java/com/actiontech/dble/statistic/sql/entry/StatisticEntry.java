@@ -1,37 +1,26 @@
 package com.actiontech.dble.statistic.sql.entry;
 
-import com.actiontech.dble.server.parser.ServerParseFactory;
-
 public class StatisticEntry {
     private FrontendInfo frontend;
-    private int sqlType = -99;
-    private long rows = 0L;
+    protected long rows = 0L;
     private long startTime = 0L;
     private long allEndTime = 0L;
+    private int txType;
     private long txId = -1L;
-    private String sql;
+    protected String xaId;
 
     public StatisticEntry(FrontendInfo frontendInfo) {
         this.frontend = frontendInfo;
     }
 
-    public StatisticEntry(FrontendInfo frontendInfo, int sqlType, String sql) {
+    public StatisticEntry(FrontendInfo frontendInfo, long txId, long startTime) {
         this.frontend = frontendInfo;
-        this.sqlType = sqlType;
-        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
-    }
-
-    public StatisticEntry(FrontendInfo frontendInfo, int sqlType, long txId, long startTime) {
-        this.frontend = frontendInfo;
-        this.sqlType = sqlType;
         this.txId = txId;
         this.startTime = startTime;
     }
 
-    public StatisticEntry(FrontendInfo frontendInfo, int sqlType, String sql, long startTime) {
+    public StatisticEntry(FrontendInfo frontendInfo, long startTime) {
         this.frontend = frontendInfo;
-        this.sqlType = sqlType;
-        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
         this.startTime = startTime;
     }
 
@@ -41,6 +30,21 @@ public class StatisticEntry {
 
     public long getTxId() {
         return txId;
+    }
+
+    public String getXaId() {
+        return xaId;
+    }
+
+    public void setXaId(String xaId) {
+        if (xaId != null) {
+            this.xaId = xaId;
+            this.txType = 1;
+        }
+    }
+
+    public int getTxType() {
+        return txType;
     }
 
     public long getRows() {
@@ -69,21 +73,6 @@ public class StatisticEntry {
 
     public void setAllEndTime(long allEndTime) {
         this.allEndTime = allEndTime;
-    }
-
-    public int getSqlType() {
-        if (sqlType == -99) {
-            this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
-        }
-        return sqlType;
-    }
-
-    public String getSql() {
-        return sql;
-    }
-
-    public void setSql(String sql) {
-        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
     }
 
     public FrontendInfo getFrontend() {

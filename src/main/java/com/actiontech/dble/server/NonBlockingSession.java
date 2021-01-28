@@ -927,13 +927,17 @@ public class NonBlockingSession extends Session {
             transactionManager.setRetryXa(true);
         }
         needWaitFinished = false;
-        if (shardingService.isTxStart()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByCommit());
+        if (shardingService.isTxChainBegin() && shardingService.isAutocommit()) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByBegin(shardingService));
         }
         shardingService.setTxStart(false);
         shardingService.getAndIncrementXid();
-        if (!shardingService.isAutocommit()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(shardingService));
+        if (shardingService.isSetNoAutoCommit()) {
+            shardingService.setSetNoAutoCommit(false);
+        } else {
+            if (!shardingService.isAutocommit()) {
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(shardingService));
+            }
         }
     }
 
@@ -983,6 +987,7 @@ public class NonBlockingSession extends Session {
             String sql = rrs.getSrcStatement();
             if (shardingService.isTxStart()) {
                 shardingService.setTxStart(false);
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(shardingService)).ifPresent(r -> r.onTxEndByCommit());
                 shardingService.getAndIncrementXid();
             }
             if (rrs.isOnline()) {

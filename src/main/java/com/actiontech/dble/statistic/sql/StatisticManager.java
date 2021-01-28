@@ -5,10 +5,10 @@ import com.actiontech.dble.services.manager.information.tables.statistic.Associa
 import com.actiontech.dble.services.manager.information.tables.statistic.FrontendByBackendByEntryByUser;
 import com.actiontech.dble.services.manager.information.tables.statistic.TableByUserByEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
-import com.actiontech.dble.statistic.sql.handler.FrontendByBackendByEntryByUserCalcHandler;
-import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
 import com.actiontech.dble.statistic.sql.handler.AssociateTablesByEntryByUserCalcHandler;
+import com.actiontech.dble.statistic.sql.handler.FrontendByBackendByEntryByUserCalcHandler;
 import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +40,6 @@ public final class StatisticManager {
         // TODO other handler ....
     }
 
-
     // start
     public void start() {
         if (isStart) return;
@@ -55,6 +54,7 @@ public final class StatisticManager {
         if (!isStart) return;
         statisticListener.stop();
         disruptor.stop();
+        statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
         isStart = false;
     }
 

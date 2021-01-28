@@ -5,13 +5,16 @@ import java.util.List;
 
 public class StatisticTxEntry extends StatisticEntry {
     private List<StatisticFrontendSqlEntry> frontendSqlEntry = new ArrayList<>();
+    // 0：normal，1：xa
+
     //set： 0
     //start transaction & begin：1
-    private int startType = 0;
-    private int endType = 0;
+    private int startType;
+    private int endType;
 
-    public StatisticTxEntry(FrontendInfo frontendInfo, long txId, int startType, long startTime) {
-        super(frontendInfo, -1, txId, startTime);
+    public StatisticTxEntry(FrontendInfo frontendInfo, String xaId, long txId, int startType, long startTime) {
+        super(frontendInfo, txId, startTime);
+        setXaId(xaId);
         this.startType = startType;
     }
 
@@ -31,8 +34,12 @@ public class StatisticTxEntry extends StatisticEntry {
         return startType;
     }
 
-    public void setEndType(int endType) {
-        this.endType = endType;
+    public void setEndType(int type) {
+        this.endType = type;
+    }
+
+    public int getEndType() {
+        return endType;
     }
 
     @Override

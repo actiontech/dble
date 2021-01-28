@@ -41,6 +41,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
     public void handle(StatisticEntry entry) {
         synchronized (records) {
             if (entry instanceof StatisticTxEntry) {
+                Set<String> keys = new HashSet<>();
                 ((StatisticTxEntry) entry).getEntryList().
                         stream().
                         flatMap(k -> k.getBackendSqlEntrys().values().stream()).
@@ -48,16 +49,21 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                         stream().
                         forEach(v -> {
                             String key = v.getKey();
+                            keys.add(key);
                             Record currRecord;
                             boolean isNew = false;
                             if (isNew = ((currRecord = records.get(key)) == null)) {
                                 currRecord = new Record(++entryId, entry.getFrontend(), v.getBackend());
                             }
-                            currRecord.addTx(v.getRows(), v.getDuration());
+                            currRecord.addTxRows(v.getRows());
                             if (isNew) {
                                 records.put(key, currRecord);
                             }
                         });
+                keys.stream().forEach(k -> {
+                    Record currRecord = records.get(k);
+                    currRecord.addTx(entry.getDuration());
+                });
             } else if (entry instanceof StatisticBackendSqlEntry) {
                 StatisticBackendSqlEntry backendSqlEntry = (StatisticBackendSqlEntry) entry;
                 String key = backendSqlEntry.getKey();
@@ -142,6 +148,16 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
             txRows += row;
             txTime += time;
             lastUpdateTime = System.currentTimeMillis();
+        }
+
+        public void addTx(long time) {
+            txCount += 1;
+            txTime += time;
+            lastUpdateTime = System.currentTimeMillis();
+        }
+
+        public void addTxRows(long row) {
+            txRows += row;
         }
 
         public void addInsert(long row, long time) {

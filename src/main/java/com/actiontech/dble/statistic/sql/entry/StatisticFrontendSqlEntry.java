@@ -1,25 +1,21 @@
 package com.actiontech.dble.statistic.sql.entry;
 
-import java.util.LinkedHashMap;
+import com.actiontech.dble.server.parser.ServerParseFactory;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
 public class StatisticFrontendSqlEntry extends StatisticEntry {
 
     private String schema;
-    private volatile Map<String, StatisticBackendSqlEntry> backendSqlEntrys = new LinkedHashMap(8);
+    private int sqlType = -99;
+    private String sql;
+    private volatile Map<String, StatisticBackendSqlEntry> backendSqlEntrys = new HashMap<>(8);
     private volatile LongAdder examinedRows = new LongAdder();
 
-    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo) {
-        super(frontendInfo);
-    }
-
-    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, int sqlType, long txId, long startTime) {
-        super(frontendInfo, sqlType, txId, startTime);
-    }
-
-    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, int sqlType, String routeSql, long startTime) {
-        super(frontendInfo, sqlType, routeSql, startTime);
+    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long txId, long startTime) {
+        super(frontendInfo, txId, startTime);
     }
 
     public LongAdder getExaminedRows() {
@@ -57,6 +53,26 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
 
     public void setSchema(String schema) {
         this.schema = schema;
+    }
+
+    public int getSqlType() {
+        if (sqlType == -99) {
+            this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
+        }
+        return sqlType;
+    }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
+    }
+
+    public void setRowsAndExaminedRows(long rows) {
+        super.rows = rows;
+        examinedRows.add(rows);
     }
 
     @Override

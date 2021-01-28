@@ -17,13 +17,16 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.singleton.TsQueriesCounter;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,11 +46,13 @@ public class RWSplitService extends BusinessService {
 
     private final RWSplitQueryHandler queryHandler;
     private final RWSplitNonBlockingSession session;
+    private AtomicLong txId = new AtomicLong(0);
 
     public RWSplitService(AbstractConnection connection) {
         super(connection);
         this.session = new RWSplitNonBlockingSession(this);
         this.queryHandler = new RWSplitQueryHandler(session);
+        txChainBegin = true;
     }
 
     @Override
@@ -56,6 +61,7 @@ public class RWSplitService extends BusinessService {
             case AUTOCOMMIT:
                 String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByBegin(this));
                     autocommit = false;
                     txStarted = true;
                     writeOkPacket();
@@ -63,6 +69,7 @@ public class RWSplitService extends BusinessService {
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
                     session.execute(true, (isSuccess, rwSplitService) -> {
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
                         this.singleTransactionsCount();
@@ -81,6 +88,7 @@ public class RWSplitService extends BusinessService {
     public void initFromAuthInfo(AuthResultInfo info) {
         super.initFromAuthInfo(info);
         this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(((RwSplitUserConfig) userConfig).getDbGroup()));
+        StatisticListener.getInstance().register(session);
     }
 
     @Override
@@ -252,6 +260,15 @@ public class RWSplitService extends BusinessService {
         return inPrepare;
     }
 
+    public long getAndIncrementTxId() {
+        return txId.getAndIncrement();
+    }
+
+
+    public long getTxId() {
+        return txId.get();
+    }
+
     public boolean isUsingTmpTable() {
         if (tmpTableSet == null) {
             return false;
@@ -285,6 +302,7 @@ public class RWSplitService extends BusinessService {
     public void killAndClose(String reason) {
         session.close(reason);
         connection.close(reason);
+        StatisticListener.getInstance().remove(session);
     }
 
     @Override

@@ -1,16 +1,30 @@
 package com.actiontech.dble.statistic.sql.entry;
 
+import com.actiontech.dble.server.parser.ServerParseFactory;
+
 public final class StatisticBackendSqlEntry extends StatisticEntry {
     //private String originalSql;
     private BackendInfo backend;
     private long firstEndTime = 0L;
+    private int sqlType = -99;
+    private String sql;
 
     public StatisticBackendSqlEntry(
             FrontendInfo frontendInfo,
             String backendName, String backendHost, int backendPort, String shardingNode,
             int sqlType, String sql, long startTime) {
-        super(frontendInfo, sqlType, sql, startTime);
+        super(frontendInfo, startTime);
         this.backend = new BackendInfo(backendName, backendHost, backendPort, shardingNode);
+        this.sqlType = sqlType;
+        this.sql = sql;
+    }
+
+    public StatisticBackendSqlEntry(
+            FrontendInfo frontendInfo,
+            String backendName, String backendHost, int backendPort, String shardingNode, String sql, long startTime) {
+        super(frontendInfo, startTime);
+        this.backend = new BackendInfo(backendName, backendHost, backendPort, shardingNode);
+        this.sql = sql;
     }
 
     public BackendInfo getBackend() {
@@ -23,6 +37,21 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
 
     public void setFirstEndTime(long firstEndTime) {
         this.firstEndTime = firstEndTime;
+    }
+
+    public int getSqlType() {
+        if (sqlType == -99) {
+            this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
+        }
+        return sqlType;
+    }
+
+    public String getSql() {
+        return sql;
+    }
+
+    public void setSql(String sql) {
+        this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
     }
 
     public String getKey() {

@@ -62,7 +62,7 @@
     </xs:element>
     <xs:element name="blacklist">
         <xs:complexType>
-            <xs:sequence>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
                 <xs:element name="property">
                     <xs:complexType>
                         <xs:simpleContent>

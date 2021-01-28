@@ -17,7 +17,7 @@
                                                     <xs:attribute name="joinColumn" type="xs:string" use="required"/>
                                                     <xs:attribute name="parentColumn" type="xs:string" use="required"/>
                                                     <xs:attribute name="incrementColumn" type="xs:string"/>
-                                                    <xs:attribute name="sqlMaxLimit" type="xs:nonNegativeInteger"/>
+                                                    <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
                                                 </xs:complexType>
                                             </xs:element>
                                         </xs:sequence>
@@ -25,7 +25,7 @@
                                         <xs:attribute name="joinColumn" type="xs:string" use="required"/>
                                         <xs:attribute name="parentColumn" type="xs:string" use="required"/>
                                         <xs:attribute name="incrementColumn" type="xs:string"/>
-                                        <xs:attribute name="sqlMaxLimit" type="xs:nonNegativeInteger"/>
+                                        <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
                                     </xs:complexType>
                                 </xs:element>
                             </xs:sequence>
@@ -35,14 +35,14 @@
                             <xs:attribute name="function" type="xs:string" use="required"/>
                             <xs:attribute name="sqlRequiredSharding" type="xs:boolean"/>
                             <xs:attribute name="incrementColumn" type="xs:string"/>
-                            <xs:attribute name="sqlMaxLimit" type="xs:nonNegativeInteger"/>
+                            <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element maxOccurs="unbounded" name="globalTable">
                         <xs:complexType>
                             <xs:attribute name="name" type="xs:string" use="required"/>
                             <xs:attribute name="shardingNode" type="xs:string" use="required"/>
-                            <xs:attribute name="sqlMaxLimit" type="xs:nonNegativeInteger"/>
+                            <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
                             <xs:attribute name="cron" type="xs:string"/>
                             <xs:attribute name="checkClass" type="xs:string"/>
                         </xs:complexType>
@@ -51,13 +51,13 @@
                         <xs:complexType>
                             <xs:attribute name="name" type="xs:string" use="required"/>
                             <xs:attribute name="shardingNode" type="xs:string" use="required"/>
-                            <xs:attribute name="sqlMaxLimit" type="xs:nonNegativeInteger"/>
+                            <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
                         </xs:complexType>
                     </xs:element>
                 </xs:choice>
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
-            <xs:attribute name="sqlMaxLimit" type="xs:nonNegativeInteger"/>
+            <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
             <xs:attribute name="shardingNode" type="xs:string"/>
         </xs:complexType>
     </xs:element>
@@ -70,8 +70,8 @@
     </xs:element>
     <xs:element name="function">
         <xs:complexType>
-            <xs:sequence>
-                <xs:element maxOccurs="unbounded" name="property">
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="property">
                     <xs:complexType>
                         <xs:simpleContent>
                             <xs:extension base="xs:string">

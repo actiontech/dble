@@ -26,6 +26,7 @@ import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,13 +41,13 @@ public class ConfigInitializer implements ProblemReporter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInitializer.class);
 
     private volatile Map<UserName, UserConfig> users;
-    private volatile Map<String, SchemaConfig> schemas;
-    private volatile Map<String, ShardingNode> shardingNodes;
+    private volatile Map<String, SchemaConfig> schemas = Maps.newHashMap();
+    private volatile Map<String, ShardingNode> shardingNodes = Maps.newHashMap();
     private volatile Map<String, PhysicalDbGroup> dbGroups;
-    private volatile Map<ERTable, Set<ERTable>> erRelations;
+    private volatile Map<ERTable, Set<ERTable>> erRelations = Maps.newHashMap();
     private volatile boolean fullyConfigured = false;
     private volatile Map<String, Properties> blacklistConfig;
-    private volatile Map<String, AbstractPartitionAlgorithm> functions;
+    private volatile Map<String, AbstractPartitionAlgorithm> functions = Maps.newHashMap();
     private String dbConfig;
     private String shardingConfig;
     private String userConfig;
@@ -58,14 +59,17 @@ public class ConfigInitializer implements ProblemReporter {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("load-config-file");
         try {
             //sync json
-            this.userConfig = new UserConverter().userXmlToJson();
+            UserConverter userConverter = new UserConverter();
+            this.userConfig = userConverter.userXmlToJson();
             this.dbConfig = DBConverter.dbXmlToJson();
             if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
                 this.sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
             } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
                 this.sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
             }
-            this.shardingConfig = new ShardingConverter().shardingXmlToJson();
+            if (userConverter.isContainsShardingUser()) {
+                this.shardingConfig = new ShardingConverter().shardingXmlToJson();
+            }
             init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig);
         } catch (Exception e) {
             if (e instanceof UnmarshalException) {
@@ -96,15 +100,17 @@ public class ConfigInitializer implements ProblemReporter {
         this.dbConfig = dbJson;
 
         //sharding
-        ShardingConverter shardingConverter = new ShardingConverter();
-        shardingConverter.shardingJsonToMap(shardingJson, dbConverter.getDbGroupMap(), sequenceJson, this);
-        this.schemas = shardingConverter.getSchemaConfigMap();
-        this.erRelations = shardingConverter.getErRelations();
-        this.shardingNodes = shardingConverter.getShardingNodeMap();
-        this.functions = shardingConverter.getFunctionMap();
-        this.shardingConfig = shardingJson;
-        this.sequenceConfig = sequenceJson;
+        if (userConverter.isContainsShardingUser()) {
+            ShardingConverter shardingConverter = new ShardingConverter();
+            shardingConverter.shardingJsonToMap(shardingJson, dbConverter.getDbGroupMap(), sequenceJson, this);
+            this.schemas = shardingConverter.getSchemaConfigMap();
+            this.erRelations = shardingConverter.getErRelations();
+            this.shardingNodes = shardingConverter.getShardingNodeMap();
+            this.functions = shardingConverter.getFunctionMap();
+            this.shardingConfig = shardingJson;
+        }
 
+        this.sequenceConfig = sequenceJson;
         checkRwSplitDbGroup();
         checkWriteDbInstance();
     }

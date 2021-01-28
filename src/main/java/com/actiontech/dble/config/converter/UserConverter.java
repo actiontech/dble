@@ -47,6 +47,8 @@ public class UserConverter {
     private final Map<String, Properties> blackListConfigMap = Maps.newLinkedHashMap();
     private final AtomicInteger userId = new AtomicInteger(0);
     private static final Pattern DML_PATTERN = Pattern.compile("^[0|1]{4}$");
+    // whether user.xml contains shardingUser
+    private boolean containsShardingUser;
 
     public UserConverter() {
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -55,7 +57,9 @@ public class UserConverter {
     }
 
     public Users userJsonToBean(String userJson) {
-        return ClusterLogic.parseUserJsonToBean(this.gson, userJson);
+        Users users = ClusterLogic.parseUserJsonToBean(this.gson, userJson);
+        this.containsShardingUser = users.getUser().stream().anyMatch(userObj -> userObj instanceof ShardingUser);
+        return users;
     }
 
     public String userBeanToJson(Users users) {
@@ -65,6 +69,9 @@ public class UserConverter {
 
         JsonArray userArray = new JsonArray();
         for (Object user : users.getUser()) {
+            if (user instanceof ShardingUser) {
+                this.containsShardingUser = true;
+            }
             JsonElement tableElement = this.gson.toJsonTree(user, User.class);
             userArray.add(tableElement);
         }
@@ -299,5 +306,9 @@ public class UserConverter {
 
     public Map<String, Properties> getBlackListConfigMap() {
         return blackListConfigMap;
+    }
+
+    public boolean isContainsShardingUser() {
+        return containsShardingUser;
     }
 }

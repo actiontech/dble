@@ -441,7 +441,8 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                 if (lexer.token() == Token.EQ) {
                     lexer.nextToken();
                 }
-                stmt.addOption("AUTO_INCREMENT", this.exprParser.expr());
+                LOGGER.warn("parse sql drop AUTO_INCREMENT detail in " + stmt.getTableSource().getName());
+                this.exprParser.expr();
                 continue;
             }
 

@@ -4,6 +4,7 @@ package com.actiontech.dble.log.general;
 import com.actiontech.dble.log.RotateLogStore;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.services.FrontendService;
+import com.actiontech.dble.services.manager.response.GeneralLogCf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ public final class GeneralLogProcessor {
             this.logDelegate = new GeneralLogDisruptor(logFileManager, GeneralLog.getInstance().getGeneralLogQueueSize());
             this.logDelegate.start();
             enable = true;
+            GeneralLogHelper.putGLog(GeneralLogCf.FILE_HEADER);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("enable general log success");
             }

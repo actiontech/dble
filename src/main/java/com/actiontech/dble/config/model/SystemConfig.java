@@ -180,7 +180,11 @@ public final class SystemConfig {
     }
 
     public void setEnableGeneralLog(int enableGeneralLog) {
-        this.enableGeneralLog = enableGeneralLog;
+        if (enableGeneralLog >= 0 && enableGeneralLog <= 1) {
+            this.enableGeneralLog = enableGeneralLog;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableGeneralLog", enableGeneralLog, this.enableGeneralLog));
+        }
     }
 
     public String getGeneralLogFile() {
@@ -188,9 +192,6 @@ public final class SystemConfig {
     }
 
     public void setGeneralLogFile(String generalLogFile) {
-        if (!generalLogFile.startsWith(String.valueOf(File.separatorChar))) {
-            generalLogFile = (this.getHomePath() + File.separatorChar + generalLogFile).replaceAll(File.separator + "+", File.separator);
-        }
         this.generalLogFile = generalLogFile;
     }
 

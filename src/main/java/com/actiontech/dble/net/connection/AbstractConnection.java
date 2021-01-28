@@ -534,7 +534,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void setSupportCompress(boolean supportCompress) {
-        isSupportCompress = supportCompress;
+        this.isSupportCompress = supportCompress;
     }
 
 }

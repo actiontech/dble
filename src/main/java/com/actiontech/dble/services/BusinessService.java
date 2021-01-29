@@ -5,24 +5,28 @@
 
 package com.actiontech.dble.services;
 
+import com.actiontech.dble.backend.mysql.MySQLMessage;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.statistic.CommandCount;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class BusinessService extends FrontendService {
+public abstract class BusinessService<T extends UserConfig> extends FrontendService<T> {
     protected volatile boolean txChainBegin;
     protected volatile boolean txStarted;
     protected final CommandCount commands;
     protected final AtomicLong queriesCounter = new AtomicLong(0);
     protected final AtomicLong transactionsCounter = new AtomicLong(0);
 
-    public BusinessService(AbstractConnection connection) {
-        super(connection);
+    public BusinessService(AbstractConnection connection, AuthResultInfo info) {
+        super(connection, info);
         this.commands = connection.getProcessor().getCommands();
     }
-
 
     public boolean isTxStart() {
         return txStarted;
@@ -123,6 +127,26 @@ public abstract class BusinessService extends FrontendService {
             handleVariable(autocommitItem);
         }
     }
+
+    protected void setOption(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data); //see sql\protocol_classic.cc parse_packet
+        if (mm.length() == 7) {
+            mm.position(5);
+            int optCommand = mm.readUB2();
+            if (optCommand == 0) {
+                multiStatementAllow = true;
+                writeDirectly(EOFPacket.EOF);
+                return;
+            } else if (optCommand == 1) {
+                multiStatementAllow = false;
+                writeDirectly(EOFPacket.EOF);
+                return;
+            }
+        }
+        writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
+    }
+
+    public abstract void resetConnection();
 
     public abstract void handleVariable(MysqlVariable variable);
 

@@ -2,17 +2,16 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.handler.ShowProcesslistHandler;
-import com.actiontech.dble.net.ConnectionException;
-import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.LongUtil;
@@ -86,7 +85,7 @@ public final class ShowProcessList {
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc == null || !fc.convertToFrontEndService())
+                if (fc == null || !fc.isAuthorized())
                     break;
 
                 Map<RouteResultsetNode, BackendConnection> backendConns = null;

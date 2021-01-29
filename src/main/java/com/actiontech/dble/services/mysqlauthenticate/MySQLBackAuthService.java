@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.mysqlauthenticate;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.PooledConnectionListener;
@@ -10,8 +11,10 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.CapClientFoundRows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +62,11 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
     }
 
     @Override
+    protected boolean beforeHandlingTask() {
+        return true;
+    }
+
+    @Override
     protected void handleInnerData(byte[] data) {
         try {
             // first,need a seed
@@ -78,7 +86,6 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
                     return;
                 }
             }
-
 
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
@@ -130,8 +137,6 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         handshakePacket.read(data);
 
         connection.setThreadId(handshakePacket.getThreadId());
-        connection.initCharacterSet(SystemConfig.getInstance().getCharset());
-
         int sl1 = handshakePacket.getSeed().length;
         int sl2 = handshakePacket.getRestOfScrambleBuff().length;
         byte[] seedTemp = new byte[sl1 + sl2];
@@ -143,17 +148,17 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         String serverPlugin = new String(handshakePacket.getAuthPluginName());
         try {
             pluginName = PluginName.valueOf(serverPlugin);
-            sendAuthPacket();
+            sendAuthPacket(++data[3]);
         } catch (IllegalArgumentException | NoSuchAlgorithmException e) {
             String authPluginErrorMessage = "Client don't support the password plugin " + serverPlugin + ",please check the default auth Plugin";
             throw new RuntimeException(authPluginErrorMessage);
         }
     }
 
-    private void sendAuthPacket() throws NoSuchAlgorithmException {
+    private void sendAuthPacket(byte packetId) throws NoSuchAlgorithmException {
         AuthPacket packet = new AuthPacket();
-        packet.setPacketId(nextPacketId());
-        packet.setMaxPacketSize(connection.getMaxPacketSize());
+        packet.setPacketId(packetId);
+        packet.setMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize());
         int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset());
         packet.setCharsetIndex(charsetIndex);
         packet.setUser(user);
@@ -176,13 +181,15 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
             return;
         }
         if (info.isSuccess()) {
-            connection.setService(BusinessServiceFactory.getBackendBusinessService(info, connection));
-            connection.getBackendService().setResponseHandler(handler);
+            final MySQLResponseService service = (MySQLResponseService) BusinessServiceFactory.getBackendBusinessService(info, connection);
+            service.setResponseHandler(handler);
+            // support
             boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & serverCapabilities);
             boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
             if (clientCompress && usingCompress) {
-                connection.getBackendService().setSupportCompress(true);
+                connection.setSupportCompress(true);
             }
+            connection.setService(service);
             if (listener != null) {
                 listener.onCreateSuccess(connection);
             } else if (handler != null) {
@@ -196,6 +203,17 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
     @Override
     public void register() throws IOException {
         connection.getSocketWR().asyncRead();
+    }
+
+    @Override
+    protected void doHandle(ServiceTask task) {
+        if (SystemConfig.getInstance().getUsePerformanceMode() != 1) {
+            super.doHandle(null);
+        } else {
+            if (isHandling.compareAndSet(false, true)) {
+                DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
+            }
+        }
     }
 
     @Override

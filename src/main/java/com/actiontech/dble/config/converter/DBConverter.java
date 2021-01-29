@@ -5,6 +5,8 @@
 package com.actiontech.dble.config.converter;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
@@ -16,7 +18,6 @@ import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.loader.xml.XMLDbLoader;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
@@ -30,25 +31,32 @@ import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DBConverter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DBConverter.class);
+    public static final String DB_NAME_FORMAT = "a-zA-Z_0-9\\-\\.";
+    public static final Pattern PATTERN_DB = Pattern.compile("([" + DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
 
     private final Map<String, PhysicalDbGroup> dbGroupMap = Maps.newLinkedHashMap();
 
-    public static String dbXmlToJson() throws JAXBException, XMLStreamException {
+    public static String dbXmlToJson() throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(DbGroups.class);
         xmlProcess.initJaxbClass();
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + ConfigFileName.DB_XML;
-        return parseDbGroupXmlFileToJson(xmlProcess, path);
+        return parseDbGroupXmlFileToJson(xmlProcess);
+    }
+
+    public static String dbXmlToJson(String xmlPath) throws Exception {
+        XmlProcessBase xmlProcess = new XmlProcessBase();
+        xmlProcess.addParseClass(DbGroups.class);
+        xmlProcess.initJaxbClass();
+        return parseDbGroupXmlFileToJson(xmlProcess, xmlPath, ConfigFileName.DB_XSD);
     }
 
     public DbGroups dbJsonToBean(String dbJson) {
@@ -84,9 +92,9 @@ public class DBConverter {
         }
         for (DBGroup dbGroup : dbs.getDbGroup()) {
             String dbGroupName = dbGroup.getName();
-            Matcher nameMatcher = XMLDbLoader.PATTERN_DB.matcher(dbGroupName);
+            Matcher nameMatcher = PATTERN_DB.matcher(dbGroupName);
             if (!nameMatcher.matches()) {
-                throw new ConfigException("dbGroup name " + dbGroupName + " show be use " + XMLDbLoader.DB_NAME_FORMAT + "!");
+                throw new ConfigException("dbGroup name " + dbGroupName + " show be use " + DB_NAME_FORMAT + "!");
             }
             if (this.dbGroupMap.containsKey(dbGroupName)) {
                 throw new ConfigException("dbGroup name " + dbGroupName + " duplicated!");
@@ -141,9 +149,25 @@ public class DBConverter {
             int heartbeatErrorRetryCount = Optional.ofNullable(heartbeat.getErrorRetryCount()).orElse(1);
             dbGroupConf.setErrorRetryCount(heartbeatErrorRetryCount);
 
-            PhysicalDbGroup physicalDbGroup = XMLDbLoader.getPhysicalDBPoolSingleWH(dbGroupConf);
+            PhysicalDbGroup physicalDbGroup = getPhysicalDBPoolSingleWH(dbGroupConf);
             this.dbGroupMap.put(dbGroupConf.getName(), physicalDbGroup);
         }
+    }
+
+    private static PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node, boolean isRead) {
+        return new MySQLInstance(node, conf, isRead);
+    }
+
+    private static PhysicalDbGroup getPhysicalDBPoolSingleWH(DbGroupConfig conf) {
+        //create PhysicalDbInstance for writeDirectly host
+        PhysicalDbInstance writeSource = createDbInstance(conf, conf.getWriteInstanceConfig(), false);
+        PhysicalDbInstance[] readSources = new PhysicalDbInstance[conf.getReadInstanceConfigs().length];
+        int i = 0;
+        for (DbInstanceConfig readNode : conf.getReadInstanceConfigs()) {
+            readSources[i++] = createDbInstance(conf, readNode, true);
+        }
+
+        return new PhysicalDbGroup(conf.getName(), conf, writeSource, readSources, conf.getRwSplitMode());
     }
 
     private void beanValidate(DbGroups dbs) {
@@ -164,11 +188,15 @@ public class DBConverter {
         }
     }
 
-    static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase, String path) throws JAXBException, XMLStreamException {
+    private static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
+        return parseDbGroupXmlFileToJson(xmlParseBase, ConfigFileName.DB_XML, ConfigFileName.DB_XSD);
+    }
+
+    private static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase, String xmlPath, String xsdPath) throws Exception {
         // xml file to bean
         DbGroups groupsBean;
         try {
-            groupsBean = (DbGroups) xmlParseBase.baseParseXmlToBean(path);
+            groupsBean = (DbGroups) xmlParseBase.baseParseXmlToBean(xmlPath, xsdPath);
         } catch (Exception e) {
             LOGGER.warn("parseXmlToBean Exception", e);
             throw e;
@@ -187,9 +215,9 @@ public class DBConverter {
         String password = dbInstance.getPassword();
         String usingDecryptStr = dbInstance.getUsingDecrypt();
 
-        Matcher nameMatcher = XMLDbLoader.PATTERN_DB.matcher(name);
+        Matcher nameMatcher = PATTERN_DB.matcher(name);
         if (!nameMatcher.matches()) {
-            throw new ConfigException("dbInstance name " + name + " show be use " + XMLDbLoader.DB_NAME_FORMAT + "!");
+            throw new ConfigException("dbInstance name " + name + " show be use " + DB_NAME_FORMAT + "!");
         }
         if (StringUtil.isEmpty(name) || StringUtil.isEmpty(nodeUrl) || StringUtil.isEmpty(user)) {
             throw new ConfigException(

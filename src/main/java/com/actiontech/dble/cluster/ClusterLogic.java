@@ -57,8 +57,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -435,7 +433,8 @@ public final class ClusterLogic {
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock) && !isWriteToLocal) {
             return;
         }
-        if (!StringUtil.isEmpty(sequenceConfig)) {
+        boolean loadByCluster = ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL || ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT;
+        if (loadByCluster && !StringUtil.isEmpty(sequenceConfig)) {
             SequenceConverter sequenceConverter = new SequenceConverter();
             Properties props = sequenceConverter.jsonToProperties(sequenceConfig);
             PropertiesUtil.storeProps(props, sequenceConverter.getFileName());
@@ -622,29 +621,6 @@ public final class ClusterLogic {
             LOGGER.warn("syncHaStatusFromCluster error :", e);
         }
     }
-
-    static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase, Gson gson, String path) throws JAXBException, XMLStreamException {
-        // xml file to bean
-        DbGroups groupsBean;
-        try {
-            groupsBean = (DbGroups) xmlParseBase.baseParseXmlToBean(path);
-        } catch (Exception e) {
-            LOGGER.warn("parseXmlToBean Exception", e);
-            throw e;
-        }
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Xml to DbGroups is :" + groupsBean);
-        }
-        // bean to json obj
-        JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty(ClusterPathUtil.VERSION, groupsBean.getVersion());
-
-        jsonObj.add(ClusterPathUtil.DB_GROUP, gson.toJsonTree(groupsBean.getDbGroup()));
-        //from json obj to string
-        return gson.toJson(jsonObj);
-    }
-
 
     public static Users parseUserJsonToBean(Gson gson, String jsonContent) {
         //from string to json obj

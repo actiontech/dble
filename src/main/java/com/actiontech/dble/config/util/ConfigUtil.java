@@ -8,27 +8,15 @@ package com.actiontech.dble.config.util;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.TraceManager;
-import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.*;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,7 +46,7 @@ public final class ConfigUtil {
             if (propStart < 0) {
                 break;
             }
-            s.append(text.substring(cur, propStart));
+            s.append(text, cur, propStart);
             propStop = text.indexOf("}", propStart);
             if (propStop < 0) {
                 throw new ConfigException("Unterminated property: " + text.substring(propStart));
@@ -72,63 +60,6 @@ public final class ConfigUtil {
             }
         }
         return s.append(text.substring(cur)).toString();
-    }
-
-    public static Document getDocument(final InputStream dtd, InputStream xml) throws ParserConfigurationException,
-            SAXException, IOException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, Boolean.TRUE);
-        factory.setValidating(true);
-        factory.setNamespaceAware(false);
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        builder.setEntityResolver(new EntityResolver() {
-            @Override
-            public InputSource resolveEntity(String publicId, String systemId) {
-                return new InputSource(dtd);
-            }
-        });
-        builder.setErrorHandler(new ErrorHandler() {
-            @Override
-            public void warning(SAXParseException e) {
-            }
-
-            @Override
-            public void error(SAXParseException e) throws SAXException {
-                throw e;
-            }
-
-            @Override
-            public void fatalError(SAXParseException e) throws SAXException {
-                throw e;
-            }
-        });
-        return builder.parse(xml);
-    }
-
-    /**
-     * @param parent parent
-     * @return key-value property
-     */
-    public static Properties loadElements(Element parent) {
-        Properties map = new Properties();
-        NodeList children = parent.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            Node node = children.item(i);
-            if (node instanceof Element) {
-                Element e = (Element) node;
-                String name = e.getNodeName();
-                if ("property".equals(name)) {
-                    String key = e.getAttribute("name");
-                    String value = e.getTextContent();
-                    if (value == null) {
-                        map.put(key, "");
-                    } else {
-                        map.put(key, value.trim());
-                    }
-                }
-            }
-        }
-        return map;
     }
 
     public static void setSchemasForPool(Map<String, PhysicalDbGroup> dbGroupMap, Map<String, ShardingNode> shardingNodeMap) {
@@ -146,42 +77,6 @@ public final class ConfigUtil {
         }
         return schemaList.toArray(new String[schemaList.size()]);
     }
-
-    private static boolean isNumeric(String value) {
-        return "-1".equals(value) || StringUtils.isNumeric(value);
-    }
-
-    private static boolean isBool(String value) {
-        return "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value);
-    }
-
-    /**
-     * check element illegal value and return val
-     */
-    public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
-        if (element.hasAttribute(attrName)) {
-            String val = element.getAttribute(attrName);
-            if (isBool(val) || isNumeric(val)) {
-                return val;
-            } else if (reporter != null) {
-                reporter.warn(element.getNodeName() + "[" + element.getAttribute("name") + "] attribute " + attrName + " " + val +
-                        " is illegal, use " + defaultValue + " replaced");
-            }
-        }
-        return defaultValue;
-    }
-
-    public static String checkBoolAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter, String fileName) {
-        if (val != null) {
-            if (isBool(val)) {
-                return val;
-            } else if (reporter != null) {
-                reporter.warn("[" + propertyName + "]'s value " + val + " in " + fileName + " is illegal, use " + defaultValue + " replaced");
-            }
-        }
-        return defaultValue;
-    }
-
 
     public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
@@ -212,9 +107,9 @@ public final class ConfigUtil {
                     } else if (keyVariables.isLowerCase() != lowerCase) {
                         secondGroup.add(dataSourceName);
                     }
-                    minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
+                    minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                     int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
-                    minVersion = minVersion < version ? minVersion : version;
+                    minVersion = Math.min(minVersion, version);
                 }
             }
             if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {

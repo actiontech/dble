@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="managerUser">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="password" type="xs:string" use="required"/>
+            <xs:attribute name="usingDecrypt" type="xs:boolean"/>
+            <xs:attribute name="whiteIPs" type="xs:string"/>
+            <xs:attribute name="readOnly" type="xs:boolean"/>
+            <xs:attribute name="maxCon" type="xs:nonNegativeInteger"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="shardingUser">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="1">
+                <xs:element name="privileges">
+                    <xs:complexType>
+                        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                            <xs:element name="schema">
+                                <xs:complexType>
+                                    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                                        <xs:element name="table">
+                                            <xs:complexType>
+                                                <xs:attribute name="name" type="xs:string" use="required"/>
+                                                <xs:attribute name="dml" type="xs:string" use="required"/>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="name" type="xs:string" use="required"/>
+                                    <xs:attribute name="dml" type="xs:string" use="required"/>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="check" type="xs:boolean" use="required"/>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="tenant" type="xs:string"/>
+            <xs:attribute name="schemas" type="xs:string" use="required"/>
+            <xs:attribute name="password" type="xs:string" use="required"/>
+            <xs:attribute name="usingDecrypt" type="xs:boolean"/>
+            <xs:attribute name="whiteIPs" type="xs:string"/>
+            <xs:attribute name="maxCon" type="xs:nonNegativeInteger"/>
+            <xs:attribute name="readOnly" type="xs:boolean"/>
+            <xs:attribute name="blacklist" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="rwSplitUser">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="tenant" type="xs:string"/>
+            <xs:attribute name="dbGroup" type="xs:string" use="required"/>
+            <xs:attribute name="password" type="xs:string" use="required"/>
+            <xs:attribute name="usingDecrypt" type="xs:boolean"/>
+            <xs:attribute name="whiteIPs" type="xs:string"/>
+            <xs:attribute name="maxCon" type="xs:nonNegativeInteger"/>
+            <xs:attribute name="blacklist" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="blacklist">
+        <xs:complexType>
+            <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                <xs:element name="property">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute name="name" type="xs:string" use="required"/>
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

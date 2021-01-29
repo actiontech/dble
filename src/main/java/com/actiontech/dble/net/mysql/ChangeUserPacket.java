@@ -29,9 +29,8 @@ public class ChangeUserPacket extends MySQLPacket {
     private String authPlugin = "mysql_native_password";
     private String tenant = "";
 
-    public ChangeUserPacket(long clientFlags, int charsetIndex) {
+    public ChangeUserPacket(long clientFlags) {
         this.clientFlags = clientFlags;
-        this.charsetIndex = charsetIndex;
     }
 
     public ChangeUserPacket(String user) {

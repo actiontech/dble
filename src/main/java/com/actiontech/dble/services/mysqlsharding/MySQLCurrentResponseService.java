@@ -14,9 +14,9 @@ public class MySQLCurrentResponseService extends MySQLResponseService {
     }
 
     @Override
-    public void handleTask(ServiceTask task) {
+    protected void doHandle(ServiceTask task) {
         if (isComplexQuery()) {
-            super.handleTask(task);
+            super.doHandle(null);
         } else {
             if (isHandling.compareAndSet(false, true)) {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);

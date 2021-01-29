@@ -6,7 +6,6 @@
 
 package com.actiontech.dble.server.parser;
 
-import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
@@ -32,12 +31,7 @@ public class PrepareStatementCalculateVisitor extends MySqlASTVisitorAdapter {
     @Override
     public boolean visit(MySqlSelectQueryBlock x) {
         selectStatement = true;
-        /*
-        access 'where' only
-         */
-        accept(x.getWhere());
-
-        return false;
+        return true;
     }
 
 
@@ -55,11 +49,11 @@ public class PrepareStatementCalculateVisitor extends MySqlASTVisitorAdapter {
     //        }
     //    }
 
-    private <T extends SQLObject> void accept(T e) {
-        if (e != null) {
-            e.accept(this);
-        }
-    }
+    //    private <T extends SQLObject> void accept(T e) {
+    //        if (e != null) {
+    //            e.accept(this);
+    //        }
+    //    }
 
 
 }

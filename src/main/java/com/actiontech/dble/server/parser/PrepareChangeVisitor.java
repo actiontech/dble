@@ -8,15 +8,25 @@ package com.actiontech.dble.server.parser;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLLimit;
+import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.SQLReplaceable;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+
+import java.util.List;
 
 /**
  * @author dcy
  * Create Date: 2020-12-25
  */
 public class PrepareChangeVisitor extends MySqlASTVisitorAdapter {
+    boolean isFirstSelectQuery = true;
+
     @Override
     public boolean visit(MySqlSelectQueryBlock x) {
 
@@ -25,13 +35,59 @@ public class PrepareChangeVisitor extends MySqlASTVisitorAdapter {
             append the  '1!=1' condition.
             So every sql  return field packets with zero rows.
          */
-        final SQLExpr sqlExpr = SQLUtils.buildCondition(SQLBinaryOperator.BooleanAnd, SQLUtils.toSQLExpr("1 != 1"), true, x.getWhere());
+        final SQLExpr sqlExpr = SQLUtils.buildCondition(SQLBinaryOperator.BooleanAnd, SQLUtils.toSQLExpr("1!=1"), true, x.getWhere());
         x.setWhere(sqlExpr);
+        x.setGroupBy(null);
+        x.setOrderBy(null);
+        /*
+            Double guarantee
+        */
+        x.setLimit(new SQLLimit(new SQLIntegerExpr(0)));
+        if (isFirstSelectQuery) {
+            final List<String> commentsDirect = x.getBeforeCommentsDirect();
+            final String comment = "/* used for prepare statement. */";
+            if (commentsDirect != null) {
+                commentsDirect.add(0, comment);
+            } else {
+                x.addBeforeComment(comment);
+            }
+
+            isFirstSelectQuery = false;
+        }
+
         /*
             in single node mysql ,one '1!=1' condition is enough.It always return zero rows.
             because dble split complex query before send.So every query should append this condition.So...there need return true to access nested select.
          */
         return true;
+    }
+
+
+    @Override
+    public boolean visit(SQLVariantRefExpr x) {
+        if (x.getParent() != null && x.getParent() instanceof SQLSelectItem) {
+            ((SQLSelectItem) x.getParent()).replace(x, SQLUtils.toSQLExpr("true"));
+            return false;
+        }
+        SQLObject parent;
+        SQLObject current = x.getParent();
+
+        //nest lookup. find closest SQLReplaceable and replace if possible.
+        while (current != null && (parent = current.getParent()) != null) {
+
+            if (parent instanceof SQLReplaceable) {
+                if (current instanceof SQLExpr) {
+                    ((SQLReplaceable) parent).replace((SQLExpr) current, SQLUtils.toSQLExpr("true"));
+                    break;
+                } else {
+                    current = parent;
+                }
+            } else {
+                current = parent;
+
+            }
+        }
+        return false;
     }
 
 

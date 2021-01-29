@@ -19,7 +19,6 @@ import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
@@ -30,14 +29,13 @@ import com.actiontech.dble.route.function.*;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.*;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -62,13 +60,18 @@ public class ShardingConverter {
         this.gson = gsonBuilder.create();
     }
 
-    public String shardingXmlToJson() throws JAXBException, XMLStreamException {
+    public String shardingXmlToJson() throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Shardings.class);
         xmlProcess.initJaxbClass();
-        String path = ClusterPathUtil.LOCAL_WRITE_PATH + ConfigFileName.SHARDING_XML;
-        String json = parseShardingXmlFileToJson(xmlProcess, path);
-        return json;
+        return parseShardingXmlFileToJson(xmlProcess);
+    }
+
+    public String shardingXmlToJson(String xmlPath) throws Exception {
+        XmlProcessBase xmlProcess = new XmlProcessBase();
+        xmlProcess.addParseClass(Shardings.class);
+        xmlProcess.initJaxbClass();
+        return parseShardingXmlFileToJson(xmlProcess, xmlPath, ConfigFileName.SHARDING_XSD);
     }
 
     public Shardings shardingJsonToBean(String shardingJson) {
@@ -134,11 +137,15 @@ public class ShardingConverter {
         }
     }
 
-    String parseShardingXmlFileToJson(XmlProcessBase xmlParseBase, String path) throws JAXBException, XMLStreamException {
+    String parseShardingXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
+        return parseShardingXmlFileToJson(xmlParseBase, ConfigFileName.SHARDING_XML, ConfigFileName.SHARDING_XSD);
+    }
+
+    String parseShardingXmlFileToJson(XmlProcessBase xmlParseBase, String xmlPath, String xsdPath) throws Exception {
         // xml file to bean
         Shardings shardingBean;
         try {
-            shardingBean = (Shardings) xmlParseBase.baseParseXmlToBean(path);
+            shardingBean = (Shardings) xmlParseBase.baseParseXmlToBean(xmlPath, xsdPath);
         } catch (Exception e) {
             LOGGER.warn("parseXmlToBean Exception", e);
             throw e;
@@ -180,9 +187,9 @@ public class ShardingConverter {
             String schemaName = schema.getName();
             String schemaShardingNode = schema.getShardingNode();
             String schemaSqlMaxLimitStr = null == schema.getSqlMaxLimit() ? null : String.valueOf(schema.getSqlMaxLimit());
-            List<Object> tableList = Optional.ofNullable(schema.getTable()).orElse(Collections.EMPTY_LIST);
+            List<Object> tableList = Optional.ofNullable(schema.getTable()).orElse(Lists.newArrayList());
 
-            int schemaSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(schemaSqlMaxLimitStr, -1);
+            int schemaSqlMaxLimit = getSqlMaxLimit(schemaSqlMaxLimitStr, -1);
             //check and add shardingNode
             if (schemaShardingNode != null && !schemaShardingNode.isEmpty()) {
                 List<String> shardingNodeLst = new ArrayList<>(1);
@@ -263,7 +270,7 @@ public class ShardingConverter {
             throw new ConfigException("one of tables' name is empty");
         }
         //limit size of the table
-        int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(singleTableSqlMaxLimitStr, schemaSqlMaxLimit);
+        int tableSqlMaxLimit = getSqlMaxLimit(singleTableSqlMaxLimitStr, schemaSqlMaxLimit);
         if (StringUtil.isBlank(singleTableShardingNode)) {
             throw new ConfigException("shardingNode of " + singleTableName + " is empty");
         }
@@ -302,7 +309,7 @@ public class ShardingConverter {
             throw new ConfigException("one of tables' name is empty");
         }
         //limit size of the table
-        int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(globalTableSqlMaxLimitStr, schemaSqlMaxLimit);
+        int tableSqlMaxLimit = getSqlMaxLimit(globalTableSqlMaxLimitStr, schemaSqlMaxLimit);
         if (StringUtil.isBlank(globalTableShardingNode)) {
             throw new ConfigException("shardingNode of " + globalTableName + " is empty");
         }
@@ -344,7 +351,7 @@ public class ShardingConverter {
         if (StringUtil.isBlank(shardingTableName)) {
             throw new ConfigException("one of tables' name is empty");
         }
-        int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(shardingTableSqlMaxLimitStr, schemaSqlMaxLimit);
+        int tableSqlMaxLimit = getSqlMaxLimit(shardingTableSqlMaxLimitStr, schemaSqlMaxLimit);
         //shardingNode of table
         if (StringUtil.isBlank(shardingTableShardingColumn)) {
             throw new ConfigException("shardingColumn of " + shardingTableName + " is empty");
@@ -499,7 +506,7 @@ public class ShardingConverter {
             if (StringUtil.isBlank(childTableName)) {
                 throw new ConfigException("one of table [" + parentTable.getName() + "]'s child name is empty");
             }
-            int tableSqlMaxLimit = XMLShardingLoader.getSqlMaxLimit(childTableSqlMaxLimitStr, schemaSqlMaxLimit);
+            int tableSqlMaxLimit = getSqlMaxLimit(childTableSqlMaxLimitStr, schemaSqlMaxLimit);
 
             ChildTableConfig table = new ChildTableConfig(childTableName, tableSqlMaxLimit, lstShardingNode,
                     parentTable, childTableJoinColumn, childTableParentColumn, childTableIncrementColumn);
@@ -559,7 +566,7 @@ public class ShardingConverter {
             if (props.size() > 0) {
                 String[] propItem = new String[props.size()];
                 props.keySet().toArray(propItem);
-                throw new ConfigException("These properties of functionInstance [" + functionName + "] is not recognized: " + StringUtil.join(propItem, ","));
+                throw new ConfigException("These properties of function [" + functionName + "] is not recognized: " + StringUtil.join(propItem, ","));
             }
 
             //init for AbstractPartitionAlgorithm
@@ -642,7 +649,7 @@ public class ShardingConverter {
                         " define error ,Number of shardingNode name must be = Number of database * Number of dbGroup");
             }
             if (dnNames.length > 1) {
-                List<String[]> mhdList = XMLShardingLoader.mergerHostDatabase(hostStrings, databases);
+                List<String[]> mhdList = mergerHostDatabase(hostStrings, databases);
                 for (int k = 0; k < dnNames.length; k++) {
                     String[] hd = mhdList.get(k);
                     String dnName = dnNames[k];
@@ -696,5 +703,29 @@ public class ShardingConverter {
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
         return erRelations;
+    }
+
+    private static int getSqlMaxLimit(String sqlMaxLimitStr, int defaultMaxLimit) {
+        // sql result size limit
+        if (sqlMaxLimitStr != null && !sqlMaxLimitStr.isEmpty()) {
+            defaultMaxLimit = Integer.parseInt(sqlMaxLimitStr);
+            if (defaultMaxLimit < -1) {
+                defaultMaxLimit = -1;
+            }
+        }
+        return defaultMaxLimit;
+    }
+
+    private static List<String[]> mergerHostDatabase(String[] hostStrings, String[] databases) {
+        List<String[]> mhdList = new ArrayList<>();
+        for (String hostString : hostStrings) {
+            for (String database : databases) {
+                String[] hd = new String[2];
+                hd[0] = hostString;
+                hd[1] = database;
+                mhdList.add(hd);
+            }
+        }
+        return mhdList;
     }
 }

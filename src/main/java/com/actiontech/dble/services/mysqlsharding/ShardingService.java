@@ -30,6 +30,7 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
@@ -57,20 +58,16 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by szf on 2020/6/18.
  */
-public class ShardingService extends BusinessService {
+public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingService.class);
 
     private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<>();
 
     private final ServerQueryHandler handler;
-
     private final ServerLoadDataInfileHandler loadDataInfileHandler;
-
     private final FrontendPrepareHandler prepareHandler;
-
     private final MySQLProtoLogicHandler protoLogicHandler;
-
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
     private volatile boolean txInterrupted;
@@ -86,8 +83,8 @@ public class ShardingService extends BusinessService {
     private volatile RequestScope requestScope;
     protected volatile boolean setNoAutoCommit = false;
 
-    public ShardingService(AbstractConnection connection) {
-        super(connection);
+    public ShardingService(AbstractConnection connection, AuthResultInfo info) {
+        super(connection, info);
         this.sptprepare = new ServerSptPrepare(this);
         this.handler = new ServerQueryHandler(this);
         this.loadDataInfileHandler = new ServerLoadDataInfileHandler(this);
@@ -96,6 +93,7 @@ public class ShardingService extends BusinessService {
         session.setRowCount(0);
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
+        StatisticListener.getInstance().register(session);
     }
 
     public RequestScope getRequestScope() {
@@ -181,7 +179,7 @@ public class ShardingService extends BusinessService {
             sql = sql.substring(0, sql.length() - 1);
         }
 
-        WallProvider blackList = ((ShardingUserConfig) userConfig).getBlacklist();
+        WallProvider blackList = userConfig.getBlacklist();
         if (blackList != null) {
             WallCheckResult result = blackList.check(sql);
             if (!result.getViolations().isEmpty()) {
@@ -194,34 +192,21 @@ public class ShardingService extends BusinessService {
 
         SerializableLock.getInstance().lock(this.connection.getId());
 
-        boolean readOnly = false;
-        if (userConfig instanceof ShardingUserConfig) {
-            readOnly = ((ShardingUserConfig) userConfig).isReadOnly();
-        }
-
-        this.handler.setReadOnly(readOnly);
+        this.handler.setReadOnly(userConfig.isReadOnly());
         this.handler.setSessionReadOnly(sessionReadOnly);
         this.handler.query(sql);
     }
 
     @Override
     protected void beforeHandlingTask() {
+        TraceManager.sessionStart(this, "sharding-server-start");
         session.setRequestTime();
     }
 
     @Override
     protected void handleInnerData(byte[] data) {
         getSession2().startProcess();
-        /*if (isAuthSwitch.compareAndSet(true, false)) {
-            commands.doOther();
-            sc.changeUserAuthSwitch(data, changeUserPacket);
-            return;
-        }*/
-        if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
-            GeneralLogHelper.putGLog(this, data);
-        }
         try (RequestScope requestScope = new RequestScope()) {
-
             if (loadDataInfileHandler.isStart()) {
                 if (isEndOfDataFile(data)) {
                     loadDataInfileHandler.end(data[3]);
@@ -230,7 +215,9 @@ public class ShardingService extends BusinessService {
                 }
                 return;
             }
-
+            if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
+                GeneralLogHelper.putGLog(this, data);
+            }
             this.requestScope = requestScope;
             switch (data[4]) {
                 case MySQLPacket.COM_INIT_DB:
@@ -285,16 +272,18 @@ public class ShardingService extends BusinessService {
                     break;
                 case MySQLPacket.COM_SET_OPTION:
                     commands.doOther();
-                    protoLogicHandler.setOption(data);
+                    setOption(data);
                     break;
                 case MySQLPacket.COM_CHANGE_USER:
                     commands.doOther();
-                    /* changeUserPacket = new ChangeUserPacket(sc.getClientFlags(), CharsetUtil.getCollationIndex(sc.getCharset().getCollation()));
-                    sc.changeUser(data, changeUserPacket, isAuthSwitch);*/
+                    final MySQLChangeUserService fService = new MySQLChangeUserService(connection, this);
+                    connection.setService(fService);
+                    fService.handleInnerData(data);
                     break;
                 case MySQLPacket.COM_RESET_CONNECTION:
                     commands.doOther();
-                    protoLogicHandler.resetConnection();
+                    resetConnection();
+                    writeOkPacket();
                     break;
                 case MySQLPacket.COM_FIELD_LIST:
                     commands.doOther();
@@ -390,14 +379,13 @@ public class ShardingService extends BusinessService {
 
     public void setTxInterrupt(String msg) {
         if ((!autocommit || txStarted) && !txInterrupted) {
-            //Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByInterrupt());
             txInterrupted = true;
             this.txInterruptMsg = "Transaction error, need to rollback.Reason:[" + msg + "]";
         }
     }
 
-
-    public void innerCleanUp() {
+    @Override
+    public void resetConnection() {
         //rollback and unlock tables  means close backend conns;
         Iterator<BackendConnection> connIterator = session.getTargetMap().values().iterator();
         while (connIterator.hasNext()) {
@@ -426,13 +414,6 @@ public class ShardingService extends BusinessService {
 
     public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
         this.shardingSQLHandler.routeSystemInfoAndExecuteSQL(stmt, schemaInfo, sqlType);
-    }
-
-    @Override
-    public void initFromAuthInfo(AuthResultInfo info) {
-        super.initFromAuthInfo(info);
-        this.multiStatementAllow = info.getMysqlAuthPacket().isMultStatementAllow();
-        StatisticListener.getInstance().register(session);
     }
 
     @Override
@@ -662,26 +643,6 @@ public class ShardingService extends BusinessService {
         }
     }
 
-    protected void sessionStart() {
-        TraceManager.sessionStart(this, "sharding-server-start");
-    }
-
-    public boolean isTxInterrupted() {
-        return txInterrupted;
-    }
-
-    public void setTxInterrupted(boolean txInterrupted) {
-        this.txInterrupted = txInterrupted;
-    }
-
-    public String getTxInterruptMsg() {
-        return txInterruptMsg;
-    }
-
-    public void setTxInterruptMsg(String txInterruptMsg) {
-        this.txInterruptMsg = txInterruptMsg;
-    }
-
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
@@ -694,10 +655,6 @@ public class ShardingService extends BusinessService {
 
     public NonBlockingSession getSession2() {
         return session;
-    }
-
-    public ShardingUserConfig getUserConfig() {
-        return (ShardingUserConfig) userConfig;
     }
 
     public boolean isLocked() {

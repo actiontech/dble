@@ -6,64 +6,62 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
+import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class FrontendService extends VariablesService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendService.class);
+public abstract class FrontendService<T extends UserConfig> extends AbstractService {
 
+    private ServiceTask currentTask = null;
+    private final AtomicInteger packetId;
+    private final ConcurrentLinkedQueue<ServiceTask> taskQueue;
+
+    // client capabilities
+    private final long clientCapabilities;
+    protected volatile byte[] seed;
     // current schema
     protected volatile String schema;
-    // login user
-    protected UserName user;
-    protected UserConfig userConfig;
-
-    protected long clientCapabilities;
-    // sql
+    // login user and config
+    protected volatile UserName user;
+    protected volatile T userConfig;
+    // last execute sql
     protected volatile String executeSql;
-    // received mysql packet
-    private ServiceTask currentTask = null;
-    private final ConcurrentLinkedQueue<ServiceTask> taskQueue;
 
     public FrontendService(AbstractConnection connection) {
         super(connection);
         this.taskQueue = new ConcurrentLinkedQueue<>();
+        this.packetId = new AtomicInteger(0);
+        this.clientCapabilities = 0;
     }
 
-    public void initFromAuthInfo(AuthResultInfo info) {
+    public FrontendService(AbstractConnection connection, AuthResultInfo info) {
+        super(connection);
+        this.taskQueue = new ConcurrentLinkedQueue<>();
+        this.packetId = new AtomicInteger(0);
+        this.user = info.getUser();
+        this.userConfig = (T) info.getUserConfig();
         AuthPacket auth = info.getMysqlAuthPacket();
-        clientCapabilities = auth.getClientFlags();
-        this.user = new UserName(auth.getUser(), auth.getTenant());
-        this.schema = info.getMysqlAuthPacket().getDatabase();
-        this.userConfig = info.getUserConfig();
-        this.connection.initCharsetIndex(info.getMysqlAuthPacket().getCharsetIndex());
-        boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
-        boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
-        if (clientCompress && usingCompress) {
-            this.setSupportCompress(true);
-        }
-        if (LOGGER.isDebugEnabled()) {
-            StringBuilder s = new StringBuilder();
-            s.append(this).append('\'').append(auth.getUser()).append("' login success");
-            byte[] extra = auth.getExtra();
-            if (extra != null && extra.length > 0) {
-                s.append(",extra:").append(new String(extra));
-            }
-            LOGGER.debug(s.toString());
-        }
+        this.schema = auth.getDatabase();
+        this.clientCapabilities = auth.getClientFlags();
+        // initial from auth packet
+        this.initCharsetIndex(auth.getCharsetIndex());
+        this.txIsolation = SystemConfig.getInstance().getTxIsolation();
+        this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+        this.multiStatementAllow = auth.isMultStatementAllow();
     }
 
     /**
@@ -72,7 +70,7 @@ public abstract class FrontendService extends VariablesService {
      * @param task task
      */
     @Override
-    public void handleTask(ServiceTask task) {
+    public void handle(ServiceTask task) {
         beforeHandlingTask();
         taskQueue.offer(task);
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
@@ -80,11 +78,11 @@ public abstract class FrontendService extends VariablesService {
 
     @Override
     public void execute(ServiceTask task) {
-        ServiceTask executeTask = null;
         if (connection.isClosed()) {
             return;
         }
 
+        ServiceTask executeTask = null;
         synchronized (this) {
             if (currentTask == null) {
                 executeTask = taskQueue.poll();
@@ -119,6 +117,7 @@ public abstract class FrontendService extends VariablesService {
     protected abstract void handleInnerData(byte[] data);
 
     protected void beforeHandlingTask() {
+        // ignore
     }
 
     private void taskToPriorityQueue(ServiceTask task) {
@@ -141,6 +140,14 @@ public abstract class FrontendService extends VariablesService {
         }
     }
 
+    public String getExecuteSql() {
+        return executeSql;
+    }
+
+    public void setExecuteSql(String executeSql) {
+        this.executeSql = executeSql;
+    }
+
     // current schema
     public String getSchema() {
         return schema;
@@ -154,20 +161,71 @@ public abstract class FrontendService extends VariablesService {
         return user;
     }
 
-    public UserConfig getUserConfig() {
+    public void setUser(UserName user) {
+        this.user = user;
+    }
+
+    public T getUserConfig() {
         return userConfig;
     }
 
-    public String getExecuteSql() {
-        return executeSql;
+    public void setUserConfig(UserConfig userConfig) {
+        this.userConfig = (T) userConfig;
     }
 
-    public void setExecuteSql(String executeSql) {
-        this.executeSql = executeSql;
+    public int nextPacketId() {
+        return packetId.incrementAndGet();
+    }
+
+    public void setPacketId(int packetId) {
+        this.packetId.set(packetId);
+    }
+
+    public byte[] getSeed() {
+        return seed;
+    }
+
+    public void setSeed(byte[] seed) {
+        this.seed = seed;
+    }
+
+    public AtomicInteger getPacketId() {
+        return packetId;
     }
 
     public long getClientCapabilities() {
         return clientCapabilities;
+    }
+
+    // write
+    public void writeOkPacket() {
+        OkPacket ok = new OkPacket();
+        byte packet = (byte) this.packetId.incrementAndGet();
+        ok.read(OkPacket.OK);
+        ok.setPacketId(packet);
+        write(ok);
+    }
+
+    public void writeErrMessage(String code, String msg, int vendorCode) {
+        writeErrMessage((byte) this.nextPacketId(), vendorCode, code, msg);
+    }
+
+    public void writeErrMessage(int vendorCode, String msg) {
+        writeErrMessage((byte) this.nextPacketId(), vendorCode, msg);
+    }
+
+    public void writeErrMessage(byte id, int vendorCode, String msg) {
+        writeErrMessage(id, vendorCode, "HY000", msg);
+    }
+
+    protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        markFinished();
+        ErrorPacket err = new ErrorPacket();
+        err.setPacketId(id);
+        err.setErrNo(vendorCode);
+        err.setSqlState(StringUtil.encode(sqlState, charsetName.getResults()));
+        err.setMessage(StringUtil.encode(msg, charsetName.getResults()));
+        err.write(connection);
     }
 
     public void killAndClose(String reason) {

@@ -3,6 +3,7 @@ package com.actiontech.dble.services.rwsplit;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
@@ -16,6 +17,8 @@ import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
+import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
@@ -30,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RWSplitService extends BusinessService {
+public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
     private static final Pattern HINT_DEST = Pattern.compile(".*/\\*\\s*dble_dest_expect\\s*:\\s*([M|S])\\s*\\*/", Pattern.CASE_INSENSITIVE);
@@ -48,9 +51,10 @@ public class RWSplitService extends BusinessService {
     private final RWSplitNonBlockingSession session;
     private AtomicLong txId = new AtomicLong(0);
 
-    public RWSplitService(AbstractConnection connection) {
-        super(connection);
+    public RWSplitService(AbstractConnection connection, AuthResultInfo info) {
+        super(connection, info);
         this.session = new RWSplitNonBlockingSession(this);
+        this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(userConfig.getDbGroup()));
         this.queryHandler = new RWSplitQueryHandler(session);
         txChainBegin = true;
     }
@@ -85,10 +89,8 @@ public class RWSplitService extends BusinessService {
     }
 
     @Override
-    public void initFromAuthInfo(AuthResultInfo info) {
-        super.initFromAuthInfo(info);
-        this.session.setRwGroup(DbleServer.getInstance().getConfig().getDbGroups().get(((RwSplitUserConfig) userConfig).getDbGroup()));
-        StatisticListener.getInstance().register(session);
+    protected void beforeHandlingTask() {
+        TraceManager.sessionStart(this, "rwSplit-server-start");
     }
 
     @Override
@@ -153,6 +155,21 @@ public class RWSplitService extends BusinessService {
             case MySQLPacket.COM_FIELD_LIST:
                 commands.doOther();
                 writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport statement");
+                break;
+            case MySQLPacket.COM_SET_OPTION:
+                commands.doOther();
+                setOption(data);
+                break;
+            case MySQLPacket.COM_RESET_CONNECTION:
+                commands.doOther();
+                resetConnection();
+                writeOkPacket();
+                break;
+            case MySQLPacket.COM_CHANGE_USER:
+                commands.doOther();
+                final MySQLChangeUserService fService = new MySQLChangeUserService(connection, this);
+                connection.setService(fService);
+                fService.handleInnerData(data);
                 break;
             default:
                 commands.doOther();
@@ -299,10 +316,31 @@ public class RWSplitService extends BusinessService {
     }
 
     @Override
+    public void setTxStart(boolean txStart) {
+        this.txStarted = txStart;
+    }
+
+    @Override
     public void killAndClose(String reason) {
         session.close(reason);
         connection.close(reason);
         StatisticListener.getInstance().remove(session);
+    }
+
+    @Override
+    public void resetConnection() {
+        session.close("reset connection");
+
+        isLocked = false;
+        inPrepare = false;
+        inLoadData = false;
+        txStarted = false;
+        this.tmpTableSet.clear();
+        this.sysVariables.clear();
+        this.usrVariables.clear();
+        autocommit = SystemConfig.getInstance().getAutocommit() == 1;
+        txIsolation = SystemConfig.getInstance().getTxIsolation();
+        setCharacterSet(SystemConfig.getInstance().getCharset());
     }
 
     @Override

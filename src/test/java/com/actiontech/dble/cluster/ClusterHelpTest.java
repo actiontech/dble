@@ -22,8 +22,6 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.stream.XMLStreamException;
 import java.util.*;
 
 public class ClusterHelpTest {
@@ -34,9 +32,9 @@ public class ClusterHelpTest {
 
     ConfigInitializer configInitializerByJson = new ConfigInitializer(userConverter.userXmlToJson(), DBConverter.dbXmlToJson(), shardingConverter.shardingXmlToJson(), sequencePropsToJson);
 
-    ConfigInitializer configInitializerByXml = new ConfigInitializer(false);
+    ConfigInitializer configInitializerByXml = new ConfigInitializer();
 
-    public ClusterHelpTest() throws JAXBException, XMLStreamException {
+    public ClusterHelpTest() throws Exception {
         if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
             sequencePropsToJson = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
         } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:dble="http://dble.cloud/" attributeFormDefault="unqualified" elementFormDefault="qualified"
+           targetNamespace="http://dble.cloud/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:import schemaLocation="user_detail.xsd"/>
+    <xs:element name="user">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="managerUser"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="shardingUser"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="rwSplitUser"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="blacklist"/>
+            </xs:sequence>
+            <xs:attribute name="version" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

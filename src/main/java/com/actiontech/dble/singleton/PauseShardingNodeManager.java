@@ -9,7 +9,9 @@ import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.values.PauseInfo;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -18,6 +20,7 @@ import com.actiontech.dble.meta.PauseEndThreadPool;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -26,11 +29,8 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,7 +45,7 @@ public final class PauseShardingNodeManager {
     private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
-    private DistributeLock distributeLock = null;
+    private volatile DistributeLock distributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 
@@ -59,6 +59,57 @@ public final class PauseShardingNodeManager {
 
     public AtomicBoolean getIsPausing() {
         return this.isPausing;
+    }
+
+
+    public void fetchClusterStatus() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            DistributeLock tempPauseLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
+                    SystemConfig.getInstance().getInstanceName());
+            boolean locked = false;
+            try {
+                for (int i = 0; i < 5; i++) {
+                    if (!tempPauseLock.acquire()) {
+                        //cluster is doing pause or resume. normally ,it will release lock soon(unless a transaction hanged the operation).
+                        //so, need try again later.
+                        LOGGER.warn("another node is doing pause or resume. We will try to wait a while.");
+                    } else {
+                        locked = true;
+                        break;
+                    }
+                    Thread.sleep(3000);
+                }
+
+                if (!locked) {
+                    final String msg = "Other node in cluster is doing pause/resume operation. We can't bootstrap unless this operation is ok.";
+                    LOGGER.error(msg);
+                    throw new IllegalStateException(msg);
+                }
+
+                final KvBean pauseResultNode = ClusterHelper.getKV(ClusterPathUtil.getPauseResultNodePath());
+                if (pauseResultNode != null) {
+                    //cluster is Pausing
+                    final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
+                    Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(pauseInfo.getShardingNodes().split(",")));
+
+                    //pause self
+                    if (!getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit())) {
+                        //the error message can only show in single mode. So, this situation won't happen.
+                        final String msg = "IllegalState: shardingNodes is paused already";
+                        LOGGER.error(msg);
+                        throw new IllegalStateException(msg);
+                    }
+                }
+                //cluster is resuming.
+                //just return;
+                return;
+            } finally {
+                if (locked) {
+                    tempPauseLock.release();
+                }
+
+            }
+        }
     }
 
     public boolean startPausing(int timeOut, Set<String> ds, int queueLimit) {
@@ -193,28 +244,26 @@ public final class PauseShardingNodeManager {
     }
 
 
-    public boolean clusterPauseNotice(String shardingNode, int timeOut, int queueLimit) {
+    public void clusterPauseNotice(String shardingNode, int timeOut, int queueLimit) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            try {
-                if (this.isPausing.get()) {
-                    return false;
+            final KvBean pauseResultNode = ClusterHelper.getKV(ClusterPathUtil.getPauseResultNodePath());
+            if (pauseResultNode != null) {
+                if (isSelfPause(pauseResultNode)) {
+                    throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You are paused cluster already");
+                } else {
+                    throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Other node in cluster is pausing");
                 }
-                DistributeLock templock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
-                        SystemConfig.getInstance().getInstanceName());
-                if (!templock.acquire()) {
-                    return false;
-                }
-                distributeLock = templock;
-                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(),
-                        new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
-            } catch (Exception e) {
-                LOGGER.info("cluster connecction error", e);
-                return false;
             }
+            ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(),
+                    new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
         }
-        return true;
     }
 
+
+    public boolean isSelfPause(KvBean pauseResultNode) {
+        final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
+        return (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName()));
+    }
 
     public boolean waitForCluster(ManagerService service, long beginTime, long timeOut) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
@@ -256,9 +305,28 @@ public final class PauseShardingNodeManager {
 
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
-            distributeLock.release();
         }
 
+    }
+
+    public void releaseDistributeLock() {
+        if (distributeLock != null) {
+            distributeLock.release();
+            distributeLock = null;
+        }
+    }
+
+
+    public boolean getDistributeLock() {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            DistributeLock templock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
+                    SystemConfig.getInstance().getInstanceName());
+            if (!templock.acquire()) {
+                return false;
+            }
+            distributeLock = templock;
+        }
+        return true;
     }
 
     public Set<String> getShardingNodes() {

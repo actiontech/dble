@@ -7,8 +7,8 @@ package com.actiontech.dble.config;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.config.loader.xml.XMLDbLoader;
-import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
+import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.optimizer.ERJoinChooser;
@@ -24,11 +24,17 @@ public class ConfigTest {
 
     private Map<ERTable, Set<ERTable>> erRealtions;
 
-    public ConfigTest() {
+    private DBConverter dbConverter;
 
-        String shardingFile = "/config/sharding.xml";
-        XMLShardingLoader schemaLoader = new XMLShardingLoader(shardingFile, true, null);
-        this.erRealtions = schemaLoader.getErRelations();
+    public ConfigTest() throws Exception {
+
+        String dbXmlToJson = DBConverter.dbXmlToJson("./config/db.xml");
+        this.dbConverter = new DBConverter();
+        dbConverter.dbJsonToMap(dbXmlToJson, null);
+        ShardingConverter shardingConverter = new ShardingConverter();
+        String shardingXmlToJson = shardingConverter.shardingXmlToJson("./config/sharding.xml");
+        shardingConverter.shardingJsonToMap(shardingXmlToJson, dbConverter.getDbGroupMap(), null, null);
+        this.erRealtions = shardingConverter.getErRelations();
 
     }
 
@@ -124,9 +130,7 @@ public class ConfigTest {
      */
     @Test
     public void testReadHostWeight() throws Exception {
-        String dbFile = "/config/db.xml";
-        XMLDbLoader dbLoader = new XMLDbLoader(dbFile, null);
-        Map<String, PhysicalDbGroup> dbGroups = dbLoader.getDbGroups();
+        Map<String, PhysicalDbGroup> dbGroups = dbConverter.getDbGroupMap();
         PhysicalDbGroup pool = dbGroups.get("localhost2");
 
         PhysicalDbInstance source = pool.select(true);

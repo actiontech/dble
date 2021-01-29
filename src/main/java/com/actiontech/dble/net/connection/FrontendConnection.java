@@ -6,7 +6,6 @@ import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.FrontendService;
-import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
 
@@ -62,6 +61,7 @@ public class FrontendConnection extends AbstractConnection {
         ((ShardingService) this.getService()).getSession2().stopFlowControl();
     }
 
+    @Override
     public void cleanup() {
         if (isCleanUp.compareAndSet(false, true)) {
             super.cleanup();
@@ -94,8 +94,8 @@ public class FrontendConnection extends AbstractConnection {
         return (FrontendService) getService();
     }
 
-    public boolean convertToFrontEndService() {
-        return !(getService() instanceof MySQLFrontAuthService);
+    public boolean isAuthorized() {
+        return !(getService() instanceof AuthService);
     }
 
     public String toString() {

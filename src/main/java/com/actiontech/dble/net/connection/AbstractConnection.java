@@ -1,7 +1,8 @@
 package com.actiontech.dble.net.connection;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
+import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
+import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
@@ -10,6 +11,7 @@ import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -21,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -40,27 +43,24 @@ public abstract class AbstractConnection implements Connection {
     protected int localPort;
     protected int port;
 
+    private final ProtoHandler proto;
+    private volatile boolean isSupportCompress;
     private volatile AbstractService service;
     protected volatile IOProcessor processor;
-
     protected volatile String closeReason;
-
     protected volatile ByteBuffer readBuffer;
-
-    protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
-
     private volatile boolean flowControlled;
-
     protected int readBufferChunk;
-    protected int maxPacketSize;
-    protected volatile CharsetNames charsetName = new CharsetNames();
-
     protected final long startupTime;
     protected volatile long lastReadTime;
     protected volatile long lastWriteTime;
     protected long netInBytes;
     protected long netOutBytes;
     protected long lastLargeMessageTime;
+
+    protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
 
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
@@ -69,6 +69,7 @@ public abstract class AbstractConnection implements Connection {
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;
+        this.proto = new MySQLProtoHandlerImpl();
     }
 
     public void onReadData(int got) {
@@ -85,9 +86,62 @@ public abstract class AbstractConnection implements Connection {
             return;
         }
         netInBytes += got;
-        service.handle(readBuffer);
+        handle(readBuffer);
     }
 
+    private void handle(ByteBuffer dataBuffer) {
+        boolean hasRemaining = true;
+        int offset = 0;
+        while (hasRemaining) {
+            ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress);
+            switch (result.getCode()) {
+                case REACH_END_BUFFER:
+                    readReachEnd();
+                    byte[] packetData = result.getPacketData();
+                    if (packetData != null) {
+                        if (!isSupportCompress) {
+                            service.handle(new ServiceTask(packetData, service));
+                        } else {
+                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
+                            for (byte[] pack : packs) {
+                                if (pack.length != 0) {
+                                    service.handle(new ServiceTask(pack, service));
+                                }
+                            }
+                        }
+                    }
+                    dataBuffer.clear();
+                    hasRemaining = false;
+                    break;
+                case BUFFER_PACKET_UNCOMPLETE:
+                    compactReadBuffer(dataBuffer, result.getOffset());
+                    hasRemaining = false;
+                    break;
+                case BUFFER_NOT_BIG_ENOUGH:
+                    ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
+                    hasRemaining = false;
+                    break;
+                case STLL_DATA_REMING:
+                    byte[] partData = result.getPacketData();
+                    if (partData != null) {
+                        if (!isSupportCompress) {
+                            service.handle(new ServiceTask(partData, service));
+                        } else {
+                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(partData, decompressUnfinishedDataQueue);
+                            for (byte[] pack : packs) {
+                                if (pack.length != 0) {
+                                    service.handle(new ServiceTask(pack, service));
+                                }
+                            }
+                        }
+                    }
+                    offset = result.getOffset();
+                    continue;
+                default:
+                    throw new RuntimeException("unknown error when read data");
+            }
+        }
+    }
 
     public void close(String reason) {
         StatisticListener.getInstance().remove(service);
@@ -203,24 +257,7 @@ public abstract class AbstractConnection implements Connection {
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
-        this.setMaxPacketSize(system.getMaxPacketSize());
-        this.initCharacterSet(system.getCharset());
         this.setReadBufferChunk(soRcvBuf);
-    }
-
-    public void initCharacterSet(String name) {
-        charsetName.setClient(name);
-        charsetName.setResults(name);
-        charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
-    }
-
-    public void initCharsetIndex(int ci) {
-        String name = CharsetUtil.getCharset(ci);
-        if (name != null) {
-            charsetName.setClient(name);
-            charsetName.setResults(name);
-            charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
-        }
     }
 
     public final void recycle(ByteBuffer buffer) {
@@ -320,8 +357,8 @@ public abstract class AbstractConnection implements Connection {
             return;
         }
 
-        if (service.isSupportCompress()) {
-            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, new ConcurrentLinkedQueue<byte[]>());
+        if (isSupportCompress) {
+            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
             writeQueue.offer(new WriteOutTask(newBuffer, false));
         } else {
             writeQueue.offer(new WriteOutTask(buffer, false));
@@ -360,6 +397,14 @@ public abstract class AbstractConnection implements Connection {
         }
         if (service != null) {
             service.cleanup();
+        }
+
+        if (!decompressUnfinishedDataQueue.isEmpty()) {
+            decompressUnfinishedDataQueue.clear();
+        }
+
+        if (!compressUnfinishedDataQueue.isEmpty()) {
+            compressUnfinishedDataQueue.clear();
         }
 
         WriteOutTask task;
@@ -446,14 +491,6 @@ public abstract class AbstractConnection implements Connection {
         this.service = service;
     }
 
-    public int getMaxPacketSize() {
-        return maxPacketSize;
-    }
-
-    public void setMaxPacketSize(int maxPacketSize) {
-        this.maxPacketSize = maxPacketSize;
-    }
-
     public int getReadBufferChunk() {
         return readBufferChunk;
     }
@@ -463,21 +500,11 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public CharsetNames getCharsetName() {
-        return charsetName;
+        return service.getCharsetName();
     }
 
     public ByteBuffer getReadBuffer() {
         return readBuffer;
-    }
-
-    public void setCharacterSet(String name) {
-        charsetName.setClient(name);
-        charsetName.setResults(name);
-        charsetName.setCollation(DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_database"));
-    }
-
-    public void setCharsetName(CharsetNames charsetName) {
-        this.charsetName = charsetName.copyObj();
     }
 
     public String getCloseReason() {
@@ -506,6 +533,10 @@ public abstract class AbstractConnection implements Connection {
 
     public long getLastWriteTime() {
         return lastWriteTime;
+    }
+
+    public void setSupportCompress(boolean supportCompress) {
+        this.isSupportCompress = supportCompress;
     }
 
 }

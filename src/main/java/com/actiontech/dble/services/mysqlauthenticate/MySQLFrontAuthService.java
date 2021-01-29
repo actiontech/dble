@@ -7,12 +7,10 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.FrontendService;
@@ -40,7 +38,6 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     private static final PluginName[] MYSQL_DEFAULT_PLUGIN = {mysql_native_password, mysql_native_password, mysql_native_password, caching_sha2_password};
 
     private volatile AuthPacket authPacket;
-    private volatile byte[] seed;
     private volatile boolean needAuthSwitched;
     private volatile PluginName pluginName;
 
@@ -77,35 +74,6 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
-    }
-
-    private void checkForResult(AuthResultInfo info) {
-        if (info == null) {
-            return;
-        }
-        TraceManager.serviceTrace(this, "check-auth-result");
-        try {
-            if (info.isSuccess()) {
-                AbstractService service = BusinessServiceFactory.getBusinessService(info, connection);
-                connection.setService(service);
-                MySQLPacket packet = new OkPacket();
-                packet.setPacketId(needAuthSwitched ? 4 : 2);
-                packet.write(connection);
-                String schema;
-                GeneralLogHelper.putGLog(connection.getId(), MySQLPacket.TO_STRING.get(MySQLPacket.COM_CONNECT),
-                        info.getUserConfig().getName() + "@" + connection.getHost() +
-                                " on " + (schema = (schema = ((FrontendService) service).getSchema()) == null ? "" : schema) +
-                                " using TCP/IP");
-            } else {
-                writeOutErrorMessage(info.getErrorMsg());
-            }
-        } finally {
-            TraceManager.sessionFinish(this);
-        }
-    }
-
-    private void writeOutErrorMessage(String errorMsg) {
-        this.writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, errorMsg);
     }
 
     private void pingResponse() {
@@ -195,12 +163,49 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     }
 
     private void auth() {
-        String errMsg = AuthUtil.auth(new UserName(authPacket.getUser(), authPacket.getTenant()), connection, seed, authPacket.getPassword(), authPacket.getDatabase(), pluginName, authPacket.getClientFlags());
-        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(new UserName(authPacket.getUser(), authPacket.getTenant()));
-        checkForResult(new AuthResultInfo(errMsg, authPacket, userConfig));
+        AuthResultInfo info = AuthUtil.auth((FrontendConnection) connection, seed, pluginName, authPacket);
+        checkForResult(info);
         boolean isFoundRows = Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & authPacket.getClientFlags());
         if (!(userConfig instanceof ManagerUserConfig) && isFoundRows != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
             LOGGER.warn("the client requested CLIENT_FOUND_ROWS capabilities is '{}', dble is configured as '{}',pls set the same.", isFoundRows ? "found rows" : "affect rows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() ? "found rows" : "affect rows");
+        }
+    }
+
+    private void checkForResult(AuthResultInfo info) {
+        TraceManager.serviceTrace(this, "check-auth-result");
+        try {
+            if (info.isSuccess()) {
+                FrontendService service = BusinessServiceFactory.getBusinessService(info, connection);
+                // for com_change_user
+                service.setSeed(seed);
+                connection.setService(service);
+                writeOkPacket();
+                // must after sending ok packet
+                boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & authPacket.getClientFlags());
+                boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
+                if (clientCompress && usingCompress) {
+                    connection.setSupportCompress(true);
+                }
+                if (LOGGER.isDebugEnabled()) {
+                    StringBuilder s = new StringBuilder();
+                    s.append(this).append('\'').append(authPacket.getUser()).append("' login success");
+                    byte[] extra = authPacket.getExtra();
+                    if (extra != null && extra.length > 0) {
+                        s.append(",extra:").append(new String(extra));
+                    }
+                    LOGGER.debug(s.toString());
+                }
+                String schema;
+                GeneralLogHelper.putGLog(connection.getId(), MySQLPacket.TO_STRING.get(MySQLPacket.COM_CONNECT),
+                        info.getUserConfig().getName() + "@" + connection.getHost() +
+                                " on " + (schema = (schema = service.getSchema()) == null ? "" : schema) +
+                                " using TCP/IP");
+
+            } else {
+                this.writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, info.getErrorMsg());
+            }
+        } finally {
+            TraceManager.sessionFinish(this);
         }
     }
 

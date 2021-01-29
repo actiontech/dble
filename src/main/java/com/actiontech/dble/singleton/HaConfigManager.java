@@ -57,7 +57,7 @@ public final class HaConfigManager {
 
     public void init() throws Exception {
         try {
-            INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML);
+            INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(ConfigFileName.DB_XML, ConfigFileName.DB_XSD);
         } catch (Exception e) {
             HA_LOGGER.warn("DbParseXmlImpl parseXmlToBean JAXBException", e);
             throw e;

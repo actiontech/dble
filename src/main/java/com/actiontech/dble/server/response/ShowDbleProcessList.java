@@ -29,7 +29,6 @@ import java.util.*;
  * ShowProcessList
  *
  * @author collapsar
- * @author collapsar
  */
 public final class ShowDbleProcessList {
     private ShowDbleProcessList() {
@@ -105,13 +104,13 @@ public final class ShowDbleProcessList {
                 if (!CollectionUtil.isEmpty(backendConns)) {
                     for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
                         String shardingNode = entry.getKey().getName();
-                        long threadId = entry.getValue().getBackendService().getConnection().getThreadId();
+                        long threadId = entry.getValue().getThreadId();
                         // row data package
                         RowDataPacket row = getRow(fc, shardingNode, threadId, charset);
                         rows.add(row);
                         // index
-                        indexs.put(shardingNode + "." + String.valueOf(threadId), rows.size() - 1);
-                        // shardingnode map
+                        indexs.put(shardingNode + "." + threadId, rows.size() - 1);
+                        // sharding node map
                         if (shardingNodeMap.get(shardingNode) == null) {
                             List<Long> threadIds = new ArrayList<>(3);
                             threadIds.add(threadId);

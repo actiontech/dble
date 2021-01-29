@@ -3,9 +3,10 @@ package com.actiontech.dble.services.manager.information.tables.statistic;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
-import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
-import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
+import com.actiontech.dble.util.DateUtil;
 import com.google.common.collect.Maps;
 
 import java.util.*;
@@ -25,8 +26,8 @@ public class TableByUserByEntry extends ManagerBaseTable {
     private static final String COLUMN_SQL_DELETE_COUNT = "sql_delete_count";
     private static final String COLUMN_SQL_DELETE_ROWS = "sql_delete_rows";
     private static final String COLUMN_SQL_DELETE_TIME = "sql_delete_time";
-    private static final String COLUMN_SQL_SELECT_EXAMINED_ROWS = "sql_select_examined_rows";
     private static final String COLUMN_SQL_SELECT_COUNT = "sql_select_count";
+    private static final String COLUMN_SQL_SELECT_EXAMINED_ROWS = "sql_select_examined_rows";
     private static final String COLUMN_SQL_SELECT_ROWS = "sql_select_rows";
     private static final String COLUMN_SQL_SELECT_TIME = "sql_select_time";
     private static final String COLUMN_LAST_UPDATE_TIME = "last_update_time";
@@ -86,8 +87,8 @@ public class TableByUserByEntry extends ManagerBaseTable {
         columns.put(COLUMN_SQL_SELECT_TIME, new ColumnMeta(COLUMN_SQL_SELECT_TIME, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_TIME, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_LAST_UPDATE_TIME, new ColumnMeta(COLUMN_LAST_UPDATE_TIME, "int(11)", false, false));
-        columnsType.put(COLUMN_LAST_UPDATE_TIME, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_LAST_UPDATE_TIME, new ColumnMeta(COLUMN_LAST_UPDATE_TIME, "varchar(26)", false, false));
+        columnsType.put(COLUMN_LAST_UPDATE_TIME, Fields.FIELD_TYPE_VAR_STRING);
     }
 
     @Override
@@ -106,22 +107,22 @@ public class TableByUserByEntry extends ManagerBaseTable {
 
             map.put(COLUMN_SQL_INSERT_COUNT, String.valueOf(v.getValue().getInsertCount()));
             map.put(COLUMN_SQL_INSERT_ROWS, String.valueOf(v.getValue().getInsertRows()));
-            map.put(COLUMN_SQL_INSERT_TIME, String.valueOf(v.getValue().getInsertTime()));
+            map.put(COLUMN_SQL_INSERT_TIME, String.valueOf(v.getValue().getInsertTime() / 1000));
 
             map.put(COLUMN_SQL_UPDATE_COUNT, String.valueOf(v.getValue().getUpdateCount()));
             map.put(COLUMN_SQL_UPDATE_ROWS, String.valueOf(v.getValue().getUpdateRows()));
-            map.put(COLUMN_SQL_UPDATE_TIME, String.valueOf(v.getValue().getUpdateTime()));
+            map.put(COLUMN_SQL_UPDATE_TIME, String.valueOf(v.getValue().getUpdateTime() / 1000));
 
             map.put(COLUMN_SQL_DELETE_COUNT, String.valueOf(v.getValue().getDeleteCount()));
             map.put(COLUMN_SQL_DELETE_ROWS, String.valueOf(v.getValue().getDeleteRows()));
-            map.put(COLUMN_SQL_DELETE_TIME, String.valueOf(v.getValue().getDeleteTime()));
+            map.put(COLUMN_SQL_DELETE_TIME, String.valueOf(v.getValue().getDeleteTime() / 1000));
 
             map.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, String.valueOf(v.getValue().getSelectExaminedRowsRows()));
             map.put(COLUMN_SQL_SELECT_COUNT, String.valueOf(v.getValue().getSelectCount()));
             map.put(COLUMN_SQL_SELECT_ROWS, String.valueOf(v.getValue().getSelectRows()));
-            map.put(COLUMN_SQL_SELECT_TIME, String.valueOf(v.getValue().getSelectTime()));
+            map.put(COLUMN_SQL_SELECT_TIME, String.valueOf(v.getValue().getSelectTime() / 1000));
 
-            map.put(COLUMN_LAST_UPDATE_TIME, String.valueOf(v.getValue().getLastUpdateTime()));
+            map.put(COLUMN_LAST_UPDATE_TIME, DateUtil.parseStr(v.getValue().getLastUpdateTime()));
             list.add(map);
         });
         return list;

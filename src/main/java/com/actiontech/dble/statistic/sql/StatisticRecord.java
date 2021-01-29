@@ -3,6 +3,7 @@ package com.actiontech.dble.statistic.sql;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.BusinessService;
@@ -248,12 +249,14 @@ public class StatisticRecord {
         }
     }
 
-    public void onRWBackendSqlError(int errorNo) {
-        if (errorNo == ErrorCode.ER_PARSE_ERROR ||
-                errorNo == ErrorCode.ER_NO_SUCH_TABLE ||
-                errorNo == ErrorCode.ER_NO_DB_ERROR ||
-                errorNo == ErrorCode.ER_BAD_DB_ERROR ||
-                errorNo == ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS) {
+    public void onRWBackendSqlError(byte[] data) {
+        ErrorPacket errPg = new ErrorPacket();
+        errPg.read(data);
+        if (errPg.getErrNo() == ErrorCode.ER_PARSE_ERROR ||
+                errPg.getErrNo() == ErrorCode.ER_NO_SUCH_TABLE ||
+                errPg.getErrNo() == ErrorCode.ER_NO_DB_ERROR ||
+                errPg.getErrNo() == ErrorCode.ER_BAD_DB_ERROR ||
+                errPg.getErrNo() == ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS) {
             onFrontendSqlClose();
             return;
         }

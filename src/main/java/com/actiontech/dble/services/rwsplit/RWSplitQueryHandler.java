@@ -34,7 +34,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getService(), "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlStart());
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
         try {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();

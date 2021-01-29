@@ -19,8 +19,10 @@ import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -219,6 +221,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlClose());
         markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);

@@ -38,6 +38,7 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         } else {
             this.txStarted = txStart;
         }
+
     }
 
     public boolean isTxChainBegin() {

@@ -6,6 +6,7 @@ import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.statistic.sql.handler.AssociateTablesByEntryByUserCalcHandler;
 import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.util.DateUtil;
 import com.google.common.collect.Maps;
 
 import java.util.*;
@@ -51,8 +52,8 @@ public class AssociateTablesByEntryByUser extends ManagerBaseTable {
         columns.put(COLUMN_SQL_SELECT_TIME, new ColumnMeta(COLUMN_SQL_SELECT_TIME, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_TIME, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_LAST_UPDATE_TIME, new ColumnMeta(COLUMN_LAST_UPDATE_TIME, "int(11)", false, false));
-        columnsType.put(COLUMN_LAST_UPDATE_TIME, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_LAST_UPDATE_TIME, new ColumnMeta(COLUMN_LAST_UPDATE_TIME, "varchar(26)", false, false));
+        columnsType.put(COLUMN_LAST_UPDATE_TIME, Fields.FIELD_TYPE_VAR_STRING);
     }
 
     @Override
@@ -75,9 +76,9 @@ public class AssociateTablesByEntryByUser extends ManagerBaseTable {
                     map.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, String.valueOf(v.getValue().getSelectExaminedRowsRows()));
                     map.put(COLUMN_SQL_SELECT_COUNT, String.valueOf(v.getValue().getSelectCount()));
                     map.put(COLUMN_SQL_SELECT_ROWS, String.valueOf(v.getValue().getSelectRows()));
-                    map.put(COLUMN_SQL_SELECT_TIME, String.valueOf(v.getValue().getSelectTime()));
+                    map.put(COLUMN_SQL_SELECT_TIME, String.valueOf(v.getValue().getSelectTime() / 1000));
 
-                    map.put(COLUMN_LAST_UPDATE_TIME, String.valueOf(v.getValue().getLastUpdateTime()));
+                    map.put(COLUMN_LAST_UPDATE_TIME, DateUtil.parseStr(v.getValue().getLastUpdateTime()));
                     list.add(map);
                 });
         return list;

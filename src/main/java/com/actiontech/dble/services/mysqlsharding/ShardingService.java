@@ -463,9 +463,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
-            if (this.isTxStart() || !this.isAutocommit()) {
-                TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
-            }
+            TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
             session.commit();
         }
     }

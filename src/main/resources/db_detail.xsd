@@ -8,7 +8,7 @@
                     <xs:complexType>
                         <xs:simpleContent>
                             <xs:extension base="xs:string">
-                                <xs:attribute name="errorRetryCount" type="xs:nonNegativeInteger"/>
+                                <xs:attribute name="errorRetryCount" type="xs:integer"/>
                                 <xs:attribute name="timeout" type="xs:nonNegativeInteger"/>
                             </xs:extension>
                         </xs:simpleContent>
@@ -28,7 +28,7 @@
                             </xs:element>
                         </xs:sequence>
                         <xs:attribute name="url" type="xs:string" use="required"/>
-                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="name" type="xs:NMTOKEN" use="required"/>
                         <xs:attribute name="user" type="xs:string" use="required"/>
                         <xs:attribute name="password" type="xs:string" use="required"/>
                         <xs:attribute name="maxCon" type="xs:nonNegativeInteger" use="required"/>
@@ -42,15 +42,7 @@
                 </xs:element>
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
-            <xs:attribute name="rwSplitMode" use="required">
-                <xs:simpleType>
-                    <xs:restriction base="xs:nonNegativeInteger">
-                        <xs:enumeration value="0"/>
-                        <xs:enumeration value="1"/>
-                        <xs:enumeration value="2"/>
-                    </xs:restriction>
-                </xs:simpleType>
-            </xs:attribute>
+            <xs:attribute name="rwSplitMode" type="xs:nonNegativeInteger" use="required"/>
             <xs:attribute name="delayThreshold" type="xs:integer"/>
             <xs:attribute name="disableHA" type="xs:boolean"/>
         </xs:complexType>

@@ -566,7 +566,7 @@ public class ShardingConverter {
             if (props.size() > 0) {
                 String[] propItem = new String[props.size()];
                 props.keySet().toArray(propItem);
-                throw new ConfigException("These properties of functionInstance [" + functionName + "] is not recognized: " + StringUtil.join(propItem, ","));
+                throw new ConfigException("These properties of function [" + functionName + "] is not recognized: " + StringUtil.join(propItem, ","));
             }
 
             //init for AbstractPartitionAlgorithm

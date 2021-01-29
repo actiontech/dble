@@ -16,6 +16,7 @@ import org.junit.Test;
 public class ServerParserTest {
 
     ServerParse serverParse = ServerParseFactory.getShardingParser();
+
     @Test
     public void testIsBegin() {
         Assert.assertEquals(ServerParse.BEGIN, serverParse.parse("begin"));
@@ -95,6 +96,7 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("rollback  work   /* dble_dest_expect:M */"));
         Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("ROLLBACK"));
         Assert.assertEquals(ServerParse.ROLLBACK, serverParse.parse("rolLBACK "));
+        Assert.assertEquals(ServerParse.OTHER, serverParse.parse("rolLBACK @@xxxx"));
     }
 
     @Test

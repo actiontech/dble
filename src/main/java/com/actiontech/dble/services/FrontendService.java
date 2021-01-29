@@ -108,10 +108,13 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         }
     }
 
+    /**
+     * for multi statement
+     *
+     * @param packetData packet data
+     */
     protected void taskMultiQueryCreate(byte[] packetData) {
-        beforeHandlingTask();
-        ServiceTask task = new ServiceTask(packetData, this, true);
-        taskQueue.offer(task);
+        handle(new ServiceTask(packetData, this, true));
     }
 
     protected abstract void handleInnerData(byte[] data);

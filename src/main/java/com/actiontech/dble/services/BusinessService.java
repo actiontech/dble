@@ -17,6 +17,7 @@ import com.actiontech.dble.statistic.CommandCount;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class BusinessService<T extends UserConfig> extends FrontendService<T> {
+    protected volatile boolean txChainBegin;
     protected volatile boolean txStarted;
     protected final CommandCount commands;
     protected final AtomicLong queriesCounter = new AtomicLong(0);
@@ -32,7 +33,12 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
     }
 
     public void setTxStart(boolean txStart) {
-        this.txStarted = txStart;
+        if (!txStart && txChainBegin) {
+            txChainBegin = false;
+        } else {
+            this.txStarted = txStart;
+        }
+
     }
 
     public void queryCount() {

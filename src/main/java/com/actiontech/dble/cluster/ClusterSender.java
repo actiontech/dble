@@ -22,7 +22,7 @@ public interface ClusterSender {
      * 2 start customized connection controller
      *
      */
-    void initCluster();
+    void initCluster() throws Exception;
 
 
     /**

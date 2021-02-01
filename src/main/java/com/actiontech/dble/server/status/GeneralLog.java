@@ -14,7 +14,11 @@ public final class GeneralLog {
 
     private GeneralLog() {
         this.enableGeneralLog = SystemConfig.getInstance().getEnableGeneralLog() == 1;
-        File file = new File(SystemConfig.getInstance().getGeneralLogFile());
+        String logFile;
+        if (!(logFile = SystemConfig.getInstance().getGeneralLogFile()).startsWith(String.valueOf(File.separatorChar))) {
+            logFile = (SystemConfig.getInstance().getHomePath() + File.separatorChar + logFile).replaceAll(File.separator + "+", File.separator);
+        }
+        File file = new File(logFile);
         this.generalLogFile = file.getAbsolutePath();
         this.generalLogFileSize = SystemConfig.getInstance().getGeneralLogFileSize();
         this.generalLogQueueSize = SystemConfig.getInstance().getGeneralLogQueueSize();

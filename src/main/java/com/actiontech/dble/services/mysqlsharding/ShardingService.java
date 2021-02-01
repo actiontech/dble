@@ -67,7 +67,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private final MySQLProtoLogicHandler protoLogicHandler;
     private final MySQLShardingSQLHandler shardingSQLHandler;
 
-    private volatile boolean txChainBegin;
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
@@ -195,11 +194,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     protected void handleInnerData(byte[] data) {
         getSession2().startProcess();
-        if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
-            GeneralLogHelper.putGLog(this, data);
-        }
         try (RequestScope requestScope = new RequestScope()) {
-
             if (loadDataInfileHandler.isStart()) {
                 if (isEndOfDataFile(data)) {
                     loadDataInfileHandler.end(data[3]);
@@ -208,7 +203,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 }
                 return;
             }
-
+            if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
+                GeneralLogHelper.putGLog(this, data);
+            }
             this.requestScope = requestScope;
             switch (data[4]) {
                 case MySQLPacket.COM_INIT_DB:

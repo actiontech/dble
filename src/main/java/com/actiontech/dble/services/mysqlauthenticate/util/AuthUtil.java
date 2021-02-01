@@ -47,7 +47,7 @@ public final class AuthUtil {
         if (!checkPassword(seed, authPacket.getPassword(), userConfig.getPassword(), plugin)) {
             return new AuthResultInfo("Access denied for user '" + user + "', because password is incorrect");
         }
-        if (!DbleServer.getInstance().getConfig().isFullyConfigured()) {
+        if (!DbleServer.getInstance().getConfig().isFullyConfigured() && !fconn.isManager()) {
             return new AuthResultInfo("Access denied for user '" + user + "', because there are some empty dbGroup/fake dbInstance");
         }
         // check schema

@@ -78,7 +78,7 @@ public class ServerConfig {
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
-        confInitNew = new ConfigInitializer(false);
+        confInitNew = new ConfigInitializer();
         this.users = confInitNew.getUsers();
         this.dbGroups = confInitNew.getDbGroups();
 
@@ -573,11 +573,13 @@ public class ServerConfig {
         // init xml
         xmlProcess.initJaxbClass();
 
-        //sharding
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
         Gson gson = gsonBuilder.create();
-        ClusterLogic.syncShardingXmlToLocal(this.shardingConfig, xmlProcess, gson, isWriteToLocal);
+        //sharding
+        if (!StringUtil.isBlank(this.shardingConfig)) {
+            ClusterLogic.syncShardingXmlToLocal(this.shardingConfig, xmlProcess, gson, isWriteToLocal);
+        }
 
         //db
         ClusterLogic.syncDbXmlToLocal(xmlProcess, this.dbConfig, isWriteToLocal);

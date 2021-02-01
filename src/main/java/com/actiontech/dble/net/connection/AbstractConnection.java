@@ -48,7 +48,6 @@ public abstract class AbstractConnection implements Connection {
     protected volatile IOProcessor processor;
     protected volatile String closeReason;
     protected volatile ByteBuffer readBuffer;
-    protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
     private volatile boolean flowControlled;
     protected int readBufferChunk;
     protected final long startupTime;
@@ -57,6 +56,10 @@ public abstract class AbstractConnection implements Connection {
     protected long netInBytes;
     protected long netOutBytes;
     protected long lastLargeMessageTime;
+
+    protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
 
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
@@ -98,7 +101,7 @@ public abstract class AbstractConnection implements Connection {
                         if (!isSupportCompress) {
                             service.handle(new ServiceTask(packetData, service));
                         } else {
-                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, new ConcurrentLinkedQueue<>());
+                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
                             for (byte[] pack : packs) {
                                 if (pack.length != 0) {
                                     service.handle(new ServiceTask(pack, service));
@@ -123,7 +126,7 @@ public abstract class AbstractConnection implements Connection {
                         if (!isSupportCompress) {
                             service.handle(new ServiceTask(partData, service));
                         } else {
-                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(partData, new ConcurrentLinkedQueue<>());
+                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(partData, decompressUnfinishedDataQueue);
                             for (byte[] pack : packs) {
                                 if (pack.length != 0) {
                                     service.handle(new ServiceTask(pack, service));
@@ -353,7 +356,7 @@ public abstract class AbstractConnection implements Connection {
         }
 
         if (isSupportCompress) {
-            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, new ConcurrentLinkedQueue<byte[]>());
+            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
             writeQueue.offer(new WriteOutTask(newBuffer, false));
         } else {
             writeQueue.offer(new WriteOutTask(buffer, false));
@@ -392,6 +395,14 @@ public abstract class AbstractConnection implements Connection {
         }
         if (service != null) {
             service.cleanup();
+        }
+
+        if (!decompressUnfinishedDataQueue.isEmpty()) {
+            decompressUnfinishedDataQueue.clear();
+        }
+
+        if (!compressUnfinishedDataQueue.isEmpty()) {
+            compressUnfinishedDataQueue.clear();
         }
 
         WriteOutTask task;
@@ -523,7 +534,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void setSupportCompress(boolean supportCompress) {
-        isSupportCompress = supportCompress;
+        this.isSupportCompress = supportCompress;
     }
 
 }

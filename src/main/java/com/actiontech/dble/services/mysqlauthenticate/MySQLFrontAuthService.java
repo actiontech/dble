@@ -180,6 +180,12 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 service.setSeed(seed);
                 connection.setService(service);
                 writeOkPacket();
+                // must after sending ok packet
+                boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & authPacket.getClientFlags());
+                boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
+                if (clientCompress && usingCompress) {
+                    connection.setSupportCompress(true);
+                }
                 if (LOGGER.isDebugEnabled()) {
                     StringBuilder s = new StringBuilder();
                     s.append(this).append('\'').append(authPacket.getUser()).append("' login success");

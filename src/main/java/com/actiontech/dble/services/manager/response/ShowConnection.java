@@ -13,9 +13,8 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.services.VariablesService;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -168,7 +167,7 @@ public final class ShowConnection {
                     continue;
                 }
                 whereInfo.remove("front_id");
-                if (fc.convertToFrontEndService() && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
+                if (fc.isAuthorized() && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
                     RowDataPacket row = getRow(fc, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
@@ -177,7 +176,7 @@ public final class ShowConnection {
             }
 
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc != null && fc.convertToFrontEndService() && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
+                if (fc != null && fc.isAuthorized() && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
                     RowDataPacket row = getRow(fc, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
@@ -216,20 +215,17 @@ public final class ShowConnection {
 
     private static RowDataPacket getRow(FrontendConnection c, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        final FrontendService service = c.getFrontEndService();
         row.add(c.getProcessor().getName().getBytes());
         row.add(LongUtil.toBytes(c.getId()));
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(IntegerUtil.toBytes(c.getPort()));
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
-        row.add(StringUtil.encode(c.getFrontEndService().getUser().toString(), charset));
-        if (!c.isManager()) {
-            row.add(StringUtil.encode(((ShardingService) c.getService()).getSchema(), charset));
-        } else {
-            row.add(StringUtil.encode("", charset));
-        }
-        row.add(StringUtil.encode(c.getCharsetName().getClient(), charset));
-        row.add(StringUtil.encode(c.getCharsetName().getCollation(), charset));
-        row.add(StringUtil.encode(c.getCharsetName().getResults(), charset));
+        row.add(StringUtil.encode(service.getUser().toString(), charset));
+        row.add(StringUtil.encode(service.getSchema(), charset));
+        row.add(StringUtil.encode(service.getCharsetName().getClient(), charset));
+        row.add(StringUtil.encode(service.getCharsetName().getCollation(), charset));
+        row.add(StringUtil.encode(service.getCharsetName().getResults(), charset));
         row.add(LongUtil.toBytes(c.getNetInBytes()));
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));
@@ -240,14 +236,13 @@ public final class ShowConnection {
         String txLevel = "";
         String autocommit = "";
         if (!c.isManager()) {
-            ShardingService shardingService = (ShardingService) c.getService();
-            txLevel = shardingService.getTxIsolation() + "";
-            autocommit = shardingService.isAutocommit() + "";
+            txLevel = service.getTxIsolation() + "";
+            autocommit = service.isAutocommit() + "";
         }
         row.add(txLevel.getBytes());
         row.add(autocommit.getBytes());
-        row.add(StringUtil.encode(((VariablesService) c.getService()).getStringOfSysVariables(), charset));
-        row.add(StringUtil.encode(((VariablesService) c.getService()).getStringOfUsrVariables(), charset));
+        row.add(StringUtil.encode(service.getStringOfSysVariables(), charset));
+        row.add(StringUtil.encode(service.getStringOfUsrVariables(), charset));
         return row;
     }
 

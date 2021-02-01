@@ -34,10 +34,10 @@ public class MysqlDatabaseHandler {
         this.dbGroups = dbGroups;
     }
 
-    public Set<String> execute() {
+    public Set<String> execute(String dbGroupName) {
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
-        PhysicalDbInstance ds = getPhysicalDbInstance();
+        PhysicalDbInstance ds = getPhysicalDbInstance(dbGroupName);
         if (ds != null) {
             OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
@@ -48,28 +48,14 @@ public class MysqlDatabaseHandler {
         return databases;
     }
 
-    private PhysicalDbInstance getPhysicalDbInstance() {
+    private PhysicalDbInstance getPhysicalDbInstance(String dbGroupName) {
         PhysicalDbInstance ds = null;
-        for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-            PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
+        PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
+        PhysicalDbInstance dsTest;
+        if (dbGroup != null) {
+            dsTest = dbGroup.getWriteDbInstance();
             if (dsTest.isTestConnSuccess()) {
                 ds = dsTest;
-            }
-            if (ds != null) {
-                break;
-            }
-        }
-        if (ds == null) {
-            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
-                    if (dsTest.isTestConnSuccess()) {
-                        ds = dsTest;
-                        break;
-                    }
-                }
-                if (ds != null) {
-                    break;
-                }
             }
         }
         return ds;

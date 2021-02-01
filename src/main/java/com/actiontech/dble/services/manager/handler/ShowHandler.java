@@ -10,10 +10,10 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.response.*;
 import com.actiontech.dble.singleton.CapClientFoundRows;
 import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.sqlengine.TransformSQLJob;
@@ -35,6 +35,7 @@ import java.util.Iterator;
  */
 public final class ShowHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShowHandler.class);
+
     private ShowHandler() {
     }
 

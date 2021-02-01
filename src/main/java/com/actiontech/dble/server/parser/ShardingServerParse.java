@@ -1033,6 +1033,9 @@ public class ShardingServerParse extends AbstractServerParse {
                         case 'W':
                             return rollbackWorkCheck(stmt, offset);
                         default:
+                            if (!ParseUtil.isMultiEof(stmt, offset)) {
+                                return OTHER;
+                            }
                             break;
                     }
                 }

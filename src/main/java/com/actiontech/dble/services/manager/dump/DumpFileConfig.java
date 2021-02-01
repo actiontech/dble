@@ -10,7 +10,7 @@ public class DumpFileConfig {
     private String writePath;
     private int writeQueueSize = 500;
     private int maxValues = 4000;
-    private int threadNum;
+    private int threadNum = 2;
 
     private boolean isIgnore = false;
 

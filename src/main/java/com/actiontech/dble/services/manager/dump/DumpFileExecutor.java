@@ -81,6 +81,7 @@ public final class DumpFileExecutor implements Runnable {
                     handler.handle(this.context, statement);
                 }
             } catch (DumpException | SQLSyntaxErrorException e) {
+                assert stmt != null;
                 String currentStmt = (stmt != null ? stmt.length() : 0) <= 1024 ? stmt : stmt.substring(0, 1024);
                 this.context.setSkipContext(true);
                 LOGGER.warn("current stmt[" + currentStmt + "] error.", e);

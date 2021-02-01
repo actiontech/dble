@@ -27,7 +27,6 @@ import java.util.Map;
  * ShowProcessList
  *
  * @author collapsar
- * @author collapsar
  */
 public final class ShowProcessList {
     private ShowProcessList() {
@@ -80,7 +79,7 @@ public final class ShowProcessList {
     public static void execute(ManagerService service) {
         List<RowDataPacket> rows = new ArrayList<>();
         Map<String, Integer> indexs = new HashMap<>();
-        Map<String, List<Long>> shardingNodeMap = new HashMap<>(4, 1f);
+        Map<String, List<Long>> shardingNodeMap = new HashMap<>(8);
         String charset = service.getCharset().getResults();
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
@@ -100,8 +99,8 @@ public final class ShowProcessList {
                         RowDataPacket row = getRow(fc, shardingNode, threadId, charset);
                         rows.add(row);
                         // index
-                        indexs.put(shardingNode + "." + String.valueOf(threadId), rows.size() - 1);
-                        // shardingnode map
+                        indexs.put(shardingNode + "." + threadId, rows.size() - 1);
+                        // sharding node map
                         if (shardingNodeMap.get(shardingNode) == null) {
                             List<Long> threadIds = new ArrayList<>(3);
                             threadIds.add(threadId);

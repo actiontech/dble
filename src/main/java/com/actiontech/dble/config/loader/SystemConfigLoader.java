@@ -11,8 +11,8 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
-import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.SystemProperty;
@@ -142,6 +142,17 @@ public final class SystemConfigLoader {
                 StartProblemReporter.getInstance().addError("These properties in bootstrap.cnf or bootstrap.dynamic.cnf are not recognized: " + StringUtil.join(propItem, ","));
             }
         }
+        postSet(systemConfig);
+    }
+
+    /**
+     * do postCheck and postSetting here
+     *
+     * @param systemConfig
+     */
+    private static void postSet(SystemConfig systemConfig) {
+        final StartProblemReporter problemReporter = StartProblemReporter.getInstance();
+
         if (systemConfig.isUseDefaultPageNumber()) {
             systemConfig.setBufferPoolPageNumber((short) (Platform.getMaxDirectMemory() * 0.8 / systemConfig.getBufferPoolPageSize()));
         }
@@ -162,7 +173,7 @@ public final class SystemConfigLoader {
             if (validVersion) {
                 Versions.setServerVersion(systemConfig.getFakeMySQLVersion());
             } else {
-                StartProblemReporter.getInstance().addError("The specified MySQL Version (" + systemConfig.getFakeMySQLVersion() + ") is not valid, " +
+                problemReporter.addError("The specified MySQL Version (" + systemConfig.getFakeMySQLVersion() + ") is not valid, " +
                         "the version should look like 'x.y.z'.");
             }
         }
@@ -173,9 +184,18 @@ public final class SystemConfigLoader {
                 WriteDynamicBootstrap.getInstance().changeValue("useOuterHa", "true");
             } catch (IOException e) {
                 LOGGER.warn("setting useOuterHa=true to bootstrap.dynamic.cnf failed", e);
-                StartProblemReporter.getInstance().addError("setting useOuterHa=true to bootstrap.dynamic.cnf failed");
+                problemReporter.addError("setting useOuterHa=true to bootstrap.dynamic.cnf failed");
             }
         }
+
+
+        if (systemConfig.getHeapTableBufferChunkSize() == -1) {
+            LOGGER.info("Property 'heapTableBufferChunkSize' in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
+            systemConfig.setHeapTableBufferChunkSize(systemConfig.getBufferPoolChunkSize());
+        } else if (systemConfig.getHeapTableBufferChunkSize() % systemConfig.getBufferPoolChunkSize() != 0) {
+            problemReporter.warn("Property 'heapTableBufferChunkSize' in bootstrap.cnf is illegal, it must be a multiple of property 'bufferPoolChunkSize'");
+        }
+
     }
 
 }

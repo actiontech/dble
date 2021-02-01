@@ -98,7 +98,7 @@ public final class UcoreSender extends AbstractConsulSender {
                                     log("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ", null);
                                     // alert
                                     Thread.currentThread().interrupt();
-                                } else if (!renewLock(sessionId)) {
+                                } else if (!renewLock(sessionId, path)) {
                                     log("renew lock of session  failure:" + sessionId + " " + path, null);
                                     // alert
                                 } else {
@@ -194,6 +194,11 @@ public final class UcoreSender extends AbstractConsulSender {
         try {
             output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
         } catch (Exception e1) {
+            if (Thread.currentThread().isInterrupted()) {
+                //shouldn't print ex when is Interrupted.because it is called by release operation.
+                LOGGER.debug(" get ucore path {} is Interrupted.Mostly it caused by release lock.", path);
+                return new KvBean(path, null, 0);
+            }
             for (String ip : getIpList()) {
                 ManagedChannel channel = null;
                 try {
@@ -202,6 +207,11 @@ public final class UcoreSender extends AbstractConsulSender {
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
                 } catch (Exception e2) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        //shouldn't print ex when is Interrupted.because it is called by release operation.
+                        LOGGER.debug(" get ucore path {} is Interrupted.Mostly it caused by release lock.", path);
+                        return new KvBean(path, null, 0);
+                    }
                     LOGGER.info("connect to ucore error ", e2);
                     if (channel != null) {
                         channel.shutdownNow();
@@ -407,12 +417,17 @@ public final class UcoreSender extends AbstractConsulSender {
     }
 
 
-    public boolean renewLock(String sessionId) throws Exception {
+    public boolean renewLock(String sessionId, String path) throws Exception {
         UcoreInterface.RenewSessionInput input = UcoreInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
         try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
             return true;
         } catch (Exception e1) {
+            if (Thread.currentThread().isInterrupted()) {
+                //shouldn't print ex when is Interrupted.because it is called by release operation.
+                LOGGER.debug("lock {} is released. So renew lock failed. Session id is {}", path, sessionId);
+                return false;
+            }
             LOGGER.info("connect to ucore renew error and will retry");
             for (String ip : getIpList()) {
                 ManagedChannel channel = null;
@@ -423,6 +438,11 @@ public final class UcoreSender extends AbstractConsulSender {
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
                     return true;
                 } catch (Exception e2) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        //shouldn't print ex when is Interrupted.because it is called by release operation.
+                        LOGGER.debug("lock {} is released. So renew lock failed. Session id is {}", path, sessionId);
+                        return false;
+                    }
                     LOGGER.info("connect to ucore renew error " + stub, e2);
                     if (channel != null) {
                         channel.shutdownNow();

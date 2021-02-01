@@ -36,6 +36,9 @@ public interface ClusterSender {
 
     /**
      * get KV from cluster
+     * <p>
+     * NOTICE:
+     * if the path  not exists. This method will return a not-null {@code KvBean} .The value of  {@code KvBean} is depend on implementation . It could be NULL or EMPTY STRING  .
      *
      * @param path get path
      * @return key value pair

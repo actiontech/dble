@@ -9,12 +9,15 @@ import com.actiontech.dble.statistic.sql.handler.AssociateTablesByEntryByUserCal
 import com.actiontech.dble.statistic.sql.handler.FrontendByBackendByEntryByUserCalcHandler;
 import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 import com.actiontech.dble.statistic.sql.handler.TableByUserByEntryCalcHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class StatisticManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticManager.class);
     private static final StatisticManager INSTANCE = new StatisticManager();
     private StatisticDisruptor disruptor;
     private static Map<String, StatisticDataHandler> statisticDataHandlers = new HashMap<>(8);
@@ -27,6 +30,12 @@ public final class StatisticManager {
     private int statisticQueueSize = SystemConfig.getInstance().getStatisticQueueSize();
 
     private StatisticManager() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                close();
+                statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
+            }
+        });
     }
 
     public static StatisticManager getInstance() {
@@ -43,19 +52,30 @@ public final class StatisticManager {
     // start
     public void start() {
         if (isStart) return;
+        statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
         statisticListener.start();
         isStart = true;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("start sql statistic success");
+        }
     }
 
     // stop
     public void stop() {
         if (!isStart) return;
         statisticListener.stop();
-        disruptor.stop();
-        statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
+        if (disruptor != null)
+            disruptor.stop();
         isStart = false;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("stop sql statistic success");
+        }
+    }
+
+    public void close() {
+        stop();
     }
 
     // push

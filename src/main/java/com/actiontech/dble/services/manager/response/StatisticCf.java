@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.btrace.provider.StatisticProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
@@ -20,8 +21,9 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service, boolean isOn) {
-            LOCK.writeLock().lock();
             try {
+                LOCK.writeLock().lock();
+                StatisticProvider.onOffStatistic();
                 StatisticManager.getInstance().setEnable(isOn);
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(1);
@@ -40,9 +42,15 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service, String value) {
-            LOCK.writeLock().lock();
             try {
-                StatisticManager.getInstance().setStatisticTableSize(Integer.parseInt(value));
+                LOCK.writeLock().lock();
+                StatisticProvider.updateTableMaxSize();
+                int size = Integer.parseInt(StringUtil.removeAllApostrophe(value.trim()));
+                if (size < 1) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "tableMaxSize must be greater than 0");
+                    return;
+                }
+                StatisticManager.getInstance().setStatisticTableSize(size);
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(1);
                 ok.setAffectedRows(1);
@@ -81,8 +89,9 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service) {
-            LOCK.readLock().lock();
             try {
+                LOCK.readLock().lock();
+                StatisticProvider.showStatistic();
                 ByteBuffer buffer = service.allocate();
                 // write header
                 buffer = HEADER.write(buffer, service, true);

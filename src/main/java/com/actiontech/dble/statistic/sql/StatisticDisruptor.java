@@ -1,7 +1,8 @@
 package com.actiontech.dble.statistic.sql;
 
-import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.btrace.provider.StatisticProvider;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventTranslatorOneArg;
@@ -20,6 +21,7 @@ public class StatisticDisruptor {
     private EventTranslatorOneArg<StatisticEvent, StatisticEntry> translator;
 
     public StatisticDisruptor(int ringBufferSize, StatisticDataHandler... dataHandler) {
+        StatisticProvider.getStatisticQueueSize(ringBufferSize);
         eventFactory = EVENTFACTORY;
         translator = TRANSLATOR;
         disruptor = new Disruptor<>(eventFactory, ringBufferSize, new ThreadFactoryBuilder().setNameFormat("STATISTIC-%d").build(), ProducerType.MULTI, new LiteBlockingWaitStrategy());

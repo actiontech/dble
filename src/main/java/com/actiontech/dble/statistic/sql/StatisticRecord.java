@@ -43,7 +43,7 @@ public class StatisticRecord {
     }
 
     // tx
-    private StatisticTxEntry txEntry;
+    private volatile StatisticTxEntry txEntry;
     private volatile boolean isStartTx;
 
     public void onTxStartBySet(BusinessService businessService) {
@@ -107,7 +107,7 @@ public class StatisticRecord {
 
 
     // frontend sql
-    private StatisticFrontendSqlEntry frontendSqlEntry;
+    private volatile StatisticFrontendSqlEntry frontendSqlEntry;
     private volatile boolean isStartFsql = false;
 
     public void onFrontendSqlStart() {
@@ -157,11 +157,12 @@ public class StatisticRecord {
         if (isStartFsql && frontendSqlEntry != null) {
             if (frontendSqlEntry.getSql() == null) {
                 onFrontendSqlClose();
+            } else {
+                frontendSqlEntry.setAllEndTime(System.nanoTime());
+                isStartFsql = false;
+                onTxData(frontendSqlEntry);
+                pushFrontendSql();
             }
-            frontendSqlEntry.setAllEndTime(System.nanoTime());
-            isStartFsql = false;
-            onTxData(frontendSqlEntry);
-            pushFrontendSql();
         }
     }
 

@@ -6,26 +6,21 @@ import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticBackendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendByBackendByEntryByUserCalcHandler.class);
 
     Map<String, Record> records = new LinkedHashMap<>(1024);
     int entryId = 0;
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) {
-        // LOGGER.info("consuming:{}", event.getEntry().toString());
-        check();
         handle(statisticEvent.getEntry());
     }
 
-    public void check() {
+    public void checkEliminate() {
         synchronized (records) {
             int removeIndex;
             if ((removeIndex = records.values().size() - StatisticManager.getInstance().getStatisticTableSize()) > 0) {
@@ -53,6 +48,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                             Record currRecord;
                             boolean isNew = false;
                             if (isNew = ((currRecord = records.get(key)) == null)) {
+                                checkEliminate();
                                 currRecord = new Record(++entryId, entry.getFrontend(), v.getBackend());
                             }
                             currRecord.addTxRows(v.getRows());
@@ -62,35 +58,40 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                         });
                 keys.stream().forEach(k -> {
                     Record currRecord = records.get(k);
-                    currRecord.addTx(entry.getDuration());
+                    if (currRecord != null) {
+                        currRecord.addTx(entry.getDuration());
+                    }
                 });
             } else if (entry instanceof StatisticBackendSqlEntry) {
                 StatisticBackendSqlEntry backendSqlEntry = (StatisticBackendSqlEntry) entry;
-                String key = backendSqlEntry.getKey();
-                Record currRecord;
-                boolean isNew = false;
-                if (isNew = ((currRecord = records.get(key)) == null)) {
-                    currRecord = new Record(++entryId, entry.getFrontend(), backendSqlEntry.getBackend());
-                }
-                switch (backendSqlEntry.getSqlType()) {
-                    case 4:
-                        currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                        break;
-                    case 11:
-                        currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                        break;
-                    case 3:
-                        currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                        break;
-                    case 7:
-                        currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                        break;
-                    default:
-                        // ignore
-                        break;
-                }
-                if (isNew) {
-                    records.put(key, currRecord);
+                if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
+                    String key = backendSqlEntry.getKey();
+                    Record currRecord;
+                    boolean isNew = false;
+                    if (isNew = ((currRecord = records.get(key)) == null)) {
+                        checkEliminate();
+                        currRecord = new Record(++entryId, entry.getFrontend(), backendSqlEntry.getBackend());
+                    }
+                    switch (backendSqlEntry.getSqlType()) {
+                        case 4:
+                            currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        case 11:
+                            currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        case 3:
+                            currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        case 7:
+                            currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        default:
+                            // ignore
+                            break;
+                    }
+                    if (isNew) {
+                        records.put(key, currRecord);
+                    }
                 }
             }
         }
@@ -106,6 +107,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
 
     @Override
     public Map<String, Record> getList() {
+        checkEliminate();
         return new HashMap<>(records);
     }
 

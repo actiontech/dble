@@ -33,7 +33,6 @@ public final class StatisticManager {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 close();
-                statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
             }
         });
     }
@@ -76,6 +75,7 @@ public final class StatisticManager {
 
     public void close() {
         stop();
+        statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
     }
 
     // push

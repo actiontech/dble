@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthResultInfo;
@@ -78,6 +79,12 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     @Override
     public void execute(ServiceTask task) {
+        // prevents QUIT from losing cumulative
+        if (task.getOrgData().length > 4 && task.getOrgData()[4] == MySQLPacket.COM_QUIT) {
+            this.handleInnerData(task.getOrgData());
+            return;
+        }
+
         if (connection.isClosed()) {
             return;
         }

@@ -26,6 +26,7 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,10 +86,11 @@ public final class PauseShardingNodeManager {
                     LOGGER.error(msg);
                     throw new IllegalStateException(msg);
                 }
-
+                LOGGER.info("fetched Pause lock");
                 final KvBean pauseResultNode = ClusterHelper.getKV(ClusterPathUtil.getPauseResultNodePath());
-                if (pauseResultNode != null) {
+                if (pauseResultNode != null && Strings.isNotEmpty(pauseResultNode.getValue())) {
                     //cluster is Pausing
+                    LOGGER.info("get pause  value :{}", pauseResultNode.getValue());
                     final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(pauseInfo.getShardingNodes().split(",")));
 
@@ -106,6 +108,7 @@ public final class PauseShardingNodeManager {
             } finally {
                 if (locked) {
                     tempPauseLock.release();
+                    LOGGER.info("released pause lock");
                 }
 
             }

@@ -1,6 +1,5 @@
 package com.actiontech.dble.services.rwsplit;
 
-import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
@@ -39,7 +38,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
             if (serverParse.isMultiStatement(sql)) {
-                if ((session.getService().getClientCapabilities() & Capabilities.CLIENT_MULTI_STATEMENTS) == 0) {
+                if (!session.getService().isMultiStatementAllow()) {
                     LOGGER.warn("use multi-query without set CLIENT_MULTI_STATEMENTS flag");
                     session.getService().writeErrMessage(ErrorCode.ERR_WRONG_USED, "Your client must enable multi-query param . For example in jdbc,you should set allowMultiQueries=true in URL.");
                     return;

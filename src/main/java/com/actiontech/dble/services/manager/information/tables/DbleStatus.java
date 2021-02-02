@@ -55,18 +55,18 @@ public class DbleStatus extends ManagerBaseTable {
         TsQueriesCounter.CalculateResult result = TsQueriesCounter.getInstance().calculate();
 
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
-        list.add(genRow("uptime", ((double) upTime / 1000) + "s", "length of time to start dble"));
-        list.add(genRow("current_timestamp", FormatUtil.formatDate(now), "the current time of the dble system"));
-        list.add(genRow("startup_timestamp", FormatUtil.formatDate(startupTime), "dble system startup time"));
-        list.add(genRow("config_reload_timestamp", FormatUtil.formatDate(server.getConfig().getReloadTime()), "last config load time"));
-        list.add(genRow("heap_memory_max", memoryMax + "", "the maximum amount of memory that the virtual machine will attempt to use, measured in bytes"));
-        list.add(genRow("heap_memory_used", memoryUsed + "", "heap memory usage, measured in bytes"));
-        list.add(genRow("heap_memory_total", memoryTotal + "", "the total of heap memory, measured in bytes"));
-        list.add(genRow("direct_memory_max", Platform.getMaxDirectMemory() + "", "max direct memory, measured in bytes"));
-        list.add(genRow("direct_memory_pool_size", poolSize + "", "size of the memory pool, is equal to the product of BufferPoolPagesize and BufferPoolPagenumber, measured in bytes"));
-        list.add(genRow("direct_memory_pool_used", poolUsed + "", "directmemory memory in the memory pool that has been used, measured in bytes"));
-        list.add(genRow("questions", result.queries + "", "number of requests"));
-        list.add(genRow("transactions", result.transactions + "", "number of transactions"));
+        list.add(genRow("uptime", ((double) upTime / 1000) + "s", "Length of time to start dble"));
+        list.add(genRow("current_timestamp", FormatUtil.formatDate(now), "The current time of the dble system"));
+        list.add(genRow("startup_timestamp", FormatUtil.formatDate(startupTime), "Dble system startup time"));
+        list.add(genRow("config_reload_timestamp", FormatUtil.formatDate(server.getConfig().getReloadTime()), "Last config load time"));
+        list.add(genRow("heap_memory_max", memoryMax + "B", "The maximum amount of memory that the virtual machine will attempt to use, measured in bytes"));
+        list.add(genRow("heap_memory_used", memoryUsed + "B", "Heap memory usage, measured in bytes"));
+        list.add(genRow("heap_memory_total", memoryTotal + "B", "The total of heap memory, measured in bytes"));
+        list.add(genRow("direct_memory_max", Platform.getMaxDirectMemory() + "B", "Max direct memory, measured in bytes"));
+        list.add(genRow("direct_memory_pool_size", poolSize + "B", "Size of the memory pool, is equal to the product of BufferPoolPagesize and BufferPoolPagenumber, measured in bytes"));
+        list.add(genRow("direct_memory_pool_used", poolUsed + "B", "DirectMemory memory in the memory pool that has been used, measured in bytes"));
+        list.add(genRow("questions", result.queries + "", "Number of requests"));
+        list.add(genRow("transactions", result.transactions + "", "Number of transactions"));
         return list;
     }
 

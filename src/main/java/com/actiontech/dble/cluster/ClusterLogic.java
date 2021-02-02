@@ -54,6 +54,7 @@ import com.actiontech.dble.util.TimeUtil;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -310,7 +311,7 @@ public final class ClusterLogic {
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(shardingNodes.split(",")));
                     PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit());
 
-                    while (!Thread.interrupted()) {
+                    while (!Thread.currentThread().isInterrupted()) {
                         lock.lock();
                         try {
                             boolean nextTurn = false;
@@ -334,6 +335,7 @@ public final class ClusterLogic {
                                 }
                             }
                             if (!nextTurn) {
+                                LOGGER.info("create self pause node.");
                                 ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), ClusterPathUtil.SUCCESS);
                                 break;
                             }
@@ -342,6 +344,7 @@ public final class ClusterLogic {
                         }
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100L));
                     }
+                    LOGGER.info("pause for slave done. interruptedFlag:" + Thread.currentThread().isInterrupted());
 
                 } catch (Exception e) {
                     LOGGER.warn(" the ucore pause error " + e.getMessage());
@@ -374,16 +377,18 @@ public final class ClusterLogic {
 
     public static void checkPauseStatusRelease(String crashNode) {
         try {
-            String fromNode = ClusterHelper.getPathValue(ClusterPathUtil.getPauseShardingNodePath());
+            String fromNode = ClusterHelper.getPathValue(ClusterPathUtil.getPauseResultNodePath());
             boolean needRelease = false;
-            if (!"".equals(fromNode)) {
+            if (Strings.isNotEmpty(fromNode)) {
                 PauseInfo pauseInfo = new PauseInfo(fromNode);
                 if (pauseInfo.getFrom().equals(crashNode)) {
                     needRelease = true;
                 }
             } else if (PauseShardingNodeManager.getInstance().getIsPausing().get()) {
+                LOGGER.warn("No PAUSE information found .But this node self is pausing. Maybe the cluster is doing resume,or something has wrong. ");
                 needRelease = true;
             }
+
             if (needRelease) {
                 ClusterHelper.forceResumePause();
             }

@@ -90,6 +90,7 @@ public class ZkSender implements ClusterSender {
             }
             ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(path);
         } catch (Exception e) {
+            LOGGER.debug("", e);
             LOGGER.warn("delete zk path failed:" + path);
         }
     }
@@ -99,6 +100,7 @@ public class ZkSender implements ClusterSender {
         try {
             ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(path);
         } catch (Exception e1) {
+            LOGGER.debug("", e1);
             throw new RuntimeException("cleanKV failure for" + path);
         }
     }

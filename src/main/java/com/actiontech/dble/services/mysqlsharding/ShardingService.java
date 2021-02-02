@@ -203,7 +203,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 }
                 return;
             }
-            if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
+            if (data[4] != MySQLPacket.COM_STMT_EXECUTE && data[4] != MySQLPacket.COM_QUIT) {
                 GeneralLogHelper.putGLog(this, data);
             }
             this.requestScope = requestScope;

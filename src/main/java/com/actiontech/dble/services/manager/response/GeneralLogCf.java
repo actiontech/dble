@@ -45,12 +45,8 @@ public final class GeneralLogCf {
                 WriteDynamicBootstrap.getInstance().changeValue("enableGeneralLog", isOn ? "1" : "0");
                 isWrite = true;
                 if (isOn) {
-                    boolean e = GeneralLogProcessor.getInstance().isEnable();
                     GeneralLog.getInstance().setEnableGeneralLog(isOn);
                     GeneralLogProcessor.getInstance().enable();
-                    if (!e) {
-                        GeneralLogHelper.putGLog(FILE_HEADER);
-                    }
                 } else {
                     GeneralLog.getInstance().setEnableGeneralLog(isOn);
                     GeneralLogProcessor.getInstance().disable();

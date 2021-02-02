@@ -4,6 +4,7 @@ import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImp
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
@@ -78,6 +79,9 @@ public abstract class AbstractConnection implements Connection {
 
         lastReadTime = TimeUtil.currentTimeMillis();
         if (got < 0) {
+            if (this instanceof FrontendConnection) {
+                GeneralLogHelper.putGLog(((FrontendConnection) this).getFrontEndService(), new byte[]{01, 00, 00, 00, 01});
+            }
             this.close("stream closed");
             return;
         } else if (got == 0 && !this.channel.isOpen()) {

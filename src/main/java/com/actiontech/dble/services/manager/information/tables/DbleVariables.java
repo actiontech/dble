@@ -47,9 +47,8 @@ public final class DbleVariables extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>();
         lst.add(genRow("version_comment", new String(Versions.VERSION_COMMENT), "version_comment", true));
         lst.add(genRow("isOnline", DbleServer.getInstance().isOnline() + "", "When it is set to offline, COM_PING/COM_HEARTBEAT/SELECT USER()/SELECT CURRENT_USER() will return error", false));
-        lst.add(genRow("heap_memory_max", Runtime.getRuntime().maxMemory() + "", "The maximum amount of memory that the virtual machine will attempt to use, measured in bytes", true));
-        lst.add(genRow("direct_memory_max", Platform.getMaxDirectMemory() + "", "Max direct memory", true));
-
+        lst.add(genRow("heap_memory_max", Runtime.getRuntime().maxMemory() + "B", "The maximum amount of memory that the virtual machine will attempt to use, measured in bytes", true));
+        lst.add(genRow("direct_memory_max", Platform.getMaxDirectMemory() + "B", "Max direct memory", true));
         lst.addAll(getVolatileParams());
         lst.addAll(readOnlyLst);
         return lst;

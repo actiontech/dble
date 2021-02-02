@@ -3,7 +3,6 @@
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
-<!DOCTYPE dble:sharding SYSTEM "sharding.dtd">
 <dble:sharding xmlns:dble="http://dble.cloud/" version="3.0">
     <schema name="cndb" >
         <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id"/>

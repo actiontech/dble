@@ -246,7 +246,7 @@ public class UserConverter {
                 UserPrivilegesConfig.TablePrivilege tablePrivilege = new UserPrivilegesConfig.TablePrivilege();
 
                 if (!DML_PATTERN.matcher(tableDml).matches())
-                    throw new ConfigException("User [" + userConfig.getName() + "]'s schema [" + schemaName + "]'s table [" + tableDml + "]'s privilege's dml is not correct");
+                    throw new ConfigException("User [" + userConfig.getName() + "]'s schema [" + schemaName + "]'s table [" + table.getName() + "]'s privilege's dml is not correct");
                 int[] dml2Array = new int[tableDml.length()];
                 for (int offset2 = 0; offset2 < tableDml.length(); offset2++) {
                     dml2Array[offset2] = Character.getNumericValue(tableDml.charAt(offset2));

@@ -40,9 +40,9 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
             } catch (Exception t) {
                 LOGGER.info("routeNormalSqlWithAST", t);
                 if (t.getMessage() != null) {
-                    throw new SQLSyntaxErrorException(t.getMessage());
+                    throw new SQLSyntaxErrorException("druid not support sql syntax, the reason is " + t.getMessage());
                 } else {
-                    throw new SQLSyntaxErrorException(t);
+                    throw new SQLSyntaxErrorException("druid not support sql syntax, the reason is " + t);
                 }
             }
         } finally {

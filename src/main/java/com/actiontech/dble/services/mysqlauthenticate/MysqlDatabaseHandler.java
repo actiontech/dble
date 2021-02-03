@@ -73,25 +73,11 @@ public class MysqlDatabaseHandler {
 
     public List<PhysicalDbInstance> getPhysicalDbInstances() {
         List<PhysicalDbInstance> physicalDbInstanceList = new ArrayList<>();
-        PhysicalDbInstance ds = null;
+        PhysicalDbInstance ds;
         for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-            PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
-            if (dsTest.isTestConnSuccess()) {
-                ds = dsTest;
-            }
-            if (ds != null) {
-                physicalDbInstanceList.add(ds);
-            }
-        }
-        if (ds == null) {
-            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
-                    if (dsTest.isTestConnSuccess()) {
-                        ds = dsTest;
-                        physicalDbInstanceList.add(ds);
-                    }
-                }
-                if (ds != null) {
+            for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
+                if (dsTest.isTestConnSuccess()) {
+                    ds = dsTest;
                     physicalDbInstanceList.add(ds);
                 }
             }

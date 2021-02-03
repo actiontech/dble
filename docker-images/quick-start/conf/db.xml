@@ -3,7 +3,6 @@
   ~ Copyright (C) 2016-2020 ActionTech.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
-<!DOCTYPE dble:db SYSTEM "db.dtd">
 <dble:db xmlns:dble="http://dble.cloud/" version="4.0">
     <dbGroup name="dbGroup1" rwSplitMode="2" delayThreshold="100">
         <heartbeat>show slave status</heartbeat>

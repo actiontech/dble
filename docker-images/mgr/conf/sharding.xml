@@ -4,7 +4,6 @@
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
-<!DOCTYPE dble:sharding SYSTEM "sharding.dtd">
 <dble:sharding xmlns:dble="http://dble.cloud/" version="4.0">
 
     <schema name="testdb"  sqlMaxLimit="100">

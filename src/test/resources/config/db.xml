@@ -18,7 +18,6 @@
  - See the License for the specific language governing permissions and
  - limitations under the License.
 -->
-<!DOCTYPE dble:db SYSTEM "db.dtd">
 <dble:db xmlns:dble="http://dble.cloud/">
 
     <dbGroup name="localhost1" rwSplitMode="0" >

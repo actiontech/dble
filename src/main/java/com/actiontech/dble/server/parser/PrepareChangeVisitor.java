@@ -35,8 +35,14 @@ public class PrepareChangeVisitor extends MySqlASTVisitorAdapter {
             append the  '1!=1' condition.
             So every sql  return field packets with zero rows.
          */
-        final SQLExpr sqlExpr = SQLUtils.buildCondition(SQLBinaryOperator.BooleanAnd, SQLUtils.toSQLExpr("1!=1"), true, x.getWhere());
-        x.setWhere(sqlExpr);
+
+        if (x.getFrom() != null) {
+            final SQLExpr sqlExpr = SQLUtils.buildCondition(SQLBinaryOperator.BooleanAnd, SQLUtils.toSQLExpr("1!=1"), true, x.getWhere());
+            x.setWhere(sqlExpr);
+        } else {
+            //if a sql without reference any table. it shouldn't add '1!=1' condition.  Although it works in msyql 8.0 but cause syntax error in mysql 5.7.
+        }
+
         x.setGroupBy(null);
         x.setOrderBy(null);
         /*

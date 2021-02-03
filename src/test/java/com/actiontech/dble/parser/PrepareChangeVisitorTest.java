@@ -37,13 +37,25 @@ public class PrepareChangeVisitorTest {
         check("select fun(?) as A,t.*,*,id where id in(?,?) group by ?  having ? ");
     }
 
-    private void check(String sql3) {
+    @Test
+    public void check4() {
+        final String str = check("select ?");
+        String target = "/* used for prepare statement. */\n" +
+                "SELECT true\n" +
+                "LIMIT 0";
+        Assert.assertEquals(target, str);
+    }
+
+    private String check(String sql3) {
         final List<SQLStatement> statements = SQLUtils.parseStatements(sql3, MYSQL, true);
         for (SQLStatement statement : statements) {
             final PrepareChangeVisitor visitor = new PrepareChangeVisitor();
             statement.accept(visitor);
+            System.out.println(statement.toString());
             Assert.assertTrue("doesn't clear all placeholder", !statement.toString().contains("?"));
+            return statement.toString();
         }
+        return null;
     }
 
 }

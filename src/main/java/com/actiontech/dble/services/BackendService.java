@@ -514,6 +514,8 @@ public abstract class BackendService extends AbstractService {
             if (autocommit != null) {
                 service.autocommit = autocommit;
             }
+            service.sysVariables.clear();
+            service.usrVariables.clear();
             service.sysVariables.putAll(sysVariables);
             service.usrVariables.putAll(usrVariables);
         }

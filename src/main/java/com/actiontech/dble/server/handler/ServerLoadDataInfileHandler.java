@@ -446,7 +446,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
-            service.updateLastReadTime();
+            service.getConnection().updateLastReadTime();
             data.setData(null);
         }
     }

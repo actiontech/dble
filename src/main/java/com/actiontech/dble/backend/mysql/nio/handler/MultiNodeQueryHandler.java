@@ -312,6 +312,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (ok.getInsertId() > 0) {
                     insertId = (insertId == 0) ? ok.getInsertId() : Math.min(insertId, ok.getInsertId());
                 }
+                if (rrs.isLoadData()) {
+                    service.getConnection().updateLastReadTime();
+                }
                 if (!decrementToZero((MySQLResponseService) service))
                     return;
                 if (isFail()) {

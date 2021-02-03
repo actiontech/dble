@@ -19,16 +19,14 @@ import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -320,6 +318,7 @@ public class MySQLResponseService extends BackendService {
     public void onConnectionClose(String reason) {
         final ResponseHandler handler = responseHandler;
         final MySQLResponseService responseService = this;
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onBackendSqlEnd(responseService));
         DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
             try {
                 responseService.backendSpecialCleanUp();

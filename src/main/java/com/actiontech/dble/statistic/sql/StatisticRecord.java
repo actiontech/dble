@@ -182,7 +182,7 @@ public class StatisticRecord {
             if (txEntry != null) {
                 entry.setTxId(shardingService.getXid());
             }
-            String key = connection.getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+            String key = connection.getId() + ":" + node.getName() + ":" + node.getStatementHash();
             frontendSqlEntry.put(key, entry);
         }
     }
@@ -210,7 +210,7 @@ public class StatisticRecord {
     public void onBackendSqlSetRows(MySQLResponseService service, long rows) {
         if (isStartFsql && frontendSqlEntry != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+            String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
                 frontendSqlEntry.getBackendSqlEntry(key).setRows(rows);
                 frontendSqlEntry.addExaminedRows(rows);
@@ -221,7 +221,7 @@ public class StatisticRecord {
     public void onBackendSqlAddRows(MySQLResponseService service) {
         if (isStartFsql && frontendSqlEntry != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+            String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
                 frontendSqlEntry.getBackendSqlEntry(key).addRows();
                 frontendSqlEntry.addExaminedRows();
@@ -232,7 +232,7 @@ public class StatisticRecord {
     public void onBackendSqlEnd(MySQLResponseService service) {
         if (isStartFsql && frontendSqlEntry != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+            String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
                 frontendSqlEntry.getBackendSqlEntry(key).setAllEndTime(System.nanoTime());
                 pushBackendSql(frontendSqlEntry.getBackendSqlEntry(key));

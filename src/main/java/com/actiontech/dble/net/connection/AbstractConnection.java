@@ -10,8 +10,8 @@ import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -24,6 +24,7 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -144,6 +145,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void close(String reason) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEndByRollback());
         StatisticListener.getInstance().remove(service);
         if (isClosed.compareAndSet(false, true)) {
             closeSocket();

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster.zkprocess.parse;
 
-import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -76,11 +75,6 @@ public class XmlProcessBase {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
 
-            if (null != name) {
-                marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
-            }
-
             Path path = Paths.get(inputPath);
 
             out = Files.newOutputStream(path, StandardOpenOption.CREATE,
@@ -146,11 +140,6 @@ public class XmlProcessBase {
             Marshaller marshaller = this.jaxContext.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
-
-            if (null != name) {
-                marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
-                        String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
-            }
 
             Path path = Paths.get(inputPath + ".dble.safe");
 

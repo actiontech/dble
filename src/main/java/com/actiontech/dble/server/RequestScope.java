@@ -17,11 +17,11 @@ import java.io.Closeable;
  * @author dcy
  */
 public class RequestScope implements Closeable {
-    private OutputStateEnum outputState = OutputStateEnum.NORMAL_QUERY;
-    private boolean usingCursor = false;
-    private boolean prepared = false;
-    private boolean usingJoin = false;
-    private PreparedStatement currentPreparedStatement;
+    private volatile OutputStateEnum outputState = OutputStateEnum.NORMAL_QUERY;
+    private volatile boolean usingCursor = false;
+    private volatile boolean prepared = false;
+    private volatile boolean usingJoin = false;
+    private volatile PreparedStatement currentPreparedStatement;
 
 
     public boolean isUsingJoin() {

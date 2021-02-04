@@ -27,14 +27,14 @@ import java.util.function.Consumer;
 public class PreparedStatement implements Closeable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PreparedStatement.class);
-    private long id;
-    private String statement;
-    private int columnsNumber;
-    private int parametersNumber;
-    private int[] parametersType;
-    private CursorCache cursorCache;
-    private List<FieldPacket> fieldPackets;
-    private Consumer<Integer> prepareCallback = null;
+    private final long id;
+    private final String statement;
+    private volatile int columnsNumber;
+    private final int parametersNumber;
+    private final int[] parametersType;
+    private volatile CursorCache cursorCache;
+    private volatile List<FieldPacket> fieldPackets;
+    private volatile Consumer<Integer> prepareCallback = null;
 
     /**
      * store the byte data from COM_STMT_SEND_LONG_DATA

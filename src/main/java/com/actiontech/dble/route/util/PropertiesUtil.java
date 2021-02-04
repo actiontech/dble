@@ -41,7 +41,7 @@ public final class PropertiesUtil {
         return props;
     }
 
-    public static Map<String, String> getOrderedProperties(String propsFile) {
+    public static Map<String, String> getOrderedMap(String propsFile) {
         try (InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile)) {
             if (inp == null) {
                 throw new java.lang.RuntimeException("sequence properties not found " + propsFile);

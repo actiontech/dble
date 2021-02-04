@@ -210,16 +210,17 @@ public final class ShowBackend {
         row.add(stateStr(state).getBytes());
         row.add(IntegerUtil.toBytes(c.getWriteQueue().size()));
         row.add((c.getSchema() == null ? "NULL" : c.getSchema()).getBytes());
-        row.add(c.getCharsetName().getClient().getBytes());
-        row.add(c.getCharsetName().getCollation().getBytes());
-        row.add(c.getCharsetName().getResults().getBytes());
-        row.add(null == c.getBackendService() ? null : (c.getBackendService().getTxIsolation() + "").getBytes());
-        row.add(null == c.getBackendService() ? null : (c.getBackendService().isAutocommit() + "").getBytes());
-        row.add(null == c.getBackendService() ? null : StringUtil.encode(c.getBackendService().getStringOfSysVariables(), charset));
-        row.add(null == c.getBackendService() ? null : StringUtil.encode(c.getBackendService().getStringOfUsrVariables(), charset));
-        row.add(null == c.getBackendService() ? null : StringUtil.encode(c.getBackendService().getXaStatus().toString(), charset));
+        boolean isNull = null == c.getBackendService();
+        row.add(isNull ? null : c.getCharsetName().getClient().getBytes());
+        row.add(isNull ? null : c.getCharsetName().getCollation().getBytes());
+        row.add(isNull ? null : c.getCharsetName().getResults().getBytes());
+        row.add(isNull ? null : (c.getBackendService().getTxIsolation() + "").getBytes());
+        row.add(isNull ? null : (c.getBackendService().isAutocommit() + "").getBytes());
+        row.add(isNull ? null : StringUtil.encode(c.getBackendService().getStringOfSysVariables(), charset));
+        row.add(isNull ? null : StringUtil.encode(c.getBackendService().getStringOfUsrVariables(), charset));
+        row.add(isNull ? null : StringUtil.encode(c.getBackendService().getXaStatus().toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(c.getPoolDestroyedTime()), charset));
-        if (null == c.getBackendService()) {
+        if (isNull) {
             row.add(null);
         } else if (state == PooledConnection.INITIAL) {
             ResponseHandler handler = c.getBackendService().getResponseHandler();

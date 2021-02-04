@@ -1245,18 +1245,23 @@ public final class SystemConfig {
     }
 
     public void setMaxHeapTableSize(int maxHeapTableSize) {
-        this.maxHeapTableSize = maxHeapTableSize;
+        if (maxHeapTableSize >= 0) {
+            this.maxHeapTableSize = maxHeapTableSize;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxHeapTableSize", maxHeapTableSize, this.maxHeapTableSize));
+        }
     }
 
     public int getHeapTableBufferChunkSize() {
-        if (heapTableBufferChunkSize == -1) {
-            return bufferPoolChunkSize;
-        }
         return heapTableBufferChunkSize;
     }
 
     public void setHeapTableBufferChunkSize(int heapTableBufferChunkSize) {
-        this.heapTableBufferChunkSize = heapTableBufferChunkSize;
+        if (heapTableBufferChunkSize > 0) {
+            this.heapTableBufferChunkSize = heapTableBufferChunkSize;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "heapTableBufferChunkSize", heapTableBufferChunkSize, this.heapTableBufferChunkSize));
+        }
     }
 
     @Override

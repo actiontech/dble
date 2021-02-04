@@ -283,7 +283,7 @@ public class PhysicalDbGroup {
                 LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
             }
         }
-        if (okSources.size() == 0 && rwSplitMode == RW_SPLIT_ALL_SLAVES_MAY_MASTER) {
+        if (okSources.size() == 0 && rwSplitMode == RW_SPLIT_ALL_SLAVES_MAY_MASTER && includeWrite) {
             if (writeDbInstance.isAlive()) {
                 okSources.add(writeDbInstance);
             } else {

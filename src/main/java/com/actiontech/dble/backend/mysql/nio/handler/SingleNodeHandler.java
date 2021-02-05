@@ -263,6 +263,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             if (rrs.isLoadData()) {
                 ok.setPacketId(shardingService.nextPacketId()); // OK_PACKET
                 shardingService.getLoadDataInfileHandler().clear();
+                service.getConnection().updateLastReadTime();
             } else {
                 ok.setPacketId(shardingService.nextPacketId()); // OK_PACKET
             }

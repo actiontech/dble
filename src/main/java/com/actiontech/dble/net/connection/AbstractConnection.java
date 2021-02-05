@@ -417,6 +417,10 @@ public abstract class AbstractConnection implements Connection {
         lastWriteTime = TimeUtil.currentTimeMillis();
     }
 
+    public void updateLastReadTime() {
+        lastReadTime = TimeUtil.currentTimeMillis();
+    }
+
     public NetworkChannel getChannel() {
         return channel;
     }

@@ -88,6 +88,7 @@ public final class LoadDataUtil {
                     temp = new byte[len];
                     System.arraycopy(buffer, 0, temp, 0, len);
                 }
+                service.getConnection().updateLastReadTime();
                 BinaryPacket packet = new BinaryPacket();
                 packet.setPacketId(++packID);
                 packet.setData(temp);

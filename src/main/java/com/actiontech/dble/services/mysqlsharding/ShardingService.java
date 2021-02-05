@@ -36,7 +36,6 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
@@ -70,7 +69,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
-    protected long lastReadTime;
     private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
@@ -660,10 +658,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public void setLastInsertId(long lastInsertId) {
         this.lastInsertId = lastInsertId;
-    }
-
-    public void updateLastReadTime() {
-        this.lastReadTime = TimeUtil.currentTimeMillis();
     }
 
     public void setSessionReadOnly(boolean sessionReadOnly) {

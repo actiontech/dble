@@ -124,15 +124,17 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         auth.read(data);
         this.authPacket = auth;
         try {
-            PluginName name = PluginName.valueOf(auth.getAuthPlugin());
-            if (pluginName != name) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("auth switch request client-plugin:[{}],server-plugin:[{}]->[{}]", name, pluginName, mysql_native_password);
+            if (null != auth.getAuthPlugin()) {
+                PluginName name = PluginName.valueOf(auth.getAuthPlugin());
+                if (pluginName != name) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("auth switch request client-plugin:[{}],server-plugin:[{}]->[{}]", name, pluginName, mysql_native_password);
+                    }
+                    needAuthSwitched = true;
+                    this.pluginName = mysql_native_password;
+                    sendSwitchPacket(pluginName);
+                    return;
                 }
-                needAuthSwitched = true;
-                this.pluginName = mysql_native_password;
-                sendSwitchPacket(pluginName);
-                return;
             }
             // check user and password whether is correct
             auth();

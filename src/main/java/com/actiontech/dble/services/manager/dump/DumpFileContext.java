@@ -4,8 +4,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.google.common.collect.Lists;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -32,10 +32,29 @@ public final class DumpFileContext {
     private boolean needSkipError;
     private DumpFileConfig config;
 
+    public DumpFileContext() {
+    }
+
     public DumpFileContext(DumpFileWriter writer, DumpFileConfig config) {
         this.writer = writer;
-        this.errors = new ArrayList<>(10);
+        this.errors = Lists.newCopyOnWriteArrayList();
         this.config = config;
+    }
+
+    public DumpFileContext(String schema, String defaultShardingNode, Set<String> allShardingNodes, DumpFileWriter writer, DumpFileConfig config,
+                           String table, BaseTableConfig tableConfig, int partitionColumnIndex, int incrementColumnIndex, boolean isSkip, boolean needSkipError) {
+        this.schema = schema;
+        this.defaultShardingNode = defaultShardingNode;
+        this.allShardingNodes = allShardingNodes;
+        this.writer = writer;
+        this.errors = Lists.newCopyOnWriteArrayList();
+        this.config = config;
+        this.table = table;
+        this.tableConfig = tableConfig;
+        this.partitionColumnIndex = partitionColumnIndex;
+        this.incrementColumnIndex = incrementColumnIndex;
+        this.isSkip = isSkip;
+        this.needSkipError = needSkipError;
     }
 
     public String getSchema() {
@@ -152,6 +171,11 @@ public final class DumpFileContext {
 
     public Set<String> getAllShardingNodes() {
         return allShardingNodes;
+    }
+
+    public DumpFileContext copyOf(DumpFileContext context) {
+        return new DumpFileContext(context.getSchema(), context.getDefaultShardingNode(), context.getAllShardingNodes(), context.getWriter(), context.getConfig(),
+                context.getTable(), context.getTableConfig(), context.getPartitionColumnIndex(), context.getIncrementColumnIndex(), context.isSkip, context.isNeedSkipError());
     }
 
 }

@@ -16,7 +16,7 @@ public class DefaultHandler implements StatementHandler {
     @Override
     public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
         for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, SQLUtils.toMySqlString(sqlStatement), true, true);
+            context.getWriter().write(shardingNode, SQLUtils.toMySqlString(sqlStatement));
         }
     }
 
@@ -28,7 +28,7 @@ public class DefaultHandler implements StatementHandler {
             context.getWriter().write(context.getDefaultShardingNode(), stmt);
         } else {
             for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-                context.getWriter().write(shardingNode, stmt, false, true);
+                context.getWriter().write(shardingNode, stmt);
             }
         }
     }

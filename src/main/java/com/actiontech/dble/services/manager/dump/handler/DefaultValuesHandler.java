@@ -19,19 +19,19 @@ public class DefaultValuesHandler {
             return;
         }
         for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, insertHeader.toString(), true, false);
+            context.getWriter().write(shardingNode, insertHeader.toString());
         }
     }
 
     public void postProcess(DumpFileContext context) throws InterruptedException {
         for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, ";", false, false);
+            context.getWriter().write(shardingNode, ";");
         }
     }
 
     public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws InterruptedException, SQLNonTransientException {
         for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, toString(values, isFirst), false, false);
+            context.getWriter().write(shardingNode, toString(values, isFirst));
         }
     }
 

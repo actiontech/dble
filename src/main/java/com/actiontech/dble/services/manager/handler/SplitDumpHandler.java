@@ -9,21 +9,22 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.dump.*;
 import com.actiontech.dble.services.manager.response.DumpFileError;
 import com.actiontech.dble.util.CollectionUtil;
+import com.actiontech.dble.util.ExecutorUtil;
+import com.actiontech.dble.util.NameableExecutor;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class SplitDumpHandler {
 
-    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)(((\\s*(-s([^\\s]+))?)|(\\s+(-r(\\d+))?)|(\\s+(-w(\\d+))?)|(\\s+(-l(\\d+))?)|(\\s+(--ignore)?))+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)(((\\s*(-s([^\\s]+))?)|(\\s+(-r(\\d+))?)|(\\s+(-w(\\d+))?)|(\\s+(-l(\\d+))?)|(\\s+(--ignore)?)|(\\s+(-t(\\d+))?))+)", Pattern.CASE_INSENSITIVE);
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
     private SplitDumpHandler() {
@@ -50,21 +51,21 @@ public final class SplitDumpHandler {
         }
 
         DumpFileWriter writer = new DumpFileWriter();
-        BlockingQueue<String> queue = new ArrayBlockingQueue<>(config.getReadQueueSize());
-        DumpFileReader reader = new DumpFileReader(queue);
-        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(queue, writer, config, defaultSchemaConfig);
+        ArrayBlockingQueue<String> deque = new ArrayBlockingQueue<>(config.getReadQueueSize());
+        ArrayBlockingQueue<String> insertDeque = new ArrayBlockingQueue<>(config.getReadQueueSize());
+        DumpFileReader reader = new DumpFileReader(deque, insertDeque);
+        NameableExecutor nameableExecutor = ExecutorUtil.createFixed("dump-file-executor", config.getThreadNum());
+        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(deque, insertDeque, writer, config, defaultSchemaConfig, nameableExecutor);
         try {
-            // firstly check file
-            reader.open(config.getReadFile());
-            String fileName = FileUtils.getName(config.getReadFile());
-            writer.open(config.getWritePath() + fileName, config.getWriteQueueSize());
-
             // thread for process statement
-            dumpFileExecutor.start();
+            nameableExecutor.execute(dumpFileExecutor);
+            writer.open(config.getWritePath() + FileUtils.getName(config.getReadFile()), config.getWriteQueueSize(), config.getMaxValues());
             // start write
             writer.start();
+            // firstly check file
+            reader.open(config.getReadFile());
             // start read
-            reader.start(service, dumpFileExecutor);
+            reader.start(service, nameableExecutor);
         } catch (IOException | InterruptedException e) {
             LOGGER.info("finish to split dump file because " + e.getMessage());
             service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());
@@ -80,10 +81,11 @@ public final class SplitDumpHandler {
         while (!service.getConnection().isClosed() && !writer.isFinished()) {
             LockSupport.parkNanos(1000);
         }
+        nameableExecutor.shutdown();
 
         if (service.getConnection().isClosed()) {
             LOGGER.info("finish to split dump file because the connection is closed.");
-            dumpFileExecutor.stop();
+            nameableExecutor.shutdownNow();
             writer.stop();
             service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, "finish to split dump file due to the connection is closed.");
             return;
@@ -127,6 +129,9 @@ public final class SplitDumpHandler {
             }
             if (m.group(17) != null) {
                 config.setIgnore(true);
+            }
+            if (m.group(21) != null) {
+                config.setThreadNum(Integer.parseInt(m.group(21)));
             }
         }
         return config;

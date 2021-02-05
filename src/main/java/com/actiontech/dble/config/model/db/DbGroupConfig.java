@@ -67,10 +67,10 @@ public class DbGroupConfig {
     }
 
     public void setRwSplitMode(int rwSplitMode) {
-        if (rwSplitMode >= 0 && rwSplitMode <= 2) {
+        if (rwSplitMode >= 0 && rwSplitMode <= 3) {
             this.rwSplitMode = rwSplitMode;
         } else {
-            throw new ConfigException("dbGroup " + name + " rwSplitMode should be between 0 and 2!");
+            throw new ConfigException("dbGroup " + name + " rwSplitMode should be between 0 and 3!");
         }
     }
 

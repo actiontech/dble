@@ -40,6 +40,7 @@ public class PhysicalDbGroup {
     public static final int RW_SPLIT_OFF = 0;
     public static final int RW_SPLIT_ALL_SLAVES = 1;
     public static final int RW_SPLIT_ALL = 2;
+    public static final int RW_SPLIT_ALL_SLAVES_MAY_MASTER = 3;
     // weight
     public static final int WEIGHT = 0;
     private final List<PhysicalDbInstance> writeInstanceList;
@@ -282,7 +283,13 @@ public class PhysicalDbGroup {
                 LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", ds);
             }
         }
-
+        if (okSources.size() == 0 && rwSplitMode == RW_SPLIT_ALL_SLAVES_MAY_MASTER && includeWrite) {
+            if (writeDbInstance.isAlive()) {
+                okSources.add(writeDbInstance);
+            } else {
+                LOGGER.warn("can't select dbInstance[{}] as read node, please check delay with primary", writeDbInstance);
+            }
+        }
         return okSources;
     }
 

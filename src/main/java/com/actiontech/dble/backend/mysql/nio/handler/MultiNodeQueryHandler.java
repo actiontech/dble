@@ -65,7 +65,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private final boolean modifiedSQL;
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> shardingNodePauseInfo; // only for debug
-    private RequestScope requestScope;
+    private final RequestScope requestScope;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);

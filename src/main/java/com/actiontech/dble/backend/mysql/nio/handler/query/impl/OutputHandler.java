@@ -39,7 +39,7 @@ public class OutputHandler extends BaseDMLHandler {
     private long netOutBytes;
     private long selectRows;
     protected final NonBlockingSession serverSession;
-    protected RequestScope requestScope;
+    protected final RequestScope requestScope;
 
     public OutputHandler(long id, Session session) {
         super(id, session);

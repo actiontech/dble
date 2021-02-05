@@ -20,7 +20,7 @@ public abstract class LocalResult implements ResultStore {
 
     protected static final int DEFAULT_INITIAL_CAPACITY = 1024;
     protected final int fieldsCount;
-    protected int maxMemory = 262144;
+    protected volatile int maxMemory = 262144;
 
     protected BufferPool pool;
     protected List<RowDataPacket> rows;
@@ -34,7 +34,7 @@ public abstract class LocalResult implements ResultStore {
     /* @bug 1208 */
     protected String charset = "UTF-8";
     protected MemSizeController bufferMC;
-    protected int maxReadMemorySize = -1;
+    protected volatile int maxReadMemorySize = -1;
 
     public LocalResult(int initialCapacity, int fieldsCount, BufferPool pool, String charset) {
         this.rows = new ArrayList<>(initialCapacity);

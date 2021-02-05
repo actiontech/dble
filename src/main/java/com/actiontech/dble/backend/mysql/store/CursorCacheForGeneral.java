@@ -19,7 +19,7 @@ import java.util.NoSuchElementException;
  * Create Date: 2020-12-22
  */
 public class CursorCacheForGeneral implements CursorCache {
-    ResultStore localResult;
+    private final ResultStore localResult;
     private volatile boolean complete = false;
 
 

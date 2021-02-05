@@ -83,7 +83,7 @@ public final class PauseStart {
                 //clusterPauseNotice
                 PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit);
             } catch (Exception e) {
-                LOGGER.warn("", e);
+                LOGGER.warn("pause failed", e);
                 service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
                 return;
             }
@@ -91,7 +91,7 @@ public final class PauseStart {
 
             if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
                 //the error message can only show in single mod
-                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "You can't run different PAUSE commands at the same time. Please resume previous PAUSE command first.");
                 return;
             }
 
@@ -115,10 +115,11 @@ public final class PauseStart {
             } else {
                 try {
                     if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
+                        LOGGER.info("call pause success");
                         OK.write(service.getConnection());
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(e.getMessage());
+                    LOGGER.warn("wait for other node failed.", e);
                     service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
                 }
             }

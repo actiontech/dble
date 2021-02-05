@@ -50,7 +50,7 @@ public final class PauseEnd {
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                     return;
                 }
-
+                LOGGER.debug("{}", value);
 
                 if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "other instance is in operation");

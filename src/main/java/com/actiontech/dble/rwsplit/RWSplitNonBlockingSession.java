@@ -47,13 +47,13 @@ public class RWSplitNonBlockingSession {
             if (statement instanceof MySqlPrepareStatement) {
                 String simpleName = ((MySqlPrepareStatement) statement).getName().getSimpleName();
                 nameSet.add(simpleName);
-                rwSplitService.setTxStart(true);
+                rwSplitService.setInPrepare(true);
             }
             if (statement instanceof MysqlDeallocatePrepareStatement) {
                 String simpleName = ((MysqlDeallocatePrepareStatement) statement).getStatementName().getSimpleName();
                 nameSet.remove(simpleName);
                 if (nameSet.isEmpty()) {
-                    rwSplitService.setTxStart(false);
+                    rwSplitService.setInPrepare(false);
                 }
             }
         } catch (SQLSyntaxErrorException throwables) {

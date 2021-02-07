@@ -43,7 +43,7 @@ public final class ManagerParseConfig {
     }
 
     private int checkConfigAll(String stmt, int offset) {
-        if (stmt.length() > offset + 2) {
+        if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

@@ -37,12 +37,14 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
      * If there are more packets next.This flag in would be set.
      */
     private static final int HAS_MORE_RESULTS = 0x08;
+    private boolean isHint;
 
-    public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback) {
+    public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback, boolean isHint) {
         this.rwSplitService = service;
         this.originPacket = originPacket;
         this.frontedConnection = service.getConnection();
         this.callback = callback;
+        this.isHint = isHint;
     }
 
     public void execute(final BackendConnection conn) {
@@ -50,7 +52,11 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         mysqlService.setResponseHandler(this);
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
+        } else if (isHint) {
+            //remove comment sentences
+            mysqlService.execute(rwSplitService, rwSplitService.getExecuteSql());
         } else {
+            //ensure that the character set is consistent with the client
             mysqlService.execute(rwSplitService, rwSplitService.getExecuteSqlBytes());
         }
     }

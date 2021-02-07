@@ -468,8 +468,10 @@ public final class ClusterLogic {
         }
         for (DBInstance instance : dbGroup.getDbInstance()) {
             DbInstanceStatus status = statusMap.get(instance.getName());
-            instance.setPrimary(status.isPrimary());
-            instance.setDisabled(status.isDisable() ? "true" : "false");
+            if (null != status) {
+                instance.setPrimary(status.isPrimary());
+                instance.setDisabled(status.isDisable() ? "true" : "false");
+            }
         }
     }
 

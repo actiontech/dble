@@ -41,7 +41,7 @@
             <directory>src/main/resources</directory>
             <outputDirectory>dble/conf</outputDirectory>
             <excludes>
-                <exclude>*.dtd</exclude>
+                <exclude>*.xsd</exclude>
                 <exclude>log4j*</exclude>
             </excludes>
         </fileSet>

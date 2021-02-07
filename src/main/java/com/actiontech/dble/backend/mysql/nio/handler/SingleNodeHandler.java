@@ -61,7 +61,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private volatile boolean connClosed = false;
     protected AtomicBoolean writeToClient = new AtomicBoolean(false);
 
-    private RequestScope requestScope;
+    private final RequestScope requestScope;
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;

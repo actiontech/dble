@@ -153,7 +153,7 @@ public final class SetHandler {
             if (owner.isGlobal()) {
                 throw new SQLSyntaxErrorException("unsupport global");
             }
-            return target.toString();
+            return target.getName();
         } else if (key instanceof SQLVariantRefExpr) {
             SQLVariantRefExpr target = (SQLVariantRefExpr) key;
             if (target.isGlobal()) {

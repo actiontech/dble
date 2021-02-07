@@ -7,6 +7,7 @@ package com.actiontech.dble.plan.common.item.function.mathsfunc;
 
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 
@@ -25,6 +26,9 @@ public class ItemFuncConv extends ItemStrFunc {
 
     @Override
     public String valStr() {
+        if (args.size() == 1) {
+            compatibleBinFunc(args);
+        }
         String res = args.get(0).valStr();
         int fromBase = args.get(1).valInt().intValue();
         int toBase = args.get(2).valInt().intValue();
@@ -67,6 +71,11 @@ public class ItemFuncConv extends ItemStrFunc {
     public void fixLengthAndDec() {
         maxLength = 64;
         maybeNull = true;
+    }
+
+    private void compatibleBinFunc(List<Item> args) {
+        args.add(new ItemInt(10));
+        args.add(new ItemInt(2));
     }
 
     @Override

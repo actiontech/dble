@@ -34,7 +34,7 @@ public class RWSplitNonBlockingSession {
 
     public void execute(Boolean master, byte[] originPacket, Callback callback) {
         try {
-            RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback);
+            RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
             if (conn != null && !conn.isClosed()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("select bind conn[id={}]", conn.getId());
@@ -81,7 +81,7 @@ public class RWSplitNonBlockingSession {
     }
 
     public void executeHint(int sqlType, String sql, Callback callback) throws IOException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback);
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback, true);
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());

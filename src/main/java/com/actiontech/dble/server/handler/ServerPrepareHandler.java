@@ -98,11 +98,11 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             final PrepareChangeVisitor visitor = new PrepareChangeVisitor();
             sqlStatement.accept(visitor);
             requestScope.setOutputState(OutputStateEnum.PREPARE);
-            service.query(sqlStatement.toString());
             requestScope.getCurrentPreparedStatement().setPrepareCallback((columnCount) -> {
                 pStmt.setColumnsNumber(columnCount);
                 PreparedStmtResponse.response(pStmt, service);
             });
+            service.query(sqlStatement.toString());
         }
 
 

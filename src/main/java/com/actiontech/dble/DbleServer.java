@@ -253,7 +253,9 @@ public final class DbleServer {
         LOGGER.info("=====================================Perform XA recovery log======================================");
         performXARecoveryLog();
         LOGGER.info("====================================Perform XA recovery finish====================================");
+        LOGGER.info("===================================Sync cluster pause status start====================================");
         PauseShardingNodeManager.getInstance().fetchClusterStatus();
+        LOGGER.info("===================================Sync cluster pause status end  ====================================");
         manager.start();
         LOGGER.info(manager.getName() + " is started and listening on " + manager.getPort());
         server.start();

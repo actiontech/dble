@@ -66,7 +66,6 @@ public class ClusterOffLineListener implements Runnable {
                         String crashNode = en.getKey().split("/")[en.getKey().split("/").length - 1];
                         ClusterLogic.checkDDLAndRelease(crashNode);
                         ClusterLogic.checkBinlogStatusRelease(crashNode);
-                        ClusterLogic.checkPauseStatusRelease(crashNode);
                     }
                 }
                 String instanceName = SystemConfig.getInstance().getInstanceName();

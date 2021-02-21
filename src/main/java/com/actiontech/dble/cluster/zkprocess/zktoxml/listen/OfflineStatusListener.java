@@ -61,7 +61,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
         String crashNode = path.substring(path.lastIndexOf("/") + 1);
         ClusterLogic.checkDDLAndRelease(crashNode);
         ClusterLogic.checkBinlogStatusRelease(crashNode);
-        ClusterLogic.checkPauseStatusRelease(crashNode);
+
     }
 
 

@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 
 public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataHandler {
 
-    Map<String, Record> records = new LinkedHashMap<>(1024);
-    int entryId = 0;
+    Map<String, Record> records = new LinkedHashMap<>(1000);
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) {
@@ -23,7 +22,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
     public void checkEliminate() {
         synchronized (records) {
             int removeIndex;
-            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getStatisticTableSize()) > 0) {
+            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getFrontendByBackendByEntryByUserTableSize()) > 0) {
                 Iterator<String> iterator = records.keySet().iterator();
                 while (removeIndex-- > 0) {
                     iterator.next();
@@ -49,7 +48,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                             boolean isNew = false;
                             if (isNew = ((currRecord = records.get(key)) == null)) {
                                 checkEliminate();
-                                currRecord = new Record(++entryId, entry.getFrontend(), v.getBackend());
+                                currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), v.getBackend());
                             }
                             currRecord.addTxRows(v.getRows());
                             if (isNew) {
@@ -70,7 +69,7 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                     boolean isNew = false;
                     if (isNew = ((currRecord = records.get(key)) == null)) {
                         checkEliminate();
-                        currRecord = new Record(++entryId, entry.getFrontend(), backendSqlEntry.getBackend());
+                        currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
                     }
                     switch (backendSqlEntry.getSqlType()) {
                         case 4:
@@ -101,7 +100,6 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
     public void clear() {
         synchronized (records) {
             records.clear();
-            entryId = 0;
         }
     }
 

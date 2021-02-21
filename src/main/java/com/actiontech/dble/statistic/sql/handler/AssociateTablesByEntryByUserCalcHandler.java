@@ -11,8 +11,7 @@ import java.util.*;
 
 public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHandler {
 
-    Map<String, Record> records = new LinkedHashMap<>(1024);
-    int entryId = 0;
+    Map<String, Record> records = new LinkedHashMap<>(1000);
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) throws Exception {
@@ -22,7 +21,7 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
     public void checkEliminate() {
         synchronized (records) {
             int removeIndex;
-            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getStatisticTableSize()) > 0) {
+            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getAssociateTablesByEntryByUserTableSize()) > 0) {
                 Iterator<String> iterator = records.keySet().iterator();
                 while (removeIndex-- > 0) {
                     iterator.next();
@@ -41,12 +40,12 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
                     if (!tableList.isEmpty() && tableList.size() > 1) {
                         Collections.sort(tableList);
                         String tables = String.join(",", tableList);
-                        String key = fEntry.getFrontend().getUser() + "-" + tables;
+                        String key = fEntry.getFrontend().getUserId() + "-" + fEntry.getFrontend().getUser() + "-" + tables;
                         Record currRecord;
                         boolean isNew = true;
                         if (isNew = ((currRecord = records.get(key)) == null)) {
                             checkEliminate();
-                            currRecord = new Record(++entryId, fEntry.getFrontend(), tables);
+                            currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), tables);
                         }
                         currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
                         if (isNew) {
@@ -68,7 +67,6 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
     public void clear() {
         synchronized (records) {
             records.clear();
-            entryId = 0;
         }
     }
 

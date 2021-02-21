@@ -26,7 +26,9 @@ public final class StatisticManager {
 
     // variable
     private volatile boolean enable = SystemConfig.getInstance().getEnableStatistic() == 1;
-    private volatile int statisticTableSize = SystemConfig.getInstance().getStatisticTableSize();
+    private volatile int associateTablesByEntryByUserTableSize = SystemConfig.getInstance().getAssociateTablesByEntryByUserTableSize();
+    private volatile int frontendByBackendByEntryByUserTableSize = SystemConfig.getInstance().getFrontendByBackendByEntryByUserTableSize();
+    private volatile int tableByUserByEntryTableSize = SystemConfig.getInstance().getTableByUserByEntryTableSize();
     private int statisticQueueSize = SystemConfig.getInstance().getStatisticQueueSize();
 
     private StatisticManager() {
@@ -96,12 +98,28 @@ public final class StatisticManager {
         }
     }
 
-    public int getStatisticTableSize() {
-        return statisticTableSize;
+    public int getAssociateTablesByEntryByUserTableSize() {
+        return associateTablesByEntryByUserTableSize;
     }
 
-    public void setStatisticTableSize(int statisticTableSize) {
-        this.statisticTableSize = statisticTableSize;
+    public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
+        this.associateTablesByEntryByUserTableSize = associateTablesByEntryByUserTableSize;
+    }
+
+    public int getFrontendByBackendByEntryByUserTableSize() {
+        return frontendByBackendByEntryByUserTableSize;
+    }
+
+    public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
+        this.frontendByBackendByEntryByUserTableSize = frontendByBackendByEntryByUserTableSize;
+    }
+
+    public int getTableByUserByEntryTableSize() {
+        return tableByUserByEntryTableSize;
+    }
+
+    public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
+        this.tableByUserByEntryTableSize = tableByUserByEntryTableSize;
     }
 
     public int getStatisticQueueSize() {

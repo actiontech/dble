@@ -320,7 +320,8 @@ public class StatisticRecord {
     }
 
     public StatisticRecord(BusinessService service) {
-        this.frontendInfo = new FrontendInfo(service.getUser().getName(),
+        this.frontendInfo = new FrontendInfo(service.getUserConfig().getId(),
+                service.getUser().getName(),
                 service.getConnection().getHost(),
                 service.getConnection().getPort());
     }

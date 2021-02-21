@@ -47,7 +47,7 @@ public class StatisticTxEntry extends StatisticEntry {
         StringBuffer sb = new StringBuffer();
         sb.append("StatisticTxEntry==>[");
         sb.append("txId='" + getTxId() + "',");
-        sb.append("frontend=[user=" + getFrontend().getUser() + ",host&port=" + getFrontend().getHost() + ":" + getFrontend().getPort() + "]");
+        sb.append("frontend=[userId=" + getFrontend().getUserId() + ",user=" + getFrontend().getUser() + ",host&port=" + getFrontend().getHost() + ":" + getFrontend().getPort() + "]");
         sb.append("time=[start=" + getStartTime() + ",end=" + getAllEndTime() + "]");
         return sb.toString();
     }

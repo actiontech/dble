@@ -81,7 +81,7 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
         sb.append("StatisticFrontendSqlEntry==>[");
         sb.append("sql='" + getSql() + "',");
         sb.append("txId='" + getTxId() + "',");
-        sb.append("frontend=[user=" + getFrontend().getUser() + ",host&port=" + getFrontend().getHost() + ":" + getFrontend().getPort() + "]");
+        sb.append("frontend=[userId=" + getFrontend().getUserId() + ",user=" + getFrontend().getUser() + ",host&port=" + getFrontend().getHost() + ":" + getFrontend().getPort() + "]");
         sb.append("time=[start=" + getStartTime() + ",end=" + getAllEndTime() + "],");
         sb.append("sendClientRows=" + getRows() + "]");
         return sb.toString();

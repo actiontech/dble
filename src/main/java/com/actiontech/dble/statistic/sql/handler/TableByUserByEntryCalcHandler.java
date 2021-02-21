@@ -11,8 +11,7 @@ import java.util.*;
 
 public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
 
-    Map<String, Record> records = new LinkedHashMap<>(1024);
-    int entryId = 0;
+    Map<String, Record> records = new LinkedHashMap<>(1000);
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) throws Exception {
@@ -22,7 +21,7 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
     public void checkEliminate() {
         synchronized (records) {
             int removeIndex;
-            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getStatisticTableSize()) > 0) {
+            if ((removeIndex = records.values().size() - StatisticManager.getInstance().getTableByUserByEntryTableSize()) > 0) {
                 Iterator<String> iterator = records.keySet().iterator();
                 while (removeIndex-- > 0) {
                     iterator.next();
@@ -51,12 +50,12 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
 
     private void toRecord(String table, StatisticFrontendSqlEntry fEntry) {
         if (fEntry.getSqlType() == 4 || fEntry.getSqlType() == 11 || fEntry.getSqlType() == 3 || fEntry.getSqlType() == 7) {
-            String key = fEntry.getFrontend().getUser() + "-" + table;
+            String key = fEntry.getFrontend().getUserId() + "-" + fEntry.getFrontend().getUser() + "-" + table;
             Record currRecord;
             boolean isNew = true;
             if (isNew = ((currRecord = records.get(key)) == null)) {
                 checkEliminate();
-                currRecord = new Record(++entryId, fEntry.getFrontend(), table);
+                currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), table);
             }
             switch (fEntry.getSqlType()) {
                 case 4:
@@ -92,7 +91,6 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
     public void clear() {
         synchronized (records) {
             records.clear();
-            entryId = 0;
         }
     }
 

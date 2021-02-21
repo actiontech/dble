@@ -175,7 +175,9 @@ public final class SystemConfig {
     private String fakeMySQLVersion = "5.7.21";
 
     private int enableStatistic = 0;
-    private int statisticTableSize = 1024;
+    private int associateTablesByEntryByUserTableSize = 1000;
+    private int frontendByBackendByEntryByUserTableSize = 1000;
+    private int tableByUserByEntryTableSize = 1000;
     private int statisticQueueSize = 4096;
 
     public int getEnableStatistic() {
@@ -186,15 +188,39 @@ public final class SystemConfig {
         this.enableStatistic = enableStatistic;
     }
 
-    public int getStatisticTableSize() {
-        return statisticTableSize;
+    public int getAssociateTablesByEntryByUserTableSize() {
+        return associateTablesByEntryByUserTableSize;
     }
 
-    public void setStatisticTableSize(int statisticTableSize) {
-        if (statisticTableSize < 1) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "statisticTableSize", statisticTableSize, this.statisticTableSize));
+    public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
+        if (associateTablesByEntryByUserTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "associateTablesByEntryByUserTableSize", associateTablesByEntryByUserTableSize, this.associateTablesByEntryByUserTableSize));
         } else {
-            this.statisticTableSize = statisticTableSize;
+            this.associateTablesByEntryByUserTableSize = associateTablesByEntryByUserTableSize;
+        }
+    }
+
+    public int getFrontendByBackendByEntryByUserTableSize() {
+        return frontendByBackendByEntryByUserTableSize;
+    }
+
+    public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
+        if (frontendByBackendByEntryByUserTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontendByBackendByEntryByUserTableSize", frontendByBackendByEntryByUserTableSize, this.frontendByBackendByEntryByUserTableSize));
+        } else {
+            this.frontendByBackendByEntryByUserTableSize = frontendByBackendByEntryByUserTableSize;
+        }
+    }
+
+    public int getTableByUserByEntryTableSize() {
+        return tableByUserByEntryTableSize;
+    }
+
+    public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
+        if (tableByUserByEntryTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "tableByUserByEntryTableSize", tableByUserByEntryTableSize, this.tableByUserByEntryTableSize));
+        } else {
+            this.tableByUserByEntryTableSize = tableByUserByEntryTableSize;
         }
     }
 
@@ -1382,6 +1408,11 @@ public final class SystemConfig {
                 ", generalLogFile=" + generalLogFile +
                 ", generalLogFileSize=" + generalLogFileSize +
                 ", generalLogQueueSize=" + generalLogQueueSize +
+                ", enableStatistic=" + enableStatistic +
+                ", associateTablesByEntryByUserTableSize=" + associateTablesByEntryByUserTableSize +
+                ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
+                ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
+                ", statisticQueueSize=" + statisticQueueSize +
                 "]";
     }
 }

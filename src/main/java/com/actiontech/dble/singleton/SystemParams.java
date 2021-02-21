@@ -148,7 +148,9 @@ public final class SystemParams {
         params.add(new ParamInfo("enableGeneralLog", GeneralLog.getInstance().isEnableGeneralLog() + "", "Enable general log"));
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log, the default value is ./general/general.log"));
         params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() + "", "Enable statistic sql"));
-        params.add(new ParamInfo("statisticTableSize", StatisticManager.getInstance().getStatisticTableSize() + "", "Statistic table size"));
+        params.add(new ParamInfo("associateTablesByEntryByUserTableSize", StatisticManager.getInstance().getAssociateTablesByEntryByUserTableSize() + "", "AssociateTablesByEntryByUser table size, the default is 1000"));
+        params.add(new ParamInfo("frontendByBackendByEntryByUserTableSize", StatisticManager.getInstance().getFrontendByBackendByEntryByUserTableSize() + "", "FrontendByBackendByEntryByUser table size, the default is 1000"));
+        params.add(new ParamInfo("tableByUserByEntryTableSize", StatisticManager.getInstance().getTableByUserByEntryTableSize() + "", "TableByUserByEntry table size, the default is 1000"));
         return params;
     }
 }

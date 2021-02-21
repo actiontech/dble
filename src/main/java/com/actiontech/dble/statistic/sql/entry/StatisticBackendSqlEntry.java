@@ -56,6 +56,8 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
 
     public String getKey() {
         StringBuffer key = new StringBuffer();
+        key.append(getFrontend().getUserId());
+        key.append(":");
         key.append(getFrontend().getUser());
         key.append(":");
         key.append(getFrontend().getHost());
@@ -73,9 +75,8 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        //sb.append("originalSql='" + originalSql + "',");
         sb.append("StatisticBackendSqlEntry==>[txId='" + getTxId() + "',");
-        sb.append("frontend=[user=" + getFrontend().getUser() + ",host=" + getFrontend().getHost() + "],");
+        sb.append("frontend=[userId=" + getFrontend().getUserId() + ",user=" + getFrontend().getUser() + ",host=" + getFrontend().getHost() + "],");
         sb.append("backend=[node=" + backend.getNode() + ",name=" + backend.getName() + ",host&port=" + backend.getHost() + ":" + backend.getPort() + ",routeSql='" + getSql() + "'],");
         sb.append("time=[start=" + getStartTime() + ",end=" + getAllEndTime() + "],");
         sb.append("rows=" + getRows() + "]");

@@ -14,10 +14,7 @@ import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -48,6 +45,19 @@ public class MysqlDatabaseHandler {
         return databases;
     }
 
+    public Set<String> execute(PhysicalDbInstance ds) {
+        String mysqlShowDataBasesCols = "Database";
+        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
+        if (ds != null) {
+            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            sqlJob.run();
+            waitDone();
+        } else {
+            LOGGER.warn("No dbInstance is alive, server can not get 'show databases' result");
+        }
+        return databases;
+    }
+
     private PhysicalDbInstance getPhysicalDbInstance(String dbGroupName) {
         PhysicalDbInstance ds = null;
         PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
@@ -59,6 +69,18 @@ public class MysqlDatabaseHandler {
             }
         }
         return ds;
+    }
+
+    public List<PhysicalDbInstance> getPhysicalDbInstances() {
+        List<PhysicalDbInstance> physicalDbInstanceList = new ArrayList<>();
+        for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+            for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
+                if (dsTest.isTestConnSuccess()) {
+                    physicalDbInstanceList.add(dsTest);
+                }
+            }
+        }
+        return physicalDbInstanceList;
     }
 
     private void waitDone() {

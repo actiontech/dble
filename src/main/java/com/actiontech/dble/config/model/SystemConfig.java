@@ -113,7 +113,7 @@ public final class SystemConfig {
     private short bufferPoolChunkSize = 4096;
     //used for cursor temp result
     private int maxHeapTableSize = 4096;
-    private int heapTableBufferChunkSize = -1;
+    private Integer heapTableBufferChunkSize = null;
     // buffer pool page number
     private short bufferPoolPageNumber = (short) (Platform.getMaxDirectMemory() * 0.8 / bufferPoolPageSize);
     private boolean useDefaultPageNumber = true;
@@ -1252,16 +1252,12 @@ public final class SystemConfig {
         }
     }
 
-    public int getHeapTableBufferChunkSize() {
+    public Integer getHeapTableBufferChunkSize() {
         return heapTableBufferChunkSize;
     }
 
-    public void setHeapTableBufferChunkSize(int heapTableBufferChunkSize) {
-        if (heapTableBufferChunkSize > 0) {
-            this.heapTableBufferChunkSize = heapTableBufferChunkSize;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "heapTableBufferChunkSize", heapTableBufferChunkSize, this.heapTableBufferChunkSize));
-        }
+    public void setHeapTableBufferChunkSize(Integer heapTableBufferChunkSize) {
+        this.heapTableBufferChunkSize = heapTableBufferChunkSize;
     }
 
     @Override

@@ -75,20 +75,26 @@
 
     </Appenders>
     <Loggers>
-        <Logger name="ha_log" additivity="false" includeLocation="false">
+        <AsyncLogger name="ha_log" additivity="false" includeLocation="false">
             <AppenderRef ref="ha_log"/>
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
-        </Logger>
-        <Logger name="DDL_TRACE" additivity="false" includeLocation="false">
+        </AsyncLogger>
+        <AsyncLogger name="DDL_TRACE" additivity="false" includeLocation="false">
             <AppenderRef ref="DDL_TRACE"/>
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
-        </Logger>
-        <Logger name="dumpFileLog" additivity="false" includeLocation="false">
+        </AsyncLogger>
+        <AsyncLogger name="dumpFileLog" additivity="false" includeLocation="false">
             <AppenderRef ref="DumpFileLog"/>
             <AppenderRef ref="RollingFile"/>
-        </Logger>
+        </AsyncLogger>
+        <AsyncLogger name="org.apache.zookeeper" level="INFO" additivity="false" includeLocation="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </AsyncLogger>
+
+
         <asyncRoot level="debug" includeLocation="true">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>

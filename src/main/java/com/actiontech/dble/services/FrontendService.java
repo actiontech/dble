@@ -80,7 +80,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     @Override
     public void execute(ServiceTask task) {
         // prevents QUIT from losing cumulative
-        if (task.getOrgData().length > 4 && task.getOrgData()[4] == MySQLPacket.COM_QUIT) {
+        if (task.getOrgData().length > 4 && (task.getOrgData()[4] == MySQLPacket.COM_QUIT || task.getOrgData()[4] == MySQLPacket.COM_STMT_CLOSE)) {
             this.handleInnerData(task.getOrgData());
             return;
         }

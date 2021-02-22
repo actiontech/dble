@@ -189,11 +189,12 @@ public final class SystemConfigLoader {
         }
 
 
-        if (systemConfig.getHeapTableBufferChunkSize() == -1) {
-            LOGGER.info("Property 'heapTableBufferChunkSize' in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
-            systemConfig.setHeapTableBufferChunkSize(systemConfig.getBufferPoolChunkSize());
-        } else if (systemConfig.getHeapTableBufferChunkSize() % systemConfig.getBufferPoolChunkSize() != 0) {
-            problemReporter.warn("Property 'heapTableBufferChunkSize' in bootstrap.cnf is illegal, it must be a multiple of property 'bufferPoolChunkSize'");
+        final Integer heapTableBufferChunkSize = systemConfig.getHeapTableBufferChunkSize();
+        if (heapTableBufferChunkSize == null) {
+            LOGGER.info("Property [ heapTableBufferChunkSize ] in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
+            systemConfig.setHeapTableBufferChunkSize((int) systemConfig.getBufferPoolChunkSize());
+        } else if (heapTableBufferChunkSize <= 0 || heapTableBufferChunkSize % systemConfig.getBufferPoolChunkSize() != 0) {
+            problemReporter.warn("Property [ heapTableBufferChunkSize ] '" + heapTableBufferChunkSize + "' in bootstrap.cnf is illegal, it must be a multiple of property 'bufferPoolChunkSize' and great than 0. ");
         }
 
     }

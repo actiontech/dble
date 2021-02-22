@@ -193,6 +193,9 @@ public class MySQLPlanNodeVisitor {
                 return true;
             }
             schema = currentDb;
+            if (schema == null) {
+                throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "3D000", "No database selected");
+            }
             tableName = StringUtil.removeBackQuote(identifierExpr.getName());
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 schema = schema.toLowerCase();

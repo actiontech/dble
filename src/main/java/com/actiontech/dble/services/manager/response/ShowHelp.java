@@ -236,6 +236,12 @@ public final class ShowHelp {
         HELPS.put("disable @@general_log", "Turn off the general log");
         HELPS.put("reload @@general_log_file='?'", "Reset file path of general log");
 
+
+        HELPS.put("show @@statistic", "Turn off statistic information");
+        HELPS.put("enable @@statistic", "Turn on statistic sql");
+        HELPS.put("disable @@statistic", "Turn off statistic sql");
+        HELPS.put("reload @@statistic_table_size = ? [where table='?' | where table in (dble_information.tableA,...)]", "Statistic table size");
+
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

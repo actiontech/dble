@@ -79,6 +79,7 @@ public final class ManagerParseShow {
     public static final int CONNECTION_POOL_PROPERTY = 69;
     public static final int CAP_CLIENT_FOUND_ROWS = 70;
     public static final int GENERAL_LOG = 71;
+    public static final int STATISTIC = 72;
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
@@ -834,6 +835,23 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2StCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ATISTIC".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            if (stmt.length() == offset + 1 && (c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') &&
+                    (c3 == 'I' || c3 == 'i') && (c4 == 'S' || c4 == 's') && (c5 == 'T' || c5 == 't') &&
+                    (c6 == 'I' || c6 == 'i') && (c7 == 'C' || c7 == 'c'))
+                return STATISTIC;
+        }
+        return OTHER;
+    }
+
     // SHOW @@S
     private static int show2SCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
@@ -853,6 +871,9 @@ public final class ManagerParseShow {
                 case 'H':
                 case 'h':
                     return show2ShCheck(stmt, offset);
+                case 'T':
+                case 't':
+                    return show2StCheck(stmt, offset);
                 default:
                     return OTHER;
             }

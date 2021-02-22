@@ -46,6 +46,7 @@ import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -133,6 +134,7 @@ public class NonBlockingSession extends Session {
 
     public void setRequestTime() {
         sessionStage = SessionStage.Read_SQL;
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlStart());
         long requestTime = 0;
 
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
@@ -241,10 +243,12 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    public void setBackendRequestTime(long backendID) {
+    public void setBackendRequestTime(MySQLResponseService service) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onBackendSqlStart(service));
         if (!timeCost) {
             return;
         }
+        long backendID = service.getConnection().getId();
         QueryTimeCost backendCost = new QueryTimeCost();
         long requestTime = System.nanoTime();
         if (LOGGER.isDebugEnabled()) {
@@ -258,6 +262,7 @@ public class NonBlockingSession extends Session {
 
     public void setBackendResponseTime(MySQLResponseService service) {
         sessionStage = SessionStage.Fetching_Result;
+        // Optional.ofNullable(StatisticListener2.getInstance().getRecorder(this)).ifPresent(r -> r.onBackendSqlFirstEnd(service));
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
@@ -343,6 +348,7 @@ public class NonBlockingSession extends Session {
 
     public void setBackendResponseEndTime(MySQLResponseService service) {
         sessionStage = SessionStage.First_Node_Fetched_Result;
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onBackendSqlEnd(service));
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             ResponseHandler responseHandler = service.getResponseHandler();
@@ -678,6 +684,9 @@ public class NonBlockingSession extends Session {
     }
 
     public void commit() {
+        if (!shardingService.isAutocommit() || shardingService.isTxStart()) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByCommit());
+        }
         checkBackupStatus();
         transactionManager.commit();
     }
@@ -918,8 +927,18 @@ public class NonBlockingSession extends Session {
             transactionManager.setRetryXa(true);
         }
         needWaitFinished = false;
+        if (shardingService.isTxChainBegin() && shardingService.isAutocommit()) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByBegin(shardingService));
+        }
         shardingService.setTxStart(false);
         shardingService.getAndIncrementXid();
+        if (shardingService.isSetNoAutoCommit()) {
+            shardingService.setSetNoAutoCommit(false);
+        } else {
+            if (!shardingService.isAutocommit()) {
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(shardingService));
+            }
+        }
     }
 
     public boolean closed() {
@@ -968,6 +987,7 @@ public class NonBlockingSession extends Session {
             String sql = rrs.getSrcStatement();
             if (shardingService.isTxStart()) {
                 shardingService.setTxStart(false);
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(shardingService)).ifPresent(r -> r.onTxEndByCommit());
                 shardingService.getAndIncrementXid();
             }
             if (rrs.isOnline()) {

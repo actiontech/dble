@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -25,6 +25,7 @@ public final class ManagerParseReload {
     public static final int SLOW_QUERY_FLUSH_PERIOD = 10;
     public static final int SLOW_QUERY_FLUSH_SIZE = 11;
     public static final int GENERAL_LOG_FILE = 12;
+    public static final int STATISTIC_TABLE_SIZE = 13;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -137,6 +138,9 @@ public final class ManagerParseReload {
                 case 'L':
                 case 'l':
                     return reload2SLCheck(stmt, offset);
+                case 'T':
+                case 't':
+                    return reload2STCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -234,6 +238,42 @@ public final class ManagerParseReload {
                     (c3 == 'L' || c3 == 'l') && (c4 == 'O' || c4 == 'o') && (c5 == 'W' || c5 == 'w') &&
                     (stmt.length() > ++offset)) {
                 return (offset << 8) | SQL_SLOW;
+            }
+        }
+        return OTHER;
+    }
+
+    // Statistic
+    private static int reload2STCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 7) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            char c13 = stmt.charAt(++offset);
+            char c14 = stmt.charAt(++offset);
+            char c15 = stmt.charAt(++offset);
+            char c16 = stmt.charAt(++offset);
+            char c17 = stmt.charAt(++offset);
+            char c18 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') &&
+                    (c3 == 'I' || c3 == 'i') && (c4 == 'S' || c4 == 's') &&
+                    (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') &&
+                    (c7 == 'C' || c7 == 'c') && (c8 == '_' && c14 == '_') &&
+                    (c9 == 'T' || c9 == 't') && (c10 == 'A' || c10 == 'a') &&
+                    (c11 == 'B' || c11 == 'b') && (c12 == 'L' || c12 == 'l') &&
+                    (c13 == 'E' || c13 == 'e') && (c15 == 'S' || c15 == 's') &&
+                    (c16 == 'I' || c16 == 'i') && (c17 == 'Z' || c17 == 'z') &&
+                    (c18 == 'E' || c18 == 'e')) {
+                return (offset << 8) | STATISTIC_TABLE_SIZE;
             }
         }
         return OTHER;

@@ -125,12 +125,65 @@ public final class RwSplitServerParse extends AbstractServerParse {
                 case 'l':
                     rt = lCheck(stmt, i);
                     break;
+                case 'X':
+                case 'x':
+                    rt = xCheck(stmt, i);
+                    break;
                 default:
                     break;
             }
             break;
         }
         return rt;
+    }
+
+    private int xCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'A':
+                case 'a':
+                    char c = stmt.charAt(++offset);
+                    if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+                        return xaCheck(stmt, offset);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return OTHER;
+    }
+
+    private int xaCheck(String stmt, int offset) {
+        char c1 = stmt.charAt(++offset);
+        if (((c1 == 'S' || c1 == 's') || (c1 == 'B' || c1 == 'b')) &&
+                stmt.length() > offset + 5 &&
+                (stmt.substring(offset + 1, offset + 5).equalsIgnoreCase("TART") ||
+                        stmt.substring(offset + 1, offset + 5).equalsIgnoreCase("EGIN"))) {
+            offset += 5;
+            return (offset << 8) | XA_START;
+        } else if ((c1 == 'E' || c1 == 'e') &&
+                stmt.length() > offset + 3 &&
+                stmt.substring(offset + 1, offset + 3).equalsIgnoreCase("ND")) {
+            offset += 3;
+            return (offset << 8) | XA_END;
+        } else if ((c1 == 'P' || c1 == 'p') &&
+                stmt.length() > offset + 7 &&
+                stmt.substring(offset + 1, offset + 7).equalsIgnoreCase("REPARE")) {
+            offset += 7;
+            return (offset << 8) | XA_PREPARE;
+        } else if ((c1 == 'R' || c1 == 'r') &&
+                stmt.length() > offset + 8 &&
+                stmt.substring(offset + 1, offset + 8).equalsIgnoreCase("OLLBACK")) {
+            offset += 8;
+            return (offset << 8) | XA_ROLLBACK;
+        } else if ((c1 == 'C' || c1 == 'c') &&
+                stmt.length() > offset + 6 &&
+                stmt.substring(offset + 1, offset + 6).equalsIgnoreCase("OMMIT")) {
+            offset += 6;
+            return (offset << 8) | XA_COMMIT;
+        } else {
+            return OTHER;
+        }
     }
 
     //create TEMPORARY TABLE XXXX
@@ -151,8 +204,8 @@ public final class RwSplitServerParse extends AbstractServerParse {
     }
 
     //DROP [TEMPORARY] TABLE [IF EXISTS]
-    //    tbl_name [, tbl_name] ...
-    //    [RESTRICT | CASCADE]
+    // tbl_name [, tbl_name] ...
+    // [RESTRICT | CASCADE]
     private int dropTableCheck(String stmt, int offset) {
         String keyword = "TEMPORARY";
         if (ParseUtil.compare(stmt, offset, keyword)) {

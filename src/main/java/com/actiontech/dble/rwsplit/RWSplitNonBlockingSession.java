@@ -3,7 +3,9 @@ package com.actiontech.dble.rwsplit;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -16,7 +18,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 
-public class RWSplitNonBlockingSession {
+public class RWSplitNonBlockingSession extends Session {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(RWSplitNonBlockingSession.class);
 
@@ -26,6 +28,11 @@ public class RWSplitNonBlockingSession {
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
+    }
+
+    @Override
+    public FrontendConnection getSource() {
+        return (FrontendConnection) rwSplitService.getConnection();
     }
 
     public void execute(Boolean master, Callback callback) {
@@ -153,6 +160,10 @@ public class RWSplitNonBlockingSession {
         if (conn != null) {
             conn.close(reason);
         }
+    }
+
+    public boolean closed() {
+        return rwSplitService.getConnection().isClosed();
     }
 
     public RWSplitService getService() {

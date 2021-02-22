@@ -13,6 +13,7 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -34,6 +35,7 @@ import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallCheckResult;
@@ -46,6 +48,7 @@ import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -76,6 +79,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
+    protected volatile boolean setNoAutoCommit = false;
 
     public ShardingService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -87,6 +91,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         session.setRowCount(0);
         this.protoLogicHandler = new MySQLProtoLogicHandler(this);
         this.shardingSQLHandler = new MySQLShardingSQLHandler(this);
+        StatisticListener.getInstance().register(session);
     }
 
     public RequestScope getRequestScope() {
@@ -111,7 +116,11 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
+                    if (!autocommit) {
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
+                    }
                     if (!autocommit && session.getTargetCount() > 0) {
+                        setNoAutoCommit = true;
                         session.implicitCommit(() -> {
                             autocommit = true;
                             txStarted = false;
@@ -123,6 +132,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     autocommit = true;
                 } else {
                     if (autocommit) {
+                        if (!txStarted) {
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
+                        }
                         autocommit = false;
                         txStarted = true;
                         TxnLogHelper.putTxnLog(this, executeSql);
@@ -416,6 +428,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 session.setKilled(false);
                 session.setDiscard(false);
             }
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
         }
     }
 
@@ -542,6 +555,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     @Override
     public void write(MySQLPacket packet) {
+        if (packet instanceof OkPacket) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+        }
         boolean multiQueryFlag = session.multiStatementPacket(packet);
         markFinished();
         if (packet.isEndOfSession()) {
@@ -626,6 +642,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void killAndClose(String reason) {
         connection.close(reason);
+        StatisticListener.getInstance().remove(session);
         if (!isTxStart() || session.getTransactionManager().getXAStage() == null) {
             //not a xa transaction ,close it
             session.kill();
@@ -678,6 +695,14 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     private boolean isEndOfDataFile(byte[] data) {
         return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
+    }
+
+    public boolean isSetNoAutoCommit() {
+        return setNoAutoCommit;
+    }
+
+    public void setSetNoAutoCommit(boolean setNoAutoCommit) {
+        this.setNoAutoCommit = setNoAutoCommit;
     }
 
     public String toString() {

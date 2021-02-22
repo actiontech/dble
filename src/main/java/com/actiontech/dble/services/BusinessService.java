@@ -41,6 +41,10 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
 
     }
 
+    public boolean isTxChainBegin() {
+        return txChainBegin;
+    }
+
     public void queryCount() {
         queriesCounter.incrementAndGet();
     }

@@ -54,6 +54,11 @@ public interface ServerParse {
     int LOCK_IN_SHARE_MODE = 157;
     int CREATE_TEMPORARY_TABLE = 158;
     int DROP_TABLE = 159;
+    int XA_START = 160;
+    int XA_END = 161;
+    int XA_PREPARE = 162;
+    int XA_COMMIT = 163;
+    int XA_ROLLBACK = 164;
 
     int MIGRATE = 203;
     /* don't set the constant to 255 */

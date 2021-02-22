@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
@@ -51,6 +51,9 @@ public final class ReloadHandler {
                 break;
             case ManagerParseReload.GENERAL_LOG_FILE:
                 GeneralLogCf.ReloadGeneralLogFile.execute(service, ParseUtil.parseString(stmt));
+                break;
+            case ManagerParseReload.STATISTIC_TABLE_SIZE:
+                StatisticCf.SetTableMaxSize.execute(service, ParseUtil.parseString(stmt));
                 break;
             default:
                 service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

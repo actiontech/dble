@@ -14,7 +14,7 @@ Checkstyle Plugin: check before commit
 setting:  
 ![checkstyle](./checkstyle.png)
 
-FindBugs-IDEA(now its name is SpotBugs):check before commit  
+FindBugs-IDEA(Now its name is SpotBugs):check before commit  
 
 setting:  
 ![findbugs](./findbugs.png)  

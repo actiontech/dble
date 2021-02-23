@@ -8,6 +8,7 @@ package com.actiontech.dble.services.manager;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.parser.ManagerParse;
 import com.actiontech.dble.services.manager.handler.*;
 import com.actiontech.dble.services.manager.response.*;
@@ -150,6 +151,9 @@ public class ManagerQueryHandler {
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             }
+        } catch (MySQLOutPutException e) {
+            service.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
+            LOGGER.warn("unknown error:", e);
         } catch (Exception e) {
             service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command " + e.getMessage());
             LOGGER.warn("unknown error:", e);

@@ -30,11 +30,11 @@ public final class ParameterMapping {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
 
-    public static void mapping(Object object, Properties parameter, ProblemReporter problemReporter) throws IllegalAccessException,
+    public static void mapping(Object target, Properties src, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
-        PropertyDescriptor[] pds = getDescriptors(object.getClass());
+        PropertyDescriptor[] pds = getDescriptors(target.getClass());
         for (PropertyDescriptor pd : pds) {
-            Object obj = parameter.get(pd.getName());
+            Object obj = src.get(pd.getName());
             Object value = obj;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
@@ -60,7 +60,7 @@ public final class ParameterMapping {
                         } else {
                             LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         }
-                        parameter.remove(pd.getName());
+                        src.remove(pd.getName());
                         continue;
                     }
                 }
@@ -68,18 +68,18 @@ public final class ParameterMapping {
             if (value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
-                    method.invoke(object, value);
-                    parameter.remove(pd.getName());
+                    method.invoke(target, value);
+                    src.remove(pd.getName());
                 }
             }
         }
     }
 
-    public static void mapping(Object object, Map<String, String> parameter, ProblemReporter problemReporter) throws IllegalAccessException,
+    public static void mapping(Object target, Map<String, String> src, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
-        PropertyDescriptor[] pds = getDescriptors(object.getClass());
+        PropertyDescriptor[] pds = getDescriptors(target.getClass());
         for (PropertyDescriptor pd : pds) {
-            String valStr = parameter.get(pd.getName());
+            String valStr = src.get(pd.getName());
             Object value = valStr;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
@@ -102,7 +102,7 @@ public final class ParameterMapping {
                         } else {
                             LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         }
-                        parameter.remove(pd.getName());
+                        src.remove(pd.getName());
                         continue;
                     }
                 }
@@ -110,21 +110,21 @@ public final class ParameterMapping {
             if (value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
-                    method.invoke(object, value);
-                    parameter.remove(pd.getName());
+                    method.invoke(target, value);
+                    src.remove(pd.getName());
                 }
             }
         }
     }
 
 
-    public static Properties mapping(Object object, ProblemReporter problemReporter) throws IllegalAccessException,
+    public static Properties mappingFromSystemProperty(Object target, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
         Properties systemProperties = (Properties) (System.getProperties().clone());
         for (String key : SystemProperty.getInnerProperties()) {
             systemProperties.remove(key);
         }
-        PropertyDescriptor[] pds = getDescriptors(object.getClass());
+        PropertyDescriptor[] pds = getDescriptors(target.getClass());
         for (PropertyDescriptor pd : pds) {
             String propertyName = pd.getName();
             String valStr = systemProperties.getProperty(propertyName);
@@ -163,7 +163,7 @@ public final class ParameterMapping {
             if (value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
-                    method.invoke(object, value);
+                    method.invoke(target, value);
                 }
             }
             systemProperties.remove(propertyName);
@@ -202,7 +202,7 @@ public final class ParameterMapping {
         return (pds2);
     }
 
-    private static Object convert(Class<?> cls, String string) {
+    private static Object convert(Class<?> cls, String string) throws NumberFormatException, IllegalStateException {
         Method method = null;
         Object value = null;
         if (cls.equals(String.class)) {
@@ -228,8 +228,16 @@ public final class ParameterMapping {
                 method = cls.getMethod("valueOf", String.class);
                 value = method.invoke(null, string);
             } catch (Exception t) {
+                if (t instanceof InvocationTargetException) {
+                    final Throwable targetException = ((InvocationTargetException) t).getTargetException();
+                    if (targetException instanceof RuntimeException) {
+                        //include NumberFormatException
+                        throw (RuntimeException) targetException;
+                    }
+                }
+                // won't happen generally，If it still happens ，maybe throw an exception and stop process  is a good idea.
                 LOGGER.info("valueofError", t);
-                value = null;
+                throw new IllegalStateException(t);
             }
         } else if (cls.equals(Class.class)) {
             try {

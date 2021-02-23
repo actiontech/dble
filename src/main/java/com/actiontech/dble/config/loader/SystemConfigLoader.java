@@ -103,7 +103,7 @@ public final class SystemConfigLoader {
         SystemConfig systemConfig = SystemConfig.getInstance();
 
         //-D properties
-        Properties system = ParameterMapping.mapping(systemConfig, StartProblemReporter.getInstance());
+        Properties system = ParameterMapping.mappingFromSystemProperty(systemConfig, StartProblemReporter.getInstance());
 
         if (systemConfig.getInstanceName() == null) {
             // if not start with wrapper , usually for debug
@@ -191,8 +191,16 @@ public final class SystemConfigLoader {
 
         final Integer heapTableBufferChunkSize = systemConfig.getHeapTableBufferChunkSize();
         if (heapTableBufferChunkSize == null) {
-            LOGGER.info("Property [ heapTableBufferChunkSize ] in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
-            systemConfig.setHeapTableBufferChunkSize((int) systemConfig.getBufferPoolChunkSize());
+            /*
+            there are two case:
+            1. the prop has been try to set before, but not set successfully.It causes an error. .
+            2. the prop not set.
+            we shouldn't set default value in case 1.
+             */
+            if (problemReporter.getErrorConfigs().isEmpty()) {
+                LOGGER.info("Property [ heapTableBufferChunkSize ] in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
+                systemConfig.setHeapTableBufferChunkSize((int) systemConfig.getBufferPoolChunkSize());
+            }
         } else if (heapTableBufferChunkSize <= 0 || heapTableBufferChunkSize % systemConfig.getBufferPoolChunkSize() != 0) {
             problemReporter.warn("Property [ heapTableBufferChunkSize ] '" + heapTableBufferChunkSize + "' in bootstrap.cnf is illegal, it must be a multiple of property 'bufferPoolChunkSize' and great than 0. ");
         }

@@ -356,6 +356,18 @@ public final class StringUtil {
         return buffer.toString();
     }
 
+    public static String toString(byte[] bytes, int num) {
+        StringBuilder buffer = new StringBuilder();
+        for (byte byt : bytes) {
+            if ((char) byt >= num) {
+                buffer.append((char) byt);
+            }
+        }
+        return buffer.toString();
+
+
+    }
+
     public static boolean equalsIgnoreCase(String str1, String str2) {
         if (str1 == null) {
             return str2 == null;

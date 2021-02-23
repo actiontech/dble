@@ -391,4 +391,14 @@ public final class FileUtils {
         }
     }
 
+    public static void write(String fileName, String content) throws IOException {
+        FileOutputStream outputStream = new FileOutputStream(fileName, true);
+        byte[] strToBytes = content.getBytes();
+        try {
+            outputStream.write(strToBytes);
+        } finally {
+            outputStream.close();
+        }
+    }
+
 }

@@ -123,4 +123,7 @@ public final class ClusterDelayProvider {
 
     }
 
+    public static void delayBeforeLoadData() {
+    }
+
 }

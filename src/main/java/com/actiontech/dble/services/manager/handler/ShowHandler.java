@@ -273,6 +273,9 @@ public final class ShowHandler {
             case ManagerParseShow.STATISTIC:
                 StatisticCf.Show.execute(service);
                 break;
+            case ManagerParseShow.LOAD_DATA_FAIL:
+                ShowLoadDataErrorFile.execute(service);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();

@@ -246,10 +246,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         session.execute(true, data, null);
     }
 
-    public RwSplitUserConfig getUserConfig() {
-        return (RwSplitUserConfig) userConfig;
-    }
-
     public RWSplitNonBlockingSession getSession() {
         return session;
     }

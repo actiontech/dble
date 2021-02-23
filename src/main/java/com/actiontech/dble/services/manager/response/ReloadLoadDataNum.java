@@ -27,7 +27,7 @@ public final class ReloadLoadDataNum {
             return;
         }
         try {
-            WriteDynamicBootstrap.getInstance().changeValue("loadDataNum", String.valueOf(num));
+            WriteDynamicBootstrap.getInstance().changeValue("maxRowSizeToFile", String.valueOf(num));
         } catch (IOException e) {
             String msg = " reload @@load_data.num failed";
             LOGGER.warn(service + " " + msg, e);

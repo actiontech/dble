@@ -403,13 +403,11 @@ public class MySQLResponseService extends BackendService {
     }
 
     private void waitSyncResult(RouteResultsetNode rrn, CharsetNames clientCharset) {
-        while (rrn.getFlag() == 0 && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
+        while (rrn.getLoadDataRrnStatus() == 0 && LoadDataBatch.getInstance().isEnableBatchLoadData()) {
             LockSupport.parkNanos(100);
         }
-        if (rrn.getFlag() == 2) {
-            sendQueryCmdTask("show warnings;", clientCharset).execute();
-        } else {
-            return;
+        if (rrn.getLoadDataRrnStatus() == 2) {
+            this.sendQueryCmd("show warnings;", clientCharset);
         }
     }
 

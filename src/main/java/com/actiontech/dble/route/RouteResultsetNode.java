@@ -32,7 +32,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     private Boolean runOnSlave = null;
     private AtomicLong multiplexNum;
     private boolean isForUpdate = false;
-    private volatile byte flag;
+    private volatile byte loadDataRrnStatus;
 
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
@@ -43,15 +43,15 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         this.statementHash = srcStatement.hashCode();
         this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
         this.multiplexNum = new AtomicLong(0);
-        flag = 0;
+        loadDataRrnStatus = 0;
     }
 
-    public byte getFlag() {
-        return flag;
+    public byte getLoadDataRrnStatus() {
+        return loadDataRrnStatus;
     }
 
-    public void setFlag(byte flag) {
-        this.flag = flag;
+    public void setLoadDataRrnStatus(byte loadDataRrnStatus) {
+        this.loadDataRrnStatus = loadDataRrnStatus;
     }
 
     public boolean isForUpdate() {

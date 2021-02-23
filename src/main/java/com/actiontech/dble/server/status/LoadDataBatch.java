@@ -4,7 +4,9 @@ import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,7 +17,7 @@ public final class LoadDataBatch {
     private AtomicInteger errorSize;
     private Set<String> successFileNames = new HashSet<>();
     private int currentNodeSize = 0;
-    private Set<String> warnings = new HashSet<>();
+    private List<String> warnings = new ArrayList<>();
 
 
     private LoadDataBatch() {
@@ -81,11 +83,11 @@ public final class LoadDataBatch {
         this.currentNodeSize = currentNodeSize;
     }
 
-    public Set<String> getWarnings() {
+    public List<String> getWarnings() {
         return warnings;
     }
 
-    public void setWarnings(Set<String> warnings) {
+    public void setWarnings(List<String> warnings) {
         this.warnings = warnings;
     }
 
@@ -95,7 +97,7 @@ public final class LoadDataBatch {
 
     public void clean() {
         warnings.clear();
-        errorSize = new AtomicInteger();
+        errorSize = new AtomicInteger(0);
     }
 
     public void cleanAll() {

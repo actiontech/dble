@@ -422,7 +422,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     data.getData().add(jLine);
                 }
                 if (LoadDataBatch.getInstance().isEnableBatchLoadData() && data.getData().size() >= LoadDataBatch.getInstance().getSize()) {
-                    saveDataToMuFile(data, name);
+                    saveDataToMuFile(data, name, fileName);
                 } else if (!LoadDataBatch.getInstance().isEnableBatchLoadData() && data.getData().size() >= LoadDataBatch.getInstance().getSize()) {
                     //avoid OOM
                     saveDataToFile(data, name);
@@ -482,11 +482,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
     }
 
-    private void saveDataToMuFile(LoadData data, String name) {
+    private void saveDataToMuFile(LoadData data, String name, String tempFileName) {
         int index = routeResultMap.get(name).size();
         boolean first = Strings.isNullOrEmpty(data.getFileName());
         if (!first) index++;
-        String curFileName = index + "-" + name + ".txt";
+        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.indexOf(".")) + "-" + name + ".txt";
         String dnPath = tempPath + curFileName;
         File dnFile = new File(dnPath);
         try {
@@ -499,7 +499,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 data.setFileName(dnPath);
             } else {
                 List<LoadData> loadDataList = routeResultMap.get(name);
-                LoadData curLoadDate = createLoadDate(data);
+                LoadData curLoadDate = createLoadData(data);
                 curLoadDate.setFileName(dnPath);
                 loadDataList.add(curLoadDate);
             }
@@ -513,7 +513,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     }
 
-    private LoadData createLoadDate(LoadData data) {
+    private LoadData createLoadData(LoadData data) {
         LoadData newData = new LoadData();
         newData.setCharset(data.getCharset());
         newData.setEnclose(data.getEnclose());

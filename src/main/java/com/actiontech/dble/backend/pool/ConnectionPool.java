@@ -220,6 +220,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     @Override
     public void onHeartbeatSuccess(PooledConnection conn) {
         conn.lazySet(STATE_NOT_IN_USE);
+        // spin until a thread takes it or none are waiting
+        while (waiters.get() > 0 && conn.getState() == STATE_NOT_IN_USE && !handoffQueue.offer(conn)) {
+            Thread.yield();
+        }
     }
 
     public int getCount(final int... states) {

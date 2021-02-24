@@ -85,6 +85,7 @@ public class ItemCreate {
         nativFuncs.put("DAYOFMONTH", new ItemFuncDayofmonth(null, defaultCharsetIndex));
         nativFuncs.put("DAYOFWEEK", new ItemFuncDayofweek(null, defaultCharsetIndex));
         nativFuncs.put("DAYOFYEAR", new ItemFuncDayofyear(null, defaultCharsetIndex));
+        nativFuncs.put("DAY", new ItemFuncDayofmonth(null, defaultCharsetIndex));
         // proFuncs.put("DECODE", new Item_func_decode(null, defaultCharsetIndex));
         nativFuncs.put("DEGREES", new ItemFuncDegree(null, defaultCharsetIndex));
         // proFuncs.put("DES_DECRYPT", new Item_func_abs(null, defaultCharsetIndex));

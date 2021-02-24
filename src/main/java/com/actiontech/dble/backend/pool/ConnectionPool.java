@@ -151,7 +151,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
     public void release(final PooledConnection conn) {
         if (poolConfig.getTestOnReturn()) {
-            conn.synchronousTest();
+            ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);
+            heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
+            return;
         }
 
         conn.lazySet(STATE_NOT_IN_USE);
@@ -184,7 +186,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         conn.setPoolRelated(this);
         allConnections.add(conn);
         if (poolConfig.getTestOnCreate()) {
-            conn.synchronousTest();
+            ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);
+            heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
+            return;
         }
 
         conn.lazySet(STATE_NOT_IN_USE);
@@ -216,6 +220,10 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     @Override
     public void onHeartbeatSuccess(PooledConnection conn) {
         conn.lazySet(STATE_NOT_IN_USE);
+        // spin until a thread takes it or none are waiting
+        while (waiters.get() > 0 && conn.getState() == STATE_NOT_IN_USE && !handoffQueue.offer(conn)) {
+            Thread.yield();
+        }
     }
 
     public int getCount(final int... states) {
@@ -354,7 +362,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             } else if (poolConfig.getTestWhileIdle() && conn.compareAndSet(STATE_NOT_IN_USE, STATE_HEARTBEAT)) {
                 ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);
                 heartBeatHandler.ping(poolConfig.getConnectionHeartbeatTimeout());
-                conn.asynchronousTest();
             }
         }
 

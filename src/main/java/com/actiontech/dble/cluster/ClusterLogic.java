@@ -575,7 +575,7 @@ public final class ClusterLogic {
         return shardingBean;
     }
 
-    public static DbGroups parseDbGroupsJsonToBean(Gson gson, String jsonContent) {
+    public static DbGroups parseDbGroupsJsonToBean(Gson gson, String jsonContent, boolean syncHaStatus) {
         DbGroups dbs = new DbGroups();
         JsonObject jsonObject = new JsonParser().parse(jsonContent).getAsJsonObject();
         JsonElement dbGroupsJson = jsonObject.get(ClusterPathUtil.DB_GROUP);
@@ -584,7 +584,7 @@ public final class ClusterLogic {
                     new TypeToken<List<DBGroup>>() {
                     }.getType());
             dbs.setDbGroup(dbGroupList);
-            if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (ClusterConfig.getInstance().isClusterEnable() && syncHaStatus) {
                 syncHaStatusFromCluster(gson, dbs, dbGroupList);
             }
         }
@@ -761,7 +761,7 @@ public final class ClusterLogic {
             return;
         }
 
-        DbGroups dbs = ClusterLogic.parseDbGroupsJsonToBean(new Gson(), dbConfig);
+        DbGroups dbs = ClusterLogic.parseDbGroupsJsonToBean(new Gson(), dbConfig, true);
 
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.DB_XML;

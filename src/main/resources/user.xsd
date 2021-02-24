@@ -4,12 +4,12 @@
     <xs:import schemaLocation="user_detail.xsd"/>
     <xs:element name="user">
         <xs:complexType>
-            <xs:sequence>
-                <xs:element maxOccurs="unbounded" ref="managerUser"/>
-                <xs:element minOccurs="0" maxOccurs="unbounded" ref="shardingUser"/>
-                <xs:element minOccurs="0" maxOccurs="unbounded" ref="rwSplitUser"/>
-                <xs:element minOccurs="0" maxOccurs="unbounded" ref="blacklist"/>
-            </xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
+                <xs:element ref="managerUser"/>
+                <xs:element ref="shardingUser"/>
+                <xs:element ref="rwSplitUser"/>
+                <xs:element ref="blacklist"/>
+            </xs:choice>
             <xs:attribute name="version" type="xs:string"/>
         </xs:complexType>
     </xs:element>

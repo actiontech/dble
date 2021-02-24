@@ -268,7 +268,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
         DBConverter dbConverter = new DBConverter();
         String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
-        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig);
+        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
         List<LinkedHashMap<String, String>> tempDbGroupMapList = dbleDbGroup.getTempRowList();
@@ -305,7 +305,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
         DBConverter dbConverter = new DBConverter();
         String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
-        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig);
+        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         for (DBInstance dbInstance : dbInstanceList) {
             Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(dbGroup -> StringUtil.equals(dbGroup.getName(), dbInstance.getDbGroup())).findFirst();
@@ -327,7 +327,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
         DBConverter dbConverter = new DBConverter();
         String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
-        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig);
+        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         for (DBInstance dbInstance : dbInstanceList) {
             Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(dbGroup -> StringUtil.equals(dbGroup.getName(), dbInstance.getDbGroup())).findFirst();
@@ -349,7 +349,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         //remove temp dbGroup
         DBConverter dbConverter = new DBConverter();
         String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
-        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig);
+        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
         DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
         for (DBGroup dbGroup : dbGroups.getDbGroup()) {
             dbleDbGroup.getTempRowList().removeIf(group -> StringUtil.equals(group.get(DbleDbGroup.COLUMN_NAME), dbGroup.getName()));

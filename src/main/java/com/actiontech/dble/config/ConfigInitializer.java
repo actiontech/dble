@@ -55,6 +55,9 @@ public class ConfigInitializer implements ProblemReporter {
 
     private final List<ErrorInfo> errorInfos = new ArrayList<>();
 
+    /**
+     * load by xml-config
+     */
     public ConfigInitializer() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("load-config-file");
         try {
@@ -70,7 +73,7 @@ public class ConfigInitializer implements ProblemReporter {
             if (userConverter.isContainsShardingUser()) {
                 this.shardingConfig = new ShardingConverter().shardingXmlToJson();
             }
-            init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig);
+            init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig, false);
         } catch (Exception e) {
             if (e instanceof UnmarshalException) {
                 throw new ConfigException(((UnmarshalException) e).getLinkedException());
@@ -81,11 +84,19 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
+    /**
+     * load by json-config
+     *
+     * @param userConfig
+     * @param dbConfig
+     * @param shardingConfig
+     * @param sequenceConfig
+     */
     public ConfigInitializer(String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) {
-        init(userConfig, dbConfig, shardingConfig, sequenceConfig);
+        init(userConfig, dbConfig, shardingConfig, sequenceConfig, true);
     }
 
-    private void init(String userJson, String dbJson, String shardingJson, String sequenceJson) {
+    private void init(String userJson, String dbJson, String shardingJson, String sequenceJson, boolean syncHaStatus) {
         //user
         UserConverter userConverter = new UserConverter();
         userConverter.userJsonToMap(userJson, this);
@@ -95,7 +106,7 @@ public class ConfigInitializer implements ProblemReporter {
 
         //db
         DBConverter dbConverter = new DBConverter();
-        dbConverter.dbJsonToMap(dbJson, this);
+        dbConverter.dbJsonToMap(dbJson, this, syncHaStatus);
         this.dbGroups = dbConverter.getDbGroupMap();
         this.dbConfig = dbJson;
 

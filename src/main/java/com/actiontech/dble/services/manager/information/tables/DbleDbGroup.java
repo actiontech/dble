@@ -130,7 +130,7 @@ public class DbleDbGroup extends ManagerWritableTable {
         List<DBGroup> dbGroupList = affectPks.stream().map(this::transformRowToDBGroup).collect(Collectors.toList());
         DBConverter dbConverter = new DBConverter();
         String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
-        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig);
+        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         for (DBGroup dbGroup : dbGroupList) {
             Optional<DBGroup> dbGroupOp = dbGroups.getDbGroup().stream().filter(sourceDbGroup -> StringUtil.equals(sourceDbGroup.getName(), dbGroup.getName())).findFirst();
@@ -167,7 +167,7 @@ public class DbleDbGroup extends ManagerWritableTable {
 
         DBConverter dbConverter = new DBConverter();
         String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
-        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig);
+        DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
         for (LinkedHashMap<String, String> affectPk : dbGroupRows) {
             dbGroups.getDbGroup().removeIf(dbGroup -> StringUtil.equals(dbGroup.getName(), affectPk.get(COLUMN_NAME)));
         }

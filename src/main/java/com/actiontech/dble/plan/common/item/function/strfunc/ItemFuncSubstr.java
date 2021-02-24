@@ -36,7 +36,6 @@ public class ItemFuncSubstr extends ItemStrFunc {
         length = Math.min(length, str.length());
         if (length <= 0)
             return EMPTY;
-
         return str.substring((int) start, (int) length);
     }
 

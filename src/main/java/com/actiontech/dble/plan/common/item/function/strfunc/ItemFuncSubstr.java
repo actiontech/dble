@@ -24,19 +24,20 @@ public class ItemFuncSubstr extends ItemStrFunc {
     @Override
     public String valStr() {
         String str = args.get(0).valStr();
-        long start = args.get(1).valInt().longValue();
-        long length = args.size() == 3 ? args.get(2).valInt().longValue() : Long.MAX_VALUE;
         if (this.nullValue = (args.get(0).isNull() || args.get(1).isNull() ||
                 (args.size() == 3 && args.get(2).isNull())))
             return EMPTY;
-        if (args.size() == 3 && length <= 0)
-            return EMPTY;
+        long start = args.get(1).valInt().longValue();
         start = (start < 0) ? str.length() + start : start - 1;
-        long tmpLength = str.length() - start;
-        length = Math.min(length, tmpLength);
-        if (start == 0 && str.length() == length)
+        if (start < 0) {
             return EMPTY;
-        return str.substring((int) start, (int) (start + length));
+        }
+        long length = args.size() == 3 ? args.get(2).valInt().longValue() : Long.MAX_VALUE;
+        length = Math.min(length, str.length());
+        if (length <= 0)
+            return EMPTY;
+
+        return str.substring((int) start, (int) length);
     }
 
     @Override

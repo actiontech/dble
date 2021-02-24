@@ -9,6 +9,8 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import sun.util.calendar.CalendarUtils;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -23,6 +25,7 @@ public final class DateUtil {
 
     public static final String DEFAULT_DATE_PATTERN = "YYYY-MM-dd HH:mm:ss";
     public static final String DATE_PATTERN_FULL = "YYYY-MM-dd HH:mm:ss.SSSSSS";
+    public static final String DATE_PATTERN_FULL2 = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String DATE_PATTERN_ONLY_DATE = "YYYY-MM-dd";
     public static final String DEFAULT_TIME_PATTERN = "HHH:mm:ss";
     public static final String TIME_PATTERN_FULL = "HHH:mm:ss.SSSSSS";
@@ -47,6 +50,18 @@ public final class DateUtil {
     public static Date parseDate(String dateStr, String datePattern) {
         DateTime dt = DateTimeFormat.forPattern(datePattern).parseDateTime(dateStr);
         return dt.toDate();
+    }
+
+    /**
+     *
+     * parseStr
+     *
+     * @param time
+     * @return
+     */
+    public static String parseStr(long time) {
+        DateFormat sdf = new SimpleDateFormat(DATE_PATTERN_FULL2);
+        return sdf.format(new Date(time));
     }
 
     /**

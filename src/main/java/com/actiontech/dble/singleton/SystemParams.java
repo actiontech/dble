@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -130,6 +131,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("generalLogQueueSize", GeneralLog.getInstance().getGeneralLogQueueSize() + "", "Sets the queue size for consuming general log, value must not be less than 1 and must be a power of 2, the default value is 4096"));
         readOnlyParams.add(new ParamInfo("maxHeapTableSize", sysConfig.getMaxHeapTableSize() + "B", "Used for temp table persistence of cursor, temp table which size larger than that will save to disk."));
         readOnlyParams.add(new ParamInfo("heapTableBufferChunkSize", sysConfig.getHeapTableBufferChunkSize() + "B", "Used for temp table persistence of cursor, setting for read-buffer size."));
+        readOnlyParams.add(new ParamInfo("statisticQueueSize", StatisticManager.getInstance().getStatisticQueueSize() + "", "Sets the queue size for statistic, value must not be less than 1 and must be a power of 2,The default value is 4096"));
     }
 
     public List<ParamInfo> getVolatileParams() {
@@ -145,6 +147,10 @@ public final class SystemParams {
         params.add(new ParamInfo("capClientFoundRows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows, the default value is false"));
         params.add(new ParamInfo("enableGeneralLog", GeneralLog.getInstance().isEnableGeneralLog() + "", "Enable general log"));
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log, the default value is ./general/general.log"));
+        params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() + "", "Enable statistic sql"));
+        params.add(new ParamInfo("associateTablesByEntryByUserTableSize", StatisticManager.getInstance().getAssociateTablesByEntryByUserTableSize() + "", "AssociateTablesByEntryByUser table size, the default is 1000"));
+        params.add(new ParamInfo("frontendByBackendByEntryByUserTableSize", StatisticManager.getInstance().getFrontendByBackendByEntryByUserTableSize() + "", "FrontendByBackendByEntryByUser table size, the default is 1000"));
+        params.add(new ParamInfo("tableByUserByEntryTableSize", StatisticManager.getInstance().getTableByUserByEntryTableSize() + "", "TableByUserByEntry table size, the default is 1000"));
         return params;
     }
 }

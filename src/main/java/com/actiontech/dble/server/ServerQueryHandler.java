@@ -15,9 +15,12 @@ import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.parser.ShardingServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 /**
  * @author mycat
@@ -46,6 +49,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service + sql);
         }
+        String finalSql = sql;
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {

@@ -113,7 +113,7 @@ public final class SystemConfig {
     private short bufferPoolChunkSize = 4096;
     //used for cursor temp result
     private int maxHeapTableSize = 4096;
-    private int heapTableBufferChunkSize = -1;
+    private Integer heapTableBufferChunkSize = null;
     // buffer pool page number
     private short bufferPoolPageNumber = (short) (Platform.getMaxDirectMemory() * 0.8 / bufferPoolPageSize);
     private boolean useDefaultPageNumber = true;
@@ -174,6 +174,67 @@ public final class SystemConfig {
     private String traceEndPoint = null;
     private String fakeMySQLVersion = "5.7.21";
 
+    private int enableStatistic = 0;
+    private int associateTablesByEntryByUserTableSize = 1000;
+    private int frontendByBackendByEntryByUserTableSize = 1000;
+    private int tableByUserByEntryTableSize = 1000;
+    private int statisticQueueSize = 4096;
+
+    public int getEnableStatistic() {
+        return enableStatistic;
+    }
+
+    public void setEnableStatistic(int enableStatistic) {
+        this.enableStatistic = enableStatistic;
+    }
+
+    public int getAssociateTablesByEntryByUserTableSize() {
+        return associateTablesByEntryByUserTableSize;
+    }
+
+    public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
+        if (associateTablesByEntryByUserTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "associateTablesByEntryByUserTableSize", associateTablesByEntryByUserTableSize, this.associateTablesByEntryByUserTableSize));
+        } else {
+            this.associateTablesByEntryByUserTableSize = associateTablesByEntryByUserTableSize;
+        }
+    }
+
+    public int getFrontendByBackendByEntryByUserTableSize() {
+        return frontendByBackendByEntryByUserTableSize;
+    }
+
+    public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
+        if (frontendByBackendByEntryByUserTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontendByBackendByEntryByUserTableSize", frontendByBackendByEntryByUserTableSize, this.frontendByBackendByEntryByUserTableSize));
+        } else {
+            this.frontendByBackendByEntryByUserTableSize = frontendByBackendByEntryByUserTableSize;
+        }
+    }
+
+    public int getTableByUserByEntryTableSize() {
+        return tableByUserByEntryTableSize;
+    }
+
+    public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
+        if (tableByUserByEntryTableSize < 1) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "tableByUserByEntryTableSize", tableByUserByEntryTableSize, this.tableByUserByEntryTableSize));
+        } else {
+            this.tableByUserByEntryTableSize = tableByUserByEntryTableSize;
+        }
+    }
+
+    public int getStatisticQueueSize() {
+        return statisticQueueSize;
+    }
+
+    public void setStatisticQueueSize(int statisticQueueSize) {
+        if (statisticQueueSize < 1 || Integer.bitCount(statisticQueueSize) != 1) {
+            problemReporter.warn("Property [ statisticQueueSize ] '" + statisticQueueSize + "' in bootstrap.cnf is illegal, size must not be less than 1 and must be a power of 2, you may need use the default value " + this.statisticQueueSize + " replaced");
+        } else {
+            this.statisticQueueSize = statisticQueueSize;
+        }
+    }
 
     public int getEnableGeneralLog() {
         return enableGeneralLog;
@@ -1252,16 +1313,12 @@ public final class SystemConfig {
         }
     }
 
-    public int getHeapTableBufferChunkSize() {
+    public Integer getHeapTableBufferChunkSize() {
         return heapTableBufferChunkSize;
     }
 
-    public void setHeapTableBufferChunkSize(int heapTableBufferChunkSize) {
-        if (heapTableBufferChunkSize > 0) {
-            this.heapTableBufferChunkSize = heapTableBufferChunkSize;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "heapTableBufferChunkSize", heapTableBufferChunkSize, this.heapTableBufferChunkSize));
-        }
+    public void setHeapTableBufferChunkSize(Integer heapTableBufferChunkSize) {
+        this.heapTableBufferChunkSize = heapTableBufferChunkSize;
     }
 
     @Override
@@ -1352,6 +1409,11 @@ public final class SystemConfig {
                 ", generalLogFile=" + generalLogFile +
                 ", generalLogFileSize=" + generalLogFileSize +
                 ", generalLogQueueSize=" + generalLogQueueSize +
+                ", enableStatistic=" + enableStatistic +
+                ", associateTablesByEntryByUserTableSize=" + associateTablesByEntryByUserTableSize +
+                ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
+                ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
+                ", statisticQueueSize=" + statisticQueueSize +
                 "]";
     }
 }

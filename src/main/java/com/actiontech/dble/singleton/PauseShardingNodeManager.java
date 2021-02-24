@@ -49,6 +49,7 @@ public final class PauseShardingNodeManager {
     private volatile DistributeLock distributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
+    private PauseInfo currentParseInfo;
 
     private PauseShardingNodeManager() {
 
@@ -62,7 +63,15 @@ public final class PauseShardingNodeManager {
         return this.isPausing;
     }
 
+    public PauseInfo getCurrentParseInfo() {
+        return currentParseInfo;
+    }
 
+    /**
+     * in this implementation, when call this method 'fetchClusterStatus()',the port is already be listened ，but the server has not ready for accept connection yet. So,no FrontConnection will be created, we don't need to call 'waitForSelfPause()' to wait for connection paused;
+     *
+     * @throws Exception
+     */
     public void fetchClusterStatus() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             DistributeLock tempPauseLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
@@ -95,12 +104,7 @@ public final class PauseShardingNodeManager {
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(pauseInfo.getShardingNodes().split(",")));
 
                     //pause self
-                    if (!getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit())) {
-                        //the error message can only show in single mode. So, this situation won't happen.
-                        final String msg = "IllegalState: shardingNodes is paused already";
-                        LOGGER.error(msg);
-                        throw new IllegalStateException(msg);
-                    }
+                    startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getShardingNodes(), pauseInfo.getQueueLimit());
                 }
                 //cluster is resuming.
                 //just return;
@@ -115,16 +119,28 @@ public final class PauseShardingNodeManager {
         }
     }
 
-    public boolean startPausing(int timeOut, Set<String> ds, int queueLimit) {
+    /**
+     * @param timeOut
+     * @param ds
+     * @param dsStr
+     * @param queueLimit
+     * @throws MySQLOutPutException throws only when single mod.
+     */
+    public void startPausing(int timeOut, Set<String> ds, String dsStr, int queueLimit) throws MySQLOutPutException {
         pauseLock.lock();
         try {
             if (isPausing.get()) {
-                return false;
+                //the error message can only show in single mod
+                if ((!Objects.equals(dsStr, currentParseInfo.getShardingNodes())) || (!Objects.equals(timeOut, currentParseInfo.getConnectionTimeOut()) || (!Objects.equals(queueLimit, currentParseInfo.getQueueLimit())))) {
+                    throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You can't run different PAUSE commands at the same time. Please resume previous PAUSE command first.");
+                } else {
+                    throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You are paused already");
+                }
             }
+            currentParseInfo = new PauseInfo(SystemConfig.getInstance().getInstanceName(), dsStr, PAUSE, timeOut, queueLimit);
             pauseThreadPool = new PauseEndThreadPool(timeOut, queueLimit);
             lockWithShardingNodes(ds);
             isPausing.set(true);
-            return true;
         } finally {
             pauseLock.unlock();
         }

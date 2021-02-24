@@ -309,7 +309,7 @@ public final class ClusterLogic {
                 try {
                     LOGGER.info("Strat pause shardingNode " + shardingNodes);
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(shardingNodes.split(",")));
-                    PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, pauseInfo.getQueueLimit());
+                    PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, shardingNodes, pauseInfo.getQueueLimit());
 
                     while (!Thread.currentThread().isInterrupted()) {
                         lock.lock();

@@ -6,8 +6,11 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.Abst
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.XAHandler;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 public class TransactionHandlerManager {
 
@@ -31,8 +34,10 @@ public class TransactionHandlerManager {
         if (xaTXEnabled && this.xaTxId == null) {
             LOGGER.info("XA Transaction enabled ,con " + source);
             xaTxId = DbleServer.getInstance().genXaTxId();
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(source)).ifPresent(r -> r.onXaStart(xaTxId));
         } else if (!xaTXEnabled && this.xaTxId != null) {
             LOGGER.info("XA Transaction disabled ,con " + source);
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(source)).ifPresent(r -> r.onXaStop());
             xaTxId = null;
         }
     }

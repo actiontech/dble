@@ -12,12 +12,14 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Optional;
 
 public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler {
 
@@ -26,6 +28,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     private final byte[] originPacket;
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
+    private long selectRows = 0;
     /**
      * When client send one request. dble should return one and only one response.
      * But , maybe OK event and connection closed event are run in parallel.
@@ -50,6 +53,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void execute(final BackendConnection conn) {
         MySQLResponseService mysqlService = conn.getBackendService();
         mysqlService.setResponseHandler(this);
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlStart(conn));
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
         } else if (isHint) {
@@ -69,11 +73,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(0));
         writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + rwSplitService.getUserConfig().getDbGroup());
     }
 
     @Override
     public void errorResponse(byte[] data, AbstractService service) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
         if (callback != null) {
@@ -109,6 +115,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
             final OkPacket packet = new OkPacket();
             packet.read(data);
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
             if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
                 if (callback != null) {
                     callback.callback(true, rwSplitService);
@@ -147,6 +154,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
         synchronized (this) {
+            this.selectRows++;
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
@@ -159,6 +167,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         synchronized (this) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(selectRows));
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
@@ -200,6 +209,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionClose(AbstractService service, String reason) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(0));
         ((MySQLResponseService) service).setResponseHandler(null);
         synchronized (this) {
             if (!write2Client) {

@@ -8,6 +8,8 @@ package com.actiontech.dble.services.manager.information;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.*;
@@ -18,6 +20,8 @@ public abstract class ManagerBaseTable {
     protected final LinkedHashMap<String, ColumnMeta> columns;
     protected final LinkedHashMap<String, Integer> columnsType;
     private String msg;
+
+    protected boolean isTruncate = false;
 
     protected ManagerBaseTable(String tableName, int filedSize) {
         this.tableName = tableName;
@@ -30,9 +34,23 @@ public abstract class ManagerBaseTable {
 
     protected abstract List<LinkedHashMap<String, String>> getRows();
 
-
     public boolean isWritable() {
         return isWritable;
+    }
+
+    public boolean isTruncate() {
+        return isTruncate;
+    }
+
+    public void useTruncate() {
+        isTruncate = true;
+    }
+
+    public void truncate() {
+        StatisticDataHandler handler;
+        if ((handler = StatisticManager.getInstance().getHandler(tableName)) != null) {
+            handler.clear();
+        }
     }
 
     public List<RowDataPacket> getRow(LinkedHashSet<Item> realSelects, String charset) {

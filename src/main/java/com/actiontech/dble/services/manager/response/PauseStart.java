@@ -10,6 +10,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -89,11 +90,7 @@ public final class PauseStart {
             }
 
 
-            if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
-                //the error message can only show in single mod
-                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "You can't run different PAUSE commands at the same time. Please resume previous PAUSE command first.");
-                return;
-            }
+            PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, shardingNode, queueLimit);
 
             //self pause the shardingNode
             long timeOut = Long.parseLong(ma.group(2)) * 1000;
@@ -123,13 +120,17 @@ public final class PauseStart {
                     service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
                 }
             }
+        } catch (MySQLOutPutException e) {
+            service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+        } catch (Exception e) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Pause operation cause error: " + e.getMessage());
         } finally {
             PauseShardingNodeManager.getInstance().releaseDistributeLock();
         }
     }
 
 
-    private static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> shardingNodes) {
+    public static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> shardingNodes) {
         boolean recycleFinish = false;
         while ((System.currentTimeMillis() - beginTime < timeOut) && PauseShardingNodeManager.getInstance().getIsPausing().get()) {
             boolean nextTurn = false;

@@ -43,6 +43,7 @@ import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.factorys.ManagerConnectionFactory;
 import com.actiontech.dble.services.factorys.ServerConnectionFactory;
 import com.actiontech.dble.singleton.*;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -175,6 +176,10 @@ public final class DbleServer {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
 
+        if (SystemConfig.getInstance().getEnableStatistic() == 1) {
+            StatisticManager.getInstance().start();
+        }
+
         LOGGER.info("==============================Connection  Connector&Acceptor init start===========================");
         // startup manager
         SocketAcceptor manager = null;
@@ -253,7 +258,9 @@ public final class DbleServer {
         LOGGER.info("=====================================Perform XA recovery log======================================");
         performXARecoveryLog();
         LOGGER.info("====================================Perform XA recovery finish====================================");
+        LOGGER.info("===================================Sync cluster pause status start====================================");
         PauseShardingNodeManager.getInstance().fetchClusterStatus();
+        LOGGER.info("===================================Sync cluster pause status end  ====================================");
         manager.start();
         LOGGER.info(manager.getName() + " is started and listening on " + manager.getPort());
         server.start();

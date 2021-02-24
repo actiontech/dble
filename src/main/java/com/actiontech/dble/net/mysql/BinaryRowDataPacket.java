@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ProtocolBinary::ResultsetRow:
@@ -230,6 +232,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, AbstractService service,
                             boolean writeSocketIfFull) {
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onFrontendAddRows());
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;

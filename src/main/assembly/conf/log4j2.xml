@@ -91,7 +91,10 @@
         <!--            <AppenderRef ref="DumpFileLog" />-->
         <!--            <AppenderRef ref="RollingFile"/>-->
         <!--        </Logger>-->
-
+        <AsyncLogger name="org.apache.zookeeper" level="INFO" additivity="false" includeLocation="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </AsyncLogger>
         <asyncRoot level="info" includeLocation="true">
             <!--<AppenderRef ref="Console" />-->
             <AppenderRef ref="RollingFile"/>

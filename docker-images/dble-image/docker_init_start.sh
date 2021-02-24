@@ -1,8 +1,7 @@
 #!/bin/sh
 
-echo "dble init&start in docker"
-
 if [ -n "$MASTERS" ] && [ -n "$SLAVES" ] &&  [ -n "$MYSQL_REPLICATION_USER" ] && [ -n "$MYSQL_REPLICATION_PASSWORD" ]; then
+      echo "dble init mysql mgr"
       # master:
       masters=(${MASTERS//,/ })
       for M in ${masters[@]}
@@ -22,10 +21,11 @@ if [ -n "$MASTERS" ] && [ -n "$SLAVES" ] &&  [ -n "$MYSQL_REPLICATION_USER" ] &&
       done
 fi
 
-cp -n /opt/dble/extend.conf.d/* /opt/dble/conf/
-
+echo "dble init&start in docker"
 sh /opt/dble/bin/dble start
 sh /opt/dble/bin/wait-for-it.sh 127.0.0.1:8066
+
+echo "init shardingNode and execute template_table.sql"
 mysql -P9066 -u man1 -h 127.0.0.1 -p654321 -e "create database @@shardingNode ='dn1,dn2,dn3,dn4,dn5,dn6'"
 mysql -P8066 -u root -h 127.0.0.1 -p123456 -e "source /opt/dble/conf/template_table.sql" testdb
 

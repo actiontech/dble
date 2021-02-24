@@ -1,0 +1,157 @@
+#encoding=UTF-8
+-agentlib:jdwp=transport=dt_socket,server=y,address=8088,suspend=n
+-server
+-XX:+AggressiveOpts
+-Dfile.encoding=UTF-8
+-Dcom.sun.management.jmxremote
+-Dcom.sun.management.jmxremote.port=1984
+-Dcom.sun.management.jmxremote.authenticate=false
+-Dcom.sun.management.jmxremote.ssl=false
+-Dcom.sun.management.jmxremote.host=127.0.0.1
+-Xmx4G
+-Xms1G
+-XX:MaxDirectMemorySize=2G
+#  base config
+-DhomePath=.
+-DinstanceName=1
+# valid for sequenceHandlerType=2 or 3
+-DinstanceId=1
+-DserverId=xxx1
+#-DbindIp=0.0.0.0
+#-DserverPort=8066
+#-DmanagerPort=9066
+#-DmaxCon=1024
+#-Dprocessors=4
+#-DbackendProcessors=12
+#-DprocessorExecutor=4
+#-DbackendProcessorExecutor=12
+#-DcomplexExecutor=8
+#-DwriteToBackendExecutor=4
+
+
+-DfakeMySQLVersion=5.7.11
+#-DtraceEndPoint=http://10.186.60.96:14268/api/traces
+
+# serverBacklog size,default 2048
+-DserverBacklog=2048
+
+#-DusePerformanceMode=0
+# if need out HA
+-DuseOuterHa=true
+
+# connection
+#-Dcharset=utf8mb4
+-DmaxPacketSize=167772160
+-DtxIsolation=2
+#-Dautocommit=1
+#-DidleTimeout=60000
+
+# option
+#-DuseCompression=1
+#-DcapClientFoundRows=false
+-DusingAIO=0
+
+-DuseThreadUsageStat=1
+#  query time cost statistics
+#-DuseCostTimeStat=0
+#-DmaxCostStatSize=100
+#-DcostSamplePercent=1
+
+
+# consistency
+#  check the consistency of table structure between nodes,default not
+-DcheckTableConsistency=0
+#  check period, he default period is 60000 milliseconds
+-DcheckTableConsistencyPeriod=60000
+
+#  processor check conn
+-DprocessorCheckPeriod=1000
+-DsqlExecuteTimeout=3000
+
+
+#-DbackSocket unit:bytes
+#-DbackSocketSoRcvbuf=4194304
+#-DbackSocketSoSndbuf=1048576
+#-DbackSocketNoDelay=1
+
+#  frontSocket
+#-DfrontSocketSoRcvbuf=1048576
+#-DfrontSocketSoSndbuf=4194304
+#-DfrontSocketNoDelay=1
+
+
+#  query memory used for per session,unit is M
+-DotherMemSize=4
+-DorderMemSize=4
+-DjoinMemSize=4
+
+
+#  off Heap unit:bytes
+-DbufferPoolChunkSize=32767
+-DbufferPoolPageNumber=512
+-DbufferPoolPageSize=2097152
+#-DmappedFileSize=2097152
+
+
+#  sql statistics
+#  1 means use SQL statistics, 0 means not
+-DuseSqlStat=1
+#-DbufferUsagePercent=80
+-DclearBigSQLResultSetMapMs=600000
+#-DsqlRecordCount=10
+#-DmaxResultSet=524288
+
+
+#  transaction log
+#  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
+-DrecordTxn=0
+#-DtransactionLogBaseDir=/txlogs
+#-DtransactionLogBaseName=server-tx
+#-DtransactionRotateSize=16
+#  XA transaction
+#  use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times , it is the check period for ,default is 1000 milliseconds
+-DxaSessionCheckPeriod=1000
+#  use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds
+-DxaLogCleanPeriod=1000
+#  XA Recovery Log path
+# -DxaRecoveryLogBaseDir=/xalogs/
+#  XA Recovery Log name
+#-DxaRecoveryLogBaseName=xalog
+#  XA Retry count, retry times in backend, 0 means always retry until success
+#-DxaRetryCount=0
+
+#-DviewPersistenceConfBaseDir=/viewPath
+#-DviewPersistenceConfBaseName=viewJson
+
+#  for join tmp results
+#-DmergeQueueSize=1024
+#-DorderByQueueSize=1024
+#-DjoinQueueSize=1024
+
+
+#  true is use JoinStrategy, default false
+#-DuseJoinStrategy=true
+-DnestLoopConnSize=4
+-DnestLoopRowsSize=2000
+
+
+#  if enable the slow query log
+-DenableSlowLog=1
+#  the slow query log location
+#-DslowLogBaseDir=./slowlogs
+#-DslowLogBaseName=slow-query
+#  the max period for flushing the slow query log from memory to disk  after last time , unit is second
+-DflushSlowLogPeriod=1
+#  the max records for flushing the slow query log from memory to disk after last time
+-DflushSlowLogSize=1000
+#  the threshold for judging if the query is slow , unit is millisecond
+-DsqlSlowTime=100
+
+#  used for load data,maxCharsPerColumn means max chars length for per column when load data
+#-DmaxCharsPerColumn=65535
+#  used for load data, because dble need save to disk if loading file contains large size
+#-DmaxRowSizeToFile=10000
+
+#enableFlowControl=false
+#flowControlStartThreshold=4096
+#flowControlStopThreshold=256

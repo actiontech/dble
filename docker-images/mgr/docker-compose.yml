@@ -8,9 +8,7 @@ networks:
                   gateway: 172.18.0.253
 services:
     mgr-a-1:
-        build:
-            context: ../mysql-image
-        image: actiontech-mysql:1.0.0
+        image: mysql:5.7
         container_name: mgr-a-1
         hostname: mgr-a-1
         privileged: true
@@ -19,7 +17,7 @@ services:
         ports:
             - "3307:3306"
         volumes:
-            - "./mgr-a-1:/etc/mysql/extend.conf.d"
+            - "./mgr-a-1:/etc/mysql/mysql.conf.d"
             - "./script/master:/docker-entrypoint-initdb.d"
         networks:
             net:
@@ -29,9 +27,7 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     mgr-a-2:
-        build:
-            context: ../mysql-image
-        image: actiontech-mysql:1.0.0
+        image: mysql:5.7
         container_name: mgr-a-2
         hostname: mgr-a-2
         privileged: true
@@ -40,7 +36,7 @@ services:
         ports:
             - "3308:3306"
         volumes:
-            - "./mgr-a-2:/etc/mysql/extend.conf.d"
+            - "./mgr-a-2:/etc/mysql/mysql.conf.d"
         depends_on:
             - "mgr-a-1"
         networks:
@@ -51,9 +47,7 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     mgr-a-3:
-        build:
-            context: ../mysql-image
-        image: actiontech-mysql:1.0.0
+        image: mysql:5.7
         container_name: mgr-a-3
         hostname: mgr-a-3
         privileged: true
@@ -62,7 +56,7 @@ services:
         ports:
             - "3309:3306"
         volumes:
-            - "./mgr-a-3:/etc/mysql/extend.conf.d"
+            - "./mgr-a-3:/etc/mysql/mysql.conf.d"
         depends_on:
             - "mgr-a-1"
         networks:
@@ -73,9 +67,7 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     mgr-b-1:
-        build:
-            context: ../mysql-image
-        image: actiontech-mysql:1.0.0
+        image: mysql:5.7
         container_name: mgr-b-1
         hostname: mgr-b-1
         privileged: true
@@ -84,7 +76,7 @@ services:
         ports:
             - "3310:3306"
         volumes:
-          - "./mgr-b-1:/etc/mysql/extend.conf.d"
+          - "./mgr-b-1:/etc/mysql/mysql.conf.d"
           - "./script/master:/docker-entrypoint-initdb.d"
         networks:
             net:
@@ -94,9 +86,7 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     mgr-b-2:
-        build:
-            context: ../mysql-image
-        image: actiontech-mysql:1.0.0
+        image: mysql:5.7
         container_name: mgr-b-2
         hostname: mgr-b-2
         privileged: true
@@ -107,7 +97,7 @@ services:
         depends_on:
             - "mgr-b-1"
         volumes:
-            - "./mgr-b-2:/etc/mysql/extend.conf.d"
+            - "./mgr-b-2:/etc/mysql/mysql.conf.d"
         networks:
             net:
                 ipv4_address: 172.18.0.6
@@ -116,9 +106,7 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     mgr-b-3:
-        build:
-            context: ../mysql-image
-        image: actiontech-mysql:1.0.0
+        image: mysql:5.7
         container_name: mgr-b-3
         hostname: mgr-b-3
         privileged: true
@@ -127,7 +115,7 @@ services:
         ports:
             - "3312:3306"
         volumes:
-          - "./mgr-b-3:/etc/mysql/extend.conf.d"
+            - "./mgr-b-3:/etc/mysql/mysql.conf.d"
         depends_on:
             - "mgr-b-1"
         networks:
@@ -138,17 +126,12 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     dble-server:
-        build:
-            context: ../dble-image
         image: actiontech-dble:latest
         container_name: dble-server
         hostname: dble-server
         privileged: true
         stdin_open: true
         tty: true
-        volumes:
-            - "./conf:/opt/dble/extend.conf.d"
-            - "./logs:/opt/dble/logs"
         environment:
             MASTERS: mgr-a-1,mgr-b-1
             SLAVES: mgr-a-2,mgr-a-3,mgr-b-2,mgr-b-3

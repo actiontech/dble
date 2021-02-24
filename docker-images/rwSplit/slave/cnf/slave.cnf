@@ -1,2 +1,4 @@
 [mysqld]
 server-id=2
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0

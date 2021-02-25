@@ -107,7 +107,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         if (executeTask != null) {
             byte[] data = executeTask.getOrgData();
             if (data != null && !executeTask.isReuse()) {
-                this.setPacketId(data[3]);
+                this.setPacketId(executeTask.getSequenceId());
             }
 
             this.handleInnerData(data);
@@ -134,7 +134,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     private void taskToPriorityQueue(ServiceTask task) {
         DbleServer.getInstance().getFrontPriorityQueue().offer(task);
-        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null));
+        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null, null));
     }
 
     @Override

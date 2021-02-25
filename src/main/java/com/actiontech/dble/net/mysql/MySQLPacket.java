@@ -172,7 +172,7 @@ public abstract class MySQLPacket {
 
     //HEADER_SIZE
     public static final int PACKET_HEADER_SIZE = 4;
-
+    //2^24-1
     public static final int MAX_PACKET_SIZE = 16777215;
 
     public static final int MAX_EOF_SIZE = 9;

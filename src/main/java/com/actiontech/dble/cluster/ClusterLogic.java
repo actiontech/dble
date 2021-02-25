@@ -54,7 +54,6 @@ import com.actiontech.dble.util.TimeUtil;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -375,28 +374,6 @@ public final class ClusterLogic {
         ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(), SystemConfig.getInstance().getInstanceName());
     }
 
-    public static void checkPauseStatusRelease(String crashNode) {
-        try {
-            String fromNode = ClusterHelper.getPathValue(ClusterPathUtil.getPauseResultNodePath());
-            boolean needRelease = false;
-            if (Strings.isNotEmpty(fromNode)) {
-                PauseInfo pauseInfo = new PauseInfo(fromNode);
-                if (pauseInfo.getFrom().equals(crashNode)) {
-                    needRelease = true;
-                }
-            } else if (PauseShardingNodeManager.getInstance().getIsPausing().get()) {
-                LOGGER.warn("No PAUSE information found .But this node self is pausing. Maybe the cluster is doing resume,or something has wrong. ");
-                needRelease = true;
-            }
-
-            if (needRelease) {
-                ClusterHelper.forceResumePause();
-            }
-
-        } catch (Exception e) {
-            LOGGER.warn(" server offline binlog status check error: ", e);
-        }
-    }
 
     /**
      * sequence

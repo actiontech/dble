@@ -111,7 +111,7 @@ public class StatisticCf {
                         String[] arr = table.split("\\.");
                         if (arr.length == 1) {
                             String tableTmp;
-                            if (!STATISTIC_TABLES.keySet().contains((tableTmp = StringUtil.removeApostropheOrBackQuote(arr[0]).toLowerCase()))) {
+                            if (!STATISTIC_TABLES.containsKey((tableTmp = StringUtil.removeApostropheOrBackQuote(arr[0]).toLowerCase()))) {
                                 service.writeErrMessage(ErrorCode.ER_YES, "Table `" + ManagerSchemaInfo.SCHEMA_NAME + "`.`" + arr[0] + "` don't belong to statistic tables");
                                 return;
                             } else {
@@ -119,8 +119,8 @@ public class StatisticCf {
                             }
                         } else if (arr.length == 2) {
                             String tableTmp;
-                            if (!StringUtil.removeApostropheOrBackQuote(arr[0]).toLowerCase().equals(ManagerSchemaInfo.SCHEMA_NAME) ||
-                                    !STATISTIC_TABLES.keySet().contains((tableTmp = StringUtil.removeApostropheOrBackQuote(arr[1])))) {
+                            if (!StringUtil.removeApostropheOrBackQuote(arr[0]).equalsIgnoreCase(ManagerSchemaInfo.SCHEMA_NAME) ||
+                                    !STATISTIC_TABLES.containsKey((tableTmp = StringUtil.removeApostropheOrBackQuote(arr[1])))) {
                                 service.writeErrMessage(ErrorCode.ER_YES, "Table `" + arr[0] + "`.`" + arr[1] + "` don't belong to statistic tables");
                                 return;
                             } else {
@@ -147,12 +147,18 @@ public class StatisticCf {
                     return;
                 }
                 for (String t : tables) {
-                    if (t.toLowerCase().equals(AssociateTablesByEntryByUser.TABLE_NAME)) {
-                        StatisticManager.getInstance().setAssociateTablesByEntryByUserTableSize(size);
-                    } else if (t.toLowerCase().equals(FrontendByBackendByEntryByUser.TABLE_NAME)) {
-                        StatisticManager.getInstance().setFrontendByBackendByEntryByUserTableSize(size);
-                    } else if (t.toLowerCase().equals(TableByUserByEntry.TABLE_NAME)) {
-                        StatisticManager.getInstance().setTableByUserByEntryTableSize(size);
+                    switch (t.toLowerCase()) {
+                        case AssociateTablesByEntryByUser.TABLE_NAME:
+                            StatisticManager.getInstance().setAssociateTablesByEntryByUserTableSize(size);
+                            break;
+                        case FrontendByBackendByEntryByUser.TABLE_NAME:
+                            StatisticManager.getInstance().setFrontendByBackendByEntryByUserTableSize(size);
+                            break;
+                        case TableByUserByEntry.TABLE_NAME:
+                            StatisticManager.getInstance().setTableByUserByEntryTableSize(size);
+                            break;
+                        default:
+                            break;
                     }
                     /*Method method = StatisticManager.getInstance().getClass().getMethod("",new Class[]{int.class});
                        method.invoke(StatisticManager.getInstance(),size);*/

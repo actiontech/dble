@@ -10,14 +10,13 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StatisticListener {
     private static final StatisticListener INSTANCE = new StatisticListener();
     private volatile boolean enable = false;
 
-    private volatile Map<Session, StatisticRecord> recorders = new HashMap<>(16);
+    private volatile ConcurrentHashMap<Session, StatisticRecord> recorders = new ConcurrentHashMap<>(16);
 
     public void start() {
         if (enable) return;

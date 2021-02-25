@@ -37,7 +37,7 @@ public class StatisticCf {
                 StatisticProvider.onOffStatistic();
                 String onOffStatus = isOn ? "enable" : "disable";
                 try {
-                    WriteDynamicBootstrap.getInstance().changeValue("enableStatistic", isOn ? "0" : "1");
+                    WriteDynamicBootstrap.getInstance().changeValue("enableStatistic", isOn ? "1" : "0");
                 } catch (Exception ex) {
                     LOGGER.warn("rollback enableStatistic failed, exception：{}", ex);
                     service.writeErrMessage(ErrorCode.ER_YES, onOffStatus + " enableStatistic failed");
@@ -59,8 +59,8 @@ public class StatisticCf {
         // reload @@statistic_table_size = 96
         //reload @@statistic_table_size = 96 where table=table1;
         //reload @@statistic_table_size = 96 where table in(schema1.table1,...)
-        public static final Pattern PATTERN_IN = Pattern.compile("^\\s*(\\d+)\\s*(where\\s+table\\s+in\\s*\\(([^\\s]+)\\))*", Pattern.CASE_INSENSITIVE);
-        public static final Pattern PATTERN_EQUAL = Pattern.compile("^\\s*(\\d+)\\s*(where\\s+table\\s*=\\s*'([^\\s]+)')*", Pattern.CASE_INSENSITIVE);
+        public static final Pattern PATTERN_IN = Pattern.compile("^\\s*((\\-|\\+)?\\d+)\\s*(where\\s+table\\s+in\\s*\\(([^\\s]+)\\))*", Pattern.CASE_INSENSITIVE);
+        public static final Pattern PATTERN_EQUAL = Pattern.compile("^\\s*((\\-|\\+)?\\d+)\\s*(where\\s+table\\s*=\\s*'([^\\s]+)')*", Pattern.CASE_INSENSITIVE);
         public static final Map<String, String> STATISTIC_TABLES = new HashMap(3);
 
         static {
@@ -79,42 +79,52 @@ public class StatisticCf {
                 int size = 0;
                 boolean haveCondition = false;
                 String tableStr = null;
-
-                if (matcher1.matches()) {
-                    size = Integer.parseInt(matcher1.group(1));
-                    if ((tableStr = matcher1.group(3)) != null) {
-                        haveCondition = true;
+                try {
+                    if (matcher1.matches()) {
+                        size = Integer.parseInt(matcher1.group(1));
+                        if ((tableStr = matcher1.group(4)) != null) {
+                            haveCondition = true;
+                        }
+                    } else if (matcher2.matches()) {
+                        size = Integer.parseInt(matcher2.group(1));
+                        if ((tableStr = matcher2.group(4)) != null) {
+                            haveCondition = true;
+                        }
+                    } else {
+                        service.writeErrMessage(ErrorCode.ER_YES, "Usage: reload @@statistic_table_size = 1024 [where table='?' | where table in (dble_information.tableA,...)]");
+                        return;
                     }
-                } else if (matcher2.matches()) {
-                    size = Integer.parseInt(matcher2.group(1));
-                    if ((tableStr = matcher2.group(3)) != null) {
-                        haveCondition = true;
-                    }
-                } else {
-                    service.writeErrMessage(ErrorCode.ER_YES, "Usage: reload @@statistic_table_size = 1000 [where table='?' | where table in (dble_information.tableA,...)]");
+                } catch (NumberFormatException e) {
+                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "tableSize setting is not correct");
+                    return;
+                }
+                if (size < 1) {
+                    service.writeErrMessage(ErrorCode.ER_YES, "tableSize must be greater than 0");
                     return;
                 }
 
                 Set<String> tables;
                 if (haveCondition) {
                     tables = new HashSet<>();
-                    String[] tableArray = tableStr.split(",");
+                    String[] tableArray = StringUtil.removeApostropheOrBackQuote(tableStr).split(",");
                     for (String table : tableArray) {
                         String[] arr = table.split("\\.");
                         if (arr.length == 1) {
-                            if (!STATISTIC_TABLES.keySet().contains(StringUtil.removeApostropheOrBackQuote(arr[0]).toLowerCase())) {
+                            String tableTmp;
+                            if (!STATISTIC_TABLES.keySet().contains((tableTmp = StringUtil.removeApostropheOrBackQuote(arr[0]).toLowerCase()))) {
                                 service.writeErrMessage(ErrorCode.ER_YES, "Table `" + ManagerSchemaInfo.SCHEMA_NAME + "`.`" + arr[0] + "` don't belong to statistic tables");
                                 return;
                             } else {
-                                tables.add(table);
+                                tables.add(tableTmp);
                             }
                         } else if (arr.length == 2) {
+                            String tableTmp;
                             if (!StringUtil.removeApostropheOrBackQuote(arr[0]).toLowerCase().equals(ManagerSchemaInfo.SCHEMA_NAME) ||
-                                    !STATISTIC_TABLES.keySet().contains(StringUtil.removeApostropheOrBackQuote(arr[1]))) {
+                                    !STATISTIC_TABLES.keySet().contains((tableTmp = StringUtil.removeApostropheOrBackQuote(arr[1])))) {
                                 service.writeErrMessage(ErrorCode.ER_YES, "Table `" + arr[0] + "`.`" + arr[1] + "` don't belong to statistic tables");
                                 return;
                             } else {
-                                tables.add(table);
+                                tables.add(tableTmp);
                             }
                         } else {
                             service.writeErrMessage(ErrorCode.ER_YES, "Please check table name is correct");

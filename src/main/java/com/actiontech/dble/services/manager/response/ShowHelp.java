@@ -89,7 +89,7 @@ public final class ShowHelp {
     static {
 
         //select
-        HELPS.put("select @@VERSION_COMMENT;", "Show the version comment of dble");
+        HELPS.put("select @@VERSION_COMMENT", "Show the version comment of dble");
         // show
         HELPS.put("show @@time.current", "Report current timestamp");
         HELPS.put("show @@time.startup", "Report startup timestamp");
@@ -109,7 +109,7 @@ public final class ShowHelp {
         HELPS.put("show @@session", "Report front session details");
         HELPS.put("show @@session.xa", "Report front session and associated xa transaction details");
         HELPS.put("show @@connection.sql", "Report connection sql");
-        HELPS.put("show @@connection.sql.status where FRONT_ID= ?;", "Show current connection sql status and detail");
+        HELPS.put("show @@connection.sql.status where FRONT_ID= ?", "Show current connection sql status and detail");
         HELPS.put("show @@sql", "Report SQL list");
         // helps.put("show @@sql where id = ?", "Report  specify SQL");
         HELPS.put("show @@sql.high", "Report Hight Frequency SQL");
@@ -117,14 +117,14 @@ public final class ShowHelp {
         HELPS.put("show @@sql.large", "Report the sql witch resultset larger than 10000 rows");
         HELPS.put("show @@sql.condition", "Report the query of a specific table.column set by reload query_cf");
         HELPS.put("show @@sql.resultset", "Report BIG RESULTSET SQL");
-        HELPS.put("show @@sql.sum", "Report  User RW Stat ");
-        HELPS.put("show @@sql.sum.user", "Report  User RW Stat ");
-        HELPS.put("show @@sql.sum.table", "Report  Table RW Stat ");
+        HELPS.put("show @@sql.sum", "Report  User RW Stat");
+        HELPS.put("show @@sql.sum.user", "Report  User RW Stat");
+        HELPS.put("show @@sql.sum.table", "Report  Table RW Stat");
         HELPS.put("show @@heartbeat", "Report heartbeat status");
         HELPS.put("show @@heartbeat.detail where name=?", "Report heartbeat current detail");
         HELPS.put("show @@sysparam", "Report system param");
         HELPS.put("show @@syslog limit=?", "Report system log");
-        HELPS.put("show @@white", "Report server white host ");
+        HELPS.put("show @@white", "Report server white host");
         HELPS.put("show @@directmemory", "Report server direct memory pool usage");
         HELPS.put("show @@command.count", "Report the current number of querys");
         HELPS.put("show @@connection.count", "Report the current number of connections");
@@ -135,7 +135,7 @@ public final class ShowHelp {
         HELPS.put("show @@processlist", "Report correspondence between front and backend session");
 
         HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
-        HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");
+        HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance");
         HELPS.put("show @@shardingNodes where schema='?' and table='?'", "Report the sharding nodes info of a table");
         HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
         HELPS.put("show @@ddl", "Report all ddl info in progress");
@@ -184,7 +184,7 @@ public final class ShowHelp {
         HELPS.put("dryrun", "Dry run to check config before reload xml");
 
         //pause
-        HELPS.put("pause @@shardingNode = 'dn1,dn2,....' and timeout = ? [,queue = ?,wait_limit = ?]", "Block query requests witch specified shardingNodes involved ");
+        HELPS.put("pause @@shardingNode = 'dn1,dn2,....' and timeout = ? [,queue = ?,wait_limit = ?]", "Block query requests witch specified shardingNodes involved");
         HELPS.put("RESUME", "Resume the query requests of the paused shardingNodes");
         HELPS.put("show @@pause", "Show which shardingNodes have bean pause");
 
@@ -218,7 +218,7 @@ public final class ShowHelp {
         HELPS.put("dbGroup @@disable name='?' (instance = '?')", "disable some dbGroup/dbInstance");
         HELPS.put("dbGroup @@enable name='?' (instance = '?')", "enable some dbGroup/dbInstance");
         HELPS.put("dbGroup @@switch name='?' master='?'", "switch primary in one dbGroup");
-        HELPS.put("dbGroup @@events ", "show all the dbGroup ha event which not finished yet ");
+        HELPS.put("dbGroup @@events ", "show all the dbGroup ha event which not finished yet");
 
         //dump file
         HELPS.put("split src dest -sschema -r500 -w500 -l10000 --ignore", "split dump file into multi dump files according to shardingNode");

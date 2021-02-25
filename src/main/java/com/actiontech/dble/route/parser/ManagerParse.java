@@ -122,22 +122,7 @@ public final class ManagerParse {
                     (c6 == 'T' || c6 == 't') &&
                     (c7 == 'E' || c7 == 'e') &&
                     (c8 == ' ' || c8 == '\t' || c8 == '\r' || c8 == '\n')) {
-                if (stmt.length() > offset + 6) {
-                    char c9 = stmt.charAt(++offset);
-                    char c10 = stmt.charAt(++offset);
-                    char c11 = stmt.charAt(++offset);
-                    char c12 = stmt.charAt(++offset);
-                    char c13 = stmt.charAt(++offset);
-                    char c14 = stmt.charAt(++offset);
-                    if ((c9 == 'T' || c9 == 't') &&
-                            (c10 == 'A' || c10 == 'a') &&
-                            (c11 == 'B' || c11 == 'b') &&
-                            (c12 == 'L' || c12 == 'l') &&
-                            (c13 == 'E' || c13 == 'e') &&
-                            (c14 == ' ' || c8 == '\t' || c14 == '\r' || c14 == '\n')) {
-                        return (offset << 8) | TRUNCATE_TABLE;
-                    }
-                }
+                return TRUNCATE_TABLE;
             }
         }
         return OTHER;

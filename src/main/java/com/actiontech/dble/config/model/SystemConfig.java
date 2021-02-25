@@ -175,9 +175,9 @@ public final class SystemConfig {
     private String fakeMySQLVersion = "5.7.21";
 
     private int enableStatistic = 0;
-    private int associateTablesByEntryByUserTableSize = 1000;
-    private int frontendByBackendByEntryByUserTableSize = 1000;
-    private int tableByUserByEntryTableSize = 1000;
+    private int associateTablesByEntryByUserTableSize = 1024;
+    private int frontendByBackendByEntryByUserTableSize = 1024;
+    private int tableByUserByEntryTableSize = 1024;
     private int statisticQueueSize = 4096;
 
     public int getEnableStatistic() {

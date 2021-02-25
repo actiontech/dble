@@ -17,7 +17,7 @@ public class AssociateTablesByEntryByUser extends ManagerBaseTable {
 
     private static final String COLUMN_ENTRY = "entry";
     private static final String COLUMN_USER = "user";
-    private static final String COLUMN_TABLES = "tables";
+    private static final String COLUMN_ASSOCIATE_TABLES = "associate_tables";
     private static final String COLUMN_SQL_SELECT_COUNT = "sql_select_count";
     private static final String COLUMN_SQL_SELECT_EXAMINED_ROWS = "sql_select_examined_rows";
     private static final String COLUMN_SQL_SELECT_ROWS = "sql_select_rows";
@@ -37,17 +37,17 @@ public class AssociateTablesByEntryByUser extends ManagerBaseTable {
         columns.put(COLUMN_USER, new ColumnMeta(COLUMN_USER, "varchar(20)", false, true));
         columnsType.put(COLUMN_USER, Fields.FIELD_TYPE_VAR_STRING);
 
-        columns.put(COLUMN_TABLES, new ColumnMeta(COLUMN_TABLES, "varchar(200)", false, true));
-        columnsType.put(COLUMN_TABLES, Fields.FIELD_TYPE_VAR_STRING);
+        columns.put(COLUMN_ASSOCIATE_TABLES, new ColumnMeta(COLUMN_ASSOCIATE_TABLES, "varchar(200)", false, true));
+        columnsType.put(COLUMN_ASSOCIATE_TABLES, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_SQL_SELECT_COUNT, new ColumnMeta(COLUMN_SQL_SELECT_COUNT, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_COUNT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, new ColumnMeta(COLUMN_SQL_SELECT_EXAMINED_ROWS, "int(11)", false, false));
-        columnsType.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, Fields.FIELD_TYPE_LONG);
-
         columns.put(COLUMN_SQL_SELECT_ROWS, new ColumnMeta(COLUMN_SQL_SELECT_ROWS, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_ROWS, Fields.FIELD_TYPE_LONG);
+
+        columns.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, new ColumnMeta(COLUMN_SQL_SELECT_EXAMINED_ROWS, "int(11)", false, false));
+        columnsType.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_SQL_SELECT_TIME, new ColumnMeta(COLUMN_SQL_SELECT_TIME, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_TIME, Fields.FIELD_TYPE_LONG);
@@ -71,13 +71,11 @@ public class AssociateTablesByEntryByUser extends ManagerBaseTable {
                     LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                     map.put(COLUMN_ENTRY, String.valueOf(v.getValue().getEntry()));
                     map.put(COLUMN_USER, v.getValue().getUser());
-                    map.put(COLUMN_TABLES, v.getValue().getTables());
-
+                    map.put(COLUMN_ASSOCIATE_TABLES, v.getValue().getTables());
                     map.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, String.valueOf(v.getValue().getSelectExaminedRowsRows()));
                     map.put(COLUMN_SQL_SELECT_COUNT, String.valueOf(v.getValue().getSelectCount()));
                     map.put(COLUMN_SQL_SELECT_ROWS, String.valueOf(v.getValue().getSelectRows()));
                     map.put(COLUMN_SQL_SELECT_TIME, String.valueOf(v.getValue().getSelectTime() / 1000));
-
                     map.put(COLUMN_LAST_UPDATE_TIME, DateUtil.parseStr(v.getValue().getLastUpdateTime()));
                     list.add(map);
                 });

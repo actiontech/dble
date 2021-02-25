@@ -185,7 +185,11 @@ public final class SystemConfig {
     }
 
     public void setEnableStatistic(int enableStatistic) {
-        this.enableStatistic = enableStatistic;
+        if (enableStatistic >= 0 && enableStatistic <= 1) {
+            this.enableStatistic = enableStatistic;
+        }else{
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableStatistic", enableStatistic, this.enableStatistic));
+        }
     }
 
     public int getAssociateTablesByEntryByUserTableSize() {

@@ -89,10 +89,6 @@
             <AppenderRef ref="DumpFileLog"/>
             <AppenderRef ref="RollingFile"/>
         </AsyncLogger>
-        <AsyncLogger name="org.apache.zookeeper" level="INFO" additivity="false" includeLocation="false">
-            <AppenderRef ref="Console"/>
-            <AppenderRef ref="RollingFile"/>
-        </AsyncLogger>
 
 
         <asyncRoot level="debug" includeLocation="true">

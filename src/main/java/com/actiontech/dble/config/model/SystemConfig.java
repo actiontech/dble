@@ -175,9 +175,9 @@ public final class SystemConfig {
     private String fakeMySQLVersion = "5.7.21";
 
     private int enableStatistic = 0;
-    private int associateTablesByEntryByUserTableSize = 1000;
-    private int frontendByBackendByEntryByUserTableSize = 1000;
-    private int tableByUserByEntryTableSize = 1000;
+    private int associateTablesByEntryByUserTableSize = 1024;
+    private int frontendByBackendByEntryByUserTableSize = 1024;
+    private int tableByUserByEntryTableSize = 1024;
     private int statisticQueueSize = 4096;
 
     public int getEnableStatistic() {
@@ -185,7 +185,11 @@ public final class SystemConfig {
     }
 
     public void setEnableStatistic(int enableStatistic) {
-        this.enableStatistic = enableStatistic;
+        if (enableStatistic >= 0 && enableStatistic <= 1) {
+            this.enableStatistic = enableStatistic;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableStatistic", enableStatistic, this.enableStatistic));
+        }
     }
 
     public int getAssociateTablesByEntryByUserTableSize() {

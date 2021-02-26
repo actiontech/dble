@@ -145,7 +145,7 @@ public class ManagerQueryHandler {
                     UseHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.TRUNCATE_TABLE:
-                    TruncateHander.handle(sql, service, rs >>> SHIFT);
+                    TruncateHander.handle(sql, service);
                     break;
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

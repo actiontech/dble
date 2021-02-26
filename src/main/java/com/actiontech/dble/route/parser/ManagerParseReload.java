@@ -245,7 +245,7 @@ public final class ManagerParseReload {
 
     // Statistic
     private static int reload2STCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 7) {
+        if (stmt.length() > offset + 18) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

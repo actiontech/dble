@@ -78,11 +78,11 @@ public class TableByUserByEntry extends ManagerBaseTable {
         columns.put(COLUMN_SQL_SELECT_COUNT, new ColumnMeta(COLUMN_SQL_SELECT_COUNT, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_COUNT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, new ColumnMeta(COLUMN_SQL_SELECT_EXAMINED_ROWS, "int(11)", false, false));
-        columnsType.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, Fields.FIELD_TYPE_LONG);
-
         columns.put(COLUMN_SQL_SELECT_ROWS, new ColumnMeta(COLUMN_SQL_SELECT_ROWS, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_ROWS, Fields.FIELD_TYPE_LONG);
+
+        columns.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, new ColumnMeta(COLUMN_SQL_SELECT_EXAMINED_ROWS, "int(11)", false, false));
+        columnsType.put(COLUMN_SQL_SELECT_EXAMINED_ROWS, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_SQL_SELECT_TIME, new ColumnMeta(COLUMN_SQL_SELECT_TIME, "int(11)", false, false));
         columnsType.put(COLUMN_SQL_SELECT_TIME, Fields.FIELD_TYPE_LONG);

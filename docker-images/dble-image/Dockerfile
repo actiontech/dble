@@ -8,14 +8,20 @@ RUN yum install -y wget java mysql python3 python3-devel pip3 mysql-devel gcc &&
 
 COPY docker_init_start.sh /opt/dble/bin/
 COPY wait-for-it.sh /opt/dble/bin/
+
+ARG MODE="quick-start"
+
+RUN if [ "$MODE" != "mgr" -a "$MODE" != "quick-start" -a "$MODE" != "rwSplit" ]; then MODE="quick-start"; fi;
+
 COPY *.cnf /opt/dble/conf/
+COPY "$MODE"/* /opt/dble/conf/
 
 ARG DBLE_VERSION="latest"
 
 RUN if [[ "$DBLE_VERSION" != "latest" ]]; then DBLE_VERSION="tags/${DBLE_VERSION}/tag"; fi;
 
 RUN wget -P /opt $(curl https://api.github.com/repos/actiontech/dble/releases/${DBLE_VERSION} | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4) && \
-    tar zxvf /opt/dble-*.tar.gz -C /opt && \
+    tar zxf /opt/dble-*.tar.gz -C /opt && \
     rm -f /opt/dble-*.tar.gz
 
 RUN chmod 777 /opt/dble/bin/*

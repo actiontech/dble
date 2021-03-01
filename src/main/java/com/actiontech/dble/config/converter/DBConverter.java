@@ -59,8 +59,8 @@ public class DBConverter {
         return parseDbGroupXmlFileToJson(xmlProcess, xmlPath, ConfigFileName.DB_XSD);
     }
 
-    public DbGroups dbJsonToBean(String dbJson) {
-        return ClusterLogic.parseDbGroupsJsonToBean(new Gson(), dbJson);
+    public DbGroups dbJsonToBean(String dbJson, boolean syncHaStatus) {
+        return ClusterLogic.parseDbGroupsJsonToBean(new Gson(), dbJson, syncHaStatus);
     }
 
     public static String dbBeanToJson(DbGroups dbGroups) {
@@ -74,8 +74,8 @@ public class DBConverter {
         return gson.toJson(jsonObj);
     }
 
-    public void dbJsonToMap(String dbJson, ProblemReporter problemReporter) {
-        DbGroups dbs = dbJsonToBean(dbJson);
+    public void dbJsonToMap(String dbJson, ProblemReporter problemReporter, boolean syncHaStatus) {
+        DbGroups dbs = dbJsonToBean(dbJson, syncHaStatus);
         //check
         beanValidate(dbs);
         if (dbs.getVersion() != null && !Versions.CONFIG_VERSION.equals(dbs.getVersion())) {

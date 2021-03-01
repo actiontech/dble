@@ -30,7 +30,7 @@ public class ConfigTest {
 
         String dbXmlToJson = DBConverter.dbXmlToJson("./config/db.xml");
         this.dbConverter = new DBConverter();
-        dbConverter.dbJsonToMap(dbXmlToJson, null);
+        dbConverter.dbJsonToMap(dbXmlToJson, null, false);
         ShardingConverter shardingConverter = new ShardingConverter();
         String shardingXmlToJson = shardingConverter.shardingXmlToJson("./config/sharding.xml");
         shardingConverter.shardingJsonToMap(shardingXmlToJson, dbConverter.getDbGroupMap(), null, null);

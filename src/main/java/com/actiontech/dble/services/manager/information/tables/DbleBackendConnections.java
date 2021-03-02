@@ -25,7 +25,7 @@ import java.util.List;
 
 public final class DbleBackendConnections extends ManagerBaseTable {
     public DbleBackendConnections() {
-        super("backend_connections", 24);
+        super("backend_connections", 25);
     }
 
     @Override
@@ -84,6 +84,9 @@ public final class DbleBackendConnections extends ManagerBaseTable {
 
         columns.put("borrowed_from_pool", new ColumnMeta("borrowed_from_pool", "varchar(5)", false));
         columnsType.put("borrowed_from_pool", Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put("state", new ColumnMeta("state", "varchar(36)", false));
+        columnsType.put("state", Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put("conn_recv_buffer", new ColumnMeta("conn_recv_buffer", "int(11)", false));
         columnsType.put("conn_recv_buffer", Fields.FIELD_TYPE_LONG);
@@ -160,18 +163,37 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         if (c.getState() == PooledConnection.INITIAL) {
             ResponseHandler handler = service.getResponseHandler();
             row.put("used_for_heartbeat", handler instanceof HeartbeatSQLJob ? "true" : "false");
-            row.put("borrowed_from_pool", "true");
+            row.put("borrowed_from_pool", "false");
         } else {
             row.put("used_for_heartbeat", "false");
             row.put("borrowed_from_pool", "true");
         }
-
+        row.put("state", stateStr(c.getState()));
         row.put("conn_closing", c.isClosed() ? "true" : "false");
         if (service.getXaStatus() != null) {
             row.put("xa_status", service.getXaStatus().toString());
         }
         row.put("in_transaction", !service.isAutocommit() + "");
         return row;
+    }
+
+    private static String stateStr(int state) {
+        switch (state) {
+            case PooledConnection.STATE_IN_USE:
+                return "IN USE";
+            case PooledConnection.STATE_NOT_IN_USE:
+                return "IDLE";
+            case PooledConnection.STATE_REMOVED:
+                return "REMOVED";
+            case PooledConnection.STATE_HEARTBEAT:
+                return "HEARTBEAT CHECK";
+            case PooledConnection.STATE_RESERVED:
+                return "EVICT";
+            case PooledConnection.INITIAL:
+                return "IN CREATION OR OUT OF POOL";
+            default:
+                return "UNKNOWN STATE";
+        }
     }
 
 }

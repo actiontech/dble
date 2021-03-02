@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 
@@ -54,7 +54,7 @@ public final class ShowHandler {
                 ShowCreateDatabase.response(service, stmt);
                 break;
             case ServerParseShow.DBLE_PROCESS_LIST:
-                ShowDbleProcessList.response(service, stmt);
+                ShowDbleProcessList.response(service);
                 break;
             case ServerParseShow.CHARSET:
                 stmt = stmt.toLowerCase().replaceFirst("charset", "character set");

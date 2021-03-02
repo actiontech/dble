@@ -125,15 +125,6 @@ public class MySQLResponseService extends BackendService {
         writeDirectly(originPacket);
     }
 
-    public boolean isChangeUser(BusinessService service) {
-        if ((service.getSchema() == null && connection.getSchema() != null) || (service.getSchema() == null && connection.getOldSchema() != null)) {
-            // change user
-            changeUser();
-            return true;
-        }
-        return false;
-    }
-
     //-------------------------------------- for sharding ----------------------------------------------------
     public void execute(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-result");
@@ -158,6 +149,15 @@ public class MySQLResponseService extends BackendService {
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
+    }
+
+    public boolean isChangeUser(BusinessService service) {
+        if ((service.getSchema() == null && connection.getSchema() != null) || (service.getSchema() == null && connection.getOldSchema() != null)) {
+            // change user
+            changeUser();
+            return true;
+        }
+        return false;
     }
 
     public void query(String query) {

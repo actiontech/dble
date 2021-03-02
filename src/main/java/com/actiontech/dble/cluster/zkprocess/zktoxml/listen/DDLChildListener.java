@@ -32,74 +32,78 @@ public class DDLChildListener implements PathChildrenCacheListener {
         }
         ClusterDelayProvider.delayAfterGetDdlNotice();
         ChildData childData = event.getData();
+
+
+        final String ddlInfoStr = new String(childData.getData(), StandardCharsets.UTF_8);
+        DDLInfo ddlInfo = new DDLInfo(ddlInfoStr);
         switch (event.getType()) {
             case CHILD_ADDED:
-                try {
-                    initDDL(childData);
-                } catch (Exception e) {
-                    LOGGER.warn("CHILD_ADDED error", e);
-                }
+                LOGGER.info("DDL node " + childData.getPath() + " created , and data is " + ddlInfoStr);
                 break;
             case CHILD_UPDATED:
-                updateMeta(childData);
+                LOGGER.info("DDL node " + childData.getPath() + " updated , and data is " + ddlInfoStr);
                 break;
             case CHILD_REMOVED:
-                deleteNode(childData);
+                LOGGER.info("DDL node " + childData.getPath() + " deleted , and data is " + ddlInfoStr);
+                break;
+            default:
+                break;
+        }
+        if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
+            LOGGER.info("DDL node " + childData.getPath() + " is from myself ,so just return ,and data is " + ddlInfo.toString());
+            return; //self node
+        }
+
+
+        switch (event.getType()) {
+            case CHILD_ADDED:
+                initMeta(childData, ddlInfo);
+                break;
+            case CHILD_UPDATED:
+                updateMeta(childData, ddlInfo);
+                break;
+            case CHILD_REMOVED:
+                deleteNode(childData, ddlInfo);
                 break;
             default:
                 break;
         }
     }
 
-    private void initDDL(ChildData childData) throws Exception {
-        String childPath = childData.getPath();
-        String data = new String(childData.getData(), StandardCharsets.UTF_8);
-        DDLInfo ddlInfo = new DDLInfo(data);
+    private void initMeta(ChildData childData, DDLInfo ddlInfo) {
 
-        LOGGER.info("DDL node " + childData.getPath() + " created , and data is " + data);
-        if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-            LOGGER.info("DDL node " + childPath + " is from myself ,so just return ,and data is " + data);
-            return; //self node
-        }
+        final String childPath = childData.getPath();
+        String keyName = childPath.substring(childPath.lastIndexOf("/") + 1);
+
+        ClusterLogic.processStatusEvent(keyName, ddlInfo, DDLStatus.INIT);
+
         if (DDLStatus.INIT != ddlInfo.getStatus()) {
-            return;
+            LOGGER.warn("get a special CREATE event of zk when doing cluster ddl , status:{}, data is {}", ddlInfo.getStatus(), ddlInfo.toString());
+            ClusterLogic.processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
         }
-        String keyName = childPath.substring(childPath.lastIndexOf("/") + 1);
-        ClusterLogic.initDDLEvent(keyName, ddlInfo);
+
+
     }
 
-    private void updateMeta(ChildData childData) {
-        String childPath = childData.getPath();
-        String data = new String(childData.getData(), StandardCharsets.UTF_8);
-        DDLInfo ddlInfo = new DDLInfo(data);
-        if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
-            LOGGER.info("DDL node " + childData.getPath() + " is from myself ,so just return ,and data is " + data);
-            return; //self node
-        }
+
+    private void updateMeta(ChildData childData, DDLInfo ddlInfo) {
+        final String childPath = childData.getPath();
+        String keyName = childPath.substring(childPath.lastIndexOf("/") + 1);
         if (DDLStatus.INIT == ddlInfo.getStatus()) {
-            return;
-        }
-        String keyName = childPath.substring(childPath.lastIndexOf("/") + 1);
-        LOGGER.info("DDL node " + childPath + " updated , and data is " + ddlInfo);
-        // just release local lock
-        if (ddlInfo.getStatus() == DDLStatus.FAILED) {
-            try {
-                ClusterLogic.ddlFailedEvent(keyName);
-            } catch (Exception e) {
-                LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
-            }
+            //missing DELETE event.
+            LOGGER.warn("get a special UPDATE event of zk when doing cluster ddl , status:{}, data is {}", ddlInfo.getStatus(), ddlInfo.toString());
+            ClusterLogic.processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
         } else {
-            try {
-                ClusterLogic.ddlUpdateEvent(keyName, ddlInfo);
-            } catch (Exception e) {
-                LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
-            }
+            // just release local lock
+            ClusterLogic.processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
         }
+
+
     }
 
-    private void deleteNode(ChildData childData) throws Exception {
-        String data = new String(childData.getData(), StandardCharsets.UTF_8);
-        DDLInfo ddlInfo = new DDLInfo(data);
+    private void deleteNode(ChildData childData, DDLInfo ddlInfo) throws Exception {
         ClusterLogic.deleteDDLNodeEvent(ddlInfo, childData.getPath());
     }
+
+
 }

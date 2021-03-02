@@ -175,6 +175,30 @@ public final class ClusterLogic {
         }
     }
 
+    public static void processStatusEvent(String keyName, DDLInfo ddlInfo, DDLInfo.DDLStatus status) {
+        try {
+            switch (status) {
+                case INIT:
+                    ClusterLogic.initDDLEvent(keyName, ddlInfo);
+                    break;
+                case SUCCESS:
+                    // just release local lock
+                    ClusterLogic.ddlUpdateEvent(keyName, ddlInfo);
+                    break;
+                case FAILED:
+                    // just release local lock
+                    ClusterLogic.ddlFailedEvent(keyName);
+                    break;
+
+                default:
+                    break;
+
+            }
+        } catch (Exception e) {
+            LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
+        }
+
+    }
 
     public static void deleteDDLNodeEvent(DDLInfo ddlInfo, String path) throws Exception {
         LOGGER.info("DDL node " + path + " removed , and DDL info is " + ddlInfo.toString());

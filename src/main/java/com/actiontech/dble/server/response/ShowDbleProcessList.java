@@ -50,7 +50,7 @@ public final class ShowDbleProcessList {
         FIELDS[i] = PacketUtil.getField("Front_Id", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("db_instance", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("db_instance", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("MysqlId", Fields.FIELD_TYPE_VAR_STRING);

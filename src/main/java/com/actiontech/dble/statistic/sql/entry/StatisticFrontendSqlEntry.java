@@ -13,9 +13,14 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     private String sql;
     private volatile Map<String, StatisticBackendSqlEntry> backendSqlEntrys = new HashMap<>(8);
     private volatile LongAdder examinedRows = new LongAdder();
+    private boolean isNeedToTx;
 
     public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long txId, long startTime) {
         super(frontendInfo, txId, startTime);
+    }
+
+    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime) {
+        super(frontendInfo, startTime);
     }
 
     public LongAdder getExaminedRows() {
@@ -46,7 +51,6 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
         return backendSqlEntrys;
     }
 
-
     public String getSchema() {
         return schema;
     }
@@ -73,6 +77,14 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     public void setRowsAndExaminedRows(long rows) {
         super.rows = rows;
         examinedRows.add(rows);
+    }
+
+    public boolean isNeedToTx() {
+        return isNeedToTx;
+    }
+
+    public void setNeedToTx(boolean needToTx) {
+        isNeedToTx = needToTx;
     }
 
     @Override

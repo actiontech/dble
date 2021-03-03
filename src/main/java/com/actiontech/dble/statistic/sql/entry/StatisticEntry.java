@@ -5,7 +5,7 @@ public class StatisticEntry {
     protected long rows = 0L;
     private long startTime = 0L;
     private long allEndTime = 0L;
-    private int txType;
+    private int txType; // 0-tx, 1-ax
     private long txId = -1L;
     protected String xaId;
 

@@ -117,7 +117,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
                     }
                     if (!autocommit && session.getTargetCount() > 0) {
                         setNoAutoCommit = true;
@@ -133,7 +133,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 } else {
                     if (autocommit) {
                         if (!txStarted) {
-                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStart(this));
                         }
                         autocommit = false;
                         txStarted = true;

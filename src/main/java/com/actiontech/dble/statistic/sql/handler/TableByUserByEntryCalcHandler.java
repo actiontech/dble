@@ -99,19 +99,19 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
         String user;
         String table;
         int insertCount = 0;
-        long insertRows = 0;
+        long insertRows = 0L;
         long insertTime = 0L;
 
         int updateCount = 0;
-        long updateRows = 0;
+        long updateRows = 0L;
         long updateTime = 0L;
 
         int deleteCount = 0;
-        long deleteRows = 0;
+        long deleteRows = 0L;
         long deleteTime = 0L;
 
         int selectCount = 0;
-        long selectRows = 0;
+        long selectRows = 0L;
         long selectExaminedRowsRows = 0L;
         long selectTime = 0L;
 

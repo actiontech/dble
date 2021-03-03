@@ -17,7 +17,7 @@ public final class XaHandler {
             if (isSuccess) {
                 Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onXaStart(xaId));
                 rwSplitService.getAndIncrementTxId();
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onTxStartByBegin(service));
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onTxStart(service));
             }
         });
     }
@@ -26,7 +26,7 @@ public final class XaHandler {
         service.getSession().execute(true, (isSuccess, rwSplitService) -> {
             if (isSuccess) {
                 Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onXaStop());
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onTxEndByCommit());
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onTxEnd());
             }
         });
     }

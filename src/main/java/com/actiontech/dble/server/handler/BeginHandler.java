@@ -20,7 +20,7 @@ public final class BeginHandler {
             service.beginInTx(stmt);
         } else {
             service.setTxStart(true);
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStartByBegin(service));
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStart(service));
             TxnLogHelper.putTxnLog(service, stmt);
             service.writeOkPacket();
         }

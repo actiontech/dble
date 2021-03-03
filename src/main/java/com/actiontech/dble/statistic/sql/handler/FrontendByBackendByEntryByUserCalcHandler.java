@@ -63,14 +63,18 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                 });
             } else if (entry instanceof StatisticBackendSqlEntry) {
                 StatisticBackendSqlEntry backendSqlEntry = (StatisticBackendSqlEntry) entry;
+                String key = backendSqlEntry.getKey();
+                Record currRecord;
+                boolean isNew = false;
+                if (isNew = ((currRecord = records.get(key)) == null)) {
+                    checkEliminate();
+                    currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
+                }
+                if (backendSqlEntry.isNeedToTx()) {
+                    currRecord.addTxRows(backendSqlEntry.getRows());
+                    currRecord.addTx(entry.getDuration());
+                }
                 if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
-                    String key = backendSqlEntry.getKey();
-                    Record currRecord;
-                    boolean isNew = false;
-                    if (isNew = ((currRecord = records.get(key)) == null)) {
-                        checkEliminate();
-                        currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
-                    }
                     switch (backendSqlEntry.getSqlType()) {
                         case 4:
                             currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
@@ -88,9 +92,9 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                             // ignore
                             break;
                     }
-                    if (isNew) {
-                        records.put(key, currRecord);
-                    }
+                }
+                if (isNew) {
+                    records.put(key, currRecord);
                 }
             }
         }
@@ -116,23 +120,23 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
         StatisticEntry.BackendInfo backend;
 
         int txCount = 0;
-        long txRows = 0;
+        long txRows = 0L;
         long txTime = 0L;
 
         int insertCount = 0;
-        long insertRows = 0;
+        long insertRows = 0L;
         long insertTime = 0L;
 
         int updateCount = 0;
-        long updateRows = 0;
+        long updateRows = 0L;
         long updateTime = 0L;
 
         int deleteCount = 0;
-        long deleteRows = 0;
+        long deleteRows = 0L;
         long deleteTime = 0L;
 
         int selectCount = 0;
-        long selectRows = 0;
+        long selectRows = 0L;
         long selectTime = 0L;
 
         long lastUpdateTime = 0L;

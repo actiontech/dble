@@ -8,6 +8,7 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
     private long firstEndTime = 0L;
     private int sqlType = -99;
     private String sql;
+    private boolean isNeedToTx;
 
     public StatisticBackendSqlEntry(
             FrontendInfo frontendInfo,
@@ -52,6 +53,14 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
 
     public void setSql(String sql) {
         this.sql = sql.replaceAll("[\\t\\n\\r]", " ");
+    }
+
+    public boolean isNeedToTx() {
+        return isNeedToTx;
+    }
+
+    public void setNeedToTx(boolean needToTx) {
+        isNeedToTx = needToTx;
     }
 
     public String getKey() {

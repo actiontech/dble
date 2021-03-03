@@ -76,7 +76,7 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
         String tables;
 
         int selectCount = 0;
-        long selectRows = 0;
+        long selectRows = 0L;
         long selectExaminedRowsRows = 0L;
         long selectTime = 0L;
         long lastUpdateTime = 0L;

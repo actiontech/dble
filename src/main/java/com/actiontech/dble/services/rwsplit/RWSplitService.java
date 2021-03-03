@@ -65,15 +65,16 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             case AUTOCOMMIT:
                 String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByBegin(this));
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
                     autocommit = false;
                     txStarted = true;
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
                     writeOkPacket();
                     return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
                     session.execute(true, (isSuccess, rwSplitService) -> {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
                         this.singleTransactionsCount();
@@ -81,6 +82,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     return;
                 }
                 this.singleTransactionsCount();
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
                 writeOkPacket();
                 break;
             default:

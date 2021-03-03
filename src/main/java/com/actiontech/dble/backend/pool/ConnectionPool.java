@@ -376,13 +376,16 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
      * <p>This method needs to be final, since it is called from a constructor.
      * See POOL-195.</p>
      */
-    public void startEvictor() {
+    public void startEvictor(String instanceName, String reason) {
         if (isClosed.compareAndSet(true, false)) {
+            LOGGER.info("start connection pool of physical db instance[{}], due to {}", instanceName, reason);
             if (evictor != null) {
                 EvictionTimer.cancel(evictor, poolConfig.getEvictorShutdownTimeoutMillis(), TimeUnit.MILLISECONDS);
             }
             evictor = new Evictor();
             EvictionTimer.schedule(evictor, 0, poolConfig.getTimeBetweenEvictionRunsMillis());
+        } else {
+            LOGGER.info("start connection pool of physical db instance[{}], due to {}, but the dbInstance has been started.", instanceName, reason);
         }
     }
 

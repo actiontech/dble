@@ -372,14 +372,9 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
     }
 
-    public void start(String reason) {
-        start(reason, true);
-    }
-
-    public void start(String reason, boolean isStartHeartbeat) {
+    void start(String reason, boolean isStartHeartbeat) {
         if ((dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || dbGroup.getWriteDbInstance() == this) && !dbGroup.isUseless()) {
-            LOGGER.info("start connection pool of physical db instance[{}], due to {}", this.dbGroup.getGroupName() + "." + name, reason);
-            this.connectionPool.startEvictor();
+            this.connectionPool.startEvictor(this.dbGroup.getGroupName() + "." + name, reason);
         }
         if (isStartHeartbeat) {
             startHeartbeat();
@@ -433,7 +428,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
 
     public boolean enable() {
         if (disabled.compareAndSet(true, false)) {
-            start("execute manager cmd of enable");
+            start("execute manager cmd of enable", true);
             return true;
         }
         return false;

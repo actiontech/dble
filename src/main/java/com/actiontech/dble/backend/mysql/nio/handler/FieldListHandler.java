@@ -81,7 +81,7 @@ public class FieldListHandler implements ResponseHandler {
 
     @Override
     public void okResponse(byte[] ok, AbstractService service) {
-        //not happen
+        ((MySQLResponseService) service).syncAndExecute();
     }
 
     @Override

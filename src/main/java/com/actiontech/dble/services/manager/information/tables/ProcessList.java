@@ -73,9 +73,8 @@ public class ProcessList extends ManagerBaseTable {
     protected List<LinkedHashMap<String, String>> getRows() {
 
         Map<String, Integer> indexs = new HashMap<>();
-        Map<PhysicalDbInstance, List<Long>> dbInstanceMap = new HashMap<>(8);
-
         List<LinkedHashMap<String, String>> rows = new ArrayList<>();
+        Map<PhysicalDbInstance, List<Long>> dbInstanceMap = new HashMap<>(8);
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             p.getFrontends().
@@ -88,19 +87,7 @@ public class ProcessList extends ManagerBaseTable {
                             Map<RouteResultsetNode, BackendConnection> backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
                             if (!CollectionUtil.isEmpty(backendConns)) {
                                 for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
-                                    long threadId = entry.getValue().getThreadId();
-                                    PhysicalDbInstance dbInstance = (PhysicalDbInstance) entry.getValue().getInstance();
-                                    rows.add(getRow(fc, entry.getValue()));
-                                    // index
-                                    indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
-                                    // sharding node map
-                                    if (dbInstanceMap.get(dbInstance) == null) {
-                                        List<Long> threadIds = new ArrayList<>(3);
-                                        threadIds.add(threadId);
-                                        dbInstanceMap.put(dbInstance, threadIds);
-                                    } else {
-                                        dbInstanceMap.get(dbInstance).add(threadId);
-                                    }
+                                    addRow(fc, entry.getValue(), rows, indexs, dbInstanceMap);
                                 }
                             } else {
                                 rows.add(getDefaultRow(fc));
@@ -108,23 +95,10 @@ public class ProcessList extends ManagerBaseTable {
                         } else {
                             BackendConnection conn = ((RWSplitService) fc.getService()).getSession().getConn();
                             if (conn != null) {
-                                long threadId = conn.getThreadId();
-                                PhysicalDbInstance dbInstance = (PhysicalDbInstance) conn.getInstance();
-                                rows.add(getRow(fc, conn));
-                                // index
-                                indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
-                                // sharding node map
-                                if (dbInstanceMap.get(dbInstance) == null) {
-                                    List<Long> threadIds = new ArrayList<>(10);
-                                    threadIds.add(threadId);
-                                    dbInstanceMap.put(dbInstance, threadIds);
-                                } else {
-                                    dbInstanceMap.get(dbInstance).add(threadId);
-                                }
+                                addRow(fc, conn, rows, indexs, dbInstanceMap);
                             } else {
                                 rows.add(getDefaultRow(fc));
                             }
-
                         }
                     });
         }
@@ -146,6 +120,23 @@ public class ProcessList extends ManagerBaseTable {
         }
 
         return rows;
+    }
+
+    private void addRow(FrontendConnection fc, BackendConnection bconn, List<LinkedHashMap<String, String>> rows,
+                        Map<String, Integer> indexs, Map<PhysicalDbInstance, List<Long>> dbInstanceMap) {
+        long threadId = bconn.getThreadId();
+        PhysicalDbInstance dbInstance = (PhysicalDbInstance) bconn.getInstance();
+        rows.add(getRow(fc, bconn));
+        // index
+        indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
+        // dbInstance map
+        if (dbInstanceMap.get(dbInstance) == null) {
+            List<Long> threadIds = new ArrayList<>(10);
+            threadIds.add(threadId);
+            dbInstanceMap.put(dbInstance, threadIds);
+        } else {
+            dbInstanceMap.get(dbInstance).add(threadId);
+        }
     }
 
     private LinkedHashMap<String, String> getRow(FrontendConnection frontConn, BackendConnection conn) {

@@ -89,50 +89,21 @@ public final class ShowProcessList {
                 if (fc == null || !fc.isAuthorized() || fc.isManager())
                     continue;
 
-
                 if (fc.getService() instanceof ShardingService) {
                     Map<RouteResultsetNode, BackendConnection> backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
                     if (!CollectionUtil.isEmpty(backendConns)) {
                         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
-                            long threadId = entry.getValue().getThreadId();
-                            PhysicalDbInstance dbInstance = (PhysicalDbInstance) entry.getValue().getInstance();
-                            RowDataPacket row = getRow(fc, dbInstance.getName(), threadId, charset);
-                            rows.add(row);
-                            // index
-                            indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
-                            // sharding node map
-                            if (dbInstanceMap.get(dbInstance) == null) {
-                                List<Long> threadIds = new ArrayList<>(3);
-                                threadIds.add(threadId);
-                                dbInstanceMap.put(dbInstance, threadIds);
-                            } else {
-                                dbInstanceMap.get(dbInstance).add(threadId);
-                            }
+                            addRow(fc, entry.getValue(), charset, rows, indexs, dbInstanceMap);
                         }
                     } else {
-                        RowDataPacket row = getRow(fc, null, null, charset);
-                        rows.add(row);
+                        rows.add(getRow(fc, null, null, charset));
                     }
                 } else {
                     BackendConnection conn = ((RWSplitService) fc.getService()).getSession().getConn();
                     if (conn != null) {
-                        long threadId = conn.getThreadId();
-                        PhysicalDbInstance dbInstance = (PhysicalDbInstance) conn.getInstance();
-                        RowDataPacket row = getRow(fc, null, null, charset);
-                        rows.add(row);
-                        // index
-                        indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
-                        // sharding node map
-                        if (dbInstanceMap.get(dbInstance) == null) {
-                            List<Long> threadIds = new ArrayList<>(10);
-                            threadIds.add(threadId);
-                            dbInstanceMap.put(dbInstance, threadIds);
-                        } else {
-                            dbInstanceMap.get(dbInstance).add(threadId);
-                        }
+                        addRow(fc, conn, charset, rows, indexs, dbInstanceMap);
                     } else {
-                        RowDataPacket row = getRow(fc, null, null, charset);
-                        rows.add(row);
+                        rows.add(getRow(fc, null, null, charset));
                     }
                 }
             }
@@ -186,12 +157,29 @@ public final class ShowProcessList {
         lastEof.write(buffer, service);
     }
 
-    private static RowDataPacket getRow(FrontendConnection fc, String shardingNode, Long threadId, String charset) {
+    private static void addRow(FrontendConnection fconn, BackendConnection bconn, String charset, List<RowDataPacket> rows,
+                               Map<String, Integer> indexs, Map<PhysicalDbInstance, List<Long>> dbInstanceMap) {
+        long threadId = bconn.getThreadId();
+        PhysicalDbInstance dbInstance = (PhysicalDbInstance) bconn.getInstance();
+        rows.add(getRow(fconn, dbInstance.getName(), threadId, charset));
+        // index
+        indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
+        // dbInstance map
+        if (dbInstanceMap.get(dbInstance) == null) {
+            List<Long> threadIds = new ArrayList<>(10);
+            threadIds.add(threadId);
+            dbInstanceMap.put(dbInstance, threadIds);
+        } else {
+            dbInstanceMap.get(dbInstance).add(threadId);
+        }
+    }
+
+    private static RowDataPacket getRow(FrontendConnection fc, String dbInstance, Long threadId, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         // Front_Id
         row.add(LongUtil.toBytes(fc.getId()));
-        // shardingNode
-        row.add(StringUtil.encode(shardingNode == null ? NULL_VAL : shardingNode, charset));
+        // dbInstance
+        row.add(StringUtil.encode(dbInstance == null ? NULL_VAL : dbInstance, charset));
         // BconnID
         row.add(threadId == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(threadId));
         // User

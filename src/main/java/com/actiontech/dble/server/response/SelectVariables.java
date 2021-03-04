@@ -8,7 +8,9 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.google.common.base.Splitter;
 import org.slf4j.Logger;
@@ -30,7 +32,7 @@ public final class SelectVariables {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectVariables.class);
 
 
-    public static void execute(ShardingService service, String sql) {
+    public static <T extends UserConfig> void execute(FrontendService<T> service, String sql) {
         String subSql = sql.substring(sql.indexOf("SELECT") + 6);
         List<String> splitVar = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(subSql);
         splitVar = convert(splitVar);

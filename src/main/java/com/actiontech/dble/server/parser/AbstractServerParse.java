@@ -25,15 +25,6 @@ public abstract class AbstractServerParse implements ServerParse {
 
     @Override
     public int parseSpecial(int sqlType, String stmt) {
-        if (ServerParse.SELECT != sqlType) {
-            return OTHER;
-        }
-        if (SELECT_FOR_UPDATE_PATTERN.matcher(stmt).matches()) {
-            return SELECT_FOR_UPDATE;
-        }
-        if (LOCK_IN_SHARE_MODE_PATTERN.matcher(stmt).matches()) {
-            return LOCK_IN_SHARE_MODE;
-        }
         return OTHER;
     }
 

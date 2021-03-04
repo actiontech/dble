@@ -369,7 +369,9 @@ public class PhysicalDbGroup {
                 }
             }
             newWriteHost.setReadInstance(false);
+            String oldWriteInstance = writeDbInstance.getName();
             writeDbInstance = newWriteHost;
+            newWriteHost.start("switch master from " + oldWriteInstance + " to the instance", false);
             return this.getClusterHaJson();
         } catch (Exception e) {
             LOGGER.warn("switchMaster Exception ", e);

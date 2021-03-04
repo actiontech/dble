@@ -202,6 +202,10 @@ public class RWSplitNonBlockingSession extends Session {
         }
     }
 
+    public BackendConnection getConn() {
+        return conn;
+    }
+
     public boolean closed() {
         return rwSplitService.getConnection().isClosed();
     }

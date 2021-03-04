@@ -7,6 +7,7 @@
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -18,6 +19,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.handler.ShowProcesslistHandler;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -48,7 +50,7 @@ public final class ShowDbleProcessList {
         FIELDS[i] = PacketUtil.getField("Front_Id", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("shardingNode", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("db_instance", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("MysqlId", Fields.FIELD_TYPE_VAR_STRING);
@@ -78,16 +80,16 @@ public final class ShowDbleProcessList {
         EOF.setPacketId(++packetId);
     }
 
-    public static void response(ShardingService service, String stmt) {
+    public static void response(ShardingService service) {
         List<RowDataPacket> rows = new ArrayList<>();
         Map<String, Integer> indexs = new HashMap<>();
-        Map<String, List<Long>> shardingNodeMap = new HashMap<>(4, 1f);
+        Map<PhysicalDbInstance, List<Long>> dbInstanceMap = new HashMap<>(8);
         String charset = service.getCharset().getResults();
 
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc == null || !fc.isAuthorized()) {
-                    break;
+                if (fc == null || !fc.isAuthorized() || fc.isManager()) {
+                    continue;
                 }
                 /*
                  only show your own task
@@ -96,39 +98,29 @@ public final class ShowDbleProcessList {
                     continue;
                 }
 
-
-                Map<RouteResultsetNode, BackendConnection> backendConns = null;
-                if (!fc.isManager()) {
-                    backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
-                }
-                if (!CollectionUtil.isEmpty(backendConns)) {
-                    for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
-                        String shardingNode = entry.getKey().getName();
-                        long threadId = entry.getValue().getThreadId();
-                        // row data package
-                        RowDataPacket row = getRow(fc, shardingNode, threadId, charset);
-                        rows.add(row);
-                        // index
-                        indexs.put(shardingNode + "." + threadId, rows.size() - 1);
-                        // sharding node map
-                        if (shardingNodeMap.get(shardingNode) == null) {
-                            List<Long> threadIds = new ArrayList<>(3);
-                            threadIds.add(threadId);
-                            shardingNodeMap.put(shardingNode, threadIds);
-                        } else {
-                            shardingNodeMap.get(shardingNode).add(threadId);
+                if (fc.getService() instanceof ShardingService) {
+                    Map<RouteResultsetNode, BackendConnection> backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
+                    if (!CollectionUtil.isEmpty(backendConns)) {
+                        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
+                            addRow(fc, entry.getValue(), charset, rows, indexs, dbInstanceMap);
                         }
+                    } else {
+                        rows.add(getRow(fc, null, null, charset));
                     }
                 } else {
-                    RowDataPacket row = getRow(fc, null, null, charset);
-                    rows.add(row);
+                    BackendConnection conn = ((RWSplitService) fc.getService()).getSession().getConn();
+                    if (conn != null) {
+                        addRow(fc, conn, charset, rows, indexs, dbInstanceMap);
+                    } else {
+                        rows.add(getRow(fc, null, null, charset));
+                    }
                 }
             }
         }
 
         // set 'show processlist' content
         try {
-            Map<String, Map<String, String>> backendRes = showProcessList(shardingNodeMap);
+            Map<String, Map<String, String>> backendRes = showProcessList(dbInstanceMap);
             for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
                 Map<String, String> res = backendRes.get(entry.getKey());
                 if (res != null) {
@@ -174,12 +166,29 @@ public final class ShowDbleProcessList {
         lastEof.write(buffer, service);
     }
 
-    private static RowDataPacket getRow(FrontendConnection fc, String shardingNode, Long threadId, String charset) {
+    private static void addRow(FrontendConnection fconn, BackendConnection bconn, String charset, List<RowDataPacket> rows,
+                               Map<String, Integer> indexs, Map<PhysicalDbInstance, List<Long>> dbInstanceMap) {
+        long threadId = bconn.getThreadId();
+        PhysicalDbInstance dbInstance = (PhysicalDbInstance) bconn.getInstance();
+        rows.add(getRow(fconn, dbInstance.getName(), threadId, charset));
+        // index
+        indexs.put(dbInstance.getName() + "." + threadId, rows.size() - 1);
+        // dbInstance map
+        if (dbInstanceMap.get(dbInstance) == null) {
+            List<Long> threadIds = new ArrayList<>(10);
+            threadIds.add(threadId);
+            dbInstanceMap.put(dbInstance, threadIds);
+        } else {
+            dbInstanceMap.get(dbInstance).add(threadId);
+        }
+    }
+
+    private static RowDataPacket getRow(FrontendConnection fc, String dbInstance, Long threadId, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         // Front_Id
         row.add(LongUtil.toBytes(fc.getId()));
-        // shardingNode
-        row.add(StringUtil.encode(shardingNode == null ? NULL_VAL : shardingNode, charset));
+        // dbInstance
+        row.add(StringUtil.encode(dbInstance == null ? NULL_VAL : dbInstance, charset));
         // BconnID
         row.add(threadId == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(threadId));
         // User
@@ -199,9 +208,9 @@ public final class ShowDbleProcessList {
         return row;
     }
 
-    private static Map<String, Map<String, String>> showProcessList(Map<String, List<Long>> dns) {
+    private static Map<String, Map<String, String>> showProcessList(Map<PhysicalDbInstance, List<Long>> dns) {
         Map<String, Map<String, String>> result = new HashMap<>();
-        for (Map.Entry<String, List<Long>> entry : dns.entrySet()) {
+        for (Map.Entry<PhysicalDbInstance, List<Long>> entry : dns.entrySet()) {
             ShowProcesslistHandler handler = new ShowProcesslistHandler(entry.getKey(), entry.getValue());
             handler.execute();
             if (handler.isSuccess()) {

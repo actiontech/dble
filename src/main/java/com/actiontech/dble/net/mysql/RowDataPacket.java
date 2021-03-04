@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
-
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 
@@ -97,7 +96,7 @@ public class RowDataPacket extends MySQLPacket {
             service.writeDirectly(bb);
             ByteBuffer tmpBuffer = service.allocate(totalSize);
             BufferUtil.writeUB3(tmpBuffer, calcPacketSize());
-            tmpBuffer.put(packetId--);
+            tmpBuffer.put(packetId);
             writeBody(tmpBuffer);
             byte[] array = tmpBuffer.array();
             service.recycleBuffer(tmpBuffer);

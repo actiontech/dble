@@ -1,8 +1,8 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.bean.KvBean;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

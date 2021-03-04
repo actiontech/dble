@@ -58,6 +58,7 @@ public abstract class AbstractConnection implements Connection {
     protected long netInBytes;
     protected long netOutBytes;
     protected long lastLargeMessageTime;
+    private int sequenceId = 0;
 
     protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
@@ -96,50 +97,56 @@ public abstract class AbstractConnection implements Connection {
         while (hasRemaining) {
             ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress);
             switch (result.getCode()) {
-                case REACH_END_BUFFER:
-                    readReachEnd();
-                    byte[] packetData = result.getPacketData();
-                    if (packetData != null) {
-                        if (!isSupportCompress) {
-                            service.handle(new ServiceTask(packetData, service));
-                        } else {
-                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
-                            for (byte[] pack : packs) {
-                                if (pack.length != 0) {
-                                    service.handle(new ServiceTask(pack, service));
-                                }
-                            }
-                        }
+                case PART_OF_BIG_PACKET:
+
+                    sequenceId++;
+                    if (!result.isHasMorePacket()) {
+                        readReachEnd();
+                        dataBuffer.clear();
                     }
-                    dataBuffer.clear();
-                    hasRemaining = false;
+
+                    break;
+                case COMPLETE_PACKET:
+                    processPacketData(result);
+                    if (!result.isHasMorePacket()) {
+                        readReachEnd();
+                        dataBuffer.clear();
+                    }
                     break;
                 case BUFFER_PACKET_UNCOMPLETE:
                     compactReadBuffer(dataBuffer, result.getOffset());
-                    hasRemaining = false;
                     break;
                 case BUFFER_NOT_BIG_ENOUGH:
                     ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
-                    hasRemaining = false;
                     break;
-                case STLL_DATA_REMING:
-                    byte[] partData = result.getPacketData();
-                    if (partData != null) {
-                        if (!isSupportCompress) {
-                            service.handle(new ServiceTask(partData, service));
-                        } else {
-                            List<byte[]> packs = CompressUtil.decompressMysqlPacket(partData, decompressUnfinishedDataQueue);
-                            for (byte[] pack : packs) {
-                                if (pack.length != 0) {
-                                    service.handle(new ServiceTask(pack, service));
-                                }
-                            }
-                        }
-                    }
-                    offset = result.getOffset();
-                    continue;
                 default:
                     throw new RuntimeException("unknown error when read data");
+            }
+
+            hasRemaining = result.isHasMorePacket();
+            if (hasRemaining) {
+                offset = result.getOffset();
+            }
+        }
+    }
+
+    private void processPacketData(ProtoHandlerResult result) {
+        byte[] packetData = result.getPacketData();
+        if (packetData != null) {
+            int tmpSequenceId = sequenceId;
+            if (!isSupportCompress) {
+                sequenceId = 0;
+                service.handle(new ServiceTask(packetData, service, tmpSequenceId));
+            } else {
+                List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
+                if (decompressUnfinishedDataQueue.isEmpty()) {
+                    sequenceId = 0;
+                }
+                for (byte[] pack : packs) {
+                    if (pack.length != 0) {
+                        service.handle(new ServiceTask(pack, service, tmpSequenceId++));
+                    }
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.VariablesService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
 
 import java.nio.ByteBuffer;
@@ -86,6 +87,9 @@ public abstract class AbstractService extends VariablesService implements Servic
             singlePacket = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
             ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
             singlePacket[3] = ++packetId;
+            if (this instanceof ShardingService) {
+                singlePacket[3] = (byte) ((ShardingService) this).nextPacketId();
+            }
             System.arraycopy(data, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_PACKET_SIZE);
             srcPos += MySQLPacket.MAX_PACKET_SIZE;
             length -= MySQLPacket.MAX_PACKET_SIZE;
@@ -94,6 +98,9 @@ public abstract class AbstractService extends VariablesService implements Servic
         singlePacket = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
         ByteUtil.writeUB3(singlePacket, length);
         singlePacket[3] = ++packetId;
+        if (this instanceof ShardingService) {
+            singlePacket[3] = (byte) ((ShardingService) this).nextPacketId();
+        }
         System.arraycopy(data, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, length);
         buffer = writeToBuffer(singlePacket, buffer);
         return buffer;

@@ -2,8 +2,8 @@ package com.actiontech.dble.statistic.sql.entry;
 
 import com.actiontech.dble.server.parser.ServerParseFactory;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
 public class StatisticFrontendSqlEntry extends StatisticEntry {
@@ -11,7 +11,7 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     private String schema;
     private int sqlType = -99;
     private String sql;
-    private volatile Map<String, StatisticBackendSqlEntry> backendSqlEntrys = new HashMap<>(8);
+    private volatile ConcurrentHashMap<String, StatisticBackendSqlEntry> backendSqlEntrys = new ConcurrentHashMap<>(8);
     private volatile LongAdder examinedRows = new LongAdder();
     private boolean isNeedToTx;
 

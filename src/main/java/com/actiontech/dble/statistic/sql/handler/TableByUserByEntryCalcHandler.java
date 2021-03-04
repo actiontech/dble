@@ -57,25 +57,27 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
                 checkEliminate();
                 currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), table);
             }
-            switch (fEntry.getSqlType()) {
-                case 4:
-                    currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case 11:
-                    currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case 3:
-                    currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case 7:
-                    currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
-                    break;
-                default:
-                    // ignore
-                    break;
-            }
-            if (isNew) {
-                records.put(key, currRecord);
+            if (currRecord != null) {
+                switch (fEntry.getSqlType()) {
+                    case 4:
+                        currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    case 11:
+                        currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    case 3:
+                        currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    case 7:
+                        currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    default:
+                        // ignore
+                        break;
+                }
+                if (isNew) {
+                    records.put(key, currRecord);
+                }
             }
         }
     }

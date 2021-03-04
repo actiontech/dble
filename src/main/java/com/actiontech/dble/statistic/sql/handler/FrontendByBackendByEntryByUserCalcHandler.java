@@ -70,31 +70,33 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                     checkEliminate();
                     currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
                 }
-                if (backendSqlEntry.isNeedToTx()) {
-                    currRecord.addTxRows(backendSqlEntry.getRows());
-                    currRecord.addTx(entry.getDuration());
-                }
-                if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
-                    switch (backendSqlEntry.getSqlType()) {
-                        case 4:
-                            currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                            break;
-                        case 11:
-                            currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                            break;
-                        case 3:
-                            currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                            break;
-                        case 7:
-                            currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                            break;
-                        default:
-                            // ignore
-                            break;
+                if (currRecord != null) {
+                    if (backendSqlEntry.isNeedToTx()) {
+                        currRecord.addTxRows(backendSqlEntry.getRows());
+                        currRecord.addTx(entry.getDuration());
                     }
-                }
-                if (isNew) {
-                    records.put(key, currRecord);
+                    if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
+                        switch (backendSqlEntry.getSqlType()) {
+                            case 4:
+                                currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                                break;
+                            case 11:
+                                currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                                break;
+                            case 3:
+                                currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                                break;
+                            case 7:
+                                currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                                break;
+                            default:
+                                // ignore
+                                break;
+                        }
+                    }
+                    if (isNew) {
+                        records.put(key, currRecord);
+                    }
                 }
             }
         }

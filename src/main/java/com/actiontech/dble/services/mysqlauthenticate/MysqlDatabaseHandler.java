@@ -31,7 +31,13 @@ public class MysqlDatabaseHandler {
         this.dbGroups = dbGroups;
     }
 
+    private void reset() {
+        isFinish = false;
+        databases.clear();
+    }
+
     public Set<String> execute(String dbGroupName) {
+        reset();
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         PhysicalDbInstance ds = getPhysicalDbInstance(dbGroupName);
@@ -42,10 +48,11 @@ public class MysqlDatabaseHandler {
         } else {
             LOGGER.warn("No dbInstance is alive, server can not get 'show databases' result");
         }
-        return databases;
+        return new HashSet<>(databases);
     }
 
     public Set<String> execute(PhysicalDbInstance ds) {
+        reset();
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         if (ds != null) {
@@ -55,7 +62,7 @@ public class MysqlDatabaseHandler {
         } else {
             LOGGER.warn("No dbInstance is alive, server can not get 'show databases' result");
         }
-        return databases;
+        return new HashSet<>(databases);
     }
 
     private PhysicalDbInstance getPhysicalDbInstance(String dbGroupName) {

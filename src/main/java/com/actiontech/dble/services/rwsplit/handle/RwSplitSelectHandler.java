@@ -25,8 +25,7 @@ public final class RwSplitSelectHandler {
             default: {
                 int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
                 switch (rs2) {
-                    case RwSplitServerParseSelect.SELECT_FOR_UPDATE:
-                    case RwSplitServerParseSelect.LOCK_IN_SHARE_MODE:
+                    case RwSplitServerParseSelect.LOCK_READ:
                         service.getSession().execute(true, null);
                         break;
                     default:

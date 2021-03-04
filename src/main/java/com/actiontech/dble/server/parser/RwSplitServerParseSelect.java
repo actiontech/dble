@@ -17,12 +17,11 @@ public final class RwSplitServerParseSelect {
     }
 
     public static final int OTHER = -1;
-    public static final int SELECT_FOR_UPDATE = 2;
-    public static final int LOCK_IN_SHARE_MODE = 3;
+    public static final int LOCK_READ = 2;
     public static final int SELECT_VAR_ALL = 9;
 
-    private static final Pattern SELECT_FOR_UPDATE_PATTERN = Pattern.compile("^.*(\\s+for\\s+update)\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern LOCK_IN_SHARE_MODE_PATTERN = Pattern.compile("^.*(\\s+lock\\s+in\\s+share\\s+mode)\\s*$", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern LOCK_READ_PATTERN = Pattern.compile("^.*((\\s+for\\s+update)|(\\s+for\\s+share)|(\\s+lock\\s+in\\s+share\\s+mode))\\s*$", Pattern.CASE_INSENSITIVE);
 
 
     public static int parse(String stmt, int offset) {
@@ -47,12 +46,10 @@ public final class RwSplitServerParseSelect {
 
     public static int parseSpecial(String stmt) {
 
-        if (SELECT_FOR_UPDATE_PATTERN.matcher(stmt).matches()) {
-            return SELECT_FOR_UPDATE;
+        if (LOCK_READ_PATTERN.matcher(stmt).matches()) {
+            return LOCK_READ;
         }
-        if (LOCK_IN_SHARE_MODE_PATTERN.matcher(stmt).matches()) {
-            return LOCK_IN_SHARE_MODE;
-        }
+
         return OTHER;
     }
 

@@ -229,8 +229,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 case ServerParse.SELECT:
                     int rs2 = RwSplitServerParseSelect.parseSpecial(sql);
                     switch (rs2) {
-                        case RwSplitServerParseSelect.SELECT_FOR_UPDATE:
-                        case RwSplitServerParseSelect.LOCK_IN_SHARE_MODE:
+                        case RwSplitServerParseSelect.LOCK_READ:
                             session.execute(true, data, null);
                             break;
                         default:

@@ -10,6 +10,12 @@ import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 
 public class RwSplitStatisticRecord extends StatisticRecord {
 
+    public void onTxPreStart() {
+        if (frontendSqlEntry != null) {
+            frontendSqlEntry.setNeedToTx(false);
+        }
+    }
+
     public void onTxStartBySet(BusinessService businessService) {
         onTxStart(businessService, false, true);
     }

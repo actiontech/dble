@@ -33,6 +33,9 @@ public class StatisticRecord {
         this.txEntry = txEntry;
     }
 
+    public void onTxPreStart() {
+    }
+
     public void onTxStartBySet(BusinessService businessService) {
     }
 

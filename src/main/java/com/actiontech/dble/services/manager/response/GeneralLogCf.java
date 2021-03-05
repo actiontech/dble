@@ -157,11 +157,11 @@ public final class GeneralLogCf {
                     filePath = SystemConfig.getInstance().getHomePath() + File.separatorChar + filePath;
                 }
                 File newFilePath = new File(filePath);
-                filePath = newFilePath.getAbsolutePath();
+                filePath = newFilePath.getCanonicalPath();
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("start create general log file {}", filePath);
                 }
-                if (!isSuccessCreateFile(newFilePath)) {
+                if (!isSuccessCreateFile(new File(filePath))) {
                     service.writeErrMessage(ErrorCode.ER_YES, "please check the permissions for the file path.");
                     return;
                 }

@@ -47,9 +47,11 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
                             checkEliminate();
                             currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), tables);
                         }
-                        currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
-                        if (isNew) {
-                            records.put(key, currRecord);
+                        if (currRecord != null) {
+                            currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
+                            if (isNew) {
+                                records.put(key, currRecord);
+                            }
                         }
                     }
                 }
@@ -76,7 +78,7 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
         String tables;
 
         int selectCount = 0;
-        long selectRows = 0;
+        long selectRows = 0L;
         long selectExaminedRowsRows = 0L;
         long selectTime = 0L;
         long lastUpdateTime = 0L;

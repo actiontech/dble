@@ -685,7 +685,7 @@ public class NonBlockingSession extends Session {
 
     public void commit() {
         if (!shardingService.isAutocommit() || shardingService.isTxStart()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndByCommit());
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
         }
         checkBackupStatus();
         transactionManager.commit();
@@ -928,7 +928,7 @@ public class NonBlockingSession extends Session {
         }
         needWaitFinished = false;
         if (shardingService.isTxChainBegin() && shardingService.isAutocommit()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByBegin(shardingService));
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByImplicitly(shardingService));
         }
         shardingService.setTxStart(false);
         shardingService.getAndIncrementXid();
@@ -936,7 +936,7 @@ public class NonBlockingSession extends Session {
             shardingService.setSetNoAutoCommit(false);
         } else {
             if (!shardingService.isAutocommit()) {
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(shardingService));
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByImplicitly(shardingService));
             }
         }
     }
@@ -987,8 +987,11 @@ public class NonBlockingSession extends Session {
             String sql = rrs.getSrcStatement();
             if (shardingService.isTxStart()) {
                 shardingService.setTxStart(false);
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(shardingService)).ifPresent(r -> r.onTxEndByCommit());
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(shardingService)).ifPresent(r -> r.onTxEnd());
                 shardingService.getAndIncrementXid();
+                if (!shardingService.isAutocommit()) {
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByImplicitly(shardingService));
+                }
             }
             if (rrs.isOnline()) {
                 LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));

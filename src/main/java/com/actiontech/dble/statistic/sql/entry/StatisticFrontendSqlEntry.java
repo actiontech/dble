@@ -2,8 +2,8 @@ package com.actiontech.dble.statistic.sql.entry;
 
 import com.actiontech.dble.server.parser.ServerParseFactory;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
 public class StatisticFrontendSqlEntry extends StatisticEntry {
@@ -11,11 +11,16 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     private String schema;
     private int sqlType = -99;
     private String sql;
-    private volatile Map<String, StatisticBackendSqlEntry> backendSqlEntrys = new HashMap<>(8);
+    private volatile ConcurrentHashMap<String, StatisticBackendSqlEntry> backendSqlEntrys = new ConcurrentHashMap<>(8);
     private volatile LongAdder examinedRows = new LongAdder();
+    private boolean isNeedToTx;
 
     public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long txId, long startTime) {
         super(frontendInfo, txId, startTime);
+    }
+
+    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime) {
+        super(frontendInfo, startTime);
     }
 
     public LongAdder getExaminedRows() {
@@ -46,7 +51,6 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
         return backendSqlEntrys;
     }
 
-
     public String getSchema() {
         return schema;
     }
@@ -73,6 +77,14 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     public void setRowsAndExaminedRows(long rows) {
         super.rows = rows;
         examinedRows.add(rows);
+    }
+
+    public boolean isNeedToTx() {
+        return isNeedToTx;
+    }
+
+    public void setNeedToTx(boolean needToTx) {
+        isNeedToTx = needToTx;
     }
 
     @Override

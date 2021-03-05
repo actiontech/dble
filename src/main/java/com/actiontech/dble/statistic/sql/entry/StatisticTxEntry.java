@@ -5,17 +5,12 @@ import java.util.List;
 
 public class StatisticTxEntry extends StatisticEntry {
     private List<StatisticFrontendSqlEntry> frontendSqlEntry = new ArrayList<>();
-    // 0：normal，1：xa
+    private boolean isImplicitly;
 
-    //set： 0
-    //start transaction & begin：1
-    private int startType;
-    private int endType;
-
-    public StatisticTxEntry(FrontendInfo frontendInfo, String xaId, long txId, int startType, long startTime) {
+    public StatisticTxEntry(FrontendInfo frontendInfo, String xaId, long txId, long startTime, boolean isImplicitly) {
         super(frontendInfo, txId, startTime);
         setXaId(xaId);
-        this.startType = startType;
+        this.isImplicitly = isImplicitly;
     }
 
     public void add(StatisticFrontendSqlEntry entry) {
@@ -30,16 +25,8 @@ public class StatisticTxEntry extends StatisticEntry {
         return frontendSqlEntry;
     }
 
-    public int getStartType() {
-        return startType;
-    }
-
-    public void setEndType(int type) {
-        this.endType = type;
-    }
-
-    public int getEndType() {
-        return endType;
+    public boolean isImplicitly() {
+        return isImplicitly;
     }
 
     @Override

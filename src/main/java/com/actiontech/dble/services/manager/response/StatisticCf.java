@@ -59,8 +59,8 @@ public class StatisticCf {
         // reload @@statistic_table_size = 96
         //reload @@statistic_table_size = 96 where table=table1;
         //reload @@statistic_table_size = 96 where table in(schema1.table1,...)
-        public static final Pattern PATTERN_IN = Pattern.compile("^\\s*((\\-|\\+)?\\d+)\\s*(where\\s+table\\s+in\\s*\\(([^\\s]+)\\))*", Pattern.CASE_INSENSITIVE);
-        public static final Pattern PATTERN_EQUAL = Pattern.compile("^\\s*((\\-|\\+)?\\d+)\\s*(where\\s+table\\s*=\\s*'([^\\s]+)')*", Pattern.CASE_INSENSITIVE);
+        public static final Pattern PATTERN_IN = Pattern.compile("^([^\\s]+)(\\s+where\\s+table\\s+in\\s*\\(([^\\s]+)\\))*", Pattern.CASE_INSENSITIVE);
+        public static final Pattern PATTERN_EQUAL = Pattern.compile("^([^\\s]+)(\\s+where\\s+table\\s*=\\s*'([^\\s]+)')*", Pattern.CASE_INSENSITIVE);
         public static final Map<String, String> STATISTIC_TABLES = new HashMap(3);
 
         static {
@@ -82,12 +82,12 @@ public class StatisticCf {
                 try {
                     if (matcher1.matches()) {
                         size = Integer.parseInt(matcher1.group(1));
-                        if ((tableStr = matcher1.group(4)) != null) {
+                        if ((tableStr = matcher1.group(3)) != null) {
                             haveCondition = true;
                         }
                     } else if (matcher2.matches()) {
                         size = Integer.parseInt(matcher2.group(1));
-                        if ((tableStr = matcher2.group(4)) != null) {
+                        if ((tableStr = matcher2.group(3)) != null) {
                             haveCondition = true;
                         }
                     } else {

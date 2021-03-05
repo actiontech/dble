@@ -27,6 +27,7 @@ public final class GeneralLog {
             this.generalLogFile = file.getCanonicalPath();
         } catch (IOException e) {
             LOGGER.warn("Invalid generalLogFile path configuration，exception: {}", e);
+            this.generalLogFile = file.getAbsolutePath();
         }
         this.generalLogFileSize = SystemConfig.getInstance().getGeneralLogFileSize();
         this.generalLogQueueSize = SystemConfig.getInstance().getGeneralLogQueueSize();

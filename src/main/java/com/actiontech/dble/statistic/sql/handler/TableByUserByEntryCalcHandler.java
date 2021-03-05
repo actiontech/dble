@@ -1,5 +1,6 @@
 package com.actiontech.dble.statistic.sql.handler;
 
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.statistic.sql.StatisticEvent;
 import com.actiontech.dble.statistic.sql.StatisticManager;
@@ -59,16 +60,16 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
             }
             if (currRecord != null) {
                 switch (fEntry.getSqlType()) {
-                    case 4:
+                    case ServerParse.INSERT:
                         currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
                         break;
-                    case 11:
+                    case ServerParse.UPDATE:
                         currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
                         break;
-                    case 3:
+                    case ServerParse.DELETE:
                         currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
                         break;
-                    case 7:
+                    case ServerParse.SELECT:
                         currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
                         break;
                     default:

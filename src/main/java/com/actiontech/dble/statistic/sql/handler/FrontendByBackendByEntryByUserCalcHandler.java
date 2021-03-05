@@ -1,5 +1,6 @@
 package com.actiontech.dble.statistic.sql.handler;
 
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.sql.StatisticEvent;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
@@ -77,16 +78,16 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                     }
                     if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
                         switch (backendSqlEntry.getSqlType()) {
-                            case 4:
+                            case ServerParse.INSERT:
                                 currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
                                 break;
-                            case 11:
+                            case ServerParse.UPDATE:
                                 currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
                                 break;
-                            case 3:
+                            case ServerParse.DELETE:
                                 currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
                                 break;
-                            case 7:
+                            case ServerParse.SELECT:
                                 currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
                                 break;
                             default:

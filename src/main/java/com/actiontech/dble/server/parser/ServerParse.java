@@ -50,8 +50,7 @@ public interface ServerParse {
     int FLUSH = 153;
     int ROLLBACK_SAVEPOINT = 154;
     int RELEASE_SAVEPOINT = 155;
-    int SELECT_FOR_UPDATE = 156;
-    int LOCK_IN_SHARE_MODE = 157;
+
     int CREATE_TEMPORARY_TABLE = 158;
     int DROP_TABLE = 159;
     int XA_START = 160;

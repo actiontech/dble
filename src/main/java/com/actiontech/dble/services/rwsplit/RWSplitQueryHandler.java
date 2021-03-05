@@ -8,6 +8,7 @@ import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
+import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.services.rwsplit.handle.XaHandler;
 import com.actiontech.dble.singleton.RouteService;
@@ -66,12 +67,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, null);
                         break;
                     case RwSplitServerParse.SELECT:
-                        int rs2 = serverParse.parseSpecial(sqlType, sql);
-                        if (rs2 == RwSplitServerParse.SELECT_FOR_UPDATE || rs2 == RwSplitServerParse.LOCK_IN_SHARE_MODE) {
-                            session.execute(true, null);
-                        } else {
-                            session.execute(null, null);
-                        }
+                        RwSplitSelectHandler.handle(sql, session.getService(), rs >>> 8);
                         break;
                     case RwSplitServerParse.SET:
                         SetHandler.handle(sql, session.getService(), rs >>> 8);

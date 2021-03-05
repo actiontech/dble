@@ -11,14 +11,14 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class StatisticListener {
     private static final StatisticListener INSTANCE = new StatisticListener();
     private volatile boolean enable = false;
 
     private volatile ConcurrentHashMap<Session, StatisticRecord> recorders = new ConcurrentHashMap<>(16);
-    private final LongAdder virtualTxID = new LongAdder();
+    private final AtomicLong virtualTxID = new AtomicLong(0);
 
     public void start() {
         if (enable) return;
@@ -48,8 +48,7 @@ public class StatisticListener {
     }
 
     public long getIncrementVirtualTxID() {
-        virtualTxID.increment();
-        return virtualTxID.longValue();
+        return virtualTxID.incrementAndGet();
     }
 
     public void register(Session session) {

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cd "$(dirname "$0")"
 echo "check JAVA_HOME & java"
 JAVA_CMD=$JAVA_HOME/bin/java
 MAIN_CLASS=com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain

@@ -238,7 +238,7 @@ public class DbleDbInstance extends ManagerWritableTable {
                 map.put(COLUMN_USER, dbInstanceConfig.getUser());
                 map.put(COLUMN_PASSWORD_ENCRYPT, getPasswordEncrypt(dbInstanceConfig.getInstanceName(), dbInstanceConfig.getUser(), dbInstanceConfig.getPassword()));
                 map.put(COLUMN_ENCRYPT_CONFIGURED, String.valueOf(dbInstanceConfig.isUsingDecrypt()));
-                map.put(COLUMN_PRIMARY, String.valueOf(dbInstanceConfig.isPrimary()));
+                map.put(COLUMN_PRIMARY, String.valueOf(!dbInstance.isReadInstance()));
                 map.put(COLUMN_ACTIVE_CONN_COUNT, String.valueOf(dbInstance.getActiveConnections()));
                 map.put(COLUMN_IDLE_CONN_COUNT, String.valueOf(dbInstance.getIdleConnections()));
                 map.put(COLUMN_READ_CONN_REQUEST, String.valueOf(dbInstance.getCount(true)));

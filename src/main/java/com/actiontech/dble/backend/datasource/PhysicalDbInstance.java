@@ -127,33 +127,35 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 throw new IOException("primary dbInstance switched");
             }
 
-            BackendConnection con = (BackendConnection) connectionPool.borrowDirectly(schema);
-            if (con != null) {
-                if (!StringUtil.equals(con.getSchema(), schema)) {
-                    // need do sharding syn in before sql send
-                    con.setSchema(schema);
+            if (!config.getPoolConfig().getTestOnBorrow()) {
+                BackendConnection con = (BackendConnection) connectionPool.borrowDirectly(schema);
+                if (con != null) {
+                    if (!StringUtil.equals(con.getSchema(), schema)) {
+                        // need do sharding syn in before sql send
+                        con.setSchema(schema);
+                    }
+                    TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
+                    con.getBackendService().setAttachment(attachment);
+                    handler.connectionAcquired(con);
+                    return;
                 }
-                TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
-                con.getBackendService().setAttachment(attachment);
-                handler.connectionAcquired(con);
-                return;
             }
 
             DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
-                BackendConnection con1;
+                BackendConnection conn;
                 try {
-                    con1 = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+                    conn = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
                 } catch (IOException e) {
                     handler.connectionError(e, attachment);
                     return;
                 }
-                if (!StringUtil.equals(con1.getSchema(), schema)) {
+                if (!StringUtil.equals(conn.getSchema(), schema)) {
                     // need do sharding syn in before sql send
-                    con1.setSchema(schema);
+                    conn.setSchema(schema);
                 }
-                TraceManager.crossThread(con1.getBackendService(), "backend-response-service", service);
-                con1.getBackendService().setAttachment(attachment);
-                handler.connectionAcquired(con1);
+                TraceManager.crossThread(conn.getBackendService(), "backend-response-service", service);
+                conn.getBackendService().setAttachment(attachment);
+                handler.connectionAcquired(conn);
             });
         } finally {
             TraceManager.finishSpan(traceObject);

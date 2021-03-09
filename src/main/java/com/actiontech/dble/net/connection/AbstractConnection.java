@@ -378,7 +378,7 @@ public abstract class AbstractConnection implements Connection {
         // so we check again
         try {
             this.socketWR.doNextWriteCheck();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOGGER.info("writeDirectly err:", e);
             this.close("writeDirectly err:" + e);
         }

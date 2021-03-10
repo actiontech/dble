@@ -25,7 +25,7 @@ public final class AlarmCode {
     public static final String REACH_MAX_CON = "DBLE_REACH_MAX_CON"; //Resolve by trigger
     public static final String TABLE_NOT_CONSISTENT_IN_SHARDINGS = "DBLE_TABLE_NOT_CONSISTENT_IN_SHARDINGS"; //Resolve by trigger
     public static final String TABLE_NOT_CONSISTENT_IN_MEMORY = "DBLE_TABLE_NOT_CONSISTENT_IN_MEMORY"; //Resolve by trigger
-    public static final String GLOBAL_TABLE_COLUMN_LOST = "DBLE_GLOBAL_TABLE_COLUMN_LOST"; //Resolve by trigger
+    public static final String GLOBAL_TABLE_NOT_CONSISTENT = "DBLE_GLOBAL_TABLE_NOT_CONSISTENT"; //Resolve by trigger
     public static final String CREATE_CONN_FAIL = "DBLE_CREATE_CONN_FAIL"; //Resolve by trigger
     public static final String DB_INSTANCE_CAN_NOT_REACH = "DBLE_DB_INSTANCE_CAN_NOT_REACH";
     public static final String KILL_BACKEND_CONN_FAIL = "DBLE_KILL_BACKEND_CONN_FAIL";

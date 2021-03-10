@@ -45,26 +45,62 @@ public class DdlChildResponse implements ClusterXmlLoader {
             return; //self node
         }
 
-        if (KvBean.DELETE.equals(configValue.getChangeType())) {
-            ClusterLogic.deleteDDLNodeEvent(ddlInfo, path);
-            return;
+
+        switch (configValue.getChangeType()) {
+            case KvBean.ADD: {
+                String key = paths[paths.length - 1];
+                initMeta(key, ddlInfo);
+                break;
+            }
+            case KvBean.UPDATE: {
+                String key = paths[paths.length - 1];
+                updateMeta(key, ddlInfo);
+                break;
+            }
+            case KvBean.DELETE:
+                ClusterLogic.deleteDDLNodeEvent(ddlInfo, path);
+                break;
+            default:
+                break;
         }
 
-        String key = paths[paths.length - 1];
-        //if the start node is preparing to do the ddl
-        if (ddlInfo.getStatus() == DDLInfo.DDLStatus.INIT) {
-            ClusterLogic.initDDLEvent(key, ddlInfo);
-        } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS) {
 
-            ClusterLogic.ddlUpdateEvent(key, ddlInfo);
-        } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED) {
-            ClusterLogic.ddlFailedEvent(key);
-        }
     }
 
 
     @Override
     public void notifyCluster() throws Exception {
     }
+
+
+    private void initMeta(String keyName, DDLInfo ddlInfo) {
+
+
+        ClusterLogic.processStatusEvent(keyName, ddlInfo, DDLInfo.DDLStatus.INIT);
+
+        if (DDLInfo.DDLStatus.INIT != ddlInfo.getStatus()) {
+            LOGGER.warn("get a special CREATE event when doing cluster ddl , status:{}, data is {}", ddlInfo.getStatus(), ddlInfo.toString());
+            ClusterLogic.processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
+        }
+
+
+    }
+
+
+    private void updateMeta(String keyName, DDLInfo ddlInfo) {
+
+
+        if (DDLInfo.DDLStatus.INIT == ddlInfo.getStatus()) {
+            //missing DELETE event.
+            LOGGER.warn("get a special UPDATE event when doing cluster ddl , status:{}, data is {}", ddlInfo.getStatus(), ddlInfo.toString());
+            ClusterLogic.processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
+        } else {
+            // just release local lock
+            ClusterLogic.processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
+        }
+
+
+    }
+
 
 }

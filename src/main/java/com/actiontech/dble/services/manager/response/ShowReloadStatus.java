@@ -1,19 +1,19 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.meta.ReloadStatus;
+import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
 
-import static com.actiontech.dble.meta.ReloadStatus.*;
+import static com.actiontech.dble.meta.ReloadStatus.RELOAD_END_NORMAL;
+import static com.actiontech.dble.meta.ReloadStatus.RELOAD_INTERRUPUTED;
 
 /**
  * Created by szf on 2019/7/15.
@@ -83,8 +83,10 @@ public final class ShowReloadStatus {
         // write rows
         byte packetId = EOF.getPacketId();
         RowDataPacket row = getRow(service.getCharset().getResults());
-        row.setPacketId(++packetId);
-        buffer = row.write(buffer, service, true);
+        if (row != null) {
+            row.setPacketId(++packetId);
+            buffer = row.write(buffer, service, true);
+        }
 
         // write last eof
         EOFRowPacket lastEof = new EOFRowPacket();
@@ -96,17 +98,9 @@ public final class ShowReloadStatus {
 
     private static RowDataPacket getRow(String charset) {
         ReloadStatus status = ReloadManager.getReloadInstance().getStatus();
-        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        if (status == null) {
-            row.add(LongUtil.toBytes(0));
-            row.add(StringUtil.encode(ClusterGeneralConfig.getInstance().getClusterType(), charset));
-            row.add(StringUtil.encode("", charset));
-            row.add(StringUtil.encode(RELOAD_STATUS_NONE, charset));
-            row.add(StringUtil.encode("", charset));
-            row.add(StringUtil.encode("", charset));
-            row.add(StringUtil.encode("", charset));
-            row.add(StringUtil.encode("", charset));
-        } else {
+        RowDataPacket row = null;
+        if (status != null) {
+            row = new RowDataPacket(FIELD_COUNT);
             row.add(LongUtil.toBytes(status.getId()));
             row.add(StringUtil.encode(status.getClusterType(), charset));
             row.add(StringUtil.encode(status.getReloadType().toString(), charset));

@@ -7,6 +7,8 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler;
 
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.CommitStage;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.RollbackStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAEndStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XARollbackFailStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XARollbackStage;
@@ -28,11 +30,8 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     @Override
     public void commit() {
         if (session.getTargetCount() <= 0) {
-            if (implicitCommitHandler != null) {
-                implicitCommitHandler.next();
-                return;
-            }
-            session.getShardingService().writeOkPacket();
+            CommitStage commitStage = new CommitStage(session, null, implicitCommitHandler);
+            commitStage.next(false, null, null);
             return;
         }
 
@@ -55,7 +54,8 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     @Override
     public void rollback() {
         if (session.getTargetCount() <= 0) {
-            session.getShardingService().writeOkPacket();
+            RollbackStage rollbackStage = new RollbackStage(session, null);
+            rollbackStage.next(false, null, null);
             return;
         }
 

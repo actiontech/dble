@@ -1,10 +1,14 @@
 package com.actiontech.dble.server.status;
 
 import com.actiontech.dble.config.model.SystemConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 
 public final class GeneralLog {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GeneralLog.class);
     private volatile boolean enableGeneralLog;
     private volatile String generalLogFile;
     private int generalLogFileSize;
@@ -19,7 +23,12 @@ public final class GeneralLog {
             logFile = (SystemConfig.getInstance().getHomePath() + File.separatorChar + logFile).replaceAll(File.separator + "+", File.separator);
         }
         File file = new File(logFile);
-        this.generalLogFile = file.getAbsolutePath();
+        try {
+            this.generalLogFile = file.getCanonicalPath();
+        } catch (IOException e) {
+            LOGGER.warn("Invalid generalLogFile path configuration，exception: {}", e);
+            this.generalLogFile = file.getAbsolutePath();
+        }
         this.generalLogFileSize = SystemConfig.getInstance().getGeneralLogFileSize();
         this.generalLogQueueSize = SystemConfig.getInstance().getGeneralLogQueueSize();
     }

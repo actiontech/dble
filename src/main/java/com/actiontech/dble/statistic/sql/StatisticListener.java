@@ -11,12 +11,14 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class StatisticListener {
     private static final StatisticListener INSTANCE = new StatisticListener();
     private volatile boolean enable = false;
 
     private volatile ConcurrentHashMap<Session, StatisticRecord> recorders = new ConcurrentHashMap<>(16);
+    private final AtomicLong virtualTxID = new AtomicLong(0);
 
     public void start() {
         if (enable) return;
@@ -45,20 +47,24 @@ public class StatisticListener {
         recorders.clear();
     }
 
+    public long getIncrementVirtualTxID() {
+        return virtualTxID.incrementAndGet();
+    }
+
     public void register(Session session) {
         if (enable) {
             if (!recorders.keySet().contains(session)) {
                 if (session instanceof NonBlockingSession) {
-                    recorders.put(session, new StatisticRecord(((NonBlockingSession) session).getShardingService()));
+                    recorders.put(session, new ShardingStatisticRecord(((NonBlockingSession) session).getShardingService()));
                 } else if (session instanceof RWSplitNonBlockingSession) {
-                    recorders.put(session, new StatisticRecord(((RWSplitNonBlockingSession) session).getService()));
+                    recorders.put(session, new RwSplitStatisticRecord(((RWSplitNonBlockingSession) session).getService()));
                 }
             }
         }
     }
 
     public StatisticRecord getRecorder(Session session) {
-        if (enable) {
+        if (enable && session != null) {
             return recorders.get(session);
         }
         return null;

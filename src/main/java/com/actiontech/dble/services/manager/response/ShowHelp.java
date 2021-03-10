@@ -175,7 +175,7 @@ public final class ShowHelp {
         HELPS.put("file @@upload filename content", "Write content to file");
         HELPS.put("flow_control @@show", "Show the current config of the flow control");
         HELPS.put("flow_control @@list", "List all the connection be flow-control now");
-        HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlStart = ?] [flowControlEnd = ?] ", "Change the config of flow control");
+        HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlStart = ?] [flowControlEnd = ?]", "Change the config of flow control");
 
         //log
         HELPS.put("log @@[file=? limit=? key=? regex=?]", "Report logs by given regex");
@@ -218,7 +218,7 @@ public final class ShowHelp {
         HELPS.put("dbGroup @@disable name='?' (instance = '?')", "disable some dbGroup/dbInstance");
         HELPS.put("dbGroup @@enable name='?' (instance = '?')", "enable some dbGroup/dbInstance");
         HELPS.put("dbGroup @@switch name='?' master='?'", "switch primary in one dbGroup");
-        HELPS.put("dbGroup @@events ", "show all the dbGroup ha event which not finished yet");
+        HELPS.put("dbGroup @@events", "show all the dbGroup ha event which not finished yet");
 
         //dump file
         HELPS.put("split src dest -sschema -r500 -w500 -l10000 --ignore", "split dump file into multi dump files according to shardingNode");

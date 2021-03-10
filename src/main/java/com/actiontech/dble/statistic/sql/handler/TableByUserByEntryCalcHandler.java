@@ -1,5 +1,6 @@
 package com.actiontech.dble.statistic.sql.handler;
 
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.manager.information.ManagerTableUtil;
 import com.actiontech.dble.statistic.sql.StatisticEvent;
 import com.actiontech.dble.statistic.sql.StatisticManager;
@@ -57,25 +58,27 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
                 checkEliminate();
                 currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), table);
             }
-            switch (fEntry.getSqlType()) {
-                case 4:
-                    currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case 11:
-                    currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case 3:
-                    currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
-                    break;
-                case 7:
-                    currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
-                    break;
-                default:
-                    // ignore
-                    break;
-            }
-            if (isNew) {
-                records.put(key, currRecord);
+            if (currRecord != null) {
+                switch (fEntry.getSqlType()) {
+                    case ServerParse.INSERT:
+                        currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    case ServerParse.UPDATE:
+                        currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    case ServerParse.DELETE:
+                        currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    case ServerParse.SELECT:
+                        currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
+                        break;
+                    default:
+                        // ignore
+                        break;
+                }
+                if (isNew) {
+                    records.put(key, currRecord);
+                }
             }
         }
     }
@@ -99,19 +102,19 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
         String user;
         String table;
         int insertCount = 0;
-        long insertRows = 0;
+        long insertRows = 0L;
         long insertTime = 0L;
 
         int updateCount = 0;
-        long updateRows = 0;
+        long updateRows = 0L;
         long updateTime = 0L;
 
         int deleteCount = 0;
-        long deleteRows = 0;
+        long deleteRows = 0L;
         long deleteTime = 0L;
 
         int selectCount = 0;
-        long selectRows = 0;
+        long selectRows = 0L;
         long selectExaminedRowsRows = 0L;
         long selectTime = 0L;
 

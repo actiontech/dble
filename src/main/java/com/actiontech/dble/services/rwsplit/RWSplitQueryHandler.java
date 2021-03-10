@@ -8,6 +8,7 @@ import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
+import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.services.rwsplit.handle.XaHandler;
 import com.actiontech.dble.singleton.RouteService;
@@ -66,12 +67,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, null);
                         break;
                     case RwSplitServerParse.SELECT:
-                        int rs2 = serverParse.parseSpecial(sqlType, sql);
-                        if (rs2 == RwSplitServerParse.SELECT_FOR_UPDATE || rs2 == RwSplitServerParse.LOCK_IN_SHARE_MODE) {
-                            session.execute(true, null);
-                        } else {
-                            session.execute(null, null);
-                        }
+                        RwSplitSelectHandler.handle(sql, session.getService(), rs >>> 8);
                         break;
                     case RwSplitServerParse.SET:
                         SetHandler.handle(sql, session.getService(), rs >>> 8);
@@ -90,13 +86,21 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxPreStart());
                         session.execute(true, (isSuccess, rwSplitService) -> {
+                            boolean isImplicitly = false;
                             if (rwSplitService.isTxStart() || !rwSplitService.isAutocommit()) {
-                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEndBySet());
+                                isImplicitly = true;
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
                             }
                             rwSplitService.getAndIncrementTxId();
                             rwSplitService.setTxStart(true);
-                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByBegin(rwSplitService));
+                            if (isImplicitly) {
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(rwSplitService));
+                            } else {
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStart(rwSplitService));
+                            }
+
                         });
                         break;
                     case RwSplitServerParse.COMMIT:
@@ -104,10 +108,10 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, (isSuccess, rwSplitService) -> {
                             rwSplitService.setTxStart(false);
                             session.getService().singleTransactionsCount();
-                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEndBySet());
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
                             if (!rwSplitService.isAutocommit()) {
                                 rwSplitService.getAndIncrementTxId();
-                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByBegin(rwSplitService));
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(rwSplitService));
                             }
                         });
                         break;
@@ -164,6 +168,13 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             case RwSplitServerParse.GRANT:
             case RwSplitServerParse.REVOKE:
                 return (isSuccess, rwSplitService) -> {
+                    if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart()) {
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+                        if (!rwSplitService.isAutocommit()) {
+                            rwSplitService.getAndIncrementTxId();
+                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(rwSplitService));
+                        }
+                    }
                     rwSplitService.setTxStart(false);
                     session.getService().singleTransactionsCount();
                 };

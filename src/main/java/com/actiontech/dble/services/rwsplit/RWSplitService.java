@@ -11,6 +11,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
+import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.response.Heartbeat;
@@ -65,15 +66,16 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             case AUTOCOMMIT:
                 String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByBegin(this));
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
                     autocommit = false;
                     txStarted = true;
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
                     writeOkPacket();
                     return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
+                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
                     session.execute(true, (isSuccess, rwSplitService) -> {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEndBySet());
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
                         this.singleTransactionsCount();
@@ -81,6 +83,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     return;
                 }
                 this.singleTransactionsCount();
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
                 writeOkPacket();
                 break;
             default:
@@ -226,11 +229,14 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             int sqlType = rs & 0xff;
             switch (sqlType) {
                 case ServerParse.SELECT:
-                    int rs2 = serverParse.parseSpecial(sqlType, sql);
-                    if (rs2 == ServerParse.SELECT_FOR_UPDATE || rs2 == ServerParse.LOCK_IN_SHARE_MODE) {
-                        session.execute(true, data, null);
-                    } else {
-                        session.execute(null, data, null);
+                    int rs2 = RwSplitServerParseSelect.parseSpecial(sql);
+                    switch (rs2) {
+                        case RwSplitServerParseSelect.LOCK_READ:
+                            session.execute(true, data, null);
+                            break;
+                        default:
+                            session.execute(null, data, null);
+                            break;
                     }
                     break;
                 default:

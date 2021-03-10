@@ -53,7 +53,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void execute(final BackendConnection conn) {
         MySQLResponseService mysqlService = conn.getBackendService();
         mysqlService.setResponseHandler(this);
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlStart(conn));
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlStart(conn));
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);
         } else if (isHint) {
@@ -73,13 +73,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(0));
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(0));
         writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + rwSplitService.getUserConfig().getDbGroup());
     }
 
     @Override
     public void errorResponse(byte[] data, AbstractService service) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlError(data));
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
         if (callback != null) {
@@ -115,7 +115,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
             final OkPacket packet = new OkPacket();
             packet.read(data);
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
             if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
                 if (callback != null) {
                     callback.callback(true, rwSplitService);
@@ -167,7 +167,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         synchronized (this) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(selectRows));
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(selectRows));
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
@@ -209,7 +209,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionClose(AbstractService service, String reason) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onRWBackendSqlSetRowsAndEnd(0));
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(0));
         ((MySQLResponseService) service).setResponseHandler(null);
         synchronized (this) {
             if (!write2Client) {

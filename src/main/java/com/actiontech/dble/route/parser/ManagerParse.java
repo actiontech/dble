@@ -767,7 +767,7 @@ public final class ManagerParse {
     }
 
     private static int killLoadData(String stmt, int offset) {
-        if (stmt.length() > offset + 5) {
+        if (stmt.length() > offset + "oadData".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

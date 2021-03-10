@@ -64,7 +64,7 @@ public final class RouteResultset implements Serializable {
     private Boolean runOnSlave = null;
     private String[] groupByCols;
 
-    private Map<String, List<RouteResultsetNode>> multiRouteResultSetNodeMap;
+    private Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap;
 
     private boolean isForUpdate = false;
 
@@ -337,11 +337,11 @@ public final class RouteResultset implements Serializable {
         this.alwaysFalse = alwaysFalse;
     }
 
-    public Map<String, List<RouteResultsetNode>> getMultiRouteResultSetNodeMap() {
+    public Map<String, List<LoadDataRouteResultsetNode>> getMultiRouteResultSetNodeMap() {
         return multiRouteResultSetNodeMap;
     }
 
-    public void setMultiRouteResultSetNodeMap(Map<String, List<RouteResultsetNode>> multiRouteResultSetNodeMap) {
+    public void setMultiRouteResultSetNodeMap(Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap) {
         this.multiRouteResultSetNodeMap = multiRouteResultSetNodeMap;
     }
 }

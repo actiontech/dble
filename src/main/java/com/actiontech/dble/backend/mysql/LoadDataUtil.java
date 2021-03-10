@@ -11,7 +11,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
-import com.google.common.base.Strings;
 
 import java.io.*;
 import java.util.List;
@@ -31,8 +30,9 @@ public final class LoadDataUtil {
         List<String> loadDataData = loadData.getData();
         service.setExecuting(false);
         BufferedInputStream in = null;
+        boolean exists = new File(loadData.getFileName()).exists();
         try {
-            if (loadDataData != null && loadDataData.size() > 0 && Strings.isNullOrEmpty(loadData.getFileName())) {
+            if (loadDataData != null && loadDataData.size() > 0 && !exists) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 for (String loadDataDataLine : loadDataData) {
                     String s = loadDataDataLine + loadData.getLineTerminatedBy();

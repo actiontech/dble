@@ -16,20 +16,6 @@ public class LoadDataResponseHandler extends DefaultResponseHandler {
     }
 
     @Override
-    public void ok(byte[] data) {
-        if (status == INITIAL) {
-            ResponseHandler respHand = service.getResponseHandler();
-            if (respHand != null) {
-                respHand.okResponse(data, service);
-            }
-        } else if (status == FIELD) {
-            fields.add(data);
-        } else {
-            handleRowPacket(data);
-        }
-    }
-
-    @Override
     public void data(byte[] data) {
         if (data[4] == RequestFilePacket.FIELD_COUNT) {
             handleRequestPacket(data);

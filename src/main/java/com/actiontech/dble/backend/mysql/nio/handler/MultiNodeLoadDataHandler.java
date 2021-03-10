@@ -18,6 +18,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.route.LoadDataRouteResultsetNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -66,7 +67,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     protected Set<MySQLResponseService> closedConnSet;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private final boolean modifiedSQL;
-    protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
+    protected Set<LoadDataRouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> shardingNodePauseInfo; // only for debug
     private int errorCount;
     private OkPacket packet;
@@ -137,9 +138,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             if (sb.length() > 0) {
                 TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
             }
-            Map<String, List<RouteResultsetNode>> multiRouteResultSetNodeMap = rrs.getMultiRouteResultSetNodeMap();
-            for (Map.Entry<String, List<RouteResultsetNode>> entry : multiRouteResultSetNodeMap.entrySet()) {
-                LoadDataBatch.getInstance().getErrorSize().incrementAndGet();
+            Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap = rrs.getMultiRouteResultSetNodeMap();
+            for (Map.Entry<String, List<LoadDataRouteResultsetNode>> entry : multiRouteResultSetNodeMap.entrySet()) {
                 executeNodeList(entry.getValue());
             }
         } finally {
@@ -156,10 +156,10 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         session.forceClose("other node prepare conns failed");
     }
 
-    private void executeNodeList(List<RouteResultsetNode> routeResultsetNodeList) {
+    private void executeNodeList(List<LoadDataRouteResultsetNode> routeResultsetNodeList) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
             Set<String> oldFileNames = LoadDataBatch.getInstance().getSuccessFileNames();
-            for (RouteResultsetNode node : routeResultsetNodeList) {
+            for (LoadDataRouteResultsetNode node : routeResultsetNodeList) {
                 String fileName = node.getLoadData().getFileName();
                 if (!dnSet.contains(node.getName()) && !oldFileNames.contains(fileName)) {
                     try {
@@ -175,7 +175,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         });
     }
 
-    private void connection(RouteResultsetNode node) throws Exception {
+    private void connection(LoadDataRouteResultsetNode node) throws Exception {
         connRrns.add(node);
         // create new connection
         node.setRunOnSlave(rrs.getRunOnSlave());
@@ -311,14 +311,14 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
     }
 
-    public void specialOkResponse() {
-
+    public void specialOkResponse(AbstractService service) {
         ShardingService shardingService = session.getShardingService();
         lock.lock();
         try {
-            if (LoadDataBatch.getInstance().getErrorSize().decrementAndGet() > 0 || LoadDataBatch.getInstance().getWarnings().size() < errorCount) {
+            decrementToZero((MySQLResponseService) service);
+            if (unResponseRrns.size() != 0) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("errorSize :" + LoadDataBatch.getInstance().getErrorSize() + " errorCount " + errorCount + " warningSize =  " + LoadDataBatch.getInstance().getWarnings().size());
+                    LOGGER.debug("errorCount " + errorCount + " warningSize =  " + LoadDataBatch.getInstance().getWarnings().size());
                 }
                 return;
             }
@@ -352,7 +352,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     public void okResponse(byte[] data, AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
-
         this.netOutBytes += data.length;
         if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
             return;
@@ -370,55 +369,51 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             ok.read(data);
             lock.lock();
             try {
-                // the affected rows of global table will use the last node's response
-                RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
-                affectedRows += ok.getAffectedRows();
-                if (ok.getInsertId() > 0) {
-                    insertId = (insertId == 0) ? ok.getInsertId() : Math.min(insertId, ok.getInsertId());
-                }
-                if (ok.getWarningCount() > 0) {
-                    affectedRows -= ok.getAffectedRows();
-                    if (rrs.isGlobalTable()) {
-                        errorCount = ok.getWarningCount();
-                    } else {
-                        errorCount += ok.getWarningCount();
-                    }
-                    dnSet.add(rrn.getName());
-                    transformOkPackage(ok, shardingService, insertId);
-                    if (packet == null)
-                        packet = ok;
-                    createErrorFile(rrn.getLoadData().getData(), rrn, "error.txt");
-                    unResponseRrns.remove(rrn);
-                    rrn.setLoadDataRrnStatus((byte) 2);
-                    // doSqlStat();
-                    return;
-                }
                 if (ok.getAffectedRows() > 0) {
+                    // the affected rows of global table will use the last node's response
+                    RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
+                    affectedRows += ok.getAffectedRows();
+                    if (ok.getInsertId() > 0) {
+                        insertId = (insertId == 0) ? ok.getInsertId() : Math.min(insertId, ok.getInsertId());
+                    }
+                    if (ok.getWarningCount() > 0) {
+                        affectedRows -= ok.getAffectedRows();
+                        if (rrs.isGlobalTable()) {
+                            errorCount = ok.getWarningCount();
+                        } else {
+                            errorCount += ok.getWarningCount();
+                        }
+                        dnSet.add(rrn.getName());
+                        transformOkPackage(ok, shardingService);
+                        if (packet == null)
+                            packet = ok;
+                        createErrorFile(rrn.getLoadData().getData(), rrn, "error.txt");
+                        rrn.setLoadDataRrnStatus((byte) 2);
+                        return;
+                    }
+
                     String filePath = rrn.getLoadData().getFileName();
                     LoadDataBatch.getInstance().setFileName(filePath);
                     handlerCommit(rrn);
                     rrn.setLoadDataRrnStatus((byte) 1);
                     decrementToZero((MySQLResponseService) service);
-                }
-                if (unResponseRrns.size() != 0) {
-                    LoadDataBatch.getInstance().getErrorSize().decrementAndGet();
-                    return;
-                }
-                if (rrs.isGlobalTable()) {
-                    affectedRows = affectedRows / LoadDataBatch.getInstance().getCurrentNodeSize();
-                }
-                if (errorCount > 0) {
-                    LoadDataBatch.getInstance().getErrorSize().set(1);
-                    specialOkResponse();
-
-                } else {
-                    ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
-                    shardingService.getLoadDataInfileHandler().clear();
-                    transformOkPackage(ok, shardingService, insertId);
-                    doSqlStat();
-                    deleteErrorFile();
-                    LoadDataBatch.getInstance().getSuccessFileNames().clear();
-                    handleEndPacket(ok, AutoTxOperation.COMMIT, true);
+                    if (unResponseRrns.size() != 0) {
+                        return;
+                    }
+                    if (rrs.isGlobalTable()) {
+                        affectedRows = affectedRows / LoadDataBatch.getInstance().getCurrentNodeSize();
+                    }
+                    if (errorCount > 0) {
+                        specialOkResponse(service);
+                    } else {
+                        ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
+                        shardingService.getLoadDataInfileHandler().clear();
+                        transformOkPackage(ok, shardingService);
+                        doSqlStat();
+                        deleteErrorFile();
+                        LoadDataBatch.getInstance().getSuccessFileNames().clear();
+                        handleEndPacket(ok, AutoTxOperation.COMMIT, true);
+                    }
                 }
 
             } finally {
@@ -546,27 +541,30 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         }
     }
 
-    private void transformOkPackage(OkPacket ok, ShardingService shardingService, long id) {
+    private void transformOkPackage(OkPacket ok, ShardingService shardingService) {
         ok.setPacketId(session.getShardingService().nextPacketId());
         ok.setAffectedRows(affectedRows);
         session.setRowCount(affectedRows);
         ok.setServerStatus(shardingService.isAutocommit() ? 2 : 1);
-        if (id > 0) {
-            ok.setInsertId(id);
-            shardingService.setLastInsertId(id);
+        if (insertId > 0) {
+            ok.setInsertId(insertId);
+            shardingService.setLastInsertId(insertId);
         }
     }
 
     @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, AbstractService service) {
-        specialOkResponse();
+        specialOkResponse(service);
     }
 
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
-            String str = StringUtil.toString(row, 32);
+            String regex = "[^A-Za-z0-9]";
+            String blankSpace = " ";
+            String str = StringUtil.toString(row);
+            str = str.replaceAll(regex, blankSpace);
             LoadDataBatch.getInstance().getWarnings().add(str);
         } finally {
             lock.unlock();
@@ -586,7 +584,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     public void requestDataResponse(byte[] data, MySQLResponseService service) {
         LoadDataUtil.requestFileDataResponse(data, service);
     }
-
 
     private void executeError(MySQLResponseService service) {
         if (!isFail()) {

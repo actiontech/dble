@@ -20,6 +20,7 @@ import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RequestFilePacket;
+import com.actiontech.dble.route.LoadDataRouteResultsetNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
@@ -237,7 +238,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         for (Map.Entry<String, List<LoadData>> entry : routeResultMap.entrySet()) {
             List<LoadData> loadDataList = entry.getValue();
             int size = loadDataList.size();
-            loadDataList.stream().filter(data -> data.getFileName() != null && data.getData() != null && data.getData().size() > 0).forEach(data -> {
+            loadDataList.stream().filter(data -> data.getData() != null && data.getData().size() > 0).forEach(data -> {
                 LoadData lastData = loadDataList.get(size - 1);
                 lastData.setData(data.getData());
                 saveDataToFile(lastData, entry.getKey());
@@ -454,7 +455,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         for (Map.Entry<String, List<LoadData>> stringListEntry : routeResultMap.entrySet()) {
             List<LoadData> loadDataList = stringListEntry.getValue();
             for (LoadData value : loadDataList) {
-                if (value.getFileName() != null && value.getData() != null && value.getData().size() > 0) {
+                if (value.getData() != null && value.getData().size() > 0) {
                     saveDataToFile(value, stringListEntry.getKey());
                 }
             }
@@ -465,6 +466,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         if (data.getFileName() == null) {
             String dnPath = tempPath + dnName + ".txt";
             data.setFileName(dnPath);
+            return;
         }
 
         File dnFile = new File(data.getFileName());
@@ -569,15 +571,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         rrs.setStatement(srcStatement);
         rrs.setFinishedRoute(true);
         rrs.setGlobalTable(tableConfig != null && tableConfig instanceof GlobalTableConfig);
-        Map<String, List<RouteResultsetNode>> multiRouteResultSetNodeMap = new HashMap<>();
+        Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap = new HashMap<>();
         List<RouteResultsetNode> allNodeList = new ArrayList<>();
         LoadDataBatch.getInstance().setCurrentNodeSize(routeMap.keySet().size());
         for (Map.Entry<String, List<LoadData>> entry : routeMap.entrySet()) {
             String name = entry.getKey();
             List<LoadData> loadDataList = entry.getValue();
-            List<RouteResultsetNode> nodeList = new ArrayList<>();
+            List<LoadDataRouteResultsetNode> nodeList = new ArrayList<>();
             for (LoadData data : loadDataList) {
-                RouteResultsetNode rrNode = new RouteResultsetNode(name, ServerParse.LOAD_DATA_INFILE_SQL, srcStatement);
+                LoadDataRouteResultsetNode rrNode = new LoadDataRouteResultsetNode(name, ServerParse.LOAD_DATA_INFILE_SQL, srcStatement);
                 rrNode.setStatement(srcStatement);
                 LoadData newLoadData = new LoadData();
                 ObjectUtil.copyProperties(data, newLoadData);
@@ -586,6 +588,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 if (loadData1.getFileName() != null) {
                     newLoadData.setFileName(loadData1.getFileName());
                 } else {
+                    newLoadData.setFileName(name);
                     newLoadData.setData(loadData1.getData());
                 }
                 rrNode.setLoadData(newLoadData);

@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -19,7 +20,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouteResultCopy;
 import com.actiontech.dble.server.NonBlockingSession;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -89,15 +89,19 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
             }
 
             LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
-            StringBuilder sb = new StringBuilder();
-            for (final RouteResultsetNode node : rrs.getNodes()) {
+            for (RouteResultsetNode node : rrs.getNodes()) {
                 unResponseRrns.add(node);
-                if (node.isModifySQL()) {
-                    sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
-                }
             }
-            if (sb.length() > 0) {
-                TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
+            if (SystemConfig.getInstance().getRecordTxn() == 1) {
+                StringBuilder sb = new StringBuilder();
+                for (final RouteResultsetNode node : rrs.getNodes()) {
+                    if (node.isModifySQL()) {
+                        sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
+                    }
+                }
+                if (sb.length() > 0) {
+                    TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
+                }
             }
 
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.CONN_TEST_START, session.getShardingService());

@@ -5,11 +5,15 @@
 
 package com.actiontech.dble.plan.common.item.function.mathsfunc;
 
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
+import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 
 import java.util.List;
 
@@ -26,18 +30,29 @@ public class ItemFuncConv extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        if (args.size() == 1) {
-            compatibleBinFunc(args);
+        if (args.size() > 3) {
+            throw new MySQLOutPutException(ErrorCode.ER_WRONG_PARAMCOUNT_TO_NATIVE_FCT, "", "Incorrect parameter count in the call to native function 'CONV'");
         }
         String res = args.get(0).valStr();
-        int fromBase = args.get(1).valInt().intValue();
-        int toBase = args.get(2).valInt().intValue();
+        MySqlStatementParser parser = new MySqlStatementParser(itemName);
+        int fromBase;
+        int toBase;
         long dec = 0;
 
-        if (args.get(0).isNullValue() || args.get(1).isNullValue() || args.get(2).isNullValue() || Math.abs(toBase) > 36 ||
-                Math.abs(toBase) < 2 || Math.abs(fromBase) > 36 || Math.abs(fromBase) < 2 || res.length() == 0) {
-            nullValue = true;
-            return null;
+        if (StringUtil.equals(parser.getLexer().stringVal().toLowerCase(), "bin")) {
+            if (args.size() > 1) {
+                throw new MySQLOutPutException(ErrorCode.ER_WRONG_PARAMCOUNT_TO_NATIVE_FCT, "", "Incorrect parameter count in the call to native function 'BIN'");
+            }
+            fromBase = 10;
+            toBase = 2;
+        } else {
+            fromBase = args.get(1).valInt().intValue();
+            toBase = args.get(2).valInt().intValue();
+            if (args.get(0).isNullValue() || args.get(1).isNullValue() || args.get(2).isNullValue() || Math.abs(toBase) > 36 ||
+                    Math.abs(toBase) < 2 || Math.abs(fromBase) > 36 || Math.abs(fromBase) < 2 || res.length() == 0) {
+                nullValue = true;
+                return null;
+            }
         }
         nullValue = false;
         if (args.get(0).fieldType() == FieldTypes.MYSQL_TYPE_BIT) {

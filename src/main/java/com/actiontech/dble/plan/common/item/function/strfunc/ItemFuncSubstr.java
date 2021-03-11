@@ -29,10 +29,10 @@ public class ItemFuncSubstr extends ItemStrFunc {
             return EMPTY;
         long start = args.get(1).valInt().longValue();
         start = (start < 0) ? str.length() + start : start - 1;
-        if (start < 0) {
+        if (start < 0 || start >= str.length()) {
             return EMPTY;
         }
-        long length = args.size() == 3 ? args.get(2).valInt().longValue() : Long.MAX_VALUE;
+        long length = args.size() == 3 ? args.get(2).valInt().longValue() + start : Long.MAX_VALUE;
         length = Math.min(length, str.length());
         if (length <= 0)
             return EMPTY;

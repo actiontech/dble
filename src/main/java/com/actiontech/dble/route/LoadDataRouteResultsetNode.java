@@ -8,6 +8,8 @@ package com.actiontech.dble.route;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.google.common.base.Objects;
 
+import java.util.Optional;
+
 /**
  * @author ylz
  */
@@ -16,19 +18,9 @@ public class LoadDataRouteResultsetNode extends RouteResultsetNode {
     private static final long serialVersionUID = 1L;
     private String name;
     private LoadData loadData;
-    private volatile byte loadDataRrnStatus;
 
     public LoadDataRouteResultsetNode(String name, int sqlType, String srcStatement) {
         super(name, sqlType, srcStatement);
-        loadDataRrnStatus = 0;
-    }
-
-    public byte getLoadDataRrnStatus() {
-        return loadDataRrnStatus;
-    }
-
-    public void setLoadDataRrnStatus(byte loadDataRrnStatus) {
-        this.loadDataRrnStatus = loadDataRrnStatus;
     }
 
     @Override
@@ -39,17 +31,16 @@ public class LoadDataRouteResultsetNode extends RouteResultsetNode {
     @Override
     public void setLoadData(LoadData loadData) {
         this.loadData = loadData;
-        name = loadData.getFileName();
+        Optional.ofNullable(loadData.getFileName()).ifPresent(fileName -> name = fileName);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (name == null) return false;
         if (!super.equals(o)) return false;
         LoadDataRouteResultsetNode that = (LoadDataRouteResultsetNode) o;
-        return loadDataRrnStatus == that.loadDataRrnStatus && Objects.equal(name, that.name);
+        return Objects.equal(name, that.name);
     }
 
     @Override

@@ -635,7 +635,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 newLoadData.setData(loadData1.getData());
             }
             rrNode.setLoadData(newLoadData);
-
             routeResultsetNodes[index] = rrNode;
             index++;
         }

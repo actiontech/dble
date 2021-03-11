@@ -457,7 +457,7 @@ public final class ManagerParseReload {
             char c3 = stmt.charAt(++offset);
             // show @@load_data_batch.num
             if ((c1 == 'N' || c1 == 'n') && (c2 == 'U' || c2 == 'u') && (c3 == 'M' || c3 == 'm') &&
-                    (stmt.length() > ++offset || ParseUtil.isEOF(stmt, offset))) {
+                    (stmt.length() > ++offset)) {
                 return (offset << 8) | LOAD_DATA_NUM;
             }
         }

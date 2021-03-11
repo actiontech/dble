@@ -106,7 +106,6 @@ public class PreparedStatement implements Closeable {
         return cursorCache;
     }
 
-
     public void setPrepareCallback(Consumer<Integer> prepareCallback) {
         this.prepareCallback = prepareCallback;
     }

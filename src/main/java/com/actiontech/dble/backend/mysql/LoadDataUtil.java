@@ -19,6 +19,7 @@ import java.util.List;
  * Created by nange on 2015/3/31.
  */
 public final class LoadDataUtil {
+
     private LoadDataUtil() {
     }
 
@@ -29,8 +30,9 @@ public final class LoadDataUtil {
         List<String> loadDataData = loadData.getData();
         service.setExecuting(false);
         BufferedInputStream in = null;
+        boolean exists = new File(loadData.getFileName()).exists();
         try {
-            if (loadDataData != null && loadDataData.size() > 0) {
+            if (loadDataData != null && loadDataData.size() > 0 && !exists) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 for (String loadDataDataLine : loadDataData) {
                     String s = loadDataDataLine + loadData.getLineTerminatedBy();

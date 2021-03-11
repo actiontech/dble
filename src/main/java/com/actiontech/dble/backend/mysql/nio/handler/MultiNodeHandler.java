@@ -12,10 +12,10 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,7 +30,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
     protected AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
-    protected Set<RouteResultsetNode> unResponseRrns = new HashSet<>();
+    protected Set<RouteResultsetNode> unResponseRrns = Sets.newConcurrentHashSet();
     protected int errorConnsCnt = 0;
     protected boolean firstResponsed = false;
 

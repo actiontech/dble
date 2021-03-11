@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author mycat
  */
-public final class RouteResultsetNode implements Serializable, Comparable<RouteResultsetNode> {
+public class RouteResultsetNode implements Serializable, Comparable<RouteResultsetNode> {
 
     private static final long serialVersionUID = 1L;
     private final String name; // node name
@@ -29,6 +29,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     private Boolean runOnSlave = null;
     private AtomicLong multiplexNum;
     private boolean isForUpdate = false;
+    private volatile byte loadDataRrnStatus;
 
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
@@ -39,6 +40,15 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         this.statementHash = srcStatement.hashCode();
         this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
         this.multiplexNum = new AtomicLong(0);
+        loadDataRrnStatus = 0;
+    }
+
+    public byte getLoadDataRrnStatus() {
+        return loadDataRrnStatus;
+    }
+
+    public void setLoadDataRrnStatus(byte loadDataRrnStatus) {
+        this.loadDataRrnStatus = loadDataRrnStatus;
     }
 
     public boolean isForUpdate() {

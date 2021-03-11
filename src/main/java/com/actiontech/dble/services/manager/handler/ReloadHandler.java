@@ -55,6 +55,9 @@ public final class ReloadHandler {
             case ManagerParseReload.STATISTIC_TABLE_SIZE:
                 StatisticCf.SetTableMaxSize.execute(service, ParseUtil.parseString(stmt));
                 break;
+            case ManagerParseReload.LOAD_DATA_NUM:
+                ReloadLoadDataNum.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
             default:
                 service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

@@ -118,6 +118,31 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         connectionPool.newConnection(schema, handler);
     }
 
+    public void syncGetConnection(final String schema, final ResponseHandler handler,
+                                  final Object attachment, boolean mustWrite) throws IOException {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-db-instance");
+        AbstractService service = TraceManager.getThreadService();
+        try {
+            if (mustWrite && readInstance) {
+                throw new IOException("primary dbInstance switched");
+            }
+            BackendConnection con;
+            con = (BackendConnection) connectionPool.borrowDirectly(schema);
+            if (con == null) {
+                con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+            }
+            if (!StringUtil.equals(con.getSchema(), schema)) {
+                // need do sharding syn in before sql send
+                con.setSchema(schema);
+            }
+            TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
+            con.getBackendService().setAttachment(attachment);
+            handler.connectionAcquired(con);
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
+    }
+
     public void getConnection(final String schema, final ResponseHandler handler,
                               final Object attachment, boolean mustWrite) throws IOException {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-connection-from-db-instance");

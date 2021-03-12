@@ -48,7 +48,7 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
         for (SQLQueryResult<List<Map<String, String>>> r : res) {
             LOGGER.info("Checksum is : " + r.getResult().get(0).get("Checksum"));
         }
-        AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+        AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_NOT_CONSISTENT, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
         ToResolveContainer.GLOBAL_TABLE_CONSISTENCY.add(tableId);
     }
 
@@ -59,7 +59,7 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
         if (elist.size() == 0) {
             LOGGER.info("Global Consistency Check success for table :" + schema + "-" + tableName);
             if (ToResolveContainer.GLOBAL_TABLE_CONSISTENCY.contains(tableId)) {
-                AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_NOT_CONSISTENT, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                         ToResolveContainer.GLOBAL_TABLE_CONSISTENCY, tableId);
             }
         } else {
@@ -71,7 +71,7 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
                 sb.append(r.getShardingNode()).append(",");
             }
             sb.setLength(sb.length() - 1);
-            AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, sb.toString(), AlertUtil.genSingleLabel("TABLE", tableId));
+            AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_NOT_CONSISTENT, Alert.AlertLevel.WARN, sb.toString(), AlertUtil.genSingleLabel("TABLE", tableId));
             ToResolveContainer.GLOBAL_TABLE_CONSISTENCY.add(tableId);
         }
     }

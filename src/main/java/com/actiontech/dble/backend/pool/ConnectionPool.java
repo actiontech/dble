@@ -148,7 +148,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         }
     }
 
-
     public void release(final PooledConnection conn) {
         if (poolConfig.getTestOnReturn()) {
             ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler((BackendConnection) conn, false, this);

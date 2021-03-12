@@ -30,7 +30,7 @@ public class SlowQueryLogProcessor extends Thread {
             "Time                 Id Command    Argument";
 
     public SlowQueryLogProcessor() {
-        this.queue = new LinkedBlockingQueue<>();
+        this.queue = new LinkedBlockingQueue<>(2000);
         this.store = new DailyRotateLogStore(SystemConfig.getInstance().getSlowLogBaseDir(), SystemConfig.getInstance().getSlowLogBaseName(), "log", 64, FILE_HEADER);
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("SlowLogFlushTimerScheduler-%d").build());
     }
@@ -120,7 +120,14 @@ public class SlowQueryLogProcessor extends Thread {
     public void putSlowQueryLog(ShardingService service, TraceResult log) {
         if (log.isCompleted() && log.getOverAllMilliSecond() > SlowQueryLog.getInstance().getSlowTime()) {
             SlowQueryLogEntry logEntry = new SlowQueryLogEntry(service.getExecuteSql(), log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
-            queue.add(logEntry);
+            try {
+                final boolean enQueue = queue.offer(logEntry, 3, TimeUnit.SECONDS);
+                if (!enQueue) {
+                    LOGGER.warn("slow log queue has so many item. Discard log entry: {}  ", logEntry.toString());
+                }
+            } catch (InterruptedException e) {
+                LOGGER.info(" ", e);
+            }
         }
     }
 }

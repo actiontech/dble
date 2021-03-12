@@ -88,47 +88,43 @@ public class MySQLResponseService extends BackendService {
     }
 
     public void execute(BusinessService service, String sql) {
-        if (connection.getSchema() == null && connection.getOldSchema() != null) {
-            // change user
-            changeUser();
-        } else {
-            StringBuilder synSQL = getSynSql(null, null,
-                    service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
-            if (protocolResponseHandler != defaultResponseHandler) {
-                protocolResponseHandler = defaultResponseHandler;
-            }
-            synAndDoExecute(synSQL, sql, service.getCharset());
+        boolean changeUser = isChangeUser(service);
+        if (changeUser) return;
+
+        StringBuilder synSQL = getSynSql(null, null,
+                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+        if (protocolResponseHandler != defaultResponseHandler) {
+            protocolResponseHandler = defaultResponseHandler;
         }
+        synAndDoExecute(synSQL, sql, service.getCharset());
     }
 
     public void execute(RWSplitService service, byte[] originPacket) {
-        if (service.getSchema() == null && connection.getSchema() != null) {
-            // change user
-            changeUser();
-        } else {
-            StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit(),
-                    service.getUsrVariables(), service.getSysVariables());
-            if (originPacket.length > 4) {
-                byte type = originPacket[4];
-                if (type == MySQLPacket.COM_STMT_PREPARE) {
-                    protocolResponseHandler = new PrepareResponseHandler(this);
-                } else if (type == MySQLPacket.COM_STMT_EXECUTE) {
-                    protocolResponseHandler = new ExecuteResponseHandler(this, originPacket[9] == (byte) 0x01);
-                } else if (type == MySQLPacket.COM_STMT_FETCH) {
-                    protocolResponseHandler = new FetchResponseHandler(this);
-                } else if (service.isInLoadData()) {
-                    protocolResponseHandler = new LoadDataResponseHandler(this);
-                } else if (protocolResponseHandler != defaultResponseHandler) {
-                    protocolResponseHandler = defaultResponseHandler;
-                }
-            }
+        boolean changeUser = isChangeUser(service);
+        if (changeUser) return;
 
-            if (synSQL != null) {
-                sendQueryCmd(synSQL.toString(), service.getCharset());
+        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit(),
+                service.getUsrVariables(), service.getSysVariables());
+        if (originPacket.length > 4) {
+            byte type = originPacket[4];
+            if (type == MySQLPacket.COM_STMT_PREPARE) {
+                protocolResponseHandler = new PrepareResponseHandler(this);
+            } else if (type == MySQLPacket.COM_STMT_EXECUTE) {
+                protocolResponseHandler = new ExecuteResponseHandler(this, originPacket[9] == (byte) 0x01);
+            } else if (type == MySQLPacket.COM_STMT_FETCH) {
+                protocolResponseHandler = new FetchResponseHandler(this);
+            } else if (service.isInLoadData()) {
+                protocolResponseHandler = new LoadDataResponseHandler(this);
+            } else if (protocolResponseHandler != defaultResponseHandler) {
+                protocolResponseHandler = defaultResponseHandler;
             }
-
-            writeDirectly(originPacket);
         }
+
+        if (synSQL != null) {
+            sendQueryCmd(synSQL.toString(), service.getCharset());
+        }
+
+        writeDirectly(originPacket);
     }
 
     //-------------------------------------- for sharding ----------------------------------------------------
@@ -155,6 +151,15 @@ public class MySQLResponseService extends BackendService {
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
+    }
+
+    public boolean isChangeUser(BusinessService service) {
+        if ((service.getSchema() == null && connection.getSchema() != null) || (service.getSchema() == null && connection.getOldSchema() != null)) {
+            // change user
+            changeUser();
+            return true;
+        }
+        return false;
     }
 
     public void query(String query) {

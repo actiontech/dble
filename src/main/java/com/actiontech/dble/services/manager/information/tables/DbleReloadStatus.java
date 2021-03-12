@@ -1,6 +1,5 @@
 package com.actiontech.dble.services.manager.information.tables;
 
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.ReloadManager;
@@ -15,7 +14,6 @@ import java.util.List;
 
 import static com.actiontech.dble.meta.ReloadStatus.RELOAD_END_NORMAL;
 import static com.actiontech.dble.meta.ReloadStatus.RELOAD_INTERRUPUTED;
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_STATUS_NONE;
 
 public class DbleReloadStatus extends ManagerBaseTable {
     private static final String TABLE_NAME = "dble_reload_status";
@@ -64,18 +62,9 @@ public class DbleReloadStatus extends ManagerBaseTable {
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
         ReloadStatus status = ReloadManager.getReloadInstance().getStatus();
-        List<LinkedHashMap<String, String>> list = new ArrayList();
-        LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
-        if (status == null) {
-            map.put(COLUMN_INDEX, "0");
-            map.put(COLUMN_CLUSTER, ClusterGeneralConfig.getInstance().getClusterType());
-            map.put(COLUMN_RELOAD_TYPE, "");
-            map.put(COLUMN_RELOAD_STATUS, RELOAD_STATUS_NONE);
-            map.put(COLUMN_LAST_RELOAD_START, "");
-            map.put(COLUMN_LAST_RELOAD_END, "");
-            map.put(COLUMN_TRIGGER_TYPE, "");
-            map.put(COLUMN_END_TYPE, "");
-        } else {
+        List<LinkedHashMap<String, String>> list = new ArrayList<>(1);
+        if (status != null) {
+            LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_INDEX, status.getId() + "");
             map.put(COLUMN_CLUSTER, status.getClusterType());
             map.put(COLUMN_RELOAD_TYPE, status.getReloadType() + "");
@@ -84,8 +73,8 @@ public class DbleReloadStatus extends ManagerBaseTable {
             map.put(COLUMN_LAST_RELOAD_END, FormatUtil.formatDate(status.getLastReloadEnd()));
             map.put(COLUMN_TRIGGER_TYPE, status.getTriggerType());
             map.put(COLUMN_END_TYPE, status.getLastReloadEnd() != 0 ? (status.isReloadInterrupted() ? RELOAD_INTERRUPUTED : RELOAD_END_NORMAL) : "");
+            list.add(map);
         }
-        list.add(map);
         return list;
     }
 }

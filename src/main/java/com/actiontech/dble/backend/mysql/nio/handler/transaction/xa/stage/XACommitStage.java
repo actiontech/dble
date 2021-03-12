@@ -45,13 +45,22 @@ public class XACommitStage extends XAStage {
             service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
             xaHandler.fakedResponse(service, "the conn has been closed before executing XA COMMIT");
         } else {
-            RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
-            String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            if (logger.isDebugEnabled()) {
-                logger.debug("XA COMMIT " + xaTxId + " to " + service);
+            try {
+                RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
+                String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("XA COMMIT " + xaTxId + " to " + service);
+                }
+                XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
+                service.execCmd("XA COMMIT " + xaTxId);
+            } catch (Exception e) {
+                logger.info("xa commit error", e);
+                if (!xaHandler.isFail()) {
+                    xaHandler.fakedResponse(service, "cause error when executing XA COMMIT. reason [" + e.getMessage() + "]");
+                } else {
+                    xaHandler.fakedResponse(service, null);
+                }
             }
-            XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
-            service.execCmd("XA COMMIT " + xaTxId);
         }
     }
 

@@ -51,7 +51,9 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
                                 checkEliminate();
                                 currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), v.getBackend());
                             }
-                            currRecord.addTxRows(v.getRows());
+                            if (v.getAllEndTime() != 0) {
+                                currRecord.addTxRows(v.getRows());
+                            }
                             if (isNew) {
                                 records.put(key, currRecord);
                             }

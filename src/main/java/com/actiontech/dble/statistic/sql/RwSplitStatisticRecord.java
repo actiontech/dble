@@ -69,11 +69,7 @@ public class RwSplitStatisticRecord extends StatisticRecord {
     public void onBackendSqlError(byte[] data) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(data);
-        if (errPg.getErrNo() == ErrorCode.ER_PARSE_ERROR ||
-                errPg.getErrNo() == ErrorCode.ER_NO_SUCH_TABLE ||
-                errPg.getErrNo() == ErrorCode.ER_NO_DB_ERROR ||
-                errPg.getErrNo() == ErrorCode.ER_BAD_DB_ERROR ||
-                errPg.getErrNo() == ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS) {
+        if (errPg.getErrNo() == ErrorCode.ER_PARSE_ERROR) {
             onFrontendSqlClose();
             return;
         }

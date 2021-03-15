@@ -499,6 +499,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 loadDataInfileHandler.clear();
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
+                // back to the beginning state
+                loadDataInfileHandler.clear();
                 LOGGER.info("load data error", e);
                 writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
             }

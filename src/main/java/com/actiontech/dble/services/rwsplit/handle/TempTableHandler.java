@@ -8,6 +8,7 @@ package com.actiontech.dble.services.rwsplit.handle;
 
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
@@ -15,6 +16,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -75,7 +77,16 @@ public final class TempTableHandler {
                     tempTableSet.remove(key);
                 }
             }
-
+            if (!rwSplitService.isAutocommit()) {
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+                rwSplitService.getAndIncrementTxId();
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(rwSplitService));
+            }
+            if (rwSplitService.isTxStart()) {
+                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+            }
+            rwSplitService.setTxStart(false);
+            session.getService().singleTransactionsCount();
         });
     }
 }

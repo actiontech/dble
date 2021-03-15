@@ -5,10 +5,14 @@
 
 package com.actiontech.dble.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NameableThreadFactory implements ThreadFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NameableThreadFactory.class);
     private final ThreadGroup group;
     private final String namePrefix;
     private final AtomicInteger threadId;
@@ -25,6 +29,8 @@ public class NameableThreadFactory implements ThreadFactory {
     public Thread newThread(Runnable r) {
         Thread t = new Thread(group, r, namePrefix + threadId.getAndIncrement());
         t.setDaemon(isDaemon);
+        //If more processing needs to be overridden class processing
+        t.setUncaughtExceptionHandler((Thread threads, Throwable e) -> LOGGER.warn("unknown exception ", e));
         return t;
     }
 }

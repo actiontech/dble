@@ -52,13 +52,24 @@ public class XAEndStage extends XAStage {
             service.setXaStatus(TxState.TX_CONN_QUIT);
             xaHandler.fakedResponse(service, "the conn has been closed before executing XA END");
         } else {
-            RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
-            String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            if (logger.isDebugEnabled()) {
-                logger.debug("XA END " + xaTxId + " to " + service);
+            try {
+                RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
+                String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("XA END " + xaTxId + " to " + service);
+                }
+                XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
+                service.execCmd("XA END " + xaTxId);
+            } catch (Exception e) {
+                logger.info("xa end error", e);
+                if (!xaHandler.isFail()) {
+                    xaHandler.fakedResponse(service, "cause error when executing XA END. reason [" + e.getMessage() + "]");
+                } else {
+                    xaHandler.fakedResponse(service, null);
+                }
+
+
             }
-            XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
-            service.execCmd("XA END " + xaTxId);
         }
     }
 

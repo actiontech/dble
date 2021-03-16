@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -888,6 +889,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     public void clear() {
+        service.getConnection().setProto(new MySQLProtoHandlerImpl());
         isStart = false;
         schema = null;
         tableConfig = null;

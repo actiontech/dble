@@ -497,6 +497,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (loadDataInfileHandler != null) {
             try {
                 loadDataInfileHandler.clear();
+                getConnection().setProto(new LoadDataProtoHandlerImpl(loadDataInfileHandler));
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 // back to the beginning state

@@ -63,10 +63,6 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public abstract void release();
 
-    public abstract void asynchronousTest();
-
-    public abstract void synchronousTest();
-
     public long getLastTime() {
         return lastTime;
     }

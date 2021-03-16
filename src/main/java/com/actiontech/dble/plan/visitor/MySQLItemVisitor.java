@@ -36,6 +36,7 @@ import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncTrim.TrimTy
 import com.actiontech.dble.plan.common.item.function.sumfunc.*;
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemDateAddInterval;
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemExtract;
+import com.actiontech.dble.plan.common.item.function.timefunc.ItemFuncCurtimeLocal;
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemFuncTimestampDiff;
 import com.actiontech.dble.plan.common.item.function.unknown.ItemFuncUnknown;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
@@ -140,6 +141,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables, this.charsetIndex);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
+    }
+
+    @Override
+    public void endVisit(SQLCurrentTimeExpr x) {
+        item = new ItemFuncCurtimeLocal(null, this.charsetIndex);
+        initName(x);
     }
 
     @Override

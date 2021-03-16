@@ -46,6 +46,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -60,6 +62,8 @@ import java.util.regex.Pattern;
  * CHARACTER SET 'gbk' in load data sql  the charset need ', otherwise the druid will error
  */
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerLoadDataInfileHandler.class);
     //innodb limit of columns per table, https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html
     private static final int DEFAULT_MAX_COLUMNS = 1017;
     private ShardingService service;
@@ -761,6 +765,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         ignoreNumber--;
                     }
                 }
+            } catch (Exception e) {
+                clear();
+                LOGGER.info("local load data error", e);
+                service.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
             } finally {
                 parser.stopParsing();
             }

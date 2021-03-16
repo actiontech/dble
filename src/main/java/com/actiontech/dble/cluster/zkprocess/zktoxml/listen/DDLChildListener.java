@@ -30,30 +30,34 @@ public class DDLChildListener implements PathChildrenCacheListener {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("event happen:" + event.toString());
         }
+        String type = null;
+        switch (event.getType()) {
+            case CHILD_ADDED:
+                type = "created";
+                break;
+            case CHILD_UPDATED:
+                type = "updated";
+                break;
+            case CHILD_REMOVED:
+                type = "deleted";
+                break;
+            default:
+                //ignore other event.
+                return;
+        }
         ClusterDelayProvider.delayAfterGetDdlNotice();
         ChildData childData = event.getData();
 
-
         final String ddlInfoStr = new String(childData.getData(), StandardCharsets.UTF_8);
         DDLInfo ddlInfo = new DDLInfo(ddlInfoStr);
-        switch (event.getType()) {
-            case CHILD_ADDED:
-                LOGGER.info("DDL node " + childData.getPath() + " created , and data is " + ddlInfoStr);
-                break;
-            case CHILD_UPDATED:
-                LOGGER.info("DDL node " + childData.getPath() + " updated , and data is " + ddlInfoStr);
-                break;
-            case CHILD_REMOVED:
-                LOGGER.info("DDL node " + childData.getPath() + " deleted , and data is " + ddlInfoStr);
-                break;
-            default:
-                break;
-        }
+
+
         if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             LOGGER.info("DDL node " + childData.getPath() + " is from myself ,so just return ,and data is " + ddlInfo.toString());
             return; //self node
         }
 
+        LOGGER.info("DDL node {} {} , and data is {}", childData.getPath(), type, ddlInfoStr);
 
         switch (event.getType()) {
             case CHILD_ADDED:

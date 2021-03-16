@@ -152,16 +152,18 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 throw new IOException("primary dbInstance switched");
             }
 
-            BackendConnection con = (BackendConnection) connectionPool.borrowDirectly(schema);
-            if (con != null) {
-                if (!StringUtil.equals(con.getSchema(), schema)) {
-                    // need do sharding syn in before sql send
-                    con.setSchema(schema);
+            if (!config.getPoolConfig().getTestOnBorrow()) {
+                BackendConnection con = (BackendConnection) connectionPool.borrowDirectly(schema);
+                if (con != null) {
+                    if (!StringUtil.equals(con.getSchema(), schema)) {
+                        // need do sharding syn in before sql send
+                        con.setSchema(schema);
+                    }
+                    TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
+                    con.getBackendService().setAttachment(attachment);
+                    handler.connectionAcquired(con);
+                    return;
                 }
-                TraceManager.crossThread(con.getBackendService(), "backend-response-service", service);
-                con.getBackendService().setAttachment(attachment);
-                handler.connectionAcquired(con);
-                return;
             }
 
             DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {

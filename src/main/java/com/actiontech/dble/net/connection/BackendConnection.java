@@ -84,16 +84,6 @@ public class BackendConnection extends PooledConnection {
     }
 
     @Override
-    public void asynchronousTest() {
-
-    }
-
-    @Override
-    public void synchronousTest() {
-
-    }
-
-    @Override
     public synchronized void close(final String reason) {
         LOGGER.info("connection id " + threadId + " close for reason " + reason);
         boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);

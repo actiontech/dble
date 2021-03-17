@@ -74,7 +74,13 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.LOCK:
                         session.execute(true, (isSuccess, rwSplitService) -> {
+                            if (!rwSplitService.isAutocommit()) {
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+                                rwSplitService.getAndIncrementTxId();
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(rwSplitService));
+                            }
                             if (rwSplitService.isTxStart()) {
+                                Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
                                 rwSplitService.setTxStart(false);
                                 session.getService().singleTransactionsCount();
                             }

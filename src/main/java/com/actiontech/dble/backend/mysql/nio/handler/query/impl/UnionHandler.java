@@ -7,13 +7,13 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.net.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +101,7 @@ public class UnionHandler extends BaseDMLHandler {
      * merge field packets with field packets2
      * eg: int field union double field ->double field
      *
-     * @param fieldPackets fieldPackets
+     * @param fieldPackets  fieldPackets
      * @param fieldPackets2 fieldPackets2
      */
     private List<FieldPacket> unionFieldPackets(List<FieldPacket> fieldPackets, List<FieldPacket> fieldPackets2) {

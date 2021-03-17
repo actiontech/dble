@@ -76,8 +76,6 @@ public class DBConverter {
 
     public void dbJsonToMap(String dbJson, ProblemReporter problemReporter, boolean syncHaStatus) {
         DbGroups dbs = dbJsonToBean(dbJson, syncHaStatus);
-        //check
-        beanValidate(dbs);
         if (dbs.getVersion() != null && !Versions.CONFIG_VERSION.equals(dbs.getVersion())) {
             if (problemReporter != null) {
                 if (Versions.checkVersion(dbs.getVersion())) {

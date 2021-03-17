@@ -5,7 +5,7 @@
     <xs:element name="db">
         <xs:complexType>
             <xs:sequence>
-                <xs:element maxOccurs="unbounded" ref="dbGroup"/>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="dbGroup"/>
             </xs:sequence>
             <xs:attribute name="version" type="xs:string"/>
         </xs:complexType>

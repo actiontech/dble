@@ -23,7 +23,7 @@ public final class ReloadLoadDataNum {
 
     public static void execute(ManagerService service, int num) {
         if (num < 1) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "numSize must be greater than 0");
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "must be of numeric type and the value must be greater than 0");
             return;
         }
         try {

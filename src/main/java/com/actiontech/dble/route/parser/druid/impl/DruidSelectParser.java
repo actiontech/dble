@@ -124,7 +124,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
                 rrs.setPrimaryKey(tc.getPrimaryKey());
                 // select ...for update /in shard mode /in transaction
-                if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
+                if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())) {
                     rrs.setCanRunInReadDB(false);
                 }
                 if (!canRouteTablesToOneNode(schema, stmt, rrs, mysqlSelectQuery, sc, visitor.getSelectTableList().size())) {

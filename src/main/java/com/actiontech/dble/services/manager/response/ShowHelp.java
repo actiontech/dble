@@ -221,7 +221,7 @@ public final class ShowHelp {
         HELPS.put("dbGroup @@events", "show all the dbGroup ha event which not finished yet");
 
         //dump file
-        HELPS.put("split src dest -sschema -r500 -w500 -l10000 --ignore", "split dump file into multi dump files according to shardingNode");
+        HELPS.put("split src dest -sschema -r500 -w500 -l10000 --ignore -t2", "split dump file into multi dump files according to shardingNode");
 
         // fresh con
         HELPS.put("fresh conn [forced] where dbGroup ='?' [and dbInstance ='?']", "fresh conn some dbGroup/dbInstance");

@@ -22,8 +22,8 @@ public final class ReloadLoadDataNum {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadLoadDataNum.class);
 
     public static void execute(ManagerService service, int num) {
-        if (num < 0) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the commend is not correct");
+        if (num < 1) {
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "numSize must be greater than 0");
             return;
         }
         try {

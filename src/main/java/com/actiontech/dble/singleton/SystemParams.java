@@ -146,7 +146,7 @@ public final class SystemParams {
         params.add(new ParamInfo("enableAlert", AlertUtil.isEnable() + "", "Enable or disable alert"));
         params.add(new ParamInfo("capClientFoundRows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() + "", "Whether to turn on EOF_Packet to return found rows, the default value is false"));
         params.add(new ParamInfo("maxRowSizeToFile", LoadDataBatch.getInstance().getSize() + "", "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 100000"));
-        params.add(new ParamInfo("enableBatchLoadData", LoadDataBatch.getInstance().isEnableBatchLoadData() + "", "Enable Batch Load Data"));
+        params.add(new ParamInfo("enableBatchLoadData", LoadDataBatch.getInstance().isEnableBatchLoadData() + "", "Enable Batch Load Data. The default value is false"));
         params.add(new ParamInfo("enableGeneralLog", GeneralLog.getInstance().isEnableGeneralLog() + "", "Enable general log"));
         params.add(new ParamInfo("generalLogFile", GeneralLog.getInstance().getGeneralLogFile(), "The path of general log, the default value is ./general/general.log"));
         params.add(new ParamInfo("enableStatistic", StatisticManager.getInstance().isEnable() + "", "Enable statistic sql, the default is false"));

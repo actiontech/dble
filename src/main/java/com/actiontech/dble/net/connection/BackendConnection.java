@@ -154,7 +154,6 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public String toString() {
-        return this.getClass() +
-                " Connection  with" + " host = " + host + " id = " + id + " port = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
+        return "BackendConnection[id = " + id + " host = " + host + " port = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
     }
 }

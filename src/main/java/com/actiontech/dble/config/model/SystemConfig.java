@@ -1325,12 +1325,17 @@ public final class SystemConfig {
     public void setHeapTableBufferChunkSize(Integer heapTableBufferChunkSize) {
         this.heapTableBufferChunkSize = heapTableBufferChunkSize;
     }
+
     public int getEnableBatchLoadData() {
         return enableBatchLoadData;
     }
 
     public void setEnableBatchLoadData(int enableBatchLoadData) {
-        this.enableBatchLoadData = enableBatchLoadData;
+        if (enableBatchLoadData >= 0 && enableBatchLoadData <= 1) {
+            this.enableBatchLoadData = enableBatchLoadData;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableBatchLoadData", enableBatchLoadData, this.enableBatchLoadData));
+        }
     }
 
     @Override

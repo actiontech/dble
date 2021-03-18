@@ -181,6 +181,35 @@ public final class SystemConfig {
     private int tableByUserByEntryTableSize = 1024;
     private int statisticQueueSize = 4096;
 
+    // sampling
+    private int samplingRate = 0;
+    private int tableSqlLogSize = 1024;
+
+    public int getSamplingRate() {
+        return samplingRate;
+    }
+
+    public void setSamplingRate(int samplingRate) {
+        if (samplingRate >= 0 && samplingRate <= 100) {
+            this.samplingRate = samplingRate;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "samplingRate", samplingRate, this.samplingRate));
+        }
+    }
+
+    public int getTableSqlLogSize() {
+        return tableSqlLogSize;
+    }
+
+    public void setTableSqlLogSize(int tableSqlLogSize) {
+        if (tableSqlLogSize > 0) {
+            this.tableSqlLogSize = tableSqlLogSize;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "tableSqlLogSize", tableSqlLogSize, this.tableSqlLogSize));
+        }
+    }
+
+
     public int getEnableStatistic() {
         return enableStatistic;
     }

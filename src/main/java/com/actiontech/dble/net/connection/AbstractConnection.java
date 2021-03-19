@@ -58,7 +58,7 @@ public abstract class AbstractConnection implements Connection {
     protected long netInBytes;
     protected long netOutBytes;
     protected long lastLargeMessageTime;
-    private int sequenceId = 0;
+    private int extraPartOfBigPacketCount = 0;
 
     protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
@@ -99,7 +99,7 @@ public abstract class AbstractConnection implements Connection {
             switch (result.getCode()) {
                 case PART_OF_BIG_PACKET:
 
-                    sequenceId++;
+                    extraPartOfBigPacketCount++;
                     if (!result.isHasMorePacket()) {
                         readReachEnd();
                         dataBuffer.clear();
@@ -133,18 +133,18 @@ public abstract class AbstractConnection implements Connection {
     private void processPacketData(ProtoHandlerResult result) {
         byte[] packetData = result.getPacketData();
         if (packetData != null) {
-            int tmpSequenceId = sequenceId;
+            int tmpCount = extraPartOfBigPacketCount;
             if (!isSupportCompress) {
-                sequenceId = 0;
-                service.handle(new ServiceTask(packetData, service, tmpSequenceId));
+                extraPartOfBigPacketCount = 0;
+                service.handle(new ServiceTask(packetData, service, tmpCount));
             } else {
                 List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
                 if (decompressUnfinishedDataQueue.isEmpty()) {
-                    sequenceId = 0;
+                    extraPartOfBigPacketCount = 0;
                 }
                 for (byte[] pack : packs) {
                     if (pack.length != 0) {
-                        service.handle(new ServiceTask(pack, service, tmpSequenceId++));
+                        service.handle(new ServiceTask(pack, service, tmpCount));
                     }
                 }
             }

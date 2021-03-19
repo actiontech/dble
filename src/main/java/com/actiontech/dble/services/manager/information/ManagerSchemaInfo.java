@@ -6,9 +6,7 @@
 package com.actiontech.dble.services.manager.information;
 
 import com.actiontech.dble.services.manager.information.tables.*;
-import com.actiontech.dble.services.manager.information.tables.statistic.AssociateTablesByEntryByUser;
-import com.actiontech.dble.services.manager.information.tables.statistic.FrontendByBackendByEntryByUser;
-import com.actiontech.dble.services.manager.information.tables.statistic.TableByUserByEntry;
+import com.actiontech.dble.services.manager.information.tables.statistic.*;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -54,6 +52,9 @@ public final class ManagerSchemaInfo {
         registerTable(new FrontendByBackendByEntryByUser());
         registerTable(new TableByUserByEntry());
         registerTable(new AssociateTablesByEntryByUser());
+        // sampling
+        registerTable(new SqlLogByTxByEntryByUser());
+        registerTable(new SqlLog());
     }
 
 

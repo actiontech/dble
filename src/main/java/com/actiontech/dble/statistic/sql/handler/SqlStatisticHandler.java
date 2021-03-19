@@ -39,7 +39,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
                     if (txRecords.size() >= sqlLogSize) {
                         txRecords.pollFirstEntry();
                     }
-                    txRecords.put(txEntry.getStartTime(), new TxRecord(txEntry));
+                    txRecords.put(txEntry.getTxId(), new TxRecord(txEntry));
                 }
             }
         } else if (entry instanceof StatisticFrontendSqlEntry) {
@@ -52,14 +52,14 @@ public class SqlStatisticHandler implements StatisticDataHandler {
                     if (txRecords.size() >= sqlLogSize) {
                         txRecords.pollFirstEntry();
                     }
-                    txRecords.put(frontendSqlEntry.getStartTime(), new TxRecord(frontendSqlEntry));
+                    txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
                 }
             }
         }
     }
 
     @Override
-    public Collection<TxRecord> getList() {
+    public LinkedList<TxRecord> getList() {
         return new LinkedList<>(txRecords.values());
     }
 

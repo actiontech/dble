@@ -68,6 +68,8 @@ public final class RouteResultset implements Serializable {
 
     private boolean isForUpdate = false;
 
+    private boolean enableLoadDataFlag = false;
+
     public boolean isForUpdate() {
         return isForUpdate;
     }
@@ -343,5 +345,13 @@ public final class RouteResultset implements Serializable {
 
     public void setMultiRouteResultSetNodeMap(Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap) {
         this.multiRouteResultSetNodeMap = multiRouteResultSetNodeMap;
+    }
+
+    public boolean isEnableLoadDataFlag() {
+        return enableLoadDataFlag;
+    }
+
+    public void setEnableLoadDataFlag(boolean enableLoadDataFlag) {
+        this.enableLoadDataFlag = enableLoadDataFlag;
     }
 }

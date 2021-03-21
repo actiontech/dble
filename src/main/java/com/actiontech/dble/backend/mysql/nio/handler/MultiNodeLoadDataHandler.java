@@ -34,6 +34,7 @@ import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -338,14 +339,18 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
 
     }
 
-    private String toStringForWarning(List<String> warns) {
-        StringBuilder sb = new StringBuilder();
-        if (rrs.isGlobalTable()) {
-            Set<String> warnSet = new HashSet<>(warns);
-            warnSet.forEach(warn -> sb.append(warn).append("\r\n"));
-        } else {
-            warns.forEach(warn -> sb.append(warn).append("\r\n"));
-        }
+    private String toStringForWarning(Map<String, List<String>> warns) {
+        StringBuilder sb = new StringBuilder("node   reason");
+        String blackSpace = "  ";
+        String line = "\r\n";
+        warns.forEach((k, v) -> {
+            if (rrs.isGlobalTable()) {
+                Set<String> warnSet = new HashSet<>(v);
+                warnSet.forEach(warn -> sb.append(line).append(k).append(blackSpace).append(warn));
+            } else {
+                v.forEach(warn -> sb.append(line).append(k).append(blackSpace).append(warn));
+            }
+        });
         return sb.toString();
     }
 
@@ -369,9 +374,9 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             ok.read(data);
             lock.lock();
             try {
-                if (ok.getAffectedRows() > 0) {
-                    // the affected rows of global table will use the last node's response
+                if (ok.getAffectedRows() > 0 || ok.getWarningCount() > 0) {
                     RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
+                    // the affected rows of global table will use the last node's response
                     affectedRows += ok.getAffectedRows();
                     if (ok.getInsertId() > 0) {
                         insertId = (insertId == 0) ? ok.getInsertId() : Math.min(insertId, ok.getInsertId());
@@ -387,11 +392,10 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                         transformOkPackage(ok, shardingService);
                         if (packet == null)
                             packet = ok;
-                        createErrorFile(rrn.getLoadData().getData(), rrn, "error.txt");
+                        createErrorFile(rrn.getLoadData().getData(), rrn, FileUtils.getName(rrn.getLoadData().getFileName()));
                         rrn.setLoadDataRrnStatus((byte) 2);
                         return;
                     }
-
                     String filePath = rrn.getLoadData().getFileName();
                     LoadDataBatch.getInstance().setFileName(filePath);
                     handlerCommit(rrn);
@@ -415,7 +419,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                         handleEndPacket(ok, AutoTxOperation.COMMIT, true);
                     }
                 }
-
             } finally {
                 lock.unlock();
             }
@@ -531,14 +534,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     }
 
     private void deleteErrorFile() {
-        String temp = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + "error" + File.separator + "error.txt";
-        File fileDirToDel = new File(temp);
-        if (!fileDirToDel.exists()) {
-            return;
-        }
-        if (fileDirToDel.isFile()) {
-            fileDirToDel.delete();
-        }
+        String temp = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + "error" + File.separator;
+        FileUtils.deleteFile(temp);
     }
 
     private void transformOkPackage(OkPacket ok, ShardingService shardingService) {
@@ -561,11 +558,15 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
         lock.lock();
         try {
-            String regex = "[^A-Za-z0-9]";
-            String blankSpace = " ";
-            String str = StringUtil.toString(row);
-            str = str.replaceAll(regex, blankSpace);
-            LoadDataBatch.getInstance().getWarnings().add(str);
+            RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
+            RowDataPacket rowDataPkg = new RowDataPacket(3);
+            rowDataPkg.read(row);
+            Map<String, List<String>> warnings = LoadDataBatch.getInstance().getWarnings();
+            String name = rrn.getName();
+            if (!warnings.containsKey(name)) {
+                warnings.put(name, Lists.newArrayList());
+            }
+            warnings.get(name).add(new String(rowDataPkg.fieldValues.get(2)));
         } finally {
             lock.unlock();
         }

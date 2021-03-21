@@ -552,7 +552,7 @@ public class NonBlockingSession extends Session {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "execute-for-dml");
         ExecutableHandler executableHandler = null;
         try {
-            if (rrs.getNodes().length == 1) {
+            if (rrs.getNodes().length == 1 && !rrs.isEnableLoadDataFlag()) {
                 executableHandler = new SingleNodeHandler(rrs, this);
                 setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
             } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {

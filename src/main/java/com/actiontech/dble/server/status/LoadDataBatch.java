@@ -4,10 +4,8 @@ import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+
 
 public final class LoadDataBatch {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoadDataBatch.class);
@@ -15,7 +13,7 @@ public final class LoadDataBatch {
     private volatile boolean enableBatchLoadData;
     private Set<String> successFileNames = new HashSet<>();
     private int currentNodeSize = 0;
-    private List<String> warnings = new ArrayList<>();
+    private Map<String, List<String>> warnings = new HashMap<>();
 
 
     private LoadDataBatch() {
@@ -73,11 +71,11 @@ public final class LoadDataBatch {
         this.currentNodeSize = currentNodeSize;
     }
 
-    public List<String> getWarnings() {
+    public Map<String, List<String>> getWarnings() {
         return warnings;
     }
 
-    public void setWarnings(List<String> warnings) {
+    public void setWarnings(Map<String, List<String>> warnings) {
         this.warnings = warnings;
     }
 

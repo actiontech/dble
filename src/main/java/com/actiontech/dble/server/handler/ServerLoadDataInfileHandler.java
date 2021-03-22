@@ -8,6 +8,7 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
+import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -30,6 +31,7 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.services.mysqlsharding.LoadDataProtoHandlerImpl;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
@@ -897,6 +899,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     public void clear() {
+        ProtoHandler proto = service.getConnection().getProto();
+        if (proto instanceof LoadDataProtoHandlerImpl) {
+            service.getConnection().setProto(((LoadDataProtoHandlerImpl) proto).getMySQLProtoHandler());
+        }
         isStart = false;
         schema = null;
         tableConfig = null;

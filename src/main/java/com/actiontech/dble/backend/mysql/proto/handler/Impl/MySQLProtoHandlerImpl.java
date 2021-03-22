@@ -29,14 +29,26 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
         int position = dataBuffer.position();
         int length = getPacketLength(dataBuffer, offset, isSupportCompress);
         final ProtoHandlerResult.ProtoHandlerResultBuilder builder = ProtoHandlerResult.builder();
+        return getProtoHandlerResultBuilder(dataBuffer, offset, position, length, builder).build();
+    }
+
+    @Nonnull
+    public ProtoHandlerResult.ProtoHandlerResultBuilder handlerResultBuilder(ByteBuffer dataBuffer, int offset, boolean isSupportCompress) {
+        int position = dataBuffer.position();
+        int length = getPacketLength(dataBuffer, offset, isSupportCompress);
+        final ProtoHandlerResult.ProtoHandlerResultBuilder builder = ProtoHandlerResult.builder();
+        return getProtoHandlerResultBuilder(dataBuffer, offset, position, length, builder);
+    }
+
+    private ProtoHandlerResult.ProtoHandlerResultBuilder getProtoHandlerResultBuilder(ByteBuffer dataBuffer, int offset, int position, int length, ProtoHandlerResult.ProtoHandlerResultBuilder builder) {
         if (length == -1) {
             if (offset != 0) {
-                return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).build();
+                return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset);
             } else if (!dataBuffer.hasRemaining()) {
                 throw new RuntimeException("invalid dataBuffer capacity ,too little buffer size " +
                         dataBuffer.capacity());
             }
-            return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).build();
+            return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset);
         }
         if (position >= offset + length) {
             // handle this package
@@ -49,7 +61,6 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
             } else {
                 builder.setCode(COMPLETE_PACKET);
             }
-
             // offset to next position
             offset += length;
             // reached end
@@ -63,14 +74,14 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
                 builder.setHasMorePacket(false);
             }
             builder.setOffset(offset).setPacketData(data);
-            return builder.build();
+            return builder;
         } else {
             // not read whole message package ,so check if buffer enough and
             // compact dataBuffer
             if (!dataBuffer.hasRemaining()) {
-                return builder.setCode(BUFFER_NOT_BIG_ENOUGH).setHasMorePacket(false).setOffset(offset).setPacketLength(length).build();
+                return builder.setCode(BUFFER_NOT_BIG_ENOUGH).setHasMorePacket(false).setOffset(offset).setPacketLength(length);
             } else {
-                return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).setPacketLength(length).build();
+                return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).setPacketLength(length);
             }
         }
     }

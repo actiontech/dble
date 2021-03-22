@@ -44,7 +44,7 @@ public abstract class AbstractConnection implements Connection {
     protected int localPort;
     protected int port;
 
-    private final ProtoHandler proto;
+    private volatile ProtoHandler proto;
     private volatile boolean isSupportCompress;
     private volatile AbstractService service;
     protected volatile IOProcessor processor;
@@ -550,6 +550,14 @@ public abstract class AbstractConnection implements Connection {
 
     public void setSupportCompress(boolean supportCompress) {
         this.isSupportCompress = supportCompress;
+    }
+
+    public ProtoHandler getProto() {
+        return proto;
+    }
+
+    public void setProto(ProtoHandler proto) {
+        this.proto = proto;
     }
 
 }

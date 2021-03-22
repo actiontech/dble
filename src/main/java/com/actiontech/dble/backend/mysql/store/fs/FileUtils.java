@@ -70,6 +70,32 @@ public final class FileUtils {
     }
 
     /**
+     * deleteFile and its children
+     */
+    public static void deleteFile(String dirPath) {
+        File fileDirToDel = new File(dirPath);
+        if (!fileDirToDel.exists()) {
+            return;
+        }
+        if (fileDirToDel.isFile()) {
+            fileDirToDel.delete();
+            return;
+        }
+        File[] fileList = fileDirToDel.listFiles();
+        if (fileList != null) {
+            for (File file : fileList) {
+                if (file.isFile() && file.exists()) {
+                    file.delete();
+                } else if (file.isDirectory()) {
+                    deleteFile(file.getAbsolutePath());
+                    file.delete();
+                }
+            }
+        }
+        fileDirToDel.delete();
+    }
+
+    /**
      * Get the canonical file or directory name. This method is similar to Java
      * 7 <code>java.nio.file.Path.toRealPath</code>.
      *

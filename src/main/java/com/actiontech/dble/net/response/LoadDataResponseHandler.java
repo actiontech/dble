@@ -61,6 +61,7 @@ public class LoadDataResponseHandler extends DefaultResponseHandler {
 
     private void handleFieldEofPacket(byte[] data) {
         ResponseHandler respHand = service.getResponseHandler();
+        service.getConnection().updateLastReadTime();
         service.setRowDataFlowing(true);
         if (respHand != null) {
             respHand.fieldEofResponse(header, fields, null, data, false, service);
@@ -71,6 +72,7 @@ public class LoadDataResponseHandler extends DefaultResponseHandler {
 
     private void handleRowPacket(byte[] data) {
         ResponseHandler respHand = service.getResponseHandler();
+        service.getConnection().updateLastReadTime();
         if (respHand != null) {
             respHand.rowResponse(data, null, false, service);
         } else {
@@ -91,6 +93,7 @@ public class LoadDataResponseHandler extends DefaultResponseHandler {
         if (service.getSession() != null && !service.isTesting() && service.getLogResponse().compareAndSet(false, true)) {
             service.getSession().setBackendResponseEndTime(this.service);
         }
+        service.getConnection().updateLastReadTime();
         service.getLogResponse().set(false);
         service.backendSpecialCleanUp();
         if (service.getResponseHandler() != null) {

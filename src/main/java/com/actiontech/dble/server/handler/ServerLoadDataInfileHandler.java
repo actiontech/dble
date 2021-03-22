@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
@@ -79,6 +80,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private ByteArrayOutputStream tempByteBuffer;
     private long tempByteBufferSize = 0;
     private String tempPath;
+    private String loadDataPath;
     private String tempFile;
     private boolean isHasStoreToFile = false;
 
@@ -95,6 +97,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     public ServerLoadDataInfileHandler(ShardingService service) {
         this.service = service;
         tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + service.getConnection().getId() + File.separator;
+        loadDataPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + "file" + File.separator;
 
     }
 
@@ -228,12 +231,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     if (rrs != null) {
                         if (LoadDataBatch.getInstance().isEnableBatchLoadData()) {
                             flushDataToLastFile();
+                            rrs.setEnableLoadDataFlag(true);
                         } else {
                             flushDataToFile();
                         }
                         ClusterDelayProvider.delayBeforeLoadData();
                         service.getSession2().execute(rrs);
-
                     }
                 }
             }
@@ -428,6 +431,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 } else {
                     data.getData().add(jLine);
                 }
+
                 if (LoadDataBatch.getInstance().isEnableBatchLoadData() && data.getData().size() >= LoadDataBatch.getInstance().getSize()) {
                     saveDataToMuFile(data, name, fileName);
                 } else if (!LoadDataBatch.getInstance().isEnableBatchLoadData() && data.getData().size() >= LoadDataBatch.getInstance().getSize()) {
@@ -495,7 +499,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         boolean first = Strings.isNullOrEmpty(data.getFileName());
         if (!first) index++;
         String curFileName = index + "-" + tempFileName.substring(0, tempFileName.indexOf(".")) + "-" + name + ".txt";
-        String dnPath = tempPath + curFileName;
+        String dnPath = loadDataPath + curFileName;
         File dnFile = new File(dnPath);
         try {
             if (!dnFile.exists()) {
@@ -776,7 +780,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
-        RouteResultset rrs = buildResultSet(convertToRouteMap(routeResultMap));
+        RouteResultset rrs;
+        if (LoadDataBatch.getInstance().isEnableBatchLoadData()) {
+            rrs = doBuildResultSet(routeResultMap);
+        } else {
+            rrs = buildResultSet(convertToRouteMap(routeResultMap));
+        }
         if (rrs != null) {
             flushDataToFile();
             service.getSession2().execute(rrs);
@@ -910,8 +919,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
-        if (tempPath != null && new File(tempPath).exists()) {
-            deleteFile(tempPath);
+        if ((tempPath != null && new File(tempPath).exists())) {
+            FileUtils.deleteFile(tempPath);
+        }
+        if (loadDataPath != null && new File(loadDataPath).exists()) {
+            FileUtils.deleteFile(loadDataPath);
         }
         tempByteBuffer = null;
         loadData = null;
@@ -939,7 +951,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         for (String successFileName : successFileNames) {
             if (new File(successFileName).exists()) {
-                deleteFile(successFileName);
+                FileUtils.deleteFile(successFileName);
             }
         }
         tempByteBuffer = null;
@@ -970,31 +982,4 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         return pColumn;
     }
-
-    /**
-     * deleteFile and its children
-     */
-    private static void deleteFile(String dirPath) {
-        File fileDirToDel = new File(dirPath);
-        if (!fileDirToDel.exists()) {
-            return;
-        }
-        if (fileDirToDel.isFile()) {
-            fileDirToDel.delete();
-            return;
-        }
-        File[] fileList = fileDirToDel.listFiles();
-        if (fileList != null) {
-            for (File file : fileList) {
-                if (file.isFile() && file.exists()) {
-                    file.delete();
-                } else if (file.isDirectory()) {
-                    deleteFile(file.getAbsolutePath());
-                    file.delete();
-                }
-            }
-        }
-        fileDirToDel.delete();
-    }
-
 }

@@ -41,7 +41,7 @@ public abstract class AbstractService implements Service {
     private volatile boolean isSupportCompress = false;
     protected volatile ProtoHandler proto;
     protected final BlockingQueue<ServiceTask> taskQueue;
-    private int sequenceId = 0;
+    private int extraPartOfBigPacketCount = 0;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
@@ -64,7 +64,7 @@ public abstract class AbstractService implements Service {
             switch (result.getCode()) {
                 case PART_OF_BIG_PACKET:
 
-                    sequenceId++;
+                    extraPartOfBigPacketCount++;
                     if (!result.isHasMorePacket()) {
                         connection.readReachEnd();
                         dataBuffer.clear();
@@ -99,8 +99,26 @@ public abstract class AbstractService implements Service {
         if (packetData == null) {
             return;
         }
+        int tmpCount = extraPartOfBigPacketCount;
+        if (!isSupportCompress) {
+            extraPartOfBigPacketCount = 0;
+            handleTask(new ServiceTask(packetData, this, tmpCount));
+        } else {
+            final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+            List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
+            if (decompressUnfinishedDataQueue.isEmpty()) {
+                extraPartOfBigPacketCount = 0;
+            }
+            for (byte[] pack : packs) {
+                if (pack.length != 0) {
+                    handleTask(new ServiceTask(pack, this, tmpCount));
+                }
+            }
+        }
+    }
+
+    public void handleTask(ServiceTask task) {
         if (beforeHandlingTask()) {
-            ServiceTask task = new ServiceTask(packetData, this, sequenceId);
             try {
                 taskQueue.put(task);
             } catch (InterruptedException e) {
@@ -322,28 +340,12 @@ public abstract class AbstractService implements Service {
         try {
             byte[] data = executeTask.getOrgData();
             if (data != null && !executeTask.isReuse()) {
-                this.setPacketId(executeTask.getSequenceId());
+                this.setPacketId(executeTask.getLastSequenceId());
             }
             if (data != null && data.length - MySQLPacket.PACKET_HEADER_SIZE >= SystemConfig.getInstance().getMaxPacketSize()) {
                 throw new IllegalArgumentException("Packet for query is too large (" + data.length + " > " + SystemConfig.getInstance().getMaxPacketSize() + ").You can change maxPacketSize value in bootstrap.cnf.");
             }
-
-            if (isSupportCompress()) {
-                final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
-                List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, decompressUnfinishedDataQueue);
-                if (decompressUnfinishedDataQueue.isEmpty()) {
-                    sequenceId = 0;
-                }
-                for (byte[] pack : packs) {
-                    if (pack.length != 0) {
-                        handleInnerData(pack);
-                    }
-                }
-            } else {
-                sequenceId = 0;
-                this.handleInnerData(data);
-
-            }
+            this.handleInnerData(data);
         } catch (Throwable e) {
             String msg = e.getMessage();
             if (StringUtil.isEmpty(msg)) {

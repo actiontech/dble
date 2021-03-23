@@ -1,6 +1,6 @@
 package com.actiontech.dble.net.service;
 
-import javax.annotation.Nullable;
+import java.util.Arrays;
 
 /**
  * Created by szf on 2020/6/18.
@@ -11,13 +11,13 @@ public class ServiceTask {
     private volatile boolean highPriority = false;
     private final boolean reuse;
     private final Service service;
-    private Integer sequenceId = null;
+    private int extraPartOfBigPacketCount = 0;
 
-    public ServiceTask(byte[] orgData, Service service, @Nullable Integer sequenceId) {
+    public ServiceTask(byte[] orgData, Service service, int extraPartsOfBigPacketCount) {
         this.orgData = orgData;
         this.service = service;
         this.reuse = false;
-        this.sequenceId = sequenceId;
+        this.extraPartOfBigPacketCount = extraPartsOfBigPacketCount;
     }
 
     public ServiceTask(byte[] orgData, Service service, boolean reuse) {
@@ -47,15 +47,10 @@ public class ServiceTask {
         return reuse;
     }
 
-    public int getSequenceId() {
-        if (sequenceId != null) {
-            return sequenceId;
-        } else {
-            if (orgData == null) {
-                throw new IllegalStateException("can't get Sequence Id from null");
-            }
-            return (orgData[3]);
+    public int getLastSequenceId() {
+        if (orgData == null || orgData.length < 4) {
+            throw new IllegalStateException("can't get Sequence Id from " + Arrays.toString(orgData));
         }
-
+        return (orgData[3]) + extraPartOfBigPacketCount;
     }
 }

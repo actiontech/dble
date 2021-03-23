@@ -112,7 +112,10 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(100);
         for (IOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
-                lst.add(getRow(bc));
+                LinkedHashMap<String, String> row = getRow(bc);
+                if (null != row) {
+                    lst.add(row);
+                }
             }
         }
         return lst;
@@ -136,6 +139,9 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         row.put("schema", c.getSchema() == null ? "NULL" : c.getSchema());
 
         MySQLResponseService service = c.getBackendService();
+        if (null == service) {
+            return null;
+        }
         if (service.getSession() != null) {
             row.put("session_conn_id", service.getSession().getSource().getId() + "");
         }

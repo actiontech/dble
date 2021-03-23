@@ -24,6 +24,7 @@ import com.actiontech.dble.server.ServerSptPrepare;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
 import com.actiontech.dble.server.handler.ServerPrepareHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
@@ -180,7 +181,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
         WallProvider blackList = userConfig.getBlacklist();
         if (blackList != null) {
-            WallCheckResult result = blackList.check(sql);
+            WallCheckResult result = blackList.check(
+                    ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
             if (!result.getViolations().isEmpty()) {
                 LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
                         result.getViolations().get(0).getMessage() + " \r\n " + sql);

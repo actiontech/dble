@@ -87,7 +87,7 @@ public class SqlLog extends ManagerBaseTable {
             } else {
                 map.put(COLUMN_SQL_STMT, sqlRecord.getStmt());
             }
-            map.put(COLUMN_SQL_TYPE, sqlRecord.getSqlId() + "");
+            map.put(COLUMN_SQL_TYPE, sqlRecord.getSqlType() + "");
             map.put(COLUMN_TX_ID, sqlRecord.getTxId() + "");
             map.put(COLUMN_ENTRY, sqlRecord.getEntry() + "");
             map.put(COLUMN_USER, sqlRecord.getUser());

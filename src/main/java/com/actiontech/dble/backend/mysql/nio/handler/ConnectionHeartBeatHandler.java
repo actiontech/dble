@@ -43,11 +43,13 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     public boolean ping(long timeout) {
-        conn.getService().writeDirectly(PingPacket.PING);
         if (heartbeatLock != null) {
+            conn.getService().writeDirectly(PingPacket.PING);
             synchronized (heartbeatLock) {
                 try {
-                    heartbeatLock.wait(timeout);
+                    while (!finished) {
+                        heartbeatLock.wait(timeout);
+                    }
                 } catch (InterruptedException e) {
                     finished = false;
                 }
@@ -55,6 +57,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             return finished;
         } else {
             heartbeatTimeout = TimerHolder.getTimer().newTimeout(timeout1 -> conn.businessClose("conn heart timeout"), timeout, TimeUnit.MILLISECONDS);
+            conn.getService().writeDirectly(PingPacket.PING);
             return true;
         }
     }

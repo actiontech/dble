@@ -93,28 +93,42 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
         ServiceTask executeTask = null;
         synchronized (this) {
-            if (currentTask == null) {
-                executeTask = taskQueue.poll();
-                if (executeTask != null) {
-                    currentTask = executeTask;
-                }
-            }
-            if (currentTask != task) {
+            if (currentTask != null) {
+                //currentTask is executing.
                 taskToPriorityQueue(task);
+                return;
             }
+
+            executeTask = taskQueue.peek();
+            if (executeTask == null) {
+                return;
+            }
+            if (executeTask != task) {
+                //out of order,adjust it.
+                taskToPriorityQueue(task);
+                return;
+            }
+            //drop head task of the queue
+            taskQueue.poll();
+            currentTask = executeTask;
         }
 
-        if (executeTask != null) {
+        try {
+
             byte[] data = executeTask.getOrgData();
             if (data != null && !executeTask.isReuse()) {
                 this.setPacketId(executeTask.getLastSequenceId());
             }
 
             this.handleInnerData(data);
+
+        } finally {
             synchronized (this) {
                 currentTask = null;
             }
         }
+
+
     }
 
     /**
@@ -133,15 +147,14 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     }
 
     private void taskToPriorityQueue(ServiceTask task) {
+        if (task == null) {
+            throw new IllegalStateException("using null task is illegal");
+        }
         DbleServer.getInstance().getFrontPriorityQueue().offer(task);
-        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null, 0));
     }
 
     @Override
     public void cleanup() {
-        synchronized (this) {
-            this.currentTask = null;
-        }
         this.taskQueue.clear();
         TraceManager.sessionFinish(this);
     }

@@ -15,7 +15,9 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) throws Exception {
-        handle(statisticEvent.getEntry());
+        if (StatisticManager.getInstance().isEnable()) {
+            handle(statisticEvent.getEntry());
+        }
     }
 
     public void checkEliminate() {

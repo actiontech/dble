@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.parser;
 
 import com.actiontech.dble.route.parser.*;
@@ -42,7 +42,7 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("show @@connection", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("SHOW @@CONNECTION", 5));
         Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("show @@CONNECTION", 5));
-        Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff &ManagerParseShow.parse("show @@CONNECTION ADFASDF", 5));
+        Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("show @@CONNECTION ADFASDF", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTIONADFASDF", 5));
     }
 
@@ -217,6 +217,13 @@ public class ManagerParserTest {
     public void testReload() {
         Assert.assertEquals(ManagerParse.RELOAD, 0xff & ManagerParse.parse("reload @@"));
         Assert.assertEquals(ManagerParse.RELOAD, 0xff & ManagerParse.parse(" RELOAD "));
+    }
+
+    @Test
+    public void testReloadSamplingRate() {
+        Assert.assertEquals(ManagerParseReload.SAMPLING_RATE, 0xff & ManagerParseReload.parse("reload @@samplingRate = 1", 7));
+        Assert.assertEquals(ManagerParseReload.SAMPLING_RATE, 0xff & ManagerParseReload.parse("reload @@samplingRate=1", 7));
+        Assert.assertEquals(ManagerParseReload.OTHER, ManagerParseReload.parse("reload @@samplingRate", 7));
     }
 
     @Test

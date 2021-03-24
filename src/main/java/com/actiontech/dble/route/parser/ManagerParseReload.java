@@ -27,6 +27,7 @@ public final class ManagerParseReload {
     public static final int GENERAL_LOG_FILE = 12;
     public static final int STATISTIC_TABLE_SIZE = 13;
     public static final int LOAD_DATA_NUM = 14;
+    public static final int SAMPLING_RATE = 15;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -77,7 +78,6 @@ public final class ManagerParseReload {
         }
         return OTHER;
     }
-
 
     private static int reload2LCheck(String stmt, int offset) {
         if (stmt.length() > offset + "OAD_DATA".length()) {
@@ -162,6 +162,9 @@ public final class ManagerParseReload {
         if (stmt.length() > offset + 1) {
 
             switch (stmt.charAt(++offset)) {
+                case 'A':
+                case 'a':
+                    return reload2SACheck(stmt, offset);
                 case 'Q':
                 case 'q':
                     return reload2SQCheck(stmt, offset);
@@ -173,6 +176,29 @@ public final class ManagerParseReload {
                     return reload2STCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // RELOAD @@samplingRate=?
+    private static int reload2SACheck(String stmt, int offset) {
+        if (stmt.length() > offset + 11) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            if ((c1 == 'M' || c1 == 'm') && (c2 == 'P' || c2 == 'p') &&
+                    (c3 == 'L' || c3 == 'l') && (c4 == 'I' || c4 == 'i') && (c5 == 'N' || c5 == 'n') &&
+                    (c6 == 'G' || c6 == 'g') && c7 == 'R' && (c8 == 'A' || c8 == 'a') &&
+                    (c9 == 'T' || c9 == 't') && (c10 == 'E' || c10 == 'e') && (stmt.length() > ++offset)) {
+                return (offset << 8) | SAMPLING_RATE;
             }
         }
         return OTHER;

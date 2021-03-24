@@ -132,10 +132,16 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             return;
         }
 
+        String alertKey = instance.getDbGroupConfig().getName() + "-" + config.getInstanceName();
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", alertKey);
         if (waiting > 0) {
             if (totalConnections.incrementAndGet() <= config.getMaxCon()) {
                 final PooledConnection conn = newConnection(schema, ConnectionPool.this);
                 if (conn != null) {
+                    if (ToResolveContainer.REACH_MAX_CON.contains(alertKey)) {
+                        AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", config.getId(), labels,
+                                ToResolveContainer.REACH_MAX_CON, alertKey);
+                    }
                     return;
                 }
             }
@@ -145,9 +151,8 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             // alert
             String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
             LOGGER.warn(maxConError);
-            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
             AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
-            ToResolveContainer.REACH_MAX_CON.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+            ToResolveContainer.REACH_MAX_CON.add(alertKey);
         }
     }
 

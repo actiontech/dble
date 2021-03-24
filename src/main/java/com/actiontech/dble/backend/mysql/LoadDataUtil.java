@@ -30,9 +30,8 @@ public final class LoadDataUtil {
         List<String> loadDataData = loadData.getData();
         service.setExecuting(false);
         BufferedInputStream in = null;
-        boolean exists = new File(loadData.getFileName()).exists();
         try {
-            if (loadDataData != null && loadDataData.size() > 0 && !exists) {
+            if (loadDataData != null && loadDataData.size() > 0) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 for (String loadDataDataLine : loadDataData) {
                     String s = loadDataDataLine + loadData.getLineTerminatedBy();

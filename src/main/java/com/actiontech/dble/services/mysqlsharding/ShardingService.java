@@ -3,7 +3,6 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
-import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -498,7 +497,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (loadDataInfileHandler != null) {
             try {
                 loadDataInfileHandler.clear();
-                getConnection().setProto(new LoadDataProtoHandlerImpl(loadDataInfileHandler, (MySQLProtoHandlerImpl) getConnection().getProto()));
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 // back to the beginning state

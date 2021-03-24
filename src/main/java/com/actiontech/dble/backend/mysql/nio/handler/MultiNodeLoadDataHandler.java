@@ -399,6 +399,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                     String filePath = rrn.getLoadData().getFileName();
                     LoadDataBatch.getInstance().setFileName(filePath);
                     handlerCommit(rrn);
+                    FileUtils.deleteFile(filePath);
                     rrn.setLoadDataRrnStatus((byte) 1);
                     decrementToZero((MySQLResponseService) service);
                     if (unResponseRrns.size() != 0) {
@@ -412,6 +413,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                     } else {
                         ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
                         shardingService.getLoadDataInfileHandler().clear();
+                        shardingService.getLoadDataInfileHandler().cleanLoadDataFile();
                         transformOkPackage(ok, shardingService);
                         doSqlStat();
                         deleteErrorFile();
@@ -675,6 +677,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 session.setBeginCommitTime();
                 handler.commit();
             } else {
+                service.getLoadDataInfileHandler().clearFile(LoadDataBatch.getInstance().getSuccessFileNames());
                 handler.rollback();
             }
         } else {

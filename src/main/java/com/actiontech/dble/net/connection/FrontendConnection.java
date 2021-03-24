@@ -26,6 +26,8 @@ public class FrontendConnection extends AbstractConnection {
     private final boolean isManager;
     private final long idleTimeout;
     private final AtomicBoolean isCleanUp;
+    //skip idleTimeout checks
+    private boolean skipCheck;
 
     public FrontendConnection(NetworkChannel channel, SocketWR socketWR, boolean isManager) throws IOException {
         super(channel, socketWR);
@@ -80,6 +82,9 @@ public class FrontendConnection extends AbstractConnection {
 
     public boolean isIdleTimeout() {
         if (!(getService() instanceof AuthService)) {
+            if (isSkipCheck() && (lastReadTime > lastWriteTime)) {
+                return false;
+            }
             return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
         } else {
             return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
@@ -98,7 +103,15 @@ public class FrontendConnection extends AbstractConnection {
         return !(getService() instanceof AuthService);
     }
 
+    public boolean isSkipCheck() {
+        return skipCheck;
+    }
+
+    public void setSkipCheck(boolean skipCheck) {
+        this.skipCheck = skipCheck;
+    }
+
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "skipCheck = " + isSkipCheck() + "]";
     }
 }

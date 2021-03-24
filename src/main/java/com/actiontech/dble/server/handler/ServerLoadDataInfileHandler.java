@@ -500,7 +500,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         int index = routeResultMap.get(name).size();
         boolean first = Strings.isNullOrEmpty(data.getFileName());
         if (!first) index++;
-        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.indexOf(".")) + "-" + name + ".txt";
+        tempFileName = FileUtils.getName(tempFileName);
+        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.lastIndexOf(".")) + "-" + name + ".txt";
         String dnPath = loadDataPath + curFileName;
         File dnFile = new File(dnPath);
         try {

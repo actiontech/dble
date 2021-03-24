@@ -71,7 +71,9 @@ public class StatisticRecord {
     protected void onTxData(StatisticFrontendSqlEntry frontendSqlentry) {
         if (isStartTx && txEntry != null && txEntry.getTxId() > 0) {
             frontendSqlentry.setNeedToTx(false);
-            txEntry.add(frontendSqlentry);
+            if (frontendSqlentry.getTxId() == txEntry.getTxId()) {
+                txEntry.add(frontendSqlentry);
+            }
         }
     }
 

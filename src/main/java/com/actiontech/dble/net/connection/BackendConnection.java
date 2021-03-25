@@ -145,7 +145,7 @@ public class BackendConnection extends PooledConnection {
     }
 
     public MySQLResponseService getBackendService() {
-        return (MySQLResponseService) getService();
+        return getService() instanceof MySQLResponseService ? (MySQLResponseService) getService() : null;
     }
 
     public ReadTimeStatusInstance getInstance() {

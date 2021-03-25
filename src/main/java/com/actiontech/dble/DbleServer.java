@@ -416,14 +416,14 @@ public final class DbleServer {
             reviseSchemas();
             initDbGroup();
             LOGGER.info("get variables Data end");
-            //init tmManager
-            try {
-                tmManager.init(this.getConfig());
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
         } else {
             reviseSchemas();
+        }
+        //init tmManager
+        try {
+            tmManager.init(this.getConfig());
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 

@@ -105,7 +105,6 @@ public final class DbleServer {
 
     private Queue<ServiceTask> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
-    private Queue<ServiceTask> frontPriorityQueue;
 
     private Queue<ServiceTask> concurrentBackHandlerQueue;
 
@@ -310,10 +309,10 @@ public final class DbleServer {
 
     private void initTaskQueue() {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            frontPriorityQueue = new ConcurrentLinkedQueue<>();
+
             frontHandlerQueue = new ConcurrentLinkedQueue<>();
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue));
             }
 
             concurrentBackHandlerQueue = new ConcurrentLinkedQueue<>();
@@ -322,10 +321,10 @@ public final class DbleServer {
             }
 
         } else {
-            frontPriorityQueue = new ConcurrentLinkedQueue<>();
+
             frontHandlerQueue = new LinkedBlockingQueue<>();
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendBlockRunnable(frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendBlockRunnable(frontHandlerQueue));
             }
 
         }
@@ -624,9 +623,6 @@ public final class DbleServer {
         return timerExecutor;
     }
 
-    public Queue<ServiceTask> getFrontPriorityQueue() {
-        return frontPriorityQueue;
-    }
 
     public ExecutorService getComplexQueryExecutor() {
         return complexQueryExecutor;

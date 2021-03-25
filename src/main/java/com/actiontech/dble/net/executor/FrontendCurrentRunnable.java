@@ -13,11 +13,9 @@ import java.util.Queue;
 public class FrontendCurrentRunnable implements Runnable {
 
     private final Queue<ServiceTask> frontNormalTasks;
-    private final Queue<ServiceTask> frontPriorityTasks;
 
-    public FrontendCurrentRunnable(Queue<ServiceTask> frontEndTasks, Queue<ServiceTask> frontPriorityTasks) {
+    public FrontendCurrentRunnable(Queue<ServiceTask> frontEndTasks) {
         this.frontNormalTasks = frontEndTasks;
-        this.frontPriorityTasks = frontPriorityTasks;
     }
 
     @Override
@@ -30,10 +28,7 @@ public class FrontendCurrentRunnable implements Runnable {
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
         }
         while (true) {
-            task = frontPriorityTasks.poll();
-            if (task == null) {
-                task = frontNormalTasks.poll();
-            }
+            task = frontNormalTasks.poll();
 
             //threadUsageStat start
             long workStart = 0;

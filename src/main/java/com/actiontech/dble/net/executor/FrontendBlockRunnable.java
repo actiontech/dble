@@ -18,11 +18,9 @@ public class FrontendBlockRunnable implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendBlockRunnable.class);
     private final BlockingQueue<ServiceTask> frontNormalTasks;
-    private final Queue<ServiceTask> frontPriorityTasks;
 
-    public FrontendBlockRunnable(Queue frontEndTasks, Queue<ServiceTask> frontPriorityTasks) {
+    public FrontendBlockRunnable(Queue frontEndTasks) {
         this.frontNormalTasks = (BlockingQueue) frontEndTasks;
-        this.frontPriorityTasks = frontPriorityTasks;
     }
 
 
@@ -37,10 +35,9 @@ public class FrontendBlockRunnable implements Runnable {
         }
         while (true) {
             try {
-                task = frontPriorityTasks.poll();
-                if (task == null) {
-                    task = frontNormalTasks.take();
-                }
+
+                task = frontNormalTasks.take();
+
                 if (task.getService() == null) {
                     continue;
                 }

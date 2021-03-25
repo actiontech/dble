@@ -24,16 +24,17 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
 
-    private ServiceTask currentTask = null;
     private final AtomicInteger packetId;
-    private final BlockingQueue<ServiceTask> taskQueue = new LinkedBlockingQueue<>(2000);
-
+    private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
+    private Long doingTaskThread = null;
+    private long taskId = 1;
+    private long consumedTaskId = 0;
     // client capabilities
     private final long clientCapabilities;
     protected volatile byte[] seed;
@@ -47,6 +48,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     public FrontendService(AbstractConnection connection) {
         super(connection);
+
         this.packetId = new AtomicInteger(0);
         this.clientCapabilities = 0;
     }
@@ -74,11 +76,8 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     @Override
     public void handle(ServiceTask task) {
         beforeHandlingTask();
-        try {
-            taskQueue.put(task);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        task.setTaskId(taskId++);
+        //taskQueue.offer(task);
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
@@ -92,44 +91,61 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             }
             return;
         }
-
-        ServiceTask executeTask = null;
-        synchronized (this) {
-            if (currentTask != null) {
-                //currentTask is executing.
-                taskToPriorityQueue(task);
-                return;
-            }
-
-            executeTask = taskQueue.peek();
-            if (executeTask == null) {
-                return;
-            }
-            if (executeTask != task) {
-                //out of order,adjust it.
-                taskToPriorityQueue(task);
-                return;
-            }
-            //drop head task of the queue
-            taskQueue.poll();
-            currentTask = executeTask;
-        }
-
+        final long currentThreadId = Thread.currentThread().getId();
         try {
 
-            byte[] data = executeTask.getOrgData();
-            if (data != null && !executeTask.isReuse()) {
-                this.setPacketId(executeTask.getLastSequenceId());
-            }
 
-            this.handleInnerData(data);
+            do {
+                ServiceTask executeTask = null;
+                synchronized (this) {
 
+                    if (task != null) {
+                        taskToLocalQueue(task);
+                        task = null;
+                    }
+
+                    if (doingTaskThread == null || doingTaskThread == currentThreadId) {
+                        doingTaskThread = currentThreadId;
+                    } else {
+                        //this service is handled by another thread
+                        return;
+                    }
+
+
+                    executeTask = taskQueue.peek();
+                    if (executeTask == null) {
+                        //consumed all.
+                        return;
+                    }
+
+                    if (executeTask.getTaskId() != consumedTaskId + 1) {
+                        //out of order
+                        return;
+                    }
+
+                    taskQueue.poll();
+                    consumedTaskId++;
+
+                }
+
+
+                byte[] data = executeTask.getOrgData();
+                if (data != null && !executeTask.isReuse()) {
+                    this.setPacketId(executeTask.getLastSequenceId());
+                }
+
+                this.handleInnerData(data);
+
+            } while (true);
         } finally {
             synchronized (this) {
-                currentTask = null;
+
+                if (doingTaskThread == currentThreadId) {
+                    doingTaskThread = null;
+                }
+
             }
         }
-
 
     }
 
@@ -148,11 +164,11 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         // ignore
     }
 
-    private void taskToPriorityQueue(ServiceTask task) {
+    private void taskToLocalQueue(ServiceTask task) {
         if (task == null) {
             throw new IllegalStateException("using null task is illegal");
         }
-        DbleServer.getInstance().getFrontPriorityQueue().offer(task);
+        taskQueue.offer(task);
     }
 
     @Override

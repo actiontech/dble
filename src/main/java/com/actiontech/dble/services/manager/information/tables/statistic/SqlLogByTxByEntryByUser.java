@@ -95,8 +95,8 @@ public class SqlLogByTxByEntryByUser extends ManagerBaseTable {
             map.put(COLUMN_SQL_IDS, sqlIds.deleteCharAt(sqlIds.length() - 1).toString());
             map.put(COLUMN_SQL_COUNT, txRecord.getSqls().size() + "");
             map.put(COLUMN_EXAMINED_ROWS, examinedRows + "");
-            map.put(COLUMN_TX_DURATION, txRecord.getDuration() + "");
-            map.put(COLUMN_BUSY_TIME, busyTime + "");
+            map.put(COLUMN_TX_DURATION, txRecord.getDuration() / 1000000 + "");
+            map.put(COLUMN_BUSY_TIME, busyTime / 1000000 + "");
             list.add(map);
         });
         return list;

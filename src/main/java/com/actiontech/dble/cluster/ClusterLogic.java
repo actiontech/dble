@@ -241,7 +241,9 @@ public final class ClusterLogic {
     public static void dbGroupChangeEvent(String dbGroupName, String value) {
         int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
         PhysicalDbGroup physicalDBPool = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
-        physicalDBPool.changeIntoLatestStatus(value);
+        if (null != physicalDBPool) {
+            physicalDBPool.changeIntoLatestStatus(value);
+        }
         HaConfigManager.getInstance().haFinish(id, null, value);
     }
 

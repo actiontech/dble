@@ -5,16 +5,16 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 
-import java.util.Queue;
+import java.util.Deque;
 
 /**
  * Created by szf on 2020/7/9.
  */
 public class FrontendCurrentRunnable implements Runnable {
 
-    private final Queue<ServiceTask> frontNormalTasks;
+    private final Deque<ServiceTask> frontNormalTasks;
 
-    public FrontendCurrentRunnable(Queue<ServiceTask> frontEndTasks) {
+    public FrontendCurrentRunnable(Deque<ServiceTask> frontEndTasks) {
         this.frontNormalTasks = frontEndTasks;
     }
 

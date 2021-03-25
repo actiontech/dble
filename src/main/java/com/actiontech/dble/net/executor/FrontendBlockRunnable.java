@@ -8,8 +8,7 @@ import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
 
 /**
  * Created by szf on 2020/6/18.
@@ -17,10 +16,10 @@ import java.util.concurrent.BlockingQueue;
 public class FrontendBlockRunnable implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendBlockRunnable.class);
-    private final BlockingQueue<ServiceTask> frontNormalTasks;
+    private final BlockingDeque<ServiceTask> frontNormalTasks;
 
-    public FrontendBlockRunnable(Queue frontEndTasks) {
-        this.frontNormalTasks = (BlockingQueue) frontEndTasks;
+    public FrontendBlockRunnable(BlockingDeque<ServiceTask> frontEndTasks) {
+        this.frontNormalTasks = frontEndTasks;
     }
 
 

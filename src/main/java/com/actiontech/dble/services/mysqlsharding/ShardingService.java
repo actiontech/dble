@@ -219,6 +219,18 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             }
             this.requestScope = requestScope;
             switch (data[4]) {
+                case MySQLPacket.COM_STMT_PREPARE:
+                case MySQLPacket.COM_STMT_EXECUTE:
+                case MySQLPacket.COM_QUERY:
+                    if (!connectionSerializableLock.tryLock()) {
+                        LOGGER.error("connection is already locking. {}", this);
+                        return;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            switch (data[4]) {
                 case MySQLPacket.COM_INIT_DB:
                     commands.doInitDB();
                     protoLogicHandler.initDB(data);
@@ -571,6 +583,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             }
             TraceManager.sessionFinish(this);
             packet.bufferWrite(connection);
+            connectionSerializableLock.unLock();
             SerializableLock.getInstance().unLock(this.connection.getId());
         } else if (packet.isEndOfQuery()) {
             //normal finish may loop to another round of query
@@ -584,6 +597,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 TraceManager.sessionFinish(this);
             }
             multiStatementNextSql(multiQueryFlag);
+
+            connectionSerializableLock.unLock();
             SerializableLock.getInstance().unLock(this.connection.getId());
         } else {
             packet.bufferWrite(connection);
@@ -601,6 +616,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 TraceManager.sessionFinish(backendConnection.getBackendService());
             }
             TraceManager.sessionFinish(this);
+            connectionSerializableLock.unLock();
         }
         buffer = packet.write(buffer, this, true);
         connection.write(buffer);
@@ -614,6 +630,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 TraceManager.sessionFinish(this);
             }
             multiStatementNextSql(multiQueryFlag);
+            connectionSerializableLock.unLock();
         }
         SerializableLock.getInstance().unLock(this.connection.getId());
     }

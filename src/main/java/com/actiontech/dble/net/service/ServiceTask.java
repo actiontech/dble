@@ -15,6 +15,9 @@ public class ServiceTask implements Comparable<ServiceTask> {
     private int extraPartOfBigPacketCount = 0;
     private long taskId;
 
+    public ServiceTaskType getType() {
+        return ServiceTaskType.NORMAL;
+    }
 
     public long getTaskId() {
         return taskId;
@@ -24,10 +27,7 @@ public class ServiceTask implements Comparable<ServiceTask> {
         this.taskId = taskId;
     }
 
-    @Override
-    public int compareTo(@NotNull ServiceTask o) {
-        return Long.compare(taskId, o.taskId);
-    }
+
 
     @Override
     public boolean equals(Object obj) {
@@ -74,5 +74,10 @@ public class ServiceTask implements Comparable<ServiceTask> {
             throw new IllegalStateException("can't get Sequence Id from " + Arrays.toString(orgData));
         }
         return (orgData[3]) + extraPartOfBigPacketCount;
+    }
+
+    @Override
+    public int compareTo(@NotNull ServiceTask o) {
+        return Long.compare(taskId, o.taskId);
     }
 }

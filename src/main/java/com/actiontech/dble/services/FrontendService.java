@@ -14,14 +14,15 @@ import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.singleton.ConnectionSerializableLock;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.PriorityQueue;
@@ -29,10 +30,10 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
-
+    private static final Logger LOGGER = LogManager.getLogger(FrontendService.class);
     private final AtomicInteger packetId;
     private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
-    private Long doingTaskThread = null;
+    private volatile Long doingTaskThread = null;
     private long taskId = 1;
     private long consumedTaskId = 0;
     // client capabilities
@@ -45,6 +46,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     protected volatile T userConfig;
     // last execute sql
     protected volatile String executeSql;
+    protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId());
 
     public FrontendService(AbstractConnection connection) {
         super(connection);
@@ -77,76 +79,126 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     public void handle(ServiceTask task) {
         beforeHandlingTask();
         task.setTaskId(taskId++);
-        //taskQueue.offer(task);
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
     @Override
     public void execute(ServiceTask task) {
 
+
         if (connection.isClosed()) {
             // prevents QUIT、CLOSE_STMT from losing cumulative
-            if (task.getOrgData().length > 4 && (task.getOrgData()[4] == MySQLPacket.COM_QUIT || task.getOrgData()[4] == MySQLPacket.COM_STMT_CLOSE)) {
+            if (task.getOrgData() != null && task.getOrgData().length > 4 && (task.getOrgData()[4] == MySQLPacket.COM_QUIT || task.getOrgData()[4] == MySQLPacket.COM_STMT_CLOSE)) {
                 this.handleInnerData(task.getOrgData());
             }
             return;
         }
+
+
         final long currentThreadId = Thread.currentThread().getId();
+        boolean isHandleByCurrentThread = false;
         try {
 
 
             do {
                 ServiceTask executeTask = null;
-                synchronized (this) {
 
-                    if (task != null) {
-                        taskToLocalQueue(task);
-                        task = null;
-                    }
+                synchronized (connectionSerializableLock) {
+                    try {
 
-                    if (doingTaskThread == null || doingTaskThread == currentThreadId) {
-                        doingTaskThread = currentThreadId;
-                    } else {
-                        //this service is handled by another thread
+                        if (task != null && !task.getType().equals(ServiceTaskType.NOTIFICATION)) {
+                            taskToLocalQueue(task);
+                            //make sure only enqueue once
+                            task = null;
+                        }
+
+                        if (doingTaskThread == null) {
+                            doingTaskThread = currentThreadId;
+                            isHandleByCurrentThread = true;
+                        } else if (doingTaskThread != currentThreadId) {
+                            //this service is handled by another thread
+                            return;
+                        }
+
+
+                        executeTask = taskQueue.peek();
+                        if (executeTask == null) {
+                            //consumed all.
+                            releaseHandle(currentThreadId);
+                            return;
+                        }
+                        //taskId <=0 used for custom event with high priority. task id> 0 must be ordered.
+                        if (executeTask.getTaskId() > 0 && executeTask.getTaskId() != nextConsumedTaskId()) {
+                            //out of order, Probably because the new data is processed slightly faster than the old data. just release and wait next turn.
+                            releaseHandle(currentThreadId);
+                            return;
+                        }
+
+                        if (connectionSerializableLock.isLocking()) {
+                            connectionSerializableLock.addListener(this::createNotifyTask);
+                            //return true when it was locking and register listener successful.
+                            releaseHandle(currentThreadId);
+                            return;
+                        }
+
+
+                        //begin consume now.
+                        taskQueue.poll();
+                        if (executeTask.getTaskId() == nextConsumedTaskId()) {
+                            consumedTaskId = nextConsumedTaskId();
+                        }
+
+
+                    } catch (Exception e) {
+                        LOGGER.error("", e);
+                        releaseHandle(currentThreadId);
                         return;
                     }
-
-
-                    executeTask = taskQueue.peek();
-                    if (executeTask == null) {
-                        //consumed all.
-                        return;
-                    }
-
-                    if (executeTask.getTaskId() != consumedTaskId + 1) {
-                        //out of order
-                        return;
-                    }
-
-                    taskQueue.poll();
-                    consumedTaskId++;
 
                 }
 
-
-                byte[] data = executeTask.getOrgData();
-                if (data != null && !executeTask.isReuse()) {
-                    this.setPacketId(executeTask.getLastSequenceId());
-                }
-
-                this.handleInnerData(data);
-
+                consumeSingleTask(executeTask);
             } while (true);
+        } catch (Throwable e) {
+            LOGGER.error("frontExecutor process error: ", e);
+            connectionSerializableLock.unLock();
         } finally {
-            synchronized (this) {
-
-                if (doingTaskThread == currentThreadId) {
-                    doingTaskThread = null;
+            //must use synchronized to make sure  task safety added when other thread is doing return.
+            if (isHandleByCurrentThread && doingTaskThread != null) {
+                synchronized (connectionSerializableLock) {
+                    releaseHandle(currentThreadId);
                 }
-
             }
         }
 
+    }
+
+    private void consumeSingleTask(ServiceTask executeTask) {
+        try {
+            byte[] data = executeTask.getOrgData();
+            if (data != null && !executeTask.isReuse()) {
+                this.setPacketId(executeTask.getLastSequenceId());
+            }
+
+            this.handleInnerData(data);
+        } catch (Throwable e) {
+            LOGGER.error("frontExecutor process error: ", e);
+            connectionSerializableLock.unLock();
+        }
+    }
+
+    private long nextConsumedTaskId() {
+        return consumedTaskId + 1;
+    }
+
+    private void releaseHandle(long currentThreadId) {
+        if (doingTaskThread != null && doingTaskThread == currentThreadId) {
+            doingTaskThread = null;
+        }
+    }
+
+    void createNotifyTask() {
+        taskToPriorityQueue(new NotificationServiceTask(this));
     }
 
     /**
@@ -155,7 +207,11 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
      * @param packetData packet data
      */
     protected void taskMultiQueryCreate(byte[] packetData) {
-        handle(new ServiceTask(packetData, this, true));
+        final ServiceTask task = new ServiceTask(packetData, this, true);
+        //high priority;
+        task.setTaskId(-1);
+        taskQueue.add(task);
+        createNotifyTask();
     }
 
     protected abstract void handleInnerData(byte[] data);
@@ -171,9 +227,18 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         taskQueue.offer(task);
     }
 
+    private void taskToPriorityQueue(ServiceTask task) {
+        if (task == null) {
+            throw new IllegalStateException("null task is illegal");
+        }
+        DbleServer.getInstance().getFrontHandlerQueue().offerFirst(task);
+    }
+
     @Override
     public void cleanup() {
-        this.taskQueue.clear();
+        synchronized (connectionSerializableLock) {
+            taskQueue.clear();
+        }
         TraceManager.sessionFinish(this);
     }
 
@@ -275,4 +340,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     public void killAndClose(String reason) {
     }
 
+    public ConnectionSerializableLock getConnectionSerializableLock() {
+        return connectionSerializableLock;
+    }
 }

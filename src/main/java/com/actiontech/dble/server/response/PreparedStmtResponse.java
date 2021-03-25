@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 public final class PreparedStmtResponse {
     private PreparedStmtResponse() {
     }
-
     public static void response(PreparedStatement pStmt, ShardingService service) {
         byte packetId = 0;
 
@@ -59,6 +58,7 @@ public final class PreparedStmtResponse {
 
         // send buffer
         service.writeDirectly(buffer);
+        service.getConnectionSerializableLock().unLock();
     }
 
 }

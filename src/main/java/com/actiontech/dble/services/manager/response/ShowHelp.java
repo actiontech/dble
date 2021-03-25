@@ -241,6 +241,7 @@ public final class ShowHelp {
         HELPS.put("enable @@statistic", "Turn on statistic sql");
         HELPS.put("disable @@statistic", "Turn off statistic sql");
         HELPS.put("reload @@statistic_table_size = ? [where table='?' | where table in (dble_information.tableA,...)]", "Statistic table size");
+        HELPS.put("reload @@samplingRate=?", "Reset the samplingRate size");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

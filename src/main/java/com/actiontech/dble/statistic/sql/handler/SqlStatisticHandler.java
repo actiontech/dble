@@ -1,7 +1,7 @@
 package com.actiontech.dble.statistic.sql.handler;
 
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.statistic.sql.StatisticEvent;
+import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
@@ -13,21 +13,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SqlStatisticHandler implements StatisticDataHandler {
 
     private final TreeMap<Long, TxRecord> txRecords = new TreeMap<>();
-
     private volatile BitSet sampleDecisions;
-
-    private volatile int sqlLogSize = SystemConfig.getInstance().getTableSqlLogSize();
-    private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
-
-    public SqlStatisticHandler() {
-        if (samplingRate != 0) {
-            sampleDecisions = randomBitSet(samplingRate, new Random());
-        }
-    }
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) {
-        if (samplingRate == 0) {
+        if (StatisticManager.getInstance().getSamplingRate() == 0) {
             return;
         }
 
@@ -36,7 +26,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             StatisticTxEntry txEntry = (StatisticTxEntry) entry;
             if (sampleDecisions.get((int) (txEntry.getTxId() % 100))) {
                 synchronized (txRecords) {
-                    if (txRecords.size() >= sqlLogSize) {
+                    if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
                         txRecords.pollFirstEntry();
                     }
                     txRecords.put(txEntry.getTxId(), new TxRecord(txEntry));
@@ -49,7 +39,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             }
             if (sampleDecisions.get((int) (frontendSqlEntry.getTxId() % 100))) {
                 synchronized (txRecords) {
-                    if (txRecords.size() >= sqlLogSize) {
+                    if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
                         txRecords.pollFirstEntry();
                     }
                     txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
@@ -88,6 +78,10 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             }
         }
         return result;
+    }
+
+    public void setSampleDecisions(int samplingRate) {
+        sampleDecisions = randomBitSet(samplingRate, new Random());
     }
 
     public static class TxRecord {
@@ -146,7 +140,6 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         private long sqlId;
         private String stmt;
-        private String schema;
         private int sqlType;
         private long txId;
         private String sourceHost;
@@ -157,13 +150,13 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         private long rows;
         private long examinedRows;
+        // ns
         private long duration;
         private long startTime;
 
         public SQLRecord(StatisticFrontendSqlEntry entry) {
             this.sqlId = SQL_ID_GENERATOR.incrementAndGet();
             this.stmt = entry.getSql();
-            this.schema = entry.getSchema();
             this.sqlType = entry.getSqlType();
             this.txId = entry.getTxId();
 
@@ -189,10 +182,6 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             return stmt;
         }
 
-        public void setStmt(String stmt) {
-            this.stmt = stmt;
-        }
-
         public long getTxId() {
             return txId;
         }
@@ -201,80 +190,36 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             return sqlType;
         }
 
-        public void setSqlType(int sqlType) {
-            this.sqlType = sqlType;
-        }
-
-        public String getSchema() {
-            return schema;
-        }
-
-        public void setSchema(String schema) {
-            this.schema = schema;
-        }
-
         public String getSourceHost() {
             return sourceHost;
-        }
-
-        public void setSourceHost(String sourceHost) {
-            this.sourceHost = sourceHost;
         }
 
         public int getSourcePort() {
             return sourcePort;
         }
 
-        public void setSourcePort(int sourcePort) {
-            this.sourcePort = sourcePort;
-        }
-
         public long getRows() {
             return rows;
-        }
-
-        public void setRows(long rows) {
-            this.rows = rows;
         }
 
         public long getDuration() {
             return duration;
         }
 
-        public void setDuration(long duration) {
-            this.duration = duration;
-        }
-
         public long getStartTime() {
             return startTime;
-        }
-
-        public void setStartTime(long startTime) {
-            this.startTime = startTime;
         }
 
         public String getUser() {
             return user;
         }
 
-        public void setUser(String user) {
-            this.user = user;
-        }
-
         public int getEntry() {
             return entry;
         }
 
-        public void setEntry(int entry) {
-            this.entry = entry;
-        }
-
         public long getExaminedRows() {
             return examinedRows;
-        }
-
-        public void setExaminedRows(long examinedRows) {
-            this.examinedRows = examinedRows;
         }
 
     }

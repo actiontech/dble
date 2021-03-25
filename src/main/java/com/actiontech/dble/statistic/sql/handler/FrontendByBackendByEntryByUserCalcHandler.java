@@ -17,7 +17,9 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) {
-        handle(statisticEvent.getEntry());
+        if (StatisticManager.getInstance().isEnable()) {
+            handle(statisticEvent.getEntry());
+        }
     }
 
     public void checkEliminate() {

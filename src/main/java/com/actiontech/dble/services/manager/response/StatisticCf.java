@@ -11,6 +11,7 @@ import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.tables.statistic.AssociateTablesByEntryByUser;
 import com.actiontech.dble.services.manager.information.tables.statistic.FrontendByBackendByEntryByUser;
+import com.actiontech.dble.services.manager.information.tables.statistic.SqlLog;
 import com.actiontech.dble.services.manager.information.tables.statistic.TableByUserByEntry;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.util.StringUtil;
@@ -39,7 +40,7 @@ public class StatisticCf {
                 try {
                     WriteDynamicBootstrap.getInstance().changeValue("enableStatistic", isOn ? "1" : "0");
                 } catch (Exception ex) {
-                    LOGGER.warn("rollback enableStatistic failed, exception：{}", ex);
+                    LOGGER.warn("rollback enableStatistic failed, exception：", ex);
                     service.writeErrMessage(ErrorCode.ER_YES, onOffStatus + " enableStatistic failed");
                     return;
                 }
@@ -55,18 +56,48 @@ public class StatisticCf {
         }
     }
 
+    public static class SamplingSwitch {
+        public SamplingSwitch() {
+        }
+
+        public static void execute(ManagerService service, int samplingRate) {
+            if (samplingRate < 0 || samplingRate > 100) {
+                service.writeErrMessage(ErrorCode.ER_YES, "values of samplingRate is incorrect, the value is a number between 0 and 100.");
+                return;
+            }
+
+            try {
+                WriteDynamicBootstrap.getInstance().changeValue("samplingRate", samplingRate + "");
+            } catch (Exception ex) {
+                LOGGER.warn("write samplingRate error", ex);
+                service.writeErrMessage(ErrorCode.ER_YES, "fail to reload samplingRate");
+                return;
+            }
+
+            try {
+                LOCK.writeLock().lock();
+                StatisticManager.getInstance().setSamplingRate(samplingRate);
+            } finally {
+                LOCK.writeLock().unlock();
+            }
+
+            service.writeOkPacket();
+        }
+    }
+
     public static class SetTableMaxSize {
         // reload @@statistic_table_size = 96
         //reload @@statistic_table_size = 96 where table=table1;
         //reload @@statistic_table_size = 96 where table in(schema1.table1,...)
-        public static final Pattern PATTERN_IN = Pattern.compile("^([^\\s]+)(\\s+where\\s+table\\s+in\\s*\\(([^\\s]+)\\))*", Pattern.CASE_INSENSITIVE);
-        public static final Pattern PATTERN_EQUAL = Pattern.compile("^([^\\s]+)(\\s+where\\s+table\\s*=\\s*'([^\\s]+)')*", Pattern.CASE_INSENSITIVE);
-        public static final Map<String, String> STATISTIC_TABLES = new HashMap(3);
+        static final Pattern PATTERN_IN = Pattern.compile("^([^\\s]+)(\\s+where\\s+table\\s+in\\s*\\(([^\\s]+)\\))*", Pattern.CASE_INSENSITIVE);
+        static final Pattern PATTERN_EQUAL = Pattern.compile("^([^\\s]+)(\\s+where\\s+table\\s*=\\s*'([^\\s]+)')*", Pattern.CASE_INSENSITIVE);
+        static final Map<String, String> STATISTIC_TABLES = new HashMap<>(8);
 
         static {
             STATISTIC_TABLES.put(AssociateTablesByEntryByUser.TABLE_NAME, "associateTablesByEntryByUserTableSize");
             STATISTIC_TABLES.put(FrontendByBackendByEntryByUser.TABLE_NAME, "frontendByBackendByEntryByUserTableSize");
             STATISTIC_TABLES.put(TableByUserByEntry.TABLE_NAME, "tableByUserByEntryTableSize");
+            STATISTIC_TABLES.put(SqlLog.TABLE_NAME, "sqlLogTableSize");
         }
 
         public static void execute(ManagerService service, String value) {
@@ -157,6 +188,9 @@ public class StatisticCf {
                         case TableByUserByEntry.TABLE_NAME:
                             StatisticManager.getInstance().setTableByUserByEntryTableSize(size);
                             break;
+                        case SqlLog.TABLE_NAME:
+                            StatisticManager.getInstance().setSqlLogSize(size);
+                            break;
                         default:
                             break;
                     }
@@ -241,6 +275,18 @@ public class StatisticCf {
                 row4.add(StringUtil.encode(String.valueOf(StatisticManager.getInstance().getTableByUserByEntryTableSize()), service.getCharset().getResults()));
                 row4.setPacketId(++packetId);
                 buffer = row4.write(buffer, service, true);
+
+                RowDataPacket row5 = new RowDataPacket(FIELD_COUNT);
+                row5.add(StringUtil.encode("sqlLogTableSize", service.getCharset().getResults()));
+                row5.add(StringUtil.encode(String.valueOf(StatisticManager.getInstance().getSqlLogSize()), service.getCharset().getResults()));
+                row5.setPacketId(++packetId);
+                buffer = row5.write(buffer, service, true);
+
+                RowDataPacket row6 = new RowDataPacket(FIELD_COUNT);
+                row6.add(StringUtil.encode("samplingRate", service.getCharset().getResults()));
+                row6.add(StringUtil.encode(String.valueOf(StatisticManager.getInstance().getSamplingRate()), service.getCharset().getResults()));
+                row6.setPacketId(++packetId);
+                buffer = row6.write(buffer, service, true);
 
                 // write last eof
                 EOFRowPacket lastEof = new EOFRowPacket();

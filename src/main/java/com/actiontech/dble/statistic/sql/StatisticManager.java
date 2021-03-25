@@ -29,6 +29,10 @@ public final class StatisticManager {
     private volatile int tableByUserByEntryTableSize = SystemConfig.getInstance().getTableByUserByEntryTableSize();
     private int statisticQueueSize = SystemConfig.getInstance().getStatisticQueueSize();
 
+    // sampling
+    private volatile int sqlLogSize = SystemConfig.getInstance().getTableSqlLogSize();
+    private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
+
     private StatisticManager() {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
@@ -51,8 +55,8 @@ public final class StatisticManager {
 
     // start
     public void start() {
-        if (isStart) return;
-        statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
+        if (isStart || samplingRate > 0) return;
+        statisticDataHandlers.values().forEach(StatisticDataHandler::clear);
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
         statisticListener.start();
@@ -64,7 +68,7 @@ public final class StatisticManager {
 
     // stop
     public void stop() {
-        if (!isStart) return;
+        if (!isStart && samplingRate <= 0) return;
         statisticListener.stop();
         if (disruptor != null)
             disruptor.stop();
@@ -76,7 +80,7 @@ public final class StatisticManager {
 
     public void close() {
         stop();
-        statisticDataHandlers.values().stream().forEach(StatisticDataHandler::clear);
+        statisticDataHandlers.values().forEach(StatisticDataHandler::clear);
     }
 
     // push
@@ -119,6 +123,29 @@ public final class StatisticManager {
 
     public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
         this.tableByUserByEntryTableSize = tableByUserByEntryTableSize;
+    }
+
+    public int getSqlLogSize() {
+        return sqlLogSize;
+    }
+
+    public void setSqlLogSize(int sqlLogSize) {
+        this.sqlLogSize = sqlLogSize;
+    }
+
+    public void setSamplingRate(int samplingRate) {
+        if (samplingRate == 0) {
+            stop();
+        } else {
+            final SqlStatisticHandler handler = ((SqlStatisticHandler) statisticDataHandlers.get(SqlLog.TABLE_NAME));
+            handler.setSampleDecisions(samplingRate);
+            start();
+        }
+        this.samplingRate = samplingRate;
+    }
+
+    public int getSamplingRate() {
+        return samplingRate;
     }
 
     public int getStatisticQueueSize() {

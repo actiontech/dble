@@ -25,6 +25,7 @@ public final class DbleVariables extends ManagerBaseTable {
     }
 
     private List<LinkedHashMap<String, String>> readOnlyLst = new ArrayList<>();
+
     @Override
     protected void initColumnAndType() {
 
@@ -53,8 +54,6 @@ public final class DbleVariables extends ManagerBaseTable {
         lst.addAll(readOnlyLst);
         return lst;
     }
-
-
 
     private LinkedHashMap<String, String> genRow(String name, String value, String comment, boolean readOnly) {
         LinkedHashMap<String, String> row = new LinkedHashMap<>();

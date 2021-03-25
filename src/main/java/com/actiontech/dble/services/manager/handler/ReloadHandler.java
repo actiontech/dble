@@ -6,10 +6,10 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseReload;
 import com.actiontech.dble.route.parser.util.ParseUtil;
+import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.response.*;
 
 /**
  * @author mycat
@@ -28,6 +28,9 @@ public final class ReloadHandler {
                 break;
             case ManagerParseReload.USER_STAT:
                 ReloadUserStat.execute(service);
+                break;
+            case ManagerParseReload.SAMPLING_RATE:
+                StatisticCf.SamplingSwitch.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
                 break;
             case ManagerParseReload.SQL_SLOW:
                 ReloadSqlSlowTime.execute(service, ParseUtil.getSQLId(stmt, rs >>> SHIFT));

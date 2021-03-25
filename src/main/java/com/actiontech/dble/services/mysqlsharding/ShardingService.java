@@ -3,7 +3,6 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
-import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -24,6 +23,7 @@ import com.actiontech.dble.server.ServerSptPrepare;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
 import com.actiontech.dble.server.handler.ServerPrepareHandler;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
@@ -180,7 +180,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
         WallProvider blackList = userConfig.getBlacklist();
         if (blackList != null) {
-            WallCheckResult result = blackList.check(sql);
+            WallCheckResult result = blackList.check(
+                    ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
             if (!result.getViolations().isEmpty()) {
                 LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
                         result.getViolations().get(0).getMessage() + " \r\n " + sql);
@@ -498,7 +499,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (loadDataInfileHandler != null) {
             try {
                 loadDataInfileHandler.clear();
-                getConnection().setProto(new LoadDataProtoHandlerImpl(loadDataInfileHandler, (MySQLProtoHandlerImpl) getConnection().getProto()));
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 // back to the beginning state

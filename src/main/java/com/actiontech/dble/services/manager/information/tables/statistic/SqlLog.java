@@ -79,6 +79,7 @@ public class SqlLog extends ManagerBaseTable {
 
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
         LinkedList<SqlStatisticHandler.TxRecord> txs = (LinkedList<SqlStatisticHandler.TxRecord>) dataHandler.getList();
+
         txs.forEach(txRecord -> txRecord.getSqls().forEach(sqlRecord -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_SQL_ID, sqlRecord.getSqlId() + "");
@@ -95,7 +96,7 @@ public class SqlLog extends ManagerBaseTable {
             map.put(COLUMN_SOURCE_PORT, sqlRecord.getSourcePort() + "");
             map.put(COLUMN_ROWS, sqlRecord.getRows() + "");
             map.put(COLUMN_EXAMINED_ROWS, sqlRecord.getExaminedRows() + "");
-            map.put(COLUMN_DURATION, sqlRecord.getDuration() + "");
+            map.put(COLUMN_DURATION, sqlRecord.getDuration() / 1000000 + "");
             map.put(COLUMN_START_TIME, sqlRecord.getStartTime() + "");
             list.add(map);
         }));

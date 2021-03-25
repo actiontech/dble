@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
@@ -215,6 +216,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         isStart = true;
         if (statement.isLocal()) {
             //request file from client
+            service.getConnection().setProto(new LoadDataProtoHandlerImpl(this, (MySQLProtoHandlerImpl) service.getConnection().getProto()));
             ByteBuffer buffer = service.allocate();
             RequestFilePacket filePacket = new RequestFilePacket();
             filePacket.setFileName(fileName.getBytes());
@@ -597,6 +599,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 LoadData loadData1 = data;
                 if (loadData1.getFileName() != null) {
                     newLoadData.setFileName(loadData1.getFileName());
+                    newLoadData.setData(null);
                 } else {
                     newLoadData.setFileName(name);
                     newLoadData.setData(loadData1.getData());
@@ -712,6 +715,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     @Override
     public void end(byte packetId) {
+        resetProto();
         service.setPacketId(packetId);
         //empty packet for end
         saveByteOrToFile(null, true);
@@ -783,11 +787,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs;
         if (LoadDataBatch.getInstance().isEnableBatchLoadData()) {
             rrs = doBuildResultSet(routeResultMap);
+            Optional.ofNullable(rrs).ifPresent(routeResultSet -> flushDataToLastFile());
         } else {
             rrs = buildResultSet(convertToRouteMap(routeResultMap));
+            Optional.ofNullable(rrs).ifPresent(routeResultSet -> flushDataToFile());
         }
         if (rrs != null) {
-            flushDataToFile();
             service.getSession2().execute(rrs);
         }
     }
@@ -897,12 +902,14 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         return sb.toString();
     }
 
-
-    public void clear() {
+    private void resetProto() {
         ProtoHandler proto = service.getConnection().getProto();
         if (proto instanceof LoadDataProtoHandlerImpl) {
             service.getConnection().setProto(((LoadDataProtoHandlerImpl) proto).getMySQLProtoHandler());
         }
+    }
+
+    public void clear() {
         isStart = false;
         schema = null;
         tableConfig = null;
@@ -918,12 +925,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 temp.delete();
             }
         }
-
         if ((tempPath != null && new File(tempPath).exists())) {
             FileUtils.deleteFile(tempPath);
-        }
-        if (loadDataPath != null && new File(loadDataPath).exists()) {
-            FileUtils.deleteFile(loadDataPath);
         }
         tempByteBuffer = null;
         loadData = null;
@@ -960,6 +963,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         fileName = null;
         statement = null;
         routeResultMap.clear();
+    }
+
+    public void cleanLoadDataFile() {
+        if (loadDataPath != null && new File(loadDataPath).exists()) {
+            FileUtils.deleteFile(loadDataPath);
+        }
     }
 
 

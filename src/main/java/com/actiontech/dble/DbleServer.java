@@ -403,15 +403,15 @@ public final class DbleServer {
             reviseSchemas();
             initDbGroup();
             LOGGER.info("get variables Data end");
-            //init tmManager
-            try {
-                tmManager.init(this.getConfig());
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
         } else {
             //TODO Self check should be execute when the dbGroup not exists
             // reviseSchemas();
+        }
+        //init tmManager
+        try {
+            tmManager.init(this.getConfig());
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 

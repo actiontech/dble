@@ -76,7 +76,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
                     newPooledEntry(schema, waiters.get());
-                    LOGGER.debug(conn.toString());
                     return conn;
                 }
             }
@@ -100,7 +99,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
                     if (waiting > 1) {
                         newPooledEntry(schema, waiting - 1);
                     }
-                    LOGGER.debug(conn.toString());
                     return conn;
                 }
             }
@@ -113,7 +111,6 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
                 final long start = System.nanoTime();
                 final PooledConnection bagEntry = handoffQueue.poll(timeout, NANOSECONDS);
                 if (bagEntry == null || bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                    LOGGER.debug(null == bagEntry ? null : bagEntry.toString());
                     return bagEntry;
                 }
 

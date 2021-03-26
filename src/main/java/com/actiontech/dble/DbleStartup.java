@@ -22,7 +22,6 @@ public final class DbleStartup {
 
     public static void main(String[] args) {
         try {
-            
             CheckConfigurationUtil.checkConfiguration();
             ClusterController.loadClusterProperties();
             //lod system properties

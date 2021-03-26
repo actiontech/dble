@@ -158,7 +158,7 @@
 #  used for load data, because dble need save to disk if loading file contains large size
 #-DmaxRowSizeToFile=100000
 #  if enable the batch load data
-#-DenableBatchLoadData=0
+#-DenableBatchLoadData=1
 
 #enableFlowControl=false
 #flowControlStartThreshold=4096

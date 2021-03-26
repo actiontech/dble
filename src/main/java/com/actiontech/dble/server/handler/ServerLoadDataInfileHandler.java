@@ -93,8 +93,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private int autoIncrementIndex = -1;
     private boolean appendAutoIncrementColumn = false;
 
-    private volatile boolean isStart = false;
-
     public ServerLoadDataInfileHandler(ShardingService service) {
         this.service = service;
         tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + service.getConnection().getId() + File.separator;
@@ -136,12 +134,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_database");
         loadData.setCharset(CharsetUtil.getJavaCharset(charset));
         loadData.setFileName(fileName);
-    }
-
-
-    @Override
-    public boolean isStart() {
-        return isStart;
     }
 
     @Override
@@ -213,7 +205,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         parseLoadDataPram();
-        isStart = true;
         if (statement.isLocal()) {
             //request file from client
             service.getConnection().setProto(new LoadDataProtoHandlerImpl(this, (MySQLProtoHandlerImpl) service.getConnection().getProto()));
@@ -500,7 +491,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         int index = routeResultMap.get(name).size();
         boolean first = Strings.isNullOrEmpty(data.getFileName());
         if (!first) index++;
-        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.indexOf(".")) + "-" + name + ".txt";
+        tempFileName = FileUtils.getName(tempFileName);
+        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.lastIndexOf(".")) + "-" + name + ".txt";
         String dnPath = loadDataPath + curFileName;
         File dnFile = new File(dnPath);
         try {
@@ -910,7 +902,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
     public void clear() {
-        isStart = false;
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;
@@ -937,7 +928,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
     public void clearFile(Set<String> successFileNames) {
-        isStart = false;
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;

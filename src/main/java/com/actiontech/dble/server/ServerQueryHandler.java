@@ -6,6 +6,7 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -50,6 +51,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             LOGGER.debug(service + sql);
         }
         String finalSql = sql;
+        FrontendConnection connection = (FrontendConnection) service.getConnection();
+        connection.setSkipCheck(false);
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
@@ -152,6 +155,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         service.writeOkPacket();
                         break;
                     case ServerParse.LOAD_DATA_INFILE_SQL:
+                        connection.setSkipCheck(true);
                         service.loadDataInfileStart(sql);
                         break;
                     case ServerParse.LOCK:

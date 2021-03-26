@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -36,6 +37,8 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
         try {
+            FrontendConnection connection = (FrontendConnection) session.getService().getConnection();
+            connection.setSkipCheck(false);
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
             if (serverParse.isMultiStatement(sql)) {
@@ -122,6 +125,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         });
                         break;
                     case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
+                        connection.setSkipCheck(true);
                         session.getService().setInLoadData(true);
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setInLoadData(false));
                         break;

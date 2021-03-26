@@ -18,7 +18,5 @@ public interface LoadDataInfileHandler {
 
     void end(byte packetId);
 
-    boolean isStart();
-
     void clear();
 }

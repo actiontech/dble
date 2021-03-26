@@ -16,6 +16,7 @@
 -Xloggc:./logs/gc_%WRAPPER_TIME_YYYYMMDDHHIISS%_%p.log
 -XX:+PrintGCTimeStamps
 -XX:+PrintGCDetails
+-XX:-OmitStackTraceInFastThrow
 #  base config
 -DhomePath=.
 -DinstanceName=1

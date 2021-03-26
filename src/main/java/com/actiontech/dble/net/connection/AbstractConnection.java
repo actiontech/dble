@@ -404,8 +404,13 @@ public abstract class AbstractConnection implements Connection {
             this.recycle(readBuffer);
             this.readBuffer = null;
         }
+
         if (service != null) {
             service.cleanup();
+        }
+
+        if (this instanceof FrontendConnection) {
+            ((FrontendConnection) this).setSkipCheck(false);
         }
 
         if (!decompressUnfinishedDataQueue.isEmpty()) {

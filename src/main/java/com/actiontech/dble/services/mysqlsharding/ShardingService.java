@@ -207,14 +207,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     protected void handleInnerData(byte[] data) {
         getSession2().startProcess();
         try (RequestScope requestScope = new RequestScope()) {
-            if (loadDataInfileHandler.isStart()) {
-                if (isEndOfDataFile(data)) {
-                    loadDataInfileHandler.end(data[3]);
-                } else {
-                    loadDataInfileHandler.handle(data);
-                }
-                return;
-            }
             if (data[4] != MySQLPacket.COM_STMT_EXECUTE) {
                 GeneralLogHelper.putGLog(this, data);
             }

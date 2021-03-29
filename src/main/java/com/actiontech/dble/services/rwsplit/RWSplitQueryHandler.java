@@ -37,8 +37,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetSql(session.getService().getSchema(), sql));
         try {
-            FrontendConnection connection = (FrontendConnection) session.getService().getConnection();
-            connection.setSkipCheck(false);
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
             if (serverParse.isMultiStatement(sql)) {
@@ -125,6 +123,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         });
                         break;
                     case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
+                        FrontendConnection connection = (FrontendConnection) session.getService().getConnection();
                         connection.setSkipCheck(true);
                         session.getService().setInLoadData(true);
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setInLoadData(false));

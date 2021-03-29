@@ -6,6 +6,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -74,6 +75,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void connectionError(Throwable e, Object attachment) {
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(0));
+        loadDataClean();
         writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + rwSplitService.getUserConfig().getDbGroup());
     }
 
@@ -82,6 +84,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
+        loadDataClean();
         if (callback != null) {
             callback.callback(false, rwSplitService);
         }
@@ -115,6 +118,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
             final OkPacket packet = new OkPacket();
             packet.read(data);
+            loadDataClean();
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
             if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
                 if (callback != null) {
@@ -213,6 +217,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         ((MySQLResponseService) service).setResponseHandler(null);
         synchronized (this) {
             if (!write2Client) {
+                loadDataClean();
                 rwSplitService.getSession().bind(null);
                 writeErrorMsg(rwSplitService.nextPacketId(), "connection close");
                 write2Client = true;
@@ -282,6 +287,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(reason, frontedConnection.getCharsetName().getClient()));
         errPacket.write(frontedConnection);
+    }
+
+    private void loadDataClean() {
+        if (rwSplitService.isInLoadData()) {
+            FrontendConnection connection = (FrontendConnection) rwSplitService.getConnection();
+            connection.setSkipCheck(false);
+        }
     }
 
 }

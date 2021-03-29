@@ -669,6 +669,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
 
     void handleEndPacket(MySQLPacket curPacket, AutoTxOperation txOperation, boolean isSuccess) {
         ShardingService service = session.getShardingService();
+        service.getLoadDataInfileHandler().clear();
         if (errorConnsCnt == rrs.getNodes().length) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("all nodes can't connect.");

@@ -490,7 +490,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     public void loadDataInfileStart(String sql) {
         if (loadDataInfileHandler != null) {
             try {
-                loadDataInfileHandler.clear();
+                loadDataInfileHandler.init();
                 loadDataInfileHandler.start(sql);
             } catch (Exception e) {
                 // back to the beginning state

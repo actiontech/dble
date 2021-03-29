@@ -19,6 +19,7 @@ import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.TableMeta;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -901,7 +902,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
     }
 
-    public void clear() {
+    public void init() {
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;
@@ -925,6 +926,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         fileName = null;
         statement = null;
         routeResultMap.clear();
+    }
+
+    public void clear() {
+        FrontendConnection connection = (FrontendConnection) service.getConnection();
+        connection.setSkipCheck(false);
+        init();
     }
 
     public void clearFile(Set<String> successFileNames) {

@@ -51,8 +51,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             LOGGER.debug(service + sql);
         }
         String finalSql = sql;
-        FrontendConnection connection = (FrontendConnection) service.getConnection();
-        connection.setSkipCheck(false);
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
@@ -155,6 +153,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         service.writeOkPacket();
                         break;
                     case ServerParse.LOAD_DATA_INFILE_SQL:
+                        FrontendConnection connection = (FrontendConnection) service.getConnection();
                         connection.setSkipCheck(true);
                         service.loadDataInfileStart(sql);
                         break;

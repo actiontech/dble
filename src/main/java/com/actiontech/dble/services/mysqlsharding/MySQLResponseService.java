@@ -114,7 +114,9 @@ public class MySQLResponseService extends BackendService {
             } else if (type == MySQLPacket.COM_STMT_FETCH) {
                 protocolResponseHandler = new FetchResponseHandler(this);
             } else if (service.isInLoadData()) {
-                protocolResponseHandler = new LoadDataResponseHandler(this);
+                if (service.isFirstInLoadData()) {
+                    protocolResponseHandler = new LoadDataResponseHandler(this);
+                }
             } else if (protocolResponseHandler != defaultResponseHandler) {
                 protocolResponseHandler = defaultResponseHandler;
             }

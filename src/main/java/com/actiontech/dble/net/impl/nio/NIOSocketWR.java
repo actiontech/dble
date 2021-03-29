@@ -19,16 +19,17 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class NIOSocketWR extends SocketWR {
     private static final Logger LOGGER = LoggerFactory.getLogger(NIOSocketWR.class);
+    public static final int NOT_USED = -1;
     private SelectionKey processKey;
     private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
     private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
     private AbstractConnection con;
     private SocketChannel channel;
-    private final AtomicBoolean writing = new AtomicBoolean(false);
+    private final AtomicLong writing = new AtomicLong(NOT_USED);
     private ConcurrentLinkedQueue<WriteOutTask> writeQueue;
 
     private volatile WriteOutTask leftoverWriteTask;
@@ -50,14 +51,14 @@ public class NIOSocketWR extends SocketWR {
     }
 
     public void doNextWriteCheck() {
-
-        if (!writing.compareAndSet(false, true)) {
+        final long threadId = Thread.currentThread().getId();
+        if (!writing.compareAndSet(NOT_USED, threadId)) {
             return;
         }
 
         try {
             boolean noMoreData = write0();
-            writing.set(false);
+            writing.compareAndSet(threadId, NOT_USED);
             if (noMoreData && writeQueue.isEmpty()) {
                 if ((processKey.isValid() && (processKey.interestOps() & SelectionKey.OP_WRITE) != 0)) {
                     disableWrite();
@@ -74,19 +75,25 @@ public class NIOSocketWR extends SocketWR {
             }
             con.close(e);
         } finally {
-            writing.set(false);
+            writing.compareAndSet(threadId, NOT_USED);
         }
 
     }
 
     public boolean registerWrite(ByteBuffer buffer) {
-
-        writing.set(true);
+        final long threadId = Thread.currentThread().getId();
+        while (!writing.compareAndSet(NOT_USED, threadId)) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         leftoverWriteTask = new WriteOutTask(buffer, false);
         buffer.flip();
         try {
             write0();
-            writing.set(false);
+            writing.compareAndSet(threadId, NOT_USED);
         } catch (IOException e) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("caught err:", e);

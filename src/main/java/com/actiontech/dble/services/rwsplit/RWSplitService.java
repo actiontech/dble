@@ -41,6 +41,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     private volatile boolean isLocked;
     private volatile boolean inLoadData;
+    private volatile boolean firstInLoadData = true;
     private volatile boolean inPrepare;
     private volatile Set<String/* schemaName.tableName */> tmpTableSet;
 
@@ -273,8 +274,20 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     }
 
     public void setInLoadData(boolean inLoadData) {
+        if (inLoadData) {
+            this.firstInLoadData = true;
+        }
         this.inLoadData = inLoadData;
     }
+
+    public boolean isFirstInLoadData() {
+        if (firstInLoadData) {
+            firstInLoadData = false;
+            return true;
+        }
+        return false;
+    }
+
 
     public boolean isInPrepare() {
         return inPrepare;

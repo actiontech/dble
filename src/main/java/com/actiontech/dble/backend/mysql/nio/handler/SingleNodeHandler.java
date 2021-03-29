@@ -458,6 +458,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + service);
         reason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getConnection().getSchema() + "],threadID[" +
                 ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
+        session.getSource().setSkipCheck(false);
         ErrorPacket err = new ErrorPacket();
         err.setPacketId((byte) session.getShardingService().nextPacketId());
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);

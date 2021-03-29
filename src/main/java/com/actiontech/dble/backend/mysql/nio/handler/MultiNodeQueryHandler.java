@@ -216,6 +216,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         session.resetMultiStatementStatus();
         lock.lock();
         try {
+            session.getSource().setSkipCheck(false);
             RouteResultsetNode rNode = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             unResponseRrns.remove(rNode);
             session.getTargetMap().remove(rNode);

@@ -6,6 +6,7 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -152,6 +153,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         service.writeOkPacket();
                         break;
                     case ServerParse.LOAD_DATA_INFILE_SQL:
+                        FrontendConnection connection = (FrontendConnection) service.getConnection();
+                        connection.setSkipCheck(true);
                         service.loadDataInfileStart(sql);
                         break;
                     case ServerParse.LOCK:

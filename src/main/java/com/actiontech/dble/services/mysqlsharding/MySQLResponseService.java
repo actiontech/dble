@@ -226,7 +226,6 @@ public class MySQLResponseService extends BackendService {
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
         DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
-        Optional.ofNullable(rrn.getLoadData()).ifPresent(r -> getConnection().updateLastReadTime());
         // waiting syn result...
     }
 

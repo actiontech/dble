@@ -19,6 +19,7 @@ import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.TableMeta;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -93,8 +94,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private int autoIncrementIndex = -1;
     private boolean appendAutoIncrementColumn = false;
 
-    private volatile boolean isStart = false;
-
     public ServerLoadDataInfileHandler(ShardingService service) {
         this.service = service;
         tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + service.getConnection().getId() + File.separator;
@@ -136,12 +135,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_database");
         loadData.setCharset(CharsetUtil.getJavaCharset(charset));
         loadData.setFileName(fileName);
-    }
-
-
-    @Override
-    public boolean isStart() {
-        return isStart;
     }
 
     @Override
@@ -213,7 +206,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         parseLoadDataPram();
-        isStart = true;
         if (statement.isLocal()) {
             //request file from client
             service.getConnection().setProto(new LoadDataProtoHandlerImpl(this, (MySQLProtoHandlerImpl) service.getConnection().getProto()));
@@ -500,7 +492,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         int index = routeResultMap.get(name).size();
         boolean first = Strings.isNullOrEmpty(data.getFileName());
         if (!first) index++;
-        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.indexOf(".")) + "-" + name + ".txt";
+        tempFileName = FileUtils.getName(tempFileName);
+        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.lastIndexOf(".")) + "-" + name + ".txt";
         String dnPath = loadDataPath + curFileName;
         File dnFile = new File(dnPath);
         try {
@@ -909,8 +902,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
     }
 
-    public void clear() {
-        isStart = false;
+    public void init() {
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;
@@ -936,8 +928,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         routeResultMap.clear();
     }
 
+    public void clear() {
+        FrontendConnection connection = (FrontendConnection) service.getConnection();
+        connection.setSkipCheck(false);
+        init();
+    }
+
     public void clearFile(Set<String> successFileNames) {
-        isStart = false;
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;

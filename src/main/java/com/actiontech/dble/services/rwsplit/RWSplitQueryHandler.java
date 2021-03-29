@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -122,6 +123,8 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         });
                         break;
                     case RwSplitServerParse.LOAD_DATA_INFILE_SQL:
+                        FrontendConnection connection = (FrontendConnection) session.getService().getConnection();
+                        connection.setSkipCheck(true);
                         session.getService().setInLoadData(true);
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setInLoadData(false));
                         break;

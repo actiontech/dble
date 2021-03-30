@@ -30,7 +30,7 @@ public final class StatisticManager {
     private int statisticQueueSize = SystemConfig.getInstance().getStatisticQueueSize();
 
     // sampling
-    private volatile int sqlLogSize = SystemConfig.getInstance().getTableSqlLogSize();
+    private volatile int sqlLogSize = SystemConfig.getInstance().getSqlLogTableSize();
     private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
     private boolean isSampling = false;
 

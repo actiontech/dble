@@ -183,7 +183,7 @@ public final class SystemConfig {
 
     // sampling
     private int samplingRate = 0;
-    private int tableSqlLogSize = 1024;
+    private int sqlLogTableSize = 1024;
 
     public int getSamplingRate() {
         return samplingRate;
@@ -197,15 +197,15 @@ public final class SystemConfig {
         }
     }
 
-    public int getTableSqlLogSize() {
-        return tableSqlLogSize;
+    public int getSqlLogTableSize() {
+        return sqlLogTableSize;
     }
 
-    public void setTableSqlLogSize(int tableSqlLogSize) {
-        if (tableSqlLogSize > 0) {
-            this.tableSqlLogSize = tableSqlLogSize;
+    public void setSqlLogTableSize(int sqlLogTableSize) {
+        if (sqlLogTableSize > 0) {
+            this.sqlLogTableSize = sqlLogTableSize;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "tableSqlLogSize", tableSqlLogSize, this.tableSqlLogSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "sqlLogTableSize", sqlLogTableSize, this.sqlLogTableSize));
         }
     }
 

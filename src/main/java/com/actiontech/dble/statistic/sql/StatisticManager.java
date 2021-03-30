@@ -32,13 +32,10 @@ public final class StatisticManager {
     // sampling
     private volatile int sqlLogSize = SystemConfig.getInstance().getTableSqlLogSize();
     private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
+    private boolean isSampling = false;
 
     private StatisticManager() {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                close();
-            }
-        });
+        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
 
     public static StatisticManager getInstance() {
@@ -55,12 +52,17 @@ public final class StatisticManager {
 
     // start
     public void start() {
-        if (isStart || samplingRate > 0) return;
+        if (isStart || isSampling) return;
         statisticDataHandlers.values().forEach(StatisticDataHandler::clear);
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
         statisticListener.start();
-        isStart = true;
+        if (enable) {
+            isStart = true;
+        }
+        if (samplingRate > 0) {
+            isSampling = true;
+        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("start sql statistic success");
         }
@@ -68,11 +70,12 @@ public final class StatisticManager {
 
     // stop
     public void stop() {
-        if (!isStart && samplingRate <= 0) return;
+        if (!isStart && !isSampling) return;
         statisticListener.stop();
         if (disruptor != null)
             disruptor.stop();
         isStart = false;
+        isSampling = false;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("stop sql statistic success");
         }
@@ -134,6 +137,7 @@ public final class StatisticManager {
     }
 
     public void setSamplingRate(int samplingRate) {
+        this.samplingRate = samplingRate;
         if (samplingRate == 0) {
             stop();
         } else {
@@ -141,7 +145,6 @@ public final class StatisticManager {
             handler.setSampleDecisions(samplingRate);
             start();
         }
-        this.samplingRate = samplingRate;
     }
 
     public int getSamplingRate() {

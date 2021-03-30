@@ -1,5 +1,6 @@
 package com.actiontech.dble.statistic.sql.handler;
 
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.statistic.sql.StatisticEvent;
 import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
@@ -14,6 +15,10 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
     private final TreeMap<Long, TxRecord> txRecords = new TreeMap<>();
     private volatile BitSet sampleDecisions;
+
+    public SqlStatisticHandler() {
+        this.sampleDecisions = randomBitSet(SystemConfig.getInstance().getSamplingRate(), new Random());
+    }
 
     @Override
     public void onEvent(StatisticEvent statisticEvent, long l, boolean b) {

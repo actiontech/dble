@@ -52,7 +52,6 @@ public final class StatisticManager {
 
     // start
     public void start() {
-        if (isStart || isSampling) return;
         statisticDataHandlers.values().forEach(StatisticDataHandler::clear);
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
@@ -70,7 +69,6 @@ public final class StatisticManager {
 
     // stop
     public void stop() {
-        if (!isStart && !isSampling) return;
         statisticListener.stop();
         if (disruptor != null)
             disruptor.stop();
@@ -97,9 +95,11 @@ public final class StatisticManager {
 
     public void setEnable(boolean enable) {
         this.enable = enable;
-        if (enable) {
+        if (enable && !isStart && !isSampling) {
             start();
-        } else {
+            return;
+        }
+        if (!enable && isStart && !isSampling) {
             stop();
         }
     }
@@ -138,12 +138,14 @@ public final class StatisticManager {
 
     public void setSamplingRate(int samplingRate) {
         this.samplingRate = samplingRate;
-        if (samplingRate == 0) {
-            stop();
-        } else {
+        if (samplingRate > 0 && !isSampling && !isStart) {
             final SqlStatisticHandler handler = ((SqlStatisticHandler) statisticDataHandlers.get(SqlLog.TABLE_NAME));
             handler.setSampleDecisions(samplingRate);
             start();
+            return;
+        }
+        if (samplingRate == 0 && isSampling && !isStart) {
+            stop();
         }
     }
 

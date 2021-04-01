@@ -53,8 +53,20 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         }
     }
 
+    private void checkEliminate() {
+        synchronized (txRecords) {
+            int removeIndex;
+            if ((removeIndex = txRecords.size() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
+                while (removeIndex-- > 0) {
+                    txRecords.pollFirstEntry();
+                }
+            }
+        }
+    }
+
     @Override
     public LinkedList<TxRecord> getList() {
+        checkEliminate();
         return new LinkedList<>(txRecords.values());
     }
 

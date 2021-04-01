@@ -10,6 +10,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,32 +114,47 @@ public class ShardingNode {
     public BackendConnection getConnection(String schema, Boolean runOnSlave, Object attachment) throws IOException {
         if (runOnSlave == null) {
             PhysicalDbInstance readSource = dbGroup.getRWSplitNode();
-            if (!readSource.isAlive()) {
-                String heartbeatError = "the dbInstance[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dbInstance status";
-                if (dbGroup.getDbGroupConfig().isShowSlaveSql()) {
-                    heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
-                }
-                LOGGER.warn(heartbeatError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", readSource.getDbGroupConfig().getName() + "-" + readSource.getConfig().getInstanceName());
-                AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
-                throw new IOException(heartbeatError);
+            if (readSource.isAlive()) {
+                return readSource.getConnection(schema, attachment);
+            } else {
+                reportHeartbeatError(readSource);
             }
-            return readSource.getConnection(schema, attachment);
         } else if (runOnSlave) {
             PhysicalDbInstance source = dbGroup.getRandomAliveReadNode();
             if (source == null) {
                 throw new IllegalArgumentException("no valid dbInstance in dbGroup:" + dbGroup.getGroupName());
             }
-            return source.getConnection(schema, attachment);
+            if (source.isAlive()) {
+                return source.getConnection(schema, attachment);
+            } else {
+                reportHeartbeatError(source);
+            }
         } else {
             checkRequest(schema);
             PhysicalDbInstance writeSource = dbGroup.getWriteDbInstance();
             if (writeSource.isReadOnly()) {
                 throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
             }
-            writeSource.incrementWriteCount();
-            return writeSource.getConnection(schema, attachment);
+            if (writeSource.isAlive()) {
+                writeSource.incrementWriteCount();
+                return writeSource.getConnection(schema, attachment);
+            } else {
+                reportHeartbeatError(writeSource);
+            }
         }
+        return null;
+    }
+
+    private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {
+        final DbInstanceConfig config = ins.getConfig();
+        String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance status";
+        if (ins.getDbGroupConfig().isShowSlaveSql()) {
+            heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
+        }
+        LOGGER.warn(heartbeatError);
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ins.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+        AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", config.getId(), labels);
+        throw new IOException(heartbeatError);
     }
 
     private void getWriteNodeConnection(String schema, ResponseHandler handler, Object attachment) throws IOException {

@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.ConnectionException;
@@ -54,7 +53,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         this.session = session;
     }
 
-    public String execute(String schema, List<String> shardingNodes) throws ConnectionException {
+    public String execute(String schema, List<String> shardingNodes) throws Exception {
         String key = schema + ":" + sql;
         CachePool cache = CacheService.getCachePoolByName("ER_SQL2PARENTID");
         if (cache != null) {
@@ -97,6 +96,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                 }
             } catch (Exception e) {
                 LOGGER.info("get connection err " + e);
+                throw e;
             }
         }
         lock.lock();
@@ -173,6 +173,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         String msg = new String(err.getMessage());
         LOGGER.info("errorResponse " + err.getErrNo() + " " + msg);
         boolean executeResponse = responseService.syncAndExecute();
+        countResult((RouteResultsetNode) responseService.getAttachment());
         if (executeResponse) {
             nodesErrorReason.put(((RouteResultsetNode) responseService.getAttachment()).getName(), msg);
             releaseConnIfSafe((MySQLResponseService) service);
@@ -184,7 +185,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
             }
             service.getConnection().businessClose("unfinished sync");
         }
-        countResult((RouteResultsetNode) responseService.getAttachment());
+
     }
 
     @Override
@@ -239,8 +240,15 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     public void connectionClose(AbstractService service, String reason) {
         LOGGER.info("connection closed " + service + " reason:" + reason);
         MySQLResponseService responseService = (MySQLResponseService) service;
-        nodesErrorReason.put(((RouteResultsetNode) responseService.getAttachment()).getName(), "connection closed ,mysql id:" + responseService.getConnection().getThreadId());
-        countResult((RouteResultsetNode) responseService.getAttachment());
+        final RouteResultsetNode attachment = (RouteResultsetNode) responseService.getAttachment();
+        final BackendConnection connection = responseService.getConnection();
+        //if  attachment is null, means other thread was call releaseConnection() before. It was happened when errorResponse and connectionClose run in parallel.
+        if (attachment != null && connection != null) {
+
+            nodesErrorReason.put(attachment.getName(), "connection closed ,mysql id:" + connection.getThreadId());
+            countResult(attachment);
+        }
+
     }
 
     @Override
@@ -250,6 +258,9 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 
     private void countResult(RouteResultsetNode routeNode) {
-        receiveMap.put(routeNode.getName(), routeNode);
+        if (routeNode != null) {
+            receiveMap.put(routeNode.getName(), routeNode);
+        }
+
     }
 }

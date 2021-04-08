@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,6 +178,9 @@ public class FileSystemRepository implements Repository {
     public Map<String, Map<String, String>> getObject() throws Exception {
         Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
         String jsonString = readFromFile();
+        if (Strings.isEmpty(jsonString)) {
+            return result;
+        }
         JsonArray jsonArray = new JsonParser().parse(jsonString).getAsJsonArray();
         if (jsonArray != null) {
             for (JsonElement schema : jsonArray) {

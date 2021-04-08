@@ -86,14 +86,11 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         }
     }
 
-
     private void existsConnectionExecute(MySQLResponseService responseService, RouteResultsetNode node) {
         TraceManager.sessionFinish(responseService);
         TraceManager.crossThread(responseService, "execute-in-exists-connection", session.getShardingService());
         innerExecute(responseService, node);
     }
-
-
 
     @Override
     public void errorResponse(byte[] data, AbstractService service) {
@@ -115,7 +112,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             }
             errConnection.add((MySQLResponseService) service);
             if (decrementToZero((MySQLResponseService) service)) {
-                errPacket.setPacketId(session.getShardingService().nextPacketId()); //just for normal error
                 session.handleSpecial(rrs, false, getDDLErrorInfo());
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), getDDLErrorInfo());
                 if (byteBuffer != null) {
@@ -128,7 +124,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         }
     }
 
-
     @Override
     public void connectionClose(AbstractService service, String reason) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-connection-closed");
@@ -140,7 +135,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         }
         LOGGER.warn("backend connect " + reason + ", conn info:" + service);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         reason = "Connection {dbInstance[" + service.getConnection().getHost() + ":" + service.getConnection().getPort() + "],Schema[" + ((MySQLResponseService) service).getSchema() + "],threadID[" +
                 ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
@@ -159,7 +153,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         }
     }
 
-
     private void innerExecute(AbstractService service, RouteResultsetNode node) {
         //do ddl what ever the serverConnection is closed
         MySQLResponseService mysqlService = (MySQLResponseService) service;
@@ -173,7 +166,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             mysqlService.executeMultiNode(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart());
         }
     }
-
 
     @Override
     public void okResponse(byte[] data, AbstractService service) {
@@ -207,7 +199,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
                     } else {
                         session.setRowCount(0);
                         DDLTraceManager.getInstance().endDDL(source, null);
-                        ok.setPacketId(session.getShardingService().nextPacketId()); // OK_PACKET
                         ok.setMessage(null);
                         ok.setAffectedRows(0);
                         ok.setServerStatus(source.isAutocommit() ? 2 : 1);
@@ -229,7 +220,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
 
     private void executeMetaDataFailed() {
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
         String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
                 " or the user for backend mysql does not have permission to execute the heartbeat sql.";
@@ -238,7 +228,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         doSqlStat();
         handleEndPacket(errPacket, false);
     }
-
 
     private boolean checkClosedConn(MySQLResponseService service) {
         lock.lock();
@@ -257,7 +246,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             lock.unlock();
         }
     }
-
 
     private void executeError(MySQLResponseService service) {
         if (!isFail()) {
@@ -292,10 +280,10 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         return s.toString();
     }
 
-
     private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
         session.clearResources(false);
         session.setResponseTime(isSuccess);
+        packet.setPacketId(session.getShardingService().nextPacketId());
         packet.write(session.getSource());
     }
 

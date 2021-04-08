@@ -2,6 +2,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AbstractService;
@@ -114,26 +115,34 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
     @Override
     protected void backConnectionErr(ErrorPacket errPkg, MySQLResponseService service, boolean syncFinished) {
-        ShardingService sessionShardingService = session.getShardingService();
-        if (service.getConnection().isClosed()) {
-            if (service.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();
-                session.getTargetMap().remove(rNode);
-            }
-        } else if (syncFinished) {
-            session.releaseConnectionIfSafe(service, false);
-        } else {
-            service.getConnection().businessClose("unfinished sync");
-            if (service.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();
-                session.getTargetMap().remove(rNode);
+        if (service != null) {
+            if (service.getConnection().isClosed()) {
+                if (service.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
+            } else if (syncFinished) {
+                session.releaseConnectionIfSafe(service, false);
+            } else {
+                service.getConnection().businessClose("unfinished sync");
+                if (service.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
             }
         }
+
+        ShardingService shardingService = session.getShardingService();
         String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        sessionShardingService.setTxInterrupt(errMsg);
+        UserName errUser = shardingService.getUser();
+        String errHost = shardingService.getConnection().getHost();
+        LOGGER.info("execute sql err :" + errMsg + " con:" + service +
+                " frontend host:" + errHost + "/" + errUser);
+
+        shardingService.setTxInterrupt(errMsg);
         if (writeToClient.compareAndSet(false, true)) {
             session.handleSpecial(rrs, false, null);
-            errPkg.write(sessionShardingService.getConnection());
+            errPkg.write(shardingService.getConnection());
         }
     }
 

@@ -6,7 +6,7 @@ package com.actiontech.dble.backend.mysql.proto.handler;
 
 public enum ProtoHandlerResultCode {
     /**
-     * receive a complete packet and has no more data exists in buffer.
+     * receive a complete packet
      */
 
     COMPLETE_PACKET,

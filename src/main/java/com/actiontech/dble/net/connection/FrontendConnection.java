@@ -108,6 +108,7 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public void setSkipCheck(boolean skipCheck) {
+        updateLastReadTime();
         this.skipCheck = skipCheck;
     }
 

@@ -24,14 +24,15 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
 
     private ServiceTask currentTask = null;
     private final AtomicInteger packetId;
-    private final ConcurrentLinkedQueue<ServiceTask> taskQueue;
+    private final BlockingQueue<ServiceTask> taskQueue = new LinkedBlockingQueue<>(2000);
 
     // client capabilities
     private final long clientCapabilities;
@@ -46,14 +47,12 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     public FrontendService(AbstractConnection connection) {
         super(connection);
-        this.taskQueue = new ConcurrentLinkedQueue<>();
         this.packetId = new AtomicInteger(0);
         this.clientCapabilities = 0;
     }
 
     public FrontendService(AbstractConnection connection, AuthResultInfo info) {
         super(connection);
-        this.taskQueue = new ConcurrentLinkedQueue<>();
         this.packetId = new AtomicInteger(0);
         this.user = info.getUser();
         this.userConfig = (T) info.getUserConfig();
@@ -75,7 +74,11 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     @Override
     public void handle(ServiceTask task) {
         beforeHandlingTask();
-        taskQueue.offer(task);
+        try {
+            taskQueue.put(task);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 

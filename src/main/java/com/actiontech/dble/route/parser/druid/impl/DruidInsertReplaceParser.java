@@ -13,7 +13,6 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.meta.TableMeta;
-import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -218,7 +217,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
                     } else {
                         service.getSession2().execute(rrs);
                     }
-                } catch (ConnectionException e) {
+                } catch (Exception e) {
                     service.setTxInterrupt(e.toString());
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
                 }

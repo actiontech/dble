@@ -62,7 +62,7 @@ public class StatisticCf {
 
         public static void execute(ManagerService service, int samplingRate) {
             if (samplingRate < 0 || samplingRate > 100) {
-                service.writeErrMessage(ErrorCode.ER_YES, "values of samplingRate is incorrect, the value is a number between 0 and 100.");
+                service.writeErrMessage(ErrorCode.ER_YES, "value of samplingRate is incorrect, the value is integer between 0 and 100.");
                 return;
             }
 

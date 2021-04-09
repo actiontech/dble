@@ -1400,6 +1400,7 @@ public final class SystemConfig {
                 ", checkTableConsistency=" + checkTableConsistency +
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
                 ", processorCheckPeriod=" + processorCheckPeriod +
+                ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
                 ", recordTxn=" + recordTxn +
                 ", transactionLogBaseDir=" + transactionLogBaseDir +

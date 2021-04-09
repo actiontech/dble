@@ -47,9 +47,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             conn.getService().writeDirectly(PingPacket.PING);
             synchronized (heartbeatLock) {
                 try {
-                    while (!finished) {
-                        heartbeatLock.wait(timeout);
-                    }
+                    heartbeatLock.wait(timeout);
                 } catch (InterruptedException e) {
                     finished = false;
                 }
@@ -74,13 +72,22 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
                 finished = true;
-                heartbeatLock.notifyAll();
+                heartbeatLock.notify();
             }
             return;
         }
 
         heartbeatTimeout.cancel();
         listener.onHeartbeatSuccess((PooledConnection) service.getConnection());
+    }
+
+    @Override
+    public void connectionClose(AbstractService service, String reason) {
+        if (heartbeatLock != null) {
+            synchronized (heartbeatLock) {
+                heartbeatLock.notify();
+            }
+        }
     }
 
     @Override
@@ -97,12 +104,6 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
 
     }
-
-    @Override
-    public void connectionClose(AbstractService service, String reason) {
-
-    }
-
 
     @Override
     public void connectionError(Throwable e, Object attachment) {

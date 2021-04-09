@@ -30,14 +30,14 @@ public class TransactionHandlerManager {
         return xaTxId;
     }
 
-    public void setXaTxEnabled(boolean xaTXEnabled, ShardingService source) {
+    public void setXaTxEnabled(boolean xaTXEnabled, ShardingService service) {
         if (xaTXEnabled && this.xaTxId == null) {
-            LOGGER.info("XA Transaction enabled ,con " + source);
+            LOGGER.info("XA Transaction enabled ,con " + service.getConnection());
             xaTxId = DbleServer.getInstance().genXaTxId();
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(source)).ifPresent(r -> r.onXaStart(xaTxId));
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onXaStart(xaTxId));
         } else if (!xaTXEnabled && this.xaTxId != null) {
-            LOGGER.info("XA Transaction disabled ,con " + source);
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(source)).ifPresent(r -> r.onXaStop());
+            LOGGER.info("XA Transaction disabled ,con " + service.getConnection());
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onXaStop());
             xaTxId = null;
         }
     }

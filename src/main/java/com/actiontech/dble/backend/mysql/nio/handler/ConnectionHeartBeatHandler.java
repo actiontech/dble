@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 ActionTech.
+ * Copyright (C) 2016-2021 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.pool.util.TimerHolder;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import io.netty.util.Timeout;
@@ -28,6 +29,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     private volatile Timeout heartbeatTimeout;
     private final BackendConnection conn;
     private final PooledConnectionListener listener;
+    private boolean returned = false;
     private boolean finished = false;
 
     public ConnectionHeartBeatHandler(BackendConnection conn, boolean isBlock, PooledConnectionListener listener) {
@@ -42,20 +44,29 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     public boolean ping(long timeout) {
-        conn.getBackendService().ping();
         if (heartbeatLock != null) {
+            final long deadline = System.currentTimeMillis() + timeout;
             synchronized (heartbeatLock) {
+                conn.getService().writeDirectly(PingPacket.PING);
                 try {
-                    heartbeatLock.wait(timeout);
+                    while (!returned) {
+                        timeout = deadline - System.currentTimeMillis();
+                        if (timeout <= 0L) {
+                            returned = true;
+                        } else {
+                            heartbeatLock.wait(timeout);
+                        }
+                    }
                 } catch (InterruptedException e) {
-                    finished = false;
+                    returned = true;
                 }
             }
-            return finished;
         } else {
             heartbeatTimeout = TimerHolder.getTimer().newTimeout(timeout1 -> conn.businessClose("conn heart timeout"), timeout, TimeUnit.MILLISECONDS);
-            return true;
+            conn.getService().writeDirectly(PingPacket.PING);
         }
+
+        return finished;
     }
 
     /**
@@ -69,8 +80,11 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     public void okResponse(byte[] ok, AbstractService service) {
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
-                finished = true;
-                heartbeatLock.notifyAll();
+                if (!returned) {
+                    returned = true;
+                    finished = true;
+                    heartbeatLock.notifyAll();
+                }
             }
             return;
         }
@@ -80,7 +94,21 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
+    public void connectionClose(AbstractService service, String reason) {
+        if (heartbeatLock != null) {
+            synchronized (heartbeatLock) {
+                if (!returned) {
+                    returned = true;
+                    finished = false;
+                    heartbeatLock.notifyAll();
+                }
+            }
+        }
+    }
+
+    @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+
     }
 
     @Override
@@ -90,10 +118,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
-    }
 
-    @Override
-    public void connectionClose(AbstractService service, String reason) {
     }
 
     @Override
@@ -103,10 +128,11 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 
     @Override
     public void connectionAcquired(com.actiontech.dble.net.connection.BackendConnection connection) {
+
     }
 
     @Override
     public void errorResponse(byte[] err, AbstractService service) {
-    }
 
+    }
 }

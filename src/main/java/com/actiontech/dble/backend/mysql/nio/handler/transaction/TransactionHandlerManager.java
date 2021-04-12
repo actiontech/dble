@@ -27,12 +27,12 @@ public class TransactionHandlerManager {
         return xaTxId;
     }
 
-    public void setXaTxEnabled(boolean xaTXEnabled, ShardingService source) {
+    public void setXaTxEnabled(boolean xaTXEnabled, ShardingService service) {
         if (xaTXEnabled && this.xaTxId == null) {
-            LOGGER.info("XA Transaction enabled ,con " + source);
+            LOGGER.info("XA Transaction enabled ,con " + service.getConnection());
             xaTxId = DbleServer.getInstance().genXaTxId();
         } else if (!xaTXEnabled && this.xaTxId != null) {
-            LOGGER.info("XA Transaction disabled ,con " + source);
+            LOGGER.info("XA Transaction disabled ,con " + service.getConnection());
             xaTxId = null;
         }
     }

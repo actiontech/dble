@@ -29,6 +29,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     private volatile Timeout heartbeatTimeout;
     private final BackendConnection conn;
     private final PooledConnectionListener listener;
+    private boolean returned = false;
     private boolean finished = false;
 
     public ConnectionHeartBeatHandler(BackendConnection conn, boolean isBlock, PooledConnectionListener listener) {
@@ -44,22 +45,28 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
 
     public boolean ping(long timeout) {
         if (heartbeatLock != null) {
-            conn.getService().writeDirectly(PingPacket.PING);
+            final long deadline = System.currentTimeMillis() + timeout;
             synchronized (heartbeatLock) {
+                conn.getService().writeDirectly(PingPacket.PING);
                 try {
-                    while (!finished) {
-                        heartbeatLock.wait(timeout);
+                    while (!returned) {
+                        timeout = deadline - System.currentTimeMillis();
+                        if (timeout <= 0L) {
+                            returned = true;
+                        } else {
+                            heartbeatLock.wait(timeout);
+                        }
                     }
                 } catch (InterruptedException e) {
-                    finished = false;
+                    returned = true;
                 }
             }
-            return finished;
         } else {
             heartbeatTimeout = TimerHolder.getTimer().newTimeout(timeout1 -> conn.businessClose("conn heart timeout"), timeout, TimeUnit.MILLISECONDS);
             conn.getService().writeDirectly(PingPacket.PING);
-            return true;
         }
+
+        return finished;
     }
 
     /**
@@ -73,14 +80,30 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     public void okResponse(byte[] ok, AbstractService service) {
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
-                finished = true;
-                heartbeatLock.notifyAll();
+                if (!returned) {
+                    returned = true;
+                    finished = true;
+                    heartbeatLock.notifyAll();
+                }
             }
             return;
         }
 
         heartbeatTimeout.cancel();
         listener.onHeartbeatSuccess((PooledConnection) service.getConnection());
+    }
+
+    @Override
+    public void connectionClose(AbstractService service, String reason) {
+        if (heartbeatLock != null) {
+            synchronized (heartbeatLock) {
+                if (!returned) {
+                    returned = true;
+                    finished = false;
+                    heartbeatLock.notifyAll();
+                }
+            }
+        }
     }
 
     @Override
@@ -97,12 +120,6 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
 
     }
-
-    @Override
-    public void connectionClose(AbstractService service, String reason) {
-
-    }
-
 
     @Override
     public void connectionError(Throwable e, Object attachment) {

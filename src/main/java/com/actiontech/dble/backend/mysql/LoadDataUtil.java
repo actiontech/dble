@@ -14,6 +14,7 @@ import com.actiontech.dble.sqlengine.mpp.LoadData;
 
 import java.io.*;
 import java.util.List;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by nange on 2015/3/31.
@@ -76,11 +77,7 @@ public final class LoadDataUtil {
                     service.getConnection().startFlowControl();
                 }
                 while (service.getConnection().isFlowControlled()) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        //ignore error
-                    }
+                    LockSupport.parkNanos(100);
                 }
                 byte[] temp = null;
                 if (len == packSize) {

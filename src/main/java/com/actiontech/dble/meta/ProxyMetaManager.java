@@ -339,6 +339,7 @@ public class ProxyMetaManager {
     }
 
     public void init(ServerConfig config) throws Exception {
+        if (null == config.getDbGroups() || config.getDbGroups().isEmpty()) return;
         LOGGER.info("init metaData start");
         tryAddSyncMetaLock();
         initMeta(config);

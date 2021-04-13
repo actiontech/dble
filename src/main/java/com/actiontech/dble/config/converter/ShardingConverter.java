@@ -457,8 +457,6 @@ public class ShardingConverter {
                 shardingNodeGroup = entry.getValue().getDbGroup();
                 if (shardingNodeGroup != null) {
                     shardingNodeGroup.setShardingUseless(false);
-                } else {
-                    throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] associated with ShardingNode[" + entry.getKey() + "] does not exist");
                 }
             } else {
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));

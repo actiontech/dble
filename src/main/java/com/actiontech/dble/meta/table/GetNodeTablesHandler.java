@@ -50,6 +50,9 @@ public abstract class GetNodeTablesHandler {
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol, "Table_type"};
+        if (null == dn.getDbGroup()) {
+            return;
+        }
         PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), ds));

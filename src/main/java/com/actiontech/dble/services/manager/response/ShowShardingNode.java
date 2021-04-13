@@ -137,6 +137,7 @@ public final class ShowShardingNode {
 
     private static RowDataPacket getRow(ShardingNode node, String charset) {
         PhysicalDbGroup pool = node.getDbGroup();
+        if (null == pool) return null;
         PhysicalDbInstance ds = pool.getWriteDbInstance();
         if (ds != null) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);

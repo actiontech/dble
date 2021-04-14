@@ -183,9 +183,15 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             WallCheckResult result = blackList.check(
                     ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
             if (!result.getViolations().isEmpty()) {
-                LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
-                        result.getViolations().get(0).getMessage() + " \r\n " + sql);
-                writeErrMessage(ErrorCode.ERR_WRONG_USED, "The statement is unsafe SQL, reject for user '" + user + "'");
+                if (result.isSyntaxError()) {
+                    LOGGER.info("{}", result.getViolations().get(0).getMessage());
+                    writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
+                            result.getViolations().get(0).getMessage());
+                } else {
+                    LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
+                            result.getViolations().get(0).getMessage() + " \r\n " + sql);
+                    writeErrMessage(ErrorCode.ERR_WRONG_USED, "The statement is unsafe SQL, reject for user '" + user + "'");
+                }
                 return;
             }
         }
@@ -193,6 +199,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         SerializableLock.getInstance().lock(this.connection.getId());
 
         this.handler.setReadOnly(userConfig.isReadOnly());
+
         this.handler.setSessionReadOnly(sessionReadOnly);
         this.handler.query(sql);
     }

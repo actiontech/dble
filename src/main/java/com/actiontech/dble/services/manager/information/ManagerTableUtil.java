@@ -19,6 +19,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -124,6 +125,13 @@ public final class ManagerTableUtil {
     }
 
     public static List<String> getTables(String defaultSchema, String sql) {
+        int hintLength = RouteService.isHintSql(sql);
+        if (hintLength != -1) {
+            int endPos = sql.substring(hintLength).indexOf("*/") + hintLength;
+            if (endPos > 0) {
+                sql = sql.substring(endPos + "*/".length()).trim();
+            }
+        }
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLStatement sqlStatement = parser.parseStatement();
         MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();

@@ -17,7 +17,9 @@ import com.actiontech.dble.util.StringUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -31,12 +33,11 @@ public abstract class AbstractService implements Service {
     protected ServiceTask currentTask = null;
     private volatile boolean isSupportCompress = false;
     protected volatile ProtoHandler proto;
-    protected final ConcurrentLinkedQueue<ServiceTask> taskQueue;
+    protected final BlockingQueue<ServiceTask> taskQueue = new LinkedBlockingQueue<>(2000);
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
         this.proto = new MySQLProtoHandlerImpl();
-        this.taskQueue = new ConcurrentLinkedQueue<>();
         this.packetId = new AtomicInteger(0);
     }
 
@@ -81,7 +82,11 @@ public abstract class AbstractService implements Service {
     protected void taskCreate(byte[] packetData) {
         if (beforeHandlingTask()) {
             ServiceTask task = new ServiceTask(packetData, this);
-            taskQueue.offer(task);
+            try {
+                taskQueue.put(task);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             taskToTotalQueue(task);
         }
     }
@@ -89,7 +94,11 @@ public abstract class AbstractService implements Service {
     protected void taskMultiQueryCreate(byte[] packetData) {
         if (beforeHandlingTask()) {
             ServiceTask task = new ServiceTask(packetData, this, true);
-            taskQueue.offer(task);
+            try {
+                taskQueue.put(task);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             taskToTotalQueue(task);
         }
     }
@@ -106,9 +115,6 @@ public abstract class AbstractService implements Service {
     }
 
     public void cleanup() {
-        synchronized (this) {
-            this.currentTask = null;
-        }
         this.taskQueue.clear();
         TraceManager.sessionFinish(this);
     }
@@ -238,8 +244,10 @@ public abstract class AbstractService implements Service {
     }
 
     protected void taskToPriorityQueue(ServiceTask task) {
+        if (task == null) {
+            throw new IllegalStateException("using null task is illegal");
+        }
         DbleServer.getInstance().getFrontPriorityQueue().offer(task);
-        DbleServer.getInstance().getFrontHandlerQueue().offer(new ServiceTask(null, null));
     }
 
     protected void taskToTotalQueue(ServiceTask task) {
@@ -257,18 +265,27 @@ public abstract class AbstractService implements Service {
         }
 
         synchronized (this) {
-            if (currentTask == null) {
-                executeTask = taskQueue.poll();
-                if (executeTask != null) {
-                    currentTask = executeTask;
-                }
-            }
-            if (currentTask != task) {
+            if (currentTask != null) {
+                //currentTask is executing.
                 taskToPriorityQueue(task);
+                return;
             }
+
+            executeTask = taskQueue.peek();
+            if (executeTask == null) {
+                return;
+            }
+            if (executeTask != task) {
+                //out of order,adjust it.
+                taskToPriorityQueue(task);
+                return;
+            }
+            //drop head task of the queue
+            taskQueue.poll();
+            currentTask = executeTask;
         }
 
-        if (executeTask != null) {
+        try {
             byte[] data = executeTask.getOrgData();
             if (data != null && !executeTask.isReuse()) {
                 this.setPacketId(data[3]);
@@ -282,10 +299,13 @@ public abstract class AbstractService implements Service {
                 }
             } else {
                 this.handleInnerData(data);
-                synchronized (this) {
-                    currentTask = null;
-                }
+
             }
+        } finally {
+            synchronized (this) {
+                currentTask = null;
+            }
+
         }
     }
 

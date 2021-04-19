@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -43,6 +44,9 @@ public class OutputHandlerForPrepare extends OutputHandler {
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
         requestScope.getCurrentPreparedStatement().onPrepareOk(fieldPackets.size());
+        HandlerTool.terminateHandlerTree(this);
+        serverSession.setHandlerEnd(this);
+        serverSession.setResponseTime(true);
         return;
 
     }

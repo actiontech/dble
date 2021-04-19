@@ -417,10 +417,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             zeroReached = canResponse();
             if (zeroReached) {
                 if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+                    recycle();
                     requestScope.getCurrentPreparedStatement().onPrepareOk(fieldCount);
                     return;
                 }
                 if (requestScope.isUsingCursor()) {
+                    recycle();
                     requestScope.getCurrentPreparedStatement().getCursorCache().done();
                     session.getShardingService().writeDirectly(byteBuffer);
                     return;
@@ -454,6 +456,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         } finally {
             lock.unlock();
         }
+    }
+
+    private void recycle() {
+        if (!rrs.isCallStatement()) {
+            if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLocked()) { // clear all connections
+                session.releaseConnections(false);
+            }
+        }
+        session.setResponseTime(!this.isFail());
     }
 
     @Override

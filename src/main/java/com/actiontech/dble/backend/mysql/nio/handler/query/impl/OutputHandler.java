@@ -182,6 +182,9 @@ public class OutputHandler extends BaseDMLHandler {
         ShardingService shardingService = serverSession.getShardingService();
         if (requestScope.isUsingCursor()) {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
+            HandlerTool.terminateHandlerTree(this);
+            serverSession.setHandlerEnd(this);
+            serverSession.setResponseTime(true);
             serverSession.getShardingService().writeDirectly(buffer);
             return;
         }

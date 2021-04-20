@@ -138,10 +138,12 @@ public final class StatisticManager {
 
     public void setSamplingRate(int samplingRate) {
         this.samplingRate = samplingRate;
-        if (samplingRate > 0 && !isSampling && !isStart) {
+        if (samplingRate > 0) {
             final SqlStatisticHandler handler = ((SqlStatisticHandler) statisticDataHandlers.get(SqlLog.TABLE_NAME));
             handler.setSampleDecisions(samplingRate);
-            start();
+            if (!isSampling && !isStart) {
+                start();
+            }
             return;
         }
         if (samplingRate == 0 && isSampling && !isStart) {

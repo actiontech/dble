@@ -45,7 +45,7 @@ import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXI
  */
 public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandler, ExecutableHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
     private final RouteResultsetNode node;
     protected final RouteResultset rrs;

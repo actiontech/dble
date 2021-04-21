@@ -293,16 +293,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
+
+        // if it's call statement,it will not release connection
+        if (!rrs.isCallStatement()) {
+            session.releaseConnectionIfSafe((MySQLResponseService) service, false);
+        }
         if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
             requestScope.getCurrentPreparedStatement().onPrepareOk(fieldCount);
             writeToClient.compareAndSet(false, true);
             return;
         }
-        // if it's call statement,it will not release connection
-        if (!rrs.isCallStatement()) {
-            session.releaseConnectionIfSafe((MySQLResponseService) service, false);
-        }
-
         eof[3] = (byte) session.getShardingService().nextPacketId();
 
         EOFRowPacket eofRowPacket = new EOFRowPacket();

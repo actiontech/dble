@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.backend.mysql.store.CursorCache;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.*;
@@ -90,7 +91,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         service.getRequestScope().setCurrentPreparedStatement(pStmt);
         service.getRequestScope().setPrepared(true);
         pStmtForId.put(pStmt.getId(), pStmt);
-        if (!(sqlStatement instanceof SQLSelectStatement)) {
+        if (!SystemConfig.getInstance().isEnableCursor() || !(sqlStatement instanceof SQLSelectStatement)) {
             //notSelect
             PreparedStmtResponse.response(pStmt, service);
         } else {
@@ -164,7 +165,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             // reset the Parameter
             String sql = prepareStmtBindValue(pStmt, bindValues);
             GeneralLogHelper.putGLog(service, MySQLPacket.TO_STRING.get(data[4]), sql);
-            if (packet.getFlag() == CursorTypeFlags.CURSOR_TYPE_READ_ONLY) {
+            if (SystemConfig.getInstance().isEnableCursor() && packet.getFlag() == CursorTypeFlags.CURSOR_TYPE_READ_ONLY) {
                 service.getRequestScope().setUsingCursor(true);
             }
             if (LOGGER.isDebugEnabled()) {

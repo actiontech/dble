@@ -112,6 +112,7 @@ public final class SystemConfig {
     //minimum allocation unit
     private short bufferPoolChunkSize = 4096;
     //used for cursor temp result
+    private boolean enableCursor = false;
     private int maxHeapTableSize = 4096;
     private Integer heapTableBufferChunkSize = null;
     // buffer pool page number
@@ -1345,6 +1346,14 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "maxHeapTableSize", maxHeapTableSize, this.maxHeapTableSize));
         }
+    }
+
+    public boolean isEnableCursor() {
+        return enableCursor;
+    }
+
+    public void setEnableCursor(boolean enableCursor) {
+        this.enableCursor = enableCursor;
     }
 
     public Integer getHeapTableBufferChunkSize() {

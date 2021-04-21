@@ -176,9 +176,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
         errPacket.read(err);
         String errMsg;
         try {
-            errMsg = new String(errPacket.getMessage(), CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()));
+            errMsg = new String(errPacket.getMessage(), CharsetUtil.getJavaCharset(service.getCharset().getResults()));
         } catch (UnsupportedEncodingException e) {
-            errMsg = "UnsupportedEncodingException:" + service.getConnection().getCharsetName();
+            errMsg = "UnsupportedEncodingException:" + service.getCharset();
         }
         LOGGER.info(service.toString() + errMsg);
         if (terminate.get())

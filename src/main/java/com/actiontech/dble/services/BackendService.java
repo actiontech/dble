@@ -179,17 +179,9 @@ public abstract class BackendService extends AbstractService {
 
         byte type = data[4];
         if (type == OkPacket.FIELD_COUNT) {
-            //            if (syncAndExecute()) {
             protocolResponseHandler.ok(data);
-            //            } else {
-            //                connection.businessClose("unfinished sync");
-            //            }
         } else if (type == ErrorPacket.FIELD_COUNT) {
-            //            if (syncAndExecute()) {
             protocolResponseHandler.error(data);
-            //            } else {
-            //                connection.businessClose("unfinished sync");
-            //            }
         } else if (type == EOFPacket.FIELD_COUNT) {
             protocolResponseHandler.eof(data);
         } else {
@@ -311,30 +303,53 @@ public abstract class BackendService extends AbstractService {
         }
     }
 
-    protected StringBuilder getSynSql(CharsetNames clientCharset, Integer clientTxIsolation, boolean expectAutocommit,
-                                      Map<String, String> usrVariables, Map<String, String> sysVariables) {
-
+    protected StringBuilder getSynSql(boolean expectAutocommit, VariablesService front) {
+        // variables
         Set<String> toResetSys = new HashSet<>();
+        Map<String, String> usrVariables = front.getUsrVariables();
+        Map<String, String> sysVariables = front.getSysVariables();
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
-        int schemaSyn = StringUtil.equals(connection.getSchema(), connection.getOldSchema()) || connection.getSchema() == null ? 0 : 1;
+        // schema
+        String schema = connection.getSchema();
+        int schemaSyn = StringUtil.equals(schema, connection.getOldSchema()) || schema == null ? 0 : 1;
+        // charset
+        CharsetNames clientCharset = front.getCharset();
         int charsetSyn = charsetName.equals(clientCharset) ? 0 : 1;
-        int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
+        // txIsolation
+        int clientTxIsolation = front.getTxIsolation();
+        boolean isReadOnly = front.isReadOnly();
+        int txIsolationSyn = this.txIsolation == clientTxIsolation ? 0 : 1;
+        int readOnlySyn = this.sessionReadOnly == isReadOnly ? 0 : 1;
+        int txAndReadOnlySyn = txIsolationSyn == 0 && readOnlySyn == 0 ? 0 : 1;
+        // autocommit
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
-        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + setSqlFlag;
+        int synCount = schemaSyn + charsetSyn + txAndReadOnlySyn + autoCommitSyn + setSqlFlag;
         if (synCount == 0) {
             return null;
         }
 
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
-            getChangeSchemaCommand(sb, connection.getSchema());
+            getChangeSchemaCommand(sb, schema);
+        } else {
+            schema = null;
         }
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
+        } else {
+            clientCharset = null;
         }
-        if (txIsolationSyn == 1) {
-            getTxIsolationCommand(sb, clientTxIsolation);
+        if (txAndReadOnlySyn == 1) {
+            sb.append("SET SESSION TRANSACTION ");
+            if (txIsolationSyn == 1) {
+                getTxIsolationCommand(sb, clientTxIsolation);
+            }
+            if (readOnlySyn == 1) {
+                if (txIsolationSyn == 1) sb.append(",");
+                getReadOnlyCommand(sb, isReadOnly);
+            }
+            sb.append(";");
         }
         if (autoCommitSyn == 1) {
             getAutocommitCommand(sb, expectAutocommit);
@@ -343,8 +358,8 @@ public abstract class BackendService extends AbstractService {
             sb.append(setSql);
         }
         metaDataSynced = false;
-        statusSync = new StatusSync(connection.getSchema(),
-                clientCharset, clientTxIsolation, expectAutocommit,
+        statusSync = new StatusSync(schema,
+                clientCharset, clientTxIsolation, expectAutocommit, isReadOnly,
                 synCount, usrVariables, sysVariables, toResetSys);
         return sb;
     }
@@ -370,19 +385,27 @@ public abstract class BackendService extends AbstractService {
     private void getTxIsolationCommand(StringBuilder sb, int txIsolation) {
         switch (txIsolation) {
             case Isolations.READ_UNCOMMITTED:
-                sb.append("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;");
+                sb.append("ISOLATION LEVEL READ UNCOMMITTED");
                 return;
             case Isolations.READ_COMMITTED:
-                sb.append("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;");
+                sb.append("ISOLATION LEVEL READ COMMITTED");
                 return;
             case Isolations.REPEATABLE_READ:
-                sb.append("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;");
+                sb.append("ISOLATION LEVEL REPEATABLE READ");
                 return;
             case Isolations.SERIALIZABLE:
-                sb.append("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
+                sb.append("ISOLATION LEVEL SERIALIZABLE");
                 return;
             default:
                 throw new UnknownTxIsolationException("txIsolation:" + txIsolation);
+        }
+    }
+
+    private void getReadOnlyCommand(StringBuilder sb, boolean isReadOnly) {
+        if (isReadOnly) {
+            sb.append("READ ONLY");
+        } else {
+            sb.append("READ WRITE");
         }
     }
 
@@ -455,6 +478,7 @@ public abstract class BackendService extends AbstractService {
         private final CharsetNames clientCharset;
         private final Integer txIsolation;
         private final Boolean autocommit;
+        private final Boolean readOnly;
         private final AtomicInteger synCmdCount;
         private final Map<String, String> usrVariables = new LinkedHashMap<>();
         private final Map<String, String> sysVariables = new LinkedHashMap<>();
@@ -469,16 +493,18 @@ public abstract class BackendService extends AbstractService {
             this.clientCharset = null;
             this.txIsolation = null;
             this.autocommit = null;
+            this.readOnly = null;
             this.synCmdCount = new AtomicInteger(synCount);
         }
 
         StatusSync(String schema,
-                   CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit,
+                   CharsetNames clientCharset, Integer txtIsolation, Boolean autocommit, Boolean readOnly,
                    int synCount, Map<String, String> usrVariables, Map<String, String> sysVariables, Set<String> toResetSys) {
             this.schema = schema;
             this.clientCharset = clientCharset;
             this.txIsolation = txtIsolation;
             this.autocommit = autocommit;
+            this.readOnly = readOnly;
             this.synCmdCount = new AtomicInteger(synCount);
             this.usrVariables.putAll(usrVariables);
             this.sysVariables.putAll(sysVariables);
@@ -513,6 +539,9 @@ public abstract class BackendService extends AbstractService {
             }
             if (autocommit != null) {
                 service.autocommit = autocommit;
+            }
+            if (readOnly != null) {
+                service.sessionReadOnly = readOnly;
             }
             service.sysVariables.clear();
             service.usrVariables.clear();

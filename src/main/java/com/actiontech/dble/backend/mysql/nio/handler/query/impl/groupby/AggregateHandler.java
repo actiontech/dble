@@ -7,12 +7,12 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby;
 
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.DistinctLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
@@ -22,7 +22,6 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.AggregatorType;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
@@ -81,7 +80,7 @@ public class AggregateHandler extends BaseDMLHandler {
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, AbstractService service) {
         session.setHandlerStart(this);
-        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharsetName().getResults());
+        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         if (terminate.get())
             return;
         if (this.pool == null)

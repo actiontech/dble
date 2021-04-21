@@ -1,7 +1,6 @@
 package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -77,7 +76,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private volatile boolean isLocked = false;
     private long lastInsertId;
     private final NonBlockingSession session;
-    private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
     protected volatile boolean setNoAutoCommit = false;
@@ -109,10 +107,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 break;
             case TRACE:
                 session.setTrace(Boolean.parseBoolean(val));
-                this.singleTransactionsCount();
-                break;
-            case TX_READ_ONLY:
-                sessionReadOnly = Boolean.parseBoolean(val);
                 this.singleTransactionsCount();
                 break;
             case AUTOCOMMIT:
@@ -154,8 +148,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         List<MysqlVariable> variables = super.getAllVars();
         variables.add(new MysqlVariable("xa", session.getTransactionManager().getSessionXaID() == null ? "false" : "true", VariableType.SYSTEM_VARIABLES));
         variables.add(new MysqlVariable("trace", session.isTrace() + "", VariableType.SYSTEM_VARIABLES));
-        variables.add(new MysqlVariable(VersionUtil.TRANSACTION_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
-        variables.add(new MysqlVariable(VersionUtil.TX_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
         return variables;
     }
 
@@ -199,8 +191,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         SerializableLock.getInstance().lock(this.connection.getId());
 
         this.handler.setReadOnly(userConfig.isReadOnly());
-
-        this.handler.setSessionReadOnly(sessionReadOnly);
         this.handler.query(sql);
     }
 
@@ -680,24 +670,12 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         this.lastInsertId = lastInsertId;
     }
 
-    public void setSessionReadOnly(boolean sessionReadOnly) {
-        this.sessionReadOnly = sessionReadOnly;
-    }
-
-    public boolean isReadOnly() {
-        return sessionReadOnly;
-    }
-
     public ServerLoadDataInfileHandler getLoadDataInfileHandler() {
         return loadDataInfileHandler;
     }
 
     public ServerSptPrepare getSptPrepare() {
         return sptprepare;
-    }
-
-    private boolean isEndOfDataFile(byte[] data) {
-        return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
     }
 
     public boolean isSetNoAutoCommit() {

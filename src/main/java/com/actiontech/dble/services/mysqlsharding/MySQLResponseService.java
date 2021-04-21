@@ -17,6 +17,7 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -27,7 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -91,8 +95,7 @@ public class MySQLResponseService extends BackendService {
         boolean changeUser = isChangeUser(service);
         if (changeUser) return;
 
-        StringBuilder synSQL = getSynSql(null, null,
-                service.getCharset(), service.getTxIsolation(), service.isAutocommit(), service.getUsrVariables(), service.getSysVariables());
+        StringBuilder synSQL = getSynSql(null, null, service.isAutocommit(), service);
         if (protocolResponseHandler != defaultResponseHandler) {
             protocolResponseHandler = defaultResponseHandler;
         }
@@ -103,8 +106,7 @@ public class MySQLResponseService extends BackendService {
         boolean changeUser = isChangeUser(service);
         if (changeUser) return;
 
-        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit(),
-                service.getUsrVariables(), service.getSysVariables());
+        StringBuilder synSQL = getSynSql(service.isAutocommit(), service);
         if (originPacket.length > 4) {
             byte type = originPacket[4];
             if (type == MySQLPacket.COM_STMT_PREPARE) {
@@ -147,8 +149,7 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = defaultResponseHandler;
             }
             String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            StringBuilder synSQL = getSynSql(xaTxId, rrn,
-                    service.getCharset(), service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            StringBuilder synSQL = getSynSql(xaTxId, rrn, isAutoCommit, service);
             synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
         } finally {
             TraceManager.finishSpan(this, traceObject);
@@ -170,11 +171,11 @@ public class MySQLResponseService extends BackendService {
 
     public void query(String query, boolean isAutoCommit) {
         RouteResultsetNode rrn = new RouteResultsetNode("default", ServerParse.SELECT, query);
-        StringBuilder synSQL = getSynSql(null, rrn, connection.getCharsetName(), this.txIsolation, isAutoCommit, usrVariables, sysVariables);
+        StringBuilder synSQL = getSynSql(null, rrn, isAutoCommit, this);
         if (protocolResponseHandler != defaultResponseHandler) {
             protocolResponseHandler = defaultResponseHandler;
         }
-        synAndDoExecute(synSQL, rrn.getStatement(), connection.getCharsetName());
+        synAndDoExecute(synSQL, rrn.getStatement(), charsetName);
     }
 
     public void executeMultiNode(RouteResultsetNode rrn, ShardingService service, boolean isAutoCommit) {
@@ -188,8 +189,7 @@ public class MySQLResponseService extends BackendService {
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }
-            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
-                    service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            StringBuilder synSQL = getSynSql(xaTxId, rrn, isAutoCommit, service);
             if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
                 protocolResponseHandler = new LoadDataResponseHandler(this);
             } else if (protocolResponseHandler != defaultResponseHandler) {
@@ -263,13 +263,12 @@ public class MySQLResponseService extends BackendService {
     }
 
     public void execCmd(String cmd) {
-        this.sendQueryCmd(cmd, connection.getCharsetName());
+        this.sendQueryCmd(cmd, charsetName);
     }
 
-    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, CharsetNames clientCharset, int clientTxIsolation,
-                                    boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
+    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, boolean expectAutocommit, VariablesService front) {
 
-        StringBuilder sb = getSynSql(clientCharset, clientTxIsolation, expectAutocommit, usrVariables, sysVariables);
+        StringBuilder sb = getSynSql(expectAutocommit, front);
 
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
@@ -354,8 +353,7 @@ public class MySQLResponseService extends BackendService {
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
             }
-            StringBuilder synSQL = getSynSql(xaTxId, rrn, service.getCharset(),
-                    service.getTxIsolation(), isAutoCommit, service.getUsrVariables(), service.getSysVariables());
+            StringBuilder synSQL = getSynSql(xaTxId, rrn, isAutoCommit, service);
             if (rrn.getSqlType() == ServerParse.LOAD_DATA_INFILE_SQL) {
                 protocolResponseHandler = new LoadDataResponseHandler(this);
             } else if (protocolResponseHandler != defaultResponseHandler) {

@@ -77,7 +77,7 @@ public class KillConnectionHandler implements ResponseHandler {
         err.read(data);
         String msg;
         try {
-            msg = new String(err.getMessage(), CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()));
+            msg = new String(err.getMessage(), CharsetUtil.getJavaCharset(service.getCharset().getResults()));
         } catch (UnsupportedEncodingException e) {
             msg = new String(err.getMessage());
         }

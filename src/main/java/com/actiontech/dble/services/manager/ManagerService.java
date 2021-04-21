@@ -50,7 +50,7 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
                 try {
                     handler.query(getCommand(data, charsetName));
                 } catch (UnsupportedEncodingException e) {
-                    writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + this.getConnection().getCharsetName().getClient() + "'");
+                    writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
                 }
                 break;
             case MySQLPacket.COM_PING:

@@ -111,7 +111,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         List<ItemSum> localResultReferredSums = referredSumFunctions;
         RowDataComparator comparator = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
         );
-        String charSet = service != null ? CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharsetName().getResults());
+        String charSet = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), comparator, localResultFps,
                 localResultReferredSums, this.isAllPushDown(), charSet).
                 setMemSizeController(session.getOtherBufferMC());

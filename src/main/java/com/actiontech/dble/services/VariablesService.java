@@ -25,6 +25,7 @@ public class VariablesService {
     protected volatile int txIsolation;
     protected volatile boolean autocommit;
     protected volatile boolean multiStatementAllow;
+    protected volatile boolean sessionReadOnly;
 
     public VariablesService() {
         this.usrVariables = new LinkedHashMap<>();
@@ -41,6 +42,8 @@ public class VariablesService {
         variables.add(new MysqlVariable("character_set_results", charsetName.getResults(), VariableType.SYSTEM_VARIABLES));
         variables.add(new MysqlVariable("character_set_connection", charsetName.getCollation(), VariableType.SYSTEM_VARIABLES));
         variables.add(new MysqlVariable(VersionUtil.TRANSACTION_ISOLATION, Isolations.getIsolation(txIsolation), VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TRANSACTION_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
+        variables.add(new MysqlVariable(VersionUtil.TX_READ_ONLY, sessionReadOnly + "", VariableType.SYSTEM_VARIABLES));
 
         for (Map.Entry<String, String> entry : sysVariables.entrySet()) {
             variables.add(new MysqlVariable(entry.getKey(), entry.getValue(), VariableType.SYSTEM_VARIABLES));
@@ -54,10 +57,6 @@ public class VariablesService {
 
     // charset
     public CharsetNames getCharset() {
-        return charsetName;
-    }
-
-    public CharsetNames getCharsetName() {
         return charsetName;
     }
 
@@ -108,14 +107,6 @@ public class VariablesService {
         charsetName.setClient(name);
     }
 
-    public Map<String, String> getUsrVariables() {
-        return usrVariables;
-    }
-
-    public Map<String, String> getSysVariables() {
-        return sysVariables;
-    }
-
     // isolation
     public int getTxIsolation() {
         return txIsolation;
@@ -141,6 +132,23 @@ public class VariablesService {
 
     public void setMultiStatementAllow(boolean multiStatementAllow) {
         this.multiStatementAllow = multiStatementAllow;
+    }
+
+    // sessionReadOnly
+    public void setSessionReadOnly(boolean sessionReadOnly) {
+        this.sessionReadOnly = sessionReadOnly;
+    }
+
+    public boolean isReadOnly() {
+        return sessionReadOnly;
+    }
+
+    public Map<String, String> getUsrVariables() {
+        return usrVariables;
+    }
+
+    public Map<String, String> getSysVariables() {
+        return sysVariables;
     }
 
     public String getStringOfSysVariables() {

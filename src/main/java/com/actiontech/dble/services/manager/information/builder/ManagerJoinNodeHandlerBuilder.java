@@ -139,7 +139,6 @@ class ManagerJoinNodeHandlerBuilder extends ManagerBaseHandlerBuilder {
 
     /**
      * generate filter for big table according to tmp(small) table's result
-     *
      */
     private void buildNestFilters(PlanNode tnBig, Item keyToPass, Set<String> valueSet, int maxPartSize) {
         List<Item> strategyFilters = tnBig.getNestLoopFilters();
@@ -151,12 +150,12 @@ class ManagerJoinNodeHandlerBuilder extends ManagerBaseHandlerBuilder {
                 partList = new ArrayList<>();
             if (value != null) {
                 // is null will never join
-                partList.add(new ItemString(value, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation())));
+                partList.add(new ItemString(value, CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation())));
                 if (++partSize >= maxPartSize) {
                     List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);
                     argList.addAll(partList);
-                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation()));
                     strategyFilters.add(inFilter);
                     partList = null;
                     partSize = 0;
@@ -167,7 +166,7 @@ class ManagerJoinNodeHandlerBuilder extends ManagerBaseHandlerBuilder {
             List<Item> argList = new ArrayList<>();
             argList.add(keyInBig);
             argList.addAll(partList);
-            ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+            ItemFuncIn inFilter = new ItemFuncIn(argList, false, CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation()));
             strategyFilters.add(inFilter);
         }
         // if no data

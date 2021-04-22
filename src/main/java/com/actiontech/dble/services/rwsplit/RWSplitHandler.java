@@ -238,16 +238,16 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             if (!write2Client) {
                 ok[3] = (byte) rwSplitService.nextPacketId();
                 buffer = frontedConnection.writeToBuffer(ok, buffer);
-                if (fields != null) {
-                    for (byte[] field : fields) {
-                        field[3] = (byte) rwSplitService.nextPacketId();
-                        buffer = frontedConnection.writeToBuffer(field, buffer);
-                    }
-                }
                 if (params != null) {
                     for (byte[] param : params) {
                         param[3] = (byte) rwSplitService.nextPacketId();
                         buffer = frontedConnection.writeToBuffer(param, buffer);
+                    }
+                }
+                if (fields != null) {
+                    for (byte[] field : fields) {
+                        field[3] = (byte) rwSplitService.nextPacketId();
+                        buffer = frontedConnection.writeToBuffer(field, buffer);
                     }
                 }
                 frontedConnection.write(buffer);

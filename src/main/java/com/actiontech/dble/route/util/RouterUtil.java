@@ -410,8 +410,16 @@ public final class RouterUtil {
                 routeNodeSet.add(shardingNode);
             }
         } else if (columnRoute.getInValues() != null) {
-            for (Object value : columnRoute.getInValues()) {
-                String shardingNode = ruleCalculateSingleValue(schemaName, tc, value, clientCharset);
+            for (Object originValue : columnRoute.getInValues()) {
+                if (originValue instanceof String) {
+                    String value = (String) originValue;
+                    //for explain
+                    if (NEED_REPLACE.equals(value) || ALL_SUB_QUERY_RESULTS.equals(value) ||
+                            MIN_SUB_QUERY_RESULTS.equals(value) || MAX_SUB_QUERY_RESULTS.equals(value)) {
+                        return routeNodeSet;
+                    }
+                }
+                String shardingNode = ruleCalculateSingleValue(schemaName, tc, originValue, clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         }

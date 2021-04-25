@@ -11,18 +11,17 @@ COPY wait-for-it.sh /opt/dble/bin/
 
 ARG MODE="quick-start"
 
-RUN if [ "$MODE" != "mgr" -a "$MODE" != "quick-start" -a "$MODE" != "rwSplit" ]; then MODE="quick-start"; fi;
-
 COPY *.cnf /opt/dble/conf/
 COPY "$MODE"/* /opt/dble/conf/
 
 ARG DBLE_VERSION="latest"
 
-RUN if [[ "$DBLE_VERSION" != "latest" ]]; then DBLE_VERSION="tags/${DBLE_VERSION}/tag"; fi;
+RUN if [[ "$DBLE_VERSION" != "latest" ]]; then echo "tags/$DBLE_VERSION/tag" > /tmp/version; else echo "latest" > /tmp/version; fi;
 
-RUN wget -P /opt $(curl https://api.github.com/repos/actiontech/dble/releases/${DBLE_VERSION} | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4) && \
+RUN wget -P /opt $(curl https://api.github.com/repos/actiontech/dble/releases/`cat /tmp/version` | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4) && \
     tar zxf /opt/dble-*.tar.gz -C /opt && \
-    rm -f /opt/dble-*.tar.gz
+    rm -rf /opt/dble-*.tar.gz && \
+    rm -rf /tmp/version
 
 RUN chmod 777 /opt/dble/bin/*
 

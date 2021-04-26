@@ -181,7 +181,7 @@ public class MySQLInstance extends PhysicalDbInstance {
                 isConnected = false;
             }
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage());
+            LOGGER.warn("testConnection error", e);
             isConnected = false;
         } finally {
             try {

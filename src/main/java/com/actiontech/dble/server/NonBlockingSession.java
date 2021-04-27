@@ -1025,6 +1025,7 @@ public class NonBlockingSession implements Session {
 
     /**
      * backend row eof packet server_status change and next round start
+     * don't use this method with OK Packet!
      */
     public boolean multiStatementPacket(byte[] eof, byte packetNum) {
         if (this.getIsMultiStatement().get()) {

@@ -24,7 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -65,7 +68,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             if (isFail()) {
                 if (decrementToZero(conn)) {
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
+                    handleEndPacket(err, AutoTxOperation.ROLLBACK, false);
                 }
             } else {
                 if (!fieldsReturned) {

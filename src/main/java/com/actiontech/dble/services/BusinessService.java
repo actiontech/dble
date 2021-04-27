@@ -97,6 +97,9 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
                     String isolationLevel = variable.getValue();
                     this.setTxIsolation(Integer.parseInt(isolationLevel));
                     break;
+                case TX_READ_ONLY:
+                    sessionReadOnly = Boolean.parseBoolean(variable.getValue());
+                    break;
                 case SYSTEM_VARIABLES:
                     this.sysVariables.put(variable.getName(), variable.getValue());
                     break;

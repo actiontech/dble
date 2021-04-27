@@ -223,9 +223,9 @@ public final class ShowConnection {
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
         row.add(StringUtil.encode(service.getUser().toString(), charset));
         row.add(StringUtil.encode(service.getSchema(), charset));
-        row.add(StringUtil.encode(service.getCharsetName().getClient(), charset));
-        row.add(StringUtil.encode(service.getCharsetName().getCollation(), charset));
-        row.add(StringUtil.encode(service.getCharsetName().getResults(), charset));
+        row.add(StringUtil.encode(service.getCharset().getClient(), charset));
+        row.add(StringUtil.encode(service.getCharset().getCollation(), charset));
+        row.add(StringUtil.encode(service.getCharset().getResults(), charset));
         row.add(LongUtil.toBytes(c.getNetInBytes()));
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));

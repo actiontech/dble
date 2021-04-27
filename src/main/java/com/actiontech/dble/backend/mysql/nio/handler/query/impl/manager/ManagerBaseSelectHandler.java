@@ -186,7 +186,7 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
 
     private List<RowDataPacket> makeRowData() {
         ManagerBaseTable table = ManagerSchemaInfo.getInstance().getTables().get(tableNode.getTableName());
-        return table.getRow(realSelects, session.getSource().getCharsetName().getResults());
+        return table.getRow(realSelects, session.getSource().getService().getCharset().getResults());
 
     }
 

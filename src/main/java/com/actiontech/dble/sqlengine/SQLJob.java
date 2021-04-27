@@ -146,9 +146,9 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
         if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
-            String xid = sql.substring(sql.indexOf("'"), sql.length()).trim();
+            String xid = sql.substring(sql.indexOf("'")).trim();
             testXid = true;
-            ((MySQLResponseService) service).sendQueryCmd("xa start " + xid, service.getConnection().getCharsetName());
+            ((MySQLResponseService) service).sendQueryCmd("xa start " + xid, service.getCharset());
         } else if (errPg.getErrNo() == ErrorCode.ER_XAER_DUPID) {
             // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
             service.getConnection().close("test xid existence");

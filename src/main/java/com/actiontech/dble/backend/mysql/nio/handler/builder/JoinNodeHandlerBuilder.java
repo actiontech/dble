@@ -38,7 +38,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
         this.node = node;
-        charsertIndex = CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation());
+        charsertIndex = CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation());
     }
 
     @Override
@@ -194,7 +194,6 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     /**
      * generate filter for big table according to tmp(small) table's result
-     *
      */
     private void buildNestFilters(PlanNode tnBig, Item keyToPass, Set<String> valueSet, int maxPartSize) {
         List<Item> strategyFilters = tnBig.getNestLoopFilters();

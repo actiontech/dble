@@ -33,6 +33,7 @@ public class CharsetNames {
     public void setClient(String client) {
         this.client = client;
     }
+
     public String getResults() {
         return results;
     }
@@ -52,6 +53,7 @@ public class CharsetNames {
     public void setCollation(String collation) {
         this.collation = collation;
     }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null)
@@ -65,6 +67,7 @@ public class CharsetNames {
                 StringUtils.equalsIgnoreCase(results, other.results) &&
                 StringUtils.equalsIgnoreCase(collation, other.collation);
     }
+
     @Override
     public int hashCode() {
         // should not use
@@ -77,11 +80,4 @@ public class CharsetNames {
                 ",character_set_results=" + results + ",collation_connection=" + collation;
     }
 
-    public CharsetNames copyObj() {
-        CharsetNames obj = new CharsetNames();
-        obj.client = this.client;
-        obj.results = this.results;
-        obj.collation = this.collation;
-        return obj;
-    }
 }

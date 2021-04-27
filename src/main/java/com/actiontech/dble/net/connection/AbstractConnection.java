@@ -7,7 +7,6 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
-import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.net.service.ServiceTask;
@@ -515,10 +514,6 @@ public abstract class AbstractConnection implements Connection {
 
     public void setReadBufferChunk(int readBufferChunk) {
         this.readBufferChunk = readBufferChunk;
-    }
-
-    public CharsetNames getCharsetName() {
-        return service.getCharsetName();
     }
 
     public ByteBuffer getReadBuffer() {

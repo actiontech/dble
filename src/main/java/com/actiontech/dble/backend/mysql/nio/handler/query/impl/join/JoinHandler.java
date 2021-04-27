@@ -105,7 +105,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
             rightFieldPackets = fieldPackets;
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
-        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getCharsetName().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharsetName().getResults());
+        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         if (!fieldSent.compareAndSet(false, true)) {
             List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
@@ -179,7 +179,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         LocalResult leftLocal = null, rightLocal = null;
         try {
             Comparator<RowDataPacket> joinComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
-                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation()));
 
             // logger.debug("merge Join start");
             leftLocal = takeFirst(leftQueue);

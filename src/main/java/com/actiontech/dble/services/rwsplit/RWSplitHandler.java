@@ -285,7 +285,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(pId);
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
-        errPacket.setMessage(StringUtil.encode(reason, frontedConnection.getCharsetName().getClient()));
+        errPacket.setMessage(StringUtil.encode(reason, rwSplitService.getCharset().getClient()));
         errPacket.write(frontedConnection);
     }
 

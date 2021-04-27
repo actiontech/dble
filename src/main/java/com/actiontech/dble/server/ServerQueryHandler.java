@@ -31,19 +31,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 
     private final ShardingService service;
     private Boolean readOnly = true;
-    private boolean sessionReadOnly = true;
-
-    public void setReadOnly(Boolean readOnly) {
-        this.readOnly = readOnly;
-    }
-
-    public void setSessionReadOnly(boolean sessionReadOnly) {
-        this.sessionReadOnly = sessionReadOnly;
-    }
-
-    public ServerQueryHandler(AbstractService service) {
-        this.service = (ShardingService) service;
-    }
 
     @Override
     public void query(String sql) {
@@ -80,8 +67,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         sqlType == ServerParse.DDL) {
                     if (readOnly) {
                         service.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");
-                    } else if (sessionReadOnly) {
-                        service.writeErrMessage(ErrorCode.ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION, "Cannot execute statement in a READ ONLY transaction.");
                     }
                 }
                 service.execute(sql, rs & 0xff);
@@ -183,9 +168,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         if (readOnly) {
                             service.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");
                             break;
-                        } else if (sessionReadOnly) {
-                            service.writeErrMessage(ErrorCode.ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION, "Cannot execute statement in a READ ONLY transaction.");
-                            break;
                         }
                         service.execute(sql, rs & 0xff);
                 }
@@ -195,6 +177,14 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         } finally {
             TraceManager.finishSpan(traceObject);
         }
+    }
+
+    public void setReadOnly(Boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+    public ServerQueryHandler(AbstractService service) {
+        this.service = (ShardingService) service;
     }
 
 }

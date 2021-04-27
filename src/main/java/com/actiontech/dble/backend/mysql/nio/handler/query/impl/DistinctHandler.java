@@ -20,7 +20,6 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,8 +75,8 @@ public class DistinctHandler extends BaseDMLHandler {
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distinctCols);
         RowDataComparator comparator = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
-        String charSet = service != null ? CharsetUtil.getJavaCharset(((MySQLResponseService) service).getCharset().getResults()) :
-                CharsetUtil.getJavaCharset(session.getSource().getService().getConnection().getCharsetName().getResults());
+        String charSet = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) :
+                CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         localResult = new DistinctSortedLocalResult(pool, sourceFields.size(), comparator, charSet).
                 setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, service);

@@ -59,7 +59,7 @@ public class FieldListHandler implements ResponseHandler {
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
         String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharsetName().getResults()));
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getService().getCharset().getResults()));
         LOGGER.warn(errMsg);
         backConnectionErr(errPacket, null, false);
     }
@@ -148,7 +148,7 @@ public class FieldListHandler implements ResponseHandler {
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
-        err.setMessage(StringUtil.encode(reason, session.getSource().getCharsetName().getResults()));
+        err.setMessage(StringUtil.encode(reason, session.getSource().getService().getCharset().getResults()));
         backConnectionErr(err, (MySQLResponseService) service, false);
     }
 

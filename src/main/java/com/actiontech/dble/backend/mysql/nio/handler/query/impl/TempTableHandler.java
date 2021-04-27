@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.store.UnSortedLocalResult;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
@@ -20,8 +21,6 @@ import com.actiontech.dble.plan.common.exception.TempTableException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
-import com.actiontech.dble.net.Session;
-import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,7 @@ public class TempTableHandler extends BaseDMLHandler {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
-                String charSet = service != null ? ((MySQLResponseService) service).getCharset().getResults() : session.getSource().getCharsetName().getResults();
+                String charSet = service != null ? service.getCharset().getResults() : session.getSource().getService().getCharset().getResults();
                 tempTable.setCharset(charSet);
                 tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), BufferPoolManager.getBufferPool(),
                         CharsetUtil.getJavaCharset(charSet)).setMemSizeController(session.getOtherBufferMC()));

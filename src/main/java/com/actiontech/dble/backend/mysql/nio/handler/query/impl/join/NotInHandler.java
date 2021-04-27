@@ -80,7 +80,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
         if (!fieldSent.compareAndSet(false, true)) {
-            this.charset = service != null ? CharsetUtil.getJavaCharset(service.getConnection().getCharsetName().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharsetName().getResults());
+            this.charset = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
             nextHandler.fieldEofResponse(null, null, leftFieldPackets, null, this.isLeft, service);
             // logger.debug("all ready");
             startOwnThread(service);
@@ -132,7 +132,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
         LocalResult leftLocal = null, rightLocal = null;
         try {
             Comparator<RowDataPacket> notInComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
-                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), CharsetUtil.getCollationIndex(session.getSource().getCharsetName().getCollation()));
+                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation()));
 
             leftLocal = takeFirst(leftQueue);
             rightLocal = takeFirst(rightQueue);

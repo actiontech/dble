@@ -33,16 +33,20 @@ public class MysqlPrepareLogicHandler extends MysqlBackendLogicHandler {
         }
         switch (resultStatus) {
             case PREPARED_OK:
-                // Prepare ok
-                handleOkPacket(data);
-                int paramCount = ByteUtil.readUB2(data, 3);
-                params = new ArrayList<>(paramCount);
-                int fieldCount = ByteUtil.readUB2(data, 5);
-                fields = new ArrayList<>(fieldCount);
-                if (paramCount > 0) {
-                    resultStatus = PREPARED_PARAM;
-                } else if (fieldCount > 0) {
-                    resultStatus = PREPARED_FIELD;
+                boolean executeResponse = service.syncAndExecute();
+                if (executeResponse) {
+                    // Prepare ok
+                    handleOkPacket(data);
+                    int fieldCount = ByteUtil.readUB2(data, 9);
+                    int paramCount = ByteUtil.readUB2(data, 11);
+                    if (fieldCount > 0) {
+                        fields = new ArrayList<>(fieldCount);
+                        resultStatus = PREPARED_FIELD;
+                    }
+                    if (paramCount > 0) {
+                        params = new ArrayList<>(paramCount);
+                        resultStatus = PREPARED_PARAM;
+                    }
                 }
                 break;
             case PREPARED_PARAM:

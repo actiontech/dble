@@ -63,6 +63,10 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         }
     }
 
+    public RouteResultsetNode[] getRoute() {
+        return route;
+    }
+
     /**
      * terminatePreHandler
      *

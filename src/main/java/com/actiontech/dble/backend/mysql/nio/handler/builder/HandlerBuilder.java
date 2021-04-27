@@ -13,11 +13,16 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class HandlerBuilder {
     private static Logger logger = LoggerFactory.getLogger(HandlerBuilder.class);
@@ -70,7 +75,7 @@ public class HandlerBuilder {
         }
     }
 
-    public BaseHandlerBuilder build() throws Exception {
+    public String build() throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build&execute-complex-sql");
         try {
             final long startTime = System.nanoTime();
@@ -86,14 +91,47 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
+            String routeNode = canRouteToOneNode(fh.getMerges());
+            if (!StringUtil.isBlank(routeNode)) {
+                return routeNode;
+            }
             HandlerBuilder.startHandler(fh);
             session.endComplexExecute();
             long endTime = System.nanoTime();
             logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
-            return builder;
+            session.setTraceBuilder(builder);
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
+        return null;
+    }
+
+    /**
+     * DBLE0REQ-504
+     * According to the execution plan, judge whether it can be routed to the same node to simplify the query
+     *
+     * @param merges
+     * @return
+     */
+    public static String canRouteToOneNode(List<DMLResponseHandler> merges) {
+        Set<String> nodeSet = Sets.newHashSet();
+        boolean isMulti = false;
+        for (DMLResponseHandler merge : merges) {
+            if (merge instanceof MultiNodeMergeHandler) {
+                RouteResultsetNode[] route = ((MultiNodeMergeHandler) merge).getRoute();
+                Set<String> currentNodeSet = Arrays.stream(route).map(node -> node.getName()).collect(Collectors.toSet());
+                if (nodeSet.isEmpty()) {
+                    nodeSet = currentNodeSet;
+                } else if (!nodeSet.equals(currentNodeSet)) {
+                    isMulti = true;
+                    break;
+                }
+            }
+        }
+        if (!isMulti && nodeSet.size() == 1) {
+            return nodeSet.iterator().next();
+        }
+        return null;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

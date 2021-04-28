@@ -541,8 +541,7 @@ public final class RouterUtil {
             if (mysqlFrom instanceof SQLJoinTableSource) {
                 SQLJoinTableSource joinTableSource = (SQLJoinTableSource) mysqlFrom;
                 SQLJoinTableSource.JoinType joinType = joinTableSource.getJoinType();
-                canMerge = joinType.equals(SQLJoinTableSource.JoinType.INNER_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.JOIN) || joinType.equals(SQLJoinTableSource.JoinType.CROSS_JOIN)
-                        || joinType.equals(SQLJoinTableSource.JoinType.STRAIGHT_JOIN);
+                canMerge = joinType.equals(SQLJoinTableSource.JoinType.INNER_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.JOIN) || joinType.equals(SQLJoinTableSource.JoinType.CROSS_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.STRAIGHT_JOIN);
             } else {
                 canMerge = true;
             }

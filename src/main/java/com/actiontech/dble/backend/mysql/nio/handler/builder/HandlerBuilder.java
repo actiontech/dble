@@ -119,7 +119,7 @@ public class HandlerBuilder {
         for (DMLResponseHandler merge : merges) {
             if (merge instanceof MultiNodeMergeHandler) {
                 RouteResultsetNode[] route = ((MultiNodeMergeHandler) merge).getRoute();
-                Set<String> currentNodeSet = Arrays.stream(route).map(node -> node.getName()).collect(Collectors.toSet());
+                Set<String> currentNodeSet = Arrays.stream(route).map(RouteResultsetNode::getName).collect(Collectors.toSet());
                 if (nodeSet.isEmpty()) {
                     nodeSet = currentNodeSet;
                 } else if (!nodeSet.equals(currentNodeSet)) {

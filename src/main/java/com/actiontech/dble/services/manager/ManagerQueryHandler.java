@@ -97,9 +97,6 @@ public class ManagerQueryHandler {
                 case ManagerParse.CONFIGFILE:
                     ConfFileHandler.handle(sql, service);
                     break;
-                case ManagerParse.LOGFILE:
-                    ShowServerLog.handle(sql, service);
-                    break;
                 case ManagerParse.CREATE_DB:
                     DatabaseHandler.handle(sql, service, true);
                     break;

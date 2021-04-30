@@ -264,11 +264,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 ok.setPacketId(shardingService.nextPacketId()); // OK_PACKET
                 shardingService.getLoadDataInfileHandler().clear();
                 service.getConnection().updateLastReadTime();
+                ok.setMessage(("Records: " + ok.getAffectedRows() + "  Deleted: 0  Skipped: 0  Warnings: " + ok.getWarningCount()).getBytes());
             } else {
                 ok.setPacketId(shardingService.nextPacketId()); // OK_PACKET
+                ok.setMessage(null);
             }
             session.setRowCount(ok.getAffectedRows());
-            ok.setMessage(null);
             ok.setServerStatus(shardingService.isAutocommit() ? 2 : 1);
             shardingService.setLastInsertId(ok.getInsertId());
             session.setBackendResponseEndTime((MySQLResponseService) service);

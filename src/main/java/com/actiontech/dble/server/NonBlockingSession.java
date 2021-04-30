@@ -989,6 +989,7 @@ public class NonBlockingSession extends Session {
     public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
         if (rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
+            shardingService.transactionsCountInTx();
             if (shardingService.isTxStart()) {
                 shardingService.setTxStart(false);
                 Optional.ofNullable(StatisticListener.getInstance().getRecorder(shardingService)).ifPresent(r -> r.onTxEnd());

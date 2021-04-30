@@ -58,10 +58,10 @@ public final class SetHandler {
             if (statement instanceof SQLSetStatement) {
                 List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
                 String key;
-                int systemVariableIndex = assignItems.size() - 1;
                 items = new MysqlVariable[assignItems.size()];
-
-                for (SQLAssignItem sqlAssignItem : assignItems) {
+                SQLAssignItem sqlAssignItem = null;
+                for (int i = 0; i < assignItems.size(); i++) {
+                    sqlAssignItem = assignItems.get(i);
                     // new set item
                     key = handleSetKey(sqlAssignItem.getTarget());
                     MysqlVariable item = newSetItem(key, sqlAssignItem.getValue());
@@ -81,17 +81,17 @@ public final class SetHandler {
                             setSQL.append(",");
                         }
                         setSQL.append(SQLUtils.toMySqlString(sqlAssignItem));
-                        items[systemVariableIndex--] = item;
+                        items[i] = item;
                     } else if (item.getType() == VariableType.XA) {
                         if (frontService instanceof ShardingService) {
                             boolean val = Boolean.parseBoolean(item.getValue());
                             ((ShardingService) frontService).checkXaStatus(val);
-                            items[systemVariableIndex--] = item;
+                            items[i] = item;
                         } else {
                             throw new SQLSyntaxErrorException("unsupported set xa");
                         }
                     } else {
-                        items[systemVariableIndex--] = item;
+                        items[i] = item;
                     }
                 }
             } else if (statement instanceof MySqlSetTransactionStatement) {

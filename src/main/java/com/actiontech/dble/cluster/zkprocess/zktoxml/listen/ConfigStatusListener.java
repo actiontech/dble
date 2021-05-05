@@ -40,8 +40,6 @@ public class ConfigStatusListener extends AbstractGeneralListener<ConfStatus> {
                 LOGGER.info("childEvent " + event.getPath() + " " + event.getChangeType());
                 executeStatusChange(event);
                 break;
-            case UPDATED:
-                break;
             case REMOVED:
                 break;
             default:

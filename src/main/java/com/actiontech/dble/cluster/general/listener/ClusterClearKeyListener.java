@@ -71,10 +71,12 @@ public class ClusterClearKeyListener implements Runnable {
         //find out the new key & changed key
         for (int i = 0; i < output.getKeysCount(); i++) {
             final ClusterValue<AnyType> clusterValue = ClusterValue.readFromJson(output.getValues(i), AnyType.class);
+            //noinspection deprecation
             newKeyMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.UPDATED));
             if (cache.get(output.getKeys(i)) != null) {
                 final ClusterValue<?> value = cache.get(output.getKeys(i)).getValue();
                 if ((!Objects.equals(value.getInstanceName(), clusterValue.getInstanceName())) || (!Objects.equals(value.getCreatedAt(), clusterValue.getCreatedAt()))) {
+                    //noinspection deprecation
                     diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.UPDATED));
                 }
             } else {

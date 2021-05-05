@@ -51,12 +51,7 @@ public class DdlChildResponse extends AbstractGeneralListener<DDLInfo> {
         switch (configValue.getChangeType()) {
             case ADDED: {
                 String key = paths[paths.length - 1];
-                initMeta(key, ddlInfo);
-                break;
-            }
-            case UPDATED: {
-                String key = paths[paths.length - 1];
-                updateMeta(key, ddlInfo);
+                processDDL(key, ddlInfo, path);
                 break;
             }
             case REMOVED:
@@ -74,33 +69,8 @@ public class DdlChildResponse extends AbstractGeneralListener<DDLInfo> {
     }
 
 
-    private void initMeta(String keyName, DDLInfo ddlInfo) {
-
-
-        ClusterLogic.forDDL().processStatusEvent(keyName, ddlInfo, DDLInfo.DDLStatus.INIT);
-
-        if (DDLInfo.DDLStatus.INIT != ddlInfo.getStatus()) {
-            LOGGER.warn("get a special CREATE event when doing cluster ddl , status:{}, data is {}", ddlInfo.getStatus(), ddlInfo.toString());
-            ClusterLogic.forDDL().processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
-        }
-
-
-    }
-
-
-    private void updateMeta(String keyName, DDLInfo ddlInfo) {
-
-
-        if (DDLInfo.DDLStatus.INIT == ddlInfo.getStatus()) {
-            //missing DELETE event.
-            LOGGER.warn("get a special UPDATE event when doing cluster ddl , status:{}, data is {}", ddlInfo.getStatus(), ddlInfo.toString());
-            ClusterLogic.forDDL().processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
-        } else {
-            // just release local lock
-            ClusterLogic.forDDL().processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus());
-        }
-
-
+    private void processDDL(String keyName, DDLInfo ddlInfo, String path) {
+        ClusterLogic.forDDL().processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus(), path);
     }
 
 

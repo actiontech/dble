@@ -15,6 +15,10 @@ public class DDLInfo {
         INIT, SUCCESS, FAILED
     }
 
+    public enum NodeStatus {
+        PREPARE, COMPLETE
+    }
+
     public enum DDLType {
         CREATE_TABLE, DROP_TABLE, ALTER_TABLE, TRUNCATE_TABLE, CREATE_INDEX, DROP_INDEX, UNKNOWN
     }

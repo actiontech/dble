@@ -583,7 +583,7 @@ public class ProxyMetaManager {
             }
             DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String tableFullName = StringUtil.getUFullName(schema, table);
-            final PathMeta<DDLInfo> ddlPathMeta = ClusterMetaUtil.getDDLPath(tableFullName);
+            final PathMeta<DDLInfo> ddlPathMeta = ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.PREPARE);
             final PathMeta<DDLInfo> ddlLockPathMeta = ClusterMetaUtil.getDDLLockPath(tableFullName);
             ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
             DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
@@ -595,7 +595,12 @@ public class ProxyMetaManager {
             DistributeLockManager.addLock(lock);
             ClusterDelayProvider.delayAfterDdlLockMeta();
             clusterHelper.setKV(ddlPathMeta, ddlInfo);
-            // String errorMsg = ClusterLogic.forGeneral().waitingForAllTheNode(viewChangePath, ClusterPathUtil.SUCCESS);
+            clusterHelper.createSelfTempNode(ddlPathMeta.getPath(), FeedBackType.SUCCESS);
+
+            String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(ddlPathMeta.getPath());
+            if (errorMsg != null) {
+                throw new RuntimeException("init ddl error:" + errorMsg);
+            }
         }
     }
 
@@ -603,7 +608,7 @@ public class ProxyMetaManager {
         ClusterDelayProvider.delayAfterDdlExecuted();
         if (ClusterConfig.getInstance().isClusterEnable()) {
             String tableFullName = StringUtil.getUFullName(schema, table);
-            final PathMeta<DDLInfo> tableDDLPath = ClusterMetaUtil.getDDLPath(tableFullName);
+            final PathMeta<DDLInfo> tableDDLPath = ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.COMPLETE);
             ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
             boolean isLock = true;
             metaLock.lock();
@@ -612,8 +617,9 @@ public class ProxyMetaManager {
                     ClusterDelayProvider.delayBeforeDdlNotice();
                     DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
                     clusterHelper.setKV(tableDDLPath, ddlInfo);
+                    ClusterHelper.cleanPath(ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.PREPARE));
                     ClusterDelayProvider.delayAfterDdlNotice();
-                    clusterHelper.createSelfTempNode(ClusterPathUtil.getDDLPath(tableFullName), FeedBackType.SUCCESS);
+                    clusterHelper.createSelfTempNode(tableDDLPath.getPath(), FeedBackType.SUCCESS);
                     metaLock.unlock();
                     isLock = false;
                     String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(tableDDLPath.getPath());

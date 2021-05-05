@@ -14,5 +14,14 @@ public enum ChangeType {
     /**
      * cluster event type
      */
-    UPDATED, ADDED, REMOVED, QUERY;
+    ADDED,
+    /**
+     * cluster event type.
+     * May cause some event missing.Should  use it  carefully.
+     */
+    @Deprecated UPDATED,
+    /**
+     * cluster event type
+     */
+    REMOVED;
 }

@@ -38,6 +38,7 @@ public class OfflineStatusListener extends AbstractGeneralListener<OnlineType> {
     public void onEvent(ClusterEvent<OnlineType> event) throws Exception {
         switch (event.getChangeType()) {
             case ADDED:
+                //noinspection deprecation
             case UPDATED:
                 String path = event.getPath();
                 OnlineType value = event.getValue().getData();

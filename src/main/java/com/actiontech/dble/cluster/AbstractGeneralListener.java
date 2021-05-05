@@ -8,6 +8,7 @@ package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.ClusterXmlLoader;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -24,12 +25,13 @@ import java.util.Optional;
  * Create Date: 2021-03-30
  */
 public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, PathChildrenCacheListener, ClusterXmlLoader {
-    //todo: detail logger
     private final Logger logger = LogManager.getLogger(this.getClass());
     private ChildPathMeta<T> pathMeta;
+    private int pathHeight;
 
     public AbstractGeneralListener(ChildPathMeta<T> pathMeta) {
         this.pathMeta = pathMeta;
+        this.pathHeight = ClusterLogic.forGeneral().getPathHeight(pathMeta.getPath());
     }
 
     @Override
@@ -75,6 +77,7 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
                 type = ChangeType.REMOVED;
                 break;
             case CHILD_UPDATED:
+                //noinspection deprecation
                 type = ChangeType.UPDATED;
                 break;
             default:

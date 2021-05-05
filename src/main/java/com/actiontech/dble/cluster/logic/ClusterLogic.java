@@ -19,11 +19,16 @@ public final class ClusterLogic {
     private static final PauseResumeClusterLogic PAUSE_RESUME_CLUSTER_LOGIC = new PauseResumeClusterLogic();
     private static final ViewClusterLogic VIEW_CLUSTER_LOGIC = new ViewClusterLogic();
     public static final OnlineClusterLogic ONLINE_CLUSTER_LOGIC = new OnlineClusterLogic();
+    public static final GeneralClusterLogic GENERAL_CLUSTER_LOGIC = new GeneralClusterLogic();
 
 
     private ClusterLogic() {
     }
 
+
+    public static GeneralClusterLogic forGeneral() {
+        return GENERAL_CLUSTER_LOGIC;
+    }
 
     public static CommonClusterLogic forCommon(ClusterOperation type) {
         return new CommonClusterLogic(type);

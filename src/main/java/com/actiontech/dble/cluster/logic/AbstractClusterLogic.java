@@ -24,7 +24,7 @@ import java.util.Map;
  * @author dcy
  * Create Date: 2021-04-30
  */
-public class AbstractClusterLogic {
+public class AbstractClusterLogic extends GeneralClusterLogic {
     private static final Logger LOGGER = LogManager.getLogger(AbstractClusterLogic.class);
     protected final ClusterOperation type;
     protected final ClusterHelper clusterHelper;
@@ -34,12 +34,6 @@ public class AbstractClusterLogic {
         this.clusterHelper = ClusterHelper.getInstance(type);
     }
 
-    public int getPathHeight(String path) {
-        if (path.endsWith(ClusterPathUtil.SEPARATOR)) {
-            path = path.substring(0, path.length() - 1);
-        }
-        return path.split(ClusterPathUtil.SEPARATOR).length;
-    }
 
     public <T> List<ClusterEntry<T>> getKVBeanOfChildPath(ChildPathMeta<T> meta) throws Exception {
         List<ClusterEntry<T>> allList = clusterHelper.getKVPath(meta);
@@ -101,7 +95,7 @@ public class AbstractClusterLogic {
     }
 
 
-    public String waitingForAllTheNode(String path) throws Exception {
+    public String waitingForAllTheNode(String path) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("wait-for-others-cluster");
         try {
             Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();

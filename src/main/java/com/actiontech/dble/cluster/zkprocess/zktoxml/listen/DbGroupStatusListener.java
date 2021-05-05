@@ -23,6 +23,7 @@ public class DbGroupStatusListener extends AbstractGeneralListener<RawJson> {
     public void onEvent(ClusterEvent<RawJson> event) throws Exception {
         switch (event.getChangeType()) {
             case ADDED:
+                //noinspection deprecation
             case UPDATED:
                 updateStatus(event);
                 break;

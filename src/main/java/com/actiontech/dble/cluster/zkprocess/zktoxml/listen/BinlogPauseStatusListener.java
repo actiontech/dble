@@ -32,8 +32,6 @@ public class BinlogPauseStatusListener extends AbstractGeneralListener<Empty> {
                 ClusterLogic.forBinlog().executeBinlogPauseEvent(instanceName);
             }
             break;
-            case UPDATED:
-                break;
             case REMOVED: {
                 LOGGER.info("childEvent " + event.getPath() + " " + event.getChangeType());
                 String instanceName = event.getValue().getInstanceName();

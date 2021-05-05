@@ -43,13 +43,6 @@ public class HaInfo {
         this.status = status;
     }
 
-    //    public HaInfo(String kv) {
-    //        String[] infoDetail = kv.split(split);
-    //        this.lockType = HaType.valueOf(infoDetail[0]);
-    //        this.startId = infoDetail[1];
-    //        this.dbGroupName = infoDetail[2];
-    //        this.status = HaStatus.valueOf(infoDetail[3]);
-    //    }
 
     public HaType getLockType() {
         return lockType;

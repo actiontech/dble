@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster;
 
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 
@@ -143,8 +144,8 @@ public final class ClusterPathUtil {
         return BASE_PATH + "ddl";
     }
 
-    public static String getDDLPath(String fullName) {
-        return getDDLPath() + SEPARATOR + fullName;
+    public static String getDDLPath(String fullName, DDLInfo.NodeStatus ddlStatus) {
+        return getDDLPath() + SEPARATOR + fullName + "." + ddlStatus;
     }
 
 

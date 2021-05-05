@@ -1,13 +1,14 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLockManager;
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -49,7 +50,9 @@ public final class KillDdlLock {
             // release distributed lock
             if (ClusterConfig.getInstance().isClusterEnable()) {
                 String fullName = StringUtil.getUFullName(schema, table);
-                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(fullName));
+                for (DDLInfo.NodeStatus nodeStatus : DDLInfo.NodeStatus.values()) {
+                    ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(fullName, nodeStatus));
+                }
                 DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(fullName));
             }
         } finally {

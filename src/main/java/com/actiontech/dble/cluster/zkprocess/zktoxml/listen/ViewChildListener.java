@@ -31,8 +31,6 @@ public class ViewChildListener extends AbstractGeneralListener<ViewChangeType> {
                 LOGGER.info("childEvent " + event.getPath() + " " + event.getChangeType());
                 executeViewOperator(event);
                 break;
-            case UPDATED:
-                break;
             case REMOVED:
                 break;
             default:

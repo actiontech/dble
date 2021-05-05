@@ -81,8 +81,8 @@ public final class ClusterMetaUtil {
     }
 
 
-    public static PathMeta<DDLInfo> getDDLPath(String fullName) {
-        return PathMeta.of(ClusterPathUtil.getDDLPath(fullName), DDLInfo.class);
+    public static PathMeta<DDLInfo> getDDLPath(String fullName, DDLInfo.NodeStatus ddlStatus) {
+        return PathMeta.of(ClusterPathUtil.getDDLPath(fullName, ddlStatus), DDLInfo.class);
     }
 
 

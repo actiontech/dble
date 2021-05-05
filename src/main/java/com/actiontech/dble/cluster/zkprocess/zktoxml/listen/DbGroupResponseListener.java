@@ -29,8 +29,6 @@ public class DbGroupResponseListener extends AbstractGeneralListener<HaInfo> {
             case ADDED:
                 updateStatus(event);
                 break;
-            case UPDATED:
-                break;
             case REMOVED:
                 break;
             default:

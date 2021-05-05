@@ -39,34 +39,40 @@ public class DDLClusterLogic extends AbstractClusterLogic {
     }
 
 
-    public void initDDLEvent(String keyName, DDLInfo ddlInfo) throws Exception {
+    public void initDDLEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
         String[] tableInfo = keyName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         String fullName = schema + "." + table;
         ddlLockMap.put(fullName, ddlInfo.getFrom());
         LOGGER.info("init of ddl " + schema + " " + table);
+        boolean metaLocked = false;
         try {
             ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
+            metaLocked = true;
+            clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
         } catch (Exception t) {
             ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            if (!metaLocked) {
+                clusterHelper.createSelfTempNode(path, FeedBackType.ofError(t.getMessage()));
+            }
             throw t;
         }
     }
 
-    public void processStatusEvent(String keyName, DDLInfo ddlInfo, DDLInfo.DDLStatus status) {
+    public void processStatusEvent(String keyName, DDLInfo ddlInfo, DDLInfo.DDLStatus status, String path) {
         try {
             switch (status) {
                 case INIT:
-                    this.initDDLEvent(keyName, ddlInfo);
+                    this.initDDLEvent(keyName, ddlInfo, path);
                     break;
                 case SUCCESS:
                     // just release local lock
-                    this.ddlUpdateEvent(keyName, ddlInfo);
+                    this.ddlSuccessEvent(keyName, ddlInfo, path);
                     break;
                 case FAILED:
                     // just release local lock
-                    this.ddlFailedEvent(keyName);
+                    this.ddlFailedEvent(keyName, path);
                     break;
 
                 default:
@@ -74,7 +80,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
 
             }
         } catch (Exception e) {
-            LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
+            LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString(), e);
         }
 
     }
@@ -83,7 +89,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         LOGGER.info("DDL node " + path + " removed , and DDL info is " + ddlInfo.toString());
     }
 
-    public void ddlFailedEvent(String keyName) throws Exception {
+    public void ddlFailedEvent(String keyName, String path) throws Exception {
         String[] tableInfo = keyName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
@@ -92,10 +98,10 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         //if the start node executing ddl with error,just release the lock
         ddlLockMap.remove(fullName);
         ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-        clusterHelper.createSelfTempNode(ClusterPathUtil.getDDLPath(fullName), FeedBackType.SUCCESS);
+        clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
     }
 
-    public void ddlUpdateEvent(String keyName, DDLInfo ddlInfo) throws Exception {
+    public void ddlSuccessEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
         LOGGER.info("ddl execute success notice");
         String[] tableInfo = keyName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
@@ -113,7 +119,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         }
 
         ClusterDelayProvider.delayBeforeDdlResponse();
-        clusterHelper.createSelfTempNode(ClusterPathUtil.getDDLPath(fullName), FeedBackType.SUCCESS);
+        clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
     }
 
     public void checkDDLAndRelease(String crashNode) {

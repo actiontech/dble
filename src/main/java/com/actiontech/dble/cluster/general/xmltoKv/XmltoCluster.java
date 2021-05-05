@@ -10,6 +10,7 @@ import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
+import com.actiontech.dble.config.loader.SystemConfigLoader;
 
 
 /**
@@ -24,6 +25,7 @@ public final class XmltoCluster {
 
     public static void main(String[] args) {
         try {
+            SystemConfigLoader.initSystemConfig();
             ClusterController.loadClusterProperties();
             ClusterGeneralConfig.initConfig();
             AbstractConsulSender sender = ((AbstractConsulSender) (ClusterGeneralConfig.getInstance().getClusterSender()));

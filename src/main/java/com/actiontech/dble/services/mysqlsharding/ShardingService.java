@@ -119,16 +119,18 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
                         Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
-                    }
-                    if (!autocommit && session.getTargetCount() > 0) {
-                        setNoAutoCommit = true;
-                        session.implicitCommit(() -> {
-                            autocommit = true;
+                        if (session.getTargetCount() > 0) {
+                            setNoAutoCommit = true;
+                            session.implicitCommit(() -> {
+                                autocommit = true;
+                                txStarted = false;
+                                this.singleTransactionsCount();
+                                writeOkPacket();
+                            });
+                            return;
+                        } else if (txStarted) {
                             txStarted = false;
-                            this.singleTransactionsCount();
-                            writeOkPacket();
-                        });
-                        return;
+                        }
                     }
                     autocommit = true;
                 } else {

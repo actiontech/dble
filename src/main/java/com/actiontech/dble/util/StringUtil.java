@@ -370,6 +370,20 @@ public final class StringUtil {
         return str1.equals(str2);
     }
 
+    /**
+     * option to ignore case depending on the condition
+     * @param str1
+     * @param str2
+     * @param ignoreCase
+     * @return
+     */
+    public static boolean equalsConditionIgnoreCase(String str1, String str2, boolean ignoreCase) {
+        if (ignoreCase) {
+            return equalsIgnoreCase(str1, str2);
+        }
+        return str1.equals(str2);
+    }
+
     public static boolean equalsWithEmpty(String str1, String str2) {
         if (isEmpty(str1)) {
             return isEmpty(str2);

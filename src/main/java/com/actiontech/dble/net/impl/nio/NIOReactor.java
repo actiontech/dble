@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
@@ -122,6 +123,12 @@ public final class NIOReactor {
                         if (key.isValid() && key.isReadable()) {
                             try {
                                 con.asyncRead();
+                            } catch (ClosedChannelException e) {
+                                //happens when close and read running in parallel.
+                                //sometimes ,no byte could be read,but an  read event triggered with  zero bytes although cause this.
+                                LOGGER.info("read bytes but the  connection is closed .connection is {}. May be the connection closed suddenly.", con);
+                                key.cancel();
+                                continue;
                             } catch (Exception e) {
                                 LOGGER.warn("caught err:", e);
                                 con.close("program err:" + e.toString());

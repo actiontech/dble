@@ -10,7 +10,7 @@ package com.actiontech.dble.cluster;
  * @author dcy
  * Create Date: 2021-03-30
  */
-public enum RestfulType {
+public enum ChangeType {
     /**
      * cluster event type
      */

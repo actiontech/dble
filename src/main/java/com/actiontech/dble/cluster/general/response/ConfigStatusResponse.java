@@ -43,7 +43,7 @@ public class ConfigStatusResponse extends AbstractGeneralListener<ConfStatus> {
         }
         ConfStatus status = configValue.getValue().getData();
 
-        if (RestfulType.REMOVED.equals(configValue.getChangeType())) {
+        if (ChangeType.REMOVED.equals(configValue.getChangeType())) {
             // delete node
             return;
         }

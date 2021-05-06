@@ -32,7 +32,7 @@ public class DbGroupHaResponse extends AbstractGeneralListener<Empty> {
             //child change the listener is not supported
             return;
         }
-        if (configValue.getChangeType().equals(RestfulType.REMOVED)) {
+        if (configValue.getChangeType().equals(ChangeType.REMOVED)) {
             return;
         }
 

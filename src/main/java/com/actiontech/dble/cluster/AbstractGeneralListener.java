@@ -66,16 +66,16 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
     @Override
     public final void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
 
-        final RestfulType type;
+        final ChangeType type;
         switch (event.getType()) {
             case CHILD_ADDED:
-                type = RestfulType.ADDED;
+                type = ChangeType.ADDED;
                 break;
             case CHILD_REMOVED:
-                type = RestfulType.REMOVED;
+                type = ChangeType.REMOVED;
                 break;
             case CHILD_UPDATED:
-                type = RestfulType.UPDATED;
+                type = ChangeType.UPDATED;
                 break;
             default:
                 return;

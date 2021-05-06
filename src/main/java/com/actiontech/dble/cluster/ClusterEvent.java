@@ -15,9 +15,9 @@ import javax.annotation.Nonnull;
 public class ClusterEvent<T> {
     private String path;
     private ClusterValue<T> value;
-    private RestfulType changeType;
+    private ChangeType changeType;
 
-    public ClusterEvent(@Nonnull String path, @Nonnull ClusterValue<T> value, @Nonnull RestfulType changeType) {
+    public ClusterEvent(@Nonnull String path, @Nonnull ClusterValue<T> value, @Nonnull ChangeType changeType) {
         this.path = path;
         this.value = value;
         this.changeType = changeType;
@@ -34,7 +34,7 @@ public class ClusterEvent<T> {
     }
 
     @Nonnull
-    public RestfulType getChangeType() {
+    public ChangeType getChangeType() {
         return changeType;
     }
 

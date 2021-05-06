@@ -36,7 +36,7 @@ public class BinlogPauseStatusResponse extends AbstractGeneralListener<Empty> {
         }
 
         String instanceName = configValue.getValue().getInstanceName();
-        if (RestfulType.REMOVED.equals(configValue.getChangeType())) {
+        if (ChangeType.REMOVED.equals(configValue.getChangeType())) {
             ClusterLogic.forBinlog().executeBinlogPauseDeleteEvent(instanceName);
         } else {
             ClusterLogic.forBinlog().executeBinlogPauseEvent(instanceName);

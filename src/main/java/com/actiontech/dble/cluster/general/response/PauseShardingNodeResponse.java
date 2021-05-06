@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.cluster.RestfulType.REMOVED;
+import static com.actiontech.dble.cluster.ChangeType.REMOVED;
 
 
 public class PauseShardingNodeResponse extends AbstractGeneralListener<PauseInfo> {

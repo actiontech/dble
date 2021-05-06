@@ -30,7 +30,7 @@ public class ViewChildResponse extends AbstractGeneralListener<ViewChangeType> {
             return;
         }
 
-        if (RestfulType.REMOVED.equals(configValue.getChangeType())) {
+        if (ChangeType.REMOVED.equals(configValue.getChangeType())) {
             // delete node
             return;
         }

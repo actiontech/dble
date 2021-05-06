@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.cluster.general.listener;
 
+import com.actiontech.dble.cluster.ChangeType;
 import com.actiontech.dble.cluster.ClusterEvent;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.ClusterValue;
-import com.actiontech.dble.cluster.RestfulType;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
@@ -71,21 +71,21 @@ public class ClusterClearKeyListener implements Runnable {
         //find out the new key & changed key
         for (int i = 0; i < output.getKeysCount(); i++) {
             final ClusterValue<AnyType> clusterValue = ClusterValue.readFromJson(output.getValues(i), AnyType.class);
-            newKeyMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, RestfulType.UPDATED));
+            newKeyMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.UPDATED));
             if (cache.get(output.getKeys(i)) != null) {
                 final ClusterValue<?> value = cache.get(output.getKeys(i)).getValue();
                 if ((!Objects.equals(value.getInstanceName(), clusterValue.getInstanceName())) || (!Objects.equals(value.getCreatedAt(), clusterValue.getCreatedAt()))) {
-                    diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, RestfulType.UPDATED));
+                    diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.UPDATED));
                 }
             } else {
-                diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, RestfulType.ADDED));
+                diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.ADDED));
             }
         }
 
         //find out the deleted Key
         for (Map.Entry<String, ClusterEvent<?>> entry : cache.entrySet()) {
             if (!newKeyMap.containsKey(entry.getKey())) {
-                diffMap.put(entry.getKey(), new ClusterEvent<>(entry.getKey(), entry.getValue().getValue(), RestfulType.REMOVED));
+                diffMap.put(entry.getKey(), new ClusterEvent<>(entry.getKey(), entry.getValue().getValue(), ChangeType.REMOVED));
             }
         }
 
@@ -105,8 +105,8 @@ public class ClusterClearKeyListener implements Runnable {
             Map<String, ClusterEvent<?>> diffMap = new HashMap<>();
             for (int i = 0; i < output.getKeysCount(); i++) {
                 final ClusterValue<AnyType> clusterValue = ClusterValue.readFromJson(output.getValues(i), AnyType.class);
-                diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, RestfulType.ADDED));
-                cache.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, RestfulType.ADDED));
+                diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.ADDED));
+                cache.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.ADDED));
             }
             handle(diffMap);
         } catch (Exception e) {

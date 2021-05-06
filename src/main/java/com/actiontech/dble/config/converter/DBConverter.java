@@ -7,8 +7,10 @@ package com.actiontech.dble.config.converter;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
-import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.JsonFactory;
+import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
@@ -45,36 +47,35 @@ public class DBConverter {
 
     private final Map<String, PhysicalDbGroup> dbGroupMap = Maps.newLinkedHashMap();
 
-    public static String dbXmlToJson() throws Exception {
+    public static RawJson dbXmlToJson() throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(DbGroups.class);
         xmlProcess.initJaxbClass();
         return parseDbGroupXmlFileToJson(xmlProcess);
     }
 
-    public static String dbXmlToJson(String xmlPath) throws Exception {
+    public static RawJson dbXmlToJson(String xmlPath) throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(DbGroups.class);
         xmlProcess.initJaxbClass();
         return parseDbGroupXmlFileToJson(xmlProcess, xmlPath, ConfigFileName.DB_XSD);
     }
 
-    public DbGroups dbJsonToBean(String dbJson, boolean syncHaStatus) {
-        return ClusterLogic.parseDbGroupsJsonToBean(new Gson(), dbJson, syncHaStatus);
+    public DbGroups dbJsonToBean(RawJson dbJson, boolean syncHaStatus) {
+        return ClusterLogic.forConfig().parseDbGroupsJsonToBean(JsonFactory.getJson(), dbJson, syncHaStatus);
     }
 
-    public static String dbBeanToJson(DbGroups dbGroups) {
-        Gson gson = new Gson();
+    public static RawJson dbBeanToJson(DbGroups dbGroups) {
+        Gson gson = JsonFactory.getJson();
         // bean to json obj
         JsonObject jsonObj = new JsonObject();
         jsonObj.addProperty(ClusterPathUtil.VERSION, dbGroups.getVersion());
 
         jsonObj.add(ClusterPathUtil.DB_GROUP, gson.toJsonTree(dbGroups.getDbGroup()));
-        //from json obj to string
-        return gson.toJson(jsonObj);
+        return RawJson.of(jsonObj);
     }
 
-    public void dbJsonToMap(String dbJson, ProblemReporter problemReporter, boolean syncHaStatus) {
+    public void dbJsonToMap(RawJson dbJson, ProblemReporter problemReporter, boolean syncHaStatus) {
         DbGroups dbs = dbJsonToBean(dbJson, syncHaStatus);
         if (dbs.getVersion() != null && !Versions.CONFIG_VERSION.equals(dbs.getVersion())) {
             if (problemReporter != null) {
@@ -186,11 +187,11 @@ public class DBConverter {
         }
     }
 
-    private static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
+    private static RawJson parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
         return parseDbGroupXmlFileToJson(xmlParseBase, ConfigFileName.DB_XML, ConfigFileName.DB_XSD);
     }
 
-    private static String parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase, String xmlPath, String xsdPath) throws Exception {
+    private static RawJson parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase, String xmlPath, String xsdPath) throws Exception {
         // xml file to bean
         DbGroups groupsBean;
         try {

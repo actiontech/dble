@@ -7,16 +7,16 @@ package com.actiontech.dble.services.manager.response.ha;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,7 @@ public final class DbGroupHaDisable {
     }
 
     public static void execute(Matcher disable, ManagerService service) {
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         String dhName = disable.group(1);
         String subHostName = disable.group(3);
 
@@ -64,9 +65,9 @@ public final class DbGroupHaDisable {
                 } else {
                     try {
                         //local set disable
-                        final String result = dh.disableHosts(subHostName, true);
+                        final RawJson result = dh.disableHosts(subHostName, true);
                         //update total dataSources status
-                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
+                        clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
                         HaConfigManager.getInstance().haFinish(id, null, result);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
@@ -77,7 +78,7 @@ public final class DbGroupHaDisable {
             } else {
                 try {
                     //dble start in single mode
-                    String result = dh.disableHosts(subHostName, true);
+                    RawJson result = dh.disableHosts(subHostName, true);
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
@@ -97,13 +98,14 @@ public final class DbGroupHaDisable {
     }
 
     private static boolean disableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc) {
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         //get the lock from ucore
-        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.DISABLE,
                         HaInfo.HaStatus.INIT
-                ).toString()
+                )
         );
         if (!distributeLock.acquire()) {
             mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
@@ -112,22 +114,22 @@ public final class DbGroupHaDisable {
         }
         try {
             //local set disable
-            final String result = dh.disableHosts(subHostName, false);
+            final RawJson result = dh.disableHosts(subHostName, false);
 
             //update total dbInstance status
-            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
+            clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
             // update the notify value let other dble to notify
-            ClusterHelper.setKV(ClusterPathUtil.getHaResponsePath(dh.getGroupName()),
+            clusterHelper.setKV(ClusterMetaUtil.getHaResponseChildPath(dh.getGroupName()),
                     new HaInfo(dh.getGroupName(),
                             SystemConfig.getInstance().getInstanceName(),
                             HaInfo.HaType.DISABLE,
                             HaInfo.HaStatus.SUCCESS
-                    ).toString());
+                    ));
             //change log stage into wait others
             HaConfigManager.getInstance().haWaitingOthers(id);
             //waiting for other dble to response
-            ClusterHelper.createSelfTempNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), ClusterPathUtil.SUCCESS);
-            String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), ClusterPathUtil.SUCCESS);
+            clusterHelper.createSelfTempNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), FeedBackType.SUCCESS);
+            String errorMsg = ClusterLogic.forHA().waitingForAllTheNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()));
             //set  log stage to finish
             HaConfigManager.getInstance().haFinish(id, errorMsg, result);
             if (errorMsg != null) {

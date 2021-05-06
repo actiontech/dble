@@ -11,18 +11,22 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.ClusterMetaUtil;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.PathMeta;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.values.Empty;
+import com.actiontech.dble.cluster.values.FeedBackType;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -34,7 +38,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -94,7 +101,8 @@ public final class ShowBinlogStatus {
 
     private static void showBinlogWithCluster(ManagerService service, long timeout) {
         //step 1 get the distributeLock
-        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), SystemConfig.getInstance().getInstanceName());
+        final ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.BINGLOG);
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getBinlogPauseLockPath());
         try {
             if (!distributeLock.acquire()) {
                 service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
@@ -115,14 +123,14 @@ public final class ShowBinlogStatus {
                         return;
                     }
                     //step 4 notify other dble to stop the commit & set self status
-                    String binlogStatusPath = ClusterPathUtil.getBinlogPauseStatus();
-                    ClusterHelper.setKV(binlogStatusPath, SystemConfig.getInstance().getInstanceName());
-                    ClusterHelper.createSelfTempNode(binlogStatusPath, ClusterPathUtil.SUCCESS);
+                    PathMeta<Empty> binlogStatusPath = ClusterMetaUtil.getBinlogPauseStatusPath();
+                    clusterHelper.setKV(binlogStatusPath, new Empty());
+                    clusterHelper.createSelfTempNode(binlogStatusPath.getPath(), FeedBackType.SUCCESS);
 
-                    Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
+                    Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
                     while (true) {
                         StringBuffer errorStringBuf = new StringBuffer();
-                        if (ClusterLogic.checkResponseForOneTime(ClusterPathUtil.SUCCESS, binlogStatusPath, expectedMap, errorStringBuf)) {
+                        if (ClusterLogic.forBinlog().checkResponseForOneTime(binlogStatusPath.getPath(), expectedMap, errorStringBuf)) {
                             errMsg = errorStringBuf.length() <= 0 ? null : errorStringBuf.toString();
                             break;
                         } else if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {

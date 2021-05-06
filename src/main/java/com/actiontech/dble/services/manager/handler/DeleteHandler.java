@@ -7,13 +7,13 @@ package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.ClusterMetaUtil;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -95,13 +95,14 @@ public final class DeleteHandler {
         }
 
         DistributeLock distributeLock = null;
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
             if (!distributeLock.acquire()) {
                 service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
                 return;
             }
-            LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+            LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
         }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         int rowSize;

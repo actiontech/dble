@@ -8,7 +8,11 @@ package com.actiontech.dble.backend.mysql.view;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
-import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.values.FeedBackType;
+import com.actiontech.dble.cluster.values.ViewChangeType;
+import com.actiontech.dble.cluster.values.ViewType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import org.slf4j.Logger;
@@ -27,17 +31,19 @@ public class KVStoreRepository implements Repository {
     private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<>();
 
     private FileSystemRepository fileSystemRepository = null;
+
     public KVStoreRepository() {
         this.init();
         fileSystemRepository = new FileSystemRepository(viewCreateSqlMap);
         fileSystemRepository.saveMapToFile();
     }
 
+    @Override
     public void init() {
         Map<String, Map<String, String>> map = new HashMap<>();
         try {
-            List<KvBean> allList = ClusterLogic.getKVBeanOfChildPath(ClusterPathUtil.getViewPath());
-            for (KvBean bean : allList) {
+            List<ClusterEntry<ViewType>> allList = ClusterLogic.forView().getKVBeanOfChildPath(ChildPathMeta.of(ClusterPathUtil.getViewPath(), ViewType.class));
+            for (ClusterEntry<ViewType> bean : allList) {
                 String[] key = bean.getKey().split("/");
                 if (bean.getKey().equals(ClusterPathUtil.getViewChangePath())) {
                     continue;
@@ -46,7 +52,7 @@ public class KVStoreRepository implements Repository {
                 String schema = value[0];
                 String viewName = value[1];
                 map.computeIfAbsent(schema, k -> new ConcurrentHashMap<>());
-                map.get(schema).put(viewName, bean.getValue());
+                map.get(schema).put(viewName, bean.getValue().getData().getCreateSql());
             }
 
             viewCreateSqlMap = map;
@@ -74,9 +80,10 @@ public class KVStoreRepository implements Repository {
             String msg = "There is another instance init meta data, try it later.";
             throw new RuntimeException(msg);
         }
-        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
-                SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
-        final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
+        final ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.VIEW);
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getViewLockPath(schemaName, viewName),
+                new ViewChangeType(SystemConfig.getInstance().getInstanceName(), UPDATE));
+        final PathMeta<ViewChangeType> viewChangePath = ClusterMetaUtil.getViewChangePath(schemaName, viewName);
         if (!distributeLock.acquire()) {
             String msg = "other session/dble instance is operating view, try it later or check the cluster lock";
             LOGGER.warn(msg);
@@ -87,14 +94,14 @@ public class KVStoreRepository implements Repository {
 
             Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
             schemaMap.put(viewName, createSql);
-            ClusterHelper.setKV(ClusterPathUtil.getViewPath(schemaName, viewName), createSql);
+            clusterHelper.setKV(ClusterMetaUtil.getViewPath(schemaName, viewName), new ViewType(createSql));
 
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
+            clusterHelper.setKV(viewChangePath, new ViewChangeType(SystemConfig.getInstance().getInstanceName(), UPDATE));
             ClusterDelayProvider.delayAfterViewNotic();
 
-            ClusterHelper.createSelfTempNode(viewChangePath, ClusterPathUtil.SUCCESS);
-            String errorMsg = ClusterLogic.waitingForAllTheNode(viewChangePath, ClusterPathUtil.SUCCESS);
+            clusterHelper.createSelfTempNode(viewChangePath.getPath(), FeedBackType.SUCCESS);
+            String errorMsg = ClusterLogic.forView().waitingForAllTheNode(viewChangePath.getPath());
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);
@@ -122,9 +129,10 @@ public class KVStoreRepository implements Repository {
             String msg = "There is another instance init meta data, try it later.";
             throw new RuntimeException(msg);
         }
-        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
-                SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
-        final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
+        final ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.VIEW);
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getViewLockPath(schemaName, viewName),
+                new ViewChangeType(SystemConfig.getInstance().getInstanceName(), DELETE));
+        final PathMeta<ViewChangeType> viewChangePath = ClusterMetaUtil.getViewChangePath(schemaName, viewName);
         if (!distributeLock.acquire()) {
             String msg = "other session/dble instance is operating view, try it later or check the cluster lock";
             LOGGER.warn(msg);
@@ -135,10 +143,10 @@ public class KVStoreRepository implements Repository {
             ClusterDelayProvider.delayAfterGetLock();
             ClusterHelper.cleanKV(ClusterPathUtil.getViewPath(schemaName, viewName));
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
+            clusterHelper.setKV(viewChangePath, new ViewChangeType(SystemConfig.getInstance().getInstanceName(), DELETE));
             ClusterDelayProvider.delayAfterViewNotic();
-            ClusterHelper.createSelfTempNode(viewChangePath, ClusterPathUtil.SUCCESS);
-            String errorMsg = ClusterLogic.waitingForAllTheNode(viewChangePath, ClusterPathUtil.SUCCESS);
+            clusterHelper.createSelfTempNode(viewChangePath.getPath(), FeedBackType.SUCCESS);
+            String errorMsg = ClusterLogic.forView().waitingForAllTheNode(viewChangePath.getPath());
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);

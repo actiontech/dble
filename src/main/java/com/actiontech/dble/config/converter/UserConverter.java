@@ -4,8 +4,10 @@
  */
 package com.actiontech.dble.config.converter;
 
-import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.JsonFactory;
+import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.Users;
 import com.actiontech.dble.cluster.zkprocess.entity.user.*;
@@ -27,7 +29,10 @@ import com.alibaba.druid.wall.WallProvider;
 import com.alibaba.druid.wall.spi.MySqlWallProvider;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +47,7 @@ public class UserConverter {
     public static final String TYPE_MANAGER_USER = "managerUser";
     public static final String TYPE_SHARDING_USER = "shardingUser";
     public static final String TYPE_RWSPLIT_USER = "rwSplitUser";
-    private final Gson gson;
+    private final Gson gson = JsonFactory.getJson();
     private final Map<UserName, UserConfig> userConfigMap = Maps.newLinkedHashMap();
     private final Map<String, Properties> blackListConfigMap = Maps.newLinkedHashMap();
     private final AtomicInteger userId = new AtomicInteger(0);
@@ -51,18 +56,15 @@ public class UserConverter {
     private boolean containsShardingUser;
 
     public UserConverter() {
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
-        this.gson = gsonBuilder.create();
     }
 
-    public Users userJsonToBean(String userJson) {
-        Users users = ClusterLogic.parseUserJsonToBean(this.gson, userJson);
+    public Users userJsonToBean(RawJson userJson) {
+        Users users = ClusterLogic.forConfig().parseUserJsonToBean(this.gson, userJson);
         this.containsShardingUser = users.getUser().stream().anyMatch(userObj -> userObj instanceof ShardingUser);
         return users;
     }
 
-    public String userBeanToJson(Users users) {
+    public RawJson userBeanToJson(Users users) {
         // bean to json obj
         JsonObject jsonObj = new JsonObject();
         jsonObj.addProperty(ClusterPathUtil.VERSION, users.getVersion());
@@ -77,18 +79,17 @@ public class UserConverter {
         }
         jsonObj.add(ClusterPathUtil.USER, this.gson.toJsonTree(userArray));
         jsonObj.add(ClusterPathUtil.BLACKLIST, this.gson.toJsonTree(users.getBlacklist()));
-        //from json obj to string
-        return this.gson.toJson(jsonObj);
+        return RawJson.of(jsonObj);
     }
 
-    public String userXmlToJson() throws Exception {
+    public RawJson userXmlToJson() throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Users.class);
         xmlProcess.initJaxbClass();
         return parseUserXmlFileToJson(xmlProcess);
     }
 
-    public void userJsonToMap(String userJson, ProblemReporter problemReporter) {
+    public void userJsonToMap(RawJson userJson, ProblemReporter problemReporter) {
         Users users = userJsonToBean(userJson);
         List<BlackList> blacklist = Optional.ofNullable(users.getBlacklist()).orElse(Lists.newArrayList());
         if (users.getVersion() != null && !Versions.CONFIG_VERSION.equals(users.getVersion())) {
@@ -111,7 +112,7 @@ public class UserConverter {
         }
     }
 
-    private String parseUserXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
+    private RawJson parseUserXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
         // xml file to bean
         Users usersBean;
         try {

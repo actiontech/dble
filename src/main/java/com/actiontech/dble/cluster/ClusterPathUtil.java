@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 
 import static com.actiontech.dble.backend.mysql.view.Repository.SCHEMA_VIEW_SPLIT;
 
@@ -126,14 +127,17 @@ public final class ClusterPathUtil {
         return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
     }
 
-    public static String getBinlogPause() {
+    public static String getBinlogPausePath() {
         return BINLOG_PAUSE_PATH;
     }
 
-    public static String getBinlogPauseStatus() {
+    public static String getBinlogPauseStatusPath() {
         return BINLOG_PAUSE_PATH + SEPARATOR + BINLOG_PAUSE_STATUS;
     }
 
+    public static String getBinlogPauseStatusSelfPath() {
+        return ClusterPathUtil.getBinlogPauseStatusPath() + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceName();
+    }
 
     public static String getDDLPath() {
         return BASE_PATH + "ddl";

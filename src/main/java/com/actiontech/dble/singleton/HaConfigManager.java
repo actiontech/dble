@@ -4,6 +4,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.JsonFactory;
+import com.actiontech.dble.cluster.RawJson;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
 import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
@@ -139,8 +141,8 @@ public final class HaConfigManager {
         }
     }
 
-    public Map<String, String> getSourceJsonList() {
-        Map<String, String> map = new HashMap<>();
+    public Map<String, RawJson> getSourceJsonList() {
+        Map<String, RawJson> map = new HashMap<>();
         for (DBGroup dbGroup : dbGroups.getDbGroup()) {
             JsonObject jsonObject = new JsonObject();
             jsonObject.addProperty(JSON_NAME, dbGroup.getName());
@@ -148,9 +150,9 @@ public final class HaConfigManager {
             for (DBInstance dbInstance : dbGroup.getDbInstance()) {
                 list.add(new DbInstanceStatus(dbInstance.getName(), "true".equals(dbInstance.getDisabled()), dbInstance.getPrimary() != null && dbInstance.getPrimary()));
             }
-            Gson gson = new Gson();
+            Gson gson = JsonFactory.getJson();
             jsonObject.add(JSON_LIST, gson.toJsonTree(list));
-            map.put(dbGroup.getName(), gson.toJson(jsonObject));
+            map.put(dbGroup.getName(), RawJson.of(jsonObject));
         }
         return map;
     }
@@ -170,7 +172,7 @@ public final class HaConfigManager {
         return id;
     }
 
-    public void haFinish(int id, String errorMsg, String result) {
+    public void haFinish(int id, String errorMsg, RawJson result) {
         HaChangeStatus status = unfinised.get(id);
         unfinised.remove(id);
         StringBuilder resultString = new StringBuilder().

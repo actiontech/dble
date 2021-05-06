@@ -5,8 +5,10 @@
 package com.actiontech.dble.config.converter;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.JsonFactory;
+import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.cluster.zkprocess.console.ParseParamEnum;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
@@ -31,7 +33,10 @@ import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,33 +57,30 @@ public class ShardingConverter {
     private final Map<String, SchemaConfig> schemaConfigMap = Maps.newLinkedHashMap();
     private final Map<ERTable, Set<ERTable>> erRelations = Maps.newLinkedHashMap();
     private final AtomicInteger tableIndex = new AtomicInteger(0);
-    private final Gson gson;
+    private final Gson gson = JsonFactory.getJson();
 
     public ShardingConverter() {
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
-        this.gson = gsonBuilder.create();
     }
 
-    public String shardingXmlToJson() throws Exception {
+    public RawJson shardingXmlToJson() throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Shardings.class);
         xmlProcess.initJaxbClass();
         return parseShardingXmlFileToJson(xmlProcess);
     }
 
-    public String shardingXmlToJson(String xmlPath) throws Exception {
+    public RawJson shardingXmlToJson(String xmlPath) throws Exception {
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Shardings.class);
         xmlProcess.initJaxbClass();
         return parseShardingXmlFileToJson(xmlProcess, xmlPath, ConfigFileName.SHARDING_XSD);
     }
 
-    public Shardings shardingJsonToBean(String shardingJson) {
-        return ClusterLogic.parseShardingJsonToBean(gson, shardingJson);
+    public Shardings shardingJsonToBean(RawJson shardingJson) {
+        return ClusterLogic.forConfig().parseShardingJsonToBean(gson, shardingJson);
     }
 
-    public String shardingBeanToJson(Shardings shardings) {
+    public RawJson shardingBeanToJson(Shardings shardings) {
         // bean to json obj
         JsonObject jsonObj = new JsonObject();
         jsonObj.addProperty(ClusterPathUtil.VERSION, shardings.getVersion());
@@ -104,11 +106,10 @@ public class ShardingConverter {
         List<Function> functionList = shardings.getFunction();
         readMapFileAddFunction(functionList);
         jsonObj.add(ClusterPathUtil.FUNCTION, gson.toJsonTree(functionList));
-        //from json obj to string
-        return gson.toJson(jsonObj);
+        return RawJson.of(jsonObj);
     }
 
-    public void shardingJsonToMap(String shardingJson, Map<String, PhysicalDbGroup> dbGroupMap, String sequenceJson, ProblemReporter problemReporter) {
+    public void shardingJsonToMap(RawJson shardingJson, Map<String, PhysicalDbGroup> dbGroupMap, RawJson sequenceJson, ProblemReporter problemReporter) {
         Shardings shardings = shardingJsonToBean(shardingJson);
         List<ShardingNode> shardingNodeList = shardings.getShardingNode();
         List<Function> functionList = shardings.getFunction();
@@ -137,11 +138,11 @@ public class ShardingConverter {
         }
     }
 
-    String parseShardingXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
+    RawJson parseShardingXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
         return parseShardingXmlFileToJson(xmlParseBase, ConfigFileName.SHARDING_XML, ConfigFileName.SHARDING_XSD);
     }
 
-    String parseShardingXmlFileToJson(XmlProcessBase xmlParseBase, String xmlPath, String xsdPath) throws Exception {
+    RawJson parseShardingXmlFileToJson(XmlProcessBase xmlParseBase, String xmlPath, String xsdPath) throws Exception {
         // xml file to bean
         Shardings shardingBean;
         try {
@@ -432,7 +433,7 @@ public class ShardingConverter {
     }
 
 
-    private void deleteUselessShardingNode(List<ErrorInfo> errorInfos, String sequenceJson) {
+    private void deleteUselessShardingNode(List<ErrorInfo> errorInfos, RawJson sequenceJson) {
         Set<String> allUseShardingNode = new HashSet<>();
         for (SchemaConfig sc : this.schemaConfigMap.values()) {
             // check shardingNode / dbGroup
@@ -441,7 +442,7 @@ public class ShardingConverter {
         }
 
         // add global sequence node when it is some dedicated servers */
-        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL && !StringUtil.isBlank(sequenceJson)) {
+        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL && sequenceJson != null) {
             IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
             redundancy.loadByJson(false, sequenceJson);
             allUseShardingNode.addAll(redundancy.getShardingNodes());

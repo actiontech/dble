@@ -10,7 +10,6 @@ import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.util.StringUtil;
 import io.grpc.Channel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -69,7 +68,7 @@ public class UshardSender extends AbstractConsulSender {
                         while (!Thread.currentThread().isInterrupted()) {
                             try {
                                 LOGGER.debug("renew lock of session  start:" + sessionId + " " + path);
-                                if (StringUtil.isEmpty(ClusterHelper.getPathValue(path))) {
+                                if (!Boolean.TRUE.equals(ClusterHelper.isExist(path))) {
                                     log("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ", null);
                                     // alert
                                     Thread.currentThread().interrupt();

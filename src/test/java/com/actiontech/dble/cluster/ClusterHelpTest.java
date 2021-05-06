@@ -22,13 +22,15 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 public class ClusterHelpTest {
 
     UserConverter userConverter = new UserConverter();
     ShardingConverter shardingConverter = new ShardingConverter();
-    String sequencePropsToJson = null;
+    RawJson sequencePropsToJson = null;
 
     ConfigInitializer configInitializerByJson = new ConfigInitializer(userConverter.userXmlToJson(), DBConverter.dbXmlToJson(), shardingConverter.shardingXmlToJson(), sequencePropsToJson);
 

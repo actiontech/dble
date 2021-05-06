@@ -18,7 +18,11 @@ import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.values.ClusterTime;
 import com.actiontech.dble.cluster.values.DDLInfo;
+import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DDLChildListener;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupResponseListener;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupStatusListener;
@@ -38,7 +42,6 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.ZKUtils;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -157,8 +160,9 @@ public class ProxyMetaManager {
     }
 
     public boolean removeMetaLock(String schema, String tbName) {
-        metaLock.lock();
+
         boolean isRemoved = false;
+        metaLock.lock();
         try {
             if (lockTables.remove(genLockKey(schema, tbName)) != null) {
                 isRemoved = true;
@@ -350,7 +354,8 @@ public class ProxyMetaManager {
     private void tryAddSyncMetaLock() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             int times = 0;
-            DistributeLock lock = ClusterHelper.createDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
+            final ClusterHelper metaHelper = ClusterHelper.getInstance(ClusterOperation.META);
+            DistributeLock lock = metaHelper.createDistributeLock(ClusterMetaUtil.getSyncMetaLockPath(), new ClusterTime(String.valueOf(System.currentTimeMillis())));
             while (!lock.acquire()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 if (times % 100 == 0) {
@@ -364,7 +369,8 @@ public class ProxyMetaManager {
 
             times = 0;
             String ddlLockPath = ClusterPathUtil.getDDLLockPath();
-            while (!StringUtil.isEmpty(ClusterHelper.getPathKey(ddlLockPath)) && ClusterHelper.getChildrenSize(ddlLockPath) > 0) {
+            final ClusterHelper ddlHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
+            while (!Boolean.TRUE.equals(ClusterHelper.isExist(ddlLockPath)) && ddlHelper.getChildrenSize(ddlLockPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
                     LOGGER.warn("waiting for DDL finished ");
@@ -375,7 +381,8 @@ public class ProxyMetaManager {
 
             times = 0;
             String viewLockPath = ClusterPathUtil.getViewLockPath();
-            while (!StringUtil.isEmpty(ClusterHelper.getPathKey(viewLockPath)) && ClusterHelper.getChildrenSize(viewLockPath) > 0) {
+            final ClusterHelper viewHelper = ClusterHelper.getInstance(ClusterOperation.VIEW);
+            while (!Boolean.TRUE.equals(ClusterHelper.isExist(viewLockPath)) && viewHelper.getChildrenSize(viewLockPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
                     LOGGER.warn("waiting for view finished");
@@ -390,14 +397,14 @@ public class ProxyMetaManager {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             if (ClusterConfig.getInstance().useZkMode()) {
                 //add watcher
-                ZKUtils.addChildPathCache(ClusterPathUtil.getDDLPath(), new DDLChildListener());
+                new DDLChildListener().registerPrefixForZk();
                 //add tow ha status && ha lock watcher
                 if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                    ZKUtils.addChildPathCache(ClusterPathUtil.getHaStatusPath(), new DbGroupStatusListener());
-                    ZKUtils.addChildPathCache(ClusterPathUtil.getHaResponsePath(), new DbGroupResponseListener());
+                    new DbGroupStatusListener().registerPrefixForZk();
+                    new DbGroupResponseListener().registerPrefixForZk();
                 }
                 //add watcher
-                ZKUtils.addChildPathCache(ClusterPathUtil.getViewChangePath(), new ViewChildListener());
+                new ViewChildListener().registerPrefixForZk();
             } else {
                 ClusterToXml.startMetaListener();
             }
@@ -576,17 +583,19 @@ public class ProxyMetaManager {
             }
             DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String tableFullName = StringUtil.getUFullName(schema, table);
-            String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
-            String ddlLockPath = ClusterPathUtil.getDDLLockPath(tableFullName);
-            DistributeLock lock = ClusterHelper.createDistributeLock(ddlLockPath, ddlInfo.toString());
+            final PathMeta<DDLInfo> ddlPathMeta = ClusterMetaUtil.getDDLPath(tableFullName);
+            final PathMeta<DDLInfo> ddlLockPathMeta = ClusterMetaUtil.getDDLLockPath(tableFullName);
+            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
+            DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
             if (!lock.acquire()) {
                 String msg = "The metaLock about `" + tableFullName + "` is exists. It means other instance is doing DDL.";
-                LOGGER.info(msg + " The path of DDL is " + tableDDLPath);
+                LOGGER.info(msg + " The path of DDL is " + ddlPathMeta);
                 throw new Exception(msg);
             }
             DistributeLockManager.addLock(lock);
             ClusterDelayProvider.delayAfterDdlLockMeta();
-            ClusterHelper.setKV(tableDDLPath, ddlInfo.toString());
+            clusterHelper.setKV(ddlPathMeta, ddlInfo);
+            // String errorMsg = ClusterLogic.forGeneral().waitingForAllTheNode(viewChangePath, ClusterPathUtil.SUCCESS);
         }
     }
 
@@ -594,19 +603,20 @@ public class ProxyMetaManager {
         ClusterDelayProvider.delayAfterDdlExecuted();
         if (ClusterConfig.getInstance().isClusterEnable()) {
             String tableFullName = StringUtil.getUFullName(schema, table);
-            String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
-            metaLock.lock();
+            final PathMeta<DDLInfo> tableDDLPath = ClusterMetaUtil.getDDLPath(tableFullName);
+            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
             boolean isLock = true;
+            metaLock.lock();
             try {
                 if (isOnMetaLock(schema, table)) {
                     ClusterDelayProvider.delayBeforeDdlNotice();
                     DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
-                    ClusterHelper.setKV(tableDDLPath, ddlInfo.toString());
+                    clusterHelper.setKV(tableDDLPath, ddlInfo);
                     ClusterDelayProvider.delayAfterDdlNotice();
-                    ClusterHelper.createSelfTempNode(tableDDLPath, ClusterPathUtil.SUCCESS);
+                    clusterHelper.createSelfTempNode(ClusterPathUtil.getDDLPath(tableFullName), FeedBackType.SUCCESS);
                     metaLock.unlock();
                     isLock = false;
-                    String errorMsg = ClusterLogic.waitingForAllTheNode(tableDDLPath, ClusterPathUtil.SUCCESS);
+                    String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(tableDDLPath.getPath());
                     if (errorMsg != null) {
                         throw new RuntimeException(errorMsg);
                     }

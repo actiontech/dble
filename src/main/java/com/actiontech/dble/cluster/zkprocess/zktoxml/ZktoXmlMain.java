@@ -5,7 +5,8 @@
 
 package com.actiontech.dble.cluster.zkprocess.zktoxml;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.general.response.PauseShardingNodeResponse;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
@@ -29,11 +30,11 @@ import java.util.concurrent.locks.LockSupport;
  * Created:2016/9/20
  */
 public final class ZktoXmlMain {
-    public static PauseShardingNodeListener getPauseShardingNodeListener() {
+    public static PauseShardingNodeResponse getPauseShardingNodeListener() {
         return pauseShardingNodeListener;
     }
 
-    private static PauseShardingNodeListener pauseShardingNodeListener;
+    private static PauseShardingNodeResponse pauseShardingNodeListener;
     private static OfflineStatusListener offlineStatusListener;
     private ZktoXmlMain() {
     }
@@ -65,15 +66,15 @@ public final class ZktoXmlMain {
         // load sequence
         childService.add(new SequenceToPropertiesListener(zkListen));
 
-        ZKUtils.addChildPathCache(ClusterPathUtil.getConfStatusPath(), new ConfigStatusListener(childService));
+        new ConfigStatusListener(childService).registerPrefixForZk();
 
         offlineStatusListener = new OfflineStatusListener();
-        ZKUtils.addChildPathCache(ClusterPathUtil.getOnlinePath(), offlineStatusListener);
+        offlineStatusListener.registerPrefixForZk();
 
-        ZKUtils.addChildPathCache(ClusterPathUtil.getBinlogPause(), new BinlogPauseStatusListener());
+        new BinlogPauseStatusListener().registerPrefixForZk();
 
-        pauseShardingNodeListener = new PauseShardingNodeListener();
-        ZKUtils.addChildPathCache(ClusterPathUtil.getPauseShardingNodePath(), pauseShardingNodeListener);
+        pauseShardingNodeListener = new PauseShardingNodeResponse();
+        pauseShardingNodeListener.registerPrefixForZk();
 
 
         // notify all
@@ -123,7 +124,7 @@ public final class ZktoXmlMain {
         }
     }
 
-    public static Map<String, String> getOnlineMap() {
+    public static Map<String, OnlineType> getOnlineMap() {
         return offlineStatusListener.copyOnlineMap();
     }
 }

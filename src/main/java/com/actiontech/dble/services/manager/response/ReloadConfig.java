@@ -11,8 +11,14 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.values.ConfStatus;
-import com.actiontech.dble.config.*;
+import com.actiontech.dble.cluster.values.FeedBackType;
+import com.actiontech.dble.config.ConfigInitializer;
+import com.actiontech.dble.config.DbleTempConfig;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -34,7 +40,6 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,15 +90,17 @@ public final class ReloadConfig {
     private static void reloadWithCluster(ManagerService service, int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
         try {
+
+            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
             DistributeLock distributeLock = null;
             if (!confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) && !confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) &&
                     !confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+                distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
                 if (!distributeLock.acquire()) {
                     service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
                     return;
                 }
-                LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
+                LOGGER.info("reload config: added distributeLock " + ClusterMetaUtil.getConfChangeLockPath() + "");
             }
             ClusterDelayProvider.delayAfterReloadLock();
             if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
@@ -126,12 +133,12 @@ public final class ReloadConfig {
                 //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
                 ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
                         ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
-                ClusterHelper.setKV(ClusterPathUtil.getConfStatusOperatorPath(), status.toString());
+                clusterHelper.setKV(ClusterMetaUtil.getConfStatusOperatorPath(), status);
                 ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
                 //step 5 start a loop to check if all the dble in cluster is reload finished
                 ReloadManager.waitingOthers();
-                ClusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
-                final String errorMsg = ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath(), ClusterPathUtil.SUCCESS);
+                clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.SUCCESS);
+                final String errorMsg = ClusterLogic.forConfig().waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath());
                 ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
                 ClusterDelayProvider.delayBeforeDeleteReloadLock();
 
@@ -224,14 +231,14 @@ public final class ReloadConfig {
     }
 
     public static boolean reloadByConfig(final int loadAllMode, boolean isWriteToLocal) throws Exception {
-        String userConfig = DbleTempConfig.getInstance().getUserConfig();
-        userConfig = StringUtil.isBlank(userConfig) ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
-        String dbConfig = DbleTempConfig.getInstance().getDbConfig();
-        dbConfig = StringUtil.isBlank(dbConfig) ? DbleServer.getInstance().getConfig().getDbConfig() : dbConfig;
-        String shardingConfig = DbleTempConfig.getInstance().getShardingConfig();
-        shardingConfig = StringUtil.isBlank(shardingConfig) ? DbleServer.getInstance().getConfig().getShardingConfig() : shardingConfig;
-        String sequenceConfig = DbleTempConfig.getInstance().getSequenceConfig();
-        sequenceConfig = StringUtil.isBlank(sequenceConfig) ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
+        RawJson userConfig = DbleTempConfig.getInstance().getUserConfig();
+        userConfig = userConfig == null ? DbleServer.getInstance().getConfig().getUserConfig() : userConfig;
+        RawJson dbConfig = DbleTempConfig.getInstance().getDbConfig();
+        dbConfig = dbConfig == null ? DbleServer.getInstance().getConfig().getDbConfig() : dbConfig;
+        RawJson shardingConfig = DbleTempConfig.getInstance().getShardingConfig();
+        shardingConfig = shardingConfig == null ? DbleServer.getInstance().getConfig().getShardingConfig() : shardingConfig;
+        RawJson sequenceConfig = DbleTempConfig.getInstance().getSequenceConfig();
+        sequenceConfig = sequenceConfig == null ? DbleServer.getInstance().getConfig().getSequenceConfig() : sequenceConfig;
         boolean reloadResult = reload(loadAllMode, userConfig, dbConfig, shardingConfig, sequenceConfig);
         DbleTempConfig.getInstance().clean();
         //sync json to local
@@ -239,7 +246,7 @@ public final class ReloadConfig {
         return reloadResult;
     }
 
-    private static boolean reload(final int loadAllMode, String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) throws Exception {
+    private static boolean reload(final int loadAllMode, RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-reload");
         try {
             /*

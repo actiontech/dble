@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
+import com.actiontech.dble.cluster.RawJson;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -64,7 +65,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
     }
 
     @Override
-    public void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+    public void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
         SequenceConverter sequenceConverter = new SequenceConverter();
         this.props = sequenceConverter.jsonToProperties(sequenceJson);
         this.props = PropertiesUtil.handleLowerCase(this.props, isLowerCaseTableNames);

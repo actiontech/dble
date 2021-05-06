@@ -4,6 +4,8 @@
  */
 package com.actiontech.dble.config;
 
+import com.actiontech.dble.cluster.RawJson;
+
 public final class DbleTempConfig {
 
     private static final DbleTempConfig INSTANCE = new DbleTempConfig();
@@ -11,40 +13,40 @@ public final class DbleTempConfig {
     private DbleTempConfig() {
     }
 
-    private String dbConfig;
-    private String shardingConfig;
-    private String userConfig;
-    private String sequenceConfig;
+    private RawJson dbConfig;
+    private RawJson shardingConfig;
+    private RawJson userConfig;
+    private RawJson sequenceConfig;
 
-    public String getDbConfig() {
+    public RawJson getDbConfig() {
         return dbConfig;
     }
 
-    public String getShardingConfig() {
+    public RawJson getShardingConfig() {
         return shardingConfig;
     }
 
-    public String getUserConfig() {
+    public RawJson getUserConfig() {
         return userConfig;
     }
 
-    public String getSequenceConfig() {
+    public RawJson getSequenceConfig() {
         return sequenceConfig;
     }
 
-    public void setDbConfig(String dbConfig) {
+    public void setDbConfig(RawJson dbConfig) {
         this.dbConfig = dbConfig;
     }
 
-    public void setShardingConfig(String shardingConfig) {
+    public void setShardingConfig(RawJson shardingConfig) {
         this.shardingConfig = shardingConfig;
     }
 
-    public void setUserConfig(String userConfig) {
+    public void setUserConfig(RawJson userConfig) {
         this.userConfig = userConfig;
     }
 
-    public void setSequenceConfig(String sequenceConfig) {
+    public void setSequenceConfig(RawJson sequenceConfig) {
         this.sequenceConfig = sequenceConfig;
     }
 

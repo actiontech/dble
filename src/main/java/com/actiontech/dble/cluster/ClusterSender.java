@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.values.OnlineType;
 
 import java.util.List;
 import java.util.Map;
@@ -101,9 +102,10 @@ public interface ClusterSender {
 
     /**
      * get online nodes
+     *
      * @return online node and info
      */
-    Map<String, String> getOnlineMap();
+    Map<String, OnlineType> getOnlineMap();
 
     /**
      * forceResumePause sharding node

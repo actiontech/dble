@@ -39,14 +39,11 @@ public final class XmltoCluster {
     private static void initFileToUcore(AbstractConsulSender sender) throws Exception {
         ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener(sender);
 
+        new XmlDbLoader().registerPrefixForUcore(ucoreListen);
+        new XmlShardingLoader().registerPrefixForUcore(ucoreListen);
+        new XmlUserLoader().registerPrefixForUcore(ucoreListen);
+        new SequencePropertiesLoader().registerPrefixForUcore(ucoreListen);
 
-        new XmlDbLoader(ucoreListen);
-
-        new XmlShardingLoader(ucoreListen);
-
-        new XmlUserLoader(ucoreListen);
-
-        new SequencePropertiesLoader(ucoreListen);
 
         ucoreListen.initAllNode();
         new DbGroupHaResponse().notifyCluster();

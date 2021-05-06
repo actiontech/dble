@@ -7,13 +7,12 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.general.bean.InstanceOnline;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;
-import com.actiontech.dble.util.StringUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -36,6 +35,7 @@ public final class OnlineStatus {
     private final int serverPort;
     private String hostAddr;
     private final long startTime;
+    private ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.ONLINE);
 
     private OnlineStatus() {
         startTime = System.currentTimeMillis();
@@ -85,9 +85,9 @@ public final class OnlineStatus {
             return false;
         }
         //check if the online mark is on than delete the mark and renew it
-        String oldValue = ClusterHelper.getPathValue(ClusterPathUtil.getOnlinePath(
-                SystemConfig.getInstance().getInstanceName()));
-        if (!StringUtil.isEmpty((oldValue))) {
+        OnlineType oldValue = clusterHelper.getPathValue(ClusterMetaUtil.getOnlinePath(
+                SystemConfig.getInstance().getInstanceName())).map(ClusterValue::getData).orElse(null);
+        if (oldValue != null) {
             if (InstanceOnline.getInstance().canRemovePath(oldValue)) {
                 ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
                         SystemConfig.getInstance().getInstanceName()));
@@ -98,9 +98,9 @@ public final class OnlineStatus {
         if (onlineLock != null) {
             onlineLock.release();
         }
-        onlineLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getOnlinePath(
+        onlineLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getOnlinePath(
                 SystemConfig.getInstance().getInstanceName()),
-                toString(), 6);
+                toOnlineType(), 6);
         int time = 0;
         while (!onlineLock.acquire()) {
             time++;
@@ -115,6 +115,10 @@ public final class OnlineStatus {
         return true;
     }
 
+    public OnlineType toOnlineType() {
+        return new OnlineType().setHostAddr(hostAddr).setServerPort(serverPort).setStartTime(startTime);
+    }
+
 
     /**
      * only be called when the ClusterOffLineListener find the self online status is missing
@@ -126,9 +130,9 @@ public final class OnlineStatus {
             if (onlineLock != null) {
                 onlineLock.release();
             }
-            onlineLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getOnlinePath(
+            onlineLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getOnlinePath(
                     SystemConfig.getInstance().getInstanceName()),
-                    toString(), 6);
+                    toOnlineType(), 6);
             int time = 0;
             while (!onlineLock.acquire()) {
                 time++;
@@ -174,6 +178,7 @@ public final class OnlineStatus {
         }
     }
 
+    @Override
     public String toString() {
         JsonObject online = new JsonObject();
         online.addProperty(SERVER_PORT, serverPort);

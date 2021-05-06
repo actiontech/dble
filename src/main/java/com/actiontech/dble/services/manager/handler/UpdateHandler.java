@@ -7,13 +7,13 @@ package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.ClusterMetaUtil;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -38,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 public final class UpdateHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHandler.class);
@@ -58,12 +60,13 @@ public final class UpdateHandler {
         }
         DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
+            distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
             if (!distributeLock.acquire()) {
                 service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
                 return;
             }
-            LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+            LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
         }
         LinkedHashMap<String, String> values;
         try {

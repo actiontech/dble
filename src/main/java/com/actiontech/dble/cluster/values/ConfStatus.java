@@ -20,8 +20,11 @@ public class ConfStatus {
     private String split = ";";
     private String from;
     private String params;
-    private final Status status;
+    private Status status;
     private String extraInfo;
+
+    public ConfStatus() {
+    }
 
     public ConfStatus(String from, Status statusFlag, String params) {
         this.from = from;

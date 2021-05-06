@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.RawJson;
 import com.actiontech.dble.config.*;
 import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.converter.SequenceConverter;
@@ -78,10 +79,10 @@ public final class DryRun {
         ConfigInitializer loader;
         try {
             //sync json
-            String userConfig = new UserConverter().userXmlToJson();
-            String dbConfig = DBConverter.dbXmlToJson();
-            String shardingConfig = new ShardingConverter().shardingXmlToJson();
-            String sequenceConfig = null;
+            RawJson userConfig = new UserConverter().userXmlToJson();
+            RawJson dbConfig = DBConverter.dbXmlToJson();
+            RawJson shardingConfig = new ShardingConverter().shardingXmlToJson();
+            RawJson sequenceConfig = null;
             if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
                 sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_FILE_NAME);
             } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
@@ -152,7 +153,7 @@ public final class DryRun {
     private static void ucoreConnectionTest(List<ErrorInfo> list) {
         try {
             String selfPath = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName());
-            ClusterHelper.getPathValue(selfPath);
+            ClusterHelper.isExist(selfPath);
         } catch (Exception e) {
             list.add(new ErrorInfo("Cluster", "ERROR", "Dble in cluster but all the ucore can't connect"));
         }

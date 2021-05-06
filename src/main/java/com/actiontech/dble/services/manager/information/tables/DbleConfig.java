@@ -5,6 +5,7 @@
 package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.Fields;
@@ -14,7 +15,9 @@ import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
@@ -41,13 +44,13 @@ public class DbleConfig extends ManagerBaseTable {
     protected List<LinkedHashMap<String, String>> getRows() {
         JsonParser jsonParser = new JsonParser();
         JsonObject resultJson = new JsonObject();
-        List<String> jsonStrList = Lists.newArrayList(DbleServer.getInstance().getConfig().getDbConfig(), DbleServer.getInstance().getConfig().getShardingConfig(),
+        List<RawJson> jsonStrList = Lists.newArrayList(DbleServer.getInstance().getConfig().getDbConfig(), DbleServer.getInstance().getConfig().getShardingConfig(),
                 DbleServer.getInstance().getConfig().getUserConfig(), DbleServer.getInstance().getConfig().getSequenceConfig());
-        for (String jsonStr : jsonStrList) {
-            if (StringUtil.isBlank(jsonStr)) {
+        for (RawJson jsonRaw : jsonStrList) {
+            if (jsonRaw == null) {
                 continue;
             }
-            JsonObject jsonObj = jsonParser.parse(jsonStr).getAsJsonObject();
+            JsonObject jsonObj = jsonRaw.getJsonObject();
             if (null != jsonObj && !jsonObj.isJsonNull()) {
                 jsonObj.entrySet().forEach(elementEntry -> {
                     if (elementEntry.getKey().contains("sequence")) {

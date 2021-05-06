@@ -5,40 +5,39 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.values.ViewChangeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/2/5.
  */
-public class ViewChildResponse implements ClusterXmlLoader {
+public class ViewChildResponse extends AbstractGeneralListener<ViewChangeType> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ViewChildResponse.class);
 
+    public ViewChildResponse() {
+        super(ClusterChildMetaUtil.getViewChangePath());
+    }
+
     @Override
-    public void notifyProcess(KvBean configValue) throws Exception {
-        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        String path = configValue.getKey();
+    public void onEvent(ClusterEvent<ViewChangeType> configValue) throws Exception {
+        String path = configValue.getPath();
         String[] paths = path.split(ClusterPathUtil.SEPARATOR);
-        if (paths.length != ClusterLogic.getPathHeight(ClusterPathUtil.getViewChangePath()) + 1) {
+        if (paths.length != ClusterLogic.forView().getPathHeight(ClusterPathUtil.getViewChangePath()) + 1) {
             //only with the type u.../d.../clu.../view/update(delete)/sharding.table
             return;
         }
-        if ("".equals(configValue.getValue())) {
-            //the value of key is empty,just doing nothing
-            return;
-        }
-        if (KvBean.DELETE.equals(configValue.getChangeType())) {
+
+        if (RestfulType.REMOVED.equals(configValue.getChangeType())) {
             // delete node
             return;
         }
         String key = paths[paths.length - 1];
-        String value = configValue.getValue();
-        ClusterLogic.executeViewEvent(path, key, value);
+        final ViewChangeType data = configValue.getValue().getData();
+        ClusterLogic.forView().executeViewEvent(path, key, data);
     }
-
 
     @Override
     public void notifyCluster() throws Exception {

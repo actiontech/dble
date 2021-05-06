@@ -7,10 +7,10 @@ package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.AbstractGeneralListener;
-import com.actiontech.dble.cluster.ClusterChildMetaUtil;
-import com.actiontech.dble.cluster.ClusterEvent;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
 import com.actiontech.dble.cluster.values.ViewChangeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

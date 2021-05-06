@@ -5,12 +5,12 @@
 
 package com.actiontech.dble.cluster.general.listener;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.ClusterValue;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 
 /**
  * Created by szf on 2018/2/8.

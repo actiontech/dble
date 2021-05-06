@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.route.sequence.handler;
 
-import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.values.RawJson;
 
 import java.sql.SQLNonTransientException;
 

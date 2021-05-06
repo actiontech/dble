@@ -4,7 +4,7 @@
  */
 package com.actiontech.dble.config.converter;
 
-import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.route.util.OrderedProperties;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.google.gson.Gson;

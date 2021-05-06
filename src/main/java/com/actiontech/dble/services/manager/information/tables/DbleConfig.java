@@ -5,7 +5,7 @@
 package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.Fields;

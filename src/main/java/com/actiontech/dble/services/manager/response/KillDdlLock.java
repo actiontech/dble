@@ -6,8 +6,8 @@
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLockManager;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;

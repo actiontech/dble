@@ -8,6 +8,7 @@ package com.actiontech.dble.cluster;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.converter.DBConverter;

@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.util;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 
 /**
  * Created by huqing.yan on 2017/6/26.

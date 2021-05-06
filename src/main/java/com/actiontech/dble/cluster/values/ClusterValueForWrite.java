@@ -4,19 +4,16 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.cluster;
-
-import com.google.gson.JsonElement;
+package com.actiontech.dble.cluster.values;
 
 /**
  * @author dcy
  * Create Date: 2021-03-17
  */
-public class ClusterValueForRawWrite<T> extends ClusterValueForBaseWrite<T> {
+public class ClusterValueForWrite<T> extends ClusterValueForBaseWrite<T> {
 
 
-    public ClusterValueForRawWrite(JsonElement data, int apiVersion) {
+    public ClusterValueForWrite(T data, int apiVersion) {
         super(data, apiVersion);
     }
-
 }

@@ -1,6 +1,6 @@
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.sequence.handler.*;
 

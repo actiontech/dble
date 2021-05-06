@@ -5,12 +5,12 @@
 
 package com.actiontech.dble.cluster.general.kVtoXml;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.listener.ClusterOffLineListener;
 import com.actiontech.dble.cluster.general.listener.ClusterSingleKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.ClusterConfig;
 import org.slf4j.Logger;
@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 
 /**
  * Created by szf on 2018/1/24.

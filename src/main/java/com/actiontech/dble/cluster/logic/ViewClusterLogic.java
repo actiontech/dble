@@ -8,8 +8,8 @@ package com.actiontech.dble.cluster.logic;
 
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterMetaUtil;
-import com.actiontech.dble.cluster.ClusterValue;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
+import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.cluster.values.ViewChangeType;
 import com.actiontech.dble.cluster.values.ViewType;

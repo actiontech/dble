@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.cluster.zkprocess;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;

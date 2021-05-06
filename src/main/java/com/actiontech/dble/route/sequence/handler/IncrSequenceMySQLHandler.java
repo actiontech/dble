@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
-import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.util.ConfigException;

@@ -4,7 +4,7 @@
  */
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.cluster.RawJson;
+import com.actiontech.dble.cluster.values.RawJson;
 
 public final class DbleTempConfig {
 

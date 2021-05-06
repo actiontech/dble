@@ -7,6 +7,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
+import com.actiontech.dble.cluster.values.ClusterEvent;
 
 /**
  * @author dcy

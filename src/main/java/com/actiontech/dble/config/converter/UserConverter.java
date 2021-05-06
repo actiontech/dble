@@ -4,10 +4,10 @@
  */
 package com.actiontech.dble.config.converter;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.JsonFactory;
-import com.actiontech.dble.cluster.RawJson;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.Users;
 import com.actiontech.dble.cluster.zkprocess.entity.user.*;

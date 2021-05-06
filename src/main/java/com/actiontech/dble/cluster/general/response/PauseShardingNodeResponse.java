@@ -4,8 +4,12 @@
  */
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
@@ -14,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.cluster.ChangeType.REMOVED;
+import static com.actiontech.dble.cluster.values.ChangeType.REMOVED;
 
 
 public class PauseShardingNodeResponse extends AbstractGeneralListener<PauseInfo> {

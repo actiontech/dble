@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.ClusterEvent;
+import com.actiontech.dble.cluster.values.ClusterEvent;
 
 /**
  * Created by szf on 2018/1/26.

@@ -4,8 +4,9 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.cluster;
+package com.actiontech.dble.cluster.values;
 
+import com.actiontech.dble.cluster.JsonFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;

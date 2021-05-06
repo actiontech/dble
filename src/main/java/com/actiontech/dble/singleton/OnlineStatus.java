@@ -7,9 +7,13 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.InstanceOnline;
 import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;

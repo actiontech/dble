@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.route.util;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceHandler;
 import com.actiontech.dble.util.ResourceUtil;
 

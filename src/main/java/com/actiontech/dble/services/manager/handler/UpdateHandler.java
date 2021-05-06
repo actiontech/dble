@@ -7,9 +7,9 @@ package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterMetaUtil;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;

@@ -7,7 +7,7 @@
 package com.actiontech.dble.cluster.logic;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.model.SystemConfig;

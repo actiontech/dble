@@ -4,8 +4,9 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.cluster;
+package com.actiontech.dble.cluster.values;
 
+import com.actiontech.dble.cluster.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonParseException;
 import org.apache.logging.log4j.LogManager;

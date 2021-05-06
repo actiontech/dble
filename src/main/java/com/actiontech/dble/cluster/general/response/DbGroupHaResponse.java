@@ -1,14 +1,16 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
-import com.actiontech.dble.cluster.values.Empty;
-import com.actiontech.dble.cluster.values.HaInfo;
+import com.actiontech.dble.cluster.path.ChildPathMeta;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.DB_GROUP_STATUS;
+import static com.actiontech.dble.cluster.path.ClusterPathUtil.DB_GROUP_STATUS;
 
 /**
  * Created by szf on 2019/10/29.

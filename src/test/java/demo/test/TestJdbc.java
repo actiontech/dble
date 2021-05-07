@@ -2,7 +2,7 @@ package demo.test;
 
 import java.sql.*;
 
-public class Testparser {
+public class TestJdbc {
     public static void main(String args[]) throws ClassNotFoundException, SQLException {
 
         Class.forName("com.mysql.jdbc.Driver");

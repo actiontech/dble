@@ -14,15 +14,12 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class HandlerBuilder {
     private static Logger logger = LoggerFactory.getLogger(HandlerBuilder.class);
@@ -114,24 +111,22 @@ public class HandlerBuilder {
      * @return
      */
     public static String canRouteToOneNode(List<DMLResponseHandler> merges) {
-        Set<String> nodeSet = Sets.newHashSet();
-        boolean isMulti = false;
+        String nodeName = null;
         for (DMLResponseHandler merge : merges) {
             if (merge instanceof MultiNodeMergeHandler) {
                 RouteResultsetNode[] route = ((MultiNodeMergeHandler) merge).getRoute();
-                Set<String> currentNodeSet = Arrays.stream(route).map(RouteResultsetNode::getName).collect(Collectors.toSet());
-                if (nodeSet.isEmpty()) {
-                    nodeSet = currentNodeSet;
-                } else if (!nodeSet.equals(currentNodeSet)) {
-                    isMulti = true;
-                    break;
+                if (null == route || route.length != 1) {
+                    return null;
+                }
+                String name = route[0].getName();
+                if (StringUtil.isBlank(nodeName)) {
+                    nodeName = name;
+                } else if (!nodeName.equals(name)) {
+                    return null;
                 }
             }
         }
-        if (!isMulti && nodeSet.size() == 1) {
-            return nodeSet.iterator().next();
-        }
-        return null;
+        return nodeName;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

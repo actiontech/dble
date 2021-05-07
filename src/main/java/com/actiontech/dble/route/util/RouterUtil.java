@@ -524,13 +524,12 @@ public final class RouterUtil {
     }
 
     /**
-     * http://10.186.18.11/jira/browse/DBLE0REQ-504?focusedCommentId=65612&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-65612
+     * DBLE0REQ-504
      *
      * @param selectStmt
      * @return
      */
     public static boolean canMergeJoin(SQLSelectStatement selectStmt) {
-        boolean canMerge = false;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             //check the select into sql is not supported
@@ -538,13 +537,22 @@ public final class RouterUtil {
 
             //three types of select route according to the from item in select sql
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
-            if (mysqlFrom instanceof SQLJoinTableSource) {
-                SQLJoinTableSource joinTableSource = (SQLJoinTableSource) mysqlFrom;
-                SQLJoinTableSource.JoinType joinType = joinTableSource.getJoinType();
-                canMerge = joinType.equals(SQLJoinTableSource.JoinType.INNER_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.JOIN) || joinType.equals(SQLJoinTableSource.JoinType.CROSS_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.STRAIGHT_JOIN);
-            } else {
-                canMerge = true;
-            }
+            return isInnerJoin(mysqlFrom);
+        }
+        return false;
+    }
+
+    private static boolean isInnerJoin(SQLTableSource tableSource) {
+        boolean canMerge;
+        if (tableSource instanceof SQLJoinTableSource) {
+            SQLJoinTableSource joinTableSource = (SQLJoinTableSource) tableSource;
+            SQLTableSource left = joinTableSource.getLeft();
+            SQLTableSource right = joinTableSource.getRight();
+
+            SQLJoinTableSource.JoinType joinType = joinTableSource.getJoinType();
+            canMerge = isInnerJoin(left) && isInnerJoin(right) && (joinType.equals(SQLJoinTableSource.JoinType.INNER_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.JOIN) || joinType.equals(SQLJoinTableSource.JoinType.CROSS_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.STRAIGHT_JOIN));
+        } else {
+            canMerge = true;
         }
         return canMerge;
     }
@@ -555,8 +563,9 @@ public final class RouterUtil {
         Set<String> tmpResultNodes = new HashSet<>();
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
         Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
-        if (ctx.getTables().size() != tableSize && !canMergeJoin(selectStmt)) {
-            //http://10.186.18.11/jira/browse/DBLE0REQ-504?focusedCommentId=65612&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-65612
+        int unrepeatedTableSize = ctx.getTables().size();
+        if (unrepeatedTableSize != tableSize && (!canMergeJoin(selectStmt))) {
+            //DBLE0REQ-504
             return null;
         }
         for (Pair<String, String> table : ctx.getTables()) {

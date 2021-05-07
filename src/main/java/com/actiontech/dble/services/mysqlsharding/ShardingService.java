@@ -441,7 +441,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             this.txChainBegin = true;
             session.commit();
             txStarted = true;
-            autocommit = false;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
     }

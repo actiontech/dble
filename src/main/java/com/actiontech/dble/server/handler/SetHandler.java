@@ -26,6 +26,7 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLSyntaxErrorException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -56,12 +57,11 @@ public final class SetHandler {
             // parse set sql
             SQLStatement statement = parseSQL(stmt);
             if (statement instanceof SQLSetStatement) {
+                List<MysqlVariable> userItems = new ArrayList<>();
+                List<MysqlVariable> otherItems = new ArrayList<>();
                 List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
                 String key;
-                items = new MysqlVariable[assignItems.size()];
-                SQLAssignItem sqlAssignItem = null;
-                for (int i = 0; i < assignItems.size(); i++) {
-                    sqlAssignItem = assignItems.get(i);
+                for (SQLAssignItem sqlAssignItem : assignItems) {
                     // new set item
                     key = handleSetKey(sqlAssignItem.getTarget());
                     MysqlVariable item = newSetItem(key, sqlAssignItem.getValue());
@@ -74,26 +74,28 @@ public final class SetHandler {
                         }
                         setSQL.append(SQLUtils.toMySqlString(sqlAssignItem));
                         selectSQL.append(item.getName());
-
-                        items[userVariableSize++] = item;
+                        userItems.add(item);
                     } else if (item.getType() == VariableType.SYSTEM_VARIABLES) {
                         if (setSQL.length() > 4) {
                             setSQL.append(",");
                         }
                         setSQL.append(SQLUtils.toMySqlString(sqlAssignItem));
-                        items[i] = item;
+                        otherItems.add(item);
                     } else if (item.getType() == VariableType.XA) {
                         if (frontService instanceof ShardingService) {
                             boolean val = Boolean.parseBoolean(item.getValue());
                             ((ShardingService) frontService).checkXaStatus(val);
-                            items[i] = item;
+                            otherItems.add(item);
                         } else {
                             throw new SQLSyntaxErrorException("unsupported set xa");
                         }
                     } else {
-                        items[i] = item;
+                        otherItems.add(item);
                     }
                 }
+                userVariableSize = userItems.size();
+                userItems.addAll(otherItems);
+                items = userItems.toArray(new MysqlVariable[userItems.size()]);
             } else if (statement instanceof MySqlSetTransactionStatement) {
                 items = new MysqlVariable[1];
                 items[0] = handleTransaction((MySqlSetTransactionStatement) statement);

@@ -69,11 +69,11 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     if (!autocommit) {
                         Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
                         session.execute(true, (isSuccess, rwSplitService) -> {
-                            if (this.isTxStart() || !this.isAutocommit()) {
-                                rwSplitService.setAutocommit(true);
-                                rwSplitService.setTxStart(false);
-                                this.transactionsCount();
-                            }
+                            //if (this.isTxStart() || !this.isAutocommit()) {
+                            rwSplitService.setAutocommit(true);
+                            rwSplitService.setTxStart(false);
+                            this.transactionsCount();
+                            //}
                         });
                         return;
                     } else if (!txStarted) {

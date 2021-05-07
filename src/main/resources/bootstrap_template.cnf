@@ -10,6 +10,7 @@
 -Dcom.sun.management.jmxremote.host=127.0.0.1
 -Xmx4G
 -Xms1G
+-Xss256k
 -XX:MaxDirectMemorySize=2G
 -XX:+PrintHeapAtGC
 -XX:+PrintGCDateStamps

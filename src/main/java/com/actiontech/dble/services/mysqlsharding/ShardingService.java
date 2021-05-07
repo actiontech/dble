@@ -103,11 +103,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         switch (var.getType()) {
             case XA:
                 session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
-                this.singleTransactionsCount();
                 break;
             case TRACE:
                 session.setTrace(Boolean.parseBoolean(val));
-                this.singleTransactionsCount();
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
@@ -118,13 +116,16 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                             session.implicitCommit(() -> {
                                 autocommit = true;
                                 txStarted = false;
-                                this.singleTransactionsCount();
+                                this.transactionsCount();
                                 writeOkPacket();
                             });
                             return;
-                        } else if (txStarted) {
+                        } else {
                             txStarted = false;
+                            this.transactionsCount();
                         }
+                    } else if (!txStarted) {
+                        this.transactionsCount();
                     }
                     autocommit = true;
                 } else {
@@ -137,7 +138,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                         TxnLogHelper.putTxnLog(this, executeSql);
                     }
                 }
-                this.singleTransactionsCount();
                 writeOkPacket();
                 break;
             default:
@@ -432,6 +432,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
+            this.transactionsCount();
             txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }

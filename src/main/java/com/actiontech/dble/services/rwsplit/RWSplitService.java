@@ -65,25 +65,30 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     public void handleVariable(MysqlVariable var) {
         switch (var.getType()) {
             case AUTOCOMMIT:
-                String ac = var.getValue();
-                if (autocommit && !Boolean.parseBoolean(ac)) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
-                    autocommit = false;
-                    txStarted = true;
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
-                    writeOkPacket();
-                    return;
+                if (Boolean.parseBoolean(var.getValue())) {
+                    if (!autocommit) {
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+                        session.execute(true, (isSuccess, rwSplitService) -> {
+                            //if (this.isTxStart() || !this.isAutocommit()) {
+                            rwSplitService.setAutocommit(true);
+                            rwSplitService.setTxStart(false);
+                            this.transactionsCount();
+                            //}
+                        });
+                        return;
+                    } else if (!txStarted) {
+                        this.transactionsCount();
+                    }
+                } else {
+                    if (autocommit) {
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
+                        autocommit = false;
+                        txStarted = true;
+                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
+                        writeOkPacket();
+                        return;
+                    }
                 }
-                if (!autocommit && Boolean.parseBoolean(ac)) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
-                    session.execute(true, (isSuccess, rwSplitService) -> {
-                        rwSplitService.setAutocommit(true);
-                        txStarted = false;
-                        this.singleTransactionsCount();
-                    });
-                    return;
-                }
-                this.singleTransactionsCount();
                 Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
                 writeOkPacket();
                 break;
@@ -261,6 +266,21 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return executeSqlBytes;
     }
 
+    public void implicitlyDeal() {
+        if (!this.isAutocommit()) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+            this.getAndIncrementTxId();
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(this));
+        }
+        if (this.isTxStart()) {
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+        }
+        if (this.isTxStart() || !this.isAutocommit()) {
+            this.setTxStart(false);
+            this.transactionsCount();
+        }
+    }
+
     public boolean isLocked() {
         return isLocked;
     }
@@ -309,7 +329,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return !tmpTableSet.isEmpty();
     }
 
-
     public Set<String> getTmpTableSet() {
         if (tmpTableSet == null) {
             synchronized (this) {
@@ -321,7 +340,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         }
         return tmpTableSet;
     }
-
 
     public void setInPrepare(boolean inPrepare) {
         this.inPrepare = inPrepare;

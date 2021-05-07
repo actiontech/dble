@@ -21,4 +21,7 @@ public abstract class SocketWR {
     public abstract void enableRead();
 
     public abstract void initFromConnection(com.actiontech.dble.net.connection.AbstractConnection connection);
+
+
+    public abstract void closeSocket() throws IOException;
 }

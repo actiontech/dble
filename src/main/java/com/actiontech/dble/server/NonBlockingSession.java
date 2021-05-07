@@ -812,7 +812,7 @@ public class NonBlockingSession extends Session {
                 if (shardingService.isFlowControlled()) {
                     releaseConnectionFromFlowCntrolled(c);
                 }
-                if (((MySQLResponseService) c.getService()).isAutocommit()) {
+                if (c.getService().isAutocommit()) {
                     c.release();
                 } else if (needClose) {
                     //c.rollback();

@@ -189,7 +189,7 @@ public abstract class AbstractConnection implements Connection {
     private void closeSocket() {
         if (channel != null) {
             try {
-                channel.close();
+                socketWR.closeSocket();
             } catch (Exception e) {
                 LOGGER.info("AbstractConnectionCloseError", e);
             }

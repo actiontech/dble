@@ -34,10 +34,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.actiontech.dble.net.mysql.StatusFlags.SERVER_STATUS_CURSOR_EXISTS;
 import static com.alibaba.druid.util.JdbcConstants.MYSQL;
@@ -64,7 +64,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     public ServerPrepareHandler(ShardingService service) {
         this.service = service;
         this.pStmtId = 0L;
-        this.pStmtForId = new HashMap<>();
+        this.pStmtForId = new ConcurrentHashMap<>();
     }
 
     @Override

@@ -10,28 +10,22 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.backend.mysql.store.CursorCache;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.parser.PrepareChangeVisitor;
-import com.actiontech.dble.server.parser.PrepareStatementCalculateVisitor;
+import com.actiontech.dble.server.parser.PrepareStatementParseInfo;
 import com.actiontech.dble.server.response.PreparedStmtResponse;
 import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.util.HexFormatUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.google.common.escape.Escaper;
-import com.google.common.escape.Escapers;
-import com.google.common.escape.Escapers.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -49,15 +43,6 @@ import static com.alibaba.druid.util.JdbcConstants.MYSQL;
 public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerPrepareHandler.class);
-    private static Escaper varcharEscape = null;
-
-    static {
-        Builder escapeBuilder = Escapers.builder();
-        escapeBuilder.addEscape('\'', "\\'");
-        escapeBuilder.addEscape('\\', "\\\\");
-        varcharEscape = escapeBuilder.build();
-    }
-
     private ShardingService service;
     private volatile long pStmtId;
     private Map<Long, PreparedStatement> pStmtForId;
@@ -85,8 +70,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         }
         final SQLStatement sqlStatement = statements.get(0);
 
-        int paramCount = getParamCount(sqlStatement);
-        PreparedStatement pStmt = new PreparedStatement(++pStmtId, sql, paramCount);
+        PreparedStatement pStmt = new PreparedStatement(++pStmtId, sql, new PrepareStatementParseInfo(sql));
         final RequestScope requestScope = service.getRequestScope();
         service.getRequestScope().setCurrentPreparedStatement(pStmt);
         service.getRequestScope().setPrepared(true);
@@ -212,13 +196,6 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     }
 
 
-    // the size of parameters of prepared statement
-    private int getParamCount(SQLStatement statement) {
-        final PrepareStatementCalculateVisitor visitor = new PrepareStatementCalculateVisitor();
-        statement.accept(visitor);
-        return visitor.getArgumentCount();
-    }
-
     /**
      * build sql
      *
@@ -227,78 +204,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
      * @return
      */
     private String prepareStmtBindValue(PreparedStatement pStmt, BindValue[] bindValues) {
-        String sql = pStmt.getStatement();
-        int[] paramTypes = pStmt.getParametersType();
-        StringBuilder sb = new StringBuilder();
-        int idx = 0;
-        for (int i = 0, len = sql.length(); i < len; i++) {
-            char c = sql.charAt(i);
-            if (c != '?') {
-                sb.append(c);
-                continue;
-            }
-            // execute the ?
-            int paramType = paramTypes[idx];
-            BindValue bindValue = bindValues[idx];
-            idx++;
-            // if field is empty
-            if (bindValue.isNull()) {
-                sb.append("NULL");
-                continue;
-            }
-            switch (paramType & 0xff) {
-                case Fields.FIELD_TYPE_TINY:
-                    sb.append(String.valueOf(bindValue.getByteBinding()));
-                    break;
-                case Fields.FIELD_TYPE_SHORT:
-                    sb.append(String.valueOf(bindValue.getShortBinding()));
-                    break;
-                case Fields.FIELD_TYPE_LONG:
-                    sb.append(String.valueOf(bindValue.getIntBinding()));
-                    break;
-                case Fields.FIELD_TYPE_LONGLONG:
-                    sb.append(String.valueOf(bindValue.getLongBinding()));
-                    break;
-                case Fields.FIELD_TYPE_FLOAT:
-                    sb.append(String.valueOf(bindValue.getFloatBinding()));
-                    break;
-                case Fields.FIELD_TYPE_DOUBLE:
-                    sb.append(String.valueOf(bindValue.getDoubleBinding()));
-                    break;
-                case Fields.FIELD_TYPE_VAR_STRING:
-                case Fields.FIELD_TYPE_STRING:
-                case Fields.FIELD_TYPE_VARCHAR:
-                    bindValue.setValue(varcharEscape.asFunction().apply(String.valueOf(bindValue.getValue())));
-                    sb.append("'" + bindValue.getValue() + "'");
-                    break;
-                case Fields.FIELD_TYPE_TINY_BLOB:
-                case Fields.FIELD_TYPE_BLOB:
-                case Fields.FIELD_TYPE_MEDIUM_BLOB:
-                case Fields.FIELD_TYPE_LONG_BLOB:
-                    if (bindValue.getValue() instanceof ByteArrayOutputStream) {
-                        byte[] bytes = ((ByteArrayOutputStream) bindValue.getValue()).toByteArray();
-                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
-                    } else if (bindValue.getValue() instanceof byte[]) {
-                        byte[] bytes = (byte[]) bindValue.getValue();
-                        sb.append("X'").append(HexFormatUtil.bytesToHexString(bytes)).append("'");
-                    } else {
-                        LOGGER.warn("bind value is not a instance of ByteArrayOutputStream,its type is " + bindValue.getValue().getClass());
-                        sb.append("'").append(bindValue.getValue().toString()).append("'");
-                    }
-                    break;
-                case Fields.FIELD_TYPE_TIME:
-                case Fields.FIELD_TYPE_DATE:
-                case Fields.FIELD_TYPE_DATETIME:
-                case Fields.FIELD_TYPE_TIMESTAMP:
-                    sb.append("'" + bindValue.getValue() + "'");
-                    break;
-                default:
-                    bindValue.setValue(varcharEscape.asFunction().apply(String.valueOf(bindValue.getValue())));
-                    sb.append(bindValue.getValue().toString());
-                    break;
-            }
-        }
-        return sb.toString();
+        return pStmt.toComQuery(bindValues);
     }
 
     @Override

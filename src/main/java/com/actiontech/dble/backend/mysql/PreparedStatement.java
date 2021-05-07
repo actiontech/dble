@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.store.CursorCache;
 import com.actiontech.dble.backend.mysql.store.CursorCacheForGeneral;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.parser.PrepareStatementParseInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,13 +45,15 @@ public class PreparedStatement implements Closeable {
      * </pre>
      */
     private Map<Long, ByteArrayOutputStream> longDataMap;
+    private PrepareStatementParseInfo parseInfo;
 
-    public PreparedStatement(long id, String statement, int parametersNumber) {
+    public PreparedStatement(long id, String statement, PrepareStatementParseInfo parseInfo) {
         this.id = id;
         this.statement = statement;
-        this.parametersNumber = parametersNumber;
-        this.parametersType = new int[parametersNumber];
+        this.parametersNumber = parseInfo.getArgumentSize();
+        this.parametersType = new int[parseInfo.getArgumentSize()];
         this.longDataMap = new HashMap<>();
+        this.parseInfo = parseInfo;
     }
 
     public long getId() {
@@ -141,6 +144,10 @@ public class PreparedStatement implements Closeable {
         }
     }
 
+
+    public String toComQuery(BindValue[] bindValues) {
+        return parseInfo.toComQuery(bindValues, this.parametersType);
+    }
 
     public Map<Long, ByteArrayOutputStream> getLongDataMap() {
         return longDataMap;

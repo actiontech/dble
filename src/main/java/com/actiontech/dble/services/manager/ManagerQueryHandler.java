@@ -34,7 +34,7 @@ public class ManagerQueryHandler {
 
     public void query(String sql) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(String.valueOf(service) + sql);
+            LOGGER.debug(service + sql);
         }
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "manager-query-handle");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);

@@ -131,7 +131,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
             row.put("in_transaction", "Manager connection");
         } else {
             row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
-            row.put("in_transaction", !service.isAutocommit() + "");
+            row.put("in_transaction", String.valueOf(((ShardingService) service).isTxStart() || !service.isAutocommit()));
         }
         row.put("schema", service.getSchema() == null ? "NULL" : service.getSchema());
         row.put("conn_net_in", c.getNetInBytes() + "");

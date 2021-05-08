@@ -65,6 +65,7 @@ public final class ManagerSchemaInfo {
         registerTable(new AssociateTablesByEntryByUser());
         // sampling
         registerTable(new SqlLog());
+        registerTable(new DbleXaRecover());
     }
 
     private void registerTable(ManagerBaseTable table) {

@@ -16,6 +16,7 @@ public final class AlarmCode {
 
     public static final String WRITE_TEMP_RESULT_FAIL = "DBLE_WRITE_TEMP_RESULT_FAIL";
     public static final String XA_RECOVER_FAIL = "DBLE_XA_RECOVER_FAIL";
+    public static final String XA_SUSPECTED_RESIDUE = "DBLE_XA_SUSPECTED_RESIDUE";
     public static final String XA_READ_XA_STREAM_FAIL = "DBLE_XA_READ_XA_STREAM_FAIL";
     public static final String XA_READ_DECODE_FAIL = "DBLE_XA_READ_DECODE_FAIL";
     public static final String XA_READ_IO_FAIL = "DBLE_XA_READ_IO_FAIL";

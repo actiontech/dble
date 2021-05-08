@@ -54,7 +54,7 @@ public interface ClusterValue<T> {
 
             return (ClusterValue<T>) JsonFactory.getJson().fromJson(value, ClusterValueForRead.class).convertTo(tClass);
         } catch (JsonParseException e) {
-            throw new RuntimeException("can't parse the value " + value);
+            throw new RuntimeException("can't parse the illegal value " + value, e);
         }
     }
 

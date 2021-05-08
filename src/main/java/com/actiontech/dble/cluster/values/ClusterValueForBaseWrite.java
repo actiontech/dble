@@ -17,21 +17,26 @@ import com.google.gson.JsonParseException;
  */
 public class ClusterValueForBaseWrite<T> {
 
-    protected String instanceName;
+    protected static String instanceName;
     protected long createdAt;
     protected int apiVersion;
     protected transient T data;
     protected transient JsonElement rawData;
 
+    static {
+        instanceName = SystemConfig.getInstance().getInstanceName();
+        if (instanceName == null) {
+            throw new IllegalStateException("please specify the instanceName");
+        }
+    }
+
     ClusterValueForBaseWrite(T data, int apiVersion) {
-        this.instanceName = SystemConfig.getInstance().getInstanceName();
         this.createdAt = System.currentTimeMillis();
         this.apiVersion = apiVersion;
         this.data = data;
     }
 
     ClusterValueForBaseWrite(JsonElement rawData, int apiVersion) {
-        this.instanceName = SystemConfig.getInstance().getInstanceName();
         this.createdAt = System.currentTimeMillis();
         this.apiVersion = apiVersion;
         this.rawData = rawData;

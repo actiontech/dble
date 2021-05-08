@@ -19,7 +19,13 @@ public class ClusterValueAdapterForRead implements JsonDeserializer<ClusterValue
 
     @Override
     public ClusterValueForRead<?> deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+        if (!jsonElement.isJsonObject()) {
+            throw new IllegalStateException("you may use old incompatible metadata.");
+        }
         JsonObject jsonObject = jsonElement.getAsJsonObject();
+        if (jsonObject.get("apiVersion") == null) {
+            throw new IllegalStateException("you may use old incompatible metadata.");
+        }
         JsonElement data = jsonObject.get("data");
 
         final int apiVersion = jsonObject.get("apiVersion").getAsInt();

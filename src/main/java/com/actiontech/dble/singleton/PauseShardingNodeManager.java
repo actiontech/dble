@@ -294,7 +294,7 @@ public final class PauseShardingNodeManager {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             clusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), FeedBackType.SUCCESS);
             Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for (; ; ) {
                 if (ClusterLogic.forPauseResume().checkResponseForOneTime(ClusterPathUtil.getPauseResultNodePath(), expectedMap, sb)) {
                     if (sb.length() == 0) {

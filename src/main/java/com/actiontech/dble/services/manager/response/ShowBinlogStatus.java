@@ -129,7 +129,7 @@ public final class ShowBinlogStatus {
 
                     Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
                     while (true) {
-                        StringBuffer errorStringBuf = new StringBuffer();
+                        StringBuilder errorStringBuf = new StringBuilder();
                         if (ClusterLogic.forBinlog().checkResponseForOneTime(binlogStatusPath.getPath(), expectedMap, errorStringBuf)) {
                             errMsg = errorStringBuf.length() <= 0 ? null : errorStringBuf.toString();
                             break;

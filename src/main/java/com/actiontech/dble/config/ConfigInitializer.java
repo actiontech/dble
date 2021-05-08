@@ -98,6 +98,9 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void init(RawJson userJson, RawJson dbJson, RawJson shardingJson, RawJson sequenceJson, boolean syncHaStatus) {
+        if (userJson == null || dbJson == null || shardingJson == null) {
+            throw new ConfigException("Config for init not ready yet. Please check local config file or cluster metadata whether exists.");
+        }
         //user
         UserConverter userConverter = new UserConverter();
         userConverter.userJsonToMap(userJson, this);

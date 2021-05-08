@@ -16,6 +16,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
         return allList;
     }
 
-    public boolean checkResponseForOneTime(String path, Map<String, OnlineType> expectedMap, StringBuffer errorMsg) {
+    public boolean checkResponseForOneTime(String path, Map<String, OnlineType> expectedMap, @Nonnull StringBuilder errorMsg) {
         Map<String, OnlineType> currentMap = ClusterHelper.getOnlineMap();
         checkOnline(expectedMap, currentMap);
         List<ClusterEntry<FeedBackType>> responseList;
@@ -61,9 +62,7 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
             return true;
         }
         if (expectedMap.size() == 0) {
-            if (errorMsg.length() != 0) {
-                errorMsg.append("All online key dropped, other instance config may out of sync, try again manually");
-            }
+            errorMsg.append("All online key dropped, other instance config may out of sync, try again manually");
             return true;
         }
 
@@ -74,9 +73,7 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
                 String responseNode = lastItemOfArray(kvBean.getKey().split(ClusterPathUtil.SEPARATOR));
                 if (lastItemOfArray(entry.getKey().split(ClusterPathUtil.SEPARATOR)).equals(responseNode)) {
                     if (!kvBean.getValue().getData().isSuccess()) {
-                        if (errorMsg != null) {
-                            errorMsg.append(responseNode).append(":").append(kvBean.getValue().getData().getMessage()).append(";");
-                        }
+                        errorMsg.append(responseNode).append(":").append(kvBean.getValue().getData().getMessage()).append(";");
                     }
                     found = true;
                     break;
@@ -99,7 +96,7 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("wait-for-others-cluster");
         try {
             Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
-            StringBuffer errorMsg = new StringBuffer();
+            StringBuilder errorMsg = new StringBuilder();
             for (; ; ) {
                 errorMsg.setLength(0);
                 if (checkResponseForOneTime(path, expectedMap, errorMsg)) {

@@ -59,6 +59,8 @@ public class FrontendBlockRunnable implements Runnable {
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("FrontendCommandHandler error.", e);
+            } catch (Throwable e) {
+                LOGGER.error("process task error", e);
             }
         }
     }

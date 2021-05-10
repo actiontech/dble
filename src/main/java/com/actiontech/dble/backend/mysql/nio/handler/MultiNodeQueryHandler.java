@@ -292,9 +292,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
-        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
-            return;
-        }
+
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + service);
@@ -343,6 +341,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     shardingService.setLastInsertId(insertId);
                 }
                 doSqlStat();
+                if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+                    return;
+                }
                 handleEndPacket(ok, AutoTxOperation.COMMIT, true);
             } finally {
                 lock.unlock();

@@ -251,9 +251,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
-        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
-            return;
-        }
+
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
@@ -276,6 +274,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.setResponseTime(true);
             session.multiStatementPacket(ok);
             doSqlStat();
+            if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+                return;
+            }
             if (rrs.isCallStatement() || writeToClient.compareAndSet(false, true)) {
                 ok.write(shardingService.getConnection());
             }

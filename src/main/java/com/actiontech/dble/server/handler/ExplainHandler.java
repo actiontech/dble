@@ -226,14 +226,24 @@ public final class ExplainHandler {
             }
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
-            List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
-            for (ReferenceHandlerInfo result : results) {
-                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, service, true);
+            String routeNode = HandlerBuilder.canRouteToOneNode(builder.getEndHandler().getMerges());
+            if (!StringUtil.isBlank(routeNode)) {
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), rrs.getSrcStatement())};
+                for (RouteResultsetNode node : nodes) {
+                    RowDataPacket row = getRow(node, service.getCharset().getResults());
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
+            } else {
+                List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
+                for (ReferenceHandlerInfo result : results) {
+                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                    row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
             }
         }
         // writeDirectly last eof

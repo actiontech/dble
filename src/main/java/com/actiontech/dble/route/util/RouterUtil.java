@@ -34,7 +34,8 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -522,16 +523,51 @@ public final class RouterUtil {
         return tc.getShardingNodes().get(nodeIndex);
     }
 
+    /**
+     * DBLE0REQ-504
+     *
+     * @param selectStmt
+     * @return
+     */
+    public static boolean canMergeJoin(SQLSelectStatement selectStmt) {
+        SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
+        if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+            //check the select into sql is not supported
+            MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) sqlSelectQuery;
+
+            //three types of select route according to the from item in select sql
+            SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
+            return isInnerJoin(mysqlFrom);
+        }
+        return false;
+    }
+
+    private static boolean isInnerJoin(SQLTableSource tableSource) {
+        boolean canMerge;
+        if (tableSource instanceof SQLJoinTableSource) {
+            SQLJoinTableSource joinTableSource = (SQLJoinTableSource) tableSource;
+            SQLTableSource left = joinTableSource.getLeft();
+            SQLTableSource right = joinTableSource.getRight();
+
+            SQLJoinTableSource.JoinType joinType = joinTableSource.getJoinType();
+            canMerge = isInnerJoin(left) && isInnerJoin(right) && (joinType.equals(SQLJoinTableSource.JoinType.INNER_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.JOIN) || joinType.equals(SQLJoinTableSource.JoinType.CROSS_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.STRAIGHT_JOIN));
+        } else {
+            canMerge = true;
+        }
+        return canMerge;
+    }
+
     public static String tryRouteTablesToOneNodeForComplex(
             RouteResultset rrs, DruidShardingParseInfo ctx,
-            Set<String> schemaList, int tableSize, String clientCharset) throws SQLException {
-        if (ctx.getTables().size() != tableSize) {
-            return null;
-        }
+            Set<String> schemaList, int tableSize, String clientCharset, SQLSelectStatement selectStmt) throws SQLException {
         Set<String> tmpResultNodes = new HashSet<>();
-
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
         Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
+        int unrepeatedTableSize = ctx.getTables().size();
+        if (unrepeatedTableSize != tableSize && (!canMergeJoin(selectStmt))) {
+            //DBLE0REQ-504
+            return null;
+        }
         for (Pair<String, String> table : ctx.getTables()) {
             String schemaName = table.getKey();
             String tableName = table.getValue();

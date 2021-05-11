@@ -50,6 +50,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
@@ -588,13 +589,23 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    private void executeMultiResultSet(PlanNode node) {
+    public void setTraceBuilder(BaseHandlerBuilder baseBuilder) {
+        if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setBuilder(baseBuilder);
+        }
+    }
+
+    private void executeMultiResultSet(RouteResultset rrs, PlanNode node) {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            BaseHandlerBuilder baseBuilder = builder.build();
-            if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
-                traceResult.setBuilder(baseBuilder);
+            String nodeName = builder.build();
+            if (!StringUtil.isBlank(nodeName)) {
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getSrcStatement())};
+                rrs.setNodes(nodes);
+                setRouteResultToTrace(nodes);
+                // dml or simple select
+                executeOther(rrs);
             }
             discard = true;
         } catch (SQLSyntaxErrorException e) {
@@ -643,13 +654,13 @@ public class NonBlockingSession extends Session {
                 final PlanNode finalNode = node;
                 //sub Query build will be blocked, so use ComplexQueryExecutor
                 DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
-                    executeMultiResultSet(finalNode);
+                    executeMultiResultSet(rrs, finalNode);
                 });
             } else {
                 if (!visitor.isContainSchema()) {
                     node.setAst(ast);
                 }
-                executeMultiResultSet(node);
+                executeMultiResultSet(rrs, node);
             }
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);

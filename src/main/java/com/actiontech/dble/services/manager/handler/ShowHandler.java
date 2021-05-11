@@ -45,9 +45,6 @@ public final class ShowHandler {
             case ManagerParseShow.SYSPARAM://add rainbow
                 ShowSysParam.execute(service);
                 break;
-            case ManagerParseShow.SYSLOG: //add by zhuam
-                ShowSysLog.execute(service, Integer.parseInt(stmt.substring(rs >>> 8).trim()));
-                break;
             case ManagerParseShow.COMMAND:
                 ShowCommand.execute(service);
                 break;

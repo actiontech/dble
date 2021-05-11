@@ -10,6 +10,7 @@ import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -152,6 +153,8 @@ public abstract class AbstractConnection implements Connection {
 
     public void close(String reason) {
         if (isClosed.compareAndSet(false, true)) {
+            if (service instanceof BusinessService)
+                ((BusinessService) service).transactionsCountInTx();
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEndByExit());
             StatisticListener.getInstance().remove(service);
             closeSocket();
@@ -186,7 +189,7 @@ public abstract class AbstractConnection implements Connection {
     private void closeSocket() {
         if (channel != null) {
             try {
-                channel.close();
+                socketWR.closeSocket();
             } catch (Exception e) {
                 LOGGER.info("AbstractConnectionCloseError", e);
             }

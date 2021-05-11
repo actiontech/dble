@@ -27,18 +27,13 @@ import com.actiontech.dble.util.HexFormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.google.common.collect.ImmutableList;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
@@ -183,13 +178,42 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             return shardingColIndex;
         }
         for (int i = 0; i < columnExprList.size(); i++) {
-            if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackQuote(columnExprList.get(i).toString()))) {
+            SQLExpr sqlExpr = columnExprList.get(i);
+            if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackQuote(sqlExpr.toString()))) {
                 return i;
+            }
+            String schema = schemaInfo.getSchema();
+            String tables = schemaInfo.getTable();
+            Queue<String> queue = new LinkedList<>();
+            queue.add(tables);
+            queue.add(schema);
+            //check database and table
+            if (sqlExpr instanceof SQLPropertyExpr) {
+                if (checkColumn(sqlExpr, queue, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames())) {
+                    throw new SQLNonTransientException("Unknown column '" + columnExprList.get(i) + "' in 'field list'", "42S22", ErrorCode.ER_BAD_FIELD_ERROR);
+                }
+                // deal with database.table.Column
+                if (partitionColumn.equalsIgnoreCase(StringUtil.removeBackQuote(((SQLPropertyExpr) sqlExpr).getName()))) {
+                    return i;
+                }
             }
         }
         return shardingColIndex;
     }
 
+    private boolean checkColumn(SQLExpr sqlExpr, Queue<String> queue, boolean lowerCase) {
+        if (queue.isEmpty()) {
+            return true;
+        }
+        String name = queue.poll();
+        sqlExpr = ((SQLPropertyExpr) sqlExpr).getOwner();
+        if (sqlExpr instanceof SQLIdentifierExpr && StringUtil.equalsConditionIgnoreCase(name, ((SQLIdentifierExpr) sqlExpr).getName(), lowerCase)) {
+            return false;
+        } else if (sqlExpr instanceof SQLPropertyExpr && StringUtil.equalsConditionIgnoreCase(name, ((SQLPropertyExpr) sqlExpr).getName(), lowerCase)) {
+            return checkColumn(sqlExpr, queue, lowerCase);
+        }
+        return true;
+    }
 
     void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ShardingService service, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

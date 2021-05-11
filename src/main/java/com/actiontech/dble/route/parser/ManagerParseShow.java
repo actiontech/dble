@@ -48,7 +48,7 @@ public final class ManagerParseShow {
     public static final int CACHE = 35;
     public static final int SESSION = 36;
     public static final int SYSPARAM = 37;
-    public static final int SYSLOG = 38;
+    // public static final int SYSLOG = 38;
     public static final int HEARTBEAT_DETAIL = 39;
     public static final int DB_INSTANCE_SYNC = 40;
     public static final int DB_INSTANCE_SYNC_DETAIL = 41;
@@ -930,71 +930,13 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    private static int show2syslog(String stmt, int offset) {
-
-        if (stmt.length() > offset + "SLOG".length()) {
-
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'G' || c2 == 'g') && c3 == ' ') {
-
-                offset = trim(offset, stmt);
-
-                char c4 = stmt.charAt(offset);
-                char c5 = stmt.charAt(++offset);
-                char c6 = stmt.charAt(++offset);
-                char c7 = stmt.charAt(++offset);
-                char c8 = stmt.charAt(++offset);
-
-                if ((c4 == 'L' || c4 == 'l') && (c5 == 'I' || c5 == 'i') && (c6 == 'M' || c6 == 'm') &&
-                        (c7 == 'I' || c7 == 'i') && (c8 == 'T' || c8 == 't')) {
-
-                    while (stmt.length() > ++offset) {
-                        switch (stmt.charAt(offset)) {
-                            case ' ':
-                                continue;
-                            case '=':
-                                while (stmt.length() > ++offset) {
-                                    switch (stmt.charAt(offset)) {
-                                        case ' ':
-                                            continue;
-                                        default:
-                                            return (offset << 8) | SYSLOG;
-                                    }
-                                }
-                                return OTHER;
-                            default:
-                                return OTHER;
-                        }
-                    }
-                }
-
-                return SYSLOG;
-            }
-        }
-
-        return OTHER;
-    }
-
     // SHOW @@SYSPARAM
-    // SHOW @@SYSLOG LIMIT=1000
     private static int show2SyCheck(String stmt, int offset) {
         if (stmt.length() > offset + "YS".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
-            if (c1 == 'S' || c1 == 's') {
-                switch (c2) {
-                    case 'L':
-                    case 'l':
-                        return show2syslog(stmt, offset);
-                    case 'P':
-                    case 'p':
-                        return show2sysparam(stmt, offset);
-                    default:
-                        return OTHER;
-                }
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'P' || c2 == 'p')) {
+                return show2sysparam(stmt, offset);
             }
         }
         return OTHER;

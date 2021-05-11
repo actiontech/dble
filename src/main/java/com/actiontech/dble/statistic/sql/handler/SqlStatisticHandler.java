@@ -7,6 +7,8 @@ import com.actiontech.dble.statistic.sql.entry.FrontendInfo;
 import com.actiontech.dble.statistic.sql.entry.StatisticEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
+import com.alibaba.druid.DbType;
+import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -157,6 +159,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         private long sqlId;
         private String stmt;
+        private String sqlDigest;
         private int sqlType;
         private long txId;
         private String sourceHost;
@@ -174,6 +177,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         public SQLRecord(StatisticFrontendSqlEntry entry) {
             this.sqlId = SQL_ID_GENERATOR.incrementAndGet();
             this.stmt = entry.getSql();
+            this.sqlDigest = ParameterizedOutputVisitorUtils.parameterize(this.stmt, DbType.mysql);
             this.sqlType = entry.getSqlType();
             this.txId = entry.getTxId();
 
@@ -239,6 +243,9 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             return examinedRows;
         }
 
+        public String getSqlDigest() {
+            return sqlDigest;
+        }
     }
 
 }

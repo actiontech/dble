@@ -73,7 +73,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             } else {
                 if (sqlType != ServerParse.START && sqlType != ServerParse.BEGIN &&
                         sqlType != ServerParse.COMMIT && sqlType != ServerParse.ROLLBACK && sqlType != ServerParse.SET) {
-                    this.service.singleTransactionsCount();
+                    this.service.transactionsCountOutTx();
                 }
                 switch (sqlType) {
                     //explain sql

@@ -103,26 +103,29 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         switch (var.getType()) {
             case XA:
                 session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
-                this.singleTransactionsCount();
                 break;
             case TRACE:
                 session.setTrace(Boolean.parseBoolean(val));
-                this.singleTransactionsCount();
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
                         Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
-                    }
-                    if (!autocommit && session.getTargetCount() > 0) {
-                        setNoAutoCommit = true;
-                        session.implicitCommit(() -> {
-                            autocommit = true;
+                        if (session.getTargetCount() > 0) {
+                            setNoAutoCommit = true;
+                            session.implicitCommit(() -> {
+                                autocommit = true;
+                                txStarted = false;
+                                this.transactionsCount();
+                                writeOkPacket();
+                            });
+                            return;
+                        } else {
                             txStarted = false;
-                            this.singleTransactionsCount();
-                            writeOkPacket();
-                        });
-                        return;
+                            this.transactionsCount();
+                        }
+                    } else if (!txStarted) {
+                        this.transactionsCount();
                     }
                     autocommit = true;
                 } else {
@@ -135,7 +138,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                         TxnLogHelper.putTxnLog(this, executeSql);
                     }
                 }
-                this.singleTransactionsCount();
                 writeOkPacket();
                 break;
             default:
@@ -430,6 +432,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
+            this.transactionsCount();
             txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }

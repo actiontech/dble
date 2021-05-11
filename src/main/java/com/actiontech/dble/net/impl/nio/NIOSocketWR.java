@@ -281,4 +281,10 @@ public class NIOSocketWR extends SocketWR {
         con.onReadData(got);
     }
 
+
+    @Override
+    public void closeSocket() throws IOException {
+        clearSelectionKey();
+        channel.close();
+    }
 }

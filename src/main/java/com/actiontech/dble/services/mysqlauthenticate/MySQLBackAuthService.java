@@ -213,7 +213,6 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
             if (isHandling.compareAndSet(false, true)) {
                 DbleServer.getInstance().getConcurrentBackHandlerQueue().offer(task);
             }
-            DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
         }
     }
 

@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,7 @@ public class PreparedStatement implements Closeable {
             cursorCache = new CursorCacheForGeneral(fieldCount);
         }
 
-        this.fieldPackets = tmpFieldPackets;
+        this.fieldPackets = new ArrayList<>(tmpFieldPackets);
     }
 
     public List<FieldPacket> getFieldPackets() {

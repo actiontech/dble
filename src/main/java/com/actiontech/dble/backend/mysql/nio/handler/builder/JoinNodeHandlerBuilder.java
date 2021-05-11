@@ -142,12 +142,12 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             pres.add(lh);
             DMLResponseHandler rh = buildJoinChild(right, false);
             pres.add(rh);
-            if (pres != null) {
+            if (!pres.isEmpty()) {
                 List<DMLResponseHandler> merges = Lists.newArrayList();
                 for (DMLResponseHandler preHandler : pres) {
                     merges.addAll(preHandler.getMerges());
                 }
-                if (null != merges && !merges.isEmpty()) {
+                if (!merges.isEmpty()) {
                     String routeNode = HandlerBuilder.canRouteToOneNode(merges);
                     if (!StringUtil.isBlank(routeNode)) {
                         mergeBuild();

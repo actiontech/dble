@@ -8,10 +8,7 @@ package com.actiontech.dble.util;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author mycat
@@ -22,9 +19,8 @@ public class NameableExecutor extends ThreadPoolExecutor {
 
     private Map<String, Map<Thread, Runnable>> runnableMap;
 
-    public NameableExecutor(String name, int size, int maximumPoolSize, long keepAliveTime,
-                            BlockingQueue<Runnable> queue, ThreadFactory factory) {
-        super(size, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue, factory);
+    public NameableExecutor(String name, int size) {
+        super(size, size, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         this.name = name;
     }
 

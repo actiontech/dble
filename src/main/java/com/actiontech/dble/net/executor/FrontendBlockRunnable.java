@@ -46,12 +46,6 @@ public class FrontendBlockRunnable implements Runnable {
                 if (task == null) {
                     task = frontNormalTasks.take();
                 }
-                if (Thread.currentThread().isInterrupted()) {
-                    frontNormalTasks.offer(task);
-                    DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                    LOGGER.debug("interrupt thread:{},frontNormalTasks:{},frontPriorityTasks:{}", Thread.currentThread().toString(), frontNormalTasks, frontPriorityTasks);
-                    break;
-                }
                 if (task.getService() == null) {
                     continue;
                 }
@@ -71,7 +65,6 @@ public class FrontendBlockRunnable implements Runnable {
             } catch (InterruptedException e) {
                 DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
                 LOGGER.debug("interrupt thread exception:{},frontNormalTasks:{},frontPriorityTasks:{}", Thread.currentThread().toString(), frontNormalTasks, frontPriorityTasks);
-                LOGGER.warn("FrontendCommandHandler error.", e);
                 break;
             }
         }

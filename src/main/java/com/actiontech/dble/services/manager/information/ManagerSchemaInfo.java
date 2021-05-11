@@ -94,9 +94,9 @@ public final class ManagerSchemaInfo {
         if (views == null) {
             views = new HashMap<>(8);
             try {
-                registerView("sql_log_by_tx_by_entry_by_user", "s1", "select tx_id,entry,user,source_host,source_port,GROUP_CONCAT(sql_id) sql_ids, COUNT(sql_id) sql_count,max(start_time + duration) - min(start_time) tx_duration,sum(duration) busy_time,sum(examined_rows) examined_rows from sql_log group by tx_id");
-                registerView("sql_log_by_digest_by_entry_by_user", "s2", "select sql_digest,entry,user,COUNT(sql_id) exec,sum(duration) duration,sum(rows) rows,sum(examined_rows) examined_rows from sql_log group by sql_digest");
-                registerView("sql_log_by_tx_digest_by_entry_by_user", "s3", "select tx_digest,count(tx_digest) exec, user,entry,sum(sql_count) sql_count,source_host,source_port,group_concat(sql_ids) sql_ids,sum(tx_duration) tx_duration,sum(busy_time) busy_time,sum(examined_rows) examined_rows from (select group_concat(sql_digest) tx_digest,user,entry,COUNT(sql_id) sql_count,source_host,source_port,GROUP_CONCAT(sql_id) sql_ids,max(start_time + duration) - min(start_time) tx_duration,sum(duration) busy_time,sum(examined_rows) examined_rows from sql_log group by tx_id) a group by a.tx_digest");
+                registerView("sql_log_by_tx_by_entry_by_user", "s1", "select tx_id,entry,user,source_host,source_port,GROUP_CONCAT(sql_id) sql_ids, COUNT(sql_id) sql_exec,max(start_time + duration) - min(start_time) tx_duration,sum(duration) busy_time,sum(examined_rows) examined_rows from sql_log group by tx_id");
+                registerView("sql_log_by_digest_by_entry_by_user", "s2", "select sql_digest,entry,user,COUNT(sql_id) exec,sum(duration) duration,sum(rows) rows,sum(examined_rows) examined_rows,duration / COUNT(sql_id) avg_duration from sql_log group by sql_digest");
+                registerView("sql_log_by_tx_digest_by_entry_by_user", "s3", "select tx_digest,count(tx_digest) exec, user,entry,sum(sql_exec) sql_exec,source_host,source_port,group_concat(sql_ids) sql_ids,sum(tx_duration) tx_duration,sum(busy_time) busy_time,sum(examined_rows) examined_rows from (select group_concat(sql_digest) tx_digest,user,entry,COUNT(sql_id) sql_exec,source_host,source_port,GROUP_CONCAT(sql_id) sql_ids,max(start_time + duration) - min(start_time) tx_duration,sum(duration) busy_time,sum(examined_rows) examined_rows from sql_log group by tx_id) a group by a.tx_digest");
             } catch (SQLSyntaxErrorException e) {
                 return null;
             }

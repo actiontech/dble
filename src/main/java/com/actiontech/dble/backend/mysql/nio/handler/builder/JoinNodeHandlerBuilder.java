@@ -26,6 +26,8 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 
 import java.util.*;
 
@@ -34,6 +36,7 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     private JoinNode node;
     private final int charsertIndex;
+    private boolean isJoin = true;
 
     JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -139,7 +142,20 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             pres.add(lh);
             DMLResponseHandler rh = buildJoinChild(right, false);
             pres.add(rh);
-
+            if (pres != null) {
+                List<DMLResponseHandler> merges = Lists.newArrayList();
+                for (DMLResponseHandler preHandler : pres) {
+                    merges.addAll(preHandler.getMerges());
+                }
+                if (null != merges && !merges.isEmpty()) {
+                    String routeNode = HandlerBuilder.canRouteToOneNode(merges);
+                    if (!StringUtil.isBlank(routeNode)) {
+                        mergeBuild();
+                        pres = null;
+                        isJoin = false;
+                    }
+                }
+            }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "strategy [" + node.getStrategy() + "] not implement yet!");
         }
@@ -171,6 +187,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public void buildOwn() {
+        if (!isJoin) {
+            return;
+        }
         if (node.isNotIn()) {
             NotInHandler nh = new NotInHandler(getSequenceId(), session, node.getLeftJoinOnOrders(),
                     node.getRightJoinOnOrders());

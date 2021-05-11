@@ -20,15 +20,14 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketAcceptor;
 import com.actiontech.dble.net.SocketConnector;
+import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.executor.BackendCurrentRunnable;
 import com.actiontech.dble.net.executor.FrontendBlockRunnable;
 import com.actiontech.dble.net.executor.FrontendCurrentRunnable;
 import com.actiontech.dble.net.executor.WriteToBackendRunnable;
 import com.actiontech.dble.net.impl.aio.AIOAcceptor;
 import com.actiontech.dble.net.impl.aio.AIOConnector;
-import com.actiontech.dble.net.impl.nio.NIOAcceptor;
-import com.actiontech.dble.net.impl.nio.NIOConnector;
-import com.actiontech.dble.net.impl.nio.NIOReactorPool;
+import com.actiontech.dble.net.impl.nio.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -67,6 +66,10 @@ public final class DbleServer {
     public static final String WRITE_TO_BACKEND_EXECUTOR_NAME = "writeToBackendExecutor";
     public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryExecutor";
     public static final String TIMER_EXECUTOR_NAME = "Timer";
+    public static final String FRONT_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT-";
+    public static final String BACKEND_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND-";
+    public static final String FRONT_BACKEND_SUFFIX = "-RW";
+    public static final String AIO_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO";
 
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
@@ -93,6 +96,8 @@ public final class DbleServer {
     private IOProcessor[] frontProcessors;
     private IOProcessor[] backendProcessors;
     private SocketConnector connector;
+    private ExecutorService frontExecutor;
+    private ExecutorService backendExecutor;
     private ExecutorService businessExecutor;
     private ExecutorService backendBusinessExecutor;
     private ExecutorService writeToBackendExecutor;
@@ -104,6 +109,8 @@ public final class DbleServer {
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
 
     private Queue<ServiceTask> concurrentBackHandlerQueue;
+    private ConcurrentLinkedQueue<AbstractConnection> frontRegisterQueue;
+    private ConcurrentLinkedQueue<AbstractConnection> backendRegisterQueue;
 
     private volatile boolean startup = false;
     private Map<String, Map<Thread, Runnable>> runnableMap = Maps.newHashMap();
@@ -151,11 +158,7 @@ public final class DbleServer {
         backendProcessors = new IOProcessor[backendProcessorCount];
 
 
-        businessExecutor = ExecutorUtil.createFixed(BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getProcessorExecutor(), runnableMap);
-        backendBusinessExecutor = ExecutorUtil.createFixed(BACKEND_BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getBackendProcessorExecutor(), runnableMap);
-        writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_EXECUTOR_NAME, SystemConfig.getInstance().getWriteToBackendExecutor(), runnableMap);
-        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexExecutor(), runnableMap);
-        timerExecutor = ExecutorUtil.createFixed(TIMER_EXECUTOR_NAME, 1);
+        initExecutor(frontProcessorCount, backendProcessorCount);
 
         LOGGER.info("====================================Task Queue&Thread init start==================================");
         initTaskQueue();
@@ -195,20 +198,20 @@ public final class DbleServer {
             server = new AIOAcceptor(NAME + "Server", SystemConfig.getInstance().getBindIp(),
                     SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), this.asyncChannelGroups[0]);
         } else {
-            NIOReactorPool frontReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT",
-                    frontProcessorCount);
-            NIOReactorPool backendReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
-                    backendProcessorCount);
+            for (int i = 0; i < frontProcessorCount; i++) {
+                frontExecutor.execute(new RW(frontRegisterQueue));
+            }
+            for (int i = 0; i < backendProcessorCount; i++) {
+                backendExecutor.execute(new RW(backendRegisterQueue));
+            }
 
-            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
+            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendRegisterQueue);
             connector.start();
 
             manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", SystemConfig.getInstance().getBindIp(),
-                    SystemConfig.getInstance().getManagerPort(), 100, new ManagerConnectionFactory(), frontReactorPool);
+                    SystemConfig.getInstance().getManagerPort(), 100, new ManagerConnectionFactory(), frontRegisterQueue);
             server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", SystemConfig.getInstance().getBindIp(),
-                    SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), frontReactorPool);
+                    SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), frontRegisterQueue);
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
@@ -281,6 +284,16 @@ public final class DbleServer {
         startup = true;
     }
 
+    private void initExecutor(int frontProcessorCount, int backendProcessorCount) {
+        businessExecutor = ExecutorUtil.createFixed(BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getProcessorExecutor(), runnableMap);
+        backendBusinessExecutor = ExecutorUtil.createFixed(BACKEND_BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getBackendProcessorExecutor(), runnableMap);
+        writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_EXECUTOR_NAME, SystemConfig.getInstance().getWriteToBackendExecutor(), runnableMap);
+        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexExecutor(), runnableMap);
+        timerExecutor = ExecutorUtil.createFixed(TIMER_EXECUTOR_NAME, 1);
+        frontExecutor = ExecutorUtil.createFixed(FRONT_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, frontProcessorCount, runnableMap);
+        backendExecutor = ExecutorUtil.createFixed(BACKEND_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, backendProcessorCount, runnableMap);
+    }
+
     private void initServerConfig() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             this.config = new ServerConfig(DbleTempConfig.getInstance().getUserConfig(), DbleTempConfig.getInstance().getDbConfig(),
@@ -301,7 +314,7 @@ public final class DbleServer {
                         @Override
                         public Thread newThread(Runnable r) {
                             Thread th = new Thread(r);
-                            th.setName(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO" + (inx++));
+                            th.setName(AIO_EXECUTOR_NAME + (inx++));
                             LOGGER.info("created new AIO thread " + th.getName());
                             return th;
                         }
@@ -335,6 +348,11 @@ public final class DbleServer {
         writeToBackendQueue = new LinkedBlockingQueue<>();
         for (int i = 0; i < SystemConfig.getInstance().getWriteToBackendExecutor(); i++) {
             writeToBackendExecutor.execute(new WriteToBackendRunnable(writeToBackendQueue));
+        }
+
+        if (SystemConfig.getInstance().getUsingAIO() != 1) {
+            frontRegisterQueue = new ConcurrentLinkedQueue<>();
+            backendRegisterQueue = new ConcurrentLinkedQueue<>();
         }
     }
 
@@ -584,6 +602,22 @@ public final class DbleServer {
 
     public ExecutorService getBackendBusinessExecutor() {
         return backendBusinessExecutor;
+    }
+
+    public ExecutorService getFrontExecutor() {
+        return frontExecutor;
+    }
+
+    public ExecutorService getBackendExecutor() {
+        return backendExecutor;
+    }
+
+    public ConcurrentLinkedQueue<AbstractConnection> getFrontRegisterQueue() {
+        return frontRegisterQueue;
+    }
+
+    public ConcurrentLinkedQueue<AbstractConnection> getBackendRegisterQueue() {
+        return backendRegisterQueue;
     }
 
     public boolean isStartup() {

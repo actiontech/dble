@@ -227,9 +227,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
-                    buffer = shardingService.writeToBuffer(errPkg.toBytes(), buffer);
                     session.setResponseTime(false);
-                    shardingService.writeDirectly(buffer);
+                    errPkg.write(buffer, shardingService);
                 } else {
                     errPkg.write(shardingService.getConnection());
                 }

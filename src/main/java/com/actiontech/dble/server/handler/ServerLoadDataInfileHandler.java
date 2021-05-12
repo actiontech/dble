@@ -209,6 +209,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     RouteResultset rrs = buildResultSet(routeResultMap);
                     if (rrs != null) {
                         flushDataToFile();
+                        service.getSession2().endParse();
                         service.getSession2().execute(rrs);
                     }
                 }
@@ -635,6 +636,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = buildResultSet(routeResultMap);
         if (rrs != null) {
             flushDataToFile();
+            service.getSession2().endParse();
             service.getSession2().execute(rrs);
         }
     }

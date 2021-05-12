@@ -57,10 +57,7 @@ public class TraceResult implements Cloneable {
     public void setVeryStartPrepare(long veryStartPrepare) {
         prepareFinished = false;
         this.veryStartPrepare = veryStartPrepare;
-    }
-
-    public void setRequestStartPrepare(TraceRecord requestStartPrepare) {
-        this.requestStartPrepare = requestStartPrepare;
+        this.requestStartPrepare = new TraceRecord(veryStartPrepare);
     }
 
     public void setRouteStart(TraceRecord routeStart) {

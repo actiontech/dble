@@ -161,7 +161,7 @@ public final class RouteService {
         Map hintMap = null;
         String hintType = null;
         if (hint.indexOf("=") >= 0) {
-            //sql/sharddingNode/db_type/db_instance_url=*****
+            //sql/shardingNode/db_type/db_instance_url=*****
             hintMap = parseKeyValue(hint, '=');
             hintType = (String) hintMap.get(HINT_TYPE);
             hintSql = (String) hintMap.get(hintType);

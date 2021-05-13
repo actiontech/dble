@@ -25,10 +25,6 @@ public class OutputHandlerForPrepare extends OutputHandler {
     }
 
 
-    @Override
-    public void okResponse(byte[] ok, AbstractService service) {
-        return;
-    }
 
 
     @Override

@@ -14,6 +14,7 @@ import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
@@ -281,7 +282,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     commands.doOther();
                     final MySQLChangeUserService fService = new MySQLChangeUserService(connection, this);
                     connection.setService(fService);
-                    fService.handleInnerData(data);
+                    fService.consumeSingleTask(new NormalServiceTask(data, this, 0));
                     break;
                 case MySQLPacket.COM_RESET_CONNECTION:
                     commands.doOther();
@@ -707,7 +708,12 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     public String toString() {
-        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + executeSql + " txInterruptMsg = " + txInterruptMsg +
+        String tmpSql = null;
+        if (executeSql != null) {
+            tmpSql = executeSql.length() > 1024 ? executeSql.substring(0, 1024) + "..." : executeSql;
+        }
+
+        return "ShardingService[ user = " + user + " schema = " + schema + " executeSql = " + tmpSql + " txInterruptMsg = " + txInterruptMsg +
                 " sessionReadOnly = " + sessionReadOnly + "] with connection " + connection.toString() + " with session " + session.toString();
     }
 }

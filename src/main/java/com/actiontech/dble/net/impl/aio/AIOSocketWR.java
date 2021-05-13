@@ -27,6 +27,7 @@ public class AIOSocketWR extends SocketWR {
     private ConcurrentLinkedQueue<WriteOutTask> writeQueue;
 
     private volatile WriteOutTask leftoverWriteTask;
+    volatile boolean writeDataErr = false;
 
     public AIOSocketWR() {
 
@@ -52,6 +53,36 @@ public class AIOSocketWR extends SocketWR {
     private void asyncWrite(final ByteBuffer buffer) {
         buffer.flip();
         this.channel.write(buffer, this, AIO_WRITE_HANDLER);
+
+    }
+
+    @Override
+    public boolean isWriteComplete() {
+        if (writeDataErr) {
+            return true;
+        }
+        int count = 0;
+        while (!writing.compareAndSet(false, true) && count < 5) {
+            try {
+                Thread.sleep(10);
+                count++;
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (count >= 5) {
+            return false;
+        }
+        try {
+            ByteBuffer buffer = leftoverWriteTask == null ? null : leftoverWriteTask.getBuffer();
+            if (buffer != null && buffer.hasRemaining()) {
+                return false;
+            }
+            return writeQueue.isEmpty();
+
+        } finally {
+            writing.set(false);
+        }
 
     }
 
@@ -153,6 +184,11 @@ public class AIOSocketWR extends SocketWR {
     @Override
     public void enableRead() {
 
+    }
+
+    @Override
+    public void shutdownInput() throws IOException {
+        channel.shutdownInput();
     }
 
     @Override

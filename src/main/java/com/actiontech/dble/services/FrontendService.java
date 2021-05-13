@@ -12,7 +12,6 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -87,10 +86,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
 
         if (connection.isClosed()) {
-            // prevents QUIT、CLOSE_STMT from losing cumulative
-            if (task.getOrgData() != null && task.getOrgData().length > 4 && (task.getOrgData()[4] == MySQLPacket.COM_QUIT || task.getOrgData()[4] == MySQLPacket.COM_STMT_CLOSE)) {
-                this.handleInnerData(task.getOrgData());
-            }
+            LOGGER.trace("Discard message in closed {}", task);
             return;
         }
 
@@ -173,14 +169,18 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     }
 
-    private void consumeSingleTask(ServiceTask executeTask) {
+    @Override
+    public void consumeSingleTask(ServiceTask serviceTask) {
         try {
-            byte[] data = executeTask.getOrgData();
-            if (data != null && !executeTask.isReuse()) {
-                this.setPacketId(executeTask.getLastSequenceId());
+            if (serviceTask.getType() == ServiceTaskType.NORMAL) {
+                NormalServiceTask executeTask = (NormalServiceTask) serviceTask;
+                byte[] data = executeTask.getOrgData();
+                if (data != null && !executeTask.isReuse()) {
+                    this.setPacketId(executeTask.getLastSequenceId());
+                }
             }
 
-            this.handleInnerData(data);
+            super.consumeSingleTask(serviceTask);
         } catch (Throwable e) {
             LOGGER.error("frontExecutor process error: ", e);
             connectionSerializableLock.unLock();
@@ -207,13 +207,14 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
      * @param packetData packet data
      */
     protected void taskMultiQueryCreate(byte[] packetData) {
-        final ServiceTask task = new ServiceTask(packetData, this, true);
+        final ServiceTask task = new NormalServiceTask(packetData, this, true);
         //high priority;
         task.setTaskId(-1);
         taskQueue.add(task);
         createNotifyTask();
     }
 
+    @Override
     protected abstract void handleInnerData(byte[] data);
 
     protected void beforeHandlingTask() {

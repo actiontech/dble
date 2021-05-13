@@ -8,10 +8,10 @@ package com.actiontech.dble.net.service;
 
 /**
  * @author dcy
- * Create Date: 2021-04-16
+ * Create Date: 2021-05-11
  */
-public enum ServiceTaskType {
-    NORMAL,
-    NOTIFICATION,
-    CLOSE;
+public abstract class InnerServiceTask extends ServiceTask {
+    public InnerServiceTask(Service service) {
+        super(service);
+    }
 }

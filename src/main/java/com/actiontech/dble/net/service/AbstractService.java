@@ -2,21 +2,27 @@ package com.actiontech.dble.net.service;
 
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
+import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 
 /**
  * Created by szf on 2020/6/16.
  */
 public abstract class AbstractService extends VariablesService implements Service {
-
+    private static final Logger LOGGER = LogManager.getLogger(AbstractService.class);
     protected AbstractConnection connection;
+    private long firstGraceCloseTime = -1;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
@@ -125,4 +131,55 @@ public abstract class AbstractService extends VariablesService implements Servic
         return "Service " + this.getClass() + " " + connection.getId();
     }
 
+    protected abstract void handleInnerData(byte[] data);
+
+
+    public void consumeSingleTask(ServiceTask serviceTask) {
+        if (serviceTask.getType() == ServiceTaskType.NORMAL) {
+            final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
+            handleInnerData(data);
+
+        } else {
+            handleSpecialInnerData((InnerServiceTask) serviceTask);
+        }
+    }
+
+    protected void handleSpecialInnerData(InnerServiceTask serviceTask) {
+        final ServiceTaskType taskType = serviceTask.getType();
+        switch (taskType) {
+            case CLOSE: {
+                IODelayProvider.beforeInnerClose(serviceTask, this);
+                final CloseServiceTask task = (CloseServiceTask) serviceTask;
+                final Collection<String> closedReasons = task.getReasons();
+                if (task.isGracefullyClose()) {
+                    if (firstGraceCloseTime == -1) {
+                        firstGraceCloseTime = System.currentTimeMillis();
+                    }
+                    connection.doNextWriteCheck();
+                    if (connection.getSocketWR().isWriteComplete()) {
+                        connection.closeImmediately(Strings.join(closedReasons, ','));
+                        IODelayProvider.afterImmediatelyClose(serviceTask, this);
+                    } else {
+                        if (System.currentTimeMillis() - firstGraceCloseTime > 10 * 1000) {
+                            LOGGER.error("conn graceful close take so long time. {}.", this);
+                            connection.closeImmediately(Strings.join(closedReasons, ','));
+                            return;
+                        }
+                        /*
+                        delayed, push back to queue.
+                         */
+                        connection.pushInnerServiceTask(serviceTask);
+                    }
+                } else {
+                    connection.closeImmediately(Strings.join(closedReasons, ','));
+                    IODelayProvider.afterImmediatelyClose(serviceTask, this);
+                }
+
+            }
+            break;
+            default:
+                LOGGER.info("UNKNOWN INNER COMMAND {} {} for con {}", serviceTask.getClass().getName(), serviceTask, connection);
+                break;
+        }
+    }
 }

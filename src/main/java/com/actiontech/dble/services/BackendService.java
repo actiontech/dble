@@ -156,7 +156,7 @@ public abstract class BackendService extends AbstractService {
             }
             // handleData
             while ((task = taskQueue.poll()) != null) {
-                this.handleInnerData(task.getOrgData());
+                this.consumeSingleTask(task);
             }
             // threadUsageStat end
             if (workUsage != null && threadName.startsWith("backend")) {
@@ -172,6 +172,7 @@ public abstract class BackendService extends AbstractService {
      *
      * @param data mysql binary packet
      */
+    @Override
     protected void handleInnerData(byte[] data) {
         if (connection.isClosed()) {
             return;
@@ -438,7 +439,7 @@ public abstract class BackendService extends AbstractService {
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
-                BigDecimal vl = new BigDecimal(value);
+                new BigDecimal(value);
             } catch (NumberFormatException e) {
                 value = "`" + value + "`";
             }

@@ -90,7 +90,7 @@ public class BackendConnection extends PooledConnection {
         if (!isClosed.get()) {
             if ((isAuthed || this.getService() == null) && channel.isOpen() && closeReason == null) {
                 try {
-                    gracefulClose(reason);
+                    closeGracefullyPassive(reason);
                 } catch (Throwable e) {
                     LOGGER.info("error when try to quit the connection ,drop the error and close it anyway", e);
                     super.close(reason);
@@ -113,6 +113,28 @@ public class BackendConnection extends PooledConnection {
         }
     }
 
+
+    @Override
+    public synchronized void closeImmediately(final String reason) {
+        LOGGER.info("connection id " + threadId + " close for reason " + reason);
+        boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
+        if (!isClosed.get()) {
+            super.closeImmediately(reason);
+            if (isAuthed) {
+                this.getBackendService().onConnectionClose(reason == null ? closeReason : reason);
+            }
+
+            if (isAuthed) {
+                this.getBackendService().backendSpecialCleanUp();
+            }
+        } else {
+            this.cleanup();
+            if (isAuthed) {
+                this.getBackendService().onConnectionClose(reason == null ? closeReason : reason);
+            }
+        }
+    }
+
     public void closeWithFront(String reason) {
         if (getBackendService().getSession() != null) {
             getBackendService().getSession().getSource().close(reason);
@@ -121,19 +143,15 @@ public class BackendConnection extends PooledConnection {
     }
 
 
-    private void gracefulClose(String reason) {
+    private void closeGracefullyPassive(String reason) {
         this.closeReason = reason;
         writeClose(writeToBuffer(QuitPacket.QUIT, allocate()));
     }
 
     public void writeClose(ByteBuffer buffer) {
         writeQueue.offer(new WriteOutTask(buffer, true));
-        try {
-            this.socketWR.doNextWriteCheck();
-        } catch (Exception e) {
-            LOGGER.info("writeDirectly err:", e);
-            this.close("writeDirectly err:" + e);
-        }
+
+        this.socketWR.doNextWriteCheck();
     }
 
     public long getThreadId() {

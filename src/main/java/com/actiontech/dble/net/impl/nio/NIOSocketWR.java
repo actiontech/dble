@@ -9,15 +9,18 @@ import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.ServiceTaskFactory;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -33,6 +36,7 @@ public class NIOSocketWR extends SocketWR {
     private ConcurrentLinkedQueue<WriteOutTask> writeQueue;
 
     private volatile WriteOutTask leftoverWriteTask;
+    private volatile boolean writeDataErr = false;
 
     public void initFromConnection(AbstractConnection connection) {
         this.con = connection;
@@ -57,6 +61,10 @@ public class NIOSocketWR extends SocketWR {
         }
 
         try {
+            if (writeDataErr) {
+                this.writeQueue.clear();
+                return;
+            }
             boolean noMoreData = write0();
             writing.compareAndSet(threadId, NOT_USED);
             if (noMoreData && writeQueue.isEmpty()) {
@@ -70,12 +78,27 @@ public class NIOSocketWR extends SocketWR {
             }
 
         } catch (IOException e) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("caught err:", e);
+
+            if (Objects.equals(e.getMessage(), "Broken pipe") || e instanceof ClosedChannelException) {
+                // target problem,
+                //ignore this exception,will close by read side.
+                LOGGER.debug("Connection was closed while read. Detail reason:{}. {}.", e, con.getService());
+            } else {
+                //self problem.
+                LOGGER.info("con {} write err:", con.getService(), e);
+                con.pushInnerServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
             }
-            con.close(e);
+            writeDataErr = true;
+        } catch (Exception e) {
+            LOGGER.info("con {} write err:", con.getService(), e);
+            con.pushInnerServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
+            writeDataErr = true;
         } finally {
+            if (writeDataErr) {
+                this.writeQueue.clear();
+            }
             writing.compareAndSet(threadId, NOT_USED);
+
         }
 
     }
@@ -116,6 +139,34 @@ public class NIOSocketWR extends SocketWR {
         SelectionKey key = this.processKey;
         key.interestOps(key.interestOps() | SelectionKey.OP_READ);
         processKey.selector().wakeup();
+    }
+
+    @Override
+    public boolean isWriteComplete() {
+        if (writeDataErr) {
+            return true;
+        }
+        if (!writeQueue.isEmpty()) {
+            return false;
+        }
+        final long threadId = Thread.currentThread().getId();
+        while (!writing.compareAndSet(NOT_USED, threadId)) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            ByteBuffer buffer = leftoverWriteTask == null ? null : leftoverWriteTask.getBuffer();
+            if (buffer != null && buffer.hasRemaining()) {
+                return false;
+            }
+            return writeQueue.isEmpty();
+        } finally {
+            writing.set(NOT_USED);
+        }
+
     }
 
     private boolean write0() throws IOException {
@@ -281,6 +332,11 @@ public class NIOSocketWR extends SocketWR {
         con.onReadData(got);
     }
 
+
+    @Override
+    public void shutdownInput() throws IOException {
+        channel.shutdownInput();
+    }
 
     @Override
     public void closeSocket() throws IOException {

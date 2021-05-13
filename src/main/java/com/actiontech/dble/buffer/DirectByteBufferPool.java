@@ -71,7 +71,11 @@ public class DirectByteBufferPool implements BufferPool {
         }
 
         if (byteBuf == null) {
-            LOGGER.warn("can't allocate DirectByteBuffer from DirectByteBufferPool. Please pay attention to whether it is a memory leak or there is no enough direct memory. The maximum size of the DirectByteBufferPool that can be allocated at one time is {}, and the size that you would like to allocate is {}", pageSize, size);
+            if (size > pageSize) {
+                LOGGER.warn("You may need to turn up page size. The maximum size of the DirectByteBufferPool that can be allocated at one time is {}, and the size that you would like to allocate is {}", pageSize, size);
+            } else {
+                LOGGER.warn("Please pay attention to whether it is a memory leak. The maximum size of the DirectByteBufferPool that can be allocated at one time is {}, and the size that you would like to allocate is {}", pageSize, size);
+            }
             return ByteBuffer.allocate(theChunkCount * chunkSize);
         }
         return byteBuf;

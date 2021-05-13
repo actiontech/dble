@@ -9,7 +9,6 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
-
 import com.actiontech.dble.singleton.BufferPoolManager;
 
 import java.nio.ByteBuffer;
@@ -105,6 +104,9 @@ public class ErrorPacket extends MySQLPacket {
         return buffer;
     }
 
+    public void write(ByteBuffer buffer, AbstractService service) {
+        service.writeWithBuffer(this, buffer);
+    }
 
     @Override
     public void bufferWrite(AbstractConnection c) {

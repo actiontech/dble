@@ -52,10 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,9 +100,8 @@ public final class DbleServer {
     private ExecutorService timerExecutor;
     private Map<String, ThreadWorkUsage> threadUsedMap = new ConcurrentHashMap<>();
 
-    private Queue<ServiceTask> frontHandlerQueue;
+    private Deque<ServiceTask> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
-    private Queue<ServiceTask> frontPriorityQueue;
 
     private Queue<ServiceTask> concurrentBackHandlerQueue;
 
@@ -310,10 +306,10 @@ public final class DbleServer {
 
     private void initTaskQueue() {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            frontPriorityQueue = new ConcurrentLinkedQueue<>();
-            frontHandlerQueue = new ConcurrentLinkedQueue<>();
+
+            frontHandlerQueue = new ConcurrentLinkedDeque<>();
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue));
             }
 
             concurrentBackHandlerQueue = new ConcurrentLinkedQueue<>();
@@ -322,10 +318,10 @@ public final class DbleServer {
             }
 
         } else {
-            frontPriorityQueue = new ConcurrentLinkedQueue<>();
-            frontHandlerQueue = new LinkedBlockingQueue<>();
+
+            frontHandlerQueue = new LinkedBlockingDeque<>(SystemConfig.getInstance().getProcessorExecutor() * 3000);
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendBlockRunnable(frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) frontHandlerQueue));
             }
 
         }
@@ -373,7 +369,7 @@ public final class DbleServer {
     }
 
 
-    public Queue<ServiceTask> getFrontHandlerQueue() {
+    public Deque<ServiceTask> getFrontHandlerQueue() {
         return frontHandlerQueue;
     }
 
@@ -624,9 +620,6 @@ public final class DbleServer {
         return timerExecutor;
     }
 
-    public Queue<ServiceTask> getFrontPriorityQueue() {
-        return frontPriorityQueue;
-    }
 
     public ExecutorService getComplexQueryExecutor() {
         return complexQueryExecutor;

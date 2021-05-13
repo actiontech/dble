@@ -79,9 +79,8 @@ public class OutputHandler extends BaseDMLHandler {
         logger.info(service.toString() + "|errorResponse()|" + new String(errPacket.getMessage()));
         lock.lock();
         try {
-            buffer = serverSession.getSource().writeToBuffer(err, buffer);
             serverSession.resetMultiStatementStatus();
-            serverSession.getSource().write(buffer);
+            errPacket.write(buffer, serverSession.getShardingService());
         } finally {
             lock.unlock();
         }

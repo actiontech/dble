@@ -10,12 +10,14 @@
 -Dcom.sun.management.jmxremote.host=127.0.0.1
 -Xmx4G
 -Xms1G
+-Xss256k
 -XX:MaxDirectMemorySize=2G
 -XX:+PrintHeapAtGC
 -XX:+PrintGCDateStamps
 -Xloggc:./logs/gc_%WRAPPER_TIME_YYYYMMDDHHIISS%_%p.log
 -XX:+PrintGCTimeStamps
 -XX:+PrintGCDetails
+-XX:MetaspaceSize=50M
 #  base config
 -DhomePath=.
 -DinstanceName=1

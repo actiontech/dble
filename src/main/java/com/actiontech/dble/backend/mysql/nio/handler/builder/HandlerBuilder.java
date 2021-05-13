@@ -14,6 +14,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,9 +89,14 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
-            String routeNode = canRouteToOneNode(fh.getMerges());
-            if (!StringUtil.isBlank(routeNode)) {
-                return routeNode;
+            if (!builder.isExistView()) {
+                List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
+                List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
+                subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);
+                String routeNode = canRouteToOneNode(merges);
+                if (!StringUtil.isBlank(routeNode)) {
+                    return routeNode;
+                }
             }
             HandlerBuilder.startHandler(fh);
             session.endComplexExecute();

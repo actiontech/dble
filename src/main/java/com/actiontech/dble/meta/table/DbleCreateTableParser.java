@@ -258,8 +258,7 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                                 continue;
                             }
                         }
-                    } else if (lexer.token() == Token.IDENTIFIER //
-                            || lexer.token() == Token.LITERAL_CHARS) {
+                    } else if (lexer.token() == Token.IDENTIFIER || lexer.token() == Token.LITERAL_CHARS) {
                         column = this.exprParser.parseColumn();
                         column.setParent(stmt);
                         stmt.getTableElementList().add(column);
@@ -267,9 +266,7 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                         if (lexer.isKeepComments() && lexer.hasComment()) {
                             column.addAfterComment(lexer.readAndResetComments());
                         }
-                    } else if (lexer.token() == Token.CONSTRAINT //
-                            || lexer.token() == Token.PRIMARY //
-                            || lexer.token() == Token.UNIQUE) {
+                    } else if (lexer.token() == Token.CONSTRAINT || lexer.token() == Token.PRIMARY || lexer.token() == Token.UNIQUE) {
                         SQLTableConstraint constraint = this.parseConstraint();
                         constraint.setParent(stmt);
 
@@ -1237,9 +1234,7 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
     }
 
     protected void partitionClauseRest(SQLPartitionBy clause) {
-        if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS)
-                || lexer.identifierEquals(FnvHash.Constants.TBPARTITIONS)
-                || lexer.identifierEquals(FnvHash.Constants.DBPARTITIONS)) {
+        if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS) || lexer.identifierEquals(FnvHash.Constants.TBPARTITIONS) || lexer.identifierEquals(FnvHash.Constants.DBPARTITIONS)) {
             lexer.nextToken();
             SQLIntegerExpr countExpr = this.exprParser.integerExpr();
             clause.setPartitionsCount(countExpr);
@@ -1348,8 +1343,7 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                     for (; ; ) {
                         SQLExpr expr = this.exprParser.expr();
 
-                        if (expr instanceof SQLIdentifierExpr
-                                && (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
+                        if (expr instanceof SQLIdentifierExpr && (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
                             String dataType = lexer.stringVal();
                             lexer.nextToken();
 
@@ -1381,8 +1375,7 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                         expr = this.exprParser.expr();
                     }
 
-                    if (expr instanceof SQLIdentifierExpr
-                            && (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
+                    if (expr instanceof SQLIdentifierExpr && (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
                         String dataType = lexer.stringVal();
                         lexer.nextToken();
 
@@ -1419,6 +1412,8 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                 accept(Token.RPAREN);
                 subPartitionByClause = range;
             }
+
+            assert subPartitionByClause != null;
 
             if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITION)) {
                 lexer.nextToken();

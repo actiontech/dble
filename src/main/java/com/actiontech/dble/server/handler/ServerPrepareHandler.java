@@ -165,11 +165,12 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
             // reset the Parameter
             String sql = prepareStmtBindValue(pStmt, bindValues);
             GeneralLogHelper.putGLog(service, MySQLPacket.TO_STRING.get(data[4]), sql);
-            if (SystemConfig.getInstance().isEnableCursor() && packet.getFlag() == CursorTypeFlags.CURSOR_TYPE_READ_ONLY) {
+            final boolean usingCursor = SystemConfig.getInstance().isEnableCursor() && packet.getFlag() == CursorTypeFlags.CURSOR_TYPE_READ_ONLY;
+            if (usingCursor) {
                 service.getRequestScope().setUsingCursor(true);
             }
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("execute prepare sql: " + sql);
+                LOGGER.debug("execute prepare sql: " + sql + ". usingCursor:" + usingCursor);
             }
             pStmt.resetLongData();
             service.query(sql);

@@ -429,12 +429,19 @@ public class PushDownVisitor extends MysqlVisitor {
         if (query.getAst() != null) {
             SQLSelectQuery queryblock = query.getAst().getSelect().getQuery();
             if (queryblock instanceof MySqlSelectQueryBlock) {
-                if (((MySqlSelectQueryBlock) queryblock).isForUpdate()) {
+                MySqlSelectQueryBlock mysqlQueryBlock = (MySqlSelectQueryBlock) queryblock;
+                if (mysqlQueryBlock.isForUpdate()) {
                     sb.append(" FOR UPDATE");
-                } else if (((MySqlSelectQueryBlock) queryblock).isLockInShareMode()) {
+                } else if (mysqlQueryBlock.isLockInShareMode()) {
                     sb.append(" LOCK IN SHARE MODE ");
+                } else if (mysqlQueryBlock.isForShare()) {
+                    sb.append(" FOR SHARE");
+                    if (mysqlQueryBlock.isSkipLocked()) {
+                        sb.append(" SKIP LOCKED");
+                    } else if (mysqlQueryBlock.isNoWait()) {
+                        sb.append(" NOWAIT");
+                    }
                 }
-
             }
         }
     }

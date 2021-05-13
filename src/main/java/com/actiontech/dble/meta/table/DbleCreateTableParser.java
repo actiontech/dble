@@ -25,9 +25,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/12/4.
- * extends druid MySqlCreateTableParser
+ * extends druid MySqlCreateTableParser for AUTO_INCREMENT
  * exempts code check because the source code is copy from druid
  * source code is copy from druid version 1.2.3 by ylz 2020/12/11
+ * source code is copy from druid version 1.2.6 by yanhuqing 2021/05/12
  */
 public class DbleCreateTableParser extends MySqlCreateTableParser {
 
@@ -257,7 +258,8 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                                 continue;
                             }
                         }
-                    } else if (lexer.token() == Token.IDENTIFIER || lexer.token() == Token.LITERAL_CHARS) {
+                    } else if (lexer.token() == Token.IDENTIFIER //
+                            || lexer.token() == Token.LITERAL_CHARS) {
                         column = this.exprParser.parseColumn();
                         column.setParent(stmt);
                         stmt.getTableElementList().add(column);
@@ -265,7 +267,9 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                         if (lexer.isKeepComments() && lexer.hasComment()) {
                             column.addAfterComment(lexer.readAndResetComments());
                         }
-                    } else if (lexer.token() == Token.CONSTRAINT || lexer.token() == Token.PRIMARY || lexer.token() == Token.UNIQUE) {
+                    } else if (lexer.token() == Token.CONSTRAINT //
+                            || lexer.token() == Token.PRIMARY //
+                            || lexer.token() == Token.UNIQUE) {
                         SQLTableConstraint constraint = this.parseConstraint();
                         constraint.setParent(stmt);
 
@@ -346,6 +350,10 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                 }
             }
 
+            if (lexer.token() == Token.HINT) {
+                lexer.nextToken();
+            }
+
             accept(Token.RPAREN);
 
             if (lexer.token() == Token.HINT && lexer.stringVal().charAt(0) == '!') {
@@ -389,6 +397,17 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                     expr = this.exprParser.integerExpr();
                 }
                 stmt.addOption("BLOCK_SIZE", expr);
+                continue;
+            }
+
+            if (lexer.identifierEquals("BLOCK_FORMAT")) {
+                lexer.nextToken();
+                if (lexer.token() == Token.EQ) {
+                    lexer.nextToken();
+                }
+
+                SQLExpr expr = this.exprParser.primary();
+                stmt.addOption("BLOCK_FORMAT", expr);
                 continue;
             }
 
@@ -1218,9 +1237,9 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
     }
 
     protected void partitionClauseRest(SQLPartitionBy clause) {
-        if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS) ||
-                lexer.identifierEquals(FnvHash.Constants.TBPARTITIONS) ||
-                lexer.identifierEquals(FnvHash.Constants.DBPARTITIONS)) {
+        if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS)
+                || lexer.identifierEquals(FnvHash.Constants.TBPARTITIONS)
+                || lexer.identifierEquals(FnvHash.Constants.DBPARTITIONS)) {
             lexer.nextToken();
             SQLIntegerExpr countExpr = this.exprParser.integerExpr();
             clause.setPartitionsCount(countExpr);
@@ -1329,8 +1348,8 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                     for (; ; ) {
                         SQLExpr expr = this.exprParser.expr();
 
-                        if (expr instanceof SQLIdentifierExpr &&
-                                (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
+                        if (expr instanceof SQLIdentifierExpr
+                                && (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
                             String dataType = lexer.stringVal();
                             lexer.nextToken();
 
@@ -1362,8 +1381,8 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                         expr = this.exprParser.expr();
                     }
 
-                    if (expr instanceof SQLIdentifierExpr &&
-                            (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
+                    if (expr instanceof SQLIdentifierExpr
+                            && (lexer.identifierEquals("bigint") || lexer.identifierEquals("long"))) {
                         String dataType = lexer.stringVal();
                         lexer.nextToken();
 
@@ -1401,29 +1420,32 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
                 subPartitionByClause = range;
             }
 
-            if (subPartitionByClause != null) {
-                if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITION)) {
-                    lexer.nextToken();
-                    acceptIdentifier("OPTIONS");
-                    this.exprParser.parseAssignItem(subPartitionByClause.getOptions(), subPartitionByClause);
-                }
-                if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITIONS)) {
-                    lexer.nextToken();
-                    Number intValue = lexer.integerValue();
-                    SQLNumberExpr numExpr = new SQLNumberExpr(intValue);
-                    subPartitionByClause.setSubPartitionsCount(numExpr);
-                    lexer.nextToken();
-                } else if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS)) { // ADB
-                    lexer.nextToken();
-                    subPartitionByClause.setSubPartitionsCount((SQLIntegerExpr) exprParser.expr());
-                    subPartitionByClause.getAttributes().put("adb.partitons", true);
-                }
+            if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITION)) {
+                lexer.nextToken();
+                acceptIdentifier("OPTIONS");
+                this.exprParser.parseAssignItem(subPartitionByClause.getOptions(), subPartitionByClause);
+            }
 
-                if (lexer.identifierEquals(FnvHash.Constants.LIFECYCLE)) {
-                    lexer.nextToken();
-                    subPartitionByClause.setLifecycle((SQLIntegerExpr) exprParser.expr());
-                }
+            if (lexer.identifierEquals(FnvHash.Constants.SUBPARTITIONS)) {
+                lexer.nextToken();
+                Number intValue = lexer.integerValue();
+                SQLNumberExpr numExpr = new SQLNumberExpr(intValue);
+                subPartitionByClause.setSubPartitionsCount(numExpr);
+                lexer.nextToken();
+            } else if (lexer.identifierEquals(FnvHash.Constants.PARTITIONS)) { // ADB
+                lexer.nextToken();
+                subPartitionByClause.setSubPartitionsCount((SQLIntegerExpr) exprParser.expr());
+                subPartitionByClause.getAttributes().put("adb.partitons", true);
+            }
+
+            if (lexer.identifierEquals(FnvHash.Constants.LIFECYCLE)) {
+                lexer.nextToken();
+                subPartitionByClause.setLifecycle((SQLIntegerExpr) exprParser.expr());
+            }
+
+            if (subPartitionByClause != null) {
                 subPartitionByClause.setLinear(linear);
+
                 clause.setSubPartitionBy(subPartitionByClause);
             }
         }
@@ -1531,9 +1553,34 @@ public class DbleCreateTableParser extends MySqlCreateTableParser {
             lexer.nextToken();
             SQLCheck check = new SQLCheck();
             check.setName(name);
-            SQLExpr expr = this.exprParser.expr();
+            SQLExpr expr = this.exprParser.primary();
             check.setExpr(expr);
             constraint = check;
+
+            boolean enforce = true;
+            if (Token.NOT.equals(lexer.token())) {
+                enforce = false;
+                lexer.nextToken();
+            }
+            if (lexer.stringVal().equalsIgnoreCase("ENFORCED")) {
+                check.setEnforced(enforce);
+                lexer.nextToken();
+            }
+            if (lexer.token() == Token.HINT) {
+                String hintText = lexer.stringVal();
+                if (hintText != null) {
+                    hintText = hintText.trim();
+                }
+
+                if (hintText.startsWith("!")) {
+                    if (hintText.endsWith("NOT ENFORCED")) {
+                        check.setEnforced(false);
+                    } else if (hintText.endsWith(" ENFORCED")) {
+                        check.setEnforced(true);
+                    }
+                    lexer.nextToken();
+                }
+            }
         }
 
         if (constraint != null) {

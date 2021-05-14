@@ -187,6 +187,12 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         }
     }
 
+    public int getRecvTaskQueueSize() {
+        synchronized (connectionSerializableLock) {
+            return taskQueue.size();
+        }
+    }
+
     private long nextConsumedTaskId() {
         return consumedTaskId + 1;
     }

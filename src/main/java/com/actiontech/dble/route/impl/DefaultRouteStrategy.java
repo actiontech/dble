@@ -11,7 +11,6 @@ import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidParserFactory;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -89,7 +88,6 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
             rrs.setStatement(originSql);
             rrs.setSrcStatement(originSql);
         }
-        service.getSession2().endParse();
         DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "simple-route-detail");
         TraceManager.log(ImmutableMap.of("druidParser", druidParser.getClass().toString()), traceObject);

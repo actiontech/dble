@@ -4,6 +4,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinInnerHandler;
 import com.actiontech.dble.plan.node.JoinInnerNode;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class JoinInnerHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
-    public void mergeBuild() {
+    public void mergeBuild(RouteResultset rrs) {
 
     }
 

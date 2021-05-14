@@ -227,9 +227,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
-                    buffer = shardingService.writeToBuffer(errPkg.toBytes(), buffer);
                     session.setResponseTime(false);
-                    shardingService.writeDirectly(buffer);
+                    errPkg.write(buffer, shardingService);
                 } else {
                     errPkg.write(shardingService.getConnection());
                 }
@@ -251,9 +250,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
-        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
-            return;
-        }
+
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
@@ -264,11 +261,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 ok.setPacketId(shardingService.nextPacketId()); // OK_PACKET
                 shardingService.getLoadDataInfileHandler().clear();
                 service.getConnection().updateLastReadTime();
+                ok.setMessage(("Records: " + ok.getAffectedRows() + "  Deleted: 0  Skipped: 0  Warnings: " + ok.getWarningCount()).getBytes());
             } else {
                 ok.setPacketId(shardingService.nextPacketId()); // OK_PACKET
+                ok.setMessage(null);
             }
             session.setRowCount(ok.getAffectedRows());
-            ok.setMessage(null);
             ok.setServerStatus(shardingService.isAutocommit() ? 2 : 1);
             shardingService.setLastInsertId(ok.getInsertId());
             session.setBackendResponseEndTime((MySQLResponseService) service);
@@ -276,6 +274,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.setResponseTime(true);
             session.multiStatementPacket(ok);
             doSqlStat();
+            if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+                return;
+            }
             if (rrs.isCallStatement() || writeToClient.compareAndSet(false, true)) {
                 ok.write(shardingService.getConnection());
             }

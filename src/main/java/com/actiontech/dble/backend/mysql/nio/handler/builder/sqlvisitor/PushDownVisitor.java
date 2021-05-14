@@ -131,10 +131,10 @@ public class PushDownVisitor extends MysqlVisitor {
         mapTableToSimple.putAll(rightVisitor.getMapTableToSimple());
         replaceableSqlBuilder.append(rightVisitor.getSql());
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
-        StringBuilder joinOnFilterStr = getJoinOn(join, leftVisitor, rightVisitor);
+        StringBuilder joinOnFilterStr = getJoinOn(join);
         sqlBuilder.append(joinOnFilterStr.toString());
         if (join.isWithSubQuery() || isTopQuery) {
-            buildWhere(join, leftVisitor.getWhereFilter(), rightVisitor.getWhereFilter());
+            buildWhere(join, leftVisitor, rightVisitor);
             buildGroupBy(join);
             // having may contains aggregate function, so it need to calc by middle-ware
             buildOrderBy(join);
@@ -149,7 +149,7 @@ public class PushDownVisitor extends MysqlVisitor {
 
     }
 
-    private StringBuilder getJoinOn(JoinNode join, MysqlVisitor leftVisitor, MysqlVisitor rightVisitor) {
+    private StringBuilder getJoinOn(JoinNode join) {
         StringBuilder joinOnFilterStr = new StringBuilder();
         boolean first = true;
         for (int i = 0; i < join.getJoinFilter().size(); i++) {
@@ -166,34 +166,15 @@ public class PushDownVisitor extends MysqlVisitor {
         if (join.getOtherJoinOnFilter() != null) {
             if (first) {
                 sqlBuilder.append(" on ");
-                first = false;
             } else {
                 joinOnFilterStr.append(" and ");
             }
             joinOnFilterStr.append(join.getOtherJoinOnFilter());
         }
-        // is not left join
-        if (leftVisitor.getWhereFilter() != null && !join.getLeftOuter()) {
-            if (!first) {
-                joinOnFilterStr.append(" and ");
-            }
-            joinOnFilterStr.append("(");
-            joinOnFilterStr.append(leftVisitor.getWhereFilter());
-            joinOnFilterStr.append(")");
-        }
-        // is not right join
-        if (rightVisitor.getWhereFilter() != null && !join.getRightOuter()) {
-            if (!first) {
-                joinOnFilterStr.append(" and ");
-            }
-            joinOnFilterStr.append("(");
-            joinOnFilterStr.append(rightVisitor.getWhereFilter());
-            joinOnFilterStr.append(")");
-        }
         return joinOnFilterStr;
     }
 
-    private void buildWhere(JoinNode planNode, Item leftFilter, Item rightFilter) {
+    private void buildWhere(JoinNode planNode, MysqlVisitor leftVisitor, MysqlVisitor rightVisitor) {
         if (!visited)
             replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
         StringBuilder whereBuilder = new StringBuilder();
@@ -204,16 +185,30 @@ public class PushDownVisitor extends MysqlVisitor {
         } else {
             whereBuilder.append(" where 1=1 ");
         }
+        // is not left join
+        if (leftVisitor.getWhereFilter() != null && !planNode.getLeftOuter()) {
+            String pdName = visitUnSelPushDownName(leftVisitor.getWhereFilter(), false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
+        // is not right join
+        if (rightVisitor.getWhereFilter() != null && !planNode.getRightOuter()) {
+            String pdName = visitUnSelPushDownName(rightVisitor.getWhereFilter(), false);
+            whereBuilder.append(" and (");
+            whereBuilder.append(pdName);
+            whereBuilder.append(")");
+        }
         // left join
-        if (leftFilter != null && !planNode.getRightOuter() && planNode.getLeftOuter()) {
-            String pdName = visitUnSelPushDownName(leftFilter, false);
+        if (leftVisitor.getWhereFilter() != null && !planNode.getRightOuter() && planNode.getLeftOuter()) {
+            String pdName = visitUnSelPushDownName(leftVisitor.getWhereFilter(), false);
             whereBuilder.append(" and (");
             whereBuilder.append(pdName);
             whereBuilder.append(")");
         }
         //right join
-        if (rightFilter != null && !planNode.getLeftOuter() && planNode.getRightOuter()) {
-            String pdName = visitUnSelPushDownName(rightFilter, false);
+        if (rightVisitor.getWhereFilter() != null && !planNode.getLeftOuter() && planNode.getRightOuter()) {
+            String pdName = visitUnSelPushDownName(rightVisitor.getWhereFilter(), false);
             whereBuilder.append(" and (");
             whereBuilder.append(pdName);
             whereBuilder.append(")");

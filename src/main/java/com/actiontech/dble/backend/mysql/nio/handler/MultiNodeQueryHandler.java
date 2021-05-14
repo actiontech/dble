@@ -66,6 +66,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> shardingNodePauseInfo; // only for debug
     private final RequestScope requestScope;
+    private int loadDataErrorCount;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -91,6 +92,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         connRrns.clear();
         this.netOutBytes = 0;
         this.resultSize = 0;
+        loadDataErrorCount = 0;
     }
 
     public void writeRemainBuffer() {
@@ -292,9 +294,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
-        if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
-            return;
-        }
+
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + service);
@@ -311,8 +311,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 // the affected rows of global table will use the last node's response
                 if (!rrs.isGlobalTable()) {
                     affectedRows += ok.getAffectedRows();
+                    loadDataErrorCount += ok.getWarningCount();
                 } else {
                     affectedRows = ok.getAffectedRows();
+                    loadDataErrorCount = ok.getWarningCount();
                 }
                 if (ok.getInsertId() > 0) {
                     insertId = (insertId == 0) ? ok.getInsertId() : Math.min(insertId, ok.getInsertId());
@@ -329,7 +331,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 ok.setPacketId(session.getShardingService().nextPacketId()); // OK_PACKET
                 if (rrs.isLoadData()) {
-                    ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
+                    ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: " + loadDataErrorCount).getBytes());
                     shardingService.getLoadDataInfileHandler().clear();
                 } else {
                     ok.setMessage(null);
@@ -343,6 +345,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     shardingService.setLastInsertId(insertId);
                 }
                 doSqlStat();
+                if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
+                    return;
+                }
                 handleEndPacket(ok, AutoTxOperation.COMMIT, true);
             } finally {
                 lock.unlock();

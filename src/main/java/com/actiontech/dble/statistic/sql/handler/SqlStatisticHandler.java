@@ -105,14 +105,12 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
     public static class TxRecord {
         private final long startTime;
-        private final long txId;
         private final long duration;
         private final FrontendInfo info;
         private final List<SQLRecord> sqls;
 
         TxRecord(StatisticFrontendSqlEntry frontendSqlEntry) {
             this.startTime = frontendSqlEntry.getStartTime();
-            this.txId = frontendSqlEntry.getTxId();
             this.info = frontendSqlEntry.getFrontend();
             this.duration = frontendSqlEntry.getDuration();
             this.sqls = new ArrayList<>(1);
@@ -121,7 +119,6 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         TxRecord(StatisticTxEntry txEntry) {
             this.startTime = txEntry.getStartTime();
-            this.txId = txEntry.getTxId();
             this.info = txEntry.getFrontend();
             this.duration = txEntry.getDuration();
             final List<StatisticFrontendSqlEntry> entryList = txEntry.getEntryList();
@@ -133,10 +130,6 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
         public long getStartTime() {
             return startTime;
-        }
-
-        public long getTxId() {
-            return txId;
         }
 
         public FrontendInfo getInfo() {
@@ -177,7 +170,15 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         public SQLRecord(StatisticFrontendSqlEntry entry) {
             this.sqlId = SQL_ID_GENERATOR.incrementAndGet();
             this.stmt = entry.getSql();
-            this.sqlDigest = ParameterizedOutputVisitorUtils.parameterize(this.stmt, DbType.mysql);
+            if (stmt.equalsIgnoreCase("begin")) {
+                this.sqlDigest = "begin";
+            } else {
+                try {
+                    this.sqlDigest = ParameterizedOutputVisitorUtils.parameterize(this.stmt, DbType.mysql).replaceAll("[\\t\\n\\r]", " ");
+                } catch (RuntimeException e) {
+                    this.sqlDigest = "";
+                }
+            }
             this.sqlType = entry.getSqlType();
             this.txId = entry.getTxId();
 

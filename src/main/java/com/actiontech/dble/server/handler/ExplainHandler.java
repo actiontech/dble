@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -36,6 +37,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,14 +228,30 @@ public final class ExplainHandler {
             }
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
-            List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
-            for (ReferenceHandlerInfo result : results) {
-                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, service, true);
+            String routeNode = null;
+            if (!builder.isExistView()) {
+                List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
+                List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
+                subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);
+                routeNode = HandlerBuilder.canRouteToOneNode(merges);
+            }
+            if (!StringUtil.isBlank(routeNode)) {
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), rrs.getStatement())};
+                for (RouteResultsetNode node : nodes) {
+                    RowDataPacket row = getRow(node, service.getCharset().getResults());
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
+            } else {
+                List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
+                for (ReferenceHandlerInfo result : results) {
+                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                    row.add(StringUtil.encode(result.getName(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(result.getType(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(result.getRefOrSQL(), service.getCharset().getResults()));
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
             }
         }
         // writeDirectly last eof

@@ -8,8 +8,8 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
-import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -230,6 +230,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             flushDataToFile();
                         }
                         ClusterDelayProvider.delayBeforeLoadData();
+                        service.getSession2().endParse();
                         service.getSession2().execute(rrs);
                     }
                 }

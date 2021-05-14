@@ -8,8 +8,7 @@ import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
 
 /**
  * Created by szf on 2020/6/18.
@@ -17,12 +16,10 @@ import java.util.concurrent.BlockingQueue;
 public class FrontendBlockRunnable implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendBlockRunnable.class);
-    private final BlockingQueue<ServiceTask> frontNormalTasks;
-    private final Queue<ServiceTask> frontPriorityTasks;
+    private final BlockingDeque<ServiceTask> frontNormalTasks;
 
-    public FrontendBlockRunnable(Queue frontEndTasks, Queue<ServiceTask> frontPriorityTasks) {
-        this.frontNormalTasks = (BlockingQueue) frontEndTasks;
-        this.frontPriorityTasks = frontPriorityTasks;
+    public FrontendBlockRunnable(BlockingDeque<ServiceTask> frontEndTasks) {
+        this.frontNormalTasks = frontEndTasks;
     }
 
 
@@ -37,10 +34,9 @@ public class FrontendBlockRunnable implements Runnable {
         }
         while (true) {
             try {
-                task = frontPriorityTasks.poll();
-                if (task == null) {
-                    task = frontNormalTasks.take();
-                }
+
+                task = frontNormalTasks.take();
+
                 if (task.getService() == null) {
                     continue;
                 }
@@ -59,6 +55,8 @@ public class FrontendBlockRunnable implements Runnable {
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("FrontendCommandHandler error.", e);
+            } catch (Throwable e) {
+                LOGGER.error("process task error", e);
             }
         }
     }

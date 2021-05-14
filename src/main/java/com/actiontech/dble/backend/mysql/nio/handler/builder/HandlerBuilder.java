@@ -13,10 +13,13 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class HandlerBuilder {
@@ -70,7 +73,7 @@ public class HandlerBuilder {
         }
     }
 
-    public BaseHandlerBuilder build() throws Exception {
+    public String build() throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build&execute-complex-sql");
         try {
             final long startTime = System.nanoTime();
@@ -86,14 +89,50 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
+            if (!builder.isExistView()) {
+                List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
+                List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
+                subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);
+                String routeNode = canRouteToOneNode(merges);
+                if (!StringUtil.isBlank(routeNode)) {
+                    return routeNode;
+                }
+            }
             HandlerBuilder.startHandler(fh);
             session.endComplexExecute();
             long endTime = System.nanoTime();
             logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
-            return builder;
+            session.setTraceBuilder(builder);
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
+        return null;
+    }
+
+    /**
+     * DBLE0REQ-504
+     * According to the execution plan, judge whether it can be routed to the same node to simplify the query
+     *
+     * @param merges
+     * @return
+     */
+    public static String canRouteToOneNode(List<DMLResponseHandler> merges) {
+        String nodeName = null;
+        for (DMLResponseHandler merge : merges) {
+            if (merge instanceof MultiNodeMergeHandler) {
+                RouteResultsetNode[] route = ((MultiNodeMergeHandler) merge).getRoute();
+                if (null == route || route.length != 1) {
+                    return null;
+                }
+                String name = route[0].getName();
+                if (StringUtil.isBlank(nodeName)) {
+                    nodeName = name;
+                } else if (!nodeName.equals(name)) {
+                    return null;
+                }
+            }
+        }
+        return nodeName;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

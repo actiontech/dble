@@ -34,6 +34,7 @@ import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -102,7 +103,8 @@ public abstract class BaseHandlerBuilder {
             noShardBuild();
         } else if (canDoAsMerge()) {
             // the query can be send to some certain nodes .eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
-            mergeBuild();
+            RouteResultset routeResultset = tryMergeBuild();
+            mergeBuild(routeResultset);
         } else {
             handleSubQueries();
             //need to split to simple query
@@ -144,8 +146,13 @@ public abstract class BaseHandlerBuilder {
         return false;
     }
 
-    protected void mergeBuild() {
+    protected void mergeBuild(RouteResultset rrs) {
         //
+    }
+
+    protected RouteResultset tryMergeBuild() {
+        //
+        return null;
     }
 
     protected abstract void handleSubQueries();
@@ -299,7 +306,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * if the node's parent handler has been ordered,it is no need to order again
-     *
      */
     private boolean isOrderNeeded(PlanNode planNode, List<Order> orderBys) {
         if (planNode instanceof TableNode || PlanUtil.isGlobalOrER(planNode))
@@ -527,4 +533,7 @@ public abstract class BaseHandlerBuilder {
         }
     }
 
+    public boolean isExistView() {
+        return subQueryBuilderList.stream().anyMatch(BaseHandlerBuilder::isExistView) || node.isExistView();
+    }
 }

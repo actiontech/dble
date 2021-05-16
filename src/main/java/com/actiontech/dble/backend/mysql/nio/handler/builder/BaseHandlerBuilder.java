@@ -320,7 +320,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * the order way of join node stored in left join on orders and right join on orders
-     *
      */
     private boolean isJoinNodeOrderMatch(JoinNode jn, List<Order> orderBys) {
         // onCondition column in orderBys will be saved to onOrders,
@@ -353,7 +352,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * try to merger the order of 'order by' syntax to columnsSelected
-     *
      */
     private List<Order> mergeOrderBy(List<Item> columnsSelected, List<Order> orderBys) {
         List<Integer> orderIndexes = new ArrayList<>();
@@ -432,25 +430,13 @@ public abstract class BaseHandlerBuilder {
         for (ItemSubQuery itemSubQuery : node.getSubQueries()) {
             if (itemSubQuery instanceof ItemSingleRowSubQuery) {
                 final SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery);
-                if (isExplain) {
-                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
-                } else {
-                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
-                }
+                selectSubQueryProcess(lock, finishSubQuery, finished, subNodes, itemSubQuery, errorPackets, tempHandler);
             } else if (itemSubQuery instanceof ItemInSubQuery) {
                 final SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery);
-                if (isExplain) {
-                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
-                } else {
-                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
-                }
+                selectSubQueryProcess(lock, finishSubQuery, finished, subNodes, itemSubQuery, errorPackets, tempHandler);
             } else if (itemSubQuery instanceof ItemAllAnySubQuery) {
                 final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery);
-                if (isExplain) {
-                    handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
-                } else {
-                    handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
-                }
+                selectSubQueryProcess(lock, finishSubQuery, finished, subNodes, itemSubQuery, errorPackets, tempHandler);
             }
         }
         lock.lock();
@@ -470,6 +456,14 @@ public abstract class BaseHandlerBuilder {
         }
         if (errorPackets.size() > 0) {
             throw new MySQLOutPutException(errorPackets.get(0).getErrNo(), "", new String(errorPackets.get(0).getMessage(), StandardCharsets.UTF_8));
+        }
+    }
+
+    private void selectSubQueryProcess(ReentrantLock lock, Condition finishSubQuery, AtomicBoolean finished, AtomicInteger subNodes, ItemSubQuery itemSubQuery, CopyOnWriteArrayList<ErrorPacket> errorPackets, SubQueryHandler tempHandler) {
+        if (isExplain) {
+            handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+        } else {
+            handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
         }
     }
 

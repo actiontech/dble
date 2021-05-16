@@ -186,6 +186,10 @@ public final class SystemConfig {
     private int samplingRate = 0;
     private int sqlLogTableSize = 1024;
 
+    //use SubQueryOptimize
+    private boolean subQueryOptimize = true;
+
+
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1376,6 +1380,14 @@ public final class SystemConfig {
         }
     }
 
+    public boolean isSubQueryOptimize() {
+        return subQueryOptimize;
+    }
+
+    public void setSubQueryOptimize(boolean subQueryOptimize) {
+        this.subQueryOptimize = subQueryOptimize;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1470,6 +1482,7 @@ public final class SystemConfig {
                 ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
+                ", subQueryOptimize=" + subQueryOptimize +
                 "]";
     }
 }

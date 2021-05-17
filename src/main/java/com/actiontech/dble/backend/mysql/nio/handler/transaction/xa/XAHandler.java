@@ -65,7 +65,7 @@ public class XAHandler {
     }
 
     // single|mulit
-    public void checkXA() {
+    protected void checkXA() {
         count.set(sqlJobs.size());
         for (SQLJob sqlJob : sqlJobs) {
             sqlJob.run();
@@ -104,7 +104,7 @@ public class XAHandler {
         }
     }
 
-    public Map<PhysicalDbInstance, List<Map<String, String>>> getXAResults() {
+    protected Map<PhysicalDbInstance, List<Map<String, String>>> getXAResults() {
         return results;
     }
 

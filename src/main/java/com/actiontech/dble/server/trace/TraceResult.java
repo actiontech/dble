@@ -52,10 +52,7 @@ public class TraceResult implements Cloneable {
     public void setVeryStartPrepare(long veryStartPrepare) {
         prepareFinished = false;
         this.veryStartPrepare = veryStartPrepare;
-    }
-
-    public void setRequestStartPrepare(TraceRecord requestStartPrepare) {
-        this.requestStartPrepare = requestStartPrepare;
+        this.requestStartPrepare = new TraceRecord(veryStartPrepare);
     }
 
     public void setRouteStart(TraceRecord routeStart) {
@@ -86,6 +83,9 @@ public class TraceResult implements Cloneable {
             System.arraycopy(this.dataNodes, 0, tempDataNodes, 0, this.dataNodes.length);
             System.arraycopy(dataNodes, 0, tempDataNodes, this.dataNodes.length, dataNodes.length);
             this.dataNodes = tempDataNodes;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("append to existing shardingNodes,current size is " + this.dataNodes.length);
+            }
         }
     }
 

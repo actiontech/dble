@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
@@ -134,7 +134,6 @@ public class NonBlockingSession implements Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             requestTime = System.nanoTime();
             traceResult.setVeryStartPrepare(requestTime);
-            traceResult.setRequestStartPrepare(new TraceRecord(requestTime));
         }
         if (DbleServer.getInstance().getConfig().getSystem().getUseCostTimeStat() == 0) {
             return;

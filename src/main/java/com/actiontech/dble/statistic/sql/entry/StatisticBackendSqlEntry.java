@@ -9,6 +9,7 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
     private int sqlType = -99;
     private String sql;
     private boolean isNeedToTx;
+    private boolean isEnd = false;
 
     public StatisticBackendSqlEntry(
             FrontendInfo frontendInfo,
@@ -79,6 +80,14 @@ public final class StatisticBackendSqlEntry extends StatisticEntry {
         key.append(":");
         key.append(getBackend().getPort());
         return key.toString();
+    }
+
+    public boolean isEnd() {
+        return isEnd;
+    }
+
+    public void setEnd(boolean end) {
+        isEnd = end;
     }
 
     @Override

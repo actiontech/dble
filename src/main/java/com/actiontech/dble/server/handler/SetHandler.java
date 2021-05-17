@@ -89,6 +89,12 @@ public final class SetHandler {
                         } else {
                             throw new SQLSyntaxErrorException("unsupported set xa");
                         }
+                    } else if (item.getType() == VariableType.TRACE) {
+                        if (frontService instanceof ShardingService) {
+                            otherItems.add(item);
+                        } else {
+                            throw new SQLSyntaxErrorException("unsupported set trace");
+                        }
                     } else {
                         otherItems.add(item);
                     }

@@ -58,7 +58,7 @@ public class XAHandler {
                 sqlJob = new SQLJob(XARECOVER_SQL, null, resultHandler, pdi);
                 sqlJobs.add(sqlJob);
             } else {
-                LOGGER.warn("when prepare execute 'XA RECOVER' in {}, check it's isAlive is falsev", pdi);
+                LOGGER.warn("When prepare execute 'XA RECOVER' in {}, check it's isAlive is false!", pdi);
                 results.put(pdi, null);
             }
         }
@@ -84,7 +84,7 @@ public class XAHandler {
                 sqlJob.run();
                 waitAllJobDone();
             } else {
-                LOGGER.warn("when prepare execute 'KILL CONNECTION {}' in {}, check it's isAlive is false!", threadId, pd);
+                LOGGER.warn("When prepare execute 'KILL CONNECTION {}' in {}, check it's isAlive is false!", threadId, pd);
             }
         }
     }
@@ -99,7 +99,7 @@ public class XAHandler {
                 sqlJob.run();
                 waitAllJobDone();
             } else {
-                LOGGER.warn("when prepare execute '{}' in {} , check it's isAlive is false!", cmd, pd);
+                LOGGER.warn("When prepare execute '{}' in {} , check it's isAlive is false!", cmd, pd);
             }
         }
     }

@@ -78,6 +78,8 @@ public class XAAnalysisHandler extends XAHandler {
         Matcher matcher;
         for (Map.Entry<PhysicalDbInstance, List<Map<String, String>>> rm : result.entrySet()) {
             boolean isResidual = false;
+            if (result.get(rm.getKey()) == null)
+                continue;
             List<String> residualXid = new ArrayList<>();
             for (Map<String, String> recover : result.get(rm.getKey())) {
                 if (LOGGER.isDebugEnabled()) {

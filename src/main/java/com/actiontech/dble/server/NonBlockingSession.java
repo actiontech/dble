@@ -600,7 +600,7 @@ public class NonBlockingSession extends Session {
         try {
             String nodeName = builder.build();
             if (!StringUtil.isBlank(nodeName)) {
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getSrcStatement())};
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement())};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select

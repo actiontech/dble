@@ -2,9 +2,9 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACheckHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.AbstractXAHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAnalysisHandler;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
@@ -100,14 +100,13 @@ public class XARollbackStage extends XAStage {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
             String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            XACheckHandler handler = new XACheckHandler(xid, service.getConnection().getSchema(), rrn.getName(),
+            XAAnalysisHandler xaAnalysisHandler = new XAAnalysisHandler(
                     ((PhysicalDbInstance) service.getConnection().getPoolRelated().getInstance()).getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
-            handler.killXaThread(xaOldThreadIds.get(rrn));
-
-            handler.checkXid();
-            if (handler.isSuccess() && !handler.isExistXid()) {
+            boolean isExistXid = xaAnalysisHandler.isExistXid(xid);
+            boolean isSuccess = xaAnalysisHandler.isSuccess();
+            if (isSuccess && !isExistXid) {
                 //ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
                 xaOldThreadIds.remove(rrn);
                 service.setXaStatus(TxState.TX_ROLLBACKED_STATE);

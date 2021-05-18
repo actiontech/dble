@@ -3,12 +3,10 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACheckHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.handler.AbstractXAHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAnalysisHandler;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
@@ -117,21 +115,22 @@ public class XACommitFailStage extends XACommitStage {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
             String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
-            XACheckHandler handler = new XACheckHandler(xid, service.getConnection().getSchema(), rrn.getName(),
+            XAAnalysisHandler xaAnalysisHandler = new XAAnalysisHandler(
                     ((PhysicalDbInstance) service.getConnection().getPoolRelated().getInstance()).getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
-            handler.checkXid();
-            if (handler.isSuccess() && !handler.isExistXid()) {
+            boolean isExistXid = xaAnalysisHandler.isExistXid(xid);
+            boolean isSuccess = xaAnalysisHandler.isSuccess();
+            if (isSuccess && !isExistXid) {
                 // Unknown XID ,if xa transaction only contains select statement, xid will lost after restart server although prepared
                 xaOldThreadIds.remove(rrn);
                 service.setXaStatus(TxState.TX_COMMITTED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);
                 service.setXaStatus(TxState.TX_INITIALIZE_STATE);
             } else {
-                if (handler.isExistXid()) {
+                if (isExistXid) {
                     // kill mysql connection holding xa transaction, so current xa transaction can be committed next time.
-                    handler.killXaThread(xaOldThreadIds.get(service.getAttachment()));
+                    xaAnalysisHandler.killThread(xaOldThreadIds.get(service.getAttachment()));
                 }
                 service.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), service);

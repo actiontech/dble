@@ -133,7 +133,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         SchemaConfig schema = schemaInfo.getSchemaConfig();
 
         String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
-        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())) {
+        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode() || mysqlSelectQuery.isForShare())) {
             if (!service.isAutocommit()) {
                 rrs.setCanRunInReadDB(false);
             } else {
@@ -219,12 +219,12 @@ public class DruidSelectParser extends DefaultDruidParser {
     private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize, String clientCharset) throws SQLException {
         Set<String> schemaList = new HashSet<>();
         String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize, clientCharset, selectStmt);
+        String sql = rrs.getStatement();
+        for (String toRemoveSchemaName : schemaList) {
+            sql = RouterUtil.removeSchema(sql, toRemoveSchemaName);
+        }
+        rrs.setStatement(sql);
         if (shardingNode != null) {
-            String sql = rrs.getStatement();
-            for (String toRemoveSchemaName : schemaList) {
-                sql = RouterUtil.removeSchema(sql, toRemoveSchemaName);
-            }
-            rrs.setStatement(sql);
             RouterUtil.routeToSingleNode(rrs, shardingNode);
         } else {
             rrs.setNeedOptimizer(true);
@@ -622,7 +622,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             return;
         } else if (tableConfig.getMaxLimit() == -1) {
             return;
-        } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
+        } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode() || mysqlSelectQuery.isForShare()) {
             return;
         }
         SQLLimit limit = new SQLLimit();

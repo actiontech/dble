@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.cluster.values.DDLInfo;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -44,8 +45,13 @@ public class DruidDropTableParser extends DefaultDruidParser {
         Map<String, BaseTableConfig> tables = schemaInfo.getSchemaConfig().getTables();
         BaseTableConfig tc = tables.get(schemaInfo.getTable());
         if (tc == null) {
-            service.writeOkPacket();
-            rrs.setFinishedExecute(true);
+            if (dropTable.isIfExists()) {
+                service.writeOkPacket();
+                rrs.setFinishedExecute(true);
+            } else {
+                String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
         } else {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);
         }

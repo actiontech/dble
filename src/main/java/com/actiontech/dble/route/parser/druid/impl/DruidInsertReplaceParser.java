@@ -207,9 +207,9 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         }
         String name = queue.poll();
         sqlExpr = ((SQLPropertyExpr) sqlExpr).getOwner();
-        if (sqlExpr instanceof SQLIdentifierExpr && StringUtil.equalsConditionIgnoreCase(name, ((SQLIdentifierExpr) sqlExpr).getName(), lowerCase)) {
+        if (sqlExpr instanceof SQLIdentifierExpr && StringUtil.equalsConditionIgnoreCase(name, StringUtil.removeBackQuote(((SQLIdentifierExpr) sqlExpr).getName()), lowerCase)) {
             return false;
-        } else if (sqlExpr instanceof SQLPropertyExpr && StringUtil.equalsConditionIgnoreCase(name, ((SQLPropertyExpr) sqlExpr).getName(), lowerCase)) {
+        } else if (sqlExpr instanceof SQLPropertyExpr && StringUtil.equalsConditionIgnoreCase(name, StringUtil.removeBackQuote(((SQLPropertyExpr) sqlExpr).getName()), lowerCase)) {
             return checkColumn(sqlExpr, queue, lowerCase);
         }
         return true;

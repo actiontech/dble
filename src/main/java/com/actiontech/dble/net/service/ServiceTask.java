@@ -1,16 +1,43 @@
 package com.actiontech.dble.net.service;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 
 /**
  * Created by szf on 2020/6/18.
  */
-public class ServiceTask {
+public class ServiceTask implements Comparable<ServiceTask> {
 
     private final byte[] orgData;
     private final boolean reuse;
     private final Service service;
     private int extraPartOfBigPacketCount = 0;
+    private long taskId;
+
+    public ServiceTaskType getType() {
+        return ServiceTaskType.NORMAL;
+    }
+
+    public long getTaskId() {
+        return taskId;
+    }
+
+    public void setTaskId(long taskId) {
+        this.taskId = taskId;
+    }
+
+
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 
     /**
      * @param orgData
@@ -47,5 +74,10 @@ public class ServiceTask {
             throw new IllegalStateException("can't get Sequence Id from " + Arrays.toString(orgData));
         }
         return (orgData[3]) + extraPartOfBigPacketCount;
+    }
+
+    @Override
+    public int compareTo(@NotNull ServiceTask o) {
+        return Long.compare(taskId, o.taskId);
     }
 }

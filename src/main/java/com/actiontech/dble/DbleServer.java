@@ -7,18 +7,12 @@ package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.xa.*;
-import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
-import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
-import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
+import com.actiontech.dble.backend.mysql.xa.XaCheckHandler;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.sharding.SchemaConfig;
-import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.log.general.GeneralLogProcessor;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
@@ -26,15 +20,14 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketAcceptor;
 import com.actiontech.dble.net.SocketConnector;
+import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.executor.BackendCurrentRunnable;
 import com.actiontech.dble.net.executor.FrontendBlockRunnable;
 import com.actiontech.dble.net.executor.FrontendCurrentRunnable;
 import com.actiontech.dble.net.executor.WriteToBackendRunnable;
 import com.actiontech.dble.net.impl.aio.AIOAcceptor;
 import com.actiontech.dble.net.impl.aio.AIOConnector;
-import com.actiontech.dble.net.impl.nio.NIOAcceptor;
-import com.actiontech.dble.net.impl.nio.NIOConnector;
-import com.actiontech.dble.net.impl.nio.NIOReactorPool;
+import com.actiontech.dble.net.impl.nio.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -47,15 +40,13 @@ import com.actiontech.dble.statistic.sql.StatisticManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.TimeUtil;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,6 +61,15 @@ public final class DbleServer {
     //used by manager command show @@binlog_status to get a stable GTID
     private final AtomicBoolean backupLocked = new AtomicBoolean(false);
 
+    public static final String BUSINESS_EXECUTOR_NAME = "BusinessExecutor";
+    public static final String BACKEND_BUSINESS_EXECUTOR_NAME = "backendBusinessExecutor";
+    public static final String WRITE_TO_BACKEND_EXECUTOR_NAME = "writeToBackendExecutor";
+    public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryExecutor";
+    public static final String TIMER_EXECUTOR_NAME = "Timer";
+    public static final String FRONT_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT-";
+    public static final String BACKEND_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND-";
+    public static final String FRONT_BACKEND_SUFFIX = "-RW";
+    public static final String AIO_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO";
 
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
@@ -96,6 +96,8 @@ public final class DbleServer {
     private IOProcessor[] frontProcessors;
     private IOProcessor[] backendProcessors;
     private SocketConnector connector;
+    private ExecutorService frontExecutor;
+    private ExecutorService backendExecutor;
     private ExecutorService businessExecutor;
     private ExecutorService backendBusinessExecutor;
     private ExecutorService writeToBackendExecutor;
@@ -103,13 +105,15 @@ public final class DbleServer {
     private ExecutorService timerExecutor;
     private Map<String, ThreadWorkUsage> threadUsedMap = new ConcurrentHashMap<>();
 
-    private Queue<ServiceTask> frontHandlerQueue;
+    private Deque<ServiceTask> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
-    private Queue<ServiceTask> frontPriorityQueue;
 
     private Queue<ServiceTask> concurrentBackHandlerQueue;
+    private ConcurrentLinkedQueue<AbstractConnection> frontRegisterQueue;
+    private ConcurrentLinkedQueue<AbstractConnection> backendRegisterQueue;
 
     private volatile boolean startup = false;
+    private Map<String, Map<Thread, Runnable>> runnableMap = Maps.newHashMap();
 
     private DbleServer() {
     }
@@ -154,11 +158,7 @@ public final class DbleServer {
         backendProcessors = new IOProcessor[backendProcessorCount];
 
 
-        businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", SystemConfig.getInstance().getProcessorExecutor());
-        backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", SystemConfig.getInstance().getBackendProcessorExecutor());
-        writeToBackendExecutor = ExecutorUtil.createFixed("writeToBackendExecutor", SystemConfig.getInstance().getWriteToBackendExecutor());
-        complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", SystemConfig.getInstance().getComplexExecutor());
-        timerExecutor = ExecutorUtil.createFixed("Timer", 1);
+        initExecutor(frontProcessorCount, backendProcessorCount);
 
         LOGGER.info("====================================Task Queue&Thread init start==================================");
         initTaskQueue();
@@ -198,20 +198,20 @@ public final class DbleServer {
             server = new AIOAcceptor(NAME + "Server", SystemConfig.getInstance().getBindIp(),
                     SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), this.asyncChannelGroups[0]);
         } else {
-            NIOReactorPool frontReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT",
-                    frontProcessorCount);
-            NIOReactorPool backendReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
-                    backendProcessorCount);
+            for (int i = 0; i < frontProcessorCount; i++) {
+                frontExecutor.execute(new RW(frontRegisterQueue));
+            }
+            for (int i = 0; i < backendProcessorCount; i++) {
+                backendExecutor.execute(new RW(backendRegisterQueue));
+            }
 
-            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
+            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendRegisterQueue);
             connector.start();
 
             manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", SystemConfig.getInstance().getBindIp(),
-                    SystemConfig.getInstance().getManagerPort(), 100, new ManagerConnectionFactory(), frontReactorPool);
+                    SystemConfig.getInstance().getManagerPort(), 100, new ManagerConnectionFactory(), frontRegisterQueue);
             server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", SystemConfig.getInstance().getBindIp(),
-                    SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), frontReactorPool);
+                    SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), frontRegisterQueue);
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
@@ -256,8 +256,13 @@ public final class DbleServer {
         LOGGER.info("====================================Cache service init finish=====================================");
 
         LOGGER.info("=====================================Perform XA recovery log======================================");
-        performXARecoveryLog();
+        XaCheckHandler.performXARecoveryLog();
         LOGGER.info("====================================Perform XA recovery finish====================================");
+
+        LOGGER.info("====================================Check Residual XA====================================");
+        XaCheckHandler.checkResidualXA();
+        LOGGER.info("====================================Check Residual XA finish====================================");
+
         LOGGER.info("===================================Sync cluster pause status start====================================");
         PauseShardingNodeManager.getInstance().fetchClusterStatus();
         LOGGER.info("===================================Sync cluster pause status end  ====================================");
@@ -277,6 +282,16 @@ public final class DbleServer {
 
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
+    }
+
+    private void initExecutor(int frontProcessorCount, int backendProcessorCount) {
+        businessExecutor = ExecutorUtil.createFixed(BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getProcessorExecutor(), runnableMap);
+        backendBusinessExecutor = ExecutorUtil.createFixed(BACKEND_BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getBackendProcessorExecutor(), runnableMap);
+        writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_EXECUTOR_NAME, SystemConfig.getInstance().getWriteToBackendExecutor(), runnableMap);
+        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexExecutor(), runnableMap);
+        timerExecutor = ExecutorUtil.createFixed(TIMER_EXECUTOR_NAME, 1);
+        frontExecutor = ExecutorUtil.createFixed(FRONT_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, frontProcessorCount, runnableMap);
+        backendExecutor = ExecutorUtil.createFixed(BACKEND_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, backendProcessorCount, runnableMap);
     }
 
     private void initServerConfig() throws Exception {
@@ -299,7 +314,7 @@ public final class DbleServer {
                         @Override
                         public Thread newThread(Runnable r) {
                             Thread th = new Thread(r);
-                            th.setName(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO" + (inx++));
+                            th.setName(AIO_EXECUTOR_NAME + (inx++));
                             LOGGER.info("created new AIO thread " + th.getName());
                             return th;
                         }
@@ -310,10 +325,10 @@ public final class DbleServer {
 
     private void initTaskQueue() {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-            frontPriorityQueue = new ConcurrentLinkedQueue<>();
-            frontHandlerQueue = new ConcurrentLinkedQueue<>();
+
+            frontHandlerQueue = new ConcurrentLinkedDeque<>();
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue));
             }
 
             concurrentBackHandlerQueue = new ConcurrentLinkedQueue<>();
@@ -322,10 +337,10 @@ public final class DbleServer {
             }
 
         } else {
-            frontPriorityQueue = new ConcurrentLinkedQueue<>();
-            frontHandlerQueue = new LinkedBlockingQueue<>();
+
+            frontHandlerQueue = new LinkedBlockingDeque<>(SystemConfig.getInstance().getProcessorExecutor() * 3000);
             for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendBlockRunnable(frontHandlerQueue, frontPriorityQueue));
+                businessExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) frontHandlerQueue));
             }
 
         }
@@ -333,6 +348,11 @@ public final class DbleServer {
         writeToBackendQueue = new LinkedBlockingQueue<>();
         for (int i = 0; i < SystemConfig.getInstance().getWriteToBackendExecutor(); i++) {
             writeToBackendExecutor.execute(new WriteToBackendRunnable(writeToBackendQueue));
+        }
+
+        if (SystemConfig.getInstance().getUsingAIO() != 1) {
+            frontRegisterQueue = new ConcurrentLinkedQueue<>();
+            backendRegisterQueue = new ConcurrentLinkedQueue<>();
         }
     }
 
@@ -373,7 +393,7 @@ public final class DbleServer {
     }
 
 
-    public Queue<ServiceTask> getFrontHandlerQueue() {
+    public Deque<ServiceTask> getFrontHandlerQueue() {
         return frontHandlerQueue;
     }
 
@@ -455,116 +475,6 @@ public final class DbleServer {
         }
     }
 
-
-    // XA recovery log check
-    private void performXARecoveryLog() {
-        // fetch the recovery log
-        CoordinatorLogEntry[] coordinatorLogEntries = getCoordinatorLogEntries();
-        // init into in memory cached
-        for (CoordinatorLogEntry coordinatorLogEntry1 : coordinatorLogEntries) {
-            genXidSeq(coordinatorLogEntry1.getId());
-            XAStateLog.flushMemoryRepository(coordinatorLogEntry1.getId(), coordinatorLogEntry1);
-        }
-        for (CoordinatorLogEntry coordinatorLogEntry : coordinatorLogEntries) {
-            boolean needRollback = false;
-            boolean needCommit = false;
-            if (coordinatorLogEntry.getTxState() == TxState.TX_COMMIT_FAILED_STATE ||
-                    // will committing, may send but failed receiving, should commit agagin
-                    coordinatorLogEntry.getTxState() == TxState.TX_COMMITTING_STATE) {
-                needCommit = true;
-            } else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE ||
-                    //don't konw prepare is succeed or not ,should rollback
-                    coordinatorLogEntry.getTxState() == TxState.TX_PREPARE_UNCONNECT_STATE ||
-                    // will rollbacking, may send but failed receiving,should rollback again
-                    coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACKING_STATE ||
-                    // will preparing, may send but failed receiving,should rollback again
-                    coordinatorLogEntry.getTxState() == TxState.TX_PREPARING_STATE) {
-                needRollback = true;
-
-            }
-            if (needCommit || needRollback) {
-                tryRecovery(coordinatorLogEntry, needCommit);
-            }
-        }
-    }
-
-    private void tryRecovery(CoordinatorLogEntry coordinatorLogEntry, boolean needCommit) {
-        StringBuilder xaCmd = new StringBuilder();
-        if (needCommit) {
-            xaCmd.append("XA COMMIT ");
-        } else {
-            xaCmd.append("XA ROLLBACK ");
-        }
-        for (int j = 0; j < coordinatorLogEntry.getParticipants().length; j++) {
-            ParticipantLogEntry participantLogEntry = coordinatorLogEntry.getParticipants()[j];
-            // XA commit
-            if (participantLogEntry.getTxState() != TxState.TX_COMMIT_FAILED_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_COMMITTING_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_ENDED_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_PREPARING_STATE) {
-                continue;
-            }
-            outLoop:
-            for (SchemaConfig schema : DbleServer.getInstance().getConfig().getSchemas().values()) {
-                for (BaseTableConfig table : schema.getTables().values()) {
-                    for (String shardingNode : table.getShardingNodes()) {
-                        ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
-                        if (participantLogEntry.compareAddress(dn.getDbGroup().getWriteDbInstance().getConfig().getIp(), dn.getDbGroup().getWriteDbInstance().getConfig().getPort(), dn.getDatabase())) {
-                            xaCmd.append(coordinatorLogEntry.getId(), 0, coordinatorLogEntry.getId().length() - 1);
-                            xaCmd.append(".");
-                            xaCmd.append(dn.getDatabase());
-                            if (participantLogEntry.getExpires() != 0) {
-                                xaCmd.append(".");
-                                xaCmd.append(participantLogEntry.getExpires());
-                            }
-                            xaCmd.append("'");
-                            XARecoverHandler handler = new XARecoverHandler(needCommit, participantLogEntry);
-                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDbGroup().getWriteDbInstance());
-                            if (!handler.isSuccess()) {
-                                throw new RuntimeException("Fail to recover xa when dble start, please check backend mysql.");
-                            }
-
-                            if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug(String.format("[%s] Host:[%s] sharding:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
-                            }
-
-                            //reset xaCmd
-                            xaCmd.setLength(0);
-                            if (needCommit) {
-                                xaCmd.append("XA COMMIT ");
-                            } else {
-                                xaCmd.append("XA ROLLBACK ");
-                            }
-                            break outLoop;
-                        }
-                    }
-                }
-            }
-        }
-        XAStateLog.saveXARecoveryLog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITTED_STATE : TxState.TX_ROLLBACKED_STATE);
-        XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
-    }
-
-    /**
-     * covert the collection to array
-     **/
-    private CoordinatorLogEntry[] getCoordinatorLogEntries() {
-        Repository fileRepository = ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode() ? new KVStoreRepository() : new FileSystemRepository();
-        Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries(true);
-        fileRepository.close();
-        if (allCoordinatorLogEntries == null) {
-            return new CoordinatorLogEntry[0];
-        }
-        if (allCoordinatorLogEntries.size() == 0) {
-            return new CoordinatorLogEntry[0];
-        }
-        return allCoordinatorLogEntries.toArray(new CoordinatorLogEntry[allCoordinatorLogEntries.size()]);
-    }
-
     public String genXaTxId() {
         long seq = this.xaIDInc.incrementAndGet();
         if (seq < 0) {
@@ -584,14 +494,13 @@ public final class DbleServer {
         return id.toString();
     }
 
-    private void genXidSeq(String xaID) {
+    public void genXidSeq(String xaID) {
         String[] idSplit = xaID.replace("'", "").split("\\.");
         long seq = Long.parseLong(idSplit[2]);
         if (xaIDInc.get() < seq) {
             xaIDInc.set(seq);
         }
     }
-
 
     /**
      * get next AsynchronousChannel ,first is exclude if multi
@@ -624,9 +533,6 @@ public final class DbleServer {
         return timerExecutor;
     }
 
-    public Queue<ServiceTask> getFrontPriorityQueue() {
-        return frontPriorityQueue;
-    }
 
     public ExecutorService getComplexQueryExecutor() {
         return complexQueryExecutor;
@@ -698,6 +604,22 @@ public final class DbleServer {
         return backendBusinessExecutor;
     }
 
+    public ExecutorService getFrontExecutor() {
+        return frontExecutor;
+    }
+
+    public ExecutorService getBackendExecutor() {
+        return backendExecutor;
+    }
+
+    public ConcurrentLinkedQueue<AbstractConnection> getFrontRegisterQueue() {
+        return frontRegisterQueue;
+    }
+
+    public ConcurrentLinkedQueue<AbstractConnection> getBackendRegisterQueue() {
+        return backendRegisterQueue;
+    }
+
     public boolean isStartup() {
         return startup;
     }
@@ -707,8 +629,15 @@ public final class DbleServer {
         return concurrentBackHandlerQueue;
     }
 
+    public Map<String, Map<Thread, Runnable>> getRunnableMap() {
+        return runnableMap;
+    }
+
     public void setConcurrentBackHandlerQueue(Queue<ServiceTask> concurrentBackHandlerQueue) {
         this.concurrentBackHandlerQueue = concurrentBackHandlerQueue;
     }
 
+    public long getXaIDInc() {
+        return xaIDInc.get();
+    }
 }

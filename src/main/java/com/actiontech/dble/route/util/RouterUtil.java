@@ -564,6 +564,7 @@ public final class RouterUtil {
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
         Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
         int unrepeatedTableSize = ctx.getTables().size();
+        extractSchema(ctx, schemaList);
         if (unrepeatedTableSize != tableSize && (!canMergeJoin(selectStmt))) {
             //DBLE0REQ-504
             return null;
@@ -572,11 +573,6 @@ public final class RouterUtil {
             String schemaName = table.getKey();
             String tableName = table.getValue();
             SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
-            if (schema == null) {
-                String msg = "Table " + StringUtil.getFullName(schemaName, tableName) + " doesn't exist";
-                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-            }
-            schemaList.add(schemaName);
             BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 if (tryRouteNoShardingTablesToOneNode(tmpResultNodes, tablesSet, table, schemaName, tableName, schema))
@@ -596,6 +592,19 @@ public final class RouterUtil {
         }
 
         return tryCalculateRouteTablesToOneNodeForComplex(rrs, ctx, tmpResultNodes, globalTables, tablesSet, clientCharset);
+    }
+
+    private static void extractSchema(DruidShardingParseInfo ctx, Set<String> schemaList) throws SQLException {
+        for (Pair<String, String> table : ctx.getTables()) {
+            String schemaName = table.getKey();
+            String tableName = table.getValue();
+            SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+            if (schema == null) {
+                String msg = "Table " + StringUtil.getFullName(schemaName, tableName) + " doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
+            schemaList.add(schemaName);
+        }
     }
 
     private static String tryCalculateRouteTablesToOneNodeForComplex(

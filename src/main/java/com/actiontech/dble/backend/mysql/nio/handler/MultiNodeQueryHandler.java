@@ -67,6 +67,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private Map<String, Integer> shardingNodePauseInfo; // only for debug
     private final RequestScope requestScope;
     private int loadDataErrorCount;
+    private int readOnlyErrorCount;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -93,6 +94,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.netOutBytes = 0;
         this.resultSize = 0;
         loadDataErrorCount = 0;
+        this.readOnlyErrorCount = 0;
     }
 
     public void writeRemainBuffer() {
@@ -274,6 +276,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 errConnection = new ArrayList<>();
             }
             errConnection.add((MySQLResponseService) service);
+            if (errPacket.getErrNo() == ErrorCode.ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION) {
+                readOnlyErrorCount++;
+            }
             if (decrementToZero((MySQLResponseService) service)) {
                 if (session.closed()) {
                     cleanBuffer();
@@ -696,6 +701,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("all nodes can't connect.");
             }
+            packet.write(session.getSource());
+            return;
+        }
+
+        if (readOnlyErrorCount == rrs.getNodes().length) {
             packet.write(session.getSource());
             return;
         }

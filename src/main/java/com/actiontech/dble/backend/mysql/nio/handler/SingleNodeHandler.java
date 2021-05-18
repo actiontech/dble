@@ -216,7 +216,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         }
 
-        if (errPkg.getErrNo() != ErrorCode.ER_DUP_ENTRY) {
+        if (errPkg.getErrNo() != ErrorCode.ER_DUP_ENTRY && errPkg.getErrNo() != ErrorCode.ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION) {
             shardingService.setTxInterrupt(errMsg);
         }
         lock.lock();
@@ -237,7 +237,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             lock.unlock();
         }
     }
-
 
     /**
      * insert/update/delete

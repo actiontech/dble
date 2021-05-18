@@ -89,6 +89,10 @@ public abstract class BaseHandlerBuilder {
         return subQueryBuilderList;
     }
 
+    public boolean isContainSubQuery() {
+        return node.getSubQueries().size() > 0;
+    }
+
     /**
      * generate a handler chain
      */
@@ -320,7 +324,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * the order way of join node stored in left join on orders and right join on orders
-     *
      */
     private boolean isJoinNodeOrderMatch(JoinNode jn, List<Order> orderBys) {
         // onCondition column in orderBys will be saved to onOrders,
@@ -353,7 +356,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * try to merger the order of 'order by' syntax to columnsSelected
-     *
      */
     private List<Order> mergeOrderBy(List<Item> columnsSelected, List<Order> orderBys) {
         List<Integer> orderIndexes = new ArrayList<>();

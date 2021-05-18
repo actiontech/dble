@@ -24,6 +24,7 @@ import com.actiontech.dble.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -232,6 +233,14 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             throw new IllegalStateException("null task is illegal");
         }
         DbleServer.getInstance().getFrontHandlerQueue().offerFirst(task);
+    }
+
+    @Override
+    public void writeDirectly(ByteBuffer buffer, boolean endOfQuery) {
+        super.writeDirectly(buffer, endOfQuery);
+        if (endOfQuery) {
+            connectionSerializableLock.unLock();
+        }
     }
 
     @Override

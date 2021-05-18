@@ -35,18 +35,26 @@ public abstract class AbstractService extends VariablesService implements Servic
     }
 
     public void writeDirectly(ByteBuffer buffer) {
+        writeDirectly(buffer, false);
+    }
+
+    public void writeDirectly(ByteBuffer buffer, boolean endOfQuery) {
         markFinished();
         this.connection.write(buffer);
     }
 
     public void writeDirectly(byte[] data) {
+        this.writeDirectly(data, false);
+    }
+
+    public void writeDirectly(byte[] data, boolean endOfQuery) {
         ByteBuffer buffer = connection.allocate();
         if (data.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
             ByteBuffer writeBuffer = writeBigPackageToBuffer(data, buffer);
-            this.writeDirectly(writeBuffer);
+            this.writeDirectly(writeBuffer, endOfQuery);
         } else {
             ByteBuffer writeBuffer = writeToBuffer(data, buffer);
-            this.writeDirectly(writeBuffer);
+            this.writeDirectly(writeBuffer, endOfQuery);
         }
     }
 

@@ -133,7 +133,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         SchemaConfig schema = schemaInfo.getSchemaConfig();
 
         String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
-        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode())) {
+        if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode() || mysqlSelectQuery.isForShare())) {
             if (!service.isAutocommit()) {
                 rrs.setCanRunInReadDB(false);
             } else {
@@ -622,7 +622,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             return;
         } else if (tableConfig.getMaxLimit() == -1) {
             return;
-        } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
+        } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode() || mysqlSelectQuery.isForShare()) {
             return;
         }
         SQLLimit limit = new SQLLimit();

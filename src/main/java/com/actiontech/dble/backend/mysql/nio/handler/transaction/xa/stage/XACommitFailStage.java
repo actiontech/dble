@@ -119,9 +119,8 @@ public class XACommitFailStage extends XACommitStage {
                     ((PhysicalDbInstance) service.getConnection().getPoolRelated().getInstance()).getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
-            xaAnalysisHandler.checkXA();
-            boolean isSuccess = xaAnalysisHandler.isSuccess();
             boolean isExistXid = xaAnalysisHandler.isExistXid(xid);
+            boolean isSuccess = xaAnalysisHandler.isSuccess();
             if (isSuccess && !isExistXid) {
                 // Unknown XID ,if xa transaction only contains select statement, xid will lost after restart server although prepared
                 xaOldThreadIds.remove(rrn);

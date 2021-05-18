@@ -24,7 +24,7 @@ import java.util.List;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultRouteStrategy.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractRouteStrategy.class);
 
     @Override
     public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException {

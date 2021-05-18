@@ -787,6 +787,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             Optional.ofNullable(rrs).ifPresent(routeResultSet -> flushDataToFile());
         }
         if (rrs != null) {
+            service.getSession2().endParse();
             service.getSession2().execute(rrs);
         }
     }

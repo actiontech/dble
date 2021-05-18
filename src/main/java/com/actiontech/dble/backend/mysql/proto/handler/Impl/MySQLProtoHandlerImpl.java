@@ -33,7 +33,7 @@ public class MySQLProtoHandlerImpl implements ProtoHandler {
                 throw new RuntimeException("invalid dataBuffer capacity ,too little buffer size " +
                         dataBuffer.capacity());
             }
-            return new ProtoHandlerResult(REACH_END_BUFFER, offset);
+            return new ProtoHandlerResult(BUFFER_PACKET_UNCOMPLETE, offset);
         }
         if (position >= offset + length) {
             // handle this package

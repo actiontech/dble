@@ -64,6 +64,10 @@ public class MySQLFrontAuthService extends AuthService {
                 handleAuthPacket(data);
             }
 
+        } catch (Exception e) {
+            LOGGER.error("illegal auth packet {}", data, e);
+            writeOutErrorMessage("illegal auth packet, the detail error message is " + e.getMessage());
+            connection.close("illegal auth packet");
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }

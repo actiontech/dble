@@ -229,7 +229,7 @@ public final class ExplainHandler {
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
             String routeNode = null;
-            if (!builder.isExistView() && !builder.isContainSubQuery()) {
+            if (!builder.isExistView() && !builder.isContainSubQuery(builder.getNode())) {
                 List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
                 List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
                 subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);

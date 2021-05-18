@@ -89,10 +89,6 @@ public abstract class BaseHandlerBuilder {
         return subQueryBuilderList;
     }
 
-    public boolean isContainSubQuery() {
-        return node.getSubQueries().size() > 0;
-    }
-
     /**
      * generate a handler chain
      */
@@ -537,5 +533,14 @@ public abstract class BaseHandlerBuilder {
 
     public boolean isExistView() {
         return subQueryBuilderList.stream().anyMatch(BaseHandlerBuilder::isExistView) || node.isExistView();
+    }
+
+
+    public boolean isContainSubQuery(PlanNode node) {
+        return node.getSubQueries().size() > 0 || node.getChildren().stream().anyMatch(this::isContainSubQuery);
+    }
+
+    public PlanNode getNode() {
+        return node;
     }
 }

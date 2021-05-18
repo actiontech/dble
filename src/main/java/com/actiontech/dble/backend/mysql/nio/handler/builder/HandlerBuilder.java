@@ -89,7 +89,7 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
-            if (!builder.isExistView() && !builder.isContainSubQuery()) {
+            if (!builder.isExistView() && !builder.isContainSubQuery(builder.getNode())) {
                 List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
                 List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
                 subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);

@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.executor.*;
 import com.actiontech.dble.net.impl.nio.RW;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
 import com.actiontech.dble.util.NameableExecutor;
@@ -28,6 +29,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.BlockingDeque;
 
 public final class DbleThreadPool extends ManagerWritableTable {
 
@@ -224,9 +226,9 @@ public final class DbleThreadPool extends ManagerWritableTable {
                 for (int i = 0; i < increaseVal; i++) {
                     LOGGER.debug("will execute thread:{}", nameableExecutor.toString());
                     if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
-                        nameableExecutor.execute(new FrontendCurrentRunnable(server.getFrontHandlerQueue(), server.getFrontPriorityQueue()));
+                        nameableExecutor.execute(new FrontendCurrentRunnable(server.getFrontHandlerQueue()));
                     } else {
-                        nameableExecutor.execute(new FrontendBlockRunnable(server.getFrontHandlerQueue(), server.getFrontPriorityQueue()));
+                        nameableExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) server.getFrontHandlerQueue()));
                     }
                 }
                 break;

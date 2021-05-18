@@ -33,7 +33,7 @@ public class FrontendCurrentRunnable implements Runnable {
         while (true) {
             if (Thread.currentThread().isInterrupted()) {
                 DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                LOGGER.debug("interrupt thread:{},frontNormalTasks:{},frontPriorityTasks:{}", Thread.currentThread().toString(), frontNormalTasks, frontPriorityTasks);
+                LOGGER.debug("interrupt thread:{},frontNormalTasks:{}", Thread.currentThread().toString(), frontNormalTasks);
                 break;
             }
             task = frontNormalTasks.poll();

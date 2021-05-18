@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
@@ -10,8 +10,6 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -75,7 +73,6 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public class CommandPacket extends MySQLPacket {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthSwitchRequestPackage.class);
     private byte command;
     private byte[] arg;
 
@@ -86,7 +83,6 @@ public class CommandPacket extends MySQLPacket {
         command = mm.read();
         arg = mm.readBytes();
     }
-
 
     public void write(OutputStream out) throws IOException {
         StreamUtil.writeUB3(out, calcPacketSize());
@@ -121,7 +117,7 @@ public class CommandPacket extends MySQLPacket {
     }
 
     public void writeBigPackage(MySQLResponseService service, int size) {
-        ByteBuffer buffer = null;
+        ByteBuffer buffer;
         int remain = 0;
         boolean isFirst = true;
         while (size >= MySQLPacket.MAX_PACKET_SIZE) {
@@ -151,7 +147,7 @@ public class CommandPacket extends MySQLPacket {
             remain = 0;
         } else {
             int start = arg.length - remain;
-            int available = buffer.limit() - buffer.position();
+            int available = (MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) - buffer.position();
             buffer.put(arg, start, available);
             remain -= available;
         }

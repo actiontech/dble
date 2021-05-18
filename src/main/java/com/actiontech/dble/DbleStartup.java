@@ -5,13 +5,11 @@
  */
 package com.actiontech.dble;
 
-
 import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.SystemConfigLoader;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.StartProblemReporter;
-import com.actiontech.dble.services.manager.handler.ShowServerLog;
 import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.util.CheckConfigurationUtil;
@@ -40,17 +38,14 @@ public final class DbleStartup {
                 System.exit(-1);
             }
             ClusterController.init();
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    System.out.println("Server execute ShutdownHook.");
-                    OnlineStatus.getInstance().shutdownClear();
-                    CustomMySQLHa.getInstance().stop(true);
-                }
-            });
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                System.out.println("Server execute ShutdownHook.");
+                OnlineStatus.getInstance().shutdownClear();
+                CustomMySQLHa.getInstance().stop(true);
+            }));
             // startup
             DbleServer.getInstance().startup();
-            System.out.println("Server startup successfully. dble version is [" + new String(Versions.getServerVersion()) + "]. Please see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);
+            System.out.println("Server startup successfully. dble version is [" + new String(Versions.getServerVersion()) + "]. Please see logs in logs/dble.log");
         } catch (Throwable e) {
             e.printStackTrace();
             System.exit(-1);

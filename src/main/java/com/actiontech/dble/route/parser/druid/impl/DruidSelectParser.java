@@ -218,13 +218,13 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize, String clientCharset) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize, clientCharset);
+        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize, clientCharset, selectStmt);
+        String sql = rrs.getStatement();
+        for (String toRemoveSchemaName : schemaList) {
+            sql = RouterUtil.removeSchema(sql, toRemoveSchemaName);
+        }
+        rrs.setStatement(sql);
         if (shardingNode != null) {
-            String sql = rrs.getStatement();
-            for (String toRemoveSchemaName : schemaList) {
-                sql = RouterUtil.removeSchema(sql, toRemoveSchemaName);
-            }
-            rrs.setStatement(sql);
             RouterUtil.routeToSingleNode(rrs, shardingNode);
         } else {
             rrs.setNeedOptimizer(true);

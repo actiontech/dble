@@ -163,7 +163,7 @@ public class StatisticRecord {
         if (isStartFsql && frontendSqlEntry != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
-            if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
+            if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
                 frontendSqlEntry.getBackendSqlEntry(key).setRows(rows);
                 frontendSqlEntry.addExaminedRows(rows);
             }
@@ -174,7 +174,7 @@ public class StatisticRecord {
         if (isStartFsql && frontendSqlEntry != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
-            if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
+            if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
                 frontendSqlEntry.getBackendSqlEntry(key).addRows();
                 frontendSqlEntry.addExaminedRows();
             }
@@ -185,7 +185,7 @@ public class StatisticRecord {
         if (isStartFsql && frontendSqlEntry != null) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
-            if (frontendSqlEntry.getBackendSqlEntry(key) != null) {
+            if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
                 frontendSqlEntry.getBackendSqlEntry(key).setAllEndTime(System.nanoTime());
                 frontendSqlEntry.getBackendSqlEntry(key).setNeedToTx(frontendSqlEntry.isNeedToTx());
                 pushBackendSql(frontendSqlEntry.getBackendSqlEntry(key));
@@ -201,7 +201,8 @@ public class StatisticRecord {
 
     // push data
     protected void pushBackendSql(StatisticBackendSqlEntry backendSqlEntry) {
-        if (backendSqlEntry != null) {
+        if (backendSqlEntry != null && !backendSqlEntry.isEnd()) {
+            backendSqlEntry.setEnd(true);
             StatisticManager.getInstance().push(backendSqlEntry);
         }
     }

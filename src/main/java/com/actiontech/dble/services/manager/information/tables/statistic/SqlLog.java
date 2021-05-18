@@ -16,6 +16,7 @@ public class SqlLog extends ManagerBaseTable {
 
     private static final String COLUMN_SQL_ID = "sql_id";
     private static final String COLUMN_SQL_STMT = "sql_stmt";
+    private static final String COLUMN_SQL_DIGEST = "sql_digest";
     private static final String COLUMN_SQL_TYPE = "sql_type";
     private static final String COLUMN_TX_ID = "tx_id";
     private static final String COLUMN_ENTRY = "entry";
@@ -39,6 +40,9 @@ public class SqlLog extends ManagerBaseTable {
 
         columns.put(COLUMN_SQL_STMT, new ColumnMeta(COLUMN_SQL_STMT, "varchar(1024)", false));
         columnsType.put(COLUMN_SQL_STMT, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_SQL_DIGEST, new ColumnMeta(COLUMN_SQL_DIGEST, "varchar(1024)", false));
+        columnsType.put(COLUMN_SQL_DIGEST, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_SQL_TYPE, new ColumnMeta(COLUMN_SQL_TYPE, "varchar(16)", false));
         columnsType.put(COLUMN_SQL_TYPE, Fields.FIELD_TYPE_VAR_STRING);
@@ -89,6 +93,11 @@ public class SqlLog extends ManagerBaseTable {
             } else {
                 map.put(COLUMN_SQL_STMT, sqlRecord.getStmt());
             }
+            if (sqlRecord.getSqlDigest().length() > 1024) {
+                map.put(COLUMN_SQL_DIGEST, sqlRecord.getSqlDigest().substring(0, 1024) + "...");
+            } else {
+                map.put(COLUMN_SQL_DIGEST, sqlRecord.getSqlDigest());
+            }
             map.put(COLUMN_SQL_TYPE, getSqlType(sqlRecord.getSqlType()));
             map.put(COLUMN_TX_ID, sqlRecord.getTxId() + "");
             map.put(COLUMN_ENTRY, sqlRecord.getEntry() + "");
@@ -97,7 +106,7 @@ public class SqlLog extends ManagerBaseTable {
             map.put(COLUMN_SOURCE_PORT, sqlRecord.getSourcePort() + "");
             map.put(COLUMN_ROWS, sqlRecord.getRows() + "");
             map.put(COLUMN_EXAMINED_ROWS, sqlRecord.getExaminedRows() + "");
-            map.put(COLUMN_DURATION, sqlRecord.getDuration() / 1000000 + "");
+            map.put(COLUMN_DURATION, sqlRecord.getDuration() + "");
             map.put(COLUMN_START_TIME, sqlRecord.getStartTime() + "");
             list.add(map);
         }));

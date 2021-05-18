@@ -38,7 +38,7 @@ public final class MyOptimizer {
             node = SubQueryPreProcessor.optimize(node);
             updateReferredTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<>());
-            if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery() || !PlanUtil.hasNoFakeNode(node)) {
+            if (node.type() == PlanNode.PlanNodeType.QUERY || node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery() || !PlanUtil.hasNoFakeNode(node)) {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
                 //node = SubQueryProcessor.optimize(node);
                 // transform right join to left join

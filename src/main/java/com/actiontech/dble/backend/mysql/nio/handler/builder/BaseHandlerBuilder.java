@@ -34,6 +34,7 @@ import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -58,7 +59,7 @@ public abstract class BaseHandlerBuilder {
     protected DMLResponseHandler start;
     /* the current last handler */
     private DMLResponseHandler currentLast;
-    private PlanNode node;
+    private final PlanNode node;
     Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     /* the children can be push down */
     boolean canPushDown = false;
@@ -67,8 +68,8 @@ public abstract class BaseHandlerBuilder {
     /* has where handler */
     boolean needWhereHandler = true;
 
-    protected boolean isExplain = false;
-    private List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
+    protected boolean isExplain;
+    private final List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -102,7 +103,8 @@ public abstract class BaseHandlerBuilder {
             noShardBuild();
         } else if (canDoAsMerge()) {
             // the query can be send to some certain nodes .eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
-            mergeBuild();
+            RouteResultset routeResultset = tryMergeBuild();
+            mergeBuild(routeResultset);
         } else {
             handleSubQueries();
             //need to split to simple query
@@ -144,8 +146,13 @@ public abstract class BaseHandlerBuilder {
         return false;
     }
 
-    protected void mergeBuild() {
+    protected void mergeBuild(RouteResultset rrs) {
         //
+    }
+
+    protected RouteResultset tryMergeBuild() {
+        //
+        return null;
     }
 
     protected abstract void handleSubQueries();
@@ -299,7 +306,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * if the node's parent handler has been ordered,it is no need to order again
-     *
      */
     private boolean isOrderNeeded(PlanNode planNode, List<Order> orderBys) {
         if (planNode instanceof TableNode || PlanUtil.isGlobalOrER(planNode))
@@ -314,7 +320,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * the order way of join node stored in left join on orders and right join on orders
-     *
      */
     private boolean isJoinNodeOrderMatch(JoinNode jn, List<Order> orderBys) {
         // onCondition column in orderBys will be saved to onOrders,
@@ -333,8 +338,7 @@ public abstract class BaseHandlerBuilder {
         if (jn.isLeftOrderMatch()) {
             List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
             List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
-            if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
-                return true;
+            return PlanUtil.orderContains(leftRemainOrders, pushedOrders);
         }
         return false;
     }
@@ -347,7 +351,6 @@ public abstract class BaseHandlerBuilder {
 
     /**
      * try to merger the order of 'order by' syntax to columnsSelected
-     *
      */
     private List<Order> mergeOrderBy(List<Item> columnsSelected, List<Order> orderBys) {
         List<Integer> orderIndexes = new ArrayList<>();
@@ -479,37 +482,31 @@ public abstract class BaseHandlerBuilder {
 
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                boolean startHandler = false;
-                try {
-                    BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
-                    DMLResponseHandler endHandler = builder.getEndHandler();
-                    endHandler.setNextHandler(tempHandler);
-                    getSubQueryBuilderList().add(builder);
-                    CallBackHandler tempDone = new CallBackHandler() {
-                        @Override
-                        public void call() throws Exception {
-                            if (tempHandler.getErrorPacket() != null) {
-                                errorPackets.add(tempHandler.getErrorPacket());
-                            }
-                            subQueryFinished(subNodes, lock, finished, finishSubQuery);
-                        }
-                    };
-                    tempHandler.setTempDoneCallBack(tempDone);
-                    startHandler = true;
-                    HandlerBuilder.startHandler(endHandler);
-                } catch (Exception e) {
-                    LOGGER.info("execute ItemScalarSubQuery error", e);
-                    ErrorPacket errorPackage = new ErrorPacket();
-                    errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
-                    String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
-                    errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
-                    errorPackets.add(errorPackage);
-                    if (!startHandler) {
-                        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+            boolean startHandler = false;
+            try {
+                BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
+                DMLResponseHandler endHandler = builder.getEndHandler();
+                endHandler.setNextHandler(tempHandler);
+                getSubQueryBuilderList().add(builder);
+                CallBackHandler tempDone = () -> {
+                    if (tempHandler.getErrorPacket() != null) {
+                        errorPackets.add(tempHandler.getErrorPacket());
                     }
+                    subQueryFinished(subNodes, lock, finished, finishSubQuery);
+                };
+                tempHandler.setTempDoneCallBack(tempDone);
+                startHandler = true;
+                HandlerBuilder.startHandler(endHandler);
+            } catch (Exception e) {
+                LOGGER.info("execute ItemScalarSubQuery error", e);
+                ErrorPacket errorPackage = new ErrorPacket();
+                errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
+                String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+                errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
+                errorPackets.add(errorPackage);
+                if (!startHandler) {
+                    subQueryFinished(subNodes, lock, finished, finishSubQuery);
                 }
             }
         });
@@ -527,4 +524,16 @@ public abstract class BaseHandlerBuilder {
         }
     }
 
+    public boolean isExistView() {
+        return subQueryBuilderList.stream().anyMatch(BaseHandlerBuilder::isExistView) || node.isExistView();
+    }
+
+
+    public boolean isContainSubQuery(PlanNode planNode) {
+        return planNode.getSubQueries().size() > 0 || planNode.getChildren().stream().anyMatch(this::isContainSubQuery);
+    }
+
+    public PlanNode getNode() {
+        return node;
+    }
 }

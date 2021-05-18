@@ -38,7 +38,6 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         } else {
             this.txStarted = txStart;
         }
-
     }
 
     public boolean isTxChainBegin() {
@@ -53,8 +52,14 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         transactionsCounter.incrementAndGet();
     }
 
-    public void singleTransactionsCount() {
-        if (!this.isTxStart()) {
+    public void transactionsCountInTx() {
+        if (txStarted || !autocommit) {
+            transactionsCounter.incrementAndGet();
+        }
+    }
+
+    public void transactionsCountOutTx() {
+        if (!txStarted && autocommit) {
             transactionsCounter.incrementAndGet();
         }
     }
@@ -125,7 +130,7 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         }
 
         if (autocommitItem == null) {
-            this.singleTransactionsCount();
+            this.transactionsCountOutTx();
             writeOkPacket();
         } else {
             handleVariable(autocommitItem);

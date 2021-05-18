@@ -25,7 +25,10 @@ import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 
 import java.util.*;
 
@@ -34,6 +37,7 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     private JoinNode node;
     private final int charsertIndex;
+    private boolean isJoin = true;
 
     JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -52,7 +56,16 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
-    public void mergeBuild() {
+    public void mergeBuild(RouteResultset rrs) {
+        try {
+            buildMergeHandler(node, rrs.getNodes());
+        } catch (Exception e) {
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception! Error:" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    protected RouteResultset tryMergeBuild() {
         try {
             this.needWhereHandler = false;
             this.canPushDown = !node.existUnPushDownGroup();
@@ -79,7 +92,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             } else {
                 rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
             }
-            buildMergeHandler(node, rrs.getNodes());
+            return rrs;
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception! Error:" + e.getMessage(), e);
         }
@@ -139,9 +152,38 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             pres.add(lh);
             DMLResponseHandler rh = buildJoinChild(right, false);
             pres.add(rh);
-
+            if (!isExistView()) {
+                pres = tryRouteToOneNode(pres);
+            }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "strategy [" + node.getStrategy() + "] not implement yet!");
+        }
+        return pres;
+    }
+
+    private List<DMLResponseHandler> tryRouteToOneNode(List<DMLResponseHandler> pres) {
+        if (!pres.isEmpty()) {
+            List<DMLResponseHandler> merges = Lists.newArrayList();
+            for (DMLResponseHandler preHandler : pres) {
+                merges.addAll(preHandler.getMerges());
+            }
+            if (!merges.isEmpty()) {
+                String routeNode = HandlerBuilder.canRouteToOneNode(merges);
+                if (!StringUtil.isBlank(routeNode)) {
+                    RouteResultset routeResultset = tryMergeBuild();
+                    //compare whether the issued nodes are consistent after merging
+                    if (null != routeResultset && routeResultset.getNodes().length == 1 && StringUtil.equalsWithEmpty(routeNode, routeResultset.getNodes()[0].getName())) {
+                        String sql = routeResultset.getStatement();
+                        for (Map.Entry<String, SchemaConfig> schemaConfigEntry : schemaConfigMap.entrySet()) {
+                            sql = RouterUtil.removeSchema(sql, schemaConfigEntry.getKey());
+                        }
+                        routeResultset.setStatement(sql);
+                        mergeBuild(routeResultset);
+                        pres = null;
+                        isJoin = false;
+                    }
+                }
+            }
         }
         return pres;
     }
@@ -171,6 +213,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public void buildOwn() {
+        if (!isJoin) {
+            return;
+        }
         if (node.isNotIn()) {
             NotInHandler nh = new NotInHandler(getSequenceId(), session, node.getLeftJoinOnOrders(),
                     node.getRightJoinOnOrders());

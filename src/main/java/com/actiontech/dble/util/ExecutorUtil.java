@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.util;
 
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 
@@ -16,20 +17,32 @@ public final class ExecutorUtil {
     }
 
     public static NameableExecutor createFixed(String name, int size) {
-        return createFixed(name, size, true);
+        return createFixed(name, null, size, true, null);
     }
 
-    private static NameableExecutor createFixed(String name, int size, boolean isDaemon) {
-        NameableThreadFactory factory = new NameableThreadFactory(name, isDaemon);
-        return new NameableExecutor(name, size, size, Long.MAX_VALUE, new LinkedBlockingQueue<Runnable>(), factory);
+    public static NameableExecutor createFixed(String name, int size, Map<String, Map<Thread, Runnable>> runnableMap) {
+        return createFixed(name, null, size, true, runnableMap);
+    }
+
+    public static NameableExecutor createFixed(String namePrefix, String nameSuffix, int size, Map<String, Map<Thread, Runnable>> runnableMap) {
+        return createFixed(namePrefix, nameSuffix, size, true, runnableMap);
+    }
+
+    private static NameableExecutor createFixed(String namePrefix, String nameSuffix, int size, boolean isDaemon, Map<String, Map<Thread, Runnable>> runnableMap) {
+        NameableThreadFactory factory = new NameableThreadFactory(namePrefix, nameSuffix, isDaemon);
+        return new NameableExecutor(namePrefix, size, size, Long.MAX_VALUE, new LinkedBlockingQueue<>(), factory, runnableMap);
     }
 
     public static NameableExecutor createCached(String name, int size) {
-        return createCached(name, size, true);
+        return createCached(name, size, true, null);
     }
 
-    private static NameableExecutor createCached(String name, int size, boolean isDaemon) {
+    public static NameableExecutor createCached(String name, int size, Map<String, Map<Thread, Runnable>> runnableMap) {
+        return createCached(name, size, true, runnableMap);
+    }
+
+    private static NameableExecutor createCached(String name, int size, boolean isDaemon, Map<String, Map<Thread, Runnable>> runnableMap) {
         NameableThreadFactory factory = new NameableThreadFactory(name, isDaemon);
-        return new NameableExecutor(name, size, Integer.MAX_VALUE, 60, new SynchronousQueue<Runnable>(), factory);
+        return new NameableExecutor(name, size, Integer.MAX_VALUE, 60, new SynchronousQueue<>(), factory, runnableMap);
     }
 }

@@ -189,24 +189,22 @@ public final class SystemConfigLoader {
         }
 
 
-        if (SystemConfig.getInstance().isEnableCursor()) {
-            final Integer heapTableBufferChunkSize = systemConfig.getHeapTableBufferChunkSize();
-            if (heapTableBufferChunkSize == null) {
-                /*
+        final Integer heapTableBufferChunkSize = systemConfig.getHeapTableBufferChunkSize();
+        if (heapTableBufferChunkSize == null) {
+            /*
                 there are two case:
                 1. the prop has been try to set before, but not set successfully.It causes an error. .
                 2. the prop not set.
                 we shouldn't set default value in case 1.
-                 */
-                if (problemReporter.getErrorConfigs().isEmpty()) {
-                    LOGGER.info("Property [ heapTableBufferChunkSize ] in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
-                    systemConfig.setHeapTableBufferChunkSize((int) systemConfig.getBufferPoolChunkSize());
-                }
-            } else if (heapTableBufferChunkSize <= 0 || heapTableBufferChunkSize % systemConfig.getBufferPoolChunkSize() != 0) {
-                problemReporter.warn("Property [ heapTableBufferChunkSize ] '" + heapTableBufferChunkSize + "' in bootstrap.cnf is illegal, it must be a multiple of property 'bufferPoolChunkSize' and great than 0. ");
+            */
+            if (problemReporter.getErrorConfigs().isEmpty()) {
+                LOGGER.info("Property [ heapTableBufferChunkSize ] in bootstrap.cnf is not set.The default value will the same as bufferPoolChunkSize");
+                systemConfig.setHeapTableBufferChunkSize((int) systemConfig.getBufferPoolChunkSize());
             }
+        } else if (heapTableBufferChunkSize <= 0 || heapTableBufferChunkSize % systemConfig.getBufferPoolChunkSize() != 0) {
+            problemReporter.warn("Property [ heapTableBufferChunkSize ] '" + heapTableBufferChunkSize + "' in bootstrap.cnf is illegal, it must be a multiple of property 'bufferPoolChunkSize' and great than 0. ");
         }
-
     }
+
 
 }

@@ -9,7 +9,6 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
 
 /**
  * @author mycat
- * @author mycat
  */
 public final class ManagerParse {
     private ManagerParse() {
@@ -27,7 +26,6 @@ public final class ManagerParse {
     public static final int ONLINE = 10;
     public static final int CHECK = 11;
     public static final int CONFIGFILE = 12;
-    public static final int LOGFILE = 13;
     public static final int PAUSE = 14;
     public static final int RESUME = 15;
     public static final int CREATE_DB = 16;
@@ -70,9 +68,6 @@ public final class ManagerParse {
                 case 'F':
                 case 'f':
                     return fCheck(stmt, i);
-                case 'L':
-                case 'l':
-                    return lCheck(stmt, i);
                 case 'S':
                 case 's':
                     return sCheck(stmt, i);
@@ -127,16 +122,6 @@ public final class ManagerParse {
             }
         }
         return OTHER;
-    }
-
-    // show LOG check
-    private static int lCheck(String stmt, int offset) {
-        String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("LOG @@")) {
-            return LOGFILE;
-        } else {
-            return OTHER;
-        }
     }
 
     private static int dCheck(String stmt, int offset) {

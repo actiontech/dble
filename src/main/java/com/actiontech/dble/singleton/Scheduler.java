@@ -1,6 +1,7 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAnalysisHandler;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -34,6 +35,7 @@ public final class Scheduler {
     private static final long DDL_EXECUTE_CHECK_PERIOD = 60L;
     private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
     private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
+    private static final int DEFAULT_CHECK_XAID = 5;
     private ExecutorService timerExecutor;
     private ScheduledExecutorService scheduledExecutor;
 
@@ -55,6 +57,7 @@ public final class Scheduler {
         }
         scheduledExecutor.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
         scheduledExecutor.scheduleAtFixedRate(printLongTimeDDL(), 0L, DDL_EXECUTE_CHECK_PERIOD, TimeUnit.SECONDS);
+        scheduledExecutor.scheduleWithFixedDelay(checkResidualXid(), 0L, DEFAULT_CHECK_XAID, TimeUnit.MINUTES);
     }
 
     private Runnable printLongTimeDDL() {
@@ -207,4 +210,13 @@ public final class Scheduler {
         return INSTANCE;
     }
 
+    public Runnable checkResidualXid() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                new XAAnalysisHandler().
+                        checkResidualTask();
+            }
+        };
+    }
 }

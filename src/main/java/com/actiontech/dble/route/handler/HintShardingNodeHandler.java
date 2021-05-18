@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
@@ -33,7 +32,7 @@ public class HintShardingNodeHandler implements HintHandler {
                                 String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("route shardingnode sql hint from " + realSQL);
+            LOGGER.debug("route shardingNode sql hint from " + realSQL);
         }
 
         RouteResultset rrs = new RouteResultset(realSQL, sqlType);
@@ -49,6 +48,7 @@ public class HintShardingNodeHandler implements HintHandler {
             throw new SQLNonTransientException(msg);
         }
 
+        service.getSession2().endParse();
         return rrs;
     }
 

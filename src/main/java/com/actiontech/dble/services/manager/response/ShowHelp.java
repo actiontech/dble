@@ -123,7 +123,6 @@ public final class ShowHelp {
         HELPS.put("show @@heartbeat", "Report heartbeat status");
         HELPS.put("show @@heartbeat.detail where name=?", "Report heartbeat current detail");
         HELPS.put("show @@sysparam", "Report system param");
-        HELPS.put("show @@syslog limit=?", "Report system log");
         HELPS.put("show @@white", "Report server white host");
         HELPS.put("show @@directmemory", "Report server direct memory pool usage");
         HELPS.put("show @@command.count", "Report the current number of querys");
@@ -135,7 +134,7 @@ public final class ShowHelp {
         HELPS.put("show @@processlist", "Report correspondence between front and backend session");
 
         HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
-        HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance");
+        HELPS.put("show @@thread_used", "Report usage of all bussiness&reactor threads, for optimize performance");
         HELPS.put("show @@shardingNodes where schema='?' and table='?'", "Report the sharding nodes info of a table");
         HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
         HELPS.put("show @@ddl", "Report all ddl info in progress");
@@ -167,8 +166,6 @@ public final class ShowHelp {
         HELPS.put("offline", "Change Server status to OFF");
         HELPS.put("online", "Change Server status to ON");
 
-        HELPS.put("show @@thread_used", "Report all bussiness&reactor thread usage");
-
         //file
         HELPS.put("file @@list", "List all the file in conf directory");
         HELPS.put("file @@show filename", "Show the file data of specific file");
@@ -176,9 +173,6 @@ public final class ShowHelp {
         HELPS.put("flow_control @@show", "Show the current config of the flow control");
         HELPS.put("flow_control @@list", "List all the connection be flow-control now");
         HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlStart = ?] [flowControlEnd = ?]", "Change the config of flow control");
-
-        //log
-        HELPS.put("log @@[file=? limit=? key=? regex=?]", "Report logs by given regex");
 
         //dryrun
         HELPS.put("dryrun", "Dry run to check config before reload xml");

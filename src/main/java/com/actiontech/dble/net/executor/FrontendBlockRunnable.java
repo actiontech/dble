@@ -34,7 +34,11 @@ public class FrontendBlockRunnable implements Runnable {
         }
         while (true) {
             try {
-
+                if (Thread.currentThread().isInterrupted()) {
+                    DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                    LOGGER.debug("interrupt thread:{},frontNormalTasks:{}", Thread.currentThread().toString(), frontNormalTasks);
+                    break;
+                }
                 task = frontNormalTasks.take();
 
                 if (task.getService() == null) {
@@ -54,8 +58,10 @@ public class FrontendBlockRunnable implements Runnable {
                     workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                 }
             } catch (InterruptedException e) {
-                throw new RuntimeException("FrontendCommandHandler error.", e);
+                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                LOGGER.warn("FrontendCommandHandler error.", e);
             } catch (Throwable e) {
+                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
                 LOGGER.error("process task error", e);
             }
         }

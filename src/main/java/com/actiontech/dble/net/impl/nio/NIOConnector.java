@@ -23,6 +23,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -36,14 +37,14 @@ public final class NIOConnector extends Thread implements SocketConnector {
     private final String name;
     private final Selector selector;
     private final BlockingQueue<AbstractConnection> connectQueue;
-    private final NIOReactorPool reactorPool;
+    private ConcurrentLinkedQueue<AbstractConnection> backendRegisterQueue;
 
-    public NIOConnector(String name, NIOReactorPool reactorPool)
+    public NIOConnector(String name, ConcurrentLinkedQueue<AbstractConnection> backendRegisterQueue)
             throws IOException {
         super.setName(name);
         this.name = name;
         this.selector = Selector.open();
-        this.reactorPool = reactorPool;
+        this.backendRegisterQueue = backendRegisterQueue;
         this.connectQueue = new LinkedBlockingQueue<>();
     }
 
@@ -106,8 +107,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                 c.setId(ID_GENERATOR.getId());
                 IOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
                 c.setProcessor(processor);
-                NIOReactor reactor = reactorPool.getNextReactor();
-                reactor.postRegister(c);
+                backendRegisterQueue.offer(c);
             }
         } catch (Exception e) {
             clearSelectionKey(key);

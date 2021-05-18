@@ -9,11 +9,14 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 public class WriteToBackendRunnable implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WriteToBackendRunnable.class);
     private final BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
 
     public WriteToBackendRunnable(BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue) {
@@ -29,6 +32,11 @@ public class WriteToBackendRunnable implements Runnable {
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
         }
         while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                LOGGER.debug("interrupt thread:{},writeToBackendQueue:{}", Thread.currentThread().toString(), writeToBackendQueue);
+                break;
+            }
             try {
                 List<WriteToBackendTask> tasks = writeToBackendQueue.take();
                 //threadUsageStat start
@@ -47,7 +55,8 @@ public class WriteToBackendRunnable implements Runnable {
                     workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                 }
             } catch (InterruptedException e) {
-                throw new RuntimeException("FrontendCommandHandler error.", e);
+                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                LOGGER.warn("interrupt thread:{},concurrentBackQueue:{}", Thread.currentThread().toString(), writeToBackendQueue);
             }
         }
 

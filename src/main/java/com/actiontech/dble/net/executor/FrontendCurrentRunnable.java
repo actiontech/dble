@@ -4,6 +4,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 
@@ -11,6 +13,7 @@ import java.util.Deque;
  * Created by szf on 2020/7/9.
  */
 public class FrontendCurrentRunnable implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendCurrentRunnable.class);
 
     private final Deque<ServiceTask> frontNormalTasks;
 
@@ -28,6 +31,11 @@ public class FrontendCurrentRunnable implements Runnable {
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
         }
         while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                LOGGER.debug("interrupt thread:{},frontNormalTasks:{}", Thread.currentThread().toString(), frontNormalTasks);
+                break;
+            }
             task = frontNormalTasks.poll();
 
             //threadUsageStat start
@@ -49,5 +57,4 @@ public class FrontendCurrentRunnable implements Runnable {
             }
         }
     }
-
 }

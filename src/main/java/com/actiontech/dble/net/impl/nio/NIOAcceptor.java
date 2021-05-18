@@ -8,6 +8,7 @@ package com.actiontech.dble.net.impl.nio;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketAcceptor;
+import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.factory.FrontendConnectionFactory;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author mycat
@@ -34,10 +36,10 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
     private final Selector selector;
     private final ServerSocketChannel serverChannel;
     private final FrontendConnectionFactory factory;
-    private final NIOReactorPool reactorPool;
+    private ConcurrentLinkedQueue<AbstractConnection> frontRegisterQueue;
 
     public NIOAcceptor(String name, String bindIp, int port, int backlog, FrontendConnectionFactory factory,
-                       NIOReactorPool reactorPool) throws IOException {
+                       ConcurrentLinkedQueue<AbstractConnection> frontRegisterQueue) throws IOException {
         super.setName(name);
         this.port = port;
         this.selector = Selector.open();
@@ -49,7 +51,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
         serverChannel.bind(new InetSocketAddress(bindIp, port), backlog);
         this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);
         this.factory = factory;
-        this.reactorPool = reactorPool;
+        this.frontRegisterQueue = frontRegisterQueue;
     }
 
     public int getPort() {
@@ -94,8 +96,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             IOProcessor processor = DbleServer.getInstance().nextFrontProcessor();
             c.setProcessor(processor);
 
-            NIOReactor reactor = reactorPool.getNextReactor();
-            reactor.postRegister(c);
+            frontRegisterQueue.offer(c);
 
         } catch (Exception e) {
             LOGGER.info(getName(), e);

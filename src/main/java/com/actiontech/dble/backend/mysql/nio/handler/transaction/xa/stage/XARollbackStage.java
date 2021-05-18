@@ -104,9 +104,8 @@ public class XARollbackStage extends XAStage {
                     ((PhysicalDbInstance) service.getConnection().getPoolRelated().getInstance()).getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
             // so we need check xid here
-            xaAnalysisHandler.checkXA();
-            boolean isSuccess = xaAnalysisHandler.isSuccess();
             boolean isExistXid = xaAnalysisHandler.isExistXid(xid);
+            boolean isSuccess = xaAnalysisHandler.isSuccess();
             if (isSuccess && !isExistXid) {
                 //ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
                 xaOldThreadIds.remove(rrn);

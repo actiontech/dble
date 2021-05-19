@@ -32,7 +32,7 @@ public final class ConnectionSerializableLock {
 
         if (!working) {
             working = true;
-            LOGGER.debug("locked id " + frontId + " success");
+            LOGGER.debug("locked success. connection id " + frontId);
             return true;
         }
         return false;
@@ -55,7 +55,7 @@ public final class ConnectionSerializableLock {
     public synchronized void unLock() {
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(" unlock id " + frontId);
+            LOGGER.debug(" unlock connection id " + frontId);
 
         }
         if (!working) {

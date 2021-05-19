@@ -35,7 +35,7 @@ import java.util.Map;
  * @author mycat
  */
 public final class ShowConnection {
-    private static final int FIELD_COUNT = 19;
+    private static final int FIELD_COUNT = 20;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -88,6 +88,9 @@ public final class ShowConnection {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("RECV_QUEUE", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("TX_ISOLATION_LEVEL", Fields.FIELD_TYPE_VAR_STRING);
@@ -232,7 +235,7 @@ public final class ShowConnection {
         ByteBuffer bb = c.getReadBuffer();
         row.add(IntegerUtil.toBytes(bb == null ? 0 : bb.capacity()));
         row.add(IntegerUtil.toBytes(c.getWriteQueue().size()));
-
+        row.add(IntegerUtil.toBytes(service.getRecvTaskQueueSize()));
         String txLevel = "";
         String autocommit = "";
         if (!c.isManager()) {

@@ -25,7 +25,7 @@ import java.util.Map;
 
 public final class DbleFrontConnections extends ManagerBaseTable {
     public DbleFrontConnections() {
-        super("session_connections", 19);
+        super("session_connections", 20);
     }
 
     @Override
@@ -81,6 +81,9 @@ public final class DbleFrontConnections extends ManagerBaseTable {
 
         columns.put("conn_send_task_queue", new ColumnMeta("conn_send_task_queue", "int(11)", false));
         columnsType.put("conn_send_task_queue", Fields.FIELD_TYPE_LONG);
+
+        columns.put("conn_recv_task_queue", new ColumnMeta("conn_recv_task_queue", "int(11)", false));
+        columnsType.put("conn_recv_task_queue", Fields.FIELD_TYPE_LONG);
 
         columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(5)", false));
         columnsType.put("in_transaction", Fields.FIELD_TYPE_VAR_STRING);
@@ -140,6 +143,7 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         ByteBuffer bb = c.getReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");
         row.put("conn_send_task_queue", c.getWriteQueue().size() + "");
+        row.put("conn_recv_task_queue", c.getFrontEndService().getRecvTaskQueueSize() + "");
         row.put("entry_id", users.get(service.getUser()).getId() + "");
         return row;
     }

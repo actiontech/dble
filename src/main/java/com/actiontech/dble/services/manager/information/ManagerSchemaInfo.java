@@ -80,8 +80,9 @@ public final class ManagerSchemaInfo {
         if (instance == null) {
             synchronized (ManagerSchemaInfo.class) {
                 if (instance == null) {
-                    instance = new ManagerSchemaInfo();
-                    instance.init();
+                    ManagerSchemaInfo info = new ManagerSchemaInfo();
+                    info.init();
+                    instance = info;
                 }
             }
         }

@@ -11,10 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.channels.CancelledKeyException;
-import java.nio.channels.ClosedSelectorException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.*;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -98,6 +95,12 @@ public final class RW implements Runnable {
                     if (key.isValid() && key.isReadable()) {
                         try {
                             con.asyncRead();
+                        } catch (AsynchronousCloseException e) {
+                            //happens when close and read running in parallel.
+                            //sometimes ,no byte could be read,but an  read event triggered with  zero bytes although cause this.
+                            LOGGER.info("read bytes but the  connection is closed .connection is {}. May be the connection closed suddenly.", con);
+                            key.cancel();
+                            continue;
                         } catch (Exception e) {
                             LOGGER.warn("caught err:", e);
                             con.close("program err:" + e.toString());

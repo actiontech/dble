@@ -35,7 +35,7 @@ public final class MyOptimizer {
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
             // PreProcessor SubQuery ,transform in sub query to join
-            if (SystemConfig.getInstance().isSubQueryOptimize()) {
+            if (SystemConfig.getInstance().isInSubQueryTransformToJoin()) {
                 node = SubQueryPreProcessor.optimize(node);
             } else {
                 node = SubQueryPreNoTransformProcessor.optimize(node);

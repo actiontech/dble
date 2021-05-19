@@ -186,8 +186,8 @@ public final class SystemConfig {
     private int samplingRate = 0;
     private int sqlLogTableSize = 1024;
 
-    //use SubQueryOptimize
-    private boolean subQueryOptimize = true;
+    //use inSubQueryTransformToJoin
+    private boolean inSubQueryTransformToJoin = true;
 
 
     public int getSamplingRate() {
@@ -1380,12 +1380,12 @@ public final class SystemConfig {
         }
     }
 
-    public boolean isSubQueryOptimize() {
-        return subQueryOptimize;
+    public boolean isInSubQueryTransformToJoin() {
+        return inSubQueryTransformToJoin;
     }
 
-    public void setSubQueryOptimize(boolean subQueryOptimize) {
-        this.subQueryOptimize = subQueryOptimize;
+    public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
+        this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
     }
 
     @Override
@@ -1482,7 +1482,7 @@ public final class SystemConfig {
                 ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
-                ", subQueryOptimize=" + subQueryOptimize +
+                ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
                 "]";
     }
 }

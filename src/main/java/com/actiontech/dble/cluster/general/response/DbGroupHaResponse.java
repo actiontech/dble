@@ -7,8 +7,6 @@ import com.actiontech.dble.cluster.path.ChildPathMeta;
 import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.actiontech.dble.cluster.path.ClusterPathUtil.DB_GROUP_STATUS;
 
@@ -16,7 +14,6 @@ import static com.actiontech.dble.cluster.path.ClusterPathUtil.DB_GROUP_STATUS;
  * Created by szf on 2019/10/29.
  */
 public class DbGroupHaResponse extends AbstractGeneralListener<Empty> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DdlChildResponse.class);
     public static final ChildPathMeta<Empty> HA_BASE_PATH = ClusterChildMetaUtil.getHaBasePath();
 
     public DbGroupHaResponse() {

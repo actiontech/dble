@@ -88,6 +88,9 @@ public class TraceResult implements Cloneable {
             System.arraycopy(this.shardingNodes, 0, tempShardingNodes, 0, this.shardingNodes.length);
             System.arraycopy(shardingNodes, 0, tempShardingNodes, this.shardingNodes.length, shardingNodes.length);
             this.shardingNodes = tempShardingNodes;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("append to existing shardingNodes,current size is " + this.shardingNodes.length);
+            }
         }
     }
 

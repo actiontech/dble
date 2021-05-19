@@ -17,71 +17,15 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.ImmutableMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
-import java.util.List;
 
 public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(DefaultRouteStrategy.class);
-
-
-    public SQLStatement parserSQL(String originSql, ShardingService service) throws SQLSyntaxErrorException {
-        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "sql-parse");
-        try {
-            SQLStatementParser parser;
-            parser = new MySqlStatementParser(originSql);
-            try {
-                return parser.parseStatement(true);
-            } catch (Exception t) {
-                LOGGER.info("routeNormalSqlWithAST", t);
-                if (t.getMessage() != null) {
-                    throw new SQLSyntaxErrorException("druid not support sql syntax, the reason is " + t.getMessage());
-                } else {
-                    throw new SQLSyntaxErrorException("druid not support sql syntax, the reason is " + t);
-                }
-            }
-        } finally {
-            TraceManager.finishSpan(service, traceObject);
-        }
-    }
-
     @Override
-    public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException {
-        SQLStatementParser parser = new MySqlStatementParser(originSql);
-
-        /**
-         * thrown SQL SyntaxError if parser error
-         */
-        try {
-            List<SQLStatement> list = parser.parseStatementList();
-            if (list.size() > 1) {
-                throw new SQLSyntaxErrorException("MultiQueries is not supported,use single query instead ");
-            }
-            return list.get(0);
-        } catch (Exception t) {
-            LOGGER.info("routeNormalSqlWithAST", t);
-            if (t.getMessage() != null) {
-                throw new SQLSyntaxErrorException(t.getMessage());
-            } else {
-                throw new SQLSyntaxErrorException(t);
-            }
-        }
-    }
-
-    @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ShardingService service) throws SQLException {
-        return this.route(schema, sqlType, origSQL, service, false);
-    }
-
-
-    @Override
-    public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
-                                                String originSql, RouteResultset rrs,
-                                                ShardingService service, boolean isExplain) throws SQLException {
+    protected RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String originSql, RouteResultset rrs,
+                                                   ShardingService service, boolean isExplain) throws SQLException {
         SQLStatement statement = parserSQL(originSql, service);
         if (service.getSession2().getIsMultiStatement().get()) {
             originSql = statement.toString();
@@ -97,7 +41,26 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
         } finally {
             TraceManager.finishSpan(service, traceObject);
         }
+    }
 
+    private SQLStatement parserSQL(String originSql, ShardingService service) throws SQLSyntaxErrorException {
+        TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "sql-parse");
+        try {
+            SQLStatementParser parser;
+            parser = new MySqlStatementParser(originSql);
+            try {
+                return parser.parseStatement(true);
+            } catch (Exception t) {
+                LOGGER.warn("routeNormalSqlWithAST", t);
+                if (t.getMessage() != null) {
+                    throw new SQLSyntaxErrorException("druid not support sql syntax, the reason is " + t.getMessage());
+                } else {
+                    throw new SQLSyntaxErrorException("druid not support sql syntax, the reason is " + t);
+                }
+            }
+        } finally {
+            TraceManager.finishSpan(service, traceObject);
+        }
     }
 
 }

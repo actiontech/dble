@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class XAAnalysisHandler extends XAHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(XAAnalysisHandler.class);
     private ProblemReporter problemReporter = StartProblemReporter.getInstance();
-    public static final Pattern XAID_STMT = Pattern.compile(DbleServer.NAME + "Server." + SystemConfig.getInstance().getInstanceName() + ".(\\d)(.[^\\s]+)?", Pattern.CASE_INSENSITIVE);
+    public static final Pattern XAID_STMT = Pattern.compile(DbleServer.NAME + "Server." + SystemConfig.getInstance().getInstanceName() + "[.](\\d+)(.[^\\s]+)?", Pattern.CASE_INSENSITIVE);
 
     public XAAnalysisHandler() {
         super();
@@ -77,9 +77,9 @@ public class XAAnalysisHandler extends XAHandler {
         String xaId;
         Matcher matcher;
         for (Map.Entry<PhysicalDbInstance, List<Map<String, String>>> rm : result.entrySet()) {
-            boolean isResidual = false;
             if (result.get(rm.getKey()) == null)
                 continue;
+            boolean isResidual = false;
             List<String> residualXid = new ArrayList<>();
             for (Map<String, String> recover : result.get(rm.getKey())) {
                 if (LOGGER.isDebugEnabled()) {

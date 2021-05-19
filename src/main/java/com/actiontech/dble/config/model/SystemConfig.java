@@ -187,7 +187,7 @@ public final class SystemConfig {
     private int sqlLogTableSize = 1024;
 
     //use inSubQueryTransformToJoin
-    private boolean inSubQueryTransformToJoin = true;
+    private boolean inSubQueryTransformToJoin = false;
 
 
     public int getSamplingRate() {

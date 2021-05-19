@@ -12,6 +12,7 @@ import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
+import com.actiontech.dble.services.manager.information.ManagerBaseView;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -19,6 +20,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlExplainStatement;
 
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
+import java.util.Collection;
 
 /**
  * ShowDatabase
@@ -57,7 +59,6 @@ public final class Describe {
     }
 
     public static void execute(String stmt, ManagerService service) {
-        String schemaName;
         String tableName;
         try {
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
@@ -87,7 +88,15 @@ public final class Describe {
         byte packetId = EOF.getPacketId();
 
         ManagerBaseTable table = ManagerSchemaInfo.getInstance().getTables().get(tableName);
-        for (ColumnMeta column : table.getColumnsMeta()) {
+        Collection<ColumnMeta> columns;
+        if (table != null) {
+            columns = table.getColumnsMeta();
+        } else {
+            ManagerBaseView view = ManagerSchemaInfo.getInstance().getView(tableName);
+            columns = view.getColumnsMeta();
+        }
+
+        for (ColumnMeta column : columns) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(column.getName(), service.getCharset().getResults()));
             row.add(StringUtil.encode(column.getDataType(), service.getCharset().getResults()));
@@ -98,7 +107,6 @@ public final class Describe {
             row.setPacketId(++packetId);
             buffer = row.write(buffer, service, true);
         }
-
 
         // write lastEof
         EOFRowPacket lastEof = new EOFRowPacket();

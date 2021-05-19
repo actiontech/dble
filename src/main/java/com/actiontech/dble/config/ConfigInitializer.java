@@ -122,15 +122,8 @@ public class ConfigInitializer implements ProblemReporter {
         }
 
         this.sequenceConfig = sequenceJson;
-        checkDbGroup();
         checkRwSplitDbGroup();
         checkWriteDbInstance();
-    }
-
-    private void checkDbGroup() {
-        shardingNodes.entrySet().stream().forEach(k ->
-                Optional.ofNullable(k.getValue().getDbGroup()).orElseThrow(() -> new ConfigException("dbGroup not exists " + k.getValue().getDbGroupName()))
-        );
     }
 
 

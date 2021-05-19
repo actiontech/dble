@@ -26,7 +26,7 @@ public class MySQLChangeUserService extends FrontendService {
     }
 
     @Override
-    public void handleInnerData(byte[] data) {
+    protected void handleInnerData(byte[] data) {
         this.setPacketId(data[3]);
         if (changeUserPacket == null) {
             changeUserPacket = new ChangeUserPacket(frontendService.getClientCapabilities());

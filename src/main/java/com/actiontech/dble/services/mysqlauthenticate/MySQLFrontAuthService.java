@@ -53,7 +53,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     }
 
     @Override
-    public void handleInnerData(byte[] data) {
+    protected void handleInnerData(byte[] data) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "handle-auth-data");
         try {
             this.setPacketId(data[3]);

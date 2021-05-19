@@ -35,7 +35,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     @Override
     public void query(String sql) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(service + sql);
+            LOGGER.debug(service + (sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql));
         }
         String finalSql = sql;
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));

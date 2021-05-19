@@ -8,10 +8,15 @@ package com.actiontech.dble.net.connection;
 public interface Connection {
 
 
+    void closeGracefully(String reason);
+
+    void closeImmediately(String reason);
+
     /**
      * Connection forced to close function
      * would be called by IO error .....
      * the service would get the error message and resoponse to it
+     *
      * @param reason
      */
     void close(String reason);

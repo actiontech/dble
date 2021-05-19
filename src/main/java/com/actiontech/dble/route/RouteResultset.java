@@ -294,7 +294,7 @@ public final class RouteResultset implements Serializable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(srcStatement).append(", route={");
+        s.append(srcStatement.length() > 1024 ? srcStatement.substring(0, 1024) + "..." : srcStatement).append(", route={");
         if (nodes != null) {
             for (int i = 0; i < nodes.length; ++i) {
                 s.append("\n ").append(FormatUtil.format(i + 1, 3));

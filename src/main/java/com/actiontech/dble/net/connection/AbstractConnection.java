@@ -3,18 +3,19 @@ package com.actiontech.dble.net.connection;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
-import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +23,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.NetworkChannel;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -60,6 +63,10 @@ public abstract class AbstractConnection implements Connection {
     protected long lastLargeMessageTime;
     private int extraPartOfBigPacketCount = 0;
 
+
+    protected Set<String> graceClosedReasons = Sets.newConcurrentHashSet();
+    protected AtomicBoolean doingGracefulClose = new AtomicBoolean(false);
+
     protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
@@ -74,22 +81,128 @@ public abstract class AbstractConnection implements Connection {
         this.proto = new MySQLProtoHandlerImpl();
     }
 
-    public void onReadData(int got) {
+    public void onReadData(int got) throws IOException {
         if (isClosed.get()) {
             return;
         }
 
         lastReadTime = TimeUtil.currentTimeMillis();
-        if (got < 0) {
-            this.close("stream closed");
+        if (got == -1) {
+            if (doingGracefulClose.get()) {
+                pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose(graceClosedReasons));
+            } else {
+                pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream closed by peer"));
+            }
             return;
         } else if (got == 0 && !this.channel.isOpen()) {
-            this.close("stream closed");
+            pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream is closed when reading zero byte"));
             return;
+        } else {
+            netInBytes += got;
         }
-        netInBytes += got;
+
         handle(readBuffer);
     }
+
+
+    @Override
+    public synchronized void closeGracefully(String reason) {
+        if (doingGracefulClose.compareAndSet(false, true)) {
+            synchronized (this) {
+                if (isClosed()) {
+                    LOGGER.info("connection  gracefully ignored. for reason {}", reason);
+                    return;
+                }
+                graceClosedReasons.add(reason);
+                //shutdownInput will trigger  a read event of IO reactor and return -1.
+                try {
+                    socketWR.shutdownInput();
+                } catch (IOException e) {
+
+                    if (isClosed()) {
+                        LOGGER.error("close gracefully cause error.ignored reason is {}", reason, e);
+                    } else {
+                        LOGGER.error("close gracefully cause error.reason is {}", reason, e);
+                        pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason));
+                    }
+                }
+
+
+            }
+        }
+    }
+
+    @Override
+    public synchronized void closeImmediately(final String reason) {
+        closeImmediatelyInner(reason);
+    }
+
+    private void closeImmediatelyInner(String reason) {
+        if (isClosed.compareAndSet(false, true)) {
+            if (service instanceof BusinessService)
+                ((BusinessService) service).transactionsCountInTx();
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEndByExit());
+            StatisticListener.getInstance().remove(service);
+            closeSocket();
+            LOGGER.info("connection id close for reason " + reason + " with connection " + toString());
+            if (processor != null) {
+                processor.removeConnection(this);
+            }
+
+            this.cleanup();
+
+            // ignore null information
+            if (Strings.isNullOrEmpty(reason)) {
+                return;
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("close connection,reason:" + reason + " ," + this);
+            }
+            if (reason.contains("connection,reason:java.net.ConnectException")) {
+                throw new RuntimeException(reason);
+            }
+        } else {
+            // make sure buffer recycle again, avoid buffer leak
+            this.cleanup();
+        }
+    }
+
+
+    public boolean pushInnerServiceTask(InnerServiceTask innerServiceTask) {
+        IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
+        if (service == null) {
+            if (isClosed()) {
+                LOGGER.info("can't delay process the service task ,connection is closed already. just ignored.  {}", innerServiceTask.getType());
+                return false;
+            } else {
+                LOGGER.info("can't delay process the service task ,Maybe the connection is not ready yet. try process immediately {}", innerServiceTask.getType());
+                printLocation();
+            }
+
+            switch (innerServiceTask.getType()) {
+                case CLOSE:
+                    this.closeImmediately(Joiner.on(',').join(((CloseServiceTask) innerServiceTask).getReasons()));
+                    break;
+                default:
+                    LOGGER.error("illegal service task. {}", innerServiceTask);
+                    return false;
+            }
+        }
+        service.handle(innerServiceTask);
+        return true;
+    }
+
+    private void printLocation() {
+        if (LOGGER.isDebugEnabled()) {
+            try {
+                throw new RuntimeException();
+            } catch (Exception e) {
+                LOGGER.debug("location", e);
+            }
+
+        }
+    }
+
 
     private void handle(ByteBuffer dataBuffer) {
         boolean hasRemaining = true;
@@ -136,7 +249,7 @@ public abstract class AbstractConnection implements Connection {
             int tmpCount = extraPartOfBigPacketCount;
             if (!isSupportCompress) {
                 extraPartOfBigPacketCount = 0;
-                service.handle(new ServiceTask(packetData, service, tmpCount));
+                service.handle(new NormalServiceTask(packetData, service, tmpCount));
             } else {
                 List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
                 if (decompressUnfinishedDataQueue.isEmpty()) {
@@ -144,7 +257,7 @@ public abstract class AbstractConnection implements Connection {
                 }
                 for (byte[] pack : packs) {
                     if (pack.length != 0) {
-                        service.handle(new ServiceTask(pack, service, tmpCount));
+                        service.handle(new NormalServiceTask(pack, service, tmpCount));
                     }
                 }
             }
@@ -152,33 +265,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void close(String reason) {
-        if (isClosed.compareAndSet(false, true)) {
-            if (service instanceof BusinessService)
-                ((BusinessService) service).transactionsCountInTx();
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEndByExit());
-            StatisticListener.getInstance().remove(service);
-            closeSocket();
-            LOGGER.info("connection id close for reason " + reason + " with connection " + toString());
-            if (processor != null) {
-                processor.removeConnection(this);
-            }
-
-            this.cleanup();
-
-            // ignore null information
-            if (Strings.isNullOrEmpty(reason)) {
-                return;
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("close connection,reason:" + reason + " ," + this);
-            }
-            if (reason.contains("connection,reason:java.net.ConnectException")) {
-                throw new RuntimeException(reason);
-            }
-        } else {
-            // make sure buffer recycle again, avoid buffer leak
-            this.cleanup();
-        }
+        this.closeImmediatelyInner(reason);
     }
 
     public void close(Exception exception) {
@@ -347,7 +434,7 @@ public abstract class AbstractConnection implements Connection {
             return this.socketWR.registerWrite(buffer);
         } catch (Exception e) {
             LOGGER.info("writeDirectly err:", e);
-            this.close("writeDirectly err:" + e);
+            this.pushInnerServiceTask(ServiceTaskFactory.getInstance(this.getService()).createForForceClose(e.getMessage()));
             return false;
         }
     }
@@ -378,12 +465,8 @@ public abstract class AbstractConnection implements Connection {
         // if async writeDirectly finished event got lock before me ,then writing
         // flag is set false but not start a writeDirectly request
         // so we check again
-        try {
-            this.socketWR.doNextWriteCheck();
-        } catch (Throwable e) {
-            LOGGER.info("writeDirectly err:", e);
-            this.close("writeDirectly err:" + e);
-        }
+        this.socketWR.doNextWriteCheck();
+
     }
 
     public boolean isClosed() {
@@ -458,7 +541,16 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void asyncRead() throws IOException {
-        this.socketWR.asyncRead();
+        try {
+            this.socketWR.asyncRead();
+        } catch (AsynchronousCloseException e) {
+            throw e;
+        } catch (IOException e) {
+            LOGGER.debug("cause exception while read {}, service is {}", e.getMessage(), getService());
+            graceClosedReasons.add(e.getMessage());
+            this.socketWR.disableRead();
+            pushInnerServiceTask(ServiceTaskFactory.getInstance(getService()).createForGracefulClose(graceClosedReasons));
+        }
     }
 
     public void doNextWriteCheck() {

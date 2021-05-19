@@ -9,6 +9,7 @@ import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
@@ -179,7 +180,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 commands.doOther();
                 final MySQLChangeUserService fService = new MySQLChangeUserService(connection, this);
                 connection.setService(fService);
-                fService.handleInnerData(data);
+                fService.consumeSingleTask(new NormalServiceTask(data, this, 0));
                 break;
             default:
                 commands.doOther();

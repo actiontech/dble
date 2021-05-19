@@ -2,12 +2,13 @@ package com.actiontech.dble.net.response;
 
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +65,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
             Optional.ofNullable(service.getSession()).ifPresent(e ->
                     Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r ->
                             r.onBackendSqlEnd(service)));
+            IODelayProvider.beforeErrorResponse(service);
             respHand.errorResponse(data, service);
         } else {
             closeNoHandler();

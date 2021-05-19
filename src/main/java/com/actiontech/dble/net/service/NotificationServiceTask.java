@@ -6,15 +6,18 @@
 
 package com.actiontech.dble.net.service;
 
+import javax.annotation.Nonnull;
+
 /**
  * @author dcy
  * Create Date: 2021-04-16
  */
-public class NotificationServiceTask extends ServiceTask {
+public class NotificationServiceTask extends InnerServiceTask {
     public NotificationServiceTask(Service service) {
-        super(null, service, 0);
+        super(service);
     }
 
+    @Nonnull
     @Override
     public ServiceTaskType getType() {
         return ServiceTaskType.NOTIFICATION;

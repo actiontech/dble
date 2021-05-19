@@ -62,6 +62,8 @@ public class DbleXaRecover extends ManagerBaseTable {
         XAAnalysisHandler xaAnalysisHandler = new XAAnalysisHandler();
         Map<PhysicalDbInstance, List<Map<String, String>>> recoverMap = xaAnalysisHandler.select();
         for (Map.Entry<PhysicalDbInstance, List<Map<String, String>>> rm : recoverMap.entrySet()) {
+            if (rm.getValue() == null)
+                continue;
             for (Map<String, String> recover : rm.getValue()) {
                 LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                 row.put(COLUMN_DBGROUP, rm.getKey().getDbGroup().getGroupName());

@@ -8,6 +8,7 @@ package com.actiontech.dble.cluster;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.converter.DBConverter;
@@ -22,13 +23,15 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 public class ClusterHelpTest {
 
     UserConverter userConverter = new UserConverter();
     ShardingConverter shardingConverter = new ShardingConverter();
-    String sequencePropsToJson = null;
+    RawJson sequencePropsToJson = null;
 
     ConfigInitializer configInitializerByJson = new ConfigInitializer(userConverter.userXmlToJson(), DBConverter.dbXmlToJson(), shardingConverter.shardingXmlToJson(), sequencePropsToJson);
 

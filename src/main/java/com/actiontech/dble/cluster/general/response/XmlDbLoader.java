@@ -5,34 +5,35 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.RawJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/1/26.
  */
-public class XmlDbLoader implements ClusterXmlLoader {
+public class XmlDbLoader extends AbstractGeneralListener<RawJson> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XmlDbLoader.class);
 
 
-    public XmlDbLoader(ClusterClearKeyListener confListener) {
-        confListener.addChild(this, ClusterPathUtil.getDbConfPath());
+    public XmlDbLoader() {
+        super(ClusterChildMetaUtil.getDbConfPath());
     }
 
     @Override
-    public void notifyProcess(KvBean configValue) throws Exception {
-        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        ClusterLogic.syncDbJson(configValue);
+    public void onEvent(ClusterEvent<RawJson> event) throws Exception {
+        ClusterLogic.forConfig().syncDbJson(event.getPath(), event.getValue().getData());
     }
+
 
     @Override
     public void notifyCluster() throws Exception {
-        ClusterLogic.syncDbXmlToCluster();
+        ClusterLogic.forConfig().syncDbXmlToCluster();
     }
 
 }

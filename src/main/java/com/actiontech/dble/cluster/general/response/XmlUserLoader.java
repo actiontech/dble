@@ -5,24 +5,27 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.RawJson;
 
-public class XmlUserLoader implements ClusterXmlLoader {
+public class XmlUserLoader extends AbstractGeneralListener<RawJson> {
 
-    public XmlUserLoader(ClusterClearKeyListener confListener) {
-        confListener.addChild(this, ClusterPathUtil.getUserConfPath());
+    public XmlUserLoader() {
+        super(ClusterChildMetaUtil.getUserConfPath());
     }
+
 
     @Override
-    public void notifyProcess(KvBean configValue) throws Exception {
-        ClusterLogic.syncUserJson(configValue);
+    public void onEvent(ClusterEvent<RawJson> event) throws Exception {
+        ClusterLogic.forConfig().syncUserJson(event.getPath(), event.getValue().getData());
     }
+
 
     @Override
     public void notifyCluster() throws Exception {
-        ClusterLogic.syncUserXmlToCluster();
+        ClusterLogic.forConfig().syncUserXmlToCluster();
     }
 }

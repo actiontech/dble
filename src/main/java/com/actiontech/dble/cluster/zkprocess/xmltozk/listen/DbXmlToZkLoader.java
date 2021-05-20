@@ -6,7 +6,7 @@
 package com.actiontech.dble.cluster.zkprocess.xmltozk.listen;
 
 
-import com.actiontech.dble.cluster.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 
@@ -17,8 +17,7 @@ public class DbXmlToZkLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
-        ClusterLogic.syncDbXmlToCluster();
-        return true;
+    public void notifyProcess() throws Exception {
+        ClusterLogic.forConfig().syncDbXmlToCluster();
     }
 }

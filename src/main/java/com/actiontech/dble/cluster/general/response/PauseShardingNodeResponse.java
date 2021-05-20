@@ -4,10 +4,13 @@
  */
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
-import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.ClusterValue;
+import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,10 +18,10 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.cluster.general.bean.KvBean.DELETE;
+import static com.actiontech.dble.cluster.values.ChangeType.REMOVED;
 
 
-public class PauseShardingNodeResponse implements ClusterXmlLoader {
+public class PauseShardingNodeResponse extends AbstractGeneralListener<PauseInfo> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PauseShardingNodeResponse.class);
 
@@ -27,26 +30,25 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
 
     private final Lock lock = new ReentrantLock();
 
-    public PauseShardingNodeResponse(ClusterClearKeyListener confListener) {
-        confListener.addChild(this, ClusterPathUtil.getPauseResultNodePath());
-        confListener.addChild(this, ClusterPathUtil.getPauseResumePath());
+
+    public PauseShardingNodeResponse() {
+        super(ClusterChildMetaUtil.getPauseShardingNodePath());
     }
+
 
     @Override
-    public void notifyProcess(KvBean configValue) throws Exception {
-        LOGGER.info("get key in PauseShardingNodeResponse:" + configValue.getKey() + "   " + configValue.getValue());
-        if (DELETE.equals(configValue.getChangeType())) {
+    public void onEvent(ClusterEvent<PauseInfo> event) throws Exception {
+        if (REMOVED.equals(event.getChangeType())) {
             return;
         }
-        String key = configValue.getKey();
-        String value = configValue.getValue();
+        String key = event.getPath();
+        ClusterValue<PauseInfo> value = event.getValue();
         if (ClusterPathUtil.getPauseResultNodePath().equals(key)) {
-            waitThread = ClusterLogic.pauseShardingNodeEvent(value, lock);
+            waitThread = ClusterLogic.forPauseResume().pauseShardingNodeEvent(value.getData(), lock);
         } else if (ClusterPathUtil.getPauseResumePath().equals(key)) {
-            ClusterLogic.resumeShardingNodeEvent(value, lock, waitThread);
+            ClusterLogic.forPauseResume().resumeShardingNodeEvent(value.getData(), lock, waitThread);
         }
     }
-
 
 
     /**

@@ -8,6 +8,7 @@ package com.actiontech.dble.config;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
@@ -48,10 +49,10 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile boolean fullyConfigured = false;
     private volatile Map<String, Properties> blacklistConfig;
     private volatile Map<String, AbstractPartitionAlgorithm> functions = Maps.newHashMap();
-    private String dbConfig;
-    private String shardingConfig;
-    private String userConfig;
-    private String sequenceConfig;
+    private RawJson dbConfig;
+    private RawJson shardingConfig;
+    private RawJson userConfig;
+    private RawJson sequenceConfig;
 
     private final List<ErrorInfo> errorInfos = new ArrayList<>();
 
@@ -92,11 +93,14 @@ public class ConfigInitializer implements ProblemReporter {
      * @param shardingConfig
      * @param sequenceConfig
      */
-    public ConfigInitializer(String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) {
+    public ConfigInitializer(RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) {
         init(userConfig, dbConfig, shardingConfig, sequenceConfig, true);
     }
 
-    private void init(String userJson, String dbJson, String shardingJson, String sequenceJson, boolean syncHaStatus) {
+    private void init(RawJson userJson, RawJson dbJson, RawJson shardingJson, RawJson sequenceJson, boolean syncHaStatus) {
+        if (userJson == null || dbJson == null || shardingJson == null) {
+            throw new ConfigException("Config for init not ready yet. Please check local config file or cluster metadata whether exists.");
+        }
         //user
         UserConverter userConverter = new UserConverter();
         userConverter.userJsonToMap(userJson, this);
@@ -341,19 +345,19 @@ public class ConfigInitializer implements ProblemReporter {
         return errorInfos;
     }
 
-    public String getDbConfig() {
+    public RawJson getDbConfig() {
         return dbConfig;
     }
 
-    public String getShardingConfig() {
+    public RawJson getShardingConfig() {
         return shardingConfig;
     }
 
-    public String getUserConfig() {
+    public RawJson getUserConfig() {
         return userConfig;
     }
 
-    public String getSequenceConfig() {
+    public RawJson getSequenceConfig() {
         return sequenceConfig;
     }
 }

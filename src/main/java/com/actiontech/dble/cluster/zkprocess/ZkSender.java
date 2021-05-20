@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.cluster.zkprocess;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
@@ -143,12 +144,12 @@ public class ZkSender implements ClusterSender {
 
 
     @Override
-    public Map<String, String> getOnlineMap() {
+    public Map<String, OnlineType> getOnlineMap() {
         return ZktoXmlMain.getOnlineMap();
     }
 
     @Override
-    public void forceResumePause() {
+    public void forceResumePause() throws Exception {
         ZktoXmlMain.getPauseShardingNodeListener().notifyCluster();
     }
 }

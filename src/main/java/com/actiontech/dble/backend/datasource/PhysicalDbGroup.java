@@ -10,7 +10,9 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
+import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
@@ -22,7 +24,6 @@ import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -293,7 +294,7 @@ public class PhysicalDbGroup {
         return okSources;
     }
 
-    public String disableHosts(String hostNames, boolean syncWriteConf) {
+    public RawJson disableHosts(String hostNames, boolean syncWriteConf) {
         String[] nameList = hostNames == null ? Arrays.copyOf(allSourceMap.keySet().toArray(), allSourceMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
@@ -319,7 +320,7 @@ public class PhysicalDbGroup {
         return snapshot;
     }
 
-    public String enableHosts(String hostNames, boolean syncWriteConf) {
+    public RawJson enableHosts(String hostNames, boolean syncWriteConf) {
         String[] nameList = hostNames == null ? Arrays.copyOf(allSourceMap.keySet().toArray(), allSourceMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
@@ -347,7 +348,7 @@ public class PhysicalDbGroup {
         return snapshot;
     }
 
-    public String switchMaster(String writeHost, boolean syncWriteConf) {
+    public RawJson switchMaster(String writeHost, boolean syncWriteConf) {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
@@ -392,12 +393,12 @@ public class PhysicalDbGroup {
     }
 
 
-    public void changeIntoLatestStatus(String jsonStatus) {
+    public void changeIntoLatestStatus(RawJson jsonStatus) {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
         try {
-            JsonObject jsonObj = new JsonParser().parse(jsonStatus).getAsJsonObject();
+            JsonObject jsonObj = jsonStatus.getJsonObject();
             JsonProcessBase base = new JsonProcessBase();
             Type parseType = new TypeToken<List<DbInstanceStatus>>() {
             }.getType();
@@ -432,16 +433,16 @@ public class PhysicalDbGroup {
         }
     }
 
-    public String getClusterHaJson() {
+    public RawJson getClusterHaJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty(JSON_NAME, this.getGroupName());
         List<DbInstanceStatus> list = new ArrayList<>();
         for (PhysicalDbInstance phys : allSourceMap.values()) {
             list.add(new DbInstanceStatus(phys.getName(), phys.isDisabled(), !phys.isReadInstance()));
         }
-        Gson gson = new Gson();
+        Gson gson = JsonFactory.getJson();
         jsonObject.add(JSON_LIST, gson.toJsonTree(list));
-        return gson.toJson(jsonObject);
+        return RawJson.of(jsonObject);
     }
 
     public boolean checkInstanceExist(String instanceName) {

@@ -5,62 +5,67 @@
 
 package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
+import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.values.ClusterEntry;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.OnlineType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class OfflineStatusListener implements PathChildrenCacheListener {
+public class OfflineStatusListener extends AbstractGeneralListener<OnlineType> {
     private static final Logger LOGGER = LoggerFactory.getLogger(OfflineStatusListener.class);
-    private volatile Map<String, String> onlineMap = new ConcurrentHashMap<>();
-    public Map<String, String> copyOnlineMap() {
+    private volatile Map<String, OnlineType> onlineMap = new ConcurrentHashMap<>();
+
+    public Map<String, OnlineType> copyOnlineMap() {
         return new ConcurrentHashMap<>(onlineMap);
     }
+
     public OfflineStatusListener() throws Exception {
-        List<KvBean> onlineNodes = ClusterHelper.getKVPath(ClusterPathUtil.getOnlinePath());
-        for (KvBean onlineNode : onlineNodes) {
-            onlineMap.put(onlineNode.getKey(), onlineNode.getValue());
+        super(ClusterChildMetaUtil.getOnlinePath());
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.ONLINE);
+        List<ClusterEntry<OnlineType>> onlineNodes = clusterHelper.getKVPath(ClusterChildMetaUtil.getOnlinePath());
+        for (ClusterEntry<OnlineType> onlineNode : onlineNodes) {
+            onlineMap.put(onlineNode.getKey(), onlineNode.getValue().getData());
         }
     }
+
+
     @Override
-    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("event happen:" + event.toString());
-        }
-        ChildData childData = event.getData();
-        switch (event.getType()) {
-            case CHILD_ADDED:
-                String path = childData.getPath();
-                String value = new String(childData.getData(), StandardCharsets.UTF_8);
+    public void onEvent(ClusterEvent<OnlineType> event) throws Exception {
+        switch (event.getChangeType()) {
+            case ADDED:
+                //noinspection deprecation
+            case UPDATED:
+                String path = event.getPath();
+                OnlineType value = event.getValue().getData();
+
                 onlineMap.put(path, value);
+
+
                 break;
-            case CHILD_UPDATED:
-                break;
-            case CHILD_REMOVED:
-                deleteNode(childData);
+            case REMOVED:
+                deleteNode(event);
                 break;
             default:
                 break;
         }
     }
 
-    private void deleteNode(ChildData childData) {
-        String path = childData.getPath();
+
+    private void deleteNode(ClusterEvent<OnlineType> event) {
+        String path = event.getPath();
         onlineMap.remove(path);
         String crashNode = path.substring(path.lastIndexOf("/") + 1);
-        ClusterLogic.checkDDLAndRelease(crashNode);
-        ClusterLogic.checkBinlogStatusRelease(crashNode);
+        ClusterLogic.forDDL().checkDDLAndRelease(crashNode);
+        ClusterLogic.forBinlog().checkBinlogStatusRelease(crashNode);
 
     }
 

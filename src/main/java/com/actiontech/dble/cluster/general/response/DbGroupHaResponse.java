@@ -1,48 +1,53 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ChildPathMeta;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.*;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.DB_GROUP_STATUS;
+import static com.actiontech.dble.cluster.path.ClusterPathUtil.DB_GROUP_STATUS;
 
 /**
  * Created by szf on 2019/10/29.
  */
-public class DbGroupHaResponse implements ClusterXmlLoader {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DdlChildResponse.class);
+public class DbGroupHaResponse extends AbstractGeneralListener<Empty> {
+    public static final ChildPathMeta<Empty> HA_BASE_PATH = ClusterChildMetaUtil.getHaBasePath();
+
+    public DbGroupHaResponse() {
+        super(HA_BASE_PATH);
+    }
 
     @Override
-    public void notifyProcess(KvBean configValue) throws Exception {
+    public void onEvent(ClusterEvent<Empty> configValue) throws Exception {
         if (!DbleServer.getInstance().isStartup()) {
             return;
         }
-        String path = configValue.getKey();
-        String value = configValue.getValue();
+        String path = configValue.getPath();
         String[] paths = path.split(ClusterPathUtil.SEPARATOR);
-        if (paths.length != ClusterLogic.getPathHeight(ClusterPathUtil.getHaBasePath()) + 2) {
+        if (paths.length != ClusterLogic.forHA().getPathHeight(HA_BASE_PATH.getPath()) + 2) {
             //child change the listener is not supported
             return;
         }
-        if (configValue.getChangeType().equals(KvBean.DELETE)) {
+        if (configValue.getChangeType().equals(ChangeType.REMOVED)) {
             return;
         }
 
         String dbGroupName = paths[paths.length - 1];
-        LOGGER.info("notify " + path + " " + value + " " + configValue.getChangeType());
         if (path.contains(DB_GROUP_STATUS)) {
-            ClusterLogic.dbGroupChangeEvent(dbGroupName, value);
+            //ha status ,using rawJson
+            ClusterLogic.forHA().dbGroupChangeEvent(dbGroupName, configValue.getValue().convertTo(RawJson.class).getData());
         } else {
-            ClusterLogic.dbGroupResponseEvent(value, dbGroupName);
+            //ha response,using HaInfo
+            ClusterLogic.forHA().dbGroupResponseEvent(configValue.getValue().convertTo(HaInfo.class).getData(), dbGroupName);
         }
     }
 
 
     @Override
     public void notifyCluster() throws Exception {
-        ClusterLogic.syncDbGroupStatusToCluster();
+        ClusterLogic.forHA().syncDbGroupStatusToCluster();
     }
 }

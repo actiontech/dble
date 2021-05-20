@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess.xmltozk.listen;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.util.KVPathUtil;
@@ -33,7 +33,7 @@ public class OtherMsgTozkLoader implements NotifyService {
     }
 
     @Override
-    public boolean notifyProcess() throws Exception {
+    public void notifyProcess() throws Exception {
         String online = ClusterPathUtil.getOnlinePath();
         ZKPaths.mkdirs(ZKUtils.getConnection().getZookeeperClient().getZooKeeper(), online);
         LOGGER.info("OtherMsgTozkLoader zookeeper mkdir " + online + " success");
@@ -85,7 +85,6 @@ public class OtherMsgTozkLoader implements NotifyService {
             ZKPaths.mkdirs(ZKUtils.getConnection().getZookeeperClient().getZooKeeper(), lockBasePathPath);
             LOGGER.info("OtherMsgTozkLoader zookeeper mkdir " + lockBasePathPath + " success");
         }
-        return true;
     }
 
 }

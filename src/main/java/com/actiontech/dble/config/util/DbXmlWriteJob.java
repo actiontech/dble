@@ -3,7 +3,7 @@ package com.actiontech.dble.config.util;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.cluster.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
@@ -41,7 +41,7 @@ public class DbXmlWriteJob implements Runnable {
     public void run() {
         try {
             List<DBGroup> dbGroupList = dbGroups.getDbGroup();
-            Map<String, DBGroup> dbGroupBeanMap = ClusterLogic.changeFromListToMap(dbGroupList);
+            Map<String, DBGroup> dbGroupBeanMap = ClusterLogic.forHA().changeFromListToMap(dbGroupList);
             for (PhysicalDbGroup dbGroup : changeSet) {
                 DBGroup dbGroupBean = dbGroupBeanMap.get(dbGroup.getGroupName());
                 if (dbGroupBean != null) {

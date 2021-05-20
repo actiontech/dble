@@ -15,6 +15,10 @@ public class DDLInfo {
         INIT, SUCCESS, FAILED
     }
 
+    public enum NodeStatus {
+        PREPARE, COMPLETE
+    }
+
     public enum DDLType {
         CREATE_TABLE, DROP_TABLE, ALTER_TABLE, TRUNCATE_TABLE, CREATE_INDEX, DROP_INDEX, UNKNOWN
     }
@@ -24,7 +28,10 @@ public class DDLInfo {
     private String from;
     private DDLStatus status;
     private DDLType type;
-    private String split = ";";
+    private transient String split = ";";
+
+    public DDLInfo() {
+    }
 
     public DDLInfo(String schema, String sql, String from, DDLStatus ddlStatus, DDLType ddlType) {
         this.schema = schema;
@@ -34,21 +41,6 @@ public class DDLInfo {
         this.type = ddlType;
     }
 
-    public DDLInfo(String info) {
-        String[] infoDetail = info.split(split);
-        this.status = DDLStatus.valueOf(infoDetail[1]);
-        this.type = DDLType.valueOf(infoDetail[2]);
-        this.schema = infoDetail[3];
-        this.from = infoDetail[4];
-        this.sql = infoDetail[5];
-        if (infoDetail.length > 6) {
-            StringBuilder sb = new StringBuilder(this.sql);
-            for (int i = 6; i < infoDetail.length; i++) {
-                sb.append(infoDetail[i]);
-            }
-            this.sql = sb.toString();
-        }
-    }
 
     @Override
     public String toString() {

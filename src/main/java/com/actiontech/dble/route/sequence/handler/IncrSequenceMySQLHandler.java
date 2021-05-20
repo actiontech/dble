@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.util.ConfigException;
@@ -32,7 +33,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     }
 
     @Override
-    public void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+    public void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
         SequenceConverter sequenceConverter = new SequenceConverter();
         Properties props = sequenceConverter.jsonToProperties(sequenceJson);
         props = PropertiesUtil.handleLowerCase(props, isLowerCaseTableNames);

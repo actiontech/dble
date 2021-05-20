@@ -12,6 +12,7 @@ import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
+import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -176,7 +177,7 @@ public abstract class AbstractConnection implements Connection {
                 return false;
             } else {
                 LOGGER.info("can't delay process the service task ,Maybe the connection is not ready yet. try process immediately {}", innerServiceTask.getType());
-                printLocation();
+                DebugUtil.printLocation();
             }
 
             switch (innerServiceTask.getType()) {
@@ -187,21 +188,13 @@ public abstract class AbstractConnection implements Connection {
                     LOGGER.error("illegal service task. {}", innerServiceTask);
                     return false;
             }
+            return true;
         }
         service.handle(innerServiceTask);
         return true;
     }
 
-    private void printLocation() {
-        if (LOGGER.isDebugEnabled()) {
-            try {
-                throw new RuntimeException();
-            } catch (Exception e) {
-                LOGGER.debug("location", e);
-            }
 
-        }
-    }
 
 
     private void handle(ByteBuffer dataBuffer) {

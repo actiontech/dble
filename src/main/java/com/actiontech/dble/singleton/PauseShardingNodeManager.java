@@ -6,10 +6,14 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
-import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterValue;
+import com.actiontech.dble.cluster.values.FeedBackType;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -26,7 +30,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +50,7 @@ public final class PauseShardingNodeManager {
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
     private volatile DistributeLock distributeLock = null;
-
+    private final ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.PAUSE_RESUME);
     private volatile PauseEndThreadPool pauseThreadPool = null;
     private PauseInfo currentParseInfo;
 
@@ -74,8 +77,7 @@ public final class PauseShardingNodeManager {
      */
     public void fetchClusterStatus() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            DistributeLock tempPauseLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
-                    SystemConfig.getInstance().getInstanceName());
+            DistributeLock tempPauseLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getPauseShardingNodeLockPath());
             boolean locked = false;
             try {
                 for (int i = 0; i < 5; i++) {
@@ -96,11 +98,10 @@ public final class PauseShardingNodeManager {
                     throw new IllegalStateException(msg);
                 }
                 LOGGER.info("fetched Pause lock");
-                final KvBean pauseResultNode = ClusterHelper.getKV(ClusterPathUtil.getPauseResultNodePath());
-                if (pauseResultNode != null && Strings.isNotEmpty(pauseResultNode.getValue())) {
+                final PauseInfo pauseInfo = clusterHelper.getPathValue(ClusterMetaUtil.getPauseResultNodePath()).map(ClusterValue::getData).orElse(null);
+                if (pauseInfo != null) {
                     //cluster is Pausing
-                    LOGGER.info("get pause  value :{}", pauseResultNode.getValue());
-                    final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
+                    LOGGER.info("get pause  value :{}", pauseInfo);
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(pauseInfo.getShardingNodes().split(",")));
 
                     //pause self
@@ -267,37 +268,35 @@ public final class PauseShardingNodeManager {
 
     public void clusterPauseNotice(String shardingNode, int timeOut, int queueLimit) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            final KvBean pauseResultNode = ClusterHelper.getKV(ClusterPathUtil.getPauseResultNodePath());
-            if (pauseResultNode != null && Strings.isNotEmpty(pauseResultNode.getValue())) {
-                final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
+            final PauseInfo pauseInfo = clusterHelper.getPathValue(ClusterMetaUtil.getPauseResultNodePath()).map(ClusterValue::getData).orElse(null);
+            if (pauseInfo != null) {
                 if ((!Objects.equals(shardingNode, pauseInfo.getShardingNodes())) || (!Objects.equals(timeOut, pauseInfo.getConnectionTimeOut()) || (!Objects.equals(queueLimit, pauseInfo.getQueueLimit())))) {
                     throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You can't run different PAUSE commands at the same time. Please resume previous PAUSE command first.");
                 }
-                if (isSelfPause(pauseResultNode)) {
+                if (isSelfPause(pauseInfo)) {
                     throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "You are paused cluster already");
                 } else {
                     throw new MySQLOutPutException(ErrorCode.ER_UNKNOWN_ERROR, "", "Other node in cluster is pausing");
                 }
             }
-            ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(),
-                    new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
+            clusterHelper.setKV(ClusterMetaUtil.getPauseResultNodePath(),
+                    new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit));
             LOGGER.debug("set cluster status for notice done.");
         }
     }
 
 
-    public boolean isSelfPause(KvBean pauseResultNode) {
-        final PauseInfo pauseInfo = new PauseInfo(pauseResultNode.getValue());
+    public boolean isSelfPause(PauseInfo pauseInfo) {
         return (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName()));
     }
 
     public boolean waitForCluster(ManagerService service, long beginTime, long timeOut) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), ClusterPathUtil.SUCCESS);
-            Map<String, String> expectedMap = ClusterHelper.getOnlineMap();
-            StringBuffer sb = new StringBuffer();
+            clusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), FeedBackType.SUCCESS);
+            Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
+            StringBuilder sb = new StringBuilder();
             for (; ; ) {
-                if (ClusterLogic.checkResponseForOneTime(null, ClusterPathUtil.getPauseResultNodePath(), expectedMap, sb)) {
+                if (ClusterLogic.forPauseResume().checkResponseForOneTime(ClusterPathUtil.getPauseResultNodePath(), expectedMap, sb)) {
                     if (sb.length() == 0) {
                         return true;
                     } else {
@@ -322,12 +321,12 @@ public final class PauseShardingNodeManager {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
 
-            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
-                    new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
+            clusterHelper.setKV(ClusterMetaUtil.getPauseResumePath(),
+                    new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0));
             LOGGER.info("try to resume cluster and waiting for others to response");
 
-            ClusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(), "");
-            ClusterLogic.waitingForAllTheNode(ClusterPathUtil.getPauseResumePath(), "");
+            clusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResumePath(), FeedBackType.SUCCESS);
+            ClusterLogic.forPauseResume().waitingForAllTheNode(ClusterPathUtil.getPauseResumePath());
 
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResumePath());
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseResultNodePath());
@@ -348,8 +347,7 @@ public final class PauseShardingNodeManager {
 
     public boolean getDistributeLock() {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            DistributeLock templock = ClusterHelper.createDistributeLock(ClusterPathUtil.getPauseShardingNodeLockPath(),
-                    SystemConfig.getInstance().getInstanceName());
+            DistributeLock templock = clusterHelper.createDistributeLock(ClusterMetaUtil.getPauseShardingNodeLockPath());
             if (!templock.acquire()) {
                 return false;
             }

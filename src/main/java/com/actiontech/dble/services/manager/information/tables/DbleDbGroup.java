@@ -7,7 +7,8 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.HeartBeat;
@@ -129,7 +130,7 @@ public class DbleDbGroup extends ManagerWritableTable {
 
         List<DBGroup> dbGroupList = affectPks.stream().map(this::transformRowToDBGroup).collect(Collectors.toList());
         DBConverter dbConverter = new DBConverter();
-        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
         DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         for (DBGroup dbGroup : dbGroupList) {
@@ -166,13 +167,13 @@ public class DbleDbGroup extends ManagerWritableTable {
         }
 
         DBConverter dbConverter = new DBConverter();
-        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
         DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
         for (LinkedHashMap<String, String> affectPk : dbGroupRows) {
             dbGroups.getDbGroup().removeIf(dbGroup -> StringUtil.equals(dbGroup.getName(), affectPk.get(COLUMN_NAME)));
         }
 
-        String dbGroupJson = DBConverter.dbBeanToJson(dbGroups);
+        RawJson dbGroupJson = DBConverter.dbBeanToJson(dbGroups);
         DbleTempConfig.getInstance().setDbConfig(dbGroupJson);
         return affectPks.size();
     }
@@ -254,8 +255,8 @@ public class DbleDbGroup extends ManagerWritableTable {
                 String rwSplitModeStr = row.get(COLUMN_RW_SPLIT_MODE);
                 if (!StringUtil.isBlank(rwSplitModeStr)) {
                     int rwSplitMode = IntegerUtil.parseInt(rwSplitModeStr);
-                    if (rwSplitMode > 2 || rwSplitMode < 0) {
-                        throw new ConfigException("rwSplitMode should be between 0 and 2!");
+                    if (rwSplitMode > 3 || rwSplitMode < 0) {
+                        throw new ConfigException("rwSplitMode should be between 0 and 3!");
                     }
                 }
             }

@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.config.model;
 
+import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -184,7 +184,7 @@ public final class ClusterConfig {
     }
 
     public Properties toProperties() {
-        String strJson = new Gson().toJson(ClusterConfig.getInstance());
+        String strJson = JsonFactory.getJson().toJson(ClusterConfig.getInstance());
         Properties props = new Properties();
         JsonObject jsonObject = new JsonParser().parse(strJson).getAsJsonObject();
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {

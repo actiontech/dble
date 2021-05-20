@@ -8,9 +8,11 @@ package com.actiontech.dble.services.manager.response.ha;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.values.HaInfo;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -31,6 +33,8 @@ public final class DbGroupHaEnable {
     }
 
     public static void execute(Matcher enable, ManagerService service) {
+
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         String dbGroupName = enable.group(1);
         String dbInstanceName = enable.group(3);
         //check the dbGroup is exists
@@ -58,9 +62,9 @@ public final class DbGroupHaEnable {
                     }
                 } else {
                     try {
-                        String result = dbGroup.enableHosts(dbInstanceName, true);
+                        RawJson result = dbGroup.enableHosts(dbInstanceName, true);
                         //only update for the status
-                        ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dbGroup.getGroupName()), result);
+                        clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dbGroup.getGroupName()), result);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
                         service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
@@ -69,7 +73,7 @@ public final class DbGroupHaEnable {
                 }
             } else {
                 try {
-                    String result = dbGroup.enableHosts(dbInstanceName, true);
+                    RawJson result = dbGroup.enableHosts(dbInstanceName, true);
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
@@ -90,13 +94,14 @@ public final class DbGroupHaEnable {
     }
 
     private static boolean enableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc) {
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         //get the lock from ucore
-        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.ENABLE,
                         HaInfo.HaStatus.INIT
-                ).toString()
+                )
         );
 
         if (!distributeLock.acquire()) {
@@ -104,9 +109,9 @@ public final class DbGroupHaEnable {
             return false;
         }
         try {
-            String result = dh.enableHosts(subHostName, false);
+            RawJson result = dh.enableHosts(subHostName, false);
             //only update for the status
-            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);
+            clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dh.getGroupName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
         } catch (Exception e) {
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());

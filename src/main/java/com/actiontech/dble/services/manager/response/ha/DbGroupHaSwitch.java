@@ -8,14 +8,16 @@ package com.actiontech.dble.services.manager.response.ha;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.values.HaInfo;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +62,7 @@ public final class DbGroupHaSwitch {
             } else {
                 try {
                     //dble start in single mode
-                    String result = dh.switchMaster(masterName, true);
+                    RawJson result = dh.switchMaster(masterName, true);
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
@@ -81,20 +83,21 @@ public final class DbGroupHaSwitch {
 
     private static boolean switchWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc) {
         //get the lock from ucore
-        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
+        DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.SWITCH,
                         HaInfo.HaStatus.INIT
-                ).toString()
+                )
         );
         if (!distributeLock.acquire()) {
             mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
             return false;
         }
         try {
-            String result = dh.switchMaster(subHostName, false);
-            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);
+            RawJson result = dh.switchMaster(subHostName, false);
+            clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dh.getGroupName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
         } catch (Exception e) {
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());

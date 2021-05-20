@@ -26,12 +26,15 @@ public class HaInfo {
     }
 
 
-    private final HaType lockType;
-    private final String startId;
-    private final String dbGroupName;
+    private HaType lockType;
+    private String startId;
+    private String dbGroupName;
 
-    private final HaStatus status;
+    private HaStatus status;
     private String split = ";";
+
+    public HaInfo() {
+    }
 
     public HaInfo(String dbGroupName, String startId, HaType lockType, HaStatus status) {
         this.lockType = lockType;
@@ -40,13 +43,6 @@ public class HaInfo {
         this.status = status;
     }
 
-    public HaInfo(String kv) {
-        String[] infoDetail = kv.split(split);
-        this.lockType = HaType.valueOf(infoDetail[0]);
-        this.startId = infoDetail[1];
-        this.dbGroupName = infoDetail[2];
-        this.status = HaStatus.valueOf(infoDetail[3]);
-    }
 
     public HaType getLockType() {
         return lockType;

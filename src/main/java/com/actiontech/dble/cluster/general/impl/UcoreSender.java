@@ -18,7 +18,6 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.PropertiesUtil;
-import com.actiontech.dble.util.StringUtil;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -94,7 +93,7 @@ public final class UcoreSender extends AbstractConsulSender {
                         while (!Thread.currentThread().isInterrupted()) {
                             try {
                                 LOGGER.debug("renew lock of session  start:" + sessionId + " " + path);
-                                if (StringUtil.isEmpty(ClusterHelper.getPathValue(path))) {
+                                if (!Boolean.TRUE.equals(ClusterHelper.isExist(path))) {
                                     log("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ", null);
                                     // alert
                                     Thread.currentThread().interrupt();
@@ -296,6 +295,7 @@ public final class UcoreSender extends AbstractConsulSender {
         cleanKV(path.substring(0, path.length() - 1));
     }
 
+    @Override
     public void cleanKV(String path) {
         UcoreInterface.DeleteKvInput input = UcoreInterface.DeleteKvInput.newBuilder().setKey(path).build();
         try {

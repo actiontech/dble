@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.values.ClusterEvent;
 
 /**
  * Created by szf on 2018/1/26.
  */
 public interface ClusterXmlLoader {
 
-    void notifyProcess(KvBean configValue) throws Exception;
+    void notifyProcess(ClusterEvent<?> configValue, boolean ignoreTheGrandChild) throws Exception;
 
     void notifyCluster() throws Exception;
 }

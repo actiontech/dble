@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -35,7 +36,7 @@ import java.util.Map;
  * @author mycat
  */
 public final class ShowConnection {
-    private static final int FIELD_COUNT = 20;
+    private static final int FIELD_COUNT = 21;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -103,6 +104,9 @@ public final class ShowConnection {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("USER_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("XA_ID", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -246,6 +250,12 @@ public final class ShowConnection {
         row.add(autocommit.getBytes());
         row.add(StringUtil.encode(service.getStringOfSysVariables(), charset));
         row.add(StringUtil.encode(service.getStringOfUsrVariables(), charset));
+        if (service instanceof ShardingService) {
+            String xaid = ((ShardingService) service).getSession2().getSessionXaID();
+            row.add(StringUtil.encode(xaid == null ? "NULL" : xaid, charset));
+        } else {
+            row.add(StringUtil.encode("-", charset));
+        }
         return row;
     }
 

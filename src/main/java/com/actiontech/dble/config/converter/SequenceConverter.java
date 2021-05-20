@@ -4,6 +4,7 @@
  */
 package com.actiontech.dble.config.converter;
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.route.util.OrderedProperties;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.google.gson.Gson;
@@ -18,15 +19,15 @@ public class SequenceConverter {
 
     private String fileName;
 
-    public static String sequencePropsToJson(String fileName) {
+    public static RawJson sequencePropsToJson(String fileName) {
         JsonObject jsonObject = new JsonObject();
         Map<String, String> properties = PropertiesUtil.getOrderedMap(fileName);
         jsonObject.addProperty(fileName, (new Gson()).toJson(properties));
-        return (new Gson()).toJson(jsonObject);
+        return RawJson.of(jsonObject);
     }
 
-    public Properties jsonToProperties(String sequenceJson) {
-        JsonObject jsonObj = new JsonParser().parse(sequenceJson).getAsJsonObject();
+    public Properties jsonToProperties(RawJson sequenceJson) {
+        JsonObject jsonObj = sequenceJson.getJsonObject();
         Map.Entry<String, JsonElement> sequenceEntry = jsonObj.entrySet().iterator().next();
         if (null == sequenceEntry) {
             return null;

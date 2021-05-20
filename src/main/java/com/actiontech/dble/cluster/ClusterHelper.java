@@ -1,92 +1,139 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ChildPathMeta;
+import com.actiontech.dble.cluster.path.PathMeta;
+import com.actiontech.dble.cluster.values.*;
+import org.apache.logging.log4j.util.Strings;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by szf on 2019/3/11.
  */
 public final class ClusterHelper {
-    private ClusterHelper() {
+    private final ClusterOperation operation;
 
+    private ClusterHelper(ClusterOperation operation) {
+        this.operation = operation;
     }
 
-    public static void setKV(String path, String value) throws Exception {
-        ClusterGeneralConfig.getInstance().getClusterSender().setKV(path, value);
+    public static ClusterHelper getInstance(ClusterOperation operation) {
+        return new ClusterHelper(operation);
     }
 
 
-    public static void createSelfTempNode(String path, String value) throws Exception {
-        ClusterGeneralConfig.getInstance().getClusterSender().createSelfTempNode(path, value);
-    }
-
-    @Nullable
-    public static KvBean getKV(String path) throws Exception {
+    @Nonnull
+    public <T> Optional<ClusterValue<T>> getPathValue(PathMeta<T> path) throws Exception {
         if (ClusterGeneralConfig.getInstance().getClusterSender() == null) {
-            return null;
+            return Optional.empty();
         }
-        return ClusterGeneralConfig.getInstance().getClusterSender().getKV(path);
+        final KvBean data = ClusterGeneralConfig.getInstance().getClusterSender().getKV(path.getPath());
+        if (isNotEmptyValue(data)) {
+            return Optional.ofNullable(ClusterValue.readFromJson(data.getValue(), path.getTClass()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * ignore the node with empty value.
+     */
+    private static boolean isNotEmptyValue(KvBean kvBean) {
+        return kvBean != null && !Strings.isEmpty(kvBean.getValue());
+    }
+
+    public int getChildrenSize(String path) throws Exception {
+        return ClusterLogic.forCommon(operation).getKVBeanOfChildPath(ChildPathMeta.of(path, Empty.class)).size();
+    }
+
+
+    public <T> List<ClusterEntry<T>> getKVPath(ChildPathMeta<T> meta) throws Exception {
+        if (null == ClusterGeneralConfig.getInstance().getClusterSender()) {
+            return Collections.EMPTY_LIST;
+        } else {
+            final List<KvBean> kvPath = ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(meta.getPath());
+            List<ClusterEntry<T>> list = new ArrayList<>();
+            for (KvBean kvBean : kvPath) {
+                if (isNotEmptyValue(kvBean)) {
+                    list.add(new ClusterEntry<T>(kvBean.getKey(), ClusterValue.readFromJson(kvBean.getValue(), meta.getChildClass())));
+                }
+            }
+            return list;
+        }
+    }
+
+    public <T> void setKV(PathMeta<T> pathMeta, @Nonnull T value) throws Exception {
+        ClusterGeneralConfig.getInstance().getClusterSender().setKV(pathMeta.getPath(), constructAndSerializeValue(value));
+    }
+
+    public DistributeLock createDistributeLock(PathMeta<Empty> path) {
+        return createDistributeLock(path, new Empty());
+    }
+
+    public <T> DistributeLock createDistributeLock(PathMeta<T> path, @Nonnull T value) {
+        return ClusterGeneralConfig.getInstance().getClusterSender().createDistributeLock(path.getPath(), constructAndSerializeValue(value));
+    }
+
+    public <T> DistributeLock createDistributeLock(PathMeta<T> path, @Nonnull T value, int maxErrorCnt) {
+        return ClusterGeneralConfig.getInstance().getClusterSender().createDistributeLock(path.getPath(), constructAndSerializeValue(value), maxErrorCnt);
+    }
+
+    public <T> void createSelfTempNode(String path, @Nonnull FeedBackType value) throws Exception {
+        ClusterGeneralConfig.getInstance().getClusterSender().createSelfTempNode(path, constructAndSerializeValue(value));
     }
 
     public static void cleanKV(String path) throws Exception {
         ClusterGeneralConfig.getInstance().getClusterSender().cleanKV(path);
     }
 
-    public static int getChildrenSize(String path) throws Exception {
-        return ClusterLogic.getKVBeanOfChildPath(path).size();
+
+    public static void cleanKV(PathMeta<?> pathMeta) throws Exception {
+        cleanKV(pathMeta.getPath());
     }
+
 
     public static void cleanPath(String path) {
         ClusterGeneralConfig.getInstance().getClusterSender().cleanPath(path);
     }
 
-    public static DistributeLock createDistributeLock(String path, String value) {
-        return ClusterGeneralConfig.getInstance().getClusterSender().createDistributeLock(path, value);
+    public static void cleanPath(PathMeta<?> pathMeta) throws Exception {
+        cleanPath(pathMeta.getPath());
     }
 
 
-    public static DistributeLock createDistributeLock(String path, String value, int maxErrorCnt) {
-        return ClusterGeneralConfig.getInstance().getClusterSender().createDistributeLock(path, value, maxErrorCnt);
-    }
-
-    public static Map<String, String> getOnlineMap() {
+    public static Map<String, OnlineType> getOnlineMap() {
         return ClusterGeneralConfig.getInstance().getClusterSender().getOnlineMap();
     }
 
     public static void writeConfToCluster() throws Exception {
-        ClusterLogic.syncSequenceJsonToCluster();
-        ClusterLogic.syncDbJsonToCluster();
-        ClusterLogic.syncShardingJsonToCluster();
-        ClusterLogic.syncUseJsonToCluster();
-        ClusterLogic.syncDbGroupStatusToCluster();
+        ClusterLogic.forConfig().syncSequenceJsonToCluster();
+        ClusterLogic.forConfig().syncDbJsonToCluster();
+        ClusterLogic.forConfig().syncShardingJsonToCluster();
+        ClusterLogic.forConfig().syncUseJsonToCluster();
+        ClusterLogic.forHA().syncDbGroupStatusToCluster();
     }
 
-    public static String getPathValue(String path) throws Exception {
-        KvBean kv = getKV(path);
-        if (kv == null) {
+    @Nullable
+    public static Boolean isExist(String path) throws Exception {
+        if (ClusterGeneralConfig.getInstance().getClusterSender() == null) {
             return null;
-        } else {
-            return kv.getValue();
         }
-    }
-
-
-    public static String getPathKey(String path) throws Exception {
-        KvBean kv = getKV(path);
-        if (kv == null) {
-            return null;
-        } else {
-            return kv.getKey();
+        final KvBean data = ClusterGeneralConfig.getInstance().getClusterSender().getKV(path);
+        if (isNotEmptyValue(data)) {
+            return Boolean.TRUE;
         }
+        return Boolean.FALSE;
     }
 
-    public static List<KvBean> getKVPath(String path) throws Exception {
-        return null == ClusterGeneralConfig.getInstance().getClusterSender() ? Collections.EMPTY_LIST : ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path);
+
+    private <T> String constructAndSerializeValue(@Nonnull T value) {
+        return ClusterValue.constructForWrite(value, operation.getApiVersion()).toJson();
     }
+
 
     public static void forceResumePause() throws Exception {
         ClusterGeneralConfig.getInstance().getClusterSender().forceResumePause();

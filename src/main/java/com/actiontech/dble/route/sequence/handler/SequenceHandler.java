@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.cluster.values.RawJson;
+
 import java.sql.SQLNonTransientException;
 
 /**
@@ -18,7 +20,7 @@ public interface SequenceHandler {
 
     void load(boolean isLowerCaseTableNames);
 
-    default void loadByJson(boolean isLowerCaseTableNames, String sequenceJson) {
+    default void loadByJson(boolean isLowerCaseTableNames, RawJson sequenceJson) {
     }
 
 }

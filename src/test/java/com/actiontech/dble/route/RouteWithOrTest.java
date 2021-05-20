@@ -271,7 +271,7 @@ public class RouteWithOrTest {
         try {
             ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
             DefaultRouteStrategy x = new DefaultRouteStrategy();
-            SQLStatement statement = x.parserSQL(sql, null);
+            SQLStatement statement = x.parserSQL(sql);
             statement.accept(visitor);
 
             DefaultDruidParser parser = new DefaultDruidParser();

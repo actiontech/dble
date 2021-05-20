@@ -25,7 +25,7 @@ import java.util.Map;
 
 public final class DbleFrontConnections extends ManagerBaseTable {
     public DbleFrontConnections() {
-        super("session_connections", 20);
+        super("session_connections", 21);
     }
 
     @Override
@@ -88,6 +88,9 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         columns.put("in_transaction", new ColumnMeta("in_transaction", "varchar(5)", false));
         columnsType.put("in_transaction", Fields.FIELD_TYPE_VAR_STRING);
 
+        columns.put("xa_id", new ColumnMeta("xa_id", "varchar(5)", false));
+        columnsType.put("xa_id", Fields.FIELD_TYPE_VAR_STRING);
+
         columns.put("entry_id", new ColumnMeta("entry_id", "int(11)", false));
         columnsType.put("entry_id", Fields.FIELD_TYPE_LONG);
     }
@@ -132,9 +135,16 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         if (c.isManager()) {
             row.put("sql_stage", "Manager connection");
             row.put("in_transaction", "Manager connection");
+            row.put("xa_id", "-");
         } else {
             row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
             row.put("in_transaction", String.valueOf(((ShardingService) service).isTxStart() || !service.isAutocommit()));
+            if (service instanceof ShardingService) {
+                String xaid = ((ShardingService) service).getSession2().getSessionXaID();
+                row.put("xa_id", xaid == null ? "NULL" : xaid);
+            } else {
+                row.put("xa_id", "-");
+            }
         }
         row.put("schema", service.getSchema() == null ? "NULL" : service.getSchema());
         row.put("conn_net_in", c.getNetInBytes() + "");

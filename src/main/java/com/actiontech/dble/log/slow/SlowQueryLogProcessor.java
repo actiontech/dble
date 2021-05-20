@@ -71,8 +71,7 @@ public class SlowQueryLogProcessor extends Thread {
                 }
             }
         } catch (IOException e) {
-            LOGGER.info("transaction log error:", e);
-            store.close();
+            LOGGER.info("slow log write error:", e);
         } finally {
             scheduler.shutdown();
             flushLog();

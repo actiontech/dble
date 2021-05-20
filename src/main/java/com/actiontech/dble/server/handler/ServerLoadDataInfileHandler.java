@@ -216,6 +216,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     if (rrs != null) {
                         flushDataToFile();
                         isStartLoadData = false;
+                        serverConnection.getSession2().endParse();
                         serverConnection.getSession2().execute(rrs);
                     }
                 }
@@ -643,6 +644,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = buildResultSet(routeResultMap);
         if (rrs != null) {
             flushDataToFile();
+            serverConnection.getSession2().endParse();
             serverConnection.getSession2().execute(rrs);
         }
     }
@@ -730,7 +732,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     /**
      * check if the sql is contain the partition. If the sql contain the partition word then stopped.
-     *
      */
     private boolean checkPartition(String strSql) {
         Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)", Pattern.CASE_INSENSITIVE);
@@ -741,7 +742,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     /**
      * use a Regular Expression to replace the "IGNORE    1234 LINES" to the " "
-     *
      */
     private String ignoreLinesDelete(String strSql) {
         Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES", Pattern.CASE_INSENSITIVE);
@@ -812,7 +812,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     /**
      * deleteFile and its children
-     *
      */
     private static void deleteFile(String dirPath) {
         File fileDirToDel = new File(dirPath);

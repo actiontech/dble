@@ -32,7 +32,7 @@ public class HintShardingNodeHandler implements HintHandler {
                                 String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("route shardingnode sql hint from " + realSQL);
+            LOGGER.debug("route shardingNode sql hint from " + realSQL);
         }
 
         RouteResultset rrs = new RouteResultset(realSQL, sqlType);
@@ -48,6 +48,7 @@ public class HintShardingNodeHandler implements HintHandler {
             throw new SQLNonTransientException(msg);
         }
 
+        sc.getSession2().endParse();
         return rrs;
     }
 

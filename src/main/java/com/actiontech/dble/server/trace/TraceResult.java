@@ -124,6 +124,7 @@ public class TraceResult implements Cloneable {
     public synchronized void addToConnReceivedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
         Map<MySQLConnection, TraceRecord> existReceivedMap = connReceivedMap.putIfAbsent(responseHandler, connMap);
         if (existReceivedMap != null) {
+            LOGGER.info("existing responseHandler {}", responseHandler);
             existReceivedMap.putAll(connMap);
         }
     }
@@ -669,6 +670,17 @@ public class TraceResult implements Cloneable {
             TraceRecord fetchStartRecord = fetchStart.getValue();
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
             executeList.add(genLogRecord(fetchStartRecord.getDataNode() + "_First_Result_Fetch", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp()));
+            if (connFetchEndMap == null) {
+                LOGGER.info("simpleHandler {}", simpleHandler);
+                for (Map.Entry<ResponseHandler, Map<MySQLConnection, TraceRecord>> entry : connFinishedMap.entrySet()) {
+                    LOGGER.info("ResponseHandler in finishedMap is {}", entry.getKey());
+                    for (Map.Entry<MySQLConnection, TraceRecord> recordEntry : entry.getValue().entrySet()) {
+                        LOGGER.info("MySQLConnection in finishedMap is {}", recordEntry.getKey());
+
+                    }
+                }
+                return true;
+            }
             TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
             if (fetchEndRecord == null) {
                 LOGGER.debug("connection fetchEndRecord is null ");

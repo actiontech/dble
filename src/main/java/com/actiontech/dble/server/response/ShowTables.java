@@ -108,6 +108,7 @@ public final class ShowTables {
         }
         RouterUtil.routeToSingleNode(rrs, node);
         ShowTablesHandler showTablesHandler = new ShowTablesHandler(rrs, c.getSession2(), info);
+        c.getSession2().setPreExecuteEnd(false);
         showTablesHandler.execute();
     }
 

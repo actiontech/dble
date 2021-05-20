@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
@@ -108,8 +108,8 @@ public class MySQLConnection extends BackendAIOConnection {
     private boolean isAuthenticated;
     private String user;
     private String password;
-    private Object attachment;
-    private ResponseHandler respHandler;
+    private volatile Object attachment;
+    private volatile ResponseHandler respHandler;
 
     private final AtomicBoolean isQuit;
 
@@ -126,7 +126,7 @@ public class MySQLConnection extends BackendAIOConnection {
         this.autocommit = true;
         this.fromSlaveDB = fromSlaveDB;
         /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
-        *  it need to sync the status firstly for new idle connection*/
+         *  it need to sync the status firstly for new idle connection*/
         this.txIsolation = -1;
         this.complexQuery = false;
         this.usrVariables = new LinkedHashMap<>();
@@ -942,7 +942,6 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
-
 
 
 }

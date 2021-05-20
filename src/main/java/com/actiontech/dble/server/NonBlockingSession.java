@@ -145,7 +145,6 @@ public class NonBlockingSession implements Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             requestTime = System.nanoTime();
             traceResult.setVeryStartPrepare(requestTime);
-            traceResult.setRequestStartPrepare(new TraceRecord(requestTime));
         }
         if (SystemConfig.getInstance().getUseCostTimeStat() == 0) {
             return;

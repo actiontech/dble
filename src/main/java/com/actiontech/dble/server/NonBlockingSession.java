@@ -141,7 +141,6 @@ public class NonBlockingSession implements Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             requestTime = System.nanoTime();
             traceResult.setVeryStartPrepare(requestTime);
-            traceResult.setRequestStartPrepare(new TraceRecord(requestTime));
         }
         if (DbleServer.getInstance().getConfig().getSystem().getUseCostTimeStat() == 0) {
             return;

@@ -17,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 
 public class SlowQueryLogProcessor extends Thread {
@@ -55,8 +55,9 @@ public class SlowQueryLogProcessor extends Thread {
                 if (log == null) {
                     continue;
                 }
-                writeLog(log);
-                logSize++;
+                if (writeLog(log)) {
+                    logSize++;
+                }
                 synchronized (this) {
                     if ((logSize - lastLogSize) % SlowQueryLog.getInstance().getFlushSize() == 0) {
                         flushLog();
@@ -65,29 +66,33 @@ public class SlowQueryLogProcessor extends Thread {
             }
             // disable slow_query_log, end task
             while ((log = queue.poll()) != null) {
-                writeLog(log);
-                logSize++;
+                if (writeLog(log)) {
+                    logSize++;
+                }
             }
-            scheduler.shutdown();
-            flushLog();
-            store.close();
         } catch (IOException e) {
             LOGGER.info("transaction log error:", e);
+            store.close();
+        } finally {
+            scheduler.shutdown();
+            flushLog();
             store.close();
         }
     }
 
-    private synchronized void writeLog(SlowQueryLogEntry log) throws IOException {
+    private synchronized boolean writeLog(SlowQueryLogEntry log) throws IOException {
         if (log == null)
-            return;
+            return false;
         byte[] data;
         try {
-            data = log.toString().getBytes("utf-8");
-        } catch (UnsupportedEncodingException e) {
-            return;
+            data = log.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            LOGGER.warn("generate write log error ", e);
+            return false;
         }
         ByteBuffer buffer = ByteBuffer.wrap(data);
         store.write(buffer);
+        return true;
     }
 
     private void flushLog() {

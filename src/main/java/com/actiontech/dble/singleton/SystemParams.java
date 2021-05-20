@@ -132,7 +132,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("enableCursor", Boolean.valueOf(sysConfig.isEnableCursor()).toString(), "Whether the server-side cursor  is enable or not. The default value is false"));
         readOnlyParams.add(new ParamInfo("maxHeapTableSize", sysConfig.getMaxHeapTableSize() + "B", "Used for temp table persistence of cursor, temp table which size larger than that will save to disk."));
         readOnlyParams.add(new ParamInfo("heapTableBufferChunkSize", sysConfig.getHeapTableBufferChunkSize() + "B", "Used for temp table persistence of cursor, setting for read-buffer size."));
-        readOnlyParams.add(new ParamInfo("statisticQueueSize", StatisticManager.getInstance().getStatisticQueueSize() + "", "Sets the queue size for statistic, value must not be less than 1 and must be a power of 2,The default value is 4096"));
+        readOnlyParams.add(new ParamInfo("statisticQueueSize", StatisticManager.getInstance().getStatisticQueueSize() + "", "Sets the queue size for statistic, value must not be less than 1 and must be a power of 2,the default value is 4096"));
+        readOnlyParams.add(new ParamInfo("inSubQueryTransformToJoin", sysConfig.isInSubQueryTransformToJoin() + "", "The inSubQuery is transformed into the join ,the default value is false"));
     }
 
     public List<ParamInfo> getVolatileParams() {

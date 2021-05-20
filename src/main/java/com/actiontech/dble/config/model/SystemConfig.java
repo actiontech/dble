@@ -186,6 +186,10 @@ public final class SystemConfig {
     private int samplingRate = 0;
     private int sqlLogTableSize = 1024;
 
+    //use inSubQueryTransformToJoin
+    private boolean inSubQueryTransformToJoin = false;
+
+
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1376,6 +1380,14 @@ public final class SystemConfig {
         }
     }
 
+    public boolean isInSubQueryTransformToJoin() {
+        return inSubQueryTransformToJoin;
+    }
+
+    public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
+        this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1470,6 +1482,7 @@ public final class SystemConfig {
                 ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
+                ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
                 "]";
     }
 }

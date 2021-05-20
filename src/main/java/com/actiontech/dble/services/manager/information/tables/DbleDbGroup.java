@@ -255,8 +255,8 @@ public class DbleDbGroup extends ManagerWritableTable {
                 String rwSplitModeStr = row.get(COLUMN_RW_SPLIT_MODE);
                 if (!StringUtil.isBlank(rwSplitModeStr)) {
                     int rwSplitMode = IntegerUtil.parseInt(rwSplitModeStr);
-                    if (rwSplitMode > 2 || rwSplitMode < 0) {
-                        throw new ConfigException("rwSplitMode should be between 0 and 2!");
+                    if (rwSplitMode > 3 || rwSplitMode < 0) {
+                        throw new ConfigException("rwSplitMode should be between 0 and 3!");
                     }
                 }
             }

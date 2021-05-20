@@ -33,7 +33,7 @@ public class HintDataNodeHandler implements HintHandler {
                                 LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("route datanode sql hint from " + realSQL);
+            LOGGER.debug("route dataNode sql hint from " + realSQL);
         }
 
         RouteResultset rrs = new RouteResultset(realSQL, sqlType);
@@ -44,11 +44,11 @@ public class HintDataNodeHandler implements HintHandler {
         if (dataNode != null) {
             rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());
         } else {
-            String msg = "can't find hint datanode:" + hintSQLValue;
+            String msg = "can't find hint dataNode:" + hintSQLValue;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
-
+        sc.getSession2().endParse();
         return rrs;
     }
 

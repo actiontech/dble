@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -108,6 +109,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                 IOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
                 c.setProcessor(processor);
                 backendRegisterQueue.offer(c);
+                wakeupBackendSelector();
             }
         } catch (Exception e) {
             clearSelectionKey(key);
@@ -133,6 +135,15 @@ public final class NIOConnector extends Thread implements SocketConnector {
         if (key.isValid()) {
             key.attach(null);
             key.cancel();
+        }
+    }
+
+    //wakeup selector
+    private void wakeupBackendSelector() {
+        Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(DbleServer.BACKEND_EXECUTOR_NAME);
+        for (Map.Entry<Thread, Runnable> runnableEntry : threadRunnableMap.entrySet()) {
+            RW rw = (RW) runnableEntry.getValue();
+            rw.getSelector().wakeup();
         }
     }
 

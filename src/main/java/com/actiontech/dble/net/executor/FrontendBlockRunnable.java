@@ -59,9 +59,9 @@ public class FrontendBlockRunnable implements Runnable {
                 }
             } catch (InterruptedException e) {
                 DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                LOGGER.warn("FrontendCommandHandler error.", e);
+                LOGGER.debug("interrupt thread:{},frontNormalTasks:{}", Thread.currentThread().toString(), frontNormalTasks, e);
+                break;
             } catch (Throwable e) {
-                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
                 LOGGER.error("process task error", e);
             }
         }

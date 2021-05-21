@@ -31,6 +31,7 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import javax.xml.bind.UnmarshalException;
 import java.util.*;
 
@@ -97,9 +98,15 @@ public class ConfigInitializer implements ProblemReporter {
         init(userConfig, dbConfig, shardingConfig, sequenceConfig, true);
     }
 
-    private void init(RawJson userJson, RawJson dbJson, RawJson shardingJson, RawJson sequenceJson, boolean syncHaStatus) {
-        if (userJson == null || dbJson == null || shardingJson == null) {
-            throw new ConfigException("Config for init not ready yet. Please check local config file or cluster metadata whether exists.");
+    private void init(RawJson userJson, RawJson dbJson, @Nullable RawJson shardingJson, @Nullable RawJson sequenceJson, boolean syncHaStatus) {
+        if (userJson == null) {
+            throw new IllegalArgumentException("Config for init not ready yet. user config is null");
+        }
+        if (shardingJson == null) {
+            LOGGER.info("sharding config is null");
+        }
+        if (dbJson == null) {
+            LOGGER.warn("Config for init not ready yet. db config is null");
         }
         //user
         UserConverter userConverter = new UserConverter();
@@ -110,9 +117,15 @@ public class ConfigInitializer implements ProblemReporter {
 
         //db
         DBConverter dbConverter = new DBConverter();
-        dbConverter.dbJsonToMap(dbJson, this, syncHaStatus);
-        this.dbGroups = dbConverter.getDbGroupMap();
-        this.dbConfig = dbJson;
+        if (dbJson != null) {
+            dbConverter.dbJsonToMap(dbJson, this, syncHaStatus);
+            this.dbGroups = dbConverter.getDbGroupMap();
+            this.dbConfig = dbJson;
+        } else {
+            this.dbGroups = new HashMap<>();
+            this.dbConfig = null;
+        }
+
 
         //sharding
         if (userConverter.isContainsShardingUser()) {

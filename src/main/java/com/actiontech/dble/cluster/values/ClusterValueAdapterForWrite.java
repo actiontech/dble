@@ -23,7 +23,7 @@ public class ClusterValueAdapterForWrite implements JsonSerializer<ClusterValueF
     public JsonElement serialize(ClusterValueForBaseWrite<?> value, Type type, JsonSerializationContext jsonSerializationContext) {
         JsonObject obj = new JsonObject();
 
-        obj.addProperty("instanceName", value.instanceName);
+        obj.addProperty("instanceName", value.getInstanceName());
         obj.addProperty("apiVersion", value.apiVersion);
         obj.addProperty("createdAt", value.createdAt);
         if (value.data != null) {
@@ -37,6 +37,8 @@ public class ClusterValueAdapterForWrite implements JsonSerializer<ClusterValueF
             }
         } else if (value.rawData != null) {
             obj.add("data", value.rawData);
+        } else {
+            throw new IllegalStateException("illegal use for cluster value.Data can't be null, maybe you need use class 'Empty'");
         }
 
 

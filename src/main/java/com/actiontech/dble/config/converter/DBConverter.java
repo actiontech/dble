@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
@@ -29,7 +30,6 @@ import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class DBConverter {
     public static RawJson dbBeanToJson(DbGroups dbGroups) {
         Gson gson = JsonFactory.getJson();
         // bean to json obj
-        JsonObject jsonObj = new JsonObject();
+        JsonObjectWriter jsonObj = new JsonObjectWriter();
         jsonObj.addProperty(ClusterPathUtil.VERSION, dbGroups.getVersion());
 
         jsonObj.add(ClusterPathUtil.DB_GROUP, gson.toJsonTree(dbGroups.getDbGroup()));

@@ -8,6 +8,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.cluster.zkprocess.console.ParseParamEnum;
@@ -82,7 +83,7 @@ public class ShardingConverter {
 
     public RawJson shardingBeanToJson(Shardings shardings) {
         // bean to json obj
-        JsonObject jsonObj = new JsonObject();
+        JsonObjectWriter jsonObj = new JsonObjectWriter();
         jsonObj.addProperty(ClusterPathUtil.VERSION, shardings.getVersion());
 
         JsonArray schemaArray = new JsonArray();

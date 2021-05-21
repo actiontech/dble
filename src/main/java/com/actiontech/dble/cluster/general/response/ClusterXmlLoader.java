@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.cluster.general.response;
 
-import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.OriginClusterEvent;
 
 /**
  * Created by szf on 2018/1/26.
  */
 public interface ClusterXmlLoader {
 
-    void notifyProcess(ClusterEvent<?> configValue, boolean ignoreTheGrandChild) throws Exception;
+    void notifyProcess(OriginClusterEvent<?> changeEvent, boolean ignoreTheGrandChild) throws Exception;
 
     void notifyCluster() throws Exception;
 }

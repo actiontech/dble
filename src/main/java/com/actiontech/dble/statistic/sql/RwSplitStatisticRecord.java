@@ -57,6 +57,8 @@ public class RwSplitStatisticRecord extends StatisticRecord {
 
     public void onBackendSqlSetRowsAndEnd(long rows) {
         if (isStartFsql && frontendSqlEntry != null) {
+            if (frontendSqlEntry.getBackendSqlEntry("&statistic_rw_key") == null)
+                return;
             frontendSqlEntry.getBackendSqlEntry("&statistic_rw_key").setRows(rows);
             frontendSqlEntry.getBackendSqlEntry("&statistic_rw_key").setAllEndTime(System.nanoTime());
             frontendSqlEntry.getBackendSqlEntry("&statistic_rw_key").setNeedToTx(frontendSqlEntry.isNeedToTx());

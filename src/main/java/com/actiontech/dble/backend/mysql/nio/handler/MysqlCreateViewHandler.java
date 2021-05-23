@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 
+import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ViewMeta;
@@ -23,6 +24,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,7 @@ import java.util.List;
 /**
  * @Author collapsar
  */
-public class MysqlCreateViewHandler implements ResponseHandler {
+public class MysqlCreateViewHandler implements ResponseHandler, ExecutableHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MysqlCreateViewHandler.class);
     private NonBlockingSession session;
     private RouteResultset rrs;
@@ -47,6 +49,7 @@ public class MysqlCreateViewHandler implements ResponseHandler {
     }
 
     public void execute() throws Exception {
+        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
         RouteResultsetNode node = rrs.getNodes()[0];
         BackendConnection conn = session.getTarget(node);
         if (session.tryExistsCon(conn, node)) {
@@ -59,6 +62,7 @@ public class MysqlCreateViewHandler implements ResponseHandler {
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), conn.getBackendService(), DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
         conn.getBackendService().execute(node, session.getShardingService(), session.getShardingService().isAutocommit());
@@ -73,6 +77,8 @@ public class MysqlCreateViewHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getShardingService(), (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), e.getMessage());
         RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
@@ -85,6 +91,9 @@ public class MysqlCreateViewHandler implements ResponseHandler {
 
     @Override
     public void errorResponse(byte[] data, AbstractService service) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
+                (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with execution failure");
         ErrorPacket errPkg = new ErrorPacket();
         errPkg.read(data);
         errPkg.setPacketId(++packetId);
@@ -98,17 +107,18 @@ public class MysqlCreateViewHandler implements ResponseHandler {
         if (!executeResponse) {
             return;
         }
-
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
         try {
             vm.addMeta(true);
         } catch (Exception e) {
+            DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with meta failure");
             ErrorPacket errPkg = new ErrorPacket();
             errPkg.setPacketId(++packetId);
             errPkg.setMessage(StringUtil.encode(e.getMessage(), session.getShardingService().getCharset().getResults()));
             backConnectionErr(errPkg, responseService, responseService.syncAndExecute());
             return;
         }
-
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), null);
         // return ok
         OkPacket ok = new OkPacket();
         ok.read(data);
@@ -160,7 +170,19 @@ public class MysqlCreateViewHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(AbstractService service, String reason) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
+                (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_CLOSE);
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), reason);
         //not happen
     }
 
+    @Override
+    public void clearAfterFailExecute() {
+
+    }
+
+    @Override
+    public void writeRemainBuffer() {
+
+    }
 }

@@ -12,11 +12,9 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 /**
@@ -55,36 +53,13 @@ public class MySQLShardingSQLHandler {
                     }
                 }
             } catch (Exception e) {
-                executeException(e, sql);
+                service.executeException(e, sql);
                 return;
             }
-
             service.getSession2().endRoute(rrs);
             service.getSession2().execute(rrs);
         } finally {
             TraceManager.finishSpan(traceObject);
-        }
-    }
-
-
-    private void executeException(Exception e, String sql) {
-        sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
-        if (e instanceof SQLException) {
-            SQLException sqlException = (SQLException) e;
-            String msg = sqlException.getMessage();
-            StringBuilder s = new StringBuilder();
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
-            }
-            int vendorCode = sqlException.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqlException.getErrorCode();
-            String sqlState = StringUtil.isEmpty(sqlException.getSQLState()) ? "HY000" : sqlException.getSQLState();
-            String errorMsg = msg == null ? sqlException.getClass().getSimpleName() : msg;
-            service.writeErrMessage(sqlState, errorMsg, vendorCode);
-        } else {
-            StringBuilder s = new StringBuilder();
-            LOGGER.info(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
-            String msg = e.getMessage();
-            service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
         }
     }
 
@@ -109,7 +84,7 @@ public class MySQLShardingSQLHandler {
             }
             service.getSession2().execute(rrs);
         } catch (Exception e) {
-            executeException(e, stmt);
+            service.executeException(e, stmt);
         }
     }
 }

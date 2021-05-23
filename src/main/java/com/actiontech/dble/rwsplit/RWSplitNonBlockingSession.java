@@ -5,13 +5,12 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.RouteService;
-import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlPrepareStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MysqlDeallocatePrepareStatement;
@@ -21,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.HashSet;
 import java.util.Set;
@@ -146,29 +144,8 @@ public class RWSplitNonBlockingSession extends Session {
             }
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
-            executeException(e, sql);
+            rwSplitService.executeException(e, sql);
             return;
-        }
-    }
-
-    private void executeException(Exception e, String sql) {
-        sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
-        if (e instanceof SQLException) {
-            SQLException sqlException = (SQLException) e;
-            String msg = sqlException.getMessage();
-            StringBuilder s = new StringBuilder();
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
-            }
-            int vendorCode = sqlException.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqlException.getErrorCode();
-            String sqlState = StringUtil.isEmpty(sqlException.getSQLState()) ? "HY000" : sqlException.getSQLState();
-            String errorMsg = msg == null ? sqlException.getClass().getSimpleName() : msg;
-            rwSplitService.writeErrMessage(sqlState, errorMsg, vendorCode);
-        } else {
-            StringBuilder s = new StringBuilder();
-            LOGGER.info(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
-            String msg = e.getMessage();
-            rwSplitService.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
         }
     }
 

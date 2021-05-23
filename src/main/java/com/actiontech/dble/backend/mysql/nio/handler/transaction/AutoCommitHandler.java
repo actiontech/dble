@@ -8,6 +8,7 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public class AutoCommitHandler implements TransactionHandler {
@@ -34,6 +35,11 @@ public class AutoCommitHandler implements TransactionHandler {
 
     @Override
     public void implicitCommit(ImplicitCommitHandler implicitCommitHandler) {
+    }
+
+    @Override
+    public void syncImplicitCommit() throws SQLException {
+        // ignore
     }
 
     @Override

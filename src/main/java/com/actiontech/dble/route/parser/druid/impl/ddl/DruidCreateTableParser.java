@@ -11,7 +11,7 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
+import com.actiontech.dble.route.parser.druid.impl.DruidImplicitCommitParser;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -26,10 +26,9 @@ import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 
 
-public class DruidCreateTableParser extends DefaultDruidParser {
+public class DruidCreateTableParser extends DruidImplicitCommitParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
-            throws SQLException {
+    public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement) stmt;
         rrs.setDdlType(DDLInfo.DDLType.CREATE_TABLE);
         //disable create table select from
@@ -42,7 +41,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, createStmt.getTableSource());
         TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (tableMeta != null && !createStmt.isIfNotExists()) {
-            service.transactionsCountInTx();
             String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' or table meta already exists";
             throw new SQLException(msg, "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }

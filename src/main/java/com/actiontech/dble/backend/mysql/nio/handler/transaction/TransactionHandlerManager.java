@@ -10,6 +10,7 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.Optional;
 
 public class TransactionHandlerManager {
@@ -78,6 +79,15 @@ public class TransactionHandlerManager {
             xaHandler.implicitCommit(handler);
         } else {
             normalHandler.implicitCommit(handler);
+        }
+    }
+
+    public void syncImplicitCommit() throws SQLException {
+        if (xaTxId != null) {
+            // implicit commit is not supported in XA transactions
+            // xaHandler.syncImplicitCommit();
+        } else {
+            normalHandler.syncImplicitCommit();
         }
     }
 

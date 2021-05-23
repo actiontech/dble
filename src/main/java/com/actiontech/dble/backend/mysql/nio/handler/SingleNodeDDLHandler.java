@@ -25,12 +25,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
     public void execute() throws Exception {
         DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
-        try {
-            super.execute();
-        } catch (Exception e) {
-            DDLTraceManager.getInstance().endDDL(session.getShardingService(), e.getMessage());
-            throw e;
-        }
+        super.execute();
     }
 
     public void execute(MySQLResponseService service) {

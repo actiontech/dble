@@ -7,10 +7,15 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
 import com.actiontech.dble.net.mysql.MySQLPacket;
 
+import java.sql.SQLException;
+
 public interface TransactionHandler {
+
     void commit();
 
     void implicitCommit(ImplicitCommitHandler handler);
+
+    void syncImplicitCommit() throws SQLException;
 
     void rollback();
 

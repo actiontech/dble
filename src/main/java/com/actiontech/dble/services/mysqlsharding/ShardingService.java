@@ -15,7 +15,6 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.NormalServiceTask;
-import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -32,20 +31,17 @@ import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
-import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
-import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
 import java.util.List;
@@ -481,14 +477,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         session.rollback();
     }
 
-    public void lockTable(String sql) {
-        if ((!isAutocommit() || isTxStart())) {
-            session.implicitCommit(() -> doLockTable(sql));
-            return;
-        }
-        doLockTable(sql);
-    }
-
     public void unLockTable(String sql) {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
@@ -514,51 +502,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile sql is not  unsupported!");
-        }
-    }
-
-    private void doLockTable(String sql) {
-        String db = this.schema;
-        SchemaConfig schemaConfig = null;
-        if (this.schema != null) {
-            schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(this.schema);
-            if (schemaConfig == null) {
-                writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown Database '" + db + "'");
-                return;
-            }
-        }
-
-        RouteResultset rrs;
-        try {
-            rrs = RouteService.getInstance().route(schemaConfig, ServerParse.LOCK, sql, this);
-        } catch (Exception e) {
-            executeException(e, sql);
-            return;
-        }
-
-        if (rrs != null) {
-            session.lockTable(rrs);
-        }
-    }
-
-    private void executeException(Exception e, String sql) {
-        sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
-        if (e instanceof SQLException) {
-            SQLException sqlException = (SQLException) e;
-            String msg = sqlException.getMessage();
-            StringBuilder s = new StringBuilder();
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
-            }
-            int vendorCode = sqlException.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqlException.getErrorCode();
-            String sqlState = StringUtil.isEmpty(sqlException.getSQLState()) ? "HY000" : sqlException.getSQLState();
-            String errorMsg = msg == null ? sqlException.getClass().getSimpleName() : msg;
-            writeErrMessage(sqlState, errorMsg, vendorCode);
-        } else {
-            StringBuilder s = new StringBuilder();
-            LOGGER.info(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
-            String msg = e.getMessage();
-            writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
         }
     }
 
@@ -705,6 +648,14 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public void setSetNoAutoCommit(boolean setNoAutoCommit) {
         this.setNoAutoCommit = setNoAutoCommit;
+    }
+
+    public boolean isTxInterrupted() {
+        return txInterrupted;
+    }
+
+    public String getTxInterruptMsg() {
+        return txInterruptMsg;
     }
 
     public String toString() {

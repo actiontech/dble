@@ -45,7 +45,7 @@ public class ViewMeta {
         this.tmManager = tmManager;
     }
 
-    public void init() throws Exception {
+    public void init() throws SQLException {
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
         viewParser.parseCreateView(this);
         //check if the select part has

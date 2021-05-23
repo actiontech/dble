@@ -6,6 +6,8 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -23,6 +25,7 @@ import com.actiontech.dble.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -350,4 +353,28 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     public ConnectionSerializableLock getConnectionSerializableLock() {
         return connectionSerializableLock;
     }
+
+    public void executeException(Exception e, String sql) {
+        sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
+        if (e instanceof VariationSQLException) {
+            ((VariationSQLException) e).getSendData().write(getConnection());
+        } else if (e instanceof SQLException) {
+            SQLException sqlException = (SQLException) e;
+            String msg = sqlException.getMessage();
+            StringBuilder s = new StringBuilder();
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info(s.append(this).append(sql).toString() + " err:" + msg);
+            }
+            int vendorCode = sqlException.getErrorCode() == 0 ? ErrorCode.ER_PARSE_ERROR : sqlException.getErrorCode();
+            String sqlState = StringUtil.isEmpty(sqlException.getSQLState()) ? "HY000" : sqlException.getSQLState();
+            String errorMsg = msg == null ? sqlException.getClass().getSimpleName() : msg;
+            writeErrMessage(sqlState, errorMsg, vendorCode);
+        } else {
+            StringBuilder s = new StringBuilder();
+            LOGGER.info(s.append(this).append(sql).toString() + " err:" + e.toString(), e);
+            String msg = e.getMessage();
+            writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+        }
+    }
+
 }

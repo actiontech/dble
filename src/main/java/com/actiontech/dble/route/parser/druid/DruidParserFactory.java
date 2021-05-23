@@ -39,7 +39,9 @@ public final class DruidParserFactory {
         } else if (statement instanceof MySqlLockTableStatement) {
             parser = new DruidLockTableParser();
         } else if (statement instanceof SQLDDLStatement) {
-            if (statement instanceof MySqlCreateTableStatement) {
+            if (statement instanceof SQLCreateDatabaseStatement) {
+                parser = new DruidCreateDatabaseParser();
+            } else if (statement instanceof MySqlCreateTableStatement) {
                 parser = new DruidCreateTableParser();
             } else if (statement instanceof SQLDropTableStatement) {
                 parser = new DruidDropTableParser();
@@ -49,6 +51,12 @@ public final class DruidParserFactory {
                 parser = new DruidCreateIndexParser();
             } else if (statement instanceof SQLDropIndexStatement) {
                 parser = new DruidDropIndexParser();
+            } else if (statement instanceof SQLDropViewStatement) {
+                parser = new DruidDropViewParser();
+            } else if (statement instanceof SQLCreateViewStatement) {
+                parser = new DruidCreateOrReplaceViewParser();
+            } else if (statement instanceof SQLAlterViewStatement) {
+                parser = new DruidAlterViewParser();
             } else {
                 String msg = "THE DDL is not supported :" + statement;
                 throw new SQLNonTransientException(msg);

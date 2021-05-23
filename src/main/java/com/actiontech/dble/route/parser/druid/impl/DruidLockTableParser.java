@@ -6,6 +6,8 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.LockTablesHandler;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.plan.common.item.Item;
@@ -14,7 +16,6 @@ import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -32,15 +33,14 @@ import java.util.*;
  *
  * @author songdabin
  */
-public class DruidLockTableParser extends DefaultDruidParser {
+public class DruidLockTableParser extends DruidImplicitCommitParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
+    public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
             throws SQLException {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, Set<String>> shardingNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schema == null ? null : schema.getName(), item.getTableSource());
-
             String table = schemaInfo.getTable();
             String schemaName = schemaInfo.getSchema();
             SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
@@ -79,6 +79,10 @@ public class DruidLockTableParser extends DefaultDruidParser {
         return schema;
     }
 
+    @Override
+    public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
+        return new LockTablesHandler(service.getSession2(), rrs);
+    }
 
     /**
      * handle single config table lock
@@ -130,7 +134,6 @@ public class DruidLockTableParser extends DefaultDruidParser {
         }
         return;
     }
-
 
     private void findTableInPlanNode(Map<String, Set<String>> tableSet, PlanNode pnode, String schema) {
         if (pnode instanceof QueryNode) {

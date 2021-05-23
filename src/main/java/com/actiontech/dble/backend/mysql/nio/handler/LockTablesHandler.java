@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -18,6 +19,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.DDLTraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,7 @@ import java.util.List;
  *
  * @author songdabin
  */
-public class LockTablesHandler extends MultiNodeHandler {
+public class LockTablesHandler extends MultiNodeHandler implements ExecutableHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LockTablesHandler.class);
 
@@ -38,12 +40,18 @@ public class LockTablesHandler extends MultiNodeHandler {
 
     public LockTablesHandler(NonBlockingSession session, RouteResultset rrs) {
         super(session);
+        if (rrs.getNodes() == null) {
+            throw new IllegalArgumentException("routeNode is null!");
+        }
         this.rrs = rrs;
         unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         this.autocommit = session.getShardingService().isAutocommit();
     }
 
     public void execute() throws Exception {
+        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
+        session.getShardingService().setLocked(true);
+        session.getTransactionManager().setXaTxEnabled(false, session.getShardingService());
         super.reset();
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
@@ -57,10 +65,21 @@ public class LockTablesHandler extends MultiNodeHandler {
         }
     }
 
+    @Override
+    public void clearAfterFailExecute() {
+        session.getShardingService().setLocked(false);
+    }
+
+    @Override
+    public void writeRemainBuffer() {
+
+    }
+
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
             return;
         }
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), conn.getBackendService(), DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
         conn.getBackendService().execute(node, session.getShardingService(), autocommit);
@@ -74,7 +93,17 @@ public class LockTablesHandler extends MultiNodeHandler {
     }
 
     @Override
+    public void connectionError(Throwable e, Object attachment) {
+        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getShardingService(), (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), e.getMessage());
+        super.connectionError(e, attachment);
+    }
+
+    @Override
     public void errorResponse(byte[] err, AbstractService service) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
+                (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with execution failure");
         MySQLResponseService responseService = (MySQLResponseService) service;
         boolean executeResponse = responseService.syncAndExecute();
         if (executeResponse) {
@@ -95,12 +124,22 @@ public class LockTablesHandler extends MultiNodeHandler {
     }
 
     @Override
+    public void connectionClose(AbstractService service, String reason) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
+                (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_CLOSE);
+        DDLTraceManager.getInstance().endDDL(session.getShardingService(), reason);
+        super.connectionClose(service, reason);
+    }
+
+    @Override
     public void okResponse(byte[] data, AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             if (clearIfSessionClosed(session)) {
                 return;
             }
+            DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service,
+                    DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             boolean isEndPack = decrementToZero((MySQLResponseService) service);
             final RouteResultsetNode node = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             if (node.getSqlType() == ServerParse.UNLOCK) {
@@ -108,9 +147,11 @@ public class LockTablesHandler extends MultiNodeHandler {
             }
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {
+                    DDLTraceManager.getInstance().endDDL(session.getShardingService(), "lock end with execution failure");
                     tryErrorFinished(true);
                     return;
                 }
+                DDLTraceManager.getInstance().endDDL(session.getShardingService(), null);
                 OkPacket ok = new OkPacket();
                 ok.read(data);
                 lock.lock();

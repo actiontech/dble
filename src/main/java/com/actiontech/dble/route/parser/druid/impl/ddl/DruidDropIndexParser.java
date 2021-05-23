@@ -8,9 +8,8 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
+import com.actiontech.dble.route.parser.druid.impl.DruidImplicitCommitParser;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -22,10 +21,9 @@ import java.sql.SQLException;
 /**
  * @author huqing.yan
  */
-public class DruidDropIndexParser extends DefaultDruidParser {
+public class DruidDropIndexParser extends DruidImplicitCommitParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
-            throws SQLException {
+    public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         rrs.setOnline(true);
         String schemaName = schema == null ? null : schema.getName();
         SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;

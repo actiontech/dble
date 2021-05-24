@@ -477,7 +477,7 @@ public class PhysicalDbGroup {
         String fakeNodeError = "the dbInstance[" + config.getUrl() + "] is fake node. Please check the dbInstance whether or not it is used";
         LOGGER.warn(fakeNodeError);
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
-        AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, fakeNodeError, "mysql", config.getId(), labels);
+        AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, fakeNodeError, "mysql", config.getId(), labels);
         throw new IOException(fakeNodeError);
     }
 

@@ -501,7 +501,7 @@ public class NonBlockingSession extends Session {
 
     private void executeDDL(RouteResultset rrs) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "execute-sql-for-ddl");
-        ExecutableHandler executableHandler;
+        ExecutableHandler executableHandler = null;
         boolean hasDDLInProcess = true;
         try {
             DDLTraceManager.getInstance().startDDL(shardingService);
@@ -539,6 +539,8 @@ public class NonBlockingSession extends Session {
             discard = true;
         } catch (Exception e) {
             LOGGER.info(String.valueOf(shardingService) + rrs, e);
+            if (null != executableHandler)
+                executableHandler.clearAfterFailExecute();
             if (!hasDDLInProcess) {
                 handleSpecial(rrs, false, null);
             }

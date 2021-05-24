@@ -25,7 +25,7 @@ public final class ManagerSchemaInfo {
     private Map<String, ManagerBaseTable> tables = new TreeMap<>();
     private Map<String, ManagerBaseView> views = new HashMap<>(8);
 
-    private void init() {
+    private ManagerSchemaInfo() {
         registerTable(new Version());
         registerTable(new DbleVariables());
         registerTable(new DbleThreadPool());
@@ -63,6 +63,9 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleXaRecover());
         // sampling
         registerTable(new SqlLog());
+    }
+
+    private void initViews() {
         registerView(new SqlLogByTxByEntryByUser());
         registerView(new SqlLogByDigestByEntryByUser());
         registerView(new SqlLogByTxDigestByEntryByUser());
@@ -81,8 +84,8 @@ public final class ManagerSchemaInfo {
             synchronized (ManagerSchemaInfo.class) {
                 if (instance == null) {
                     ManagerSchemaInfo info = new ManagerSchemaInfo();
-                    info.init();
                     instance = info;
+                    info.initViews();
                 }
             }
         }

@@ -71,6 +71,10 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 handleAuthPacket(data);
             }
 
+        } catch (Exception e) {
+            LOGGER.error("illegal auth packet {}", data, e);
+            writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "illegal auth packet, the detail error message is " + e.getMessage());
+            connection.close("illegal auth packet");
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }

@@ -6,6 +6,7 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -22,6 +23,8 @@ import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -29,7 +32,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
-
+    private static final Logger LOGGER = LogManager.getLogger(FrontendService.class);
     private ServiceTask currentTask = null;
     private final AtomicInteger packetId;
     private final BlockingQueue<ServiceTask> taskQueue = new LinkedBlockingQueue<>(2000);
@@ -124,6 +127,10 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
             this.handleInnerData(data);
 
+        } catch (Throwable e) {
+            LOGGER.error("process task error", e);
+            writeErrMessage(ErrorCode.ER_YES, "process task error, exception is " + e);
+            connection.close("process task error");
         } finally {
             synchronized (this) {
                 currentTask = null;

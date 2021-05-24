@@ -6,6 +6,7 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -13,6 +14,8 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.StringUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by szf on 2020/6/16.
  */
 public abstract class AbstractService implements Service {
-
+    private static final Logger LOGGER = LogManager.getLogger(AbstractService.class);
     protected AbstractConnection connection;
     private AtomicInteger packetId;
 
@@ -301,6 +304,10 @@ public abstract class AbstractService implements Service {
                 this.handleInnerData(data);
 
             }
+        } catch (Throwable e) {
+            LOGGER.error("process task error", e);
+            writeErrMessage(ErrorCode.ER_YES, "process task error, exception is " + e);
+            connection.close("process task error");
         } finally {
             synchronized (this) {
                 currentTask = null;

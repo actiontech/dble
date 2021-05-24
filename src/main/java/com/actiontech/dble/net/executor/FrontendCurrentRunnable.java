@@ -31,29 +31,33 @@ public class FrontendCurrentRunnable implements Runnable {
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
         }
         while (true) {
-            if (Thread.currentThread().isInterrupted()) {
-                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                LOGGER.debug("interrupt thread:{},frontNormalTasks:{}", Thread.currentThread().toString(), frontNormalTasks);
-                break;
-            }
-            task = frontNormalTasks.poll();
-
-            //threadUsageStat start
-            long workStart = 0;
-            if (workUsage != null) {
-                workStart = System.nanoTime();
-            }
-            if (task != null) {
-                //handler data
-                if (task.getService() == null) {
-                    continue;
+            try {
+                if (Thread.currentThread().isInterrupted()) {
+                    DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                    LOGGER.debug("interrupt thread:{},frontNormalTasks:{}", Thread.currentThread().toString(), frontNormalTasks);
+                    break;
                 }
-                task.getService().execute(task);
-            }
+                task = frontNormalTasks.poll();
 
-            //threadUsageStat end
-            if (workUsage != null) {
-                workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                //threadUsageStat start
+                long workStart = 0;
+                if (workUsage != null) {
+                    workStart = System.nanoTime();
+                }
+                if (task != null) {
+                    //handler data
+                    if (task.getService() == null) {
+                        continue;
+                    }
+                    task.getService().execute(task);
+                }
+
+                //threadUsageStat end
+                if (workUsage != null) {
+                    workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                }
+            } catch (Throwable t) {
+                LOGGER.warn("Unknown error:", t);
             }
         }
     }

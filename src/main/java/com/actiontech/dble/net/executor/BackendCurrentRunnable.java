@@ -32,22 +32,26 @@ public class BackendCurrentRunnable implements Runnable {
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
         }
         while (true) {
-            if (Thread.currentThread().isInterrupted()) {
-                DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
-                LOGGER.debug("interrupt thread:{},concurrentBackQueue:{}", Thread.currentThread().toString(), concurrentBackQueue);
-                break;
-            }
-            while ((task = concurrentBackQueue.poll()) != null) {
-                //threadUsageStat start
-                long workStart = 0;
-                if (workUsage != null) {
-                    workStart = System.nanoTime();
+            try {
+                if (Thread.currentThread().isInterrupted()) {
+                    DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
+                    LOGGER.debug("interrupt thread:{},concurrentBackQueue:{}", Thread.currentThread().toString(), concurrentBackQueue);
+                    break;
                 }
-                task.getService().execute(task);
-                //threadUsageStat end
-                if (workUsage != null) {
-                    workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                while ((task = concurrentBackQueue.poll()) != null) {
+                    //threadUsageStat start
+                    long workStart = 0;
+                    if (workUsage != null) {
+                        workStart = System.nanoTime();
+                    }
+                    task.getService().execute(task);
+                    //threadUsageStat end
+                    if (workUsage != null) {
+                        workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                    }
                 }
+            } catch (Throwable t) {
+                LOGGER.warn("Unknown error:", t);
             }
         }
     }

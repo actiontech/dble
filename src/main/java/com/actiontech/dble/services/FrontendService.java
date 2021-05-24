@@ -6,6 +6,7 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -185,8 +186,15 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
             super.consumeSingleTask(serviceTask);
         } catch (Throwable e) {
-            LOGGER.error("frontExecutor process error: ", e);
             connectionSerializableLock.unLock();
+            String msg = e.getMessage();
+            if (StringUtil.isEmpty(msg)) {
+                LOGGER.warn("Maybe occur a bug, please check it.", e);
+                msg = e.toString();
+            } else {
+                LOGGER.warn("There is an error you may need know.", e);
+            }
+            writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
         }
     }
 

@@ -58,6 +58,8 @@ public class WriteToBackendRunnable implements Runnable {
                 DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
                 LOGGER.debug("interrupt thread:{},concurrentBackQueue:{}", Thread.currentThread().toString(), writeToBackendQueue, e);
                 break;
+            } catch (Throwable t) {
+                LOGGER.warn("Unknown error:", t);
             }
         }
 

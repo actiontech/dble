@@ -20,7 +20,11 @@ import java.util.TreeMap;
 
 public final class ManagerSchemaInfo {
     public static final String SCHEMA_NAME = "dble_information";
-    private static volatile ManagerSchemaInfo instance;
+    private static final ManagerSchemaInfo INSTANCE = new ManagerSchemaInfo();
+
+    static {
+        INSTANCE.initViews();
+    }
 
     private Map<String, ManagerBaseTable> tables = new TreeMap<>();
     private Map<String, ManagerBaseView> views = new HashMap<>(8);
@@ -80,16 +84,7 @@ public final class ManagerSchemaInfo {
     }
 
     public static ManagerSchemaInfo getInstance() {
-        if (instance == null) {
-            synchronized (ManagerSchemaInfo.class) {
-                if (instance == null) {
-                    ManagerSchemaInfo info = new ManagerSchemaInfo();
-                    instance = info;
-                    instance.initViews();
-                }
-            }
-        }
-        return instance;
+        return INSTANCE;
     }
 
     public Map<String, ManagerBaseTable> getTables() {

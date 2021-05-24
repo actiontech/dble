@@ -434,7 +434,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (requestScope.isUsingCursor()) {
                     recycle();
                     requestScope.getCurrentPreparedStatement().getCursorCache().done();
-                    session.getShardingService().writeDirectly(byteBuffer);
+                    session.getShardingService().writeDirectly(byteBuffer, true);
                     return;
                 }
                 this.resultSize += eof.length;

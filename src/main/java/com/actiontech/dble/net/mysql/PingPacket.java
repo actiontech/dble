@@ -31,7 +31,7 @@ public class PingPacket extends MySQLPacket {
 
 
     public static void response(AbstractService service) {
-        service.writeDirectly(OkPacket.OK);
+        service.writeDirectly(OkPacket.OK, true);
     }
 
 }

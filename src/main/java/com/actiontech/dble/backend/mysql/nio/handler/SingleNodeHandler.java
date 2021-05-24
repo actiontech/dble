@@ -313,7 +313,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         doSqlStat();
         if (requestScope.isUsingCursor()) {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
-            session.getShardingService().writeDirectly(buffer);
+            session.getShardingService().writeDirectly(buffer, true);
         }
         lock.lock();
         try {

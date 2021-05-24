@@ -184,7 +184,7 @@ public class OutputHandler extends BaseDMLHandler {
             HandlerTool.terminateHandlerTree(this);
             serverSession.setHandlerEnd(this);
             serverSession.setResponseTime(true);
-            serverSession.getShardingService().writeDirectly(buffer);
+            serverSession.getShardingService().writeDirectly(buffer, true);
             return;
         }
         lock.lock();

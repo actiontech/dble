@@ -85,7 +85,7 @@ public final class ManagerSchemaInfo {
                 if (instance == null) {
                     ManagerSchemaInfo info = new ManagerSchemaInfo();
                     instance = info;
-                    info.initViews();
+                    instance.initViews();
                 }
             }
         }

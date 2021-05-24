@@ -60,4 +60,28 @@ public final class DebugUtil {
 
         return line;
     }
+
+    public static void printLocation() {
+        if (LOGGER.isDebugEnabled()) {
+            try {
+                throw new DebugPrinter();
+            } catch (DebugPrinter e) {
+                LOGGER.debug("location", e);
+            }
+
+        }
+    }
+
+
+    @SuppressWarnings("AlibabaExceptionClassShouldEndWithException")
+    public static class DebugPrinter extends Exception {
+        public DebugPrinter(String message) {
+            super(message);
+        }
+
+        public DebugPrinter() {
+            super("used for debugger");
+        }
+    }
+
 }

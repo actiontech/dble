@@ -345,7 +345,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
             // Explicit distributed transaction
             source.setTxInterrupt(reason);
         }
-        session.getSource().write(data);
+        source.writeDirectly(data, true);
     }
 
 

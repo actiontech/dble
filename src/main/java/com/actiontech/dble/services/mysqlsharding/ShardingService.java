@@ -553,7 +553,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 TraceManager.sessionFinish(backendConnection.getBackendService());
             }
             TraceManager.sessionFinish(this);
-            connectionSerializableLock.unLock();
         }
         buffer = packet.write(buffer, this, true);
         connection.write(buffer);
@@ -567,6 +566,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 TraceManager.sessionFinish(this);
             }
             multiStatementNextSql(multiQueryFlag);
+        }
+        if (packet.isEndOfSession() || packet.isEndOfQuery()) {
             connectionSerializableLock.unLock();
         }
         SerializableLock.getInstance().unLock(this.connection.getId());

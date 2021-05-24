@@ -37,7 +37,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class DBConverter {
 
@@ -237,10 +236,13 @@ public class DBConverter {
         // init properties of connection pool
         PoolConfig poolConfig = new PoolConfig();
         if (!propertyList.isEmpty()) {
-            Map<String, String> propertyMap = propertyList.stream().collect(Collectors.toMap(Property::getName, Property::getValue));
-            ParameterMapping.mapping(poolConfig, propertyMap, problemReporter);
-            if (propertyMap.size() > 0) {
-                throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propertyMap.keySet(), ","));
+            Properties props = new Properties();
+            propertyList.forEach(property -> props.put(property.getName(), property.getValue()));
+            ParameterMapping.mapping(poolConfig, props, problemReporter);
+            if (props.size() > 0) {
+                String[] propItem = new String[props.size()];
+                props.keySet().toArray(propItem);
+                throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
             }
         }
 

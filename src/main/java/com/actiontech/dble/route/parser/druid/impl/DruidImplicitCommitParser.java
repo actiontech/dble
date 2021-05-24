@@ -30,6 +30,7 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
         } finally {
             if (sqlException != null) {
                 if (!isSyntaxNotSupported ||
+                        sqlException.getErrorCode() != 0 ||
                         sqlException.getErrorCode() != ErrorCode.ER_NO_DB_ERROR ||
                         sqlException.getErrorCode() != ErrorCode.ER_PARSE_ERROR) {
                     // Implicit commit does not take effect if a syntax error occurs or if a library is not selected

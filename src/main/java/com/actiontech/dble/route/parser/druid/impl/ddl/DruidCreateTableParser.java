@@ -79,13 +79,13 @@ public class DruidCreateTableParser extends DruidImplicitCommitParser {
         String sqlAssignItemValue = sqlAssignItem.getValue().toString();
         //ALLOW InnoDB ONLY
         if (StringUtil.equals("ENGINE", sqlAssignItemTarget) && !"InnoDB".equalsIgnoreCase(sqlAssignItemValue)) {
-            String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
+            String msg = "create table only can use ENGINE InnoDB, others not supported:" + createStmt;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
         //DISABLE DATA DIRECTORY
         if (StringUtil.equals("DATA DIRECTORY", sqlAssignItemTarget)) {
-            String msg = "create table with DATA DIRECTORY  not supported:" + createStmt;
+            String msg = "create table with DATA DIRECTORY not supported:" + createStmt;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }

@@ -248,7 +248,7 @@ public class PhysicalDbGroup {
                 }
                 return writeDbInstance;
             } else {
-                reportHeartbeatError(writeDbInstance);
+                reportError(writeDbInstance);
             }
         }
 
@@ -263,7 +263,7 @@ public class PhysicalDbGroup {
             }
             return selectInstance;
         } else {
-            reportHeartbeatError(selectInstance);
+            reportError(selectInstance);
             return selectInstance;
         }
     }
@@ -464,6 +464,24 @@ public class PhysicalDbGroup {
         return true;
     }
 
+    private void reportDisableError(PhysicalDbInstance ins) throws IOException {
+        final DbInstanceConfig config = ins.getConfig();
+        String disableError = "the dbInstance[" + config.getUrl() + "] is disable. Please check the dbInstance disable status";
+        LOGGER.warn(disableError);
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
+        AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, disableError, "mysql", config.getId(), labels);
+        throw new IOException(disableError);
+    }
+
+    private void reportFakeNodeError(PhysicalDbInstance ins) throws IOException {
+        final DbInstanceConfig config = ins.getConfig();
+        String fakeNodeError = "the dbInstance[" + config.getUrl() + "] is fake node. Please check the dbInstance whether or not it is used";
+        LOGGER.warn(fakeNodeError);
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
+        AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, fakeNodeError, "mysql", config.getId(), labels);
+        throw new IOException(fakeNodeError);
+    }
+
     private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {
         final DbInstanceConfig config = ins.getConfig();
         String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance status";
@@ -474,6 +492,16 @@ public class PhysicalDbGroup {
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", config.getId(), labels);
         throw new IOException(heartbeatError);
+    }
+
+    private void reportError(PhysicalDbInstance dbInstance) throws IOException {
+        if (dbInstance.isFakeNode()) {
+            reportFakeNodeError(dbInstance);
+        } else if (dbInstance.isDisabled()) {
+            reportDisableError(dbInstance);
+        } else {
+            reportHeartbeatError(dbInstance);
+        }
     }
 
     public boolean equalsBaseInfo(PhysicalDbGroup pool) {

@@ -9,11 +9,14 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 public class WriteToBackendRunnable implements Runnable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WriteToBackendRunnable.class);
     private final BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
 
     public WriteToBackendRunnable(BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue) {
@@ -48,6 +51,8 @@ public class WriteToBackendRunnable implements Runnable {
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("FrontendCommandHandler error.", e);
+            } catch (Throwable t) {
+                LOGGER.warn("Unknown error:", t);
             }
         }
 

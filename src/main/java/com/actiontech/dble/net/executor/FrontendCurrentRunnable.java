@@ -4,6 +4,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
 
@@ -12,6 +14,7 @@ import java.util.Queue;
  */
 public class FrontendCurrentRunnable implements Runnable {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FrontendCurrentRunnable.class);
     private final Queue<ServiceTask> frontNormalTasks;
     private final Queue<ServiceTask> frontPriorityTasks;
 
@@ -30,27 +33,31 @@ public class FrontendCurrentRunnable implements Runnable {
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
         }
         while (true) {
-            task = frontPriorityTasks.poll();
-            if (task == null) {
-                task = frontNormalTasks.poll();
-            }
-
-            //threadUsageStat start
-            long workStart = 0;
-            if (workUsage != null) {
-                workStart = System.nanoTime();
-            }
-            if (task != null) {
-                //handler data
-                if (task.getService() == null) {
-                    continue;
+            try {
+                task = frontPriorityTasks.poll();
+                if (task == null) {
+                    task = frontNormalTasks.poll();
                 }
-                task.getService().execute(task);
-            }
 
-            //threadUsageStat end
-            if (workUsage != null) {
-                workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                //threadUsageStat start
+                long workStart = 0;
+                if (workUsage != null) {
+                    workStart = System.nanoTime();
+                }
+                if (task != null) {
+                    //handler data
+                    if (task.getService() == null) {
+                        continue;
+                    }
+                    task.getService().execute(task);
+                }
+
+                //threadUsageStat end
+                if (workUsage != null) {
+                    workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                }
+            } catch (Throwable t) {
+                LOGGER.warn("Unknown error:", t);
             }
         }
     }

@@ -22,6 +22,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.util.FilterUtils;
+import com.actiontech.dble.services.manager.information.ManagerBaseView;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
@@ -236,9 +237,9 @@ public class MySQLPlanNodeVisitor {
             }
         } else {
 
-            QueryNode node = ManagerSchemaInfo.getInstance().getView(tableName);
-            if (node != null) {
-                this.tableNode = node;
+            ManagerBaseView view = ManagerSchemaInfo.getInstance().getView(tableName);
+            if (view != null) {
+                this.tableNode = view.getViewNode();
                 return true;
             }
 

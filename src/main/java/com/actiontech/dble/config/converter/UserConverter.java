@@ -7,6 +7,7 @@ package com.actiontech.dble.config.converter;
 import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.Users;
@@ -32,7 +33,6 @@ import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ public class UserConverter {
 
     public RawJson userBeanToJson(Users users) {
         // bean to json obj
-        JsonObject jsonObj = new JsonObject();
+        JsonObjectWriter jsonObj = new JsonObjectWriter();
         jsonObj.addProperty(ClusterPathUtil.VERSION, users.getVersion());
 
         JsonArray userArray = new JsonArray();

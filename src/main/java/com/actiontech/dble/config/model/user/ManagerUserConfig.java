@@ -37,7 +37,8 @@ public class ManagerUserConfig extends UserConfig {
             String msg = "Unknown database '" + schemaInfo.getSchema() + "'";
             throw new SQLException(msg, "42000", ErrorCode.ER_BAD_DB_ERROR);
         }
-        if (!ManagerSchemaInfo.getInstance().getTables().containsKey(schemaInfo.getTable())) {
+        ManagerSchemaInfo info = ManagerSchemaInfo.getInstance();
+        if (!info.getTables().containsKey(schemaInfo.getTable()) && !info.getViews().containsKey(schemaInfo.getTable())) {
             String msg = "Table " + StringUtil.getFullName(schemaInfo.getSchema(), schemaInfo.getTable()) + " doesn't exist";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }

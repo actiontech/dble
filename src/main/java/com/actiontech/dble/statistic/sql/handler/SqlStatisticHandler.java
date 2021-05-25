@@ -11,11 +11,12 @@ import com.alibaba.druid.DbType;
 import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SqlStatisticHandler implements StatisticDataHandler {
 
-    private final TreeMap<Long, TxRecord> txRecords = new TreeMap<>();
+    private final ConcurrentSkipListMap<Long, TxRecord> txRecords = new ConcurrentSkipListMap<>();
     private volatile BitSet sampleDecisions;
 
     public SqlStatisticHandler() {
@@ -32,12 +33,10 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         if (entry instanceof StatisticTxEntry) {
             StatisticTxEntry txEntry = (StatisticTxEntry) entry;
             if (sampleDecisions.get((int) (txEntry.getTxId() % 100))) {
-                synchronized (txRecords) {
-                    if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
-                        txRecords.pollFirstEntry();
-                    }
-                    txRecords.put(txEntry.getTxId(), new TxRecord(txEntry));
+                if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
+                    txRecords.pollFirstEntry();
                 }
+                txRecords.put(txEntry.getTxId(), new TxRecord(txEntry));
             }
         } else if (entry instanceof StatisticFrontendSqlEntry) {
             StatisticFrontendSqlEntry frontendSqlEntry = (StatisticFrontendSqlEntry) entry;
@@ -45,23 +44,19 @@ public class SqlStatisticHandler implements StatisticDataHandler {
                 return;
             }
             if (sampleDecisions.get((int) (frontendSqlEntry.getTxId() % 100))) {
-                synchronized (txRecords) {
-                    if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
-                        txRecords.pollFirstEntry();
-                    }
-                    txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
+                if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
+                    txRecords.pollFirstEntry();
                 }
+                txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
             }
         }
     }
 
     private void checkEliminate() {
-        synchronized (txRecords) {
-            int removeIndex;
-            if ((removeIndex = txRecords.size() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
-                while (removeIndex-- > 0) {
-                    txRecords.pollFirstEntry();
-                }
+        int removeIndex;
+        if ((removeIndex = txRecords.size() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
+            while (removeIndex-- > 0) {
+                txRecords.pollFirstEntry();
             }
         }
     }
@@ -74,9 +69,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
     @Override
     public void clear() {
-        synchronized (txRecords) {
-            txRecords.clear();
-        }
+        txRecords.clear();
     }
 
     private BitSet randomBitSet(int cardinality, Random rnd) {

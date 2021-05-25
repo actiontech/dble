@@ -25,7 +25,7 @@ public class SqlLogByTxByEntryByUser extends ManagerBaseView {
 
     @Override
     protected void initColumnAndType() {
-        columns.put(COLUMN_TX_ID, new ColumnMeta(COLUMN_TX_ID, "int(11)", false, true));
+        columns.put(COLUMN_TX_ID, new ColumnMeta(COLUMN_TX_ID, "int(11)", false));
         columnsType.put(COLUMN_TX_ID, Fields.FIELD_TYPE_LONG);
 
         columns.put(COLUMN_ENTRY, new ColumnMeta(COLUMN_ENTRY, "int(11)", false));
@@ -40,7 +40,7 @@ public class SqlLogByTxByEntryByUser extends ManagerBaseView {
         columns.put(COLUMN_SOURCE_PORT, new ColumnMeta(COLUMN_SOURCE_PORT, "int(11)", false));
         columnsType.put(COLUMN_SOURCE_PORT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_SQL_IDS, new ColumnMeta(COLUMN_SQL_IDS, "VARCHAR(1024)", false));
+        columns.put(COLUMN_SQL_IDS, new ColumnMeta(COLUMN_SQL_IDS, "varchar(1024)", false));
         columnsType.put(COLUMN_SQL_IDS, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_SQL_EXEC, new ColumnMeta(COLUMN_SQL_EXEC, "int(11)", false));

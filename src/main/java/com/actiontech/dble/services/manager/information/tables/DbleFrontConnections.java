@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -137,12 +138,15 @@ public final class DbleFrontConnections extends ManagerBaseTable {
             row.put("in_transaction", "Manager connection");
             row.put("xa_id", "-");
         } else {
-            row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
-            row.put("in_transaction", String.valueOf(((ShardingService) service).isTxStart() || !service.isAutocommit()));
             if (service instanceof ShardingService) {
-                String xaid = ((ShardingService) service).getSession2().getSessionXaID();
+                NonBlockingSession session = ((ShardingService) service).getSession2();
+                row.put("in_transaction", String.valueOf(((ShardingService) service).isTxStart() || !service.isAutocommit()));
+                row.put("sql_stage", session.getSessionStage().toString());
+                String xaid = session.getSessionXaID();
                 row.put("xa_id", xaid == null ? "NULL" : xaid);
             } else {
+                row.put("in_transaction", !service.isAutocommit() + "");
+                row.put("sql_stage", "NULL");
                 row.put("xa_id", "-");
             }
         }

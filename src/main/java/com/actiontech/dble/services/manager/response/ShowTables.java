@@ -120,6 +120,11 @@ public final class ShowTables {
                 tableNames.add(tbName);
             }
         }
+        for (String viewName : ManagerSchemaInfo.getInstance().getViews().keySet()) {
+            if ((pattern == null || pattern.matcher(viewName).matches())) {
+                tableNames.add(viewName);
+            }
+        }
         return tableNames;
     }
 

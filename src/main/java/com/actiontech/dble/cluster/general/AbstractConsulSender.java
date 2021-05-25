@@ -8,7 +8,6 @@ package com.actiontech.dble.cluster.general;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.ClusterAlertBean;
@@ -17,6 +16,8 @@ import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -102,10 +103,11 @@ public abstract class AbstractConsulSender implements ClusterSender {
         ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener(this);
 
 
-        new XmlDbLoader(ucoreListen);
-        new XmlShardingLoader(ucoreListen);
-        new XmlUserLoader(ucoreListen);
-        new SequencePropertiesLoader(ucoreListen);
+        new XmlDbLoader().registerPrefixForUcore(ucoreListen);
+        new XmlShardingLoader().registerPrefixForUcore(ucoreListen);
+        new XmlUserLoader().registerPrefixForUcore(ucoreListen);
+        new SequencePropertiesLoader().registerPrefixForUcore(ucoreListen);
+
         ucoreListen.initAllNode();
         new DbGroupHaResponse().notifyCluster();
     }
@@ -122,7 +124,7 @@ public abstract class AbstractConsulSender implements ClusterSender {
 
 
     @Override
-    public Map<String, String> getOnlineMap() {
+    public Map<String, OnlineType> getOnlineMap() {
         return ClusterToXml.getOnlineMap();
     }
 

@@ -8,7 +8,8 @@ package com.actiontech.dble.services.manager.information.tables;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
@@ -267,7 +268,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         List<DBInstance> dbInstanceList = rows.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
 
         DBConverter dbConverter = new DBConverter();
-        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
         DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
@@ -304,7 +305,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         List<DBInstance> dbInstanceList = affectPks.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
 
         DBConverter dbConverter = new DBConverter();
-        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
         DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         for (DBInstance dbInstance : dbInstanceList) {
@@ -326,7 +327,7 @@ public class DbleDbInstance extends ManagerWritableTable {
         List<DBInstance> dbInstanceList = affectPks.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
 
         DBConverter dbConverter = new DBConverter();
-        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
         DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
 
         for (DBInstance dbInstance : dbInstanceList) {
@@ -348,7 +349,7 @@ public class DbleDbInstance extends ManagerWritableTable {
     public void afterExecute() {
         //remove temp dbGroup
         DBConverter dbConverter = new DBConverter();
-        String dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
+        RawJson dbConfig = DbleServer.getInstance().getConfig().getDbConfig();
         DbGroups dbGroups = dbConverter.dbJsonToBean(dbConfig, false);
         DbleDbGroup dbleDbGroup = (DbleDbGroup) ManagerSchemaInfo.getInstance().getTables().get(DbleDbGroup.TABLE_NAME);
         for (DBGroup dbGroup : dbGroups.getDbGroup()) {

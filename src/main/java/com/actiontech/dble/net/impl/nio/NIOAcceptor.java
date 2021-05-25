@@ -22,6 +22,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -97,6 +98,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             c.setProcessor(processor);
 
             frontRegisterQueue.offer(c);
+            wakeupFrontedSelector();
 
         } catch (Exception e) {
             LOGGER.info(getName(), e);
@@ -120,6 +122,15 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             channel.close();
         } catch (IOException e) {
             LOGGER.info("closeChannelError", e);
+        }
+    }
+
+    //wakeup selector
+    private void wakeupFrontedSelector() {
+        Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(DbleServer.FRONT_EXECUTOR_NAME);
+        for (Map.Entry<Thread, Runnable> runnableEntry : threadRunnableMap.entrySet()) {
+            RW rw = (RW) runnableEntry.getValue();
+            rw.getSelector().wakeup();
         }
     }
 

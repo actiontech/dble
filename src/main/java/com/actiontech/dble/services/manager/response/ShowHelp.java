@@ -21,7 +21,6 @@ import java.util.Map;
  * ShowHelp
  *
  * @author mycat
- * @author mycat
  */
 public final class ShowHelp {
     private ShowHelp() {
@@ -166,10 +165,6 @@ public final class ShowHelp {
         HELPS.put("offline", "Change Server status to OFF");
         HELPS.put("online", "Change Server status to ON");
 
-        //file
-        HELPS.put("file @@list", "List all the file in conf directory");
-        HELPS.put("file @@show filename", "Show the file data of specific file");
-        HELPS.put("file @@upload filename content", "Write content to file");
         HELPS.put("flow_control @@show", "Show the current config of the flow control");
         HELPS.put("flow_control @@list", "List all the connection be flow-control now");
         HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlStart = ?] [flowControlEnd = ?]", "Change the config of flow control");

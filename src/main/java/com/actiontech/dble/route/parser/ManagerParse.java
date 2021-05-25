@@ -25,7 +25,6 @@ public final class ManagerParse {
     public static final int OFFLINE = 9;
     public static final int ONLINE = 10;
     public static final int CHECK = 11;
-    public static final int CONFIGFILE = 12;
     public static final int PAUSE = 14;
     public static final int RESUME = 15;
     public static final int CREATE_DB = 16;
@@ -228,10 +227,6 @@ public final class ManagerParse {
 
     // config file check
     private static int fCheck(String stmt, int offset) {
-        String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("FILE @@")) {
-            return CONFIGFILE;
-        }
         if (stmt.length() <= ++offset) {
             return OTHER;
         }

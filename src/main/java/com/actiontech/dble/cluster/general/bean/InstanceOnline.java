@@ -1,10 +1,12 @@
 package com.actiontech.dble.cluster.general.bean;
 
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+
+import java.util.Objects;
 
 /**
  * Created by szf on 2019/8/28.
@@ -29,20 +31,19 @@ public final class InstanceOnline {
         return INSTANCE;
     }
 
-    public boolean canRemovePath(String value) {
+    public boolean canRemovePath(OnlineType that) {
         if (hostAddr == null) {
             return false;
         }
         try {
-            JsonObject jsonObj = new JsonParser().parse(value).getAsJsonObject();
-            return serverPort == jsonObj.get(SERVER_PORT).getAsLong() &&
-                    hostAddr.equals(jsonObj.get(HOST_ADDR).getAsString());
+            return serverPort == that.getServerPort() && Objects.equals(hostAddr, that.getHostAddr());
         } catch (Exception e) {
             //remove the old online timestamp when upgrade from old version
             return true;
         }
     }
 
+    @Override
     public String toString() {
         JsonObject online = new JsonObject();
         online.addProperty(SERVER_PORT, serverPort);

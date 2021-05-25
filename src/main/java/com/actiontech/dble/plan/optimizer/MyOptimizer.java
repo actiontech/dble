@@ -35,7 +35,11 @@ public final class MyOptimizer {
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
             // PreProcessor SubQuery ,transform in sub query to join
-            node = SubQueryPreProcessor.optimize(node);
+            if (SystemConfig.getInstance().isInSubQueryTransformToJoin()) {
+                node = SubQueryPreProcessor.optimize(node);
+            } else {
+                node = SubQueryPreNoTransformProcessor.optimize(node);
+            }
             updateReferredTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<>());
             if (node.type() == PlanNode.PlanNodeType.QUERY || node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery() || !PlanUtil.hasNoFakeNode(node)) {

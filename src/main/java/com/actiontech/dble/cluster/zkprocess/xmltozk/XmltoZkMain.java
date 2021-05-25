@@ -6,8 +6,10 @@
 package com.actiontech.dble.cluster.zkprocess.xmltozk;
 
 import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
+import com.actiontech.dble.config.loader.SystemConfigLoader;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -18,7 +20,10 @@ public final class XmltoZkMain {
 
     public static void main(String[] args) {
         try {
+            SystemConfigLoader.initSystemConfig();
             ClusterController.loadClusterProperties();
+            ClusterGeneralConfig.initConfig();
+
             if (!ClusterController.CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
                 throw new RuntimeException("Cluster mode is not " + ClusterController.CONFIG_MODE_ZK);
             }

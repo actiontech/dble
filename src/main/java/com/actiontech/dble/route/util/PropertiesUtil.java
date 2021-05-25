@@ -5,12 +5,15 @@
 
 package com.actiontech.dble.route.util;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceHandler;
 import com.actiontech.dble.util.ResourceUtil;
 
 import java.io.*;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * PropertiesUtil
@@ -48,6 +51,7 @@ public final class PropertiesUtil {
             }
             Map<String, String> mp = new LinkedHashMap<>();
             (new Properties() {
+                @Override
                 public synchronized Object put(Object key, Object value) {
                     return mp.put((String) key, (String) value);
                 }

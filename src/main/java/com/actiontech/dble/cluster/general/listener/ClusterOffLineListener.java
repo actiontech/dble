@@ -5,11 +5,13 @@
 
 package com.actiontech.dble.cluster.general.listener;
 
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterValue;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import org.slf4j.Logger;
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 
 /**
  * Created by szf on 2018/2/8.
@@ -26,7 +28,7 @@ import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 public class ClusterOffLineListener implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterOffLineListener.class);
-    private volatile Map<String, String> onlineMap = new ConcurrentHashMap<>();
+    private volatile Map<String, OnlineType> onlineMap = new ConcurrentHashMap<>();
     private long index = 0;
     private AbstractConsulSender sender;
 
@@ -34,7 +36,7 @@ public class ClusterOffLineListener implements Runnable {
         this.sender = sender;
     }
 
-    public Map<String, String> copyOnlineMap() {
+    public Map<String, OnlineType> copyOnlineMap() {
         return new ConcurrentHashMap<>(onlineMap);
     }
 
@@ -55,24 +57,24 @@ public class ClusterOffLineListener implements Runnable {
                     continue;
                 }
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
-                Map<String, String> newMap = new ConcurrentHashMap<>();
+                Map<String, OnlineType> newMap = new ConcurrentHashMap<>();
                 for (int i = 0; i < output.getKeysCount(); i++) {
-                    newMap.put(output.getKeys(i), output.getValues(i));
+                    newMap.put(output.getKeys(i), ClusterValue.readFromJson(output.getValues(i), OnlineType.class).getData());
                 }
 
-                for (Map.Entry<String, String> en : onlineMap.entrySet()) {
+                for (Map.Entry<String, OnlineType> en : onlineMap.entrySet()) {
                     if (!newMap.containsKey(en.getKey()) ||
                             (newMap.containsKey(en.getKey()) && !newMap.get(en.getKey()).equals(en.getValue()))) {
                         String crashNode = en.getKey().split("/")[en.getKey().split("/").length - 1];
-                        ClusterLogic.checkDDLAndRelease(crashNode);
-                        ClusterLogic.checkBinlogStatusRelease(crashNode);
+                        ClusterLogic.forDDL().checkDDLAndRelease(crashNode);
+                        ClusterLogic.forBinlog().checkBinlogStatusRelease(crashNode);
                     }
                 }
                 String instanceName = SystemConfig.getInstance().getInstanceName();
                 String selfPath = ClusterPathUtil.getOnlinePath(instanceName);
                 if (!newMap.containsKey(selfPath)) {
                     lackSelf = !reInitOnlineStatus();
-                    newMap.put(selfPath, OnlineStatus.getInstance().toString());
+                    newMap.put(selfPath, OnlineStatus.getInstance().toOnlineType());
                 }
                 onlineMap = newMap;
                 index = output.getIndex();

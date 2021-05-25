@@ -94,9 +94,6 @@ public class ManagerQueryHandler {
                 case ManagerParse.RELOAD:
                     ReloadHandler.handle(sql, service, rs >>> SHIFT);
                     break;
-                case ManagerParse.CONFIGFILE:
-                    ConfFileHandler.handle(sql, service);
-                    break;
                 case ManagerParse.CREATE_DB:
                     DatabaseHandler.handle(sql, service, true);
                     break;

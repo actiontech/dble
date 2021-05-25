@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess.comm;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 
 import java.io.*;

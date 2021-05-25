@@ -18,5 +18,5 @@ public interface NotifyService {
      * @return true for success ,false for failed
      * @throws Exception
      */
-    boolean notifyProcess() throws Exception;
+    void notifyProcess() throws Exception;
 }

@@ -12,14 +12,12 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.cluster.ClusterLogic;
+import com.actiontech.dble.cluster.JsonFactory;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
 import com.actiontech.dble.cluster.zkprocess.entity.Users;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
-import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAdapter;
-import com.actiontech.dble.cluster.zkprocess.entity.user.User;
-import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
 import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
@@ -42,7 +40,6 @@ import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,10 +68,10 @@ public class ServerConfig {
     private ConfigInitializer confInitNew;
     private volatile Map<String, Properties> blacklistConfig;
     private volatile Map<String, AbstractPartitionAlgorithm> functions;
-    private String dbConfig;
-    private String shardingConfig;
-    private String userConfig;
-    private String sequenceConfig;
+    private RawJson dbConfig;
+    private RawJson shardingConfig;
+    private RawJson userConfig;
+    private RawJson sequenceConfig;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -117,7 +114,7 @@ public class ServerConfig {
         this.blacklistConfig = confInit.getBlacklistConfig();
     }
 
-    public ServerConfig(String userConfig, String dbConfig, String shardingConfig, String sequenceConfig) {
+    public ServerConfig(RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) {
         confInitNew = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
         this.users = confInitNew.getUsers();
         this.dbGroups = confInitNew.getDbGroups();
@@ -213,7 +210,7 @@ public class ServerConfig {
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
                           final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
-                          String userJsonConfig, String sequenceJsonConfig, String shardingJsonConfig, String dbJsonConfig) throws SQLNonTransientException {
+                          RawJson userJsonConfig, RawJson sequenceJsonConfig, RawJson shardingJsonConfig, RawJson dbJsonConfig) throws SQLNonTransientException {
         boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations,
                 newSystemVariables, isFullyConfigured, loadAllMode, newBlacklistConfig, newFunctions, userJsonConfig,
                 sequenceJsonConfig, shardingJsonConfig, dbJsonConfig);
@@ -330,7 +327,7 @@ public class ServerConfig {
                           Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables,
                           boolean isFullyConfigured, final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
-                          String userJsonConfig, String sequenceJsonConfig, String shardingJsonConfig, String dbJsonConfig) throws SQLNonTransientException {
+                          RawJson userJsonConfig, RawJson sequenceJsonConfig, RawJson shardingJsonConfig, RawJson dbJsonConfig) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
@@ -459,7 +456,7 @@ public class ServerConfig {
         return sb.toString();
     }
 
-    public void reviseLowerCase(String sequenceJson) {
+    public void reviseLowerCase(RawJson sequenceJson) {
 
         //user sharding
         for (UserConfig uc : users.values()) {
@@ -510,8 +507,8 @@ public class ServerConfig {
         SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
 
-    public void loadSequence(String sequenceJson) {
-        if (StringUtil.isEmpty(sequenceJson)) {
+    public void loadSequence(RawJson sequenceJson) {
+        if (sequenceJson == null) {
             loadSequence();
         } else {
             SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames(), sequenceJson);
@@ -573,43 +570,41 @@ public class ServerConfig {
         // init xml
         xmlProcess.initJaxbClass();
 
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
-        Gson gson = gsonBuilder.create();
+
+        Gson gson = JsonFactory.getJson();
         //sharding
-        if (!StringUtil.isBlank(this.shardingConfig)) {
-            ClusterLogic.syncShardingXmlToLocal(this.shardingConfig, xmlProcess, gson, isWriteToLocal);
+        if ((this.shardingConfig) != null) {
+            ClusterLogic.forConfig().syncShardingXmlToLocal(this.shardingConfig, xmlProcess, gson, isWriteToLocal);
         }
 
         //db
-        ClusterLogic.syncDbXmlToLocal(xmlProcess, this.dbConfig, isWriteToLocal);
+        ClusterLogic.forConfig().syncDbXmlToLocal(xmlProcess, this.dbConfig, isWriteToLocal);
 
         //user
-        gsonBuilder.registerTypeAdapter(User.class, new UserGsonAdapter());
-        gson = gsonBuilder.create();
-        ClusterLogic.syncUserXmlToLocal(this.userConfig, xmlProcess, gson, isWriteToLocal);
+        gson = JsonFactory.getJson();
+        ClusterLogic.forConfig().syncUserXmlToLocal(this.userConfig, xmlProcess, gson, isWriteToLocal);
 
         //sequence
-        ClusterLogic.syncSequenceToLocal(this.sequenceConfig, isWriteToLocal);
+        ClusterLogic.forConfig().syncSequenceToLocal(this.sequenceConfig, isWriteToLocal);
     }
 
-    public String getDbConfig() {
+    public RawJson getDbConfig() {
         return dbConfig;
     }
 
-    public void setDbConfig(String dbConfig) {
+    public void setDbConfig(RawJson dbConfig) {
         this.dbConfig = dbConfig;
     }
 
-    public String getShardingConfig() {
+    public RawJson getShardingConfig() {
         return shardingConfig;
     }
 
-    public String getUserConfig() {
+    public RawJson getUserConfig() {
         return userConfig;
     }
 
-    public String getSequenceConfig() {
+    public RawJson getSequenceConfig() {
         return sequenceConfig;
     }
 }

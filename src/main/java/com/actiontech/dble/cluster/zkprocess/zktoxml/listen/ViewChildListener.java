@@ -6,47 +6,46 @@
 package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.ViewChangeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 
-
-public class ViewChildListener implements PathChildrenCacheListener {
+public class ViewChildListener extends AbstractGeneralListener<ViewChangeType> {
     private static final Logger LOGGER = LoggerFactory.getLogger(ViewChildListener.class);
+
+    public ViewChildListener() {
+        super(ClusterChildMetaUtil.getViewChangePath());
+    }
+
     @Override
-    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("event happen:" + event.toString());
-        }
-        switch (event.getType()) {
-            case CHILD_ADDED:
-                ChildData childData = event.getData();
+    public void onEvent(ClusterEvent<ViewChangeType> event) throws Exception {
+        switch (event.getChangeType()) {
+            case ADDED:
                 ClusterDelayProvider.delayWhenReponseViewNotic();
-                LOGGER.info("childEvent " + childData.getPath() + " " + event.getType());
-                executeViewOperator(childData);
+                LOGGER.info("childEvent " + event.getPath() + " " + event.getChangeType());
+                executeViewOperator(event);
                 break;
-            case CHILD_UPDATED:
-                break;
-            case CHILD_REMOVED:
+            case REMOVED:
                 break;
             default:
                 break;
         }
+
     }
 
-    private void executeViewOperator(ChildData childData) throws Exception {
+
+    private void executeViewOperator(ClusterEvent<ViewChangeType> childData) throws Exception {
         String path = childData.getPath();
-        String value = new String(childData.getData(), StandardCharsets.UTF_8);
+        ViewChangeType data = childData.getValue().getData();
         String[] paths = path.split(ClusterPathUtil.SEPARATOR);
         String key = paths[paths.length - 1];
-        ClusterLogic.executeViewEvent(path, key, value);
+        ClusterLogic.forView().executeViewEvent(path, key, data);
     }
 
 

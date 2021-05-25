@@ -1,11 +1,14 @@
 /*
  * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.cluster;
+package com.actiontech.dble.cluster.path;
 
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 
 import static com.actiontech.dble.backend.mysql.view.Repository.SCHEMA_VIEW_SPLIT;
 
@@ -126,21 +129,24 @@ public final class ClusterPathUtil {
         return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
     }
 
-    public static String getBinlogPause() {
+    public static String getBinlogPausePath() {
         return BINLOG_PAUSE_PATH;
     }
 
-    public static String getBinlogPauseStatus() {
+    public static String getBinlogPauseStatusPath() {
         return BINLOG_PAUSE_PATH + SEPARATOR + BINLOG_PAUSE_STATUS;
     }
 
+    public static String getBinlogPauseStatusSelfPath() {
+        return ClusterPathUtil.getBinlogPauseStatusPath() + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceName();
+    }
 
     public static String getDDLPath() {
         return BASE_PATH + "ddl";
     }
 
-    public static String getDDLPath(String fullName) {
-        return getDDLPath() + SEPARATOR + fullName;
+    public static String getDDLPath(String fullName, DDLInfo.NodeStatus ddlStatus) {
+        return getDDLPath() + SEPARATOR + fullName + "." + ddlStatus;
     }
 
 

@@ -1,5 +1,6 @@
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.sequence.handler.*;
 
@@ -45,7 +46,7 @@ public final class SequenceManager {
         INSTANCE.handler.load(lowerCaseTableNames);
     }
 
-    public static void load(boolean lowerCaseTableNames, String sequenceJson) {
+    public static void load(boolean lowerCaseTableNames, RawJson sequenceJson) {
         INSTANCE.handler.loadByJson(lowerCaseTableNames, sequenceJson);
     }
 

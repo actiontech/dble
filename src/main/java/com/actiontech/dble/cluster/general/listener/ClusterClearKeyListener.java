@@ -5,18 +5,22 @@
 
 package com.actiontech.dble.cluster.general.listener;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
-import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.general.response.ClusterXmlLoader;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.AnyType;
+import com.actiontech.dble.cluster.values.ChangeType;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.ClusterValue;
+import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -29,7 +33,7 @@ public class ClusterClearKeyListener implements Runnable {
 
     private Map<String, ClusterXmlLoader> childService = new HashMap<>();
 
-    private Map<String, String> cache = new HashMap<>();
+    private Map<String, ClusterEvent<?>> cache = new HashMap<>();
 
     private long index = 0;
     private AbstractConsulSender sender;
@@ -49,7 +53,7 @@ public class ClusterClearKeyListener implements Runnable {
                 request.setPath(ClusterPathUtil.CONF_BASE_PATH);
                 SubscribeReturnBean output = sender.subscribeKvPrefix(request);
                 if (output.getIndex() != index) {
-                    Map<String, KvBean> diffMap = getDiffMapWithOrder(output);
+                    Map<String, ClusterEvent<?>> diffMap = getDiffMap(output);
                     handle(diffMap);
                     index = output.getIndex();
                 }
@@ -60,46 +64,31 @@ public class ClusterClearKeyListener implements Runnable {
         }
     }
 
-
-    private Map<String, KvBean> getDiffMapWithOrder(SubscribeReturnBean output) {
-        Map<String, KvBean> diffMap = new LinkedHashMap<String, KvBean>();
-        Map<String, String> newKeyMap = new LinkedHashMap<String, String>();
-
-        KvBean reloadKv = null;
+    private Map<String, ClusterEvent<?>> getDiffMap(SubscribeReturnBean output) {
+        Map<String, ClusterEvent<?>> diffMap = new HashMap<>();
+        Map<String, ClusterEvent<?>> newKeyMap = new HashMap<>();
 
         //find out the new key & changed key
         for (int i = 0; i < output.getKeysCount(); i++) {
-            newKeyMap.put(output.getKeys(i), output.getValues(i));
+            final ClusterValue<AnyType> clusterValue = ClusterValue.readFromJson(output.getValues(i), AnyType.class);
+            //noinspection deprecation
+            newKeyMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.UPDATED));
             if (cache.get(output.getKeys(i)) != null) {
-                if (!cache.get(output.getKeys(i)).equals(output.getValues(i))) {
-                    if (output.getKeys(i).equalsIgnoreCase(ClusterPathUtil.getConfStatusOperatorPath())) {
-                        reloadKv = new KvBean(output.getKeys(i), output.getValues(i), KvBean.UPDATE);
-                    } else {
-                        diffMap.put(output.getKeys(i), new KvBean(output.getKeys(i), output.getValues(i), KvBean.UPDATE));
-                    }
+                final ClusterValue<?> value = cache.get(output.getKeys(i)).getValue();
+                if ((!Objects.equals(value.getInstanceName(), clusterValue.getInstanceName())) || (!Objects.equals(value.getCreatedAt(), clusterValue.getCreatedAt()))) {
+                    //noinspection deprecation
+                    diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.UPDATED));
                 }
             } else {
-                if (output.getKeys(i).equalsIgnoreCase(ClusterPathUtil.getConfStatusOperatorPath())) {
-                    reloadKv = new KvBean(output.getKeys(i), output.getValues(i), KvBean.ADD);
-                } else {
-                    diffMap.put(output.getKeys(i), new KvBean(output.getKeys(i), output.getValues(i), KvBean.ADD));
-                }
+                diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.ADDED));
             }
         }
 
         //find out the deleted Key
-        for (Map.Entry<String, String> entry : cache.entrySet()) {
+        for (Map.Entry<String, ClusterEvent<?>> entry : cache.entrySet()) {
             if (!newKeyMap.containsKey(entry.getKey())) {
-                if (entry.getKey().equalsIgnoreCase(ClusterPathUtil.getConfStatusOperatorPath())) {
-                    reloadKv = new KvBean(entry.getKey(), entry.getValue(), KvBean.DELETE);
-                } else {
-                    diffMap.put(entry.getKey(), new KvBean(entry.getKey(), entry.getValue(), KvBean.DELETE));
-                }
+                diffMap.put(entry.getKey(), new ClusterEvent<>(entry.getKey(), entry.getValue().getValue(), ChangeType.REMOVED));
             }
-        }
-
-        if (reloadKv != null) {
-            diffMap.put(reloadKv.getKey(), reloadKv);
         }
 
         cache = newKeyMap;
@@ -115,10 +104,11 @@ public class ClusterClearKeyListener implements Runnable {
             request.setPath(ClusterPathUtil.BASE_PATH);
             SubscribeReturnBean output = sender.subscribeKvPrefix(request);
             index = output.getIndex();
-            Map<String, KvBean> diffMap = new HashMap<String, KvBean>();
+            Map<String, ClusterEvent<?>> diffMap = new HashMap<>();
             for (int i = 0; i < output.getKeysCount(); i++) {
-                diffMap.put(output.getKeys(i), new KvBean(output.getKeys(i), output.getValues(i), KvBean.ADD));
-                cache.put(output.getKeys(i), output.getValues(i));
+                final ClusterValue<AnyType> clusterValue = ClusterValue.readFromJson(output.getValues(i), AnyType.class);
+                diffMap.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.ADDED));
+                cache.put(output.getKeys(i), new ClusterEvent<>(output.getKeys(i), clusterValue, ChangeType.ADDED));
             }
             handle(diffMap);
         } catch (Exception e) {
@@ -132,14 +122,18 @@ public class ClusterClearKeyListener implements Runnable {
      * if the config version changes,writeDirectly the file
      * or just start a new waiting
      */
-    public void handle(Map<String, KvBean> diffMap) {
+    public void handle(Map<String, ClusterEvent<?>> diffMap) {
         try {
-            for (Map.Entry<String, KvBean> entry : diffMap.entrySet()) {
+            diffMap.entrySet().stream().sorted((e1, e2) -> Longs.compare(e1.getValue().getValue().getCreatedAt(), e2.getValue().getValue().getCreatedAt())).forEach(entry -> {
                 ClusterXmlLoader x = childService.get(entry.getKey());
                 if (x != null) {
-                    x.notifyProcess(entry.getValue());
+                    try {
+                        x.notifyProcess(entry.getValue(), false);
+                    } catch (Exception e) {
+                        LOGGER.warn(" ucore data parse to xml error", e);
+                    }
                 }
-            }
+            });
         } catch (Exception e) {
             LOGGER.warn(" ucore data parse to xml error ", e);
         }

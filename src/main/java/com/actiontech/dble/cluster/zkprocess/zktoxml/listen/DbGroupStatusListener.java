@@ -1,44 +1,45 @@
 package com.actiontech.dble.cluster.zkprocess.zktoxml.listen;
 
-import com.actiontech.dble.cluster.ClusterLogic;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.RawJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * Created by szf on 2019/10/30.
  */
-public class DbGroupStatusListener implements PathChildrenCacheListener {
+public class DbGroupStatusListener extends AbstractGeneralListener<RawJson> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupStatusListener.class);
 
+    public DbGroupStatusListener() {
+        super(ClusterChildMetaUtil.getHaStatusPath());
+    }
+
     @Override
-    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("event happen:" + event.toString());
-        }
-        switch (event.getType()) {
-            case CHILD_ADDED:
-            case CHILD_UPDATED:
-                updateStatus(event.getData());
+    public void onEvent(ClusterEvent<RawJson> event) throws Exception {
+        switch (event.getChangeType()) {
+            case ADDED:
+                //noinspection deprecation
+            case UPDATED:
+                updateStatus(event);
                 break;
-            case CHILD_REMOVED:
+            case REMOVED:
                 break;
             default:
                 break;
         }
     }
 
-    private void updateStatus(ChildData childData) {
+
+    private void updateStatus(ClusterEvent<RawJson> childData) {
         try {
             String dbGroupName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
-            String value = new String(childData.getData(), StandardCharsets.UTF_8);
-            ClusterLogic.dbGroupChangeEvent(dbGroupName, value);
+            RawJson rawJson = childData.getValue().getData();
+            ClusterLogic.forHA().dbGroupChangeEvent(dbGroupName, rawJson);
         } catch (Exception e) {
             LOGGER.warn("get Error when update Ha status", e);
         }

@@ -5,12 +5,13 @@
 
 package com.actiontech.dble.cluster.general.kVtoXml;
 
-import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.general.listener.ClusterOffLineListener;
 import com.actiontech.dble.cluster.general.listener.ClusterSingleKeyListener;
 import com.actiontech.dble.cluster.general.response.*;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.ClusterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 
 /**
  * Created by szf on 2018/1/24.
@@ -41,16 +42,19 @@ public final class ClusterToXml {
             //create a new listener to the ucore config change
             listener = new ClusterClearKeyListener(sender);
             //add all loader into listener map list
-            new XmlDbLoader(listener);
-            new XmlShardingLoader(listener);
-            new XmlUserLoader(listener);
-            new SequencePropertiesLoader(listener);
+            new XmlDbLoader().registerPrefixForUcore(listener);
+            new XmlShardingLoader().registerPrefixForUcore(listener);
+            new XmlUserLoader().registerPrefixForUcore(listener);
+            new SequencePropertiesLoader().registerPrefixForUcore(listener);
+
 
             //add listener to watch the Prefix of the keys
-            new ConfigStatusResponse(listener);
-            new PauseShardingNodeResponse(listener);
+            new ConfigStatusResponse().registerPrefixForUcore(listener);
+            final PauseShardingNodeResponse pauseShardingNodeResponse = new PauseShardingNodeResponse();
+            pauseShardingNodeResponse.registerPrefixForUcore(listener);
 
-            final ClusterSingleKeyListener binlogPauseListener = new ClusterSingleKeyListener(ClusterPathUtil.getBinlogPause() + SEPARATOR, new BinlogPauseStatusResponse(), sender);
+
+            final ClusterSingleKeyListener binlogPauseListener = new ClusterSingleKeyListener(ClusterPathUtil.getBinlogPausePath() + SEPARATOR, new BinlogPauseStatusResponse(), sender);
 
             final ClusterSingleKeyListener ddlListener = new ClusterSingleKeyListener(ClusterPathUtil.getDDLPath() + SEPARATOR, new DdlChildResponse(), sender);
 
@@ -101,7 +105,7 @@ public final class ClusterToXml {
         return listener;
     }
 
-    public static Map<String, String> getOnlineMap() {
+    public static Map<String, OnlineType> getOnlineMap() {
         return offlineStatusListener.copyOnlineMap();
     }
 }

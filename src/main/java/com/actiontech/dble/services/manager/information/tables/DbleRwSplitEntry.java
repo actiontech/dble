@@ -2,7 +2,8 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.Users;
 import com.actiontech.dble.cluster.zkprocess.entity.user.RwSplitUser;
 import com.actiontech.dble.config.ConfigFileName;
@@ -118,7 +119,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         List<RwSplitUser> rwSplitUserList = rows.stream().map(this::transformRowToUser).collect(Collectors.toList());
 
         UserConverter userConverter = new UserConverter();
-        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        RawJson userConfig = DbleServer.getInstance().getConfig().getUserConfig();
         Users users = userConverter.userJsonToBean(userConfig);
 
         checkLogicalUniqueKeyDuplicate(users, rwSplitUserList);
@@ -142,7 +143,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         List<RwSplitUser> rwSplitUserList = affectPks.stream().map(this::transformRowToUser).collect(Collectors.toList());
 
         UserConverter userConverter = new UserConverter();
-        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        RawJson userConfig = DbleServer.getInstance().getConfig().getUserConfig();
         Users users = userConverter.userJsonToBean(userConfig);
 
         updateList(users, rwSplitUserList, false);
@@ -157,7 +158,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
         List<RwSplitUser> rwSplitUserList = affectPks.stream().map(this::transformRowToUser).collect(Collectors.toList());
 
         UserConverter userConverter = new UserConverter();
-        String userConfig = DbleServer.getInstance().getConfig().getUserConfig();
+        RawJson userConfig = DbleServer.getInstance().getConfig().getUserConfig();
         Users users = userConverter.userJsonToBean(userConfig);
 
         updateList(users, rwSplitUserList, true);

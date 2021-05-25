@@ -6,13 +6,15 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.logic.ClusterOperation;
+import com.actiontech.dble.cluster.path.ClusterMetaUtil;
+import com.actiontech.dble.cluster.values.ClusterValue;
+import com.actiontech.dble.cluster.values.PauseInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,12 +47,13 @@ public final class PauseEnd {
         LOGGER.info("resume start from command");
         if (ClusterConfig.getInstance().isClusterEnable()) {
             try {
-                String value = ClusterHelper.getPathValue(ClusterPathUtil.getPauseResultNodePath());
-                if (StringUtil.isEmpty(value)) {
+                ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.PAUSE_RESUME);
+                PauseInfo pauseInfo = clusterHelper.getPathValue(ClusterMetaUtil.getPauseResultNodePath()).map(ClusterValue::getData).orElse(null);
+                if (pauseInfo == null) {
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No shardingNode paused");
                     return;
                 }
-                LOGGER.debug("{}", value);
+                LOGGER.debug("{}", pauseInfo);
 
                 if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "other instance is in operation");

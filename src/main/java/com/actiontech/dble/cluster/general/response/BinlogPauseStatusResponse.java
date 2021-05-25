@@ -6,40 +6,45 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterLogic;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.general.bean.KvBean;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.logic.ClusterLogic;
+import com.actiontech.dble.cluster.path.ChildPathMeta;
+import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.ChangeType;
+import com.actiontech.dble.cluster.values.ClusterEvent;
+import com.actiontech.dble.cluster.values.Empty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/1/31.
  */
-public class BinlogPauseStatusResponse implements ClusterXmlLoader {
+public class BinlogPauseStatusResponse extends AbstractGeneralListener<Empty> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusResponse.class);
+    public static final ChildPathMeta<Empty> BINLOG_PAUSE_PATH = ClusterChildMetaUtil.getBinlogPausePath();
 
+    public BinlogPauseStatusResponse() {
+        super(BINLOG_PAUSE_PATH);
+    }
 
     @Override
-    public void notifyProcess(KvBean configValue) throws Exception {
+    public void onEvent(ClusterEvent<Empty> configValue) throws Exception {
         if (!DbleServer.getInstance().isStartup()) {
             return;
         }
-        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        String path = configValue.getKey();
+
+        String path = configValue.getPath();
         String[] paths = path.split(ClusterPathUtil.SEPARATOR);
-        if (paths.length != ClusterLogic.getPathHeight(ClusterPathUtil.getBinlogPause()) + 1) {
-            return;
-        }
-        if ("".equals(configValue.getValue())) {
-            //the value of key is empty,just doing nothing
+        if (paths.length != ClusterLogic.forBinlog().getPathHeight(BINLOG_PAUSE_PATH.getPath()) + 1) {
             return;
         }
 
-        String value = configValue.getValue();
-        if (KvBean.DELETE.equals(configValue.getChangeType())) {
-            ClusterLogic.executeBinlogPauseDeleteEvent(value);
+        String instanceName = configValue.getValue().getInstanceName();
+        if (ChangeType.REMOVED.equals(configValue.getChangeType())) {
+            ClusterLogic.forBinlog().executeBinlogPauseDeleteEvent(instanceName);
         } else {
-            ClusterLogic.executeBinlogPauseEvent(value);
+            ClusterLogic.forBinlog().executeBinlogPauseEvent(instanceName);
         }
     }
 

@@ -144,11 +144,11 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
             int optCommand = mm.readUB2();
             if (optCommand == 0) {
                 multiStatementAllow = true;
-                writeDirectly(EOFPacket.EOF);
+                writeDirectly(EOFPacket.EOF, true);
                 return;
             } else if (optCommand == 1) {
                 multiStatementAllow = false;
-                writeDirectly(EOFPacket.EOF);
+                writeDirectly(EOFPacket.EOF, true);
                 return;
             }
         }

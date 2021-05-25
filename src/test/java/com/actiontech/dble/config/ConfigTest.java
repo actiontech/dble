@@ -7,6 +7,7 @@ package com.actiontech.dble.config;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
@@ -28,11 +29,11 @@ public class ConfigTest {
 
     public ConfigTest() throws Exception {
 
-        String dbXmlToJson = DBConverter.dbXmlToJson("./config/db.xml");
+        RawJson dbXmlToJson = DBConverter.dbXmlToJson("./config/db.xml");
         this.dbConverter = new DBConverter();
         dbConverter.dbJsonToMap(dbXmlToJson, null, false);
         ShardingConverter shardingConverter = new ShardingConverter();
-        String shardingXmlToJson = shardingConverter.shardingXmlToJson("./config/sharding.xml");
+        RawJson shardingXmlToJson = shardingConverter.shardingXmlToJson("./config/sharding.xml");
         shardingConverter.shardingJsonToMap(shardingXmlToJson, dbConverter.getDbGroupMap(), null, null);
         this.erRealtions = shardingConverter.getErRelations();
 

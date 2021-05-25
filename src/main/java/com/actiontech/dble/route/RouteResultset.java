@@ -20,6 +20,8 @@ import java.util.Map;
  */
 public final class RouteResultset implements Serializable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteResultset.class);
+    private static final String DDL_TRACE_LOG = "DDL_TRACE";
+    private static final Logger DTRACE_LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
     private static final long serialVersionUID = 3906972758236875720L;
 
     private String srcStatement; // origin statement
@@ -93,7 +95,7 @@ public final class RouteResultset implements Serializable {
     public void setNeedOptimizer(boolean needOptimizer) {
         this.needOptimizer = needOptimizer;
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("the sql is need to use complex query Optimizer:" + srcStatement);
+            DTRACE_LOGGER.trace("the sql is need to use complex query Optimizer:" + srcStatement);
         }
     }
 
@@ -206,7 +208,7 @@ public final class RouteResultset implements Serializable {
     public void setNodes(RouteResultsetNode[] nodes) {
         if (alwaysFalse && nodes.length > 1) {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("the condition is always false ,route from broadcast to single");
+                DTRACE_LOGGER.trace("the condition is always false ,route from broadcast to single");
             }
             RouteResultsetNode[] newNodes = new RouteResultsetNode[1];
             newNodes[0] = nodes[0];

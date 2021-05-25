@@ -12,6 +12,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
+import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
@@ -434,7 +435,7 @@ public class PhysicalDbGroup {
     }
 
     public RawJson getClusterHaJson() {
-        JsonObject jsonObject = new JsonObject();
+        JsonObjectWriter jsonObject = new JsonObjectWriter();
         jsonObject.addProperty(JSON_NAME, this.getGroupName());
         List<DbInstanceStatus> list = new ArrayList<>();
         for (PhysicalDbInstance phys : allSourceMap.values()) {

@@ -7,6 +7,7 @@ import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
 import com.actiontech.dble.cluster.values.HaInfo;
+import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
@@ -16,7 +17,6 @@ import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.util.DbXmlWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,7 +144,7 @@ public final class HaConfigManager {
     public Map<String, RawJson> getSourceJsonList() {
         Map<String, RawJson> map = new HashMap<>();
         for (DBGroup dbGroup : dbGroups.getDbGroup()) {
-            JsonObject jsonObject = new JsonObject();
+            JsonObjectWriter jsonObject = new JsonObjectWriter();
             jsonObject.addProperty(JSON_NAME, dbGroup.getName());
             List<DbInstanceStatus> list = new ArrayList<>();
             for (DBInstance dbInstance : dbGroup.getDbInstance()) {

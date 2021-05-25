@@ -32,7 +32,14 @@ public abstract class RawJson {
     }
 
 
-    public static RawJson of(JsonObject data) {
+    public static RawJson of(JsonObjectWriter data) {
+        if (data == null) {
+            return new RawJsonForJson(null);
+        }
+        return new RawJsonForJson(data.toJsonObject());
+    }
+
+    protected static RawJson of(JsonObject data) {
         if (data == null) {
             return new RawJsonForJson(null);
         }

@@ -71,7 +71,13 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         try {
             // first,need a seed
             if (this.seed == null) {
-                handleHandshake(data);
+                if (data[4] == ErrorPacket.FIELD_COUNT) {
+                    ErrorPacket err = new ErrorPacket();
+                    err.read(data);
+                    throw new RuntimeException(new String(err.getMessage()));
+                } else {
+                    handleHandshake(data);
+                }
                 return;
             }
 

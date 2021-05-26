@@ -88,6 +88,9 @@ public class ManagerQueryHandler {
                 case ManagerParse.STOP:
                     StopHandler.handle(sql, service, rs >>> SHIFT);
                     break;
+                case ManagerParse.START:
+                    StartHandler.handle(sql, service, rs >>> SHIFT);
+                    break;
                 case ManagerParse.DRY_RUN:
                     DryRun.execute(service);
                     break;
@@ -99,6 +102,9 @@ public class ManagerQueryHandler {
                     break;
                 case ManagerParse.DROP_DB:
                     DatabaseHandler.handle(sql, service, false);
+                    break;
+                case ManagerParse.DROP_STATISTIC_QUEUE_USAGE:
+                    StatisticCf.Queue.drop(service);
                     break;
                 case ManagerParse.ENABLE:
                     EnableHandler.handle(sql, service, rs >>> SHIFT);

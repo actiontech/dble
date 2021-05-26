@@ -51,6 +51,10 @@ public class StatisticDisruptor {
         return true;
     }
 
+    public Disruptor<StatisticEvent> getDisruptor() {
+        return disruptor;
+    }
+
     private static final EventFactory<StatisticEvent> EVENTFACTORY = new EventFactory<StatisticEvent>() {
         @Override
         public StatisticEvent newInstance() {

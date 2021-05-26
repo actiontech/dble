@@ -512,31 +512,27 @@ public class NonBlockingSession extends Session {
                 DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, shardingService);
             }
 
-            if (rrs.getNodes().length == 1) {
-                if (null == rrs.getDdlHandler()) {
-                    executableHandler = new SingleNodeDDLHandler(rrs, this);
-                } else {
+            if (null != rrs.getDdlHandler()) {
+                if (rrs.getNodes().length == 1) {
                     executableHandler = rrs.getDdlHandler();
-                }
-                setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
-            } else {
-                /*
-                 * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
-                 * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
-                 */
-                checkBackupStatus();
-                if (null == rrs.getDdlHandler()) {
-                    executableHandler = new MultiNodeDdlPrepareHandler(rrs, this);
+                    setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
                 } else {
+                    /*
+                     * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
+                     * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
+                     */
+                    checkBackupStatus();
                     executableHandler = rrs.getDdlHandler();
+                    setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
                 }
-                setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
-            }
 
-            setTraceSimpleHandler((ResponseHandler) executableHandler);
-            readyToDeliver();
-            executableHandler.execute();
-            discard = true;
+                setTraceSimpleHandler((ResponseHandler) executableHandler);
+                readyToDeliver();
+                executableHandler.execute();
+                discard = true;
+            } else {
+                throw new Exception("no processor to perform!");
+            }
         } catch (Exception e) {
             LOGGER.info(String.valueOf(shardingService) + rrs, e);
             if (null != executableHandler)
@@ -726,6 +722,7 @@ public class NonBlockingSession extends Session {
             if (shardingService.isTxInterrupted()) {
                 throw new SQLException(shardingService.getTxInterruptMsg(), "HY000", ErrorCode.ER_YES);
             }
+            shardingService.getSession2().checkBackupStatus();
             transactionManager.syncImplicitCommit();
         }
     }

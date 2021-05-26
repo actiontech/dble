@@ -46,7 +46,7 @@ public class DruidDropTableParser extends DruidImplicitCommitParser {
         BaseTableConfig tc = tables.get(schemaInfo.getTable());
         if (tc == null) {
             if (dropTable.isIfExists()) {
-                service.writeOkPacket();
+                rrs.setFinishedExecute(true);
             } else {
                 String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);

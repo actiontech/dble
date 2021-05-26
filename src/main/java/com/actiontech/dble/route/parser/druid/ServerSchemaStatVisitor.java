@@ -335,7 +335,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLBinaryOpExpr x) {
-        if (isUnaryParentEffect(x)) return true;
+        if (isParentEffect(x)) {
+            return true;
+        }
         x.getLeft().setParent(x);
         x.getRight().setParent(x);
 
@@ -908,10 +910,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
     }
 
-    private boolean isUnaryParentEffect(SQLBinaryOpExpr x) {
-        if (x.getParent() instanceof SQLUnaryExpr) {
-            SQLUnaryExpr parent = (SQLUnaryExpr) x.getParent();
-            switch (parent.getOperator()) {
+    private boolean isParentEffect(SQLBinaryOpExpr x) {
+        SQLObject parent = x.getParent();
+        //filter conditions like group by, order by ,having
+        if (parent instanceof SQLSelectOrderByItem || parent instanceof SQLSelectGroupByClause) {
+            return true;
+        }
+        if (parent instanceof SQLUnaryExpr) {
+            SQLUnaryExpr sqlUnaryExprParent = (SQLUnaryExpr) x.getParent();
+            switch (sqlUnaryExprParent.getOperator()) {
                 case Not:
                 case NOT:
                 case Compl:
@@ -926,6 +933,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private void putAliasToMap(String name, String value) {
         putAliasToMap(name, value, true);
     }
+
     private void putAliasToMap(String name, String value, boolean removeApostrophe) {
         if (removeApostrophe) {
             value = value.replace("`", "");

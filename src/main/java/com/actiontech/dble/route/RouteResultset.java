@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author mycat
@@ -204,7 +205,7 @@ public final class RouteResultset implements Serializable {
     }
 
     public void setNodes(RouteResultsetNode[] nodes) {
-        if (alwaysFalse && nodes.length > 1) {
+        if (alwaysFalse && !Objects.isNull(nodes) && nodes.length > 1) {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("the condition is always false ,route from broadcast to single");
             }

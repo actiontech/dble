@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.handler
 
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.StageRecorder;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionStage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.stage.CommitStage;
@@ -23,6 +24,7 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,6 +62,30 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             conns.add(conn);
         }
         changeStageTo(new CommitStage(session, conns, implicitCommitHandler));
+    }
+
+
+    @Override
+    public void syncImplicitCommit() throws SQLException {
+        StageRecorder stageRecorder = new StageRecorder();
+        if (session.getTargetCount() <= 0) {
+            CommitStage commitStage = new CommitStage(session, null, stageRecorder);
+            commitStage.next(false, null, null);
+            stageRecorder.check();
+            return;
+        }
+
+        reset();
+        unResponseRrns.addAll(session.getTargetKeys());
+        List<BackendConnection> conns = new ArrayList<>(session.getTargetCount());
+        BackendConnection conn;
+        for (RouteResultsetNode rrn : session.getTargetKeys()) {
+            conn = session.getTarget(rrn);
+            conn.getBackendService().setResponseHandler(this);
+            conns.add(conn);
+        }
+        changeStageTo(new CommitStage(session, conns, stageRecorder));
+        stageRecorder.check();
     }
 
     @Override

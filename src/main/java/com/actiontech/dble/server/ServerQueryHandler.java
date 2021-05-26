@@ -142,20 +142,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         connection.setSkipCheck(true);
                         service.loadDataInfileStart(sql);
                         break;
-                    case ServerParse.LOCK:
-                        service.lockTable(sql);
-                        break;
                     case ServerParse.UNLOCK:
                         service.unLockTable(sql);
-                        break;
-                    case ServerParse.CREATE_VIEW:
-                    case ServerParse.REPLACE_VIEW:
-                    case ServerParse.ALTER_VIEW:
-                    case ServerParse.DROP_VIEW:
-                        ViewHandler.handle(sqlType, sql, service);
-                        break;
-                    case ServerParse.CREATE_DATABASE:
-                        CreateDatabaseHandler.handle(sql, service);
                         break;
                     case ServerParse.FLUSH:
                         FlushTableHandler.handle(sql, service);

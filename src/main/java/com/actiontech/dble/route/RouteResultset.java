@@ -5,6 +5,7 @@
  */
 package com.actiontech.dble.route;
 
+import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
 import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -41,6 +42,7 @@ public final class RouteResultset implements Serializable {
     private boolean sqlRouteCacheAble;
     // limit output total
     private int limitSize;
+    private transient ExecutableHandler ddlHandler;
 
     private boolean callStatement = false; // is Call Statement
 
@@ -305,7 +307,6 @@ public final class RouteResultset implements Serializable {
         return s.toString();
     }
 
-
     public DDLInfo.DDLType getDdlType() {
         return ddlType;
     }
@@ -353,5 +354,13 @@ public final class RouteResultset implements Serializable {
 
     public void setEnableLoadDataFlag(boolean enableLoadDataFlag) {
         this.enableLoadDataFlag = enableLoadDataFlag;
+    }
+
+    public ExecutableHandler getDdlHandler() {
+        return ddlHandler;
+    }
+
+    public void setDdlHandler(ExecutableHandler ddlHandler) {
+        this.ddlHandler = ddlHandler;
     }
 }

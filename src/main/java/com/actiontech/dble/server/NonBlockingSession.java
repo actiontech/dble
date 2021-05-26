@@ -56,6 +56,7 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
@@ -70,7 +71,6 @@ import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
-import static com.actiontech.dble.server.parser.ServerParse.DDL;
 
 /**
  * @author mycat
@@ -481,17 +481,10 @@ public class NonBlockingSession extends Session {
                 }
                 return;
             }
-
-            if (rrs.getSqlType() == DDL) {
-                // ddl
-                if (transactionManager.getSessionXaID() != null) {
-                    shardingService.writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "DDL is not allowed to be executed in xa transaction.");
-                    return;
-                }
-                setRouteResultToTrace(nodes);
+            setRouteResultToTrace(nodes);
+            if (rrs.getDdlHandler() != null) {
                 executeDDL(rrs);
             } else {
-                setRouteResultToTrace(nodes);
                 // dml or simple select
                 executeOther(rrs);
             }
@@ -508,19 +501,23 @@ public class NonBlockingSession extends Session {
 
     private void executeDDL(RouteResultset rrs) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "execute-sql-for-ddl");
-        ExecutableHandler executableHandler;
+        ExecutableHandler executableHandler = null;
         boolean hasDDLInProcess = true;
         try {
             DDLTraceManager.getInstance().startDDL(shardingService);
             // not hint and not online ddl
             if (rrs.getSchema() != null && !rrs.isOnline()) {
-                addTableMetaLock(rrs);
+                addMetaLock(rrs);
                 hasDDLInProcess = false;
                 DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, shardingService);
             }
 
             if (rrs.getNodes().length == 1) {
-                executableHandler = new SingleNodeDDLHandler(rrs, this);
+                if (null == rrs.getDdlHandler()) {
+                    executableHandler = new SingleNodeDDLHandler(rrs, this);
+                } else {
+                    executableHandler = rrs.getDdlHandler();
+                }
                 setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
             } else {
                 /*
@@ -528,20 +525,26 @@ public class NonBlockingSession extends Session {
                  * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
                  */
                 checkBackupStatus();
-                executableHandler = new MultiNodeDdlPrepareHandler(rrs, this);
+                if (null == rrs.getDdlHandler()) {
+                    executableHandler = new MultiNodeDdlPrepareHandler(rrs, this);
+                } else {
+                    executableHandler = rrs.getDdlHandler();
+                }
                 setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
             }
 
             setTraceSimpleHandler((ResponseHandler) executableHandler);
-
             readyToDeliver();
             executableHandler.execute();
             discard = true;
         } catch (Exception e) {
             LOGGER.info(String.valueOf(shardingService) + rrs, e);
+            if (null != executableHandler)
+                executableHandler.clearAfterFailExecute();
             if (!hasDDLInProcess) {
                 handleSpecial(rrs, false, null);
             }
+            DDLTraceManager.getInstance().endDDL(shardingService, e.getMessage());
             shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);
@@ -666,7 +669,16 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    private void addTableMetaLock(RouteResultset rrs) throws SQLNonTransientException {
+    private void addMetaLock(RouteResultset rrs) throws SQLNonTransientException {
+        if (rrs.getSqlType() == ServerParse.CREATE_VIEW ||
+                rrs.getSqlType() == ServerParse.DROP_VIEW ||
+                rrs.getSqlType() == ServerParse.ALTER_VIEW ||
+                rrs.getSqlType() == ServerParse.REPLACE_VIEW ||
+                rrs.getSqlType() == ServerParse.CREATE_DATABASE ||
+                rrs.getSqlType() == ServerParse.LOCK) {
+            return;
+        }
+
         String schema = rrs.getSchema();
         String table = rrs.getTable();
         try {
@@ -709,6 +721,15 @@ public class NonBlockingSession extends Session {
         transactionManager.implicitCommit(handler);
     }
 
+    public void syncImplicitCommit() throws SQLException {
+        if (shardingService.isTxStart() || !shardingService.isAutocommit()) {
+            if (shardingService.isTxInterrupted()) {
+                throw new SQLException(shardingService.getTxInterruptMsg(), "HY000", ErrorCode.ER_YES);
+            }
+            transactionManager.syncImplicitCommit();
+        }
+    }
+
     public void performSavePoint(String spName, SavePointHandler.Type type) {
         if (savePointHandler == null) {
             savePointHandler = new SavePointHandler(this);
@@ -731,33 +752,6 @@ public class NonBlockingSession extends Session {
 
     public void rollback() {
         transactionManager.rollback();
-    }
-
-    /**
-     * lockTable
-     *
-     * @param rrs
-     * @author songdabin
-     * @date 2016-7-9
-     */
-    public void lockTable(RouteResultset rrs) {
-        RouteResultsetNode[] nodes = rrs.getNodes();
-        if (nodes == null || nodes.length == 0 || nodes[0].getName() == null ||
-                nodes[0].getName().equals("")) {
-            shardingService.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                    "No shardingNode found ,please check tables defined in schema:" + shardingService.getSchema());
-            return;
-        }
-        LockTablesHandler handler = new LockTablesHandler(this, rrs);
-        shardingService.setLocked(true);
-        transactionManager.setXaTxEnabled(false, shardingService);
-        try {
-            handler.execute();
-        } catch (Exception e) {
-            shardingService.setLocked(false);
-            LOGGER.info(String.valueOf(shardingService) + rrs, e);
-            shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-        }
     }
 
     /**
@@ -999,15 +993,6 @@ public class NonBlockingSession extends Session {
     public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
         if (rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
-            shardingService.transactionsCountInTx();
-            if (shardingService.isTxStart()) {
-                shardingService.setTxStart(false);
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(shardingService)).ifPresent(r -> r.onTxEnd());
-                shardingService.getAndIncrementXid();
-                if (!shardingService.isAutocommit()) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByImplicitly(shardingService));
-                }
-            }
             if (rrs.isOnline()) {
                 LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
                 return true;

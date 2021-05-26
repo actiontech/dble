@@ -536,7 +536,7 @@ public class ShardingServerParse extends AbstractServerParse {
     }
 
     private int dropViewCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 3) {
+        if (stmt.length() > offset + 4) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
@@ -548,7 +548,7 @@ public class ShardingServerParse extends AbstractServerParse {
                 return DROP_VIEW;
             }
         }
-        return DDL;
+        return OTHER;
     }
 
     // delete or drop

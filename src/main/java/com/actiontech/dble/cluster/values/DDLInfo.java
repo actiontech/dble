@@ -20,7 +20,17 @@ public class DDLInfo {
     }
 
     public enum DDLType {
-        CREATE_TABLE, DROP_TABLE, ALTER_TABLE, TRUNCATE_TABLE, CREATE_INDEX, DROP_INDEX, UNKNOWN
+        CREATE_DATABASE,
+        CREATE_TABLE,
+        DROP_TABLE,
+        ALTER_TABLE,
+        TRUNCATE_TABLE,
+        CREATE_INDEX,
+        DROP_INDEX,
+        CREATEORREPLACE_VIEW,
+        ALTER_VIEW,
+        DROP_VIEW,
+        UNKNOWN
     }
 
     private String schema;

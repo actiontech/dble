@@ -11,7 +11,7 @@ import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
+import com.actiontech.dble.route.parser.druid.impl.DruidImplicitCommitParser;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -35,10 +35,9 @@ import java.util.Map;
  *
  * @author wang.dw
  */
-public class DruidAlterTableParser extends DefaultDruidParser {
+public class DruidAlterTableParser extends DruidImplicitCommitParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain)
-            throws SQLException {
+    public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         SQLAlterTableStatement alterTable = (SQLAlterTableStatement) stmt;
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, alterTable.getTableSource());
@@ -77,6 +76,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         }
         if (!support && alterTable.getItems().size() != 0) {
             msg = msg + stmt;
+            setSyntaxNotSupported(true);
             throw new SQLNonTransientException(msg);
         }
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());

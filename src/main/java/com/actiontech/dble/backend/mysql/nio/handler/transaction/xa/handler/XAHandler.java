@@ -21,6 +21,8 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
+import java.sql.SQLException;
+
 public class XAHandler extends AbstractXAHandler implements TransactionHandler {
 
     public XAHandler(NonBlockingSession session) {
@@ -49,6 +51,11 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     public void implicitCommit(ImplicitCommitHandler handler) {
         this.implicitCommitHandler = handler;
         commit();
+    }
+
+    @Override
+    public void syncImplicitCommit() throws SQLException {
+        // implicit commit is not supported in XA transactions, so ignore
     }
 
     @Override

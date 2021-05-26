@@ -128,9 +128,14 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             this.handleInnerData(data);
 
         } catch (Throwable e) {
-            LOGGER.error("process task error", e);
-            writeErrMessage(ErrorCode.ER_YES, "process task error, exception is " + e);
-            connection.close("process task error");
+            String msg = e.getMessage();
+            if (StringUtil.isEmpty(msg)) {
+                LOGGER.warn("Maybe occur a bug, please check it.", e);
+                msg = e.toString();
+            } else {
+                LOGGER.warn("There is an error you may need know.", e);
+            }
+            writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
         } finally {
             synchronized (this) {
                 currentTask = null;

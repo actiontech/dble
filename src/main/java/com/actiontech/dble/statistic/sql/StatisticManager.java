@@ -20,7 +20,7 @@ public final class StatisticManager {
     private static StatisticListener statisticListener = StatisticListener.getInstance();
     private static volatile LinkedHashMap<String, String> usageData = new LinkedHashMap<>();
     private boolean isStart = false;
-    private Timer queueMonitor;
+    private volatile Timer queueMonitor;
 
 
     // variable

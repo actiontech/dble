@@ -30,7 +30,7 @@ public final class ManagerParseStart {
                     i = ParseUtil.comment(stmt, i);
                     continue;
                 case '@':
-                    return stop2Check(stmt, i);
+                    return startCheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -53,9 +53,9 @@ public final class ManagerParseStart {
     }
 
     // STATISTIC_QUEUE_TIMER
-    static int stop2Check(String stmt, int offset) {
+    static int startCheck(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@') {
-            if (stmt.length() > offset + 21 && stmt.substring(offset + 1).toUpperCase().contains("STATISTIC_QUEUE_MONITOR")) {
+            if (stmt.length() > offset + 21 && stmt.substring(offset + 1).toUpperCase().startsWith("STATISTIC_QUEUE_MONITOR")) {
                 return STATISTIC_QUEUE_MONITOR;
             }
         }

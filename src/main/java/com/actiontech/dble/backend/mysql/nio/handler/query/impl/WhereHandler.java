@@ -7,12 +7,13 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.net.Session;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -35,8 +36,9 @@ public class WhereHandler extends BaseDMLHandler {
         return HandlerType.WHERE;
     }
 
+    @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -45,7 +47,8 @@ public class WhereHandler extends BaseDMLHandler {
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, service);
     }
 
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    @Override
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get())
             return true;
         lock.lock();
@@ -64,7 +67,8 @@ public class WhereHandler extends BaseDMLHandler {
         }
     }
 
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    @Override
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get())
             return;
         session.setHandlerEnd(this);

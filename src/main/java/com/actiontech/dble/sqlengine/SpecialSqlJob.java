@@ -12,6 +12,7 @@ import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,7 @@ public class SpecialSqlJob extends SQLJob {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
@@ -104,7 +105,7 @@ public class SpecialSqlJob extends SQLJob {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         if (doFinished(true)) {
             list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get connection closed"));
         }
@@ -112,7 +113,7 @@ public class SpecialSqlJob extends SQLJob {
 
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         doFinished(false);
         service.getConnection().close("dry run used connection");
     }

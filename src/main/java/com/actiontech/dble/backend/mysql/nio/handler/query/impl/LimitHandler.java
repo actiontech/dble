@@ -6,10 +6,11 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.service.AbstractService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,7 @@ public class LimitHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("row eof");
         if (!terminate.get()) {
             session.setHandlerEnd(this);
@@ -50,13 +51,13 @@ public class LimitHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, service);
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get()) {
             return true;
         }

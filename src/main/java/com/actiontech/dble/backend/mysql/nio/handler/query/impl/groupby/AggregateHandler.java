@@ -24,6 +24,7 @@ import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.Aggregat
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +79,9 @@ public class AggregateHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
-        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
+        this.charset = !service.isFakeClosed() ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -114,7 +115,7 @@ public class AggregateHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("rowresponse");
         if (terminate.get())
             return true;
@@ -154,7 +155,7 @@ public class AggregateHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("row eof for orderby.");
         if (terminate.get())
             return;

@@ -12,9 +12,7 @@ import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
-import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.TimeUtil;
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -53,6 +51,7 @@ public abstract class AbstractConnection implements Connection {
     private volatile ProtoHandler proto;
     private volatile boolean isSupportCompress;
     private volatile AbstractService service;
+
     protected volatile IOProcessor processor;
     protected volatile String closeReason;
     protected volatile ByteBuffer readBuffer;
@@ -173,30 +172,13 @@ public abstract class AbstractConnection implements Connection {
 
     public boolean pushInnerServiceTask(InnerServiceTask innerServiceTask) {
         IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
-        if (service == null) {
-            if (isClosed()) {
-                LOGGER.info("can't delay process the service task ,connection is closed already. just ignored.  {}", innerServiceTask.getType());
-                return false;
-            } else {
-                LOGGER.info("can't delay process the service task ,Maybe the connection is not ready yet. try process immediately {}", innerServiceTask.getType());
-                DebugUtil.printLocation();
-            }
-
-            switch (innerServiceTask.getType()) {
-                case CLOSE:
-                    this.closeImmediately(Joiner.on(',').join(((CloseServiceTask) innerServiceTask).getReasons()));
-                    break;
-                default:
-                    LOGGER.error("illegal service task. {}", innerServiceTask);
-                    return false;
-            }
-            return true;
+        if (isClosed()) {
+            LOGGER.info("can't delay process the service task ,connection is closed already. just ignored.  {}", innerServiceTask.getType());
+            return false;
         }
         service.handle(innerServiceTask);
         return true;
     }
-
-
 
 
     private void handle(ByteBuffer dataBuffer) {
@@ -259,6 +241,7 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
+    @Override
     public void close(String reason) {
         this.closeImmediatelyInner(reason);
     }
@@ -366,6 +349,7 @@ public abstract class AbstractConnection implements Connection {
         return true;
     }
 
+    @Nonnull
     public synchronized AbstractService getService() {
         return service;
     }
@@ -459,7 +443,7 @@ public abstract class AbstractConnection implements Connection {
             this.readBuffer = null;
         }
 
-        if (service != null) {
+        if (service != null && !service.isFakeClosed()) {
             service.cleanup();
         }
 
@@ -573,7 +557,7 @@ public abstract class AbstractConnection implements Connection {
         this.port = port;
     }
 
-    public synchronized void setService(AbstractService service) {
+    public synchronized void setService(@Nonnull AbstractService service) {
         this.service = service;
     }
 

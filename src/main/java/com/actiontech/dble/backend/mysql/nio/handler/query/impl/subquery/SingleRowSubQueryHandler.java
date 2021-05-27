@@ -18,6 +18,7 @@ import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
 import com.actiontech.dble.plan.node.ManagerTableNode;
 import com.actiontech.dble.plan.node.PlanNode;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +36,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get()) {
             return;
@@ -56,7 +57,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             if (terminate.get()) {

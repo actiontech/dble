@@ -17,9 +17,11 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -73,7 +75,7 @@ public class FieldListHandler implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         ErrorPacket errPkg = new ErrorPacket();
         errPkg.read(data);
         errPkg.setPacketId(++packetId);
@@ -81,12 +83,12 @@ public class FieldListHandler implements ResponseHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         ((MySQLResponseService) service).syncAndExecute();
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         ShardingService shardingService = session.getShardingService();
         buffer = session.getSource().allocate();
         for (int i = 0, len = fields.size(); i < len; ++i) {
@@ -126,19 +128,19 @@ public class FieldListHandler implements ResponseHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         //not happen
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         session.releaseConnectionIfSafe((MySQLResponseService) service, false);
         session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END);
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         if (connClosed) {
             return;
         }
@@ -153,13 +155,13 @@ public class FieldListHandler implements ResponseHandler {
         backConnectionErr(err, (MySQLResponseService) service, false);
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, MySQLResponseService responseService, boolean syncFinished) {
+    private void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService responseService, boolean syncFinished) {
         ShardingService shardingService = session.getShardingService();
         UserName errUser = shardingService.getUser();
         String errHost = shardingService.getConnection().getHost();
         int errPort = shardingService.getConnection().getLocalPort();
         String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        if (responseService != null) {
+        if (responseService != null && !responseService.isFakeClosed()) {
             LOGGER.info("execute sql err :" + errMsg + " con:" + responseService +
                     " frontend host:" + errHost + "/" + errPort + "/" + errUser);
             if (responseService.getConnection().isClosed()) {

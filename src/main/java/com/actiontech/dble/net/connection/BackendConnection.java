@@ -54,7 +54,7 @@ public class BackendConnection extends PooledConnection {
             this.getBackendService().setResponseHandler(null);
             this.getService().cleanup();
         }
-        this.setService(null);
+        this.getService().setFakeClosed(true);
         this.close(reason);
     }
 
@@ -86,9 +86,9 @@ public class BackendConnection extends PooledConnection {
     @Override
     public synchronized void close(final String reason) {
         LOGGER.info("connection id " + threadId + " close for reason " + reason);
-        boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
+        boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
-            if ((isAuthed || this.getService() == null) && channel.isOpen() && closeReason == null) {
+            if ((isAuthed || this.getService().isFakeClosed()) && channel.isOpen() && closeReason == null) {
                 try {
                     closeGracefullyPassive(reason);
                 } catch (Throwable e) {
@@ -117,7 +117,7 @@ public class BackendConnection extends PooledConnection {
     @Override
     public synchronized void closeImmediately(final String reason) {
         LOGGER.info("connection id " + threadId + " close for reason " + reason);
-        boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
+        boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
             super.closeImmediately(reason);
             if (isAuthed) {

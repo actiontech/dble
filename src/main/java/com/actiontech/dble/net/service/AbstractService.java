@@ -26,6 +26,7 @@ public abstract class AbstractService extends VariablesService implements Servic
     private static final Logger LOGGER = LogManager.getLogger(AbstractService.class);
     protected AbstractConnection connection;
     private long firstGraceCloseTime = -1;
+    private boolean fakeClosed = false;
 
     public AbstractService(AbstractConnection connection) {
         this.connection = connection;
@@ -36,10 +37,14 @@ public abstract class AbstractService extends VariablesService implements Servic
         return connection;
     }
 
-    public boolean isBusinessClosed() {
-        return false;
+    public boolean isFakeClosed() {
+        return fakeClosed;
     }
 
+    public AbstractService setFakeClosed(boolean fakeClosedTmp) {
+        fakeClosed = fakeClosedTmp;
+        return this;
+    }
 
     @Override
     public void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {

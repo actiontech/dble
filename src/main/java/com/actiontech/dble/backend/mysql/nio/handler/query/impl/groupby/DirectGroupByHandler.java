@@ -28,6 +28,7 @@ import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +89,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -111,7 +112,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         List<ItemSum> localResultReferredSums = referredSumFunctions;
         RowDataComparator comparator = new RowDataComparator(this.localResultFps, this.groupBys, this.isAllPushDown(), this.type()
         );
-        String charSet = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
+        String charSet = !service.isFakeClosed() ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         groupLocalResult = new GroupByLocalResult(pool, localResultFps.size(), comparator, localResultFps,
                 localResultReferredSums, this.isAllPushDown(), charSet).
                 setMemSizeController(session.getOtherBufferMC());
@@ -191,7 +192,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("rowResponse");
         if (terminate.get())
             return true;
@@ -206,7 +207,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;

@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query;
 
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.service.AbstractService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,16 +100,16 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         nextHandler.errorResponse(err, service);
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         // TODO Auto-generated method stub
 
     }

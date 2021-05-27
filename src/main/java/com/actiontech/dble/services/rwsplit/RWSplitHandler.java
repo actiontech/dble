@@ -16,9 +16,11 @@ import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
@@ -81,7 +83,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
@@ -110,7 +112,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         // TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
         //        TraceManager.finishSpan(service, traceObject);
         MySQLResponseService mysqlService = (MySQLResponseService) service;
@@ -144,7 +146,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         buffer = frontedConnection.allocate();
         synchronized (this) {
             header[3] = (byte) rwSplitService.nextPacketId();
@@ -159,7 +161,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
             this.selectRows++;
             if (buffer == null) {
@@ -172,7 +174,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(selectRows));
             selectRows = 0;
@@ -210,7 +212,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void requestDataResponse(byte[] requestFilePacket, MySQLResponseService service) {
+    public void requestDataResponse(byte[] requestFilePacket, @Nonnull MySQLResponseService service) {
         synchronized (this) {
             if (!write2Client) {
                 rwSplitService.write(requestFilePacket, WriteFlags.QUERY_END);
@@ -220,7 +222,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(0));
         ((MySQLResponseService) service).setResponseHandler(null);
         synchronized (this) {

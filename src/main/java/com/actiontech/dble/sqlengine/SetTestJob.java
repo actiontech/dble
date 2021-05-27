@@ -24,6 +24,7 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.HexFormatUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,7 +114,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         if (hasReturn.compareAndSet(false, true)) {
             LOGGER.info("connectionClose sql :" + sql);
             doFinished(true);
@@ -122,7 +123,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         if (hasReturn.compareAndSet(false, true)) {
             ErrorPacket errPg = new ErrorPacket();
             errPg.read(err);
@@ -133,7 +134,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         MySQLResponseService responseService = (MySQLResponseService) service;
         if (!responseService.syncAndExecute()) {
             return;
@@ -154,7 +155,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fps, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         for (byte[] field : fields) {
             // save field
             FieldPacket fieldPk = new FieldPacket();
@@ -164,7 +165,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         RowDataPacket rowDataPk = new RowDataPacket(fieldPackets.size());
         rowDataPk.read(row);
 
@@ -186,7 +187,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         MySQLResponseService responseService = (MySQLResponseService) service;
         if (hasReturn.compareAndSet(false, true)) {
             doFinished(false);

@@ -8,9 +8,11 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
+import javax.annotation.Nonnull;
+
 /**
  * Created by nange on 2015/3/31.
  */
 public interface LoadDataResponseHandler {
-    void requestDataResponse(byte[] row, MySQLResponseService service);
+    void requestDataResponse(byte[] row, @Nonnull MySQLResponseService service);
 }

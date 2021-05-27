@@ -16,6 +16,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -114,7 +115,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
@@ -131,7 +132,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         if (((MySQLResponseService) service).syncAndExecute()) {
             ((MySQLResponseService) service).release();
             doFinished(false);
@@ -140,18 +141,18 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         jobHandler.onHeader(fields);
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         EOFPacket packet = new EOFPacket();
         packet.read(eof);
         if ((packet.getStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) <= 0) {
@@ -161,7 +162,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         doFinished(true);
     }
 

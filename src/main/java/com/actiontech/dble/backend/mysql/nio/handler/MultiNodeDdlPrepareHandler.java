@@ -28,6 +28,7 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +142,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_CLOSE);
         if (checkClosedConn(((MySQLResponseService) service).getConnection())) {
@@ -228,7 +229,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
 
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_TEST_RESULT_ERROR);
         ErrorPacket errPacket = new ErrorPacket();
@@ -251,7 +252,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         if (!((MySQLResponseService) service).syncAndExecute()) {
             LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute!");
         } else {
@@ -260,7 +261,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     }
 
     @Override
-    public void rowEofResponse(final byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(final byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         MySQLResponseService responseService = (MySQLResponseService) service;
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 responseService, DDLTraceInfo.DDLConnectionStatus.CONN_TEST_SUCCESS);
@@ -311,11 +312,11 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, @NotNull AbstractService service) {
         /* It is impossible arriving here, because we set limit to 0 */
         return false;
     }

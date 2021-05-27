@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, final AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull final AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get())
             return;
@@ -60,7 +61,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
 
         this.fieldPackets = fieldPackets;
         RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type());
-        String charSet = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) :
+        String charSet = !service.isFakeClosed() ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) :
                 CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         localResult = new SortedLocalResult(pool, fieldPackets.size(), cmp, charSet).
                 setMemSizeController(session.getOrderBufferMC());
@@ -69,7 +70,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get())
             return true;
         try {
@@ -81,7 +82,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;

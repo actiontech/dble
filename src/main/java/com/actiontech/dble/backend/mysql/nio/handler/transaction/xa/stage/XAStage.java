@@ -38,7 +38,7 @@ public abstract class XAStage implements TransactionStage {
         for (RouteResultsetNode rrn : resultsetNodes) {
             if (null == session.getTarget(rrn)) {
                 LOGGER.debug("this node may be release.{}", rrn);
-            } else if (session.getTarget(rrn).getBackendService() != null) {
+            } else if (session.getTarget(rrn).getBackendService() != null && !session.getTarget(rrn).getBackendService().isFakeClosed()) {
                 onEnterStage(session.getTarget(rrn).getBackendService());
             } else {
                 session.releaseConnection(rrn, LOGGER.isDebugEnabled(), false);

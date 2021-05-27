@@ -28,6 +28,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +92,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, final AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull final AbstractService service) {
         session.setHandlerStart(this);
         if (this.pool == null)
             this.pool = BufferPoolManager.getBufferPool();
@@ -105,7 +106,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
             rightFieldPackets = fieldPackets;
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
-        this.charset = service != null ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
+        this.charset = !service.isFakeClosed() ? CharsetUtil.getJavaCharset(service.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getService().getCharset().getResults());
         if (!fieldSent.compareAndSet(false, true)) {
             List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
@@ -125,7 +126,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService conn) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService conn) {
         LOGGER.debug("rowresponse");
         if (terminate.get()) {
             return true;
@@ -154,7 +155,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.debug("roweof");
         if (terminate.get()) {
             return;

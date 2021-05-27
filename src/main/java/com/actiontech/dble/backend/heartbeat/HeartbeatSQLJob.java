@@ -13,6 +13,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.sqlengine.SQLJobHandler;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +87,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
         heartbeat.setErrorResult(new String(errPg.getMessage()));
@@ -103,7 +104,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         if (((MySQLResponseService) service).syncAndExecute()) {
             doFinished(false);
         }
@@ -111,24 +112,24 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         jobHandler.onHeader(fields);
 
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         doFinished(false);
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try again immediately");
         if (!heartbeat.doHeartbeatRetry()) {
             heartbeat.setErrorResult("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);

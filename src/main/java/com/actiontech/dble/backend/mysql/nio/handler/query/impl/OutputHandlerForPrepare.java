@@ -10,6 +10,7 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -25,20 +26,18 @@ public class OutputHandlerForPrepare extends OutputHandler {
     }
 
 
-
-
     @Override
-    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets, byte[] eofNull, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets, byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         this.fieldPackets = fieldPackets;
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         requestScope.getCurrentPreparedStatement().onPrepareOk(fieldPackets.size());
         HandlerTool.terminateHandlerTree(this);
         serverSession.setHandlerEnd(this);

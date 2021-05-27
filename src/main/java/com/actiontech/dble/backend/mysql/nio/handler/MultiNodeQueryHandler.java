@@ -33,9 +33,12 @@ import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -204,7 +207,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         pauseTime((MySQLResponseService) service);
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-connection-closed");
         TraceManager.finishSpan(service, traceObject);
@@ -260,7 +263,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-sql-execute-error");
         TraceManager.finishSpan(service, traceObject);
         pauseTime((MySQLResponseService) service);
@@ -296,7 +299,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
@@ -364,7 +367,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         this.netOutBytes += header.length;
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
@@ -398,7 +401,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void rowEofResponse(final byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(final byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-rowEof-response");
         TraceManager.finishSpan(service, traceObject);
         if (LOGGER.isDebugEnabled()) {
@@ -479,7 +482,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, @NotNull AbstractService service) {
         this.netOutBytes += row.length;
         if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
             return false;
@@ -551,19 +554,19 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public void requestDataResponse(byte[] data, MySQLResponseService service) {
+    public void requestDataResponse(byte[] data, @Nonnull MySQLResponseService service) {
         LoadDataUtil.requestFileDataResponse(data, service);
     }
 
 
-    private void executeError(MySQLResponseService service) {
+    private void executeError(@Nullable MySQLResponseService service) {
         if (!isFail()) {
             setFail(new String(err.getMessage()));
         }
         if (errConnection == null) {
             errConnection = new ArrayList<>();
         }
-        if (service != null) {
+        if (service != null && !service.isFakeClosed()) {
             errConnection.add(service);
             if (service.getConnection().isClosed() && (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart())) {
                 session.getShardingService().setTxInterrupt(error);

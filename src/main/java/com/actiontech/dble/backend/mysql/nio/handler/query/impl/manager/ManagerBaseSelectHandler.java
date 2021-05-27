@@ -21,9 +21,11 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.ManagerTableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.services.FakeAbstractService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,13 +55,14 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
             @Override
             public void run() {
                 try {
+                    final AbstractService service = new FakeAbstractService(null);
                     List<FieldPacket> fields = makeField();
-                    nextHandler.fieldEofResponse(null, null, fields, null, left, null);
+                    nextHandler.fieldEofResponse(null, null, fields, null, left, service);
                     List<RowDataPacket> data = makeRowData();
                     for (RowDataPacket row : data) {
-                        nextHandler.rowResponse(null, row, left, null);
+                        nextHandler.rowResponse(null, row, left, service);
                     }
-                    nextHandler.rowEofResponse(null, left, null);
+                    nextHandler.rowEofResponse(null, left, service);
                 } catch (Exception e) {
                     logger.warn("execute error", e);
                     ((ManagerService) session.getSource().getService()).writeErrMessage((byte) 1, ErrorCode.ER_UNKNOWN_ERROR, e.getMessage() == null ? e.toString() : e.getMessage());
@@ -196,17 +199,17 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
 
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
 
     }
 

@@ -425,6 +425,7 @@ public class MySQLResponseService extends BackendService {
         COMMIT.write(this);
     }
 
+    @Override
     public BackendConnection getConnection() {
         return connection;
     }

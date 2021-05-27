@@ -4,6 +4,7 @@ package com.actiontech.dble.net.service;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.connection.WriteAbleService;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -21,7 +22,7 @@ import java.util.EnumSet;
 /**
  * Created by szf on 2020/6/16.
  */
-public abstract class AbstractService extends VariablesService implements Service {
+public abstract class AbstractService extends VariablesService implements Service, WriteAbleService {
     private static final Logger LOGGER = LogManager.getLogger(AbstractService.class);
     protected AbstractConnection connection;
     private long firstGraceCloseTime = -1;
@@ -30,54 +31,18 @@ public abstract class AbstractService extends VariablesService implements Servic
         this.connection = connection;
     }
 
+    @Override
     public AbstractConnection getConnection() {
         return connection;
     }
 
-    public ByteBuffer allocate() {
-        return this.connection.allocate();
-    }
-
-    public ByteBuffer allocate(int size) {
-        return this.connection.allocate(size);
+    public boolean isBusinessClosed() {
+        return false;
     }
 
 
-    /**
-     * the common method to write to connection.
-     *
-     * @param buffer
-     * @param writeFlags
-     */
-    public final void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
-        final boolean end = writeFlags.contains(WriteFlag.END_OF_QUERY) || writeFlags.contains(WriteFlag.END_OF_SESSION);
-        if (end) {
-            beforeWriteFinish(writeFlags);
-        }
-
-        this.connection.innerWrite(buffer, writeFlags);
-        if (end) {
-            afterWriteFinish(writeFlags);
-        }
-
-    }
-
-    public void write(byte[] data, @Nonnull EnumSet<WriteFlag> writeFlags) {
-        ByteBuffer buffer = connection.allocate();
-        ByteBuffer writeBuffer = writeToBuffer(data, buffer);
-        this.writeDirectly(writeBuffer, writeFlags);
-    }
-
-    /**
-     * this method will call writeDirectly method finally.
-     *
-     * @param packet
-     */
-    public void write(MySQLPacket packet) {
-        packet.bufferWrite(connection);
-    }
-
-    protected void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
+    @Override
+    public void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
         if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
             TraceManager.sessionFinish(this);
         } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
@@ -85,20 +50,11 @@ public abstract class AbstractService extends VariablesService implements Servic
         }
     }
 
-
-    protected void afterWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
+    @Override
+    public void afterWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
 
     }
 
-
-    public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
-        buffer = packet.write(buffer, this, true);
-        this.writeDirectly(buffer, packet.getLastWriteFlag());
-    }
-
-    public void recycleBuffer(ByteBuffer buffer) {
-        this.connection.getProcessor().getBufferPool().recycle(buffer);
-    }
 
     private ByteBuffer writeBigPackageToBuffer(byte[] data, ByteBuffer buffer) {
         int srcPos;
@@ -140,10 +96,7 @@ public abstract class AbstractService extends VariablesService implements Servic
         return this.connection.isFlowControlled();
     }
 
-    public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
-        return connection.checkWriteBuffer(buffer, capacity, writeSocketIfFull);
-    }
-
+    @Override
     public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
         if (src.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
             return this.writeBigPackageToBuffer(src, buffer);

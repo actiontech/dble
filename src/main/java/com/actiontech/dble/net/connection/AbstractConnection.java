@@ -412,7 +412,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
 
-    public void innerWrite(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
+    protected void innerWrite(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
         if (isClosed.get()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("it will not writeDirectly because of closed " + this + " " + isClosed);

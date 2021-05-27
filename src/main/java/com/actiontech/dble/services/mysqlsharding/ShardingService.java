@@ -520,7 +520,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     @Override
-    protected void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+    public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
         if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
             multiStatementNextSql(session.getIsMultiStatement().get());
         } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {

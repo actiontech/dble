@@ -1,6 +1,7 @@
 package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.StringUtil;
@@ -9,6 +10,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 
+import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,7 +20,7 @@ public final class SetItemUtil {
     private SetItemUtil() {
     }
 
-    public static String getBooleanVal(SQLExpr valueExpr) throws SQLSyntaxErrorException {
+    public static String getBooleanVal(String strKey, SQLExpr valueExpr) throws SQLException {
         String strValue = parseStringValue(valueExpr);
         switch (strValue) {
             case "1":
@@ -28,7 +30,7 @@ public final class SetItemUtil {
             case "off":
                 return "false";
             default:
-                throw new SQLSyntaxErrorException("illegal value[" + strValue + "]");
+                throw new SQLException("Variable '" + strKey + "' can't be set to the value of '" + strValue + "'", "42000", ErrorCode.ER_WRONG_VALUE_FOR_VAR);
         }
     }
 

@@ -25,6 +25,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStat
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
+import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
 import java.util.List;
@@ -119,13 +120,12 @@ public final class SetHandler {
             } else {
                 frontService.executeContextSetTask(items);
             }
-
-        } catch (SQLSyntaxErrorException e) {
-            frontService.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
+        } catch (SQLException e) {
+            frontService.executeException(e, stmt);
         }
     }
 
-    private static MysqlVariable handleTransaction(MySqlSetTransactionStatement setStatement) throws SQLSyntaxErrorException {
+    private static MysqlVariable handleTransaction(MySqlSetTransactionStatement setStatement) throws SQLException {
         //always single
         MysqlVariable item;
         if (setStatement.getGlobal() == null && setStatement.getSession() == null) {
@@ -175,14 +175,14 @@ public final class SetHandler {
         throw new SQLSyntaxErrorException("unknown key type");
     }
 
-    private static MysqlVariable newSetItem(String key, SQLExpr valueExpr) throws SQLSyntaxErrorException {
+    private static MysqlVariable newSetItem(String key, SQLExpr valueExpr) throws SQLException {
         switch (key.toLowerCase()) {
             case "xa":
-                return new MysqlVariable("xa", SetItemUtil.getBooleanVal(valueExpr), VariableType.XA);
+                return new MysqlVariable("xa", SetItemUtil.getBooleanVal(key.toLowerCase(), valueExpr), VariableType.XA);
             case "trace":
-                return new MysqlVariable("trace", SetItemUtil.getBooleanVal(valueExpr), VariableType.TRACE);
+                return new MysqlVariable("trace", SetItemUtil.getBooleanVal(key.toLowerCase(), valueExpr), VariableType.TRACE);
             case "autocommit":
-                return new MysqlVariable("autocommit", SetItemUtil.getBooleanVal(valueExpr), VariableType.AUTOCOMMIT);
+                return new MysqlVariable("autocommit", SetItemUtil.getBooleanVal(key.toLowerCase(), valueExpr), VariableType.AUTOCOMMIT);
             case "collation_connection":
                 return new MysqlVariable("collation_connection", SetItemUtil.getCollationVal(valueExpr), VariableType.COLLATION_CONNECTION);
             case "character_set_client":
@@ -200,7 +200,7 @@ public final class SetHandler {
                 return new MysqlVariable(key, SetItemUtil.getIsolationVal(valueExpr), VariableType.TX_ISOLATION);
             case VersionUtil.TRANSACTION_READ_ONLY:
             case VersionUtil.TX_READ_ONLY:
-                return new MysqlVariable(key, SetItemUtil.getBooleanVal(valueExpr), VariableType.TX_READ_ONLY);
+                return new MysqlVariable(key, SetItemUtil.getBooleanVal(key.toLowerCase(), valueExpr), VariableType.TX_READ_ONLY);
             default:
                 if (key.startsWith("@@")) {
                     return newSetItem(key.substring(2), valueExpr);

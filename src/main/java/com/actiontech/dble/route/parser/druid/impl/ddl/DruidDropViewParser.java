@@ -56,7 +56,7 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
                     if (!deleteMysqlViewMaps.containsKey(nodeName)) {
                         deleteMysqlViewMaps.put(nodeName, new HashSet<>(4));
                     }
-                    deleteMysqlViewMaps.get(nodeName).add(viewName);
+                    deleteMysqlViewMaps.get(nodeName).add("`" + viewName + "`");
                 }
             } finally {
                 proxyManger.removeMetaLock(vSchema, viewName);

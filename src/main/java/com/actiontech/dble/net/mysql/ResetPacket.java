@@ -62,4 +62,8 @@ public class ResetPacket extends MySQLPacket {
         return pStmtId;
     }
 
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
+    }
 }

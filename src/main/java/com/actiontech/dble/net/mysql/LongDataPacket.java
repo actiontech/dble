@@ -76,5 +76,9 @@ public class LongDataPacket extends MySQLPacket {
         return longData;
     }
 
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
+    }
 
 }

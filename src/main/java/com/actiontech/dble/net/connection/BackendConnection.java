@@ -145,7 +145,7 @@ public class BackendConnection extends PooledConnection {
 
     private void closeGracefullyPassive(String reason) {
         this.closeReason = reason;
-        writeClose(writeToBuffer(QuitPacket.QUIT, allocate()));
+        writeClose(getService().writeToBuffer(QuitPacket.QUIT, allocate()));
     }
 
     public void writeClose(ByteBuffer buffer) {

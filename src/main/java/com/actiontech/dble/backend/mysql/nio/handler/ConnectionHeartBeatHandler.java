@@ -13,6 +13,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import io.netty.util.Timeout;
 
 import java.util.List;
@@ -47,7 +48,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         if (heartbeatLock != null) {
             final long deadline = System.currentTimeMillis() + timeout;
             synchronized (heartbeatLock) {
-                conn.getService().writeDirectly(PingPacket.PING);
+                conn.getService().write(PingPacket.PING, WriteFlags.QUERY_END);
                 try {
                     while (!returned) {
                         timeout = deadline - System.currentTimeMillis();
@@ -63,7 +64,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             }
         } else {
             heartbeatTimeout = TimerHolder.getTimer().newTimeout(timeout1 -> conn.businessClose("conn heart timeout"), timeout, TimeUnit.MILLISECONDS);
-            conn.getService().writeDirectly(PingPacket.PING);
+            conn.getService().write(PingPacket.PING, WriteFlags.QUERY_END);
         }
 
         return finished;

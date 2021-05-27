@@ -115,7 +115,18 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             });
             return;
         }
-
+        switch (data[4]) {
+            case MySQLPacket.COM_STMT_PREPARE:
+            case MySQLPacket.COM_STMT_EXECUTE:
+            case MySQLPacket.COM_QUERY:
+                if (!connectionSerializableLock.tryLock()) {
+                    LOGGER.error("connection is already locking. {}", this);
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
         switch (data[4]) {
             case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();

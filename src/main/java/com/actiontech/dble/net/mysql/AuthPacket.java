@@ -190,7 +190,7 @@ public class AuthPacket extends MySQLPacket {
             BufferUtil.writeWithNull(buffer, HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN);
         }
 
-        service.writeDirectly(buffer);
+        service.writeDirectly(buffer, getLastWriteFlag());
     }
 
 
@@ -230,7 +230,7 @@ public class AuthPacket extends MySQLPacket {
         BufferUtil.writeUB4(buffer, clientFlags);     // capability flags
         BufferUtil.writeUB4(buffer, maxPacketSize);     // max-packet size
         buffer.put((byte) charsetIndex);                //character set
-        buffer = c.writeToBuffer(FILLER, buffer);       // reserved (all [0])
+        buffer = c.getService().writeToBuffer(FILLER, buffer);       // reserved (all [0])
         if (user == null) {
             buffer = c.checkWriteBuffer(buffer, 1, true);
             buffer.put((byte) 0);
@@ -257,7 +257,7 @@ public class AuthPacket extends MySQLPacket {
         //if use the mysql_native_password  is used for auth this need be replay
         BufferUtil.writeWithNull(buffer, authPlugin.getBytes());
 
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
 
@@ -346,5 +346,10 @@ public class AuthPacket extends MySQLPacket {
 
     public boolean isMultStatementAllow() {
         return multStatementAllow;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

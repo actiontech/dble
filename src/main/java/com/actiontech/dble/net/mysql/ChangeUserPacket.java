@@ -108,7 +108,7 @@ public class ChangeUserPacket extends MySQLPacket {
         buffer = c.checkWriteBuffer(buffer, authPlugin.getBytes().length + 1, true);
         BufferUtil.writeWithNull(buffer, authPlugin.getBytes());
         //        }
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
     @Override
@@ -159,4 +159,8 @@ public class ChangeUserPacket extends MySQLPacket {
         return tenant;
     }
 
+    @Override
+    public boolean isEndOfQuery() {
+        return false;
+    }
 }

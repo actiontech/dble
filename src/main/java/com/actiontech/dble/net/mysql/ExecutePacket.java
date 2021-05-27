@@ -153,4 +153,9 @@ public class ExecutePacket extends MySQLPacket {
     public byte getFlag() {
         return flag;
     }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
+    }
 }

@@ -18,6 +18,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.LoadDataRouteResultsetNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -301,7 +302,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 if (session.closed()) {
                     cleanBuffer();
                 } else if (byteBuffer != null) {
-                    session.getSource().write(byteBuffer);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 }
                 //just for normal error
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
@@ -620,7 +621,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 cleanBuffer();
             } else {
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
-                session.getSource().write(byteBuffer);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         }

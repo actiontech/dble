@@ -98,7 +98,7 @@ public class OkPacket extends MySQLPacket {
     @Override
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = write(c.allocate(), c);
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
 

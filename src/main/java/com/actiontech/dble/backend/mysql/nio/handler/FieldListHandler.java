@@ -9,6 +9,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -133,7 +134,7 @@ public class FieldListHandler implements ResponseHandler {
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         session.releaseConnectionIfSafe((MySQLResponseService) service, false);
-        session.getSource().write(buffer);
+        session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END);
     }
 
     @Override

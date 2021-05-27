@@ -12,8 +12,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
 
+import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.EnumSet;
 
 
 /**
@@ -40,52 +42,65 @@ public abstract class AbstractService extends VariablesService implements Servic
         return this.connection.allocate(size);
     }
 
-    public void writeDirectly(ByteBuffer buffer) {
-        writeDirectly(buffer, false);
+
+    /**
+     * the common method to write to connection.
+     *
+     * @param buffer
+     * @param writeFlags
+     */
+    public final void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
+        final boolean end = writeFlags.contains(WriteFlag.END_OF_QUERY) || writeFlags.contains(WriteFlag.END_OF_SESSION);
+        if (end) {
+            beforeWriteFinish(writeFlags);
+        }
+
+        this.connection.innerWrite(buffer, writeFlags);
+        if (end) {
+            afterWriteFinish(writeFlags);
+        }
+
     }
 
-    public void writeDirectly(ByteBuffer buffer, boolean endOfQuery) {
-        markFinished();
-        this.connection.write(buffer);
-    }
-
-    public void writeDirectly(byte[] data) {
-        this.writeDirectly(data, false);
-    }
-
-    public void writeDirectly(byte[] data, boolean endOfQuery) {
+    public void write(byte[] data, @Nonnull EnumSet<WriteFlag> writeFlags) {
         ByteBuffer buffer = connection.allocate();
-        if (data.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-            ByteBuffer writeBuffer = writeBigPackageToBuffer(data, buffer);
-            this.writeDirectly(writeBuffer, endOfQuery);
-        } else {
-            ByteBuffer writeBuffer = writeToBuffer(data, buffer);
-            this.writeDirectly(writeBuffer, endOfQuery);
-        }
+        ByteBuffer writeBuffer = writeToBuffer(data, buffer);
+        this.writeDirectly(writeBuffer, writeFlags);
     }
 
+    /**
+     * this method will call writeDirectly method finally.
+     *
+     * @param packet
+     */
     public void write(MySQLPacket packet) {
-        if (packet.isEndOfSession() || packet.isEndOfQuery()) {
-            TraceManager.sessionFinish(this);
-        }
-        markFinished();
         packet.bufferWrite(connection);
     }
 
-    public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
-        buffer = packet.write(buffer, this, true);
-        markFinished();
-        connection.write(buffer);
-        if (packet.isEndOfSession() || packet.isEndOfQuery()) {
+    protected void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
+        if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
+            TraceManager.sessionFinish(this);
+        } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
             TraceManager.sessionFinish(this);
         }
+    }
+
+
+    protected void afterWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
+
+    }
+
+
+    public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
+        buffer = packet.write(buffer, this, true);
+        this.writeDirectly(buffer, packet.getLastWriteFlag());
     }
 
     public void recycleBuffer(ByteBuffer buffer) {
         this.connection.getProcessor().getBufferPool().recycle(buffer);
     }
 
-    public ByteBuffer writeBigPackageToBuffer(byte[] data, ByteBuffer buffer) {
+    private ByteBuffer writeBigPackageToBuffer(byte[] data, ByteBuffer buffer) {
         int srcPos;
         byte[] singlePacket;
         singlePacket = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
@@ -120,8 +135,6 @@ public abstract class AbstractService extends VariablesService implements Servic
         return buffer;
     }
 
-    protected void markFinished() {
-    }
 
     public boolean isFlowControlled() {
         return this.connection.isFlowControlled();
@@ -132,7 +145,26 @@ public abstract class AbstractService extends VariablesService implements Servic
     }
 
     public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
-        return connection.writeToBuffer(src, buffer);
+        if (src.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+            return this.writeBigPackageToBuffer(src, buffer);
+        }
+        int offset = 0;
+        int length = src.length;
+        int remaining = buffer.remaining();
+        while (length > 0) {
+            if (remaining >= length) {
+                buffer.put(src, offset, length);
+                break;
+            } else {
+                buffer.put(src, offset, remaining);
+                this.writeDirectly(buffer, WriteFlags.PART);
+                buffer = allocate();
+                offset += remaining;
+                length -= remaining;
+                remaining = buffer.remaining();
+            }
+        }
+        return buffer;
     }
 
     public String toBriefString() {

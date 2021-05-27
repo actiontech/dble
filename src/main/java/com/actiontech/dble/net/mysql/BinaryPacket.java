@@ -7,7 +7,6 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.StreamUtil;
-
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 
@@ -72,7 +71,7 @@ public class BinaryPacket extends MySQLPacket {
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
         buffer.put(data);
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
     @Override
@@ -106,7 +105,13 @@ public class BinaryPacket extends MySQLPacket {
     public byte[] getAuthPluginData(byte[] dataContainsPluginData) throws Exception {
         return StreamUtil.read(dataContainsPluginData, AUTH_PLUGIN_LENGTH + 1 + 4, AUTH_PLUGIN_LENGTH - 1);
     }
+
     public void setData(byte[] data) {
         this.data = data;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

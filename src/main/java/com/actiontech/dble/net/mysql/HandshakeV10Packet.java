@@ -225,4 +225,9 @@ public class HandshakeV10Packet extends MySQLPacket {
     public void setAuthPluginName(byte[] authPluginName) {
         this.authPluginName = authPluginName;
     }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
+    }
 }

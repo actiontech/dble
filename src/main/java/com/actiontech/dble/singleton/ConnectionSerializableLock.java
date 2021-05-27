@@ -20,6 +20,7 @@ public final class ConnectionSerializableLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionSerializableLock.class);
     private boolean working = false;
     private final long frontId;
+    private long index = 0;
     private final List<Runnable> callbacks = new ArrayList<>();
 
 
@@ -32,7 +33,7 @@ public final class ConnectionSerializableLock {
 
         if (!working) {
             working = true;
-            LOGGER.debug("locked success. connection id " + frontId);
+            LOGGER.debug("locked success. connection id : {} , index : {}", frontId, ++index);
             return true;
         }
         return false;
@@ -53,10 +54,8 @@ public final class ConnectionSerializableLock {
     }
 
     public synchronized void unLock() {
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(" unlock connection id " + frontId);
-
+        if (working) {
+            LOGGER.debug(" unlock success. connection id : {} , index : {}", frontId, index);
         }
         if (!working) {
             LOGGER.warn("find useless unlock.");
@@ -77,20 +76,5 @@ public final class ConnectionSerializableLock {
 
     }
 
-    private String printTrace() {
-        StackTraceElement[] st = Thread.currentThread().getStackTrace();
-        if (st == null) {
-            return "";
-        }
-        StringBuilder sbf = new StringBuilder();
-        for (StackTraceElement e : st) {
-            if (sbf.length() > 0) {
-                sbf.append(" <- ");
-                sbf.append(System.getProperty("line.separator"));
-            }
-            sbf.append(java.text.MessageFormat.format("{0}.{1}() {2}", e.getClassName(), e.getMethodName(), e.getLineNumber()));
-        }
-        sbf.append("==============================================");
-        return sbf.toString();
-    }
+
 }

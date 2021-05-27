@@ -18,6 +18,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -101,7 +102,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         lock.lock();
         try {
             if (byteBuffer != null) {
-                session.getSource().write(byteBuffer);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 byteBuffer = null;
             }
         } finally {
@@ -283,7 +284,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (session.closed()) {
                     cleanBuffer();
                 } else if (byteBuffer != null) {
-                    session.getSource().write(byteBuffer);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 }
                 //just for normal error
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
@@ -434,7 +435,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (requestScope.isUsingCursor()) {
                     recycle();
                     requestScope.getCurrentPreparedStatement().getCursorCache().done();
-                    session.getShardingService().writeDirectly(byteBuffer, true);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END);
                     return;
                 }
                 this.resultSize += eof.length;
@@ -449,7 +450,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                         if (session.closed()) {
                             cleanBuffer();
                         } else if (byteBuffer != null) {
-                            session.getSource().write(byteBuffer);
+                            session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END);
                         }
                         ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                         handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
@@ -577,7 +578,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 cleanBuffer();
             } else {
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
-                session.getSource().write(byteBuffer);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END);
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         }

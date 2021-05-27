@@ -16,6 +16,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -120,7 +121,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
                 session.handleSpecial(rrs, false, getDDLErrorInfo());
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), getDDLErrorInfo());
                 if (byteBuffer != null) {
-                    session.getSource().write(byteBuffer);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 }
                 handleEndPacket(errPacket, false);
             }
@@ -266,7 +267,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             if (byteBuffer == null) {
                 handleEndPacket(err, false);
             } else {
-                session.getSource().write(byteBuffer);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 handleEndPacket(err, false);
             }
         }

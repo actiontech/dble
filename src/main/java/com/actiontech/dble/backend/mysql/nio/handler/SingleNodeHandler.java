@@ -17,6 +17,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -313,7 +314,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         doSqlStat();
         if (requestScope.isUsingCursor()) {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
-            session.getShardingService().writeDirectly(buffer, true);
+            session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END);
         }
         lock.lock();
         try {

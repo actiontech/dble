@@ -27,6 +27,7 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NetworkChannel;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -378,30 +379,10 @@ public abstract class AbstractConnection implements Connection {
         return this.processor.getBufferPool().allocate(size);
     }
 
-    public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
-        int offset = 0;
-        int length = src.length;
-        int remaining = buffer.remaining();
-        while (length > 0) {
-            if (remaining >= length) {
-                buffer.put(src, offset, length);
-                break;
-            } else {
-                buffer.put(src, offset, remaining);
-                writePart(buffer);
-                buffer = allocate();
-                offset += remaining;
-                length -= remaining;
-                remaining = buffer.remaining();
-            }
-        }
-        return buffer;
-    }
-
     public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
         if (capacity > buffer.remaining()) {
             if (writeSocketIfFull) {
-                writePart(buffer);
+                service.writeDirectly(buffer, WriteFlags.PART);
                 return processor.getBufferPool().allocate(capacity);
             } else { // Relocate a larger buffer
                 buffer.flip();
@@ -415,9 +396,6 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-    public void writePart(ByteBuffer buffer) {
-        write(buffer);
-    }
 
     public final boolean registerWrite(ByteBuffer buffer) {
 
@@ -433,11 +411,8 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-    public void write(byte[] data) {
-        service.writeDirectly(data);
-    }
 
-    public void write(ByteBuffer buffer) {
+    public void innerWrite(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
         if (isClosed.get()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("it will not writeDirectly because of closed " + this + " " + isClosed);

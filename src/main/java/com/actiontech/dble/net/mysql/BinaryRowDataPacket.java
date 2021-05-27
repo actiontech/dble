@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
@@ -226,7 +227,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
         BufferUtil.writeUB3(bb, size);
         bb.put(packetId);
         writeBody(bb);
-        conn.write(bb);
+        conn.getService().writeDirectly(bb, getLastWriteFlag());
     }
 
     @Override
@@ -237,7 +238,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
         if (isBigPackage) {
-            service.writeDirectly(bb);
+            service.writeDirectly(bb, WriteFlags.PART);
             ByteBuffer tmpBuffer = service.allocate(totalSize);
             BufferUtil.writeUB3(tmpBuffer, calcPacketSize());
             tmpBuffer.put(packetId--);
@@ -245,7 +246,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
             byte[] array = tmpBuffer.array();
             service.recycleBuffer(tmpBuffer);
             ByteBuffer newBuffer = service.allocate();
-            return service.writeBigPackageToBuffer(array, newBuffer);
+            return service.writeToBuffer(array, newBuffer);
         } else {
             bb = service.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, size);
@@ -379,5 +380,10 @@ public class BinaryRowDataPacket extends MySQLPacket {
 
     public void setFieldPackets(List<FieldPacket> fieldPackets) {
         this.fieldPackets = fieldPackets;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return false;
     }
 }

@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -96,28 +97,28 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void okResponse(byte[] ok, AbstractService service) {
-        this.managerService.writeDirectly(ok);
+        this.managerService.write(ok, WriteFlags.QUERY_END);
         connection.release();
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
-        managerService.writeDirectly(header);
+        managerService.write(header, WriteFlags.PART);
         for (byte[] field : fields) {
-            managerService.writeDirectly(field);
+            managerService.write(field, WriteFlags.PART);
         }
-        managerService.writeDirectly(eof);
+        managerService.write(eof, WriteFlags.PART);
     }
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
-        managerService.writeDirectly(row);
+        managerService.write(row, WriteFlags.PART);
         return false;
     }
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
-        managerService.writeDirectly(eof);
+        managerService.write(eof, WriteFlags.QUERY_END);
         connection.release();
     }
 
@@ -131,7 +132,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     private void writeError(byte[] err) {
-        managerService.writeDirectly(err);
+        managerService.write(err, WriteFlags.SESSION_END);
         if (connection != null) {
             connection.release();
         }

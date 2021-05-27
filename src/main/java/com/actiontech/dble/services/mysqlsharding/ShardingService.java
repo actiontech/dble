@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.NormalServiceTask;
+import com.actiontech.dble.net.service.WriteFlag;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -38,15 +39,13 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
+import javax.annotation.Nonnull;
 import java.sql.SQLSyntaxErrorException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -72,6 +71,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
+    @Nonnull
     private final NonBlockingSession session;
     private ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
@@ -422,17 +422,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         writeErrMessage(++packetId, vendorCode, sqlState, msg);
     }
 
-    @Override
-    public void markFinished() {
-        if (session != null) {
-            session.setStageFinished();
-            if (session.isDiscard() || session.isKilled()) {
-                session.setKilled(false);
-                session.setDiscard(false);
-            }
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
-        }
-    }
 
     public void beginInTx(String stmt) {
         if (txInterrupted) {
@@ -505,72 +494,52 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         }
     }
 
+
+    @Override
+    public void beforeWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+        for (BackendConnection backendConnection : session.getTargetMap().values()) {
+            TraceManager.sessionFinish(backendConnection.getBackendService());
+        }
+
+
+        if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
+            if (session.getIsMultiStatement().get()) {
+                TraceManager.queryFinish(this);
+            } else {
+                TraceManager.sessionFinish(this);
+            }
+        } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
+            TraceManager.sessionFinish(this);
+        }
+        session.setStageFinished();
+        if (session.isDiscard() || session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
+        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
+    }
+
+    @Override
+    protected void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+        if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
+            multiStatementNextSql(session.getIsMultiStatement().get());
+        } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
+            session.resetMultiStatementStatus();
+        }
+
+
+        SerializableLock.getInstance().unLock(this.connection.getId());
+        super.afterWriteFinish(writeFlags);
+    }
+
+
     @Override
     public void write(MySQLPacket packet) {
         if (packet instanceof OkPacket) {
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
-        boolean multiQueryFlag = session.multiStatementPacket(packet);
-        markFinished();
-        if (packet.isEndOfSession()) {
-            //error finished do resource clean up
-            session.resetMultiStatementStatus();
-            for (BackendConnection backendConnection : session.getTargetMap().values()) {
-                TraceManager.sessionFinish(backendConnection.getBackendService());
-            }
-            TraceManager.sessionFinish(this);
-            packet.bufferWrite(connection);
-            connectionSerializableLock.unLock();
-            SerializableLock.getInstance().unLock(this.connection.getId());
-        } else if (packet.isEndOfQuery()) {
-            //normal finish may loop to another round of query
-            packet.bufferWrite(connection);
-            for (BackendConnection backendConnection : session.getTargetMap().values()) {
-                TraceManager.sessionFinish(backendConnection.getBackendService());
-            }
-            if (multiQueryFlag) {
-                TraceManager.queryFinish(this);
-            } else {
-                TraceManager.sessionFinish(this);
-            }
-            multiStatementNextSql(multiQueryFlag);
-
-            connectionSerializableLock.unLock();
-            SerializableLock.getInstance().unLock(this.connection.getId());
-        } else {
-            packet.bufferWrite(connection);
-        }
-    }
-
-    @Override
-    public void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
-        boolean multiQueryFlag = session.multiStatementPacket(packet);
-        markFinished();
-        if (packet.isEndOfSession()) {
-            //error finished do resource clean up
-            session.resetMultiStatementStatus();
-            for (BackendConnection backendConnection : session.getTargetMap().values()) {
-                TraceManager.sessionFinish(backendConnection.getBackendService());
-            }
-            TraceManager.sessionFinish(this);
-        }
-        buffer = packet.write(buffer, this, true);
-        connection.write(buffer);
-        if (packet.isEndOfQuery() && !packet.isEndOfSession()) {
-            for (BackendConnection backendConnection : session.getTargetMap().values()) {
-                TraceManager.sessionFinish(backendConnection.getBackendService());
-            }
-            if (multiQueryFlag) {
-                TraceManager.queryFinish(this);
-            } else {
-                TraceManager.sessionFinish(this);
-            }
-            multiStatementNextSql(multiQueryFlag);
-        }
-        if (packet.isEndOfSession() || packet.isEndOfQuery()) {
-            connectionSerializableLock.unLock();
-        }
-        SerializableLock.getInstance().unLock(this.connection.getId());
+        session.multiStatementPacket(packet);
+        super.write(packet);
     }
 
 

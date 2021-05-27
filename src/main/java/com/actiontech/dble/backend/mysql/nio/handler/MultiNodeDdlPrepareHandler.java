@@ -16,6 +16,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouteResultCopy;
@@ -345,7 +346,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
             // Explicit distributed transaction
             source.setTxInterrupt(reason);
         }
-        source.writeDirectly(data, true);
+        source.write(data, WriteFlags.SESSION_END);
     }
 
 

@@ -48,6 +48,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStat
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -357,7 +358,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             RouteResultsetNode[] rrsNodes = new RouteResultsetNode[shardingNodes.size()];
             for (int i = 0, shardingNodesSize = shardingNodes.size(); i < shardingNodesSize; i++) {
                 String shardingNode = shardingNodes.get(i);
-                RouteResultsetNode rrNode = new RouteResultsetNode(shardingNode, ServerParse.INSERT, strSql);
+                RouteResultsetNode rrNode = new RouteResultsetNode(shardingNode, ServerParse.INSERT, strSql, Sets.newHashSet(schema.getName() + "." + tableName));
                 rrsNodes[i] = rrNode;
             }
             rrs.setGlobalTable(true);
@@ -376,7 +377,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             } else {
                 String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
                 if (noShardingNode != null) {
-                    return RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                    return RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schema.getName() + "." + tableName));
                 }
                 return RouterUtil.tryRouteForOneTable(schema, new RouteCalculateUnit(), tableName, rrs, false, statement.getCharset());
             }
@@ -586,6 +587,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             List<LoadDataRouteResultsetNode> nodeList = new ArrayList<>();
             for (LoadData data : loadDataList) {
                 LoadDataRouteResultsetNode rrNode = new LoadDataRouteResultsetNode(name, ServerParse.LOAD_DATA_INFILE_SQL, srcStatement);
+                rrNode.setTableSet(Sets.newHashSet(schema.getName() + "." + tableName));
                 rrNode.setStatement(srcStatement);
                 LoadData newLoadData = new LoadData();
                 ObjectUtil.copyProperties(data, newLoadData);
@@ -631,6 +633,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         int index = 0;
         for (Map.Entry<String, LoadData> entry : routeMap.entrySet()) {
             RouteResultsetNode rrNode = new RouteResultsetNode(entry.getKey(), ServerParse.LOAD_DATA_INFILE_SQL, srcStatement);
+            rrNode.setTableSet(Sets.newHashSet(schema.getName() + "." + tableName));
             rrNode.setStatement(srcStatement);
             LoadData newLoadData = new LoadData();
             ObjectUtil.copyProperties(loadData, newLoadData);

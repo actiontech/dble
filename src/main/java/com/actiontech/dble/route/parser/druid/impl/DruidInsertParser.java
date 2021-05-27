@@ -37,6 +37,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -78,7 +79,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             String sql = rrs.getStatement();
             sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             rrs.setStatement(sql);
-            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
+            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
             rrs.setFinishedRoute(true);
             return schema;
         } else if (tc instanceof ChildTableConfig) { // insert childTable will finished router while parser
@@ -196,7 +197,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
-            fetchChildTableToRoute(tc, joinColumnVal, service, schema, sql, rrs, isExplain);
+            fetchChildTableToRoute(tc, joinColumnVal, service, schema, sql, rrs, isExplain, tableName);
         }
     }
 
@@ -227,7 +228,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(tableConfig.getShardingNodes().get(nodeIndex), rrs.getSqlType(),
-                RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
+                RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()), Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
 
         // insert into .... on duplicateKey
         //such as :INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE b=VALUES(b);
@@ -298,7 +299,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             insertStmt.getValuesList().clear();
             insertStmt.getValuesList().addAll(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getShardingNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()), Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
             count++;
 
         }
@@ -314,7 +315,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
      *
      * @param schemaInfo ManagerSchemaInfo
      * @param insertStmt MySqlInsertStatement
-     * @param joinColumn    joinColumn
+     * @param joinColumn joinColumn
      * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException if not find
      */

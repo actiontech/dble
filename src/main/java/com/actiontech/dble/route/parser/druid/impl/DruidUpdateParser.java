@@ -23,6 +23,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -55,7 +56,9 @@ public class DruidUpdateParser extends DruidModifyParser {
             List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(service, schemaName, stmt, visitor.getMotifyTableSourceList());
 
             boolean isAllGlobal = true;
+            Set<String> tableSet = Sets.newHashSet();
             for (SchemaInfo schemaInfo : schemaInfos) {
+                tableSet.add(schemaInfo.getSchema() + "." + schemaInfo.getTable());
                 BaseTableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 if (tc == null || !(tc instanceof GlobalTableConfig)) {
@@ -71,7 +74,7 @@ public class DruidUpdateParser extends DruidModifyParser {
                 routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
 
-            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
             rrs.setFinishedRoute(true);
             return schema;
         } else {
@@ -92,14 +95,14 @@ public class DruidUpdateParser extends DruidModifyParser {
                 routeForModifySubQueryList(rrs, tc, visitor, schema, service);
                 return schema;
             } else if (noShardingNode != null) {
-                RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
                 rrs.setFinishedRoute(true);
                 return schema;
             }
 
             checkTableExists(tc, schema.getName(), tableName, ShardingPrivileges.CheckType.UPDATE);
             if (tc instanceof GlobalTableConfig) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
                 rrs.setFinishedRoute(true);
                 return schema;
             }
@@ -138,8 +141,8 @@ public class DruidUpdateParser extends DruidModifyParser {
     }
 
     /*
-    * isSubQueryClause
-    * IN (select...), ANY, EXISTS, ALL , IN (1,2,3...)
+     * isSubQueryClause
+     * IN (select...), ANY, EXISTS, ALL , IN (1,2,3...)
      */
     private static boolean isSubQueryClause(SQLExpr sqlExpr) throws SQLNonTransientException {
         return (sqlExpr instanceof SQLInSubQueryExpr || sqlExpr instanceof SQLAnyExpr || sqlExpr instanceof SQLAllExpr ||

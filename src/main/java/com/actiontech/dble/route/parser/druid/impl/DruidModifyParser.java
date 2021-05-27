@@ -29,6 +29,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.stat.TableStat;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -491,7 +492,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             if (SQLJob.LOGGER.isDebugEnabled()) {
                 SQLJob.LOGGER.debug("found partion node (using parent partition rule directly) for child table to insert  " + dn + " sql :" + rrs.getStatement());
             }
-            return RouterUtil.routeToSingleNode(rrs, dn);
+            return RouterUtil.routeToSingleNode(rrs, dn, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
         }
         return null;
     }
@@ -580,7 +581,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             throw new SQLNonTransientException(getErrorMsg());
         }
 
-        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tc == null ? null : Sets.newHashSet(schema.getName() + "." + tc.getName()));
         rrs.setFinishedRoute(true);
     }
 

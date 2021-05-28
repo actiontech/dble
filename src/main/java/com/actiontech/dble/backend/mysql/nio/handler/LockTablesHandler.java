@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -19,7 +18,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.singleton.DDLTraceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +47,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     public void execute() throws Exception {
-        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
         session.getShardingService().setLocked(true);
         session.getTransactionManager().setXaTxEnabled(false, session.getShardingService());
         super.reset();
@@ -79,7 +76,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         if (clearIfSessionClosed(session)) {
             return;
         }
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), conn.getBackendService(), DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
         conn.getBackendService().execute(node, session.getShardingService(), autocommit);
@@ -94,16 +90,11 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        DDLTraceManager.getInstance().updateRouteNodeStatus(session.getShardingService(), (RouteResultsetNode) attachment, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_ERROR);
-        DDLTraceManager.getInstance().endDDL(session.getShardingService(), e.getMessage());
         super.connectionError(e, attachment);
     }
 
     @Override
     public void errorResponse(byte[] err, AbstractService service) {
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
-                (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
-        DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with execution failure");
         MySQLResponseService responseService = (MySQLResponseService) service;
         boolean executeResponse = responseService.syncAndExecute();
         if (executeResponse) {
@@ -125,9 +116,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
 
     @Override
     public void connectionClose(AbstractService service, String reason) {
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
-                (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_CLOSE);
-        DDLTraceManager.getInstance().endDDL(session.getShardingService(), reason);
         super.connectionClose(service, reason);
     }
 
@@ -138,8 +126,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
             if (clearIfSessionClosed(session)) {
                 return;
             }
-            DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service,
-                    DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             boolean isEndPack = decrementToZero((MySQLResponseService) service);
             final RouteResultsetNode node = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
             if (node.getSqlType() == ServerParse.UNLOCK) {
@@ -147,11 +133,9 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
             }
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {
-                    DDLTraceManager.getInstance().endDDL(session.getShardingService(), "lock end with execution failure");
                     tryErrorFinished(true);
                     return;
                 }
-                DDLTraceManager.getInstance().endDDL(session.getShardingService(), null);
                 OkPacket ok = new OkPacket();
                 ok.read(data);
                 lock.lock();

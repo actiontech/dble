@@ -504,15 +504,18 @@ public class NonBlockingSession extends Session {
         ExecutableHandler executableHandler = null;
         boolean hasDDLInProcess = true;
         try {
-            DDLTraceManager.getInstance().startDDL(shardingService);
-            // not hint and not online ddl
-            if (rrs.getSchema() != null && !rrs.isOnline()) {
-                addMetaLock(rrs);
-                hasDDLInProcess = false;
-                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, shardingService);
-            }
-
             if (null != rrs.getDdlHandler()) {
+                if (!(rrs.getDdlHandler() instanceof LockTablesHandler))
+                    DDLTraceManager.getInstance().startDDL(shardingService);
+
+                // not hint and not online ddl
+                if (rrs.getSchema() != null && !rrs.isOnline()) {
+                    addMetaLock(rrs);
+                    hasDDLInProcess = false;
+                    if (!(rrs.getDdlHandler() instanceof LockTablesHandler))
+                        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, shardingService);
+                }
+
                 if (rrs.getNodes().length == 1) {
                     executableHandler = rrs.getDdlHandler();
                     setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
@@ -521,8 +524,10 @@ public class NonBlockingSession extends Session {
                      * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
                      * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
                      */
-                    checkBackupStatus();
                     executableHandler = rrs.getDdlHandler();
+                    if (executableHandler instanceof MultiNodeDdlPrepareHandler) {
+                        checkBackupStatus();
+                    }
                     setPreExecuteEnd(TraceResult.SqlTraceType.MULTI_NODE_QUERY);
                 }
 

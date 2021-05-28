@@ -1,6 +1,8 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeDdlPrepareHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.SingleNodeDDLHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -29,19 +31,17 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
             sqlException = e;
         } finally {
             if (sqlException != null) {
-                if (!isSyntaxNotSupported ||
-                        sqlException.getErrorCode() != 0 ||
-                        sqlException.getErrorCode() != ErrorCode.ER_NO_DB_ERROR ||
+                if (!isSyntaxNotSupported &&
+                        sqlException.getErrorCode() != 0 &&
+                        sqlException.getErrorCode() != ErrorCode.ER_NO_DB_ERROR &&
                         sqlException.getErrorCode() != ErrorCode.ER_PARSE_ERROR) {
                     // Implicit commit does not take effect if a syntax error occurs or if a library is not selected
-                    service.getSession2().checkBackupStatus();
                     service.getSession2().syncImplicitCommit();
                     service.transactionsCountInTx();
                     resetTxState(service);
                 }
                 throw sqlException;
             } else {
-                service.getSession2().checkBackupStatus();
                 service.getSession2().syncImplicitCommit();
                 service.transactionsCountInTx();
                 resetTxState(service);
@@ -61,12 +61,11 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
     }
 
     public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
-        /*if (rrs.getNodes().length == 1) {
+        if (rrs.getNodes().length == 1) {
             return new SingleNodeDDLHandler(rrs, service.getSession2());
         } else {
             return new MultiNodeDdlPrepareHandler(rrs, service.getSession2());
-        }*/
-        return null;
+        }
     }
 
     public void checkSchema(String schema) throws SQLException {

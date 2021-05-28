@@ -39,8 +39,8 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service, boolean isOn) {
+            LOCK.writeLock().lock();
             try {
-                LOCK.writeLock().lock();
                 StatisticProvider.onOffStatistic();
                 String onOffStatus = isOn ? "enable" : "disable";
                 try {
@@ -80,8 +80,8 @@ public class StatisticCf {
                 return;
             }
 
+            LOCK.writeLock().lock();
             try {
-                LOCK.writeLock().lock();
                 StatisticManager.getInstance().setSamplingRate(samplingRate);
             } finally {
                 LOCK.writeLock().unlock();
@@ -107,8 +107,8 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service, String value) {
+            LOCK.writeLock().lock();
             try {
-                LOCK.writeLock().lock();
                 StatisticProvider.updateTableMaxSize();
 
                 Matcher matcher1 = PATTERN_IN.matcher(value);
@@ -240,8 +240,8 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service) {
+            LOCK.readLock().lock();
             try {
-                LOCK.readLock().lock();
                 StatisticProvider.showStatistic();
                 ByteBuffer buffer = service.allocate();
                 // write header

@@ -22,7 +22,7 @@ public final class StatisticManager {
     private static volatile LinkedHashMap<String, String> usageData = new LinkedHashMap<>();
     private boolean isStart = false;
     private Timer queueMonitor;
-    private ReentrantReadWriteLock monitorlock = new ReentrantReadWriteLock();
+    private static final ReentrantReadWriteLock MONITO_RLOCK = new ReentrantReadWriteLock();
 
     // variable
     private volatile boolean enable = SystemConfig.getInstance().getEnableStatistic() == 1;
@@ -95,30 +95,30 @@ public final class StatisticManager {
     }
 
     public boolean isMonitoring() {
+        MONITO_RLOCK.readLock().lock();
         try {
-            monitorlock.readLock().lock();
             return queueMonitor != null;
         } finally {
-            monitorlock.readLock().unlock();
+            MONITO_RLOCK.readLock().unlock();
         }
     }
 
     public Timer getQueueMonitor() {
+        MONITO_RLOCK.writeLock().lock();
         try {
-            monitorlock.writeLock().lock();
             if (disruptor == null)
                 return null;
             if (queueMonitor == null)
                 queueMonitor = new Timer("monitorStatisticQueue");
             return queueMonitor;
         } finally {
-            monitorlock.writeLock().unlock();
+            MONITO_RLOCK.writeLock().unlock();
         }
     }
 
     public void cancelMonitoring() {
+        MONITO_RLOCK.writeLock().lock();
         try {
-            monitorlock.writeLock().lock();
             if (null != queueMonitor) {
                 queueMonitor.cancel();
                 queueMonitor = null;
@@ -126,7 +126,7 @@ public final class StatisticManager {
                     LOGGER.debug("cancel queue monitor");
             }
         } finally {
-            monitorlock.writeLock().unlock();
+            MONITO_RLOCK.writeLock().unlock();
         }
     }
 

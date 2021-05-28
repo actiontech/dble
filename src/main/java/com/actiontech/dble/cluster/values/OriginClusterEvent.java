@@ -12,29 +12,24 @@ import javax.annotation.Nonnull;
  * @author dcy
  * Create Date: 2021-03-30
  */
-public class ClusterEvent<T> {
+public class OriginClusterEvent<T> {
     private String path;
     private ClusterValue<T> value;
-    private ChangeType changeType;
-    /**
-     * it is update event before.
-     * used for distinguish ADD event and UPDATE event.
-     */
-    private boolean update = false;
+    private ClusterValue<T> oldValue;
+    private OriginChangeType changeType;
 
-    public ClusterEvent(@Nonnull String path, @Nonnull ClusterValue<T> value, @Nonnull ChangeType changeType) {
+
+    public OriginClusterEvent(@Nonnull String path, @Nonnull ClusterValue<T> value, @Nonnull OriginChangeType changeType) {
         this.path = path;
         this.value = value;
         this.changeType = changeType;
     }
 
-    public boolean isUpdate() {
-        return update;
-    }
-
-    public ClusterEvent<T> markUpdate() {
-        this.update = true;
-        return this;
+    public OriginClusterEvent(@Nonnull String path, @Nonnull ClusterValue<T> currentValue, @Nonnull ClusterValue<T> oldValue, @Nonnull OriginChangeType changeType) {
+        this.path = path;
+        this.value = currentValue;
+        this.oldValue = oldValue;
+        this.changeType = changeType;
     }
 
 
@@ -48,18 +43,22 @@ public class ClusterEvent<T> {
         return value;
     }
 
+    public ClusterValue<T> getOldValue() {
+        return oldValue;
+    }
+
     @Nonnull
-    public ChangeType getChangeType() {
+    public OriginChangeType getChangeType() {
         return changeType;
     }
 
     @Override
     public String toString() {
-        return "ClusterEvent{" +
+        return "OriginClusterEvent{" +
                 "path='" + path + '\'' +
                 ", value=" + value +
+                ", oldValue=" + oldValue +
                 ", changeType=" + changeType +
-                ", update=" + update +
                 '}';
     }
 }

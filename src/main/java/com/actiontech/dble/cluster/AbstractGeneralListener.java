@@ -13,6 +13,7 @@ import com.actiontech.dble.cluster.path.ChildPathMeta;
 import com.actiontech.dble.cluster.values.ChangeType;
 import com.actiontech.dble.cluster.values.ClusterEvent;
 import com.actiontech.dble.cluster.values.ClusterValue;
+import com.actiontech.dble.cluster.values.OriginClusterEvent;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -22,7 +23,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author dcy
@@ -52,15 +55,54 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
 
 
     @Override
-    public final void notifyProcess(ClusterEvent<?> configValue, boolean ignoreTheGrandChild) throws Exception {
+    public final void notifyProcess(OriginClusterEvent<?> changeEvent, boolean ignoreTheGrandChild) throws Exception {
 
-        logger.info("event happen in {}, path: {},type: {},data: {}", this.getClass().getSimpleName(), configValue.getPath(), configValue.getChangeType(), configValue.getValue());
-        //ucore may receive the grandchildren event.But zk only receive the children event.
-        if (ignoreTheGrandChild && ClusterLogic.forGeneral().getPathHeight(configValue.getPath()) != pathHeight + 1) {
+        logger.info("event happen in {}, path: {},type: {},data: {}", this.getClass().getSimpleName(), changeEvent.getPath(), changeEvent.getChangeType(), changeEvent.getValue());
+        //ucore may receive the grandchildren event.But zk only receive the children event. remove  grandchildren event if needed
+        if (ignoreTheGrandChild && ClusterLogic.forGeneral().getPathHeight(changeEvent.getPath()) != pathHeight + 1) {
             return;
         }
 
-        onEvent(new ClusterEvent<>(configValue.getPath(), (configValue.getValue().convertTo(pathMeta.getChildClass())), configValue.getChangeType()));
+        final ClusterEvent<T> newEvent;
+        ClusterEvent<T> oldEvent = null;
+        final ClusterValue<T> newValue = (changeEvent.getValue().convertTo(pathMeta.getChildClass()));
+        final String path = changeEvent.getPath();
+
+        switch (changeEvent.getChangeType()) {
+            case ADDED:
+                newEvent = new ClusterEvent<>(path, newValue, ChangeType.ADDED);
+                break;
+            case REMOVED:
+                newEvent = new ClusterEvent<>(path, newValue, ChangeType.REMOVED);
+                break;
+            case UPDATE:
+                /**
+                 * update event are split into two event.
+                 * remove the old and add the new
+                 */
+                final ClusterValue<T> oldValue = changeEvent.getOldValue().convertTo(pathMeta.getChildClass());
+                oldEvent = new ClusterEvent<>(path, oldValue, ChangeType.REMOVED);
+                oldEvent.markUpdate();
+                newEvent = new ClusterEvent<>(path, newValue, ChangeType.ADDED);
+                oldEvent.markUpdate();
+                break;
+            default:
+                return;
+        }
+
+
+        if (oldEvent != null) {
+            try {
+                onEvent(oldEvent);
+            } catch (Exception e) {
+                logger.info("", e);
+            }
+        }
+        try {
+            onEvent(newEvent);
+        } catch (Exception e) {
+            logger.info("", e);
+        }
     }
 
 
@@ -69,20 +111,16 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
 
     }
 
+    private Map<String/* path */, ClusterValue<T>> keyCacheMap = new ConcurrentHashMap<>();
+
     @Override
     public final void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
 
-        final ChangeType type;
+
         switch (event.getType()) {
             case CHILD_ADDED:
-                type = ChangeType.ADDED;
-                break;
             case CHILD_REMOVED:
-                type = ChangeType.REMOVED;
-                break;
             case CHILD_UPDATED:
-                //noinspection deprecation
-                type = ChangeType.UPDATED;
                 break;
             default:
                 return;
@@ -103,6 +141,54 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
             logger.warn("ignore this empty event.{}", event);
             return;
         }
-        onEvent(new ClusterEvent<>(data.getPath(), ClusterValue.readFromJson(strValue, pathMeta.getChildClass()), type));
+
+
+        final ClusterEvent<T> newEvent;
+        ClusterEvent<T> oldEvent = null;
+        final ClusterValue<T> newValue = ClusterValue.readFromJson(strValue, pathMeta.getChildClass());
+        final String path = data.getPath();
+        switch (event.getType()) {
+            case CHILD_ADDED:
+
+                newEvent = new ClusterEvent<>(path, newValue, ChangeType.ADDED);
+                keyCacheMap.put(path, newValue);
+                break;
+            case CHILD_REMOVED:
+                newEvent = new ClusterEvent<>(path, newValue, ChangeType.REMOVED);
+                keyCacheMap.remove(path);
+                break;
+            case CHILD_UPDATED:
+                /**
+                 * update event are split into two event.
+                 * remove the old and add the new
+                 */
+                newEvent = new ClusterEvent<>(path, newValue, ChangeType.ADDED);
+                newEvent.markUpdate();
+                final ClusterValue<T> oldValue = keyCacheMap.get(path);
+                if (oldValue == null) {
+                    logger.error("miss previous message for UPDATE");
+                } else {
+                    oldEvent = new ClusterEvent<>(path, oldValue, ChangeType.REMOVED);
+                    oldEvent.markUpdate();
+                }
+                keyCacheMap.put(path, newValue);
+                break;
+            default:
+                return;
+        }
+
+        if (oldEvent != null) {
+            try {
+                onEvent(oldEvent);
+            } catch (Exception e) {
+                logger.info("", e);
+            }
+        }
+        try {
+            onEvent(newEvent);
+        } catch (Exception e) {
+            logger.info("", e);
+        }
+
     }
 }

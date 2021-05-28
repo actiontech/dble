@@ -17,7 +17,6 @@ public class KvBean {
 
     private String key;
     private String value;
-    private String changeType;
     private long index;
 
     public KvBean() {
@@ -27,18 +26,13 @@ public class KvBean {
         this.key = key;
         this.value = value;
     }
+
     public KvBean(String key, String value, long index) {
         this.key = key;
         this.value = value;
         this.index = index;
     }
 
-
-    public KvBean(String key, String value, String changeType) {
-        this.key = key;
-        this.value = value;
-        this.changeType = changeType;
-    }
 
     public String getKey() {
         return key;
@@ -64,11 +58,4 @@ public class KvBean {
         this.index = index;
     }
 
-    public String getChangeType() {
-        return changeType;
-    }
-
-    public void setChangeType(String changeType) {
-        this.changeType = changeType;
-    }
 }

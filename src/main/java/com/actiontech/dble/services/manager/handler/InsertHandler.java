@@ -52,6 +52,14 @@ public final class InsertHandler {
         }
 
         ManagerWritableTable managerTable = getWritableTable(insert, service);
+        if (null == managerTable) {
+            return;
+        }
+        List<String> columns = getColumn(insert, managerTable, service);
+        if (null == columns) {
+            return;
+        }
+        //cluster-lock
         DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
             ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
@@ -62,10 +70,7 @@ public final class InsertHandler {
             }
             LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
         }
-        List<String> columns = getColumn(insert, managerTable, service);
-        if (null == columns) {
-            return;
-        }
+        //stand-alone lock
         List<LinkedHashMap<String, String>> rows;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {

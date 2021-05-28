@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class StatisticManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticManager.class);
@@ -20,8 +21,8 @@ public final class StatisticManager {
     private static StatisticListener statisticListener = StatisticListener.getInstance();
     private static volatile LinkedHashMap<String, String> usageData = new LinkedHashMap<>();
     private boolean isStart = false;
-    private volatile Timer queueMonitor;
-
+    private Timer queueMonitor;
+    private ReentrantReadWriteLock monitorlock = new ReentrantReadWriteLock();
 
     // variable
     private volatile boolean enable = SystemConfig.getInstance().getEnableStatistic() == 1;
@@ -94,24 +95,38 @@ public final class StatisticManager {
     }
 
     public boolean isMonitoring() {
-        return queueMonitor != null;
+        try {
+            monitorlock.readLock().lock();
+            return queueMonitor != null;
+        } finally {
+            monitorlock.readLock().unlock();
+        }
     }
 
     public Timer getQueueMonitor() {
-        if (disruptor == null)
-            return null;
-        if (queueMonitor == null)
-            queueMonitor = new Timer("monitorStatisticQueue");
-        return queueMonitor;
+        try {
+            monitorlock.writeLock().lock();
+            if (disruptor == null)
+                return null;
+            if (queueMonitor == null)
+                queueMonitor = new Timer("monitorStatisticQueue");
+            return queueMonitor;
+        } finally {
+            monitorlock.writeLock().unlock();
+        }
     }
 
     public void cancelMonitoring() {
-        if (null != queueMonitor) {
-            queueMonitor.cancel();
-            queueMonitor = null;
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("cancel queue monitor");
+        try {
+            monitorlock.writeLock().lock();
+            if (null != queueMonitor) {
+                queueMonitor.cancel();
+                queueMonitor = null;
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("cancel queue monitor");
             }
+        } finally {
+            monitorlock.writeLock().unlock();
         }
     }
 

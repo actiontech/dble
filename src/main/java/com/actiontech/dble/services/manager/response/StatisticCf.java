@@ -364,7 +364,7 @@ public class StatisticCf {
                 return;
             }
             if (!StatisticManager.getInstance().isEnable() && StatisticManager.getInstance().getSamplingRate() == 0) {
-                service.writeErrMessage(ErrorCode.ER_YES, "statistic is disabled and samplingRate value is 0");
+                service.writeErrMessage(ErrorCode.ER_YES, "Statistic is disabled and samplingRate value is 0");
                 return;
             }
             if (StatisticManager.getInstance().isMonitoring()) {
@@ -373,12 +373,16 @@ public class StatisticCf {
             }
 
             StatisticManager.getInstance().resetUsageData();
-            StatisticManager.getInstance().getQueueMonitor().
-                    schedule(new MonitorTask(
-                                    observeTime,
-                                    intervalTime),
-                            0,
-                            intervalTime);
+            Timer timer = StatisticManager.getInstance().getQueueMonitor();
+            if (null == timer) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Check the sql statistics is disabled or samplingRate value is 0");
+                return;
+            }
+            timer.schedule(new MonitorTask(
+                            observeTime,
+                            intervalTime),
+                    0,
+                    intervalTime);
             service.writeOkPacket();
         }
 

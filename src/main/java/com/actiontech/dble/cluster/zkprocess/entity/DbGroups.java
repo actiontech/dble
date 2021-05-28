@@ -10,6 +10,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -23,8 +24,10 @@ import java.util.List;
 public class DbGroups {
 
     @XmlAttribute(required = false)
+    @Expose
     protected String version;
 
+    @Expose
     protected List<DBGroup> dbGroup;
 
     public List<DBGroup> getDbGroup() {

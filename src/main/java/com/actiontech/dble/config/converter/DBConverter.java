@@ -30,6 +30,7 @@ import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public class DBConverter {
     }
 
     public static RawJson dbBeanToJson(DbGroups dbGroups) {
-        Gson gson = JsonFactory.getJson();
+        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
         // bean to json obj
         JsonObjectWriter jsonObj = new JsonObjectWriter();
         jsonObj.addProperty(ClusterPathUtil.VERSION, dbGroups.getVersion());

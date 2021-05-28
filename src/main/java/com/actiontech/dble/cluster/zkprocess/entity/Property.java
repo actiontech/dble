@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity;
 
+import com.google.gson.annotations.Expose;
+
 import javax.xml.bind.annotation.*;
 import java.util.Objects;
 
@@ -17,8 +19,10 @@ import java.util.Objects;
 public class Property implements Named {
 
     @XmlValue
+    @Expose
     protected String value;
     @XmlAttribute(name = "name")
+    @Expose
     protected String name;
 
     public Property() {

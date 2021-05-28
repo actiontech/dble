@@ -39,6 +39,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
     private static final String COLUMN_MAX_CONN_COUNT = "max_conn_count";
     private static final String COLUMN_BLACKLIST = "blacklist";
     public static final String COLUMN_DB_GROUP = "db_group";
+    public static final String CONSTANT_NO_LIMIT = "no limit";
 
     public DbleRwSplitEntry() {
         super(TABLE_NAME, 10);
@@ -104,7 +105,7 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                     map.put(COLUMN_CONN_ATTR_KEY, rwSplitUserConfig.getTenant() != null ? "tenant" : null);
                     map.put(COLUMN_CONN_ATTR_VALUE, rwSplitUserConfig.getTenant());
                     map.put(COLUMN_WHITE_IPS, DbleEntry.getWhiteIps(rwSplitUserConfig.getWhiteIPs()));
-                    map.put(COLUMN_MAX_CONN_COUNT, rwSplitUserConfig.getMaxCon() == -1 ? "no limit" : rwSplitUserConfig.getMaxCon() + "");
+                    map.put(COLUMN_MAX_CONN_COUNT, rwSplitUserConfig.getMaxCon() == 0 ? CONSTANT_NO_LIMIT : rwSplitUserConfig.getMaxCon() + "");
                     map.put(COLUMN_BLACKLIST, rwSplitUserConfig.getBlacklist() == null ? null : rwSplitUserConfig.getBlacklist().getName());
                     map.put(COLUMN_DB_GROUP, dbGroupName);
                     list.add(map);
@@ -215,6 +216,18 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                 throw new ConfigException("Column 'encrypt_configured' values only support 'false' or 'true'.");
             }
         }
+        if (!StringUtil.isBlank(tempRowMap.get(COLUMN_CONN_ATTR_KEY))) {
+            if (!StringUtil.equals(tempRowMap.get(COLUMN_CONN_ATTR_KEY), "tenant")) {
+                throw new ConfigException("'conn_attr_key' value is ['tenant',null].");
+            }
+            if (StringUtil.isBlank(tempRowMap.get(COLUMN_CONN_ATTR_VALUE))) {
+                throw new ConfigException("'conn_attr_key' and 'conn_attr_value' are used together.");
+            }
+        } else {
+            if (!StringUtil.isBlank(tempRowMap.get(COLUMN_CONN_ATTR_VALUE))) {
+                throw new ConfigException("'conn_attr_key' and 'conn_attr_value' are used together.");
+            }
+        }
     }
 
 
@@ -259,7 +272,10 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
                     break;
                 case COLUMN_MAX_CONN_COUNT:
                     if (!StringUtil.isBlank(entry.getValue())) {
-                        rwSplitUser.setMaxCon(IntegerUtil.parseInt(entry.getValue()));
+                        rwSplitUser.setMaxCon(IntegerUtil.parseInt(entry.getValue().replace(CONSTANT_NO_LIMIT, "0")));
+                    }
+                    if (rwSplitUser.getMaxCon() < 0) {
+                        throw new ConfigException("Column 'max_conn_count' value cannot be less than 0.");
                     }
                     break;
                 case COLUMN_DB_GROUP:
@@ -270,5 +286,10 @@ public class DbleRwSplitEntry extends ManagerWritableTable {
             }
         }
         return rwSplitUser;
+    }
+
+    @Override
+    public void updateTempConfig() {
+        DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
     }
 }

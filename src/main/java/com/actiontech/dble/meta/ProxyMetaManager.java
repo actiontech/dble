@@ -583,7 +583,7 @@ public class ProxyMetaManager {
     public void notifyClusterDDL(String schema, String table, String sql) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             if (DistributeLockManager.isLooked(ClusterPathUtil.getSyncMetaLockPath())) {
-                String msg = "There is another instance init meta data, try it later.";
+                String msg = "There is another instance init meta data, try it later";
                 throw new Exception(msg);
             }
             DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
@@ -593,7 +593,7 @@ public class ProxyMetaManager {
             ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
             DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
             if (!lock.acquire()) {
-                String msg = "The metaLock about `" + tableFullName + "` is exists. It means other instance is doing DDL.";
+                String msg = "The metaLock about `" + tableFullName + "` is exists. It means other instance is doing DDL";
                 LOGGER.info(msg + " The path of DDL is " + ddlPathMeta);
                 throw new Exception(msg);
             }

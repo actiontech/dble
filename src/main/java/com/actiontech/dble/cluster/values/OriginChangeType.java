@@ -10,16 +10,15 @@ package com.actiontech.dble.cluster.values;
  * @author dcy
  * Create Date: 2021-03-30
  */
-public enum ChangeType {
+public enum OriginChangeType {
     /**
      * cluster event type
      */
     ADDED,
-    /*
-     * UPDATED event is discarded in order to prevent event merge.
-     * This UPDATED event are split into two event, remove the old and add the new.
+    /**
+     * cluster event type
      */
-    //    @Deprecated UPDATED,
+    UPDATE,
     /**
      * cluster event type
      */

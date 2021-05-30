@@ -84,7 +84,7 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
                 oldEvent = new ClusterEvent<>(path, oldValue, ChangeType.REMOVED);
                 oldEvent.markUpdate();
                 newEvent = new ClusterEvent<>(path, newValue, ChangeType.ADDED);
-                oldEvent.markUpdate();
+                newEvent.markUpdate();
                 break;
             default:
                 return;

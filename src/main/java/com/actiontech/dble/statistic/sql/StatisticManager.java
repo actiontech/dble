@@ -10,9 +10,8 @@ import com.actiontech.dble.statistic.sql.handler.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class StatisticManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatisticManager.class);
@@ -20,7 +19,10 @@ public final class StatisticManager {
     private StatisticDisruptor disruptor;
     private static Map<String, StatisticDataHandler> statisticDataHandlers = new HashMap<>(8);
     private static StatisticListener statisticListener = StatisticListener.getInstance();
+    private static volatile LinkedHashMap<String, String> usageData = new LinkedHashMap<>();
     private boolean isStart = false;
+    private Timer queueMonitor;
+    private static final ReentrantReadWriteLock MONITO_RLOCK = new ReentrantReadWriteLock();
 
     // variable
     private volatile boolean enable = SystemConfig.getInstance().getEnableStatistic() == 1;
@@ -70,10 +72,13 @@ public final class StatisticManager {
     // stop
     public void stop() {
         statisticListener.stop();
-        if (disruptor != null)
+        if (disruptor != null) {
             disruptor.stop();
+            disruptor = null;
+        }
         isStart = false;
         isSampling = false;
+        cancelMonitoring();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("stop sql statistic success");
         }
@@ -87,6 +92,50 @@ public final class StatisticManager {
     // push
     public void push(final StatisticEntry entry) {
         disruptor.push(entry);
+    }
+
+    public boolean isMonitoring() {
+        MONITO_RLOCK.readLock().lock();
+        try {
+            return queueMonitor != null;
+        } finally {
+            MONITO_RLOCK.readLock().unlock();
+        }
+    }
+
+    public Timer getQueueMonitor() {
+        MONITO_RLOCK.writeLock().lock();
+        try {
+            if (disruptor == null)
+                return null;
+            if (queueMonitor == null)
+                queueMonitor = new Timer("monitorStatisticQueue");
+            return queueMonitor;
+        } finally {
+            MONITO_RLOCK.writeLock().unlock();
+        }
+    }
+
+    public void cancelMonitoring() {
+        MONITO_RLOCK.writeLock().lock();
+        try {
+            if (null != queueMonitor) {
+                queueMonitor.cancel();
+                queueMonitor = null;
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("cancel queue monitor");
+            }
+        } finally {
+            MONITO_RLOCK.writeLock().unlock();
+        }
+    }
+
+    public LinkedHashMap<String, String> getUsageData() {
+        return usageData;
+    }
+
+    public void resetUsageData() {
+        usageData.clear();
     }
 
     public boolean isEnable() {
@@ -157,6 +206,10 @@ public final class StatisticManager {
 
     public int getStatisticQueueSize() {
         return statisticQueueSize;
+    }
+
+    public long getDisruptorRemaining() {
+        return disruptor.getDisruptor().getRingBuffer().remainingCapacity();
     }
 
     public StatisticDataHandler getHandler(String key) {

@@ -45,6 +45,8 @@ public final class ManagerParse {
     public static final int USE = 31;
     public static final int TRUNCATE_TABLE = 32;
     public static final int KILL_LOAD_DATA = 33;
+    public static final int START = 34;
+    public static final int DROP_STATISTIC_QUEUE_USAGE = 35;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -191,10 +193,14 @@ public final class ManagerParse {
     private static int dropCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("OP")) {
-            return DROP_DB;
-        } else {
-            return OTHER;
+            String tmp = stmt.substring(offset + 3).trim();
+            if (tmp.toUpperCase().equals("@@STATISTIC_QUEUE.USAGE")) {
+                return DROP_STATISTIC_QUEUE_USAGE;
+            } else {
+                return DROP_DB;
+            }
         }
+        return OTHER;
     }
 
     private static int disCheck(String stmt) {
@@ -400,7 +406,7 @@ public final class ManagerParse {
                     return split(stmt, offset);
                 case 'T':
                 case 't':
-                    return stop(stmt, offset);
+                    return checks(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -665,15 +671,42 @@ public final class ManagerParse {
         return OTHER;
     }
 
+    private static int checks(String stmt, int offset) {
+        char c1 = stmt.charAt(++offset);
+        switch (c1) {
+            case 'A':
+            case 'a':
+                return start(stmt, offset);
+            case 'O':
+            case 'o':
+                return stop(stmt, offset);
+            default:
+                return OTHER;
+        }
+    }
+
     // STOP' '
     private static int stop(String stmt, int offset) {
-        if (stmt.length() > offset + 3) {
-            char c1 = stmt.charAt(++offset);
+        if (stmt.length() > offset + 2) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'P' || c2 == 'p') &&
+            if ((c2 == 'P' || c2 == 'p') &&
                     (c3 == ' ' || c3 == '\t' || c3 == '\r' || c3 == '\n')) {
                 return (offset << 8) | STOP;
+            }
+        }
+        return OTHER;
+    }
+
+    // START' '
+    private static int start(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'T' || c3 == 't') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                return (offset << 8) | START;
             }
         }
         return OTHER;

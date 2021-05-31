@@ -60,7 +60,11 @@ public final class DateUtil {
      * @return
      */
     public static String parseStr(long time) {
-        DateFormat sdf = new SimpleDateFormat(DATE_PATTERN_FULL2);
+        return parseStr(time, DATE_PATTERN_FULL2);
+    }
+
+    public static String parseStr(long time, String datePattern) {
+        DateFormat sdf = new SimpleDateFormat(datePattern);
         return sdf.format(new Date(time));
     }
 

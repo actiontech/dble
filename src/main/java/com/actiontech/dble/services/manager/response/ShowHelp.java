@@ -231,6 +231,10 @@ public final class ShowHelp {
         HELPS.put("disable @@statistic", "Turn off statistic sql");
         HELPS.put("reload @@statistic_table_size = ? [where table='?' | where table in (dble_information.tableA,...)]", "Statistic table size");
         HELPS.put("reload @@samplingRate=?", "Reset the samplingRate size");
+        HELPS.put("show @@statistic_queue.usage", "Show the queue usage");
+        HELPS.put("drop @@statistic_queue.usage", "Drop the queue usage");
+        HELPS.put("start @@statistic_queue_monitor [observeTime = ? [and intervalTime = ?]]", "Start monitoring queue usage, Unit: (s,m/min,h)");
+        HELPS.put("stop @@statistic_queue_monitor", "Stop monitoring queue usage");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

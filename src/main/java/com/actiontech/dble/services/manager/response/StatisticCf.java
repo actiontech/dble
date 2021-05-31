@@ -4,6 +4,8 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.btrace.provider.StatisticProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.memory.unsafe.utils.JavaUtils;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -14,12 +16,16 @@ import com.actiontech.dble.services.manager.information.tables.statistic.Fronten
 import com.actiontech.dble.services.manager.information.tables.statistic.SqlLog;
 import com.actiontech.dble.services.manager.information.tables.statistic.TableByUserByEntry;
 import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,8 +39,8 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service, boolean isOn) {
+            LOCK.writeLock().lock();
             try {
-                LOCK.writeLock().lock();
                 StatisticProvider.onOffStatistic();
                 String onOffStatus = isOn ? "enable" : "disable";
                 try {
@@ -74,8 +80,8 @@ public class StatisticCf {
                 return;
             }
 
+            LOCK.writeLock().lock();
             try {
-                LOCK.writeLock().lock();
                 StatisticManager.getInstance().setSamplingRate(samplingRate);
             } finally {
                 LOCK.writeLock().unlock();
@@ -101,8 +107,8 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service, String value) {
+            LOCK.writeLock().lock();
             try {
-                LOCK.writeLock().lock();
                 StatisticProvider.updateTableMaxSize();
 
                 Matcher matcher1 = PATTERN_IN.matcher(value);
@@ -234,8 +240,8 @@ public class StatisticCf {
         }
 
         public static void execute(ManagerService service) {
+            LOCK.readLock().lock();
             try {
-                LOCK.readLock().lock();
                 StatisticProvider.showStatistic();
                 ByteBuffer buffer = service.allocate();
                 // write header
@@ -288,6 +294,12 @@ public class StatisticCf {
                 row6.setPacketId(++packetId);
                 buffer = row6.write(buffer, service, true);
 
+                RowDataPacket row7 = new RowDataPacket(FIELD_COUNT);
+                row7.add(StringUtil.encode("queueMonitor", service.getCharset().getResults()));
+                row7.add(StringUtil.encode(StatisticManager.getInstance().isMonitoring() ? "monitoring" : "-", service.getCharset().getResults()));
+                row7.setPacketId(++packetId);
+                buffer = row7.write(buffer, service, true);
+
                 // write last eof
                 EOFRowPacket lastEof = new EOFRowPacket();
                 lastEof.setPacketId(++packetId);
@@ -299,4 +311,139 @@ public class StatisticCf {
         }
     }
 
+    public static class Queue {
+        private static final int FIELD_COUNT = 2;
+        private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
+        private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
+        private static final EOFPacket EOF = new EOFPacket();
+        private static final Pattern PATTERN = Pattern.compile("start\\s+@@statistic_queue_monitor(\\s+observeTime\\s*=\\s*(([^\\s])+)(\\s+and\\s+intervalTime\\s*=\\s*([^']+))?)?", Pattern.CASE_INSENSITIVE);
+
+        private static final ImmutableMap<String, TimeUnit> TIME_SUFFIXES =
+                ImmutableMap.<String, TimeUnit>builder().
+                        put("s", TimeUnit.SECONDS).
+                        put("m", TimeUnit.MINUTES).
+                        put("min", TimeUnit.MINUTES).
+                        put("h", TimeUnit.HOURS).
+                        build();
+
+        static {
+            int i = 0;
+            byte packetId = 0;
+            HEADER.setPacketId(++packetId);
+
+            FIELDS[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_VAR_STRING);
+            FIELDS[i++].setPacketId(++packetId);
+
+            FIELDS[i] = PacketUtil.getField("USAGE", Fields.FIELD_TYPE_VAR_STRING);
+            FIELDS[i].setPacketId(++packetId);
+
+            EOF.setPacketId(++packetId);
+        }
+
+        // start @@statistic_queue_monitor observeTime = 0 and intervalTime = 0;
+        public static void start(ManagerService service, String stmt) {
+            Matcher ma = PATTERN.matcher(stmt);
+            if (!ma.matches()) {
+                service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "The sql does not match: start @@statistic_queue_monitor observeTime = ? and intervalTime = ?");
+                return;
+            }
+            long observeTime = 60000L;
+            long intervalTime = 5000L;
+            try {
+                if (null != ma.group(2)) {
+                    observeTime = JavaUtils.timeStringAsMs(ma.group(2), TIME_SUFFIXES);
+                }
+                if (null != ma.group(5)) {
+                    intervalTime = JavaUtils.timeStringAsMs(ma.group(5), TIME_SUFFIXES);
+                }
+                if (observeTime < intervalTime) {
+                    throw new NumberFormatException();
+                }
+            } catch (NumberFormatException e) {
+                service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Rule: must be a positive integer, observeTime > intervalTime, Unit: (s,m/min,h)");
+                return;
+            }
+            if (!StatisticManager.getInstance().isEnable() && StatisticManager.getInstance().getSamplingRate() == 0) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Statistic is disabled and samplingRate value is 0");
+                return;
+            }
+            if (StatisticManager.getInstance().isMonitoring()) {
+                service.writeErrMessage(ErrorCode.ER_YES, "In the monitoring..., can use 'stop @@statistic_queue_monitor' to interrupt monitoring");
+                return;
+            }
+
+            StatisticManager.getInstance().resetUsageData();
+            Timer timer = StatisticManager.getInstance().getQueueMonitor();
+            if (null == timer) {
+                service.writeErrMessage(ErrorCode.ER_YES, "Check the sql statistics is disabled or samplingRate value is 0");
+                return;
+            }
+            timer.schedule(new MonitorTask(
+                            observeTime,
+                            intervalTime),
+                    0,
+                    intervalTime);
+            service.writeOkPacket();
+        }
+
+        // stop @@statistic_queue_monitor;
+        public static void stop(ManagerService service) {
+            StatisticManager.getInstance().cancelMonitoring();
+            service.writeOkPacket();
+        }
+
+        // show @@statistic_queue.usage;
+        public static void show(ManagerService service) {
+            ByteBuffer buffer = service.allocate();
+            buffer = HEADER.write(buffer, service, true);
+            for (FieldPacket field : FIELDS) {
+                buffer = field.write(buffer, service, true);
+            }
+            buffer = EOF.write(buffer, service, true);
+            byte packetId = EOF.getPacketId();
+            RowDataPacket row;
+
+            for (Map.Entry<String, String> entry : StatisticManager.getInstance().getUsageData().entrySet()) {
+                row = new RowDataPacket(FIELD_COUNT);
+                row.add(StringUtil.encode(entry.getKey(), service.getCharset().getResults()));
+                row.add(StringUtil.encode(entry.getValue(), service.getCharset().getResults()));
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
+            }
+            EOFRowPacket lastEof = new EOFRowPacket();
+            lastEof.setPacketId(++packetId);
+            lastEof.write(buffer, service);
+        }
+
+        public static void drop(ManagerService service) {
+            StatisticManager.getInstance().getUsageData().clear();
+            service.writeOkPacket();
+        }
+
+        public static class MonitorTask extends TimerTask {
+            private static final DecimalFormat DF = new DecimalFormat("0.00%");
+            private int queueSize = SystemConfig.getInstance().getStatisticQueueSize();
+            private LinkedHashMap<String, String> usageData;
+            private long recordNum;
+            private long interval;
+            long count;
+
+            public MonitorTask(long observe, long interval) {
+                super();
+                this.recordNum = observe / interval;
+                this.interval = interval;
+                this.usageData = StatisticManager.getInstance().getUsageData();
+            }
+
+            @Override
+            public void run() {
+                if (usageData.keySet().size() == recordNum + 1) {
+                    StatisticManager.getInstance().cancelMonitoring();
+                    return;
+                }
+                usageData.put(DateUtil.parseStr(System.currentTimeMillis(), DateUtil.DEFAULT_DATE_PATTERN), DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize)));
+                count += interval;
+            }
+        }
+    }
 }

@@ -23,7 +23,7 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
         if (service.getSession2().getSessionXaID() != null) {
             // Implicitly committed statement (such as: DDL) is not allowed to be executed in xa transaction.
-            throw new SQLException("The command cannot be executed when xa transaction.");
+            throw new SQLException("Implicit commit statement cannot be executed when xa transaction.");
         }
         try {
             schema = doVisitorParse(schema, rrs, stmt, visitor, service, isExplain);

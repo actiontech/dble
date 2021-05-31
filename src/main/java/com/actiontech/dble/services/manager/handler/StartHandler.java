@@ -6,25 +6,21 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.route.parser.ManagerParseStart;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.response.StatisticCf;
-import com.actiontech.dble.services.manager.response.StopHeartbeat;
-import com.actiontech.dble.route.parser.ManagerParseStop;
 
 /**
  * @author mycat
  */
-public final class StopHandler {
-    private StopHandler() {
+public final class StartHandler {
+    private StartHandler() {
     }
 
     public static void handle(String stmt, ManagerService c, int offset) {
-        switch (ManagerParseStop.parse(stmt, offset)) {
-            case ManagerParseStop.HEARTBEAT:
-                StopHeartbeat.execute(stmt, c);
-                break;
-            case ManagerParseStop.STATISTIC_QUEUE_MONITOR:
-                StatisticCf.Queue.stop(c);
+        switch (ManagerParseStart.parse(stmt, offset)) {
+            case ManagerParseStart.STATISTIC_QUEUE_MONITOR:
+                StatisticCf.Queue.start(c, stmt);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

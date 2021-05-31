@@ -12,13 +12,12 @@ import com.actiontech.dble.util.SplitUtil;
 /**
  * @author mycat
  */
-public final class ManagerParseStop {
-    private ManagerParseStop() {
+public final class ManagerParseStart {
+    private ManagerParseStart() {
     }
 
     public static final int OTHER = -1;
-    public static final int HEARTBEAT = 1;
-    public static final int STATISTIC_QUEUE_MONITOR = 2;
+    public static final int STATISTIC_QUEUE_MONITOR = 1;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -31,7 +30,7 @@ public final class ManagerParseStop {
                     i = ParseUtil.comment(stmt, i);
                     continue;
                 case '@':
-                    return stop2Check(stmt, i);
+                    return startCheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -54,31 +53,11 @@ public final class ManagerParseStop {
     }
 
     // STATISTIC_QUEUE_TIMER
-    // HEARTBEAT
-    static int stop2Check(String stmt, int offset) {
+    static int startCheck(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@') {
-            if (stmt.length() > offset + 21 && stmt.substring(offset + 1).toUpperCase().equals("STATISTIC_QUEUE_MONITOR")) {
+            if (stmt.length() > offset + 21 && stmt.substring(offset + 1).toUpperCase().startsWith("STATISTIC_QUEUE_MONITOR")) {
                 return STATISTIC_QUEUE_MONITOR;
-            } else if (stmt.length() > offset + 9) {
-                char c1 = stmt.charAt(++offset);
-                char c2 = stmt.charAt(++offset);
-                char c3 = stmt.charAt(++offset);
-                char c4 = stmt.charAt(++offset);
-                char c5 = stmt.charAt(++offset);
-                char c6 = stmt.charAt(++offset);
-                char c7 = stmt.charAt(++offset);
-                char c8 = stmt.charAt(++offset);
-                char c9 = stmt.charAt(++offset);
-                if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a') &&
-                        (c4 == 'R' || c4 == 'r') && (c5 == 'T' || c5 == 't') && (c6 == 'B' || c6 == 'b') &&
-                        (c7 == 'E' || c7 == 'e') && (c8 == 'A' || c8 == 'a') && (c9 == 'T' || c9 == 't')) {
-                    if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                        return OTHER;
-                    }
-                    return HEARTBEAT;
-                }
             }
-
         }
         return OTHER;
     }

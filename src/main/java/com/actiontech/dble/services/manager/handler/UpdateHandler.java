@@ -158,8 +158,8 @@ public final class UpdateHandler {
             return null;
         }
         ManagerBaseTable managerBaseTable = ManagerSchemaInfo.getInstance().getTables().get(schemaInfo.getTable());
-        if (!managerBaseTable.isWritable()) {
-            service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
+        if (managerBaseTable == null || !managerBaseTable.isWritable()) {
+            service.writeErrMessage("42000", "Access denied for table '" + schemaInfo.getTable() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return null;
         }
         return (ManagerWritableTable) managerBaseTable;

@@ -40,12 +40,12 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
             if (serverParse.isMultiStatement(sql)) {
+                session.getService().transactionsCount();
                 if (!session.getService().isMultiStatementAllow()) {
                     LOGGER.warn("use multi-query without set CLIENT_MULTI_STATEMENTS flag");
                     session.getService().writeErrMessage(ErrorCode.ERR_WRONG_USED, "Your client must enable multi-query param . For example in jdbc,you should set allowMultiQueries=true in URL.");
                     return;
                 }
-                session.getService().transactionsCountInTx();
                 session.execute(true, null);
                 return;
             }

@@ -541,7 +541,7 @@ public class NonBlockingSession extends Session {
                 handleSpecial(rrs, false, null);
             }
             DDLTraceManager.getInstance().endDDL(shardingService, e.getMessage());
-            shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+            shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);
         }
@@ -683,7 +683,7 @@ public class NonBlockingSession extends Session {
             ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
         } catch (Exception e) {
             ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-            throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
+            throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
         }
     }
 

@@ -74,6 +74,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     private OkPacket packet;
     private Set<String> dnSet = new ConcurrentSkipListSet<>();
     private RequestScope requestScope;
+    private int errorNodeCount;
 
     public MultiNodeLoadDataHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -102,6 +103,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         dnSet.clear();
         packet = null;
         errorCount = 0;
+        errorNodeCount = 0;
         unResponseRrns.clear();
         LoadDataBatch.getInstance().clean();
         deleteErrorFile();
@@ -232,8 +234,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         try {
             session.getSource().setSkipCheck(false);
             RouteResultsetNode rNode = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
-            unResponseRrns.remove(rNode);
             dnSet.add(rNode.getName());
+            removeNode(rNode.getName());
             rNode.setLoadDataRrnStatus((byte) 1);
             session.getTargetMap().remove(rNode);
             ((MySQLResponseService) service).setResponseHandler(null);
@@ -252,15 +254,13 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         errPacket.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
         LOGGER.warn(errMsg);
         err = errPacket;
-        if (LoadDataBatch.getInstance().isEnableBatchLoadData()) {
-            unResponseRrns.remove(rrn);
-            dnSet.add(rrn.getName());
-            rrn.setLoadDataRrnStatus((byte) 1);
-        }
         session.resetMultiStatementStatus();
         lock.lock();
         try {
             errorConnsCnt++;
+            removeNode(rrn.getName());
+            dnSet.add(rrn.getName());
+            rrn.setLoadDataRrnStatus((byte) 1);
             executeError(null);
         } finally {
             lock.unlock();
@@ -286,8 +286,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         lock.lock();
         try {
             RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
-            unResponseRrns.remove(rrn);
             dnSet.add(rrn.getName());
+            removeNode(rrn.getName());
             rrn.setLoadDataRrnStatus((byte) 1);
             if (!isFail()) {
                 err = errPacket;
@@ -316,8 +316,9 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         ShardingService shardingService = session.getShardingService();
         lock.lock();
         try {
+            errorNodeCount++;
             decrementToZero((MySQLResponseService) service);
-            if (unResponseRrns.size() != 0) {
+            if (unResponseRrns.size() != 0 || dnSet.size() > errorNodeCount) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("errorCount " + errorCount + " warningSize =  " + LoadDataBatch.getInstance().getWarnings().size());
                 }
@@ -392,6 +393,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                             errorCount += ok.getWarningCount();
                         }
                         dnSet.add(rrn.getName());
+                        removeNode(rrn.getName());
                         transformOkPackage(ok, shardingService);
                         if (packet == null)
                             packet = ok;
@@ -414,12 +416,12 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                     if (errorCount > 0) {
                         specialOkResponse(service);
                     } else {
-                        LoadDataBatch.getInstance().getSuccessFileNames().clear();
                         if (isFail()) {
                             ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                             handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
                             return;
                         }
+                        LoadDataBatch.getInstance().getSuccessFileNames().clear();
                         ok.setMessage(("Records: " + affectedRows + "  Deleted: 0  Skipped: 0  Warnings: 0").getBytes());
                         shardingService.getLoadDataInfileHandler().clear();
                         shardingService.getLoadDataInfileHandler().cleanLoadDataFile();
@@ -752,5 +754,9 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             }
             LOGGER.debug("shardingnode[" + rNode.getName() + "], which conn threadid[" + service.getConnection().getThreadId() + "] has slept for " + millis + " milliseconds");
         }
+    }
+
+    private void removeNode(String nodeName) {
+        unResponseRrns.removeIf(node -> StringUtil.equals(node.getName(), nodeName));
     }
 }

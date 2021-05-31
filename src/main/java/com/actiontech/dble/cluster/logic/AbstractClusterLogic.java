@@ -51,6 +51,9 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
     }
 
     public boolean checkResponseForOneTime(String path, Map<String, OnlineType> expectedMap, @Nonnull StringBuilder errorMsg) {
+        if (expectedMap.size() == 0) {
+            return true;
+        }
         Map<String, OnlineType> currentMap = ClusterHelper.getOnlineMap();
         checkOnline(expectedMap, currentMap);
         List<ClusterEntry<FeedBackType>> responseList;

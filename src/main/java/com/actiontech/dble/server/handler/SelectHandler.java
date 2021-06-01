@@ -107,6 +107,9 @@ public final class SelectHandler {
             case ServerParseSelect.ROW_COUNT:
                 SelectRowCount.response(service);
                 break;
+            case ServerParseSelect.MAX_ALLOWED_PACKET:
+                SelectMaxAllowedPacket.response(service);
+                break;
             default:
                 service.execute(stmt, ServerParse.SELECT);
         }

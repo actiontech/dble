@@ -21,6 +21,8 @@ import java.util.Map;
  */
 public class RouteCalculateUnit {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteCalculateUnit.class);
+    private static final String DDL_TRACE_LOG = "DDL_TRACE";
+    private static final Logger DTRACE_LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
     private boolean alwaysFalse = false;
     private Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = new LinkedHashMap<>();
 
@@ -39,7 +41,7 @@ public class RouteCalculateUnit {
     public void addShardingExpr(Pair<String, String> table, String columnName, Object value) {
         if (alwaysFalse) {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("this RouteCalculateUnit is always false, ignore " + changeValueToColumnRoute(value));
+                DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, ignore " + changeValueToColumnRoute(value));
             }
             return;
         }
@@ -82,7 +84,7 @@ public class RouteCalculateUnit {
 
     private void markAlwaysFalse(ColumnRoute columnValue) {
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("this condition " + columnValue + " is always false, so this RouteCalculateUnit will be always false");
+            DTRACE_LOGGER.trace("this condition " + columnValue + " is always false, so this RouteCalculateUnit will be always false");
         }
         clear();
         alwaysFalse = true;
@@ -108,7 +110,7 @@ public class RouteCalculateUnit {
                         ColumnRoute columnValue = mergeColumnRoute(thisColumnPair, otherColumnPair);
                         if (columnValue.isAlwaysFalse()) {
                             ret.markAlwaysFalse(columnValue);
-                            LOGGER.trace("this RouteCalculateUnit [" + this + "] and RouteCalculateUnit [" + other + "] merged to RouteCalculateUnit[" + ret + "]");
+                            DTRACE_LOGGER.trace("this RouteCalculateUnit [" + this + "] and RouteCalculateUnit [" + other + "] merged to RouteCalculateUnit[" + ret + "]");
                             return ret;
                         }
                         tableColumnsMap.put(upperColName, columnValue);
@@ -117,7 +119,7 @@ public class RouteCalculateUnit {
             }
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("this RouteCalculateUnit [" + this + "] and RouteCalculateUnit [" + other + "] merged to RouteCalculateUnit[" + ret + "]");
+            DTRACE_LOGGER.trace("this RouteCalculateUnit [" + this + "] and RouteCalculateUnit [" + other + "] merged to RouteCalculateUnit[" + ret + "]");
         }
         return ret;
     }
@@ -185,7 +187,7 @@ public class RouteCalculateUnit {
             ret = new ColumnRoute(true); //WILL NOT HAPPEN
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("ColumnRoute[" + oldItem + "] and ColumnRoute[" + newItem + "] will merge to ColumnRoute[" + ret + "]");
+            DTRACE_LOGGER.trace("ColumnRoute[" + oldItem + "] and ColumnRoute[" + newItem + "] will merge to ColumnRoute[" + ret + "]");
         }
         return ret;
     }

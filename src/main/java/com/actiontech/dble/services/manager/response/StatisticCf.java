@@ -422,7 +422,7 @@ public class StatisticCf {
 
         public static class MonitorTask extends TimerTask {
             private static final DecimalFormat DF = new DecimalFormat("0.00%");
-            private int queueSize = SystemConfig.getInstance().getStatisticQueueSize();
+            private double queueSize = SystemConfig.getInstance().getStatisticQueueSize();
             private LinkedHashMap<String, String> usageData;
             private long recordNum;
             private long interval;

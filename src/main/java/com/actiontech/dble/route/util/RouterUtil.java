@@ -34,7 +34,10 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLHexExpr;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import org.slf4j.Logger;
@@ -56,6 +59,8 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
 public final class RouterUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static ThreadLocalRandom rand = ThreadLocalRandom.current();
+    private static final String DDL_TRACE_LOG = "DDL_TRACE";
+    private static final Logger DTRACE_LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
 
     private RouterUtil() {
     }
@@ -471,13 +476,13 @@ public final class RouterUtil {
             }
             if (routeNodeSet.size() == 0) {
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("all ColumnRoute " + columnRoute + " merge to always false");
+                    DTRACE_LOGGER.trace("all ColumnRoute " + columnRoute + " merge to always false");
                 }
                 rrs.setAlwaysFalse(true);
                 rangeNodeSet.addAll(tc.getShardingNodes());
             }
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("all ColumnRoute " + columnRoute + " merge to these node:" + routeNodeSet);
+                DTRACE_LOGGER.trace("all ColumnRoute " + columnRoute + " merge to these node:" + routeNodeSet);
             }
         }
     }
@@ -794,7 +799,7 @@ public final class RouterUtil {
 
         Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
         if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
-            LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
+            DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
         }
         routeToMultiNode(isSelect, rrs, retNodesSet);
         return rrs;
@@ -856,7 +861,7 @@ public final class RouterUtil {
 
         Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
         if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
-            LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
+            DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
         }
         routeToMultiNode(true, rrs, retNodesSet);
         return rrs;

@@ -25,6 +25,8 @@ import java.util.*;
 
 public final class ConditionUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConditionUtil.class);
+    private static final String DDL_TRACE_LOG = "DDL_TRACE";
+    private static final Logger DTRACE_LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
 
     private ConditionUtil() {
     }
@@ -58,7 +60,7 @@ public final class ConditionUtil {
             pruningAndConditions(tableAliasMap, defaultSchema, iteratorOutConditions);
             if (outConditions.size() == 0 && (subWhereSize != 0 && subWhereSizeAfter == 0) || (orSize != 0 && orSizeAfter == 0) || (subWhereSize == 0 && orSize == 0)) {
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("whereUnit [" + whereUnitContent + "] will be pruned for contains useless or condition");
+                    DTRACE_LOGGER.trace("whereUnit [" + whereUnitContent + "] will be pruned for contains useless or condition");
                 }
                 whereUnitIterator.remove();
             }
@@ -72,7 +74,7 @@ public final class ConditionUtil {
             List<Object> values = condition.getValues();
             if (values.size() == 0 || !checkConditionValues(values)) {
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("condition [" + condition + "] will be pruned for empty values");
+                    DTRACE_LOGGER.trace("condition [" + condition + "] will be pruned for empty values");
                 }
                 iteratorConditions.remove(); //AND CONDITION can be pruned
             } else {
@@ -100,14 +102,14 @@ public final class ConditionUtil {
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase()) || schemaConfig == null) {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("condition [" + condition + "] will be pruned for schema name " + schemaName.toUpperCase());
+                DTRACE_LOGGER.trace("condition [" + condition + "] will be pruned for schema name " + schemaName.toUpperCase());
             }
             return null;
         }
         BaseTableConfig tableConfig = schemaConfig.getTables().get(tableName);
         if (tableConfig == null) {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("condition [" + condition + "] will be pruned for table is not config " + tableName);
+                DTRACE_LOGGER.trace("condition [" + condition + "] will be pruned for table is not config " + tableName);
             }
             return null;
         }
@@ -116,7 +118,7 @@ public final class ConditionUtil {
         //execute only between ,in and = is
         if (!operator.equalsIgnoreCase("between") && !operator.equals("=") && !operator.equalsIgnoreCase("in") && !operator.equalsIgnoreCase("IS")) {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("condition [" + condition + "] will be pruned for operator is not [between,=,in,IS]");
+                DTRACE_LOGGER.trace("condition [" + condition + "] will be pruned for operator is not [between,=,in,IS]");
             }
             return null;
         }
@@ -136,7 +138,7 @@ public final class ConditionUtil {
             }
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingColumn/joinColumn");
+            DTRACE_LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingColumn/joinColumn");
         }
         return null;
     }
@@ -148,7 +150,7 @@ public final class ConditionUtil {
         }
         if (tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("condition [" + condition + "] will be pruned for can't find table " + tableFullName);
+                DTRACE_LOGGER.trace("condition [" + condition + "] will be pruned for can't find table " + tableFullName);
             }
             //ignore subQuery's alias
             return null;
@@ -231,7 +233,7 @@ public final class ConditionUtil {
             return mergedRouteUnitList;
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("changeAndToOr will start ");
+            DTRACE_LOGGER.trace("changeAndToOr will start ");
         }
         for (List<RouteCalculateUnit> routeUnit : routeUnits) {
             StringBuilder sb = new StringBuilder();
@@ -241,11 +243,11 @@ public final class ConditionUtil {
             mergedRouteUnitList = changeAndToOr(mergedRouteUnitList, routeUnit);
             if (LOGGER.isTraceEnabled()) {
                 sb.append(mergedRouteUnitList);
-                LOGGER.trace(sb.toString());
+                DTRACE_LOGGER.trace(sb.toString());
             }
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("changeAndToOr end ");
+            DTRACE_LOGGER.trace("changeAndToOr end ");
         }
         return mergedRouteUnitList;
     }
@@ -262,7 +264,7 @@ public final class ConditionUtil {
         for (RouteCalculateUnit item1 : list1) {
             if (item1.isAlwaysFalse()) {
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("this RouteCalculateUnit " + item1 + " is always false, so this Unit will be ignore for changeAndToOr");
+                    DTRACE_LOGGER.trace("this RouteCalculateUnit " + item1 + " is always false, so this Unit will be ignore for changeAndToOr");
                 }
                 containsAlwaysFalse = true;
                 continue;
@@ -270,7 +272,7 @@ public final class ConditionUtil {
             for (RouteCalculateUnit item2 : list2) {
                 if (item2.isAlwaysFalse()) {
                     if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("this RouteCalculateUnit " + item2 + " is always false, so this Unit will be ignore for changeAndToOr");
+                        DTRACE_LOGGER.trace("this RouteCalculateUnit " + item2 + " is always false, so this Unit will be ignore for changeAndToOr");
                     }
                     containsAlwaysFalse = true;
                     continue;
@@ -278,7 +280,7 @@ public final class ConditionUtil {
                 RouteCalculateUnit tmp = item1.merge(item2);
                 if (tmp.isAlwaysFalse()) {
                     if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("this RouteCalculateUnit " + tmp + " is always false, so this Unit will be ignore for changeAndToOr");
+                        DTRACE_LOGGER.trace("this RouteCalculateUnit " + tmp + " is always false, so this Unit will be ignore for changeAndToOr");
                     }
                     containsAlwaysFalse = true;
                     continue;
@@ -291,7 +293,7 @@ public final class ConditionUtil {
             routeCalculateUnit.setAlwaysFalse(true);
             retList.add(routeCalculateUnit);
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("changeAndToOr are all always false, so leave one alwaysFalse as RouteCalculateUnit");
+                DTRACE_LOGGER.trace("changeAndToOr are all always false, so leave one alwaysFalse as RouteCalculateUnit");
             }
         }
         return retList;
@@ -346,7 +348,7 @@ public final class ConditionUtil {
                 sb.append(routeUnit.toString());
                 sb.append("}");
             }
-            LOGGER.trace(sb.toString());
+            DTRACE_LOGGER.trace(sb.toString());
         }
         return retList;
     }
@@ -399,7 +401,7 @@ public final class ConditionUtil {
                 i++;
             }
             sb.append("}");
-            LOGGER.trace(sb.toString());
+            DTRACE_LOGGER.trace(sb.toString());
         }
         ConditionUtil.pruningConditions(whereUnits, tableAliasMap, defaultSchema);
         if (whereUnits.size() == 0) {

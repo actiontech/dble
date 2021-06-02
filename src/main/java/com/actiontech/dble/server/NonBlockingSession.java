@@ -16,6 +16,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitH
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandlerManager;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
@@ -533,6 +534,7 @@ public class NonBlockingSession extends Session {
 
                 setTraceSimpleHandler((ResponseHandler) executableHandler);
                 readyToDeliver();
+                ClusterDelayProvider.delayDdLToDeliver();
                 executableHandler.execute();
                 discard = true;
             } else {

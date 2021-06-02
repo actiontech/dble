@@ -20,6 +20,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
+import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
@@ -44,7 +45,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private String notSupportMsg = null;
     private boolean hasOrCondition = false;
     private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<>();
-    private boolean inSelect = false;
+    private boolean routeConditionIgnore = false;
     private boolean inOuterJoin = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
 
@@ -176,7 +177,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(SQLSelectItem x) {
         //need to protect parser SQLSelectItem, or SQLBinaryOpExpr may add to whereUnit
         // eg:id =1 will add to whereUnit
-        inSelect = true;
+        routeConditionIgnore = true;
         SQLExpr sqlExpr = x.getExpr();
         if (sqlExpr instanceof SQLMethodInvokeExpr && ItemCreate.getInstance().isInnerFunc(sqlExpr.toString().replace("(", "").replace(")", ""))) {
             containsInnerFunction = true;
@@ -184,8 +185,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             containsInnerFunction = true;
         }
         sqlExpr.accept(this);
-        inSelect = false;
-
         //alias for select item is useless
         //        String alias = x.getAlias();
         //
@@ -286,6 +285,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     @Override
+    public boolean visit(SQLSelectGroupByClause x) {
+        routeConditionIgnore = true;
+        return true;
+    }
+
+    @Override
     public boolean visit(SQLBetweenExpr x) {
         if (x.isNot()) {
             return true;
@@ -334,8 +339,34 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     @Override
+    public boolean visit(SQLInListExpr x) {
+        if (routeConditionIgnore) {
+            return false;
+        }
+        if (x.isNot()) {
+            handleCondition(x.getExpr(), "NOT IN", x.getTargetList());
+        } else {
+            handleCondition(x.getExpr(), "IN", x.getTargetList());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean visit(SQLUnaryExpr x) {
+        switch (x.getOperator()) {
+            case Not:
+            // It doesn't match now it might match in the future，don't delete
+            case NOT:
+            case Compl:
+                return false;
+            default:
+                break;
+        }
+        return true;
+    }
+
+    @Override
     public boolean visit(SQLBinaryOpExpr x) {
-        if (isUnaryParentEffect(x)) return true;
         x.getLeft().setParent(x);
         x.getRight().setParent(x);
 
@@ -344,24 +375,24 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             case LessThanOrEqualOrGreaterThan:
             case Is:
             case IsNot:
-                if (!inSelect && !inOuterJoin) {
+                if (!routeConditionIgnore && !inOuterJoin) {
                     handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
                     handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
                 }
-                if (!inSelect) {
+                if (!routeConditionIgnore) {
                     handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
                 }
                 break;
             case BooleanOr:
                 //remove always true
-                if (!RouterUtil.isConditionAlwaysTrue(x) && !inSelect && !inOuterJoin) {
+                if (!RouterUtil.isConditionAlwaysTrue(x) && !routeConditionIgnore && !inOuterJoin) {
                     hasOrCondition = true;
                     WhereUnit whereUnit;
                     whereUnit = new WhereUnit(x);
                     whereUnit.addOutConditions(getConditions());
                     whereUnit.addOutRelationships(getRelationships());
                     whereUnits.add(whereUnit);
-                } else if (!RouterUtil.isConditionAlwaysTrue(x) && !inSelect) {
+                } else if (!RouterUtil.isConditionAlwaysTrue(x) && !routeConditionIgnore) {
                     WhereUnit whereUnit;
                     whereUnit = new WhereUnit(x);
                     whereUnit.addOutRelationships(getRelationships());
@@ -486,20 +517,29 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     @Override
+    public boolean visit(SQLOrderBy x) {
+        routeConditionIgnore = true;
+        return super.visit(x);
+    }
+
+    @Override
+    public boolean visit(SQLNotExpr x) {
+        routeConditionIgnore = true;
+        return true;
+    }
+
+    @Override
     public boolean visit(SQLSelect x) {
         if (x.getOrderBy() != null) {
             x.getOrderBy().setParent(x);
         }
-
         this.accept(x.getWithSubQuery());
-
         Set<Pair<String, Pair<String, String>>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
         tmpSelectSchemaTables.addAll(selectSchemaTables);
         selectSchemaTables.clear();
         this.accept(x.getQuery());
         selectSchemaTables.addAll(tmpSelectSchemaTables);
         tmpSelectSchemaTables.clear();
-
         this.accept(x.getOrderBy());
         return false;
     }
@@ -517,6 +557,25 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return true;
     }
 
+    @Override
+    public void endVisit(SQLOrderBy x) {
+        routeConditionIgnore = false;
+    }
+
+    @Override
+    public void endVisit(SQLSelectGroupByClause x) {
+        routeConditionIgnore = false;
+    }
+
+    @Override
+    public void endVisit(SQLSelectItem x) {
+        routeConditionIgnore = false;
+    }
+
+    @Override
+    public void endVisit(SQLNotExpr x) {
+        routeConditionIgnore = false;
+    }
 
     @Override
     public void endVisit(SQLSelect x) {
@@ -908,24 +967,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
     }
 
-    private boolean isUnaryParentEffect(SQLBinaryOpExpr x) {
-        if (x.getParent() instanceof SQLUnaryExpr) {
-            SQLUnaryExpr parent = (SQLUnaryExpr) x.getParent();
-            switch (parent.getOperator()) {
-                case Not:
-                case NOT:
-                case Compl:
-                    return true;
-                default:
-                    break;
-            }
-        }
-        return false;
-    }
-
     private void putAliasToMap(String name, String value) {
         putAliasToMap(name, value, true);
     }
+
     private void putAliasToMap(String name, String value, boolean removeApostrophe) {
         if (removeApostrophe) {
             value = value.replace("`", "");

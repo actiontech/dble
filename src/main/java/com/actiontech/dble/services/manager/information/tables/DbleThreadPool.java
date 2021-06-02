@@ -6,19 +6,23 @@
 package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.ColumnMeta;
+import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.executor.*;
 import com.actiontech.dble.net.impl.nio.RW;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
+import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.NameableExecutor;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,34 +108,33 @@ public final class DbleThreadPool extends ManagerWritableTable {
         if (values.containsKey(COLUMN_NAME) || values.containsKey(COLUMN_ACTIVE_COUNT) || values.containsKey(COLUMN_WAITING_TASK_COUNT) || values.containsKey(COLUMN_POOL_SIZE)) {
             throw new SQLException("Column '" + COLUMN_NAME + "/" + COLUMN_ACTIVE_COUNT + "/" + COLUMN_WAITING_TASK_COUNT + "/" + COLUMN_POOL_SIZE + "' is not writable", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
         }
-        String corePoolSize = values.get(COLUMN_CORE_POOL_SIZE);
-        if (StringUtil.isBlank(corePoolSize) || Integer.parseInt(corePoolSize) == 0) {
-            throw new SQLException("Column '" + COLUMN_CORE_POOL_SIZE + "' can not be empty or '0'", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
+        String corePoolSizeStr = values.get(COLUMN_CORE_POOL_SIZE);
+        int corePoolSize;
+        if (StringUtil.isBlank(corePoolSizeStr) || (corePoolSize = IntegerUtil.parseInt(corePoolSizeStr)) <= 0) {
+            throw new SQLException("Column '" + COLUMN_CORE_POOL_SIZE + "' should be a positive integer greater than 0", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
         }
         for (LinkedHashMap<String, String> affectPk : affectPks) {
             final int oldSize = Integer.parseInt(affectPk.get(COLUMN_CORE_POOL_SIZE));
-            String newSizeStr = values.get(COLUMN_CORE_POOL_SIZE);
-            int newSize = Integer.parseInt(newSizeStr);
             NameableExecutor nameableExecutor = getExecutor(affectPk.get(COLUMN_NAME));
             if (null == nameableExecutor) {
                 throw new SQLException("the current line does not support modification", "42S22", ErrorCode.ER_DUP_ENTRY);
             }
-            nameableExecutor.setCorePoolSize(newSize);
+            nameableExecutor.setCorePoolSize(corePoolSize);
             if (!nameableExecutor.getName().equals(DbleServer.COMPLEX_QUERY_EXECUTOR_NAME)) {
-                nameableExecutor.setMaximumPoolSize(newSize);
+                nameableExecutor.setMaximumPoolSize(corePoolSize);
             }
-            if (oldSize < newSize) {
+            if (oldSize < corePoolSize) {
                 try {
-                    increasePoolSize(nameableExecutor, newSize - oldSize);
+                    increasePoolSize(nameableExecutor, corePoolSize - oldSize);
                 } catch (IOException e) {
                     throw new SQLException(e.getMessage(), "42S22", ErrorCode.ER_YES);
                 }
-            } else if (oldSize > newSize) {
-                decreasePoolSize(nameableExecutor, oldSize - newSize);
+            } else if (oldSize > corePoolSize) {
+                decreasePoolSize(nameableExecutor, oldSize - corePoolSize);
             }
             //persistence
             try {
-                WriteDynamicBootstrap.getInstance().changeValue(getConfigParam(affectPk.get(COLUMN_NAME)), String.valueOf(newSize));
+                WriteDynamicBootstrap.getInstance().changeValue(getConfigParam(affectPk.get(COLUMN_NAME)), corePoolSizeStr);
             } catch (IOException e) {
                 throw new SQLException("persistence failed", "42S22", ErrorCode.ER_YES);
             }
@@ -160,62 +163,107 @@ public final class DbleThreadPool extends ManagerWritableTable {
     }
 
     private void decreasePoolSize(NameableExecutor nameableExecutor, int decreaseVal) {
-        DbleServer server = DbleServer.getInstance();
-        Map<Thread, Runnable> runnableMap = server.getRunnableMap().get(nameableExecutor.getName());
+        Map<Thread, Runnable> runnableMap = DbleServer.getInstance().getRunnableMap().get(nameableExecutor.getName());
+        if (nameableExecutor.getName().equals(DbleServer.FRONT_EXECUTOR_NAME) || nameableExecutor.getName().equals(DbleServer.BACKEND_EXECUTOR_NAME)) {
+            runnableMap = reorderRunnableMap(runnableMap);
+        }
+        int registerCount = 0;
         Iterator<Map.Entry<Thread, Runnable>> iterator = runnableMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Thread, Runnable> threadRunnableEntry = iterator.next();
             Thread thread = threadRunnableEntry.getKey();
             Runnable runnable = threadRunnableEntry.getValue();
-            if (runnable != null && !thread.isInterrupted() && !nameableExecutor.getName().equals(DbleServer.COMPLEX_QUERY_EXECUTOR_NAME)) {
+            boolean isNormalBackendExecutor = SystemConfig.getInstance().getUsePerformanceMode() != 1 && nameableExecutor.getName().equals(DbleServer.BACKEND_BUSINESS_EXECUTOR_NAME);
+            if (runnable != null && !thread.isInterrupted() && !nameableExecutor.getName().equals(DbleServer.COMPLEX_QUERY_EXECUTOR_NAME) && !isNormalBackendExecutor) {
                 if (decreaseVal-- > 0) {
                     LOGGER.debug("will interrupt thread:{}", thread.toString());
                     iterator.remove();
                     if (runnable instanceof RW && !((RW) runnable).getSelector().keys().isEmpty()) {
                         //register selector
-                        reRegisterSelector(thread, ((RW) runnable).getSelector(), runnableMap);
+                        Runnable tailRunnable = getEntryFromTail(runnableMap, ++registerCount);
+                        reRegisterSelector(((RW) runnable).getSelector(), tailRunnable);
                     }
                     thread.interrupt();
-                    //short life cycle-the thread does not contain a queue
-                    if (SystemConfig.getInstance().getUsePerformanceMode() != 1 && nameableExecutor.getName().equals(DbleServer.BACKEND_BUSINESS_EXECUTOR_NAME)) {
-                        DbleServer.getInstance().getThreadUsedMap().remove(thread.getName());
-                    }
                 } else {
                     break;
                 }
+            } else if (isNormalBackendExecutor) {
+                //short life cycle-the thread does not contain a queue
+                DbleServer.getInstance().getThreadUsedMap().remove(thread.getName());
             }
         }
+        DbleServer.getInstance().getRunnableMap().put(nameableExecutor.getName(), runnableMap);
     }
 
-    private void reRegisterSelector(Thread thread, Selector selector, Map<Thread, Runnable> runnableMap) {
-        for (Map.Entry<Thread, Runnable> threadRunnableEntry : runnableMap.entrySet()) {
-            if (thread.equals(threadRunnableEntry.getKey())) {
+    /**
+     * Fetch data in reverse order
+     *
+     * @param runnableMap
+     * @param index
+     * @return
+     */
+    private Runnable getEntryFromTail(Map<Thread, Runnable> runnableMap, int index) {
+        List<Runnable> runnableList = new ArrayList<>(runnableMap.values());
+        int size = runnableList.size();
+        return runnableList.get(size >= index ? size - index : index % size);
+    }
+
+    /**
+     * Sort according to the number of selectorKeys
+     *
+     * @param runnableMap
+     * @return
+     */
+    private LinkedHashMap<Thread, Runnable> reorderRunnableMap(Map<Thread, Runnable> runnableMap) {
+        LinkedHashMap<Thread, Runnable> orderMap = Maps.newLinkedHashMap();
+        runnableMap.entrySet().stream().sorted((o1, o2) -> {
+            RW rw1 = (RW) o1.getValue();
+            RW rw2 = (RW) o2.getValue();
+            return rw1.getSelector().keys().size() - rw2.getSelector().keys().size();
+        }).forEach(threadRunnableEntry -> orderMap.put(threadRunnableEntry.getKey(), threadRunnableEntry.getValue()));
+        return orderMap;
+    }
+
+    /**
+     * Re-register the channel to the selector
+     *
+     * @param selector
+     * @param runnable
+     */
+    private void reRegisterSelector(Selector selector, Runnable runnable) {
+        if (null == runnable) {
+            LOGGER.warn("register error.");
+        }
+        RW rw = (RW) runnable;
+        // loop over all the keys that are registered with the old Selector
+        // and register them with the new one
+        ArrayList<SelectionKey> selectionKeys = Lists.newArrayList(selector.keys());
+        for (SelectionKey key : selectionKeys) {
+            if (!key.isValid()) {
                 continue;
             }
-            RW rw = (RW) threadRunnableEntry.getValue();
-            // loop over all the keys that are registered with the old Selector
-            // and register them with the new one
-            ArrayList<SelectionKey> selectionKeys = Lists.newArrayList(selector.keys().iterator());
-            for (SelectionKey key : selectionKeys) {
-                SelectableChannel ch = key.channel();
-                int ops = key.interestOps();
-                Object att = key.attachment();
-                // cancel the old key
-                key.cancel();
+            SelectableChannel ch = key.channel();
+            int ops = key.interestOps();
+            Object att = key.attachment();
+            AbstractConnection connection = (AbstractConnection) att;
+            LOGGER.debug("register connection:{},rw:{}", connection.getId(), rw.toString());
+            // cancel the old key
+            key.cancel();
 
+            try {
+                DbleThreadPoolProvider.reRegisterSelector();
+                //wake up select-avoid lock time-consuming
+                rw.getSelector().wakeup();
+                // register the channel with the new selector now
+                ch.register(rw.getSelector(), ops, att);
+            } catch (ClosedChannelException e) {
+                // close channel
                 try {
-                    // register the channel with the new selector now
-                    ch.register(rw.getSelector(), ops, att);
-                } catch (ClosedChannelException e) {
-                    // close channel
-                    try {
-                        ch.close();
-                    } catch (IOException ioException) {
-                        LOGGER.warn("error:", e);
-                    }
+                    ch.close();
+                } catch (IOException ioException) {
+                    LOGGER.warn("error:", e);
                 }
             }
-            break;
         }
     }
 

@@ -41,27 +41,28 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
     private NonBlockingSession session;
     private RouteResultset rrs;
     private volatile byte packetId;
-    private AtomicInteger viewNum;
+    private AtomicInteger viewNodeNum;
     private ViewMeta vm; //if only for replace from a no sharding view to a sharding view
 
-    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNum, ViewMeta vm) {
+    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNodeNum, ViewMeta vm) {
         this.session = session;
         this.rrs = rrs;
         this.packetId = (byte) session.getPacketId().get();
-        this.viewNum = new AtomicInteger(viewNum);
+        this.viewNodeNum = new AtomicInteger(viewNodeNum);
         this.vm = vm;
     }
 
     public void execute() throws Exception {
         DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
-        RouteResultsetNode node = rrs.getNodes()[0];
-        BackendConnection conn = session.getTarget(node);
-        if (session.tryExistsCon(conn, node)) {
-            innerExecute(conn, node);
-        } else {
-            // create new connection
-            ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
-            dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
+        for (RouteResultsetNode node : rrs.getNodes()) {
+            BackendConnection conn = session.getTarget(node);
+            if (session.tryExistsCon(conn, node)) {
+                innerExecute(conn, node);
+            } else {
+                // create new connection
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
+                dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
+            }
         }
     }
 
@@ -107,11 +108,14 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
     @Override
     public void okResponse(byte[] data, AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + service);
+        }
         if (!executeResponse) {
             return;
         }
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
-        if (viewNum.decrementAndGet() == 0) {
+        if (viewNodeNum.decrementAndGet() == 0) {
             if (vm != null) { // replace a new sharding view
                 try {
                     vm.addMeta(true);
@@ -154,7 +158,7 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
             }
         }
 
-        if (viewNum.decrementAndGet() == 0) {
+        if (viewNodeNum.decrementAndGet() == 0) {
             shardingService.setTxInterrupt(errMsg);
             errPkg.write(shardingService.getConnection());
         }

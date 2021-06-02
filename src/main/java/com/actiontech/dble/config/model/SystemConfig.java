@@ -189,6 +189,8 @@ public final class SystemConfig {
     //use inSubQueryTransformToJoin
     private boolean inSubQueryTransformToJoin = false;
 
+    //use groupConcatMaxLen
+    private int groupConcatMaxLen = 1024;
 
     public int getSamplingRate() {
         return samplingRate;
@@ -1386,6 +1388,18 @@ public final class SystemConfig {
 
     public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
         this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
+    }
+
+    public int getGroupConcatMaxLen() {
+        return groupConcatMaxLen;
+    }
+
+    public void setGroupConcatMaxLen(int maxLen) {
+        if (maxLen >= 0) {
+            this.groupConcatMaxLen = maxLen;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "groupConcatMaxLen", maxLen, this.groupConcatMaxLen));
+        }
     }
 
     @Override

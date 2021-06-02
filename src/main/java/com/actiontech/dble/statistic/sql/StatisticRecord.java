@@ -82,6 +82,9 @@ public class StatisticRecord {
     protected volatile boolean isStartFsql = false;
     protected volatile long txid;
 
+    public void onFrontendMultiSqlStart() {
+    }
+
     public void onFrontendSqlStart() {
         isStartFsql = true;
         frontendSqlEntry = new StatisticFrontendSqlEntry(frontendInfo, System.nanoTime());
@@ -95,7 +98,7 @@ public class StatisticRecord {
             if (sql == null || sql.toLowerCase().startsWith("explain")) {
                 onFrontendSqlClose();
             } else {
-                frontendSqlEntry.setSql(sql);
+                frontendSqlEntry.setSql(sql.trim());
                 frontendSqlEntry.setSchema(schema);
                 if (isStartTx && txEntry != null) {
                     frontendSqlEntry.setTxId(txid);

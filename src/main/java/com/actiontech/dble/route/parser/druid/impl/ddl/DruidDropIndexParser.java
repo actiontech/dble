@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -17,6 +18,8 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLDropIndexStatement;
 
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
+import java.util.Optional;
 
 /**
  * @author huqing.yan
@@ -27,6 +30,8 @@ public class DruidDropIndexParser extends DruidImplicitCommitParser {
         rrs.setOnline(true);
         String schemaName = schema == null ? null : schema.getName();
         SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;
+        Optional.ofNullable(dropStmt.getTableName()).orElseThrow(() ->
+                new SQLSyntaxErrorException("You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ' '", "42000", ErrorCode.ER_PARSE_ERROR));
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, dropStmt.getTableName());
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);

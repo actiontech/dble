@@ -75,49 +75,6 @@ public final class ParameterMapping {
         }
     }
 
-    public static void mapping(Object target, Map<String, String> src, ProblemReporter problemReporter) throws IllegalAccessException,
-            InvocationTargetException {
-        PropertyDescriptor[] pds = getDescriptors(target.getClass());
-        for (PropertyDescriptor pd : pds) {
-            String valStr = src.get(pd.getName());
-            Object value = valStr;
-            Class<?> cls = pd.getPropertyType();
-            if (cls == null) {
-                if (problemReporter != null) {
-                    problemReporter.warn("unknown property [ " + pd.getName() + " ]");
-                } else {
-                    LOGGER.warn("unknown property [ " + pd.getName() + " ]");
-                }
-                continue;
-            }
-
-            if (!StringUtil.isEmpty(valStr)) {
-                valStr = ConfigUtil.filter(valStr);
-                if (isPrimitiveType(cls)) {
-                    try {
-                        value = convert(cls, valStr);
-                    } catch (NumberFormatException nfe) {
-                        if (problemReporter != null) {
-                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
-                        } else {
-                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
-                        }
-                        src.remove(pd.getName());
-                        continue;
-                    }
-                }
-            }
-            if (value != null) {
-                Method method = pd.getWriteMethod();
-                if (method != null) {
-                    method.invoke(target, value);
-                    src.remove(pd.getName());
-                }
-            }
-        }
-    }
-
-
     public static Properties mappingFromSystemProperty(Object target, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
         Properties systemProperties = (Properties) (System.getProperties().clone());

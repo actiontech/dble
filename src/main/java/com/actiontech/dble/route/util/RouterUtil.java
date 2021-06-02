@@ -475,13 +475,13 @@ public final class RouterUtil {
                 routeNodeSet.addAll(rangeNodeSet);
             }
             if (routeNodeSet.size() == 0) {
-                if (LOGGER.isTraceEnabled()) {
+                if (DTRACE_LOGGER.isTraceEnabled()) {
                     DTRACE_LOGGER.trace("all ColumnRoute " + columnRoute + " merge to always false");
                 }
                 rrs.setAlwaysFalse(true);
                 rangeNodeSet.addAll(tc.getShardingNodes());
             }
-            if (LOGGER.isTraceEnabled()) {
+            if (DTRACE_LOGGER.isTraceEnabled()) {
                 DTRACE_LOGGER.trace("all ColumnRoute " + columnRoute + " merge to these node:" + routeNodeSet);
             }
         }
@@ -798,7 +798,7 @@ public final class RouterUtil {
         }
 
         Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
-        if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
+        if (retNodesSet.size() == 0 && DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
         }
         routeToMultiNode(isSelect, rrs, retNodesSet);
@@ -860,7 +860,7 @@ public final class RouterUtil {
         }
 
         Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
-        if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
+        if (retNodesSet.size() == 0 && DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
         }
         routeToMultiNode(true, rrs, retNodesSet);

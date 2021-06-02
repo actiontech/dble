@@ -40,7 +40,7 @@ public class RouteCalculateUnit {
 
     public void addShardingExpr(Pair<String, String> table, String columnName, Object value) {
         if (alwaysFalse) {
-            if (LOGGER.isTraceEnabled()) {
+            if (DTRACE_LOGGER.isTraceEnabled()) {
                 DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, ignore " + changeValueToColumnRoute(value));
             }
             return;
@@ -83,7 +83,7 @@ public class RouteCalculateUnit {
     }
 
     private void markAlwaysFalse(ColumnRoute columnValue) {
-        if (LOGGER.isTraceEnabled()) {
+        if (DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("this condition " + columnValue + " is always false, so this RouteCalculateUnit will be always false");
         }
         clear();
@@ -118,7 +118,7 @@ public class RouteCalculateUnit {
                 }
             }
         }
-        if (LOGGER.isTraceEnabled()) {
+        if (DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("this RouteCalculateUnit [" + this + "] and RouteCalculateUnit [" + other + "] merged to RouteCalculateUnit[" + ret + "]");
         }
         return ret;
@@ -186,7 +186,7 @@ public class RouteCalculateUnit {
         } else {
             ret = new ColumnRoute(true); //WILL NOT HAPPEN
         }
-        if (LOGGER.isTraceEnabled()) {
+        if (DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("ColumnRoute[" + oldItem + "] and ColumnRoute[" + newItem + "] will merge to ColumnRoute[" + ret + "]");
         }
         return ret;

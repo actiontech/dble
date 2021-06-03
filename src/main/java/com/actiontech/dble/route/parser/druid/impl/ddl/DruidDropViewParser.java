@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class DruidDropViewParser extends DruidImplicitCommitParser {
-    int viewNum = 0;
+    int viewNodeNum = 0;
 
     @Override
     public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
@@ -37,16 +37,11 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
         if (schema != null) {
             defaultSchema = schema.getName();
         }
+        //need checkView
+        checkView(defaultSchema, dropViewStatement);
         for (SQLExprTableSource table : dropViewStatement.getTableSources()) {
             vSchema = table.getSchema() == null ? defaultSchema : StringUtil.removeBackQuote(table.getSchema());
-            checkSchema(vSchema);
             String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
-            if (proxyManger.getCatalogs().get(vSchema) == null) {
-                throw new SQLException("Unknown database " + vSchema, "42000", ErrorCode.ER_BAD_DB_ERROR);
-            }
-            if (!proxyManger.getCatalogs().get(vSchema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
-                throw new SQLException("Unknown view '" + viewName + "'", "HY000", ErrorCode.ER_NO_TABLES_USED);
-            }
             proxyManger.addMetaLock(vSchema, viewName, rrs.getStatement());
             try {
                 proxyManger.getRepository().delete(vSchema, viewName);
@@ -67,15 +62,15 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
             StringBuilder dropStmt;
             List<RouteResultsetNode> nodes = new ArrayList<>();
             for (Map.Entry<String, Set<String>> n : deleteMysqlViewMaps.entrySet()) {
-                viewNum += n.getValue().size();
                 dropStmt = new StringBuilder("drop view ");
                 if (ifExistsFlag) {
                     dropStmt.append("if exists ");
                 }
                 dropStmt.append(n.getValue().stream().collect(Collectors.joining(",")));
-                nodes.add(new RouteResultsetNode(nodeName, rrs.getSqlType(), dropStmt.toString()));
+                nodes.add(new RouteResultsetNode(n.getKey(), rrs.getSqlType(), dropStmt.toString()));
             }
             rrs.setNodes(nodes.toArray(new RouteResultsetNode[nodes.size()]));
+            viewNodeNum = nodes.size();
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
@@ -85,6 +80,23 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
 
     @Override
     public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
-        return new MysqlDropViewHandler(service.getSession2(), rrs, viewNum, null);
+        return new MysqlDropViewHandler(service.getSession2(), rrs, viewNodeNum, null);
+    }
+
+    private void checkView(String defaultSchema, SQLDropViewStatement dropViewStatement) throws SQLException {
+        String vSchema;
+        ProxyMetaManager proxyManger = ProxyMeta.getInstance().getTmManager();
+        boolean ifExistsFlag = dropViewStatement.isIfExists();
+        for (SQLExprTableSource table : dropViewStatement.getTableSources()) {
+            vSchema = table.getSchema() == null ? defaultSchema : StringUtil.removeBackQuote(table.getSchema());
+            checkSchema(vSchema);
+            String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
+            if (proxyManger.getCatalogs().get(vSchema) == null) {
+                throw new SQLException("Unknown database " + vSchema, "42000", ErrorCode.ER_BAD_DB_ERROR);
+            }
+            if (!proxyManger.getCatalogs().get(vSchema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
+                throw new SQLException("Unknown view '" + viewName + "'", "HY000", ErrorCode.ER_NO_TABLES_USED);
+            }
+        }
     }
 }

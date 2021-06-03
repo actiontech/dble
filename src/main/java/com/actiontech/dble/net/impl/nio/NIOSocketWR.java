@@ -78,21 +78,22 @@ public class NIOSocketWR extends SocketWR {
             }
 
         } catch (IOException e) {
-
+            writeDataErr = true;
             if (Objects.equals(e.getMessage(), "Broken pipe") || e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
-                LOGGER.debug("Connection was closed while read. Detail reason:{}. {}.", e, con.getService());
+                LOGGER.debug("Connection was closed while read. Detail reason:{}. {}.", e.toString(), con.getService());
             } else {
                 //self problem.
                 LOGGER.info("con {} write err:", con.getService(), e);
                 con.pushInnerServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
             }
-            writeDataErr = true;
+
         } catch (Exception e) {
+            writeDataErr = true;
             LOGGER.info("con {} write err:", con.getService(), e);
             con.pushInnerServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
-            writeDataErr = true;
+
         } finally {
             if (writeDataErr) {
                 this.writeQueue.clear();

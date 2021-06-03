@@ -20,11 +20,12 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NetworkChannel;
 import java.util.List;
 import java.util.Optional;
@@ -107,7 +108,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     @Override
-    public synchronized void closeGracefully(String reason) {
+    public synchronized void closeGracefully(@Nonnull String reason) {
         if (doingGracefulClose.compareAndSet(false, true)) {
             synchronized (this) {
                 if (isClosed()) {
@@ -536,11 +537,16 @@ public abstract class AbstractConnection implements Connection {
     public void asyncRead() throws IOException {
         try {
             this.socketWR.asyncRead();
-        } catch (AsynchronousCloseException e) {
+        } catch (ClosedChannelException e) {
             throw e;
         } catch (IOException e) {
-            LOGGER.debug("cause exception while read {}, service is {}", e.getMessage(), getService());
-            graceClosedReasons.add(e.getMessage());
+            if (e.getMessage() == null) {
+                LOGGER.info("cause exception while read , service is {}", getService(), e);
+            } else {
+                LOGGER.debug("cause exception while read {}, service is {}", e.toString(), getService());
+            }
+
+            graceClosedReasons.add(e.toString());
             this.socketWR.disableRead();
             pushInnerServiceTask(ServiceTaskFactory.getInstance(getService()).createForGracefulClose(graceClosedReasons));
         }

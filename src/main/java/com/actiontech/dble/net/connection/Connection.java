@@ -1,6 +1,7 @@
 package com.actiontech.dble.net.connection;
 
 
+import javax.annotation.Nonnull;
 
 /**
  * Created by szf on 2020/6/15.
@@ -8,7 +9,7 @@ package com.actiontech.dble.net.connection;
 public interface Connection {
 
 
-    void closeGracefully(String reason);
+    void closeGracefully(@Nonnull String reason);
 
     void closeImmediately(String reason);
 

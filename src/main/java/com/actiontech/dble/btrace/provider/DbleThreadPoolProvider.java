@@ -1,6 +1,6 @@
 package com.actiontech.dble.btrace.provider;
 
-public class DbleThreadPoolProvider {
+public final class DbleThreadPoolProvider {
     private DbleThreadPoolProvider() {
     }
 

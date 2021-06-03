@@ -93,6 +93,10 @@ public class FrontendConnection extends AbstractConnection {
         return (FrontEndService) getService();
     }
 
+    public boolean isAuthorized() {
+        return !(getService() instanceof AuthService);
+    }
+
     public String toString() {
         return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "]";
     }

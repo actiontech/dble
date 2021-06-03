@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -82,7 +82,7 @@ public final class ShowConnectionSQL {
         byte packetId = EOF.getPacketId();
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (!fc.isClosed()) {
+                if (!fc.isClosed() && fc.isAuthorized()) {
                     RowDataPacket row = getRow(fc, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);

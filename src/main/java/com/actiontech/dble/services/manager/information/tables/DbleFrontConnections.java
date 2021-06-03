@@ -13,7 +13,6 @@ import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.services.FrontEndService;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
@@ -130,12 +129,15 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         if (c.isManager()) {
             row.put("sql_stage", "Manager connection");
             row.put("in_transaction", "Manager connection");
-            row.put("schema", ((ManagerService) service).getSchema() == null ? "NULL" : ((ManagerService) service).getSchema());
         } else {
-            row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
+            if (service instanceof ShardingService) {
+                row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
+            } else {
+                row.put("sql_stage", "NULL");
+            }
             row.put("in_transaction", !service.isAutocommit() + "");
-            row.put("schema", ((ShardingService) service).getSchema() == null ? "NULL" : ((ShardingService) service).getSchema());
         }
+        row.put("schema", service.getSchema() == null ? "NULL" : service.getSchema());
         row.put("conn_net_in", c.getNetInBytes() + "");
         row.put("conn_net_out", c.getNetOutBytes() + "");
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");

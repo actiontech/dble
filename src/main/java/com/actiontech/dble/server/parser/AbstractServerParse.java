@@ -7,6 +7,7 @@ package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 
+import java.util.LinkedList;
 import java.util.regex.Pattern;
 
 /**
@@ -63,5 +64,22 @@ public abstract class AbstractServerParse implements ServerParse {
     public boolean isMultiStatement(String sql) {
         int index = ParseUtil.findNextBreak(sql);
         return index + 1 < sql.length() && !ParseUtil.isEOF(sql, index);
+    }
+
+    @Override
+    public LinkedList<String> getMultiStatement(String sql, LinkedList<String> splitSql) {
+        int index = ParseUtil.findNextBreak(sql);
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
+            splitSql.add(sql.substring(0, index).trim());
+            sql = sql.substring(index + 1);
+            getMultiStatement(sql, splitSql);
+        } else {
+            if (sql.endsWith(";")) {
+                splitSql.add(sql.substring(0, sql.length() - 1).trim());
+            } else {
+                splitSql.add(sql.trim());
+            }
+        }
+        return splitSql;
     }
 }

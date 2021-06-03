@@ -172,6 +172,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
         synchronized (this) {
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(selectRows));
+            selectRows = 0;
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {

@@ -66,8 +66,10 @@ public abstract class BackendService extends AbstractService {
         this.taskQueue = new ConcurrentLinkedQueue<>();
         this.isHandling = new AtomicBoolean(false);
         // variables
-        this.autocommitSynced = connection.getInstance().isAutocommitSynced();
-        this.isolationSynced = connection.getInstance().isIsolationSynced();
+        if (connection != null) {
+            this.autocommitSynced = connection.getInstance().isAutocommitSynced();
+            this.isolationSynced = connection.getInstance().isIsolationSynced();
+        }
         initCharacterSet(SystemConfig.getInstance().getCharset());
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T

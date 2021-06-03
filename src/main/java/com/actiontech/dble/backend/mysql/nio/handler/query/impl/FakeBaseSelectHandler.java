@@ -9,7 +9,8 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.services.FakeAbstractService;
+import com.actiontech.dble.services.FakeResponseService;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
             createErrorMessage();
             return;
         }
-        final AbstractService service = new FakeAbstractService(null);
+        final MySQLResponseService service = new FakeResponseService(null);
         nextHandler.fieldEofResponse(null, null, fields, null, false, service);
         for (RowDataPacket row : data) {
             nextHandler.rowResponse(null, row, false, service);

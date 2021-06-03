@@ -9,6 +9,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.QuitPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -163,7 +164,8 @@ public class BackendConnection extends PooledConnection {
     }
 
     public MySQLResponseService getBackendService() {
-        return getService() instanceof MySQLResponseService ? (MySQLResponseService) getService() : null;
+        final AbstractService service = getService();
+        return service instanceof MySQLResponseService ? (MySQLResponseService) service : null;
     }
 
     public ReadTimeStatusInstance getInstance() {

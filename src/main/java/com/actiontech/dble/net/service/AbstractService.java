@@ -103,7 +103,7 @@ public abstract class AbstractService extends VariablesService implements Servic
 
     @Override
     public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
-        if (src.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+        if (src.length > MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
             return this.writeBigPackageToBuffer(src, buffer);
         }
         int offset = 0;

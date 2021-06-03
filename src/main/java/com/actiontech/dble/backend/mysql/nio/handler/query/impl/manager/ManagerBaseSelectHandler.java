@@ -21,10 +21,11 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.ManagerTableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
-import com.actiontech.dble.services.FakeAbstractService;
+import com.actiontech.dble.services.FakeResponseService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ public class ManagerBaseSelectHandler extends BaseDMLHandler {
             @Override
             public void run() {
                 try {
-                    final AbstractService service = new FakeAbstractService(null);
+                    final MySQLResponseService service = new FakeResponseService(null);
                     List<FieldPacket> fields = makeField();
                     nextHandler.fieldEofResponse(null, null, fields, null, left, service);
                     List<RowDataPacket> data = makeRowData();

@@ -39,7 +39,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
     private volatile Long doingTaskThread = null;
     private long taskId = 1;
-    private long consumedTaskId = 0;
+    private volatile long consumedTaskId = 0;
     // client capabilities
     private final long clientCapabilities;
     protected volatile byte[] seed;
@@ -50,7 +50,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     protected volatile T userConfig;
     // last execute sql
     protected volatile String executeSql;
-    protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId());
+    protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId(), this);
 
     public FrontendService(AbstractConnection connection) {
         super(connection);
@@ -72,6 +72,10 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.multiStatementAllow = auth.isMultStatementAllow();
+    }
+
+    public long getConsumedTaskId() {
+        return consumedTaskId;
     }
 
     /**

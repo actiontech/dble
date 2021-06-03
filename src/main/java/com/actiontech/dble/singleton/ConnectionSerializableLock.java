@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,20 +21,22 @@ public final class ConnectionSerializableLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionSerializableLock.class);
     private boolean working = false;
     private final long frontId;
-    private long index = 0;
+    private long index = -1;
     private final List<Runnable> callbacks = new ArrayList<>();
+    private final FrontendService frontendService;
 
 
-    public ConnectionSerializableLock(long frontId) {
+    public ConnectionSerializableLock(long frontId, FrontendService frontendService) {
         this.frontId = frontId;
-
+        this.frontendService = frontendService;
     }
 
     public synchronized boolean tryLock() {
 
         if (!working) {
             working = true;
-            LOGGER.debug("locked success. connection id : {} , index : {}", frontId, ++index);
+            index = frontendService.getConsumedTaskId();
+            LOGGER.debug("locked success. connection id : {} , index : {}", frontId, index);
             return true;
         }
         return false;
@@ -58,7 +61,10 @@ public final class ConnectionSerializableLock {
             LOGGER.debug(" unlock success. connection id : {} , index : {}", frontId, index);
         }
         if (!working) {
-            LOGGER.warn("find useless unlock.");
+            //locked before
+            if (frontendService.getConsumedTaskId() == index) {
+                LOGGER.warn("find useless unlock. connection id : {} , index : {}", frontId, index);
+            }
         }
         working = false;
 

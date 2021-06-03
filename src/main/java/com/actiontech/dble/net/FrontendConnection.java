@@ -40,7 +40,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     private static final long AUTH_TIMEOUT = 15 * 1000L;
 
     private byte[] seed;
-    protected UserName user;
+    protected volatile UserName user;
     private long clientFlags;
     protected String schema;
 

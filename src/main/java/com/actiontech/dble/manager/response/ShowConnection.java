@@ -228,7 +228,7 @@ public final class ShowConnection {
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
         row.add(StringUtil.encode(c.getUser().toString(), charset));
         if (c instanceof ServerConnection) {
-            row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
+            row.add(StringUtil.encode(c.getSchema(), charset));
         } else {
             row.add(StringUtil.encode("", charset));
         }

@@ -39,10 +39,12 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DruidSelectParser extends DefaultDruidParser {
     private static HashSet<String> aggregateSet = new HashSet<>(16, 1);
@@ -142,7 +144,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         if (noShardingNode != null) {
             //route to singleNode
-            RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
         } else {
             //route for configured table
             BaseTableConfig tc = schema.getTables().get(schemaInfo.getTable());
@@ -225,7 +227,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         rrs.setStatement(sql);
         if (shardingNode != null) {
-            RouterUtil.routeToSingleNode(rrs, shardingNode);
+            Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
+            RouterUtil.routeToSingleNode(rrs, shardingNode, tableSet);
         } else {
             rrs.setNeedOptimizer(true);
             rrs.setSqlStatement(selectStmt);

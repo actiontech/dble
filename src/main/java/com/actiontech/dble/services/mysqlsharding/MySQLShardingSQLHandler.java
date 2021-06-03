@@ -12,6 +12,7 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ public class MySQLShardingSQLHandler {
         try {
             String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
             if (noShardingNode != null) {
-                RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
             } else {
                 if (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()) == null) {
                     // check view

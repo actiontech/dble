@@ -23,11 +23,13 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/delete.html
@@ -57,8 +59,10 @@ public class DruidDeleteParser extends DruidModifyParser {
             List<SchemaInfo> schemaInfos = checkPrivilegeForModifyTable(service, schemaName, stmt, visitor.getMotifyTableSourceList());
 
             boolean isAllGlobal = true;
+            Set<String> tableSet = Sets.newHashSet();
             for (SchemaInfo schemaInfo : schemaInfos) {
                 BaseTableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+                tableSet.add(schemaInfo.getSchema() + "." + schemaInfo.getTable());
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 if (tc == null || !(tc instanceof GlobalTableConfig)) {
                     isAllGlobal = false;
@@ -73,7 +77,7 @@ public class DruidDeleteParser extends DruidModifyParser {
                 routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
 
-            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
             rrs.setFinishedRoute(true);
             return schema;
 
@@ -96,13 +100,13 @@ public class DruidDeleteParser extends DruidModifyParser {
             String tableName = schemaInfo.getTable();
             String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
             if (noShardingNode != null) {
-                RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schemaName + "." + tableName));
                 return schema;
             }
             checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
 
             if (tc instanceof GlobalTableConfig) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
                 rrs.setFinishedRoute(true);
                 return schema;
             }

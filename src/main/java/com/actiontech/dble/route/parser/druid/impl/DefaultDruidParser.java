@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * DefaultDruidParser
@@ -180,7 +181,8 @@ public class DefaultDruidParser implements DruidParser {
             }
             shardingNodeTarget = schema.getRandomShardingNode();
         }
-        RouterUtil.routeToSingleNode(rrs, shardingNodeTarget);
+        Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
+        RouterUtil.routeToSingleNode(rrs, shardingNodeTarget, tableSet);
         rrs.setFinishedRoute(true);
         return schema;
     }

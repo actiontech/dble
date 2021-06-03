@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class HandlerBuilder {
@@ -51,8 +52,13 @@ public class HandlerBuilder {
 
     synchronized void checkRRSs(RouteResultsetNode[] rrssArray) {
         for (RouteResultsetNode rrss : rrssArray) {
-            while (rrsNodes.contains(rrss)) {
+            //shardingNode-index
+            while (rrsNodes.stream().anyMatch(rrsNode -> Objects.equals(rrsNode.getMultiplexNum().get(), rrss.getMultiplexNum().get()) && Objects.equals(rrsNode.getName(), rrss.getName()))) {
                 rrss.getMultiplexNum().incrementAndGet();
+            }
+            //repeatTable-index
+            while (rrsNodes.contains(rrss)) {
+                rrss.getRepeatTableIndex().incrementAndGet();
             }
             rrsNodes.add(rrss);
         }
@@ -153,4 +159,7 @@ public class HandlerBuilder {
         throw new RuntimeException("not supported tree node type:" + planNode.type());
     }
 
+    public Set<RouteResultsetNode> getRrsNodes() {
+        return rrsNodes;
+    }
 }

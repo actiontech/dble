@@ -40,6 +40,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,7 +198,7 @@ public final class RouterUtil {
             if (schema == null) {
                 schema = DbleServer.getInstance().getConfig().getSchemas().get(SchemaUtil.getRandomDb());
             }
-            return RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
+            return RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode(), null);
         }
 
         /* multi-tables*/
@@ -243,7 +244,7 @@ public final class RouterUtil {
     public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs, String shardingNode) throws SQLException {
         rrs.setSchema(schemaInfo.getSchema());
         rrs.setTable(schemaInfo.getTable());
-        RouterUtil.routeToSingleNode(rrs, shardingNode);
+        RouterUtil.routeToSingleNode(rrs, shardingNode, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
     }
 
     public static void routeNoNameTableToSingleNode(RouteResultset rrs, SchemaConfig schema) throws SQLNonTransientException {
@@ -255,16 +256,16 @@ public final class RouterUtil {
             }
             schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
         }
-        rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaShardingNode());
+        rrs = RouterUtil.routeToSingleNode(rrs, schema.getMetaShardingNode(), null);
         rrs.setFinishedRoute(true);
     }
 
-    public static RouteResultset routeToSingleNode(RouteResultset rrs, String shardingNode) {
+    public static RouteResultset routeToSingleNode(RouteResultset rrs, String shardingNode, Set<String> tableSet) {
         if (shardingNode == null) {
             return rrs;
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
-        nodes[0] = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement());
+        nodes[0] = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement(), tableSet);
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
         if (rrs.getCanRunInReadDB() != null) {
@@ -297,7 +298,7 @@ public final class RouterUtil {
 
         for (int i = 0; i < nodeSize; i++) {
             String name = iterator1.next();
-            nodes[i] = new RouteResultsetNode(name, ServerParse.DDL, stmt);
+            nodes[i] = new RouteResultsetNode(name, ServerParse.DDL, stmt, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
         }
         rrs.setNodes(nodes);
         rrs.setSchema(schemaInfo.getSchema());
@@ -318,11 +319,11 @@ public final class RouterUtil {
     }
 
 
-    private static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes) {
+    private static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, Set<String> tableSet) {
         RouteResultsetNode[] nodes = new RouteResultsetNode[shardingNodes.size()];
         int i = 0;
         for (String shardingNode : shardingNodes) {
-            nodes[i] = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement());
+            nodes[i] = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement(), tableSet);
             if (rrs.getCanRunInReadDB() != null) {
                 nodes[i].setCanRunInReadDB(rrs.getCanRunInReadDB());
             }
@@ -339,8 +340,8 @@ public final class RouterUtil {
         return rrs;
     }
 
-    public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, boolean isGlobalTable) {
-        rrs = routeToMultiNode(cache, rrs, shardingNodes);
+    public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, boolean isGlobalTable, Set<String> tableSet) {
+        rrs = routeToMultiNode(cache, rrs, shardingNodes, tableSet);
         rrs.setGlobalTable(isGlobalTable);
         return rrs;
     }
@@ -348,7 +349,7 @@ public final class RouterUtil {
     public static void routeToRandomNode(RouteResultset rrs,
                                          SchemaConfig schema, String tableName) throws SQLException {
         String shardingNode = getRandomShardingNode(schema, tableName);
-        routeToSingleNode(rrs, shardingNode);
+        routeToSingleNode(rrs, shardingNode, Sets.newHashSet(schema.getName() + "." + tableName));
     }
 
     public static String getRandomShardingNode(List<String> shardingNodes) {
@@ -756,15 +757,15 @@ public final class RouterUtil {
             SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, RouteResultset rrs,
             boolean isSelect, String clientCharset) throws SQLException {
         List<Pair<String, String>> tables = ctx.getTables();
-
+        Pair<String, String> firstTable = tables.get(0);
         // no sharding table
-        String noShardingNode = RouterUtil.isNoSharding(schema, tables.get(0).getValue());
+        String noShardingNode = RouterUtil.isNoSharding(schema, firstTable.getValue());
         if (noShardingNode != null) {
-            return RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            return RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schema.getName() + "." + firstTable.getValue()));
         }
 
         if (tables.size() == 1) {
-            return RouterUtil.tryRouteForOneTable(schema, routeUnit, tables.get(0).getValue(), rrs, isSelect, clientCharset);
+            return RouterUtil.tryRouteForOneTable(schema, routeUnit, firstTable.getValue(), rrs, isSelect, clientCharset);
         }
 
         /*
@@ -784,11 +785,13 @@ public final class RouterUtil {
 
         //findRouter for singe table global table will not change the result
         // if global table and normal table has no intersection ,they had treat as normal join
+        Set<String> tableSet = Sets.newHashSet();
         for (Pair<String, String> table : tables) {
             String tableName = table.getValue();
+            tableSet.add(schema.getName() + "." + tableName);
             String testShardingNode = RouterUtil.isNoSharding(schema, tableName);
             if (testShardingNode != null && tablesRouteMap.size() == 0) {
-                return RouterUtil.routeToSingleNode(rrs, testShardingNode);
+                return RouterUtil.routeToSingleNode(rrs, testShardingNode, Sets.newHashSet(schema.getName() + "." + tableName));
             }
             BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig != null && !(tableConfig instanceof GlobalTableConfig) && tablesRouteMap.get(table) == null) { //the other is single table
@@ -801,7 +804,7 @@ public final class RouterUtil {
         if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
         }
-        routeToMultiNode(isSelect, rrs, retNodesSet);
+        routeToMultiNode(isSelect, rrs, retNodesSet, tableSet);
         return rrs;
 
     }
@@ -818,10 +821,11 @@ public final class RouterUtil {
         List<Pair<String, String>> tables = ctx.getTables();
 
         Pair<String, String> firstTable = tables.get(0);
+        SchemaConfig schemaConfig = schemaMap.get(firstTable);
         // no sharding table
-        String noShardingNode = RouterUtil.isNoSharding(schemaMap.get(firstTable), firstTable.getValue());
+        String noShardingNode = RouterUtil.isNoSharding(schemaConfig, firstTable.getValue());
         if (noShardingNode != null) {
-            return RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            return RouterUtil.routeToSingleNode(rrs, noShardingNode, Sets.newHashSet(schemaConfig.getName() + "." + firstTable.getValue()));
         }
 
         if (tables.size() == 1) {
@@ -845,12 +849,14 @@ public final class RouterUtil {
 
         //findRouter for singe table * global table will not change the result
         // if global table and normal table has no intersection ,they had treat as normal join
+        Set<String> tableSet = Sets.newHashSet();
         for (Pair<String, String> table : tables) {
             SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(table.getKey());
             String tableName = table.getValue();
+            tableSet.add(schema.getName() + "." + tableName);
             String testShardingNode = RouterUtil.isNoSharding(schema, tableName);
             if (testShardingNode != null && tablesRouteMap.size() == 0) {
-                return RouterUtil.routeToSingleNode(rrs, testShardingNode);
+                return RouterUtil.routeToSingleNode(rrs, testShardingNode, Sets.newHashSet(schema.getName() + "." + tableName));
             }
             BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig != null && !(tableConfig instanceof GlobalTableConfig) && tablesRouteMap.get(table) == null) { //the other is single table
@@ -863,7 +869,7 @@ public final class RouterUtil {
         if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
         }
-        routeToMultiNode(true, rrs, retNodesSet);
+        routeToMultiNode(true, rrs, retNodesSet, tableSet);
         return rrs;
 
     }
@@ -908,7 +914,7 @@ public final class RouterUtil {
                 rrs.setSqlRouteCacheAble(false);
                 rrs.setGlobalTable(true);
                 String randomShardingNode = RouterUtil.getRandomShardingNode(tc.getShardingNodes());
-                rrs = routeToSingleNode(rrs, randomShardingNode);
+                rrs = routeToSingleNode(rrs, randomShardingNode, Sets.newHashSet(schema.getName() + "." + tableName));
                 List<String> globalBackupNodes = new ArrayList<>(tc.getShardingNodes().size() - 1);
                 for (String shardingNode : tc.getShardingNodes()) {
                     if (!shardingNode.equals(randomShardingNode)) {
@@ -918,15 +924,15 @@ public final class RouterUtil {
                 rrs.setGlobalBackupNodes(globalBackupNodes);
                 return rrs;
             } else { //insert into all global table's node
-                return routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
+                return routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schema.getName() + "." + tableName));
             }
         } else if (tc instanceof SingleTableConfig) {
-            return routeToSingleNode(rrs, tc.getShardingNodes().get(0));
+            return routeToSingleNode(rrs, tc.getShardingNodes().get(0), Sets.newHashSet(schema.getName() + "." + tableName));
         } else if (tc instanceof ChildTableConfig) {
             ChildTableConfig childConfig = (ChildTableConfig) tc;
             if ((childConfig.getParentTC() != null && childConfig.getDirectRouteTC() == null)) {
                 // one of the children of complex ER table
-                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes());
+                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes(), Sets.newHashSet(schema.getName() + "." + tableName));
             } else {
                 Pair<String, String> table = new Pair<>(schema.getName(), tableName);
                 Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
@@ -937,9 +943,9 @@ public final class RouterUtil {
                     }
                 }
                 if (tablesRouteMap.get(table) == null) {
-                    return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes());
+                    return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes(), Sets.newHashSet(schema.getName() + "." + tableName));
                 } else {
-                    return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tablesRouteMap.get(table));
+                    return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tablesRouteMap.get(table), Sets.newHashSet(schema.getName() + "." + tableName));
                 }
             }
         } else { //shard-ing table
@@ -957,9 +963,9 @@ public final class RouterUtil {
                 }
             }
             if (tablesRouteMap.get(table) == null) {
-                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes());
+                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes(), Sets.newHashSet(schema.getName() + "." + tableName));
             } else {
-                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tablesRouteMap.get(table));
+                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tablesRouteMap.get(table), Sets.newHashSet(schema.getName() + "." + tableName));
             }
         }
     }
@@ -1112,11 +1118,11 @@ public final class RouterUtil {
                     Arrays.toString(shardingNodeSet.toArray()) + " sql :" + rrs.getStatement());
         }
         if (shardingNodeSet.size() > 1) {
-            routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, shardingNodeSet);
+            routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, shardingNodeSet, Sets.newHashSet(schemaName + "." + tableConfig.getName()));
             rrs.setFinishedRoute(true);
         } else {
             rrs.setSqlRouteCacheAble(true);
-            routeToSingleNode(rrs, shardingNodeSet.iterator().next());
+            routeToSingleNode(rrs, shardingNodeSet.iterator().next(), Sets.newHashSet(schemaName + "." + tableConfig.getName()));
         }
     }
 

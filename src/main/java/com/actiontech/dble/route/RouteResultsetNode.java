@@ -9,7 +9,9 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 
 import java.io.Serializable;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * @author mycat
@@ -28,6 +30,9 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
 
     private Boolean runOnSlave = null;
     private AtomicLong multiplexNum;
+    //included table
+    private Set<String> tableSet;
+    private AtomicLong repeatTableIndex;
     private boolean isForUpdate = false;
     private volatile byte loadDataRrnStatus;
 
@@ -40,7 +45,22 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         this.statementHash = srcStatement.hashCode();
         this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
         this.multiplexNum = new AtomicLong(0);
+        this.repeatTableIndex = new AtomicLong(0);
         loadDataRrnStatus = 0;
+    }
+
+    public RouteResultsetNode(String name, int sqlType, String srcStatement, Set<String> tableSet) {
+        this.name = name;
+        this.limitStart = 0;
+        this.limitSize = -1;
+        this.sqlType = sqlType;
+        this.statement = srcStatement;
+        this.statementHash = srcStatement.hashCode();
+        this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
+        this.multiplexNum = new AtomicLong(0);
+        this.repeatTableIndex = new AtomicLong(0);
+        loadDataRrnStatus = 0;
+        this.tableSet = tableSet;
     }
 
     public byte getLoadDataRrnStatus() {
@@ -69,6 +89,10 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
 
     public AtomicLong getMultiplexNum() {
         return multiplexNum;
+    }
+
+    public AtomicLong getRepeatTableIndex() {
+        return repeatTableIndex;
     }
 
     public void setStatement(String statement) {
@@ -132,9 +156,17 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         this.loadData = loadData;
     }
 
+    public void setTableSet(Set<String> tableSet) {
+        this.tableSet = tableSet;
+    }
+
     @Override
     public int hashCode() {
         return name.hashCode();
+    }
+
+    public Set<String> getTableSet() {
+        return tableSet;
     }
 
     @Override
@@ -144,23 +176,33 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         }
         if (obj instanceof RouteResultsetNode) {
             RouteResultsetNode rrn = (RouteResultsetNode) obj;
-            if ((this.multiplexNum.get() == rrn.getMultiplexNum().get()) && equals(name, rrn.getName())) {
+            if (contains(rrn.getTableSet(), tableSet) && equals(name, rrn.getName()) && equals(rrn.getRepeatTableIndex().get(), repeatTableIndex.get())) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean equals(String str1, String str2) {
+    private boolean equals(Object str1, Object str2) {
         if (str1 == null) {
             return str2 == null;
         }
         return str1.equals(str2);
     }
 
+    private boolean contains(Set<String> source, Set<String> target) {
+        if (null == source || null == target || source.isEmpty() || target.isEmpty()) {
+            return true;
+        }
+        return source.containsAll(target) || target.containsAll(source);
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(name);
+        if (null != tableSet && !tableSet.isEmpty()) {
+            sb.append("-{" + tableSet.stream().collect(Collectors.joining(",")) + "}." + repeatTableIndex + "-");
+        }
         sb.append('{');
         sb.append(statement.length() <= 1024 ? statement : statement.substring(0, 1024) + "...");
         sb.append("}.");

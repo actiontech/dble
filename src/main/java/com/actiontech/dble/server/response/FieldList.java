@@ -10,6 +10,7 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.google.common.collect.Sets;
 
 public final class FieldList {
     private static final String SQL_SELECT_TABLE = "SELECT * FROM {0} LIMIT 0;";
@@ -55,7 +56,7 @@ public final class FieldList {
             String sql = SQL_SELECT_TABLE.replace("{0}", table);
             RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
             rrs.setSchema(cSchema);
-            RouterUtil.routeToSingleNode(rrs, shardingNode);
+            RouterUtil.routeToSingleNode(rrs, shardingNode, Sets.newHashSet(cSchema + "." + table));
             FieldListHandler fieldsListHandler = new FieldListHandler(service.getSession2(), rrs);
             fieldsListHandler.execute();
         } catch (Exception e) {

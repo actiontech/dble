@@ -54,6 +54,7 @@ import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -606,7 +607,14 @@ public class NonBlockingSession extends Session {
         try {
             String nodeName = builder.build();
             if (!StringUtil.isBlank(nodeName)) {
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement())};
+                Set<String> tableSet = Sets.newHashSet();
+                for (RouteResultsetNode routeResultsetNode : builder.getRrsNodes()) {
+                    Set<String> set = routeResultsetNode.getTableSet();
+                    if (null != set) {
+                        tableSet.addAll(set);
+                    }
+                }
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement(), tableSet)};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select

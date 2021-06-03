@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.route.RouteResultset;
@@ -19,7 +19,7 @@ public final class RouteResultCopy {
     }
 
     public static RouteResultsetNode rrnCopy(RouteResultsetNode node, int sqlType, String stmt) {
-        RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt);
+        RouteResultsetNode nn = new RouteResultsetNode(node.getName(), sqlType, stmt, node.getTableSet());
         nn.setRunOnSlave(node.getRunOnSlave());
         nn.setCanRunInReadDB(false);
         nn.setLimitSize(0);

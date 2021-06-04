@@ -1,9 +1,12 @@
 package com.actiontech.dble.statistic.sql.entry;
 
+import com.actiontech.dble.util.TimeUtil;
+
 public class StatisticEntry {
     private FrontendInfo frontend;
     protected long rows = 0L;
     private long startTime = 0L;
+    private long startTimeMs = 0L;
     private long allEndTime = 0L;
     private int txType; // 0-tx, 1-ax
     private long txId = -1L;
@@ -17,11 +20,13 @@ public class StatisticEntry {
         this.frontend = frontendInfo;
         this.txId = txId;
         this.startTime = startTime;
+        this.startTimeMs = TimeUtil.currentTimeMillis();
     }
 
     public StatisticEntry(FrontendInfo frontendInfo, long startTime) {
         this.frontend = frontendInfo;
         this.startTime = startTime;
+        this.startTimeMs = TimeUtil.currentTimeMillis();
     }
 
     public void setTxId(long txId) {
@@ -65,6 +70,10 @@ public class StatisticEntry {
 
     public void setStartTime(long startTime) {
         this.startTime = startTime;
+    }
+
+    public long getStartTimeMs() {
+        return startTimeMs;
     }
 
     public long getAllEndTime() {

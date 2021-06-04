@@ -15,10 +15,6 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     private volatile LongAdder examinedRows = new LongAdder();
     private boolean isNeedToTx;
 
-    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long txId, long startTime) {
-        super(frontendInfo, txId, startTime);
-    }
-
     public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime) {
         super(frontendInfo, startTime);
     }

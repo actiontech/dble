@@ -16,7 +16,7 @@ public final class WallErrorCode {
         * see com/alibaba/druid/wall/violation/ErrorCode.java
         * see https://github.com/alibaba/druid/pull/4304
         * */
-        CODE_MAP.put(ErrorCode.SYNTAX_ERROR, null);
+        CODE_MAP.put(ErrorCode.SYNTAX_ERROR, "strictSyntaxCheck");
         CODE_MAP.put(ErrorCode.SELECT_NOT_ALLOW, "selelctAllow,selectAllColumnAllow");
         CODE_MAP.put(ErrorCode.SELECT_INTO_NOT_ALLOW, "selectIntoAllow");
         CODE_MAP.put(ErrorCode.INSERT_NOT_ALLOW, "insertAllow");
@@ -79,7 +79,7 @@ public final class WallErrorCode {
         CODE_MAP.put(ErrorCode.INTO_OUTFILE, "selectIntoOutfileAllow");
 
         CODE_MAP.put(ErrorCode.READ_ONLY, "readOnlyTables");
-        CODE_MAP.put(ErrorCode.UNION, "selectUnionCheck");
+        CODE_MAP.put(ErrorCode.UNION, "selectUnionCheck,selectMinusCheck,selectIntersectCheck,selectExceptCheck");
         CODE_MAP.put(ErrorCode.INVALID_JOIN_CONDITION, null); //  No need to configure, just execute 'select * from sharding_2_t1 a inner join sharding_2_t1 b on b.name'
 
         CODE_MAP.put(ErrorCode.COMPOUND, null); // No reference

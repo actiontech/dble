@@ -3,6 +3,7 @@ package com.actiontech.dble.services.mysqlsharding;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.WallErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
@@ -179,9 +180,11 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
                             result.getViolations().get(0).getMessage());
                 } else {
-                    LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
-                            result.getViolations().get(0).getMessage() + " \r\n " + sql);
-                    writeErrMessage(ErrorCode.ERR_WRONG_USED, "The statement is unsafe SQL, reject for user '" + user + "'");
+                    String violation = "[" + WallErrorCode.get(result.getViolations().get(0).getErrorCode()) + "]";
+                    String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
+                    LOGGER.warn("Firewall message:{}, {}",
+                            result.getViolations().get(0).getMessage(), msg);
+                    writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);
                 }
                 return;
             }

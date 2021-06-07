@@ -24,6 +24,7 @@ import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RequestFilePacket;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.LoadDataRouteResultsetNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -214,7 +215,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             RequestFilePacket filePacket = new RequestFilePacket();
             filePacket.setFileName(fileName.getBytes());
             filePacket.setPacketId(1);
-            filePacket.write(buffer, service, true);
+            buffer = filePacket.write(buffer, service, true);
+            service.writeDirectly(buffer, WriteFlags.QUERY_END);
         } else {
             if (!new File(fileName).exists()) {
                 String msg = fileName + " is not found!";

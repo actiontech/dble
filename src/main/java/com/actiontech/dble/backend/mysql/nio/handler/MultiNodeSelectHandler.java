@@ -23,6 +23,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
@@ -66,7 +67,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         queues.put((MySQLResponseService) service, new LinkedBlockingQueue<>(queueSize));
         lock.lock();
         try {
@@ -93,7 +94,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void rowEofResponse(final byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(final byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-rowEof-response");
         TraceManager.finishSpan(service, traceObject);
         BlockingQueue<HeapItem> queue = queues.get(service);
@@ -107,7 +108,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, @NotNull AbstractService service) {
         if (errorResponse.get() || noNeedRows) {
             return true;
         }
@@ -209,14 +210,17 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 }
             }
             Iterator<Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+            MySQLResponseService service = null;
             while (iterator.hasNext()) {
                 Map.Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry = iterator.next();
+                service = entry.getKey();
                 entry.getValue().clear();
                 session.releaseConnectionIfSafe(entry.getKey(), false);
                 iterator.remove();
             }
             doSqlStat();
-            outputHandler.rowEofResponse(null, false, null);
+            assert service != null;
+            outputHandler.rowEofResponse(null, false, service);
         } catch (MySQLOutPutException e) {
             String msg = e.getLocalizedMessage();
             LOGGER.info(msg, e);

@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.io.IOException;
@@ -99,7 +100,7 @@ public class CommandPacket extends MySQLPacket {
             buffer.put(packetId);
             buffer.put(command);
             buffer = service.writeToBuffer(arg, buffer);
-            service.writeDirectly(buffer);
+            service.writeDirectly(buffer, getLastWriteFlag());
         } catch (java.nio.BufferOverflowException e1) {
             //fixed issues #98 #1072
             buffer = service.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + calcPacketSize(), false);
@@ -107,7 +108,7 @@ public class CommandPacket extends MySQLPacket {
             buffer.put(packetId);
             buffer.put(command);
             buffer = service.writeToBuffer(arg, buffer);
-            service.writeDirectly(buffer);
+            service.writeDirectly(buffer, getLastWriteFlag());
         }
     }
 
@@ -126,7 +127,7 @@ public class CommandPacket extends MySQLPacket {
             BufferUtil.writeUB3(buffer, MySQLPacket.MAX_PACKET_SIZE);
             buffer.put(packetId++);
             remain = writeBody(buffer, isFirst, remain);
-            service.writeDirectly(buffer);
+            service.writeDirectly(buffer, WriteFlags.PART);
             isFirst = false;
         }
 
@@ -134,7 +135,7 @@ public class CommandPacket extends MySQLPacket {
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         writeBody(buffer, isFirst, remain);
-        service.writeDirectly(buffer);
+        service.writeDirectly(buffer, getLastWriteFlag());
     }
 
     private int writeBody(ByteBuffer buffer, boolean isFirst, int remain) {
@@ -178,5 +179,10 @@ public class CommandPacket extends MySQLPacket {
 
     public void setArg(byte[] arg) {
         this.arg = arg;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

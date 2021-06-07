@@ -15,10 +15,12 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,39 +92,39 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         writeError(err);
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
-        this.managerService.writeDirectly(ok);
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
+        this.managerService.write(ok, WriteFlags.QUERY_END);
         connection.release();
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
-        managerService.writeDirectly(header);
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
+        managerService.write(header, WriteFlags.PART);
         for (byte[] field : fields) {
-            managerService.writeDirectly(field);
+            managerService.write(field, WriteFlags.PART);
         }
-        managerService.writeDirectly(eof);
+        managerService.write(eof, WriteFlags.PART);
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
-        managerService.writeDirectly(row);
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
+        managerService.write(row, WriteFlags.PART);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
-        managerService.writeDirectly(eof);
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
+        managerService.write(eof, WriteFlags.QUERY_END);
         connection.release();
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_YES);
@@ -131,7 +133,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     private void writeError(byte[] err) {
-        managerService.writeDirectly(err);
+        managerService.write(err, WriteFlags.SESSION_END);
         if (connection != null) {
             connection.release();
         }

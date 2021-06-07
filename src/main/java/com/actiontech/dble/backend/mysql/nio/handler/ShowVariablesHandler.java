@@ -10,6 +10,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
@@ -22,7 +23,7 @@ public class ShowVariablesHandler extends SingleNodeHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         String charset = session.getShardingService().getCharset().getResults();
         RowDataPacket rowDataPacket = new RowDataPacket(2);
         /* Fixme: the accurate statistics of netOutBytes.

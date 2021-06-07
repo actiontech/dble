@@ -7,7 +7,6 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -18,6 +17,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +71,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         String errMsg = new String(err.getMessage());
@@ -88,7 +88,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             ((SequenceVal) ((MySQLResponseService) service).getAttachment()).dbfinished = true;
@@ -98,7 +98,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         RowDataPacket rowDataPkg = new RowDataPacket(1);
         rowDataPkg.read(row);
         byte[] columnData = rowDataPkg.fieldValues.get(0);
@@ -117,7 +117,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         ((SequenceVal) ((MySQLResponseService) service).getAttachment()).dbfinished = true;
         ((MySQLResponseService) service).release();
     }
@@ -130,14 +130,14 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         LOGGER.warn("connection " + service + " closed, reason:" + reason);
         handleError(((MySQLResponseService) service).getAttachment(), "connection " + service + " closed, reason:" + reason);
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
 
     }
 

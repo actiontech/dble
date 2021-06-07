@@ -130,4 +130,9 @@ public class PreparedOkPacket extends MySQLPacket {
     public void setWarningCount(int warningCount) {
         this.warningCount = warningCount;
     }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
+    }
 }

@@ -16,6 +16,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -25,6 +26,7 @@ import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +100,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-error-response");
         TraceManager.finishSpan(service, traceObject);
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service,
@@ -120,7 +122,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
                 session.handleSpecial(rrs, false, getDDLErrorInfo());
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), getDDLErrorInfo());
                 if (byteBuffer != null) {
-                    session.getSource().write(byteBuffer);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 }
                 handleEndPacket(errPacket, false);
             }
@@ -130,7 +132,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-connection-closed");
         TraceManager.finishSpan(service, traceObject);
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service,
@@ -173,7 +175,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
@@ -266,7 +268,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             if (byteBuffer == null) {
                 handleEndPacket(err, false);
             } else {
-                session.getSource().write(byteBuffer);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 handleEndPacket(err, false);
             }
         }

@@ -97,6 +97,7 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
         return "managerService";
     }
 
+    @Override
     public FrontendConnection getConnection() {
         return (FrontendConnection) connection;
     }

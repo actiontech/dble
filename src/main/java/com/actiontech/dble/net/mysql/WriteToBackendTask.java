@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.nio.ByteBuffer;
@@ -35,14 +36,14 @@ public class WriteToBackendTask {
             buffer.put(packet.packetId);
             buffer.put(packet.getCommand());
             buffer = responseService.writeToBuffer(packet.getArg(), buffer);
-            responseService.writeDirectly(buffer);
+            responseService.writeDirectly(buffer, WriteFlags.QUERY_END);
         } catch (java.nio.BufferOverflowException e1) {
             buffer = responseService.checkWriteBuffer(buffer, MySQLPacket.PACKET_HEADER_SIZE + packet.calcPacketSize(), false);
             BufferUtil.writeUB3(buffer, packet.calcPacketSize());
             buffer.put(packet.packetId);
             buffer.put(packet.getCommand());
             buffer = responseService.writeToBuffer(packet.getArg(), buffer);
-            responseService.writeDirectly(buffer);
+            responseService.writeDirectly(buffer, WriteFlags.QUERY_END);
         }
     }
 }

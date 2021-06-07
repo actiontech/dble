@@ -7,11 +7,12 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.net.Session;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class RenameFieldHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
         for (FieldPacket fp : fieldPackets) {
             fp.setTable(alias.getBytes());
@@ -43,13 +44,13 @@ public class RenameFieldHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         nextHandler.rowResponse(rowNull, rowPacket, this.isLeft, service);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerEnd(this);
         nextHandler.rowEofResponse(eof, this.isLeft, service);
     }

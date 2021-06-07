@@ -10,6 +10,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,13 +68,13 @@ public class OneTimeConnJob extends SQLJob {
 
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         service.getConnection().businessClose("conn used for once");
         doFinished(false);
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
 
@@ -86,7 +87,7 @@ public class OneTimeConnJob extends SQLJob {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         if (((MySQLResponseService) service).syncAndExecute()) {
             service.getConnection().businessClose("conn used for once");
             doFinished(false);

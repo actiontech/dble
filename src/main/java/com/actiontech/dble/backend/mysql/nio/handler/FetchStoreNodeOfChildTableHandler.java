@@ -20,6 +20,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.CacheService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +167,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         MySQLResponseService responseService = (MySQLResponseService) service;
@@ -189,7 +190,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("okResponse " + service);
         }
@@ -201,7 +202,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received rowResponse response from  " + service);
         }
@@ -221,7 +222,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("rowEofResponse" + service);
         }
@@ -237,7 +238,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         LOGGER.info("connection closed " + service + " reason:" + reason);
         MySQLResponseService responseService = (MySQLResponseService) service;
         final RouteResultsetNode attachment = (RouteResultsetNode) responseService.getAttachment();
@@ -253,7 +254,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
     }
 
 

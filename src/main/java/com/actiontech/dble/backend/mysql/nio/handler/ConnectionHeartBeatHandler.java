@@ -13,7 +13,9 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import io.netty.util.Timeout;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +49,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
         if (heartbeatLock != null) {
             final long deadline = System.currentTimeMillis() + timeout;
             synchronized (heartbeatLock) {
-                conn.getService().writeDirectly(PingPacket.PING);
+                conn.getService().write(PingPacket.PING, WriteFlags.QUERY_END);
                 try {
                     while (!returned) {
                         timeout = deadline - System.currentTimeMillis();
@@ -63,7 +65,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
             }
         } else {
             heartbeatTimeout = TimerHolder.getTimer().newTimeout(timeout1 -> conn.businessClose("conn heart timeout"), timeout, TimeUnit.MILLISECONDS);
-            conn.getService().writeDirectly(PingPacket.PING);
+            conn.getService().write(PingPacket.PING, WriteFlags.QUERY_END);
         }
 
         return finished;
@@ -77,7 +79,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
      * @param service
      */
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
                 if (!returned) {
@@ -94,7 +96,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         if (heartbeatLock != null) {
             synchronized (heartbeatLock) {
                 if (!returned) {
@@ -107,17 +109,17 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
 
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
 
     }
 
@@ -132,7 +134,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
 
     }
 }

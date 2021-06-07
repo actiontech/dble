@@ -12,12 +12,15 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
@@ -80,7 +83,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean syncFinished = mysqlService.syncAndExecute();
@@ -99,9 +102,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 data[3] = (byte) rwSplitService.nextPacketId();
                 if (buffer != null) {
                     buffer = rwSplitService.writeToBuffer(data, buffer);
-                    frontedConnection.write(buffer);
+                    frontedConnection.getService().writeDirectly(buffer, WriteFlags.SESSION_END);
                 } else {
-                    frontedConnection.write(data);
+                    rwSplitService.write(data, WriteFlags.SESSION_END);
                 }
                 write2Client = true;
             }
@@ -109,7 +112,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         // TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
         //        TraceManager.finishSpan(service, traceObject);
         MySQLResponseService mysqlService = (MySQLResponseService) service;
@@ -130,9 +133,11 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             synchronized (this) {
                 if (!write2Client) {
                     data[3] = (byte) rwSplitService.nextPacketId();
-                    frontedConnection.write(data);
                     if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
+                        rwSplitService.write(data, WriteFlags.QUERY_END);
                         write2Client = true;
+                    } else {
+                        rwSplitService.write(data, WriteFlags.PART);
                     }
                 }
             }
@@ -141,35 +146,35 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         buffer = frontedConnection.allocate();
         synchronized (this) {
             header[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(header, buffer);
+            buffer = frontedConnection.getService().writeToBuffer(header, buffer);
             for (byte[] field : fields) {
                 field[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(field, buffer);
+                buffer = frontedConnection.getService().writeToBuffer(field, buffer);
             }
             eof[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(eof, buffer);
+            buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
         }
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
             this.selectRows++;
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
             row[3] = (byte) rwSplitService.nextPacketId();
-            buffer = frontedConnection.writeToBuffer(row, buffer);
+            buffer = frontedConnection.getService().writeToBuffer(row, buffer);
         }
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(selectRows));
             selectRows = 0;
@@ -183,7 +188,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 } else {
                     LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
                 }
-                buffer = frontedConnection.writeToBuffer(eof, buffer);
+                buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
                 /*
                 multi statement all cases are as follows:
                 1. if an resultSet is followed by an resultSet. buffer will re-assign in fieldEofResponse()
@@ -193,7 +198,11 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 We must prevent  same buffer called connection.write() twice.
                 According to the above, you need write buffer immediately and set buffer to null.
                  */
-                frontedConnection.write(buffer);
+                if ((eof[7] & HAS_MORE_RESULTS) == 0) {
+                    frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+                } else {
+                    frontedConnection.getService().writeDirectly(buffer, WriteFlags.PART);
+                }
                 buffer = null;
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
                     write2Client = true;
@@ -203,17 +212,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     }
 
     @Override
-    public void requestDataResponse(byte[] requestFilePacket, MySQLResponseService service) {
+    public void requestDataResponse(byte[] requestFilePacket, @Nonnull MySQLResponseService service) {
         synchronized (this) {
             if (!write2Client) {
-                frontedConnection.write(requestFilePacket);
+                rwSplitService.write(requestFilePacket, WriteFlags.QUERY_END);
             }
         }
     }
 
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(rwSplitService)).ifPresent(r -> r.onBackendSqlSetRowsAndEnd(0));
         ((MySQLResponseService) service).setResponseHandler(null);
         synchronized (this) {
@@ -238,20 +247,20 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             }
             if (!write2Client) {
                 ok[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(ok, buffer);
+                buffer = frontedConnection.getService().writeToBuffer(ok, buffer);
                 if (params != null) {
                     for (byte[] param : params) {
                         param[3] = (byte) rwSplitService.nextPacketId();
-                        buffer = frontedConnection.writeToBuffer(param, buffer);
+                        buffer = frontedConnection.getService().writeToBuffer(param, buffer);
                     }
                 }
                 if (fields != null) {
                     for (byte[] field : fields) {
                         field[3] = (byte) rwSplitService.nextPacketId();
-                        buffer = frontedConnection.writeToBuffer(field, buffer);
+                        buffer = frontedConnection.getService().writeToBuffer(field, buffer);
                     }
                 }
-                frontedConnection.write(buffer);
+                frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
                 write2Client = true;
                 buffer = null;
             }
@@ -266,16 +275,16 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             }
             if (!write2Client) {
                 header[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(header, buffer);
+                buffer = frontedConnection.getService().writeToBuffer(header, buffer);
                 if (fields != null) {
                     for (byte[] field : fields) {
                         field[3] = (byte) rwSplitService.nextPacketId();
-                        buffer = frontedConnection.writeToBuffer(field, buffer);
+                        buffer = frontedConnection.getService().writeToBuffer(field, buffer);
                     }
                 }
                 eof[3] = (byte) rwSplitService.nextPacketId();
-                buffer = frontedConnection.writeToBuffer(eof, buffer);
-                frontedConnection.write(buffer);
+                buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
+                frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
                 write2Client = true;
                 buffer = null;
             }

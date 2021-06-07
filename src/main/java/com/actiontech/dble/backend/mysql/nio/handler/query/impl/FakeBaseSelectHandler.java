@@ -2,13 +2,16 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.net.Session;
+import com.actiontech.dble.services.FakeResponseService;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +38,12 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
             createErrorMessage();
             return;
         }
-        nextHandler.fieldEofResponse(null, null, fields, null, false, null);
+        final MySQLResponseService service = new FakeResponseService(null);
+        nextHandler.fieldEofResponse(null, null, fields, null, false, service);
         for (RowDataPacket row : data) {
-            nextHandler.rowResponse(null, row, false, null);
+            nextHandler.rowResponse(null, row, false, service);
         }
-        nextHandler.rowEofResponse(null, false, null);
+        nextHandler.rowEofResponse(null, false, service);
     }
 
     public String toSQLString() {
@@ -90,17 +94,17 @@ public class FakeBaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
 
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
 
     }
 

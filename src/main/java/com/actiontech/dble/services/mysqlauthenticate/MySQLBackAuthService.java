@@ -12,6 +12,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.BackendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -88,7 +89,7 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
                     BinaryPacket binPacket = new BinaryPacket();
                     byte[] publicKey = binPacket.readKey(data);
                     byte[] authResponse = PasswordAuthPlugin.sendEnPasswordWithPublicKey(seed, publicKey, passwd, ++data[3]);
-                    connection.write(authResponse);
+                    this.write(authResponse, WriteFlags.QUERY_END);
                     return;
                 }
             }

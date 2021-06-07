@@ -6,8 +6,8 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -24,8 +24,10 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
 import java.sql.SQLException;
-import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -37,7 +39,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
     private volatile Long doingTaskThread = null;
     private long taskId = 1;
-    private long consumedTaskId = 0;
+    private volatile long consumedTaskId = 0;
     // client capabilities
     private final long clientCapabilities;
     protected volatile byte[] seed;
@@ -48,7 +50,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     protected volatile T userConfig;
     // last execute sql
     protected volatile String executeSql;
-    protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId());
+    protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId(), this);
 
     public FrontendService(AbstractConnection connection) {
         super(connection);
@@ -70,6 +72,10 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.multiStatementAllow = auth.isMultStatementAllow();
+    }
+
+    public long getConsumedTaskId() {
+        return consumedTaskId;
     }
 
     /**
@@ -161,6 +167,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         } catch (Throwable e) {
             LOGGER.error("frontExecutor process error: ", e);
             connectionSerializableLock.unLock();
+            connection.close("frontExecutor process error");
         } finally {
             //must use synchronized to make sure  task safety added when other thread is doing return.
             if (isHandleByCurrentThread && doingTaskThread != null) {
@@ -251,13 +258,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         DbleServer.getInstance().getFrontHandlerQueue().offerFirst(task);
     }
 
-    @Override
-    public void writeDirectly(ByteBuffer buffer, boolean endOfQuery) {
-        super.writeDirectly(buffer, endOfQuery);
-        if (endOfQuery) {
-            connectionSerializableLock.unLock();
-        }
-    }
 
     @Override
     public void cleanup() {
@@ -353,7 +353,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlClose());
-        markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);
@@ -392,4 +391,8 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         }
     }
 
+    @Override
+    public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+        connectionSerializableLock.unLock();
+    }
 }

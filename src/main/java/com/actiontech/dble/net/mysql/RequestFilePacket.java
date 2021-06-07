@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
@@ -30,7 +30,6 @@ public class RequestFilePacket extends MySQLPacket {
         if (fileName != null) {
             buffer.put(fileName);
         }
-        service.writeDirectly(buffer);
         return buffer;
     }
 
@@ -64,5 +63,10 @@ public class RequestFilePacket extends MySQLPacket {
 
     public void setFileName(byte[] fileName) {
         this.fileName = fileName;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

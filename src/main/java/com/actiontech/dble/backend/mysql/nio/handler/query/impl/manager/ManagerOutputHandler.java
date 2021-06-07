@@ -11,7 +11,9 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.manager.ManagerSession;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,18 +45,18 @@ public class ManagerOutputHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         logger.info(service.toString() + "|errorResponse()|" + new String(errPacket.getMessage()));
         lock.lock();
         try {
-            buffer = managerSession.getSource().writeToBuffer(err, buffer);
-            managerSession.getSource().write(buffer);
+            buffer = managerSession.getSource().getService().writeToBuffer(err, buffer);
+            managerSession.getSource().getService().writeDirectly(buffer, WriteFlags.SESSION_END);
         } finally {
             lock.unlock();
         }
@@ -62,7 +64,7 @@ public class ManagerOutputHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         managerSession.setHandlerStart(this);
         if (terminate.get()) {
             return;
@@ -90,7 +92,7 @@ public class ManagerOutputHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get()) {
             return true;
         }
@@ -106,7 +108,7 @@ public class ManagerOutputHandler extends BaseDMLHandler {
             } else {
                 row = rowNull;
                 row[3] = ++packetId;
-                buffer = managerSession.getSource().writeToBuffer(row, buffer);
+                buffer = managerSession.getSource().getService().writeToBuffer(row, buffer);
             }
         } finally {
             lock.unlock();
@@ -115,7 +117,7 @@ public class ManagerOutputHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get()) {
             return;
         }
@@ -133,9 +135,9 @@ public class ManagerOutputHandler extends BaseDMLHandler {
             eofPacket.setPacketId(++packetId);
             HandlerTool.terminateHandlerTree(this);
             byte[] eof = eofPacket.toBytes();
-            buffer = source.writeToBuffer(eof, buffer);
+            buffer = source.getService().writeToBuffer(eof, buffer);
             managerSession.setHandlerEnd(this);
-            source.write(buffer);
+            source.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
         } finally {
             lock.unlock();
         }

@@ -7,7 +7,6 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-
 import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.nio.ByteBuffer;
@@ -43,7 +42,7 @@ public class HeartbeatPacket extends MySQLPacket {
         buffer.put(packetId);
         buffer.put(command);
         BufferUtil.writeLength(buffer, id);
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
     @Override
@@ -70,5 +69,10 @@ public class HeartbeatPacket extends MySQLPacket {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

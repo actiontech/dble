@@ -97,7 +97,7 @@ public final class RouteResultset implements Serializable {
 
     public void setNeedOptimizer(boolean needOptimizer) {
         this.needOptimizer = needOptimizer;
-        if (LOGGER.isTraceEnabled()) {
+        if (DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("the sql is need to use complex query Optimizer:" + srcStatement);
         }
     }
@@ -210,7 +210,7 @@ public final class RouteResultset implements Serializable {
 
     public void setNodes(RouteResultsetNode[] nodes) {
         if (alwaysFalse && !Objects.isNull(nodes) && nodes.length > 1) {
-            if (LOGGER.isTraceEnabled()) {
+            if (DTRACE_LOGGER.isTraceEnabled()) {
                 DTRACE_LOGGER.trace("the condition is always false ,route from broadcast to single");
             }
             RouteResultsetNode[] newNodes = new RouteResultsetNode[1];

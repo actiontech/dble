@@ -19,11 +19,6 @@ public class NameableExecutor extends ThreadPoolExecutor {
 
     private Map<String, Map<Thread, Runnable>> runnableMap;
 
-    public NameableExecutor(String name, int size) {
-        super(size, size, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
-        this.name = name;
-    }
-
     public NameableExecutor(String name, int size, int maximumPoolSize, long keepAliveTime,
                             BlockingQueue<Runnable> queue, ThreadFactory factory, Map<String, Map<Thread, Runnable>> runnableMap) {
         super(size, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue, factory);

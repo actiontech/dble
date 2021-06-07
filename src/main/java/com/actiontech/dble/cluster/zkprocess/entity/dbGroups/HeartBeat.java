@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity.dbGroups;
 
-import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.*;
 
@@ -13,13 +12,12 @@ import javax.xml.bind.annotation.*;
 @XmlType(name = "heartbeat")
 public class HeartBeat {
     @XmlValue
-    @Expose
     protected String value;
+
     @XmlAttribute
-    @Expose
     protected Integer timeout;
+
     @XmlAttribute
-    @Expose
     protected Integer errorRetryCount;
 
     public HeartBeat() {

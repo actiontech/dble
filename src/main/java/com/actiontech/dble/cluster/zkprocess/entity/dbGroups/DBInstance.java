@@ -7,7 +7,6 @@ package com.actiontech.dble.cluster.zkprocess.entity.dbGroups;
 
 import com.actiontech.dble.cluster.zkprocess.entity.Propertied;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
-import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.*;
 import java.util.ArrayList;
@@ -18,46 +17,41 @@ import java.util.List;
 public class DBInstance implements Propertied {
 
     @XmlAttribute(required = true)
-    @Expose
     protected String name;
+
     @XmlAttribute(required = true)
-    @Expose
     protected String url;
+
     @XmlAttribute(required = true)
-    @Expose
     protected String password;
+
     @XmlAttribute(required = true)
-    @Expose
     protected String user;
+
     @XmlAttribute(required = true)
-    @Expose
     protected Integer maxCon;
+
     @XmlAttribute(required = true)
-    @Expose
     protected Integer minCon;
+
     @XmlAttribute
-    @Expose
     protected String usingDecrypt;
+
     @XmlAttribute
-    @Expose
     protected String disabled;
+
     @XmlAttribute
-    @Expose
     protected String id;
+
     @XmlAttribute
-    @Expose
     protected String readWeight;
 
     @XmlAttribute
-    @Expose
     protected Boolean primary;
 
-    @Expose
     protected List<Property> property;
 
-    @XmlTransient
-    @Expose(serialize = false, deserialize = false)
-    protected String dbGroup;
+    protected transient String dbGroup;
 
     public DBInstance() {
     }

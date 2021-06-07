@@ -6,7 +6,6 @@
 package com.actiontech.dble.cluster.zkprocess.entity.dbGroups;
 
 import com.actiontech.dble.cluster.zkprocess.entity.Named;
-import com.google.gson.annotations.Expose;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -20,21 +19,19 @@ import java.util.List;
 public class DBGroup implements Named {
 
     @XmlAttribute(required = true)
-    @Expose
     protected Integer rwSplitMode;
+
     @XmlAttribute(required = true)
-    @Expose
     protected String name;
+
     @XmlAttribute
-    @Expose
     protected Integer delayThreshold;
+
     @XmlAttribute
-    @Expose
     protected String disableHA;
 
-    @Expose
     protected HeartBeat heartbeat;
-    @Expose
+
     protected List<DBInstance> dbInstance;
 
     public DBGroup() {

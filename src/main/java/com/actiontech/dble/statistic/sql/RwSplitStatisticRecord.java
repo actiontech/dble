@@ -112,16 +112,16 @@ public class RwSplitStatisticRecord extends StatisticRecord {
             txEntry = new StatisticTxEntry(frontendInfo, xaId, txid, time, true);
         }
         for (String sql : splitSql) {
-            StatisticFrontendSqlEntry frontendSqlEntryi = new StatisticFrontendSqlEntry(frontendInfo, time);
-            frontendSqlEntryi.put("&statistic_rw_key", new StatisticBackendSqlEntry(
+            StatisticFrontendSqlEntry frontendSqlEntry = new StatisticFrontendSqlEntry(frontendInfo, time);
+            frontendSqlEntry.put("&statistic_rw_key", new StatisticBackendSqlEntry(
                     frontendInfo,
                     ((MySQLInstance) connection.getInstance()).getName(), connection.getHost(), connection.getPort(), "-",
                     sql, time));
-            frontendSqlEntryi.setSql(sql);
-            frontendSqlEntryi.setSchema(frontendSqlEntry.getSchema());
-            frontendSqlEntryi.setTxId(txid);
-            frontendSqlEntryi.setNeedToTx(false);
-            multiFrontendSqlEntry.add(frontendSqlEntryi);
+            frontendSqlEntry.setSql(sql);
+            frontendSqlEntry.setSchema(frontendSqlEntry.getSchema());
+            frontendSqlEntry.setTxId(txid);
+            frontendSqlEntry.setNeedToTx(false);
+            multiFrontendSqlEntry.add(frontendSqlEntry);
         }
         frontendSqlEntry = null;
     }

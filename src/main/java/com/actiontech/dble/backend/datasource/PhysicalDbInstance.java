@@ -18,15 +18,12 @@ import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.factory.MySQLConnectionFactory;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -58,9 +55,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     // connection pool
     private ConnectionPool connectionPool;
     protected MySQLHeartbeat heartbeat;
-    private volatile long heartbeatRecoveryTime;
     private volatile boolean needSkipEvit = false;
-
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
         this.config = config;
@@ -269,14 +264,6 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         this.readOnly = readOnly;
     }
 
-    public long getHeartbeatRecoveryTime() {
-        return heartbeatRecoveryTime;
-    }
-
-    public void setHeartbeatRecoveryTime(long heartbeatRecoveryTime) {
-        this.heartbeatRecoveryTime = heartbeatRecoveryTime;
-    }
-
     public long getCount(boolean isRead) {
         if (isRead) {
             return readCount.longValue();
@@ -295,7 +282,6 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
     public DbGroupConfig getDbGroupConfig() {
         return dbGroupConfig;
     }
-
 
     public boolean isFakeNode() {
         return fakeNode;
@@ -387,16 +373,7 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             return;
         }
 
-        heartbeat.start();
-        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
-            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                    return;
-                }
-
-                heartbeat.heartbeat();
-            }
-        }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
+        heartbeat.start(config.getPoolConfig().getHeartbeatPeriodMillis());
     }
 
     void start(String reason, boolean isStartHeartbeat) {

@@ -286,4 +286,9 @@ public class DbleDbGroup extends ManagerWritableTable {
         map.put(COLUMN_DISABLE_HA, String.valueOf(dbGroupConfig.isDisableHA()));
         return map;
     }
+
+    @Override
+    public void updateTempConfig() {
+        DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+    }
 }

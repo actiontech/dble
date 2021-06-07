@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity.dbGroups;
 
+
 import javax.xml.bind.annotation.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -12,8 +13,10 @@ import javax.xml.bind.annotation.*;
 public class HeartBeat {
     @XmlValue
     protected String value;
+
     @XmlAttribute
     protected Integer timeout;
+
     @XmlAttribute
     protected Integer errorRetryCount;
 

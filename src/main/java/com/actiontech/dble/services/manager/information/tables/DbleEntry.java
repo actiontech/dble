@@ -104,7 +104,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_CONN_ATTR_VALUE, null);
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, userConfig.isReadOnly() + "");
-        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, null);
     }
 
@@ -118,7 +118,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, userConfig.isReadOnly() + "");
-        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
 
@@ -132,7 +132,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, "-");
-        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
 

@@ -26,6 +26,7 @@ import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -48,6 +49,11 @@ public final class ManagerTableUtil {
         } else if (valueExpr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             value = charExpr.getText();
+            if (StringUtil.isBlank(value) || StringUtil.equalsIgnoreCase(value, "null")) {
+                throw new SQLNonTransientException("Not Supported of Value EXPR :" + valueExpr.toString());
+            }
+        } else if (valueExpr instanceof SQLNullExpr) {
+            value = null;
         } else {
             throw new SQLNonTransientException("Not Supported of Value EXPR :" + valueExpr.toString());
         }

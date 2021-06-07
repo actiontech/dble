@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity;
 
+
 import javax.xml.bind.annotation.*;
 import java.util.Objects;
 
@@ -18,6 +19,7 @@ public class Property implements Named {
 
     @XmlValue
     protected String value;
+
     @XmlAttribute(name = "name")
     protected String name;
 

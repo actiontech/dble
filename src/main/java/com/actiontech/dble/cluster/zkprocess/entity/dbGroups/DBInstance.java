@@ -18,22 +18,31 @@ public class DBInstance implements Propertied {
 
     @XmlAttribute(required = true)
     protected String name;
+
     @XmlAttribute(required = true)
     protected String url;
+
     @XmlAttribute(required = true)
     protected String password;
+
     @XmlAttribute(required = true)
     protected String user;
+
     @XmlAttribute(required = true)
     protected Integer maxCon;
+
     @XmlAttribute(required = true)
     protected Integer minCon;
+
     @XmlAttribute
     protected String usingDecrypt;
+
     @XmlAttribute
     protected String disabled;
+
     @XmlAttribute
     protected String id;
+
     @XmlAttribute
     protected String readWeight;
 
@@ -42,8 +51,7 @@ public class DBInstance implements Propertied {
 
     protected List<Property> property;
 
-    @XmlTransient
-    protected String dbGroup;
+    protected transient String dbGroup;
 
     public DBInstance() {
     }

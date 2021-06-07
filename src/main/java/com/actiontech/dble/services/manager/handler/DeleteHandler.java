@@ -5,13 +5,11 @@
 
 package com.actiontech.dble.services.manager.handler;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.values.ConfStatus;
-import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -137,8 +135,7 @@ public final class DeleteHandler {
             }
             return;
         } finally {
-            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
-            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
+            managerTable.updateTempConfig();
             managerTable.getLock().unlock();
             if (distributeLock != null) {
                 distributeLock.release();

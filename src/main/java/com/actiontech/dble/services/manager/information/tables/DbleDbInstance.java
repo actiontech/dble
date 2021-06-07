@@ -396,10 +396,16 @@ public class DbleDbInstance extends ManagerWritableTable {
                     if (!StringUtil.isBlank(entry.getValue())) {
                         dbInstance.setMinCon(IntegerUtil.parseInt(entry.getValue()));
                     }
+                    if (dbInstance.getMinCon() < 0) {
+                        throw new ConfigException("Column 'min_conn_count' value cannot be less than 0.");
+                    }
                     break;
                 case COLUMN_MAX_CONN_COUNT:
                     if (!StringUtil.isBlank(entry.getValue())) {
                         dbInstance.setMaxCon(IntegerUtil.parseInt(entry.getValue()));
+                    }
+                    if (dbInstance.getMaxCon() < 0) {
+                        throw new ConfigException("Column 'max_conn_count' value cannot be less than 0.");
                     }
                     break;
                 case COLUMN_READ_WEIGHT:
@@ -451,4 +457,8 @@ public class DbleDbInstance extends ManagerWritableTable {
         }
     }
 
+    @Override
+    public void updateTempConfig() {
+        DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+    }
 }

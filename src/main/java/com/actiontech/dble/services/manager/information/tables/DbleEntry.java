@@ -3,14 +3,20 @@ package com.actiontech.dble.services.manager.information.tables;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.loader.xml.XMLUserLoader;
-import com.actiontech.dble.config.model.user.*;
+import com.actiontech.dble.config.model.user.ManagerUserConfig;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.util.DecryptUtil;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 public class DbleEntry extends ManagerBaseTable {
 
@@ -77,7 +83,7 @@ public class DbleEntry extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
         DbleServer.getInstance().getConfig().getUsers().entrySet().
                 stream().
-                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                 forEach(v -> {
                     UserConfig userConfig = v.getValue();
                     LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
@@ -104,7 +110,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_CONN_ATTR_VALUE, null);
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, userConfig.isReadOnly() + "");
-        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, null);
     }
 
@@ -118,7 +124,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, userConfig.isReadOnly() + "");
-        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
 
@@ -132,7 +138,7 @@ public class DbleEntry extends ManagerBaseTable {
         map.put(COLUMN_CONN_ATTR_VALUE, userConfig.getTenant());
         map.put(COLUMN_WHITE_IPS, getWhiteIps(userConfig.getWhiteIPs()));
         map.put(COLUMN_READONLY, "-");
-        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == -1 ? "no limit" : userConfig.getMaxCon() + "");
+        map.put(COLUMN_MAX_CONN_COUNT, userConfig.getMaxCon() == 0 ? "no limit" : userConfig.getMaxCon() + "");
         map.put(COLUMN_BLACKLIST, userConfig.getBlacklist() == null ? null : userConfig.getBlacklist().getName());
     }
 

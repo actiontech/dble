@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.util;
 
+import com.actiontech.dble.config.util.ConfigException;
+
 /**
  * @author mycat
  */
@@ -84,4 +86,26 @@ public final class LongUtil {
         }
     }
 
+    public static boolean isLong(String intStr) {
+        try {
+            if (!StringUtil.isBlank(intStr)) {
+                Long.parseLong(intStr);
+                return true;
+            }
+        } catch (NumberFormatException e) {
+            return false;
+        }
+        return false;
+    }
+
+    public static long parseLong(String intStr) {
+        try {
+            if (!StringUtil.isBlank(intStr)) {
+                return Long.parseLong(intStr);
+            }
+        } catch (NumberFormatException e) {
+            throw new ConfigException("incorrect long value: '" + intStr + "'");
+        }
+        throw new ConfigException("incorrect long value: 'null'");
+    }
 }

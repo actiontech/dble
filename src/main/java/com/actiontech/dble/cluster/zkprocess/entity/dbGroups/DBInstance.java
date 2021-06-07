@@ -21,22 +21,31 @@ public class DBInstance implements Propertied {
 
     @XmlAttribute(required = true)
     protected String name;
+
     @XmlAttribute(required = true)
     protected String url;
+
     @XmlAttribute(required = true)
     protected String password;
+
     @XmlAttribute(required = true)
     protected String user;
+
     @XmlAttribute(required = true)
     protected Integer maxCon;
+
     @XmlAttribute(required = true)
     protected Integer minCon;
+
     @XmlAttribute
     protected String usingDecrypt;
+
     @XmlAttribute
     protected String disabled;
+
     @XmlAttribute
     protected String id;
+
     @XmlAttribute
     protected String readWeight;
 
@@ -44,6 +53,8 @@ public class DBInstance implements Propertied {
     protected Boolean primary;
 
     protected List<Property> property;
+
+    protected transient String dbGroup;
 
     public DBInstance() {
     }
@@ -172,6 +183,13 @@ public class DBInstance implements Propertied {
         this.property = property;
     }
 
+    public void setDbGroup(String dbGroup) {
+        this.dbGroup = dbGroup;
+    }
+
+    public String getDbGroup() {
+        return dbGroup;
+    }
     @Override
     public String toString() {
         return "dbInstance [name=" +

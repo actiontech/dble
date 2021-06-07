@@ -88,12 +88,14 @@ public final class DeleteHandler {
             return;
         }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
-        int rowSize;
+        int rowSize = 0;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
+        boolean isSuccess = true;
+        String errorMsg = null;
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
@@ -102,37 +104,45 @@ public final class DeleteHandler {
                 ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
             }
         } catch (SQLException e) {
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
+            isSuccess = false;
+            errorMsg = e.getMessage();
         } catch (ConfigException e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
-            return;
+            isSuccess = false;
+            errorMsg = "Delete failure.The reason is " + e.getMessage();
         } catch (Exception e) {
+            isSuccess = false;
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
+                errorMsg = "Delete failure.The reason is " + e.getMessage();
+                LOGGER.warn("Delete failure.The reason is " + e);
                 handleConfigException(e, service, managerTable);
             } else {
-                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+                errorMsg = "unknown error:" + e.getMessage();
                 LOGGER.warn("unknown error:", e);
             }
-            return;
         } finally {
             managerTable.deleteBackupFile();
             managerTable.getLock().unlock();
         }
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(rowSize);
-        ok.write(service.getConnection());
+        writePacket(isSuccess, rowSize, service, errorMsg);
+    }
+
+    private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg) {
+        if (isSuccess) {
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(rowSize);
+            ok.write(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
     }
 
     private void handleConfigException(Exception e, ManagerService service, ManagerWritableTable managerTable) {
         try {
             managerTable.rollbackXmlFile();
         } catch (IOException ioException) {
-            service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-            return;
+            LOGGER.warn("unknown error:", e);
         }
-        service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
     }
 }

@@ -20,14 +20,18 @@ public class DBGroup implements Named {
 
     @XmlAttribute(required = true)
     protected Integer rwSplitMode;
+
     @XmlAttribute(required = true)
     protected String name;
+
     @XmlAttribute
     protected Integer delayThreshold;
+
     @XmlAttribute
     protected String disableHA;
 
     protected HeartBeat heartbeat;
+
     protected List<DBInstance> dbInstance;
 
     public DBGroup() {

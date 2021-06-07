@@ -84,14 +84,14 @@ public final class ShowUser {
             row.add(StringUtil.encode("N", charset));
             row.add(StringUtil.encode(shardingUser.isReadOnly() ? "Y" : "N", charset));
             int maxCon = shardingUser.getMaxCon();
-            row.add(StringUtil.encode(maxCon == -1 ? "no limit" : maxCon + "", charset));
+            row.add(StringUtil.encode(maxCon == 0 ? "no limit" : maxCon + "", charset));
         } else if (user instanceof ManagerUserConfig) {
             ManagerUserConfig mUser = (ManagerUserConfig) user;
             row.add(StringUtil.encode(user.getName(), charset));
             row.add(StringUtil.encode("Y", charset));
             row.add(StringUtil.encode(mUser.isReadOnly() ? "Y" : "N", charset));
             int maxCon = mUser.getMaxCon();
-            row.add(StringUtil.encode(maxCon == -1 ? "no limit" : maxCon + "", charset));
+            row.add(StringUtil.encode(maxCon == 0 ? "no limit" : maxCon + "", charset));
         } else {
             RwSplitUserConfig rUser = (RwSplitUserConfig) user;
             if (rUser.getTenant() != null) {

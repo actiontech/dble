@@ -33,7 +33,7 @@ public class ShardingStatisticRecord extends StatisticRecord {
     }
 
     public void onBackendSqlStart(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             BackendConnection connection = service.getConnection();
             ShardingService shardingService = service.getSession().getShardingService();

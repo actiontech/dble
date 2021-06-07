@@ -10,6 +10,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
@@ -33,33 +34,33 @@ public interface ResponseHandler {
     /**
      * execute after get an error response
      */
-    void errorResponse(byte[] err, AbstractService service);
+    void errorResponse(byte[] err, @Nonnull AbstractService service);
 
     /**
      * execute after get an OK response
      */
-    void okResponse(byte[] ok, AbstractService service);
+    void okResponse(byte[] ok, @Nonnull AbstractService service);
 
     /**
      * execute after get an fieldEof response
      */
 
     void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                          boolean isLeft, AbstractService service);
+                          boolean isLeft, @Nonnull AbstractService service);
 
     /**
      * execute after get an row response
      */
-    boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service);
+    boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @Nonnull AbstractService service);
 
     /**
      * execute after get an rowEof response
      */
-    void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service);
+    void rowEofResponse(byte[] eof, boolean isLeft, @Nonnull AbstractService service);
 
     /**
      * on connection close event
      */
-    void connectionClose(AbstractService service, String reason);
+    void connectionClose(@Nonnull AbstractService service, String reason);
 
 }

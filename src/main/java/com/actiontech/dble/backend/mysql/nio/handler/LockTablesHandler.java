@@ -18,6 +18,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         MySQLResponseService responseService = (MySQLResponseService) service;
         boolean executeResponse = responseService.syncAndExecute();
         if (executeResponse) {
@@ -115,12 +116,12 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         super.connectionClose(service, reason);
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             if (clearIfSessionClosed(session)) {
@@ -153,14 +154,14 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         LOGGER.info("unexpected packet for " +
                 service + " bound by " + session.getSource() +
                 ": field's eof");
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.info("unexpected packet for " +
                 service + " bound by " + session.getSource() +
                 ": row data packet");
@@ -168,7 +169,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         LOGGER.info("unexpected packet for " +
                 service + " bound by " + session.getSource() +
                 ": row's eof");

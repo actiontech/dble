@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 
@@ -93,7 +94,7 @@ public class RowDataPacket extends MySQLPacket {
         int totalSize = size + PACKET_HEADER_SIZE;
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
         if (isBigPackage) {
-            service.writeDirectly(bb);
+            service.writeDirectly(bb, WriteFlags.PART);
             ByteBuffer tmpBuffer = service.allocate(totalSize);
             BufferUtil.writeUB3(tmpBuffer, calcPacketSize());
             tmpBuffer.put(packetId);
@@ -101,7 +102,7 @@ public class RowDataPacket extends MySQLPacket {
             byte[] array = tmpBuffer.array();
             service.recycleBuffer(tmpBuffer);
             ByteBuffer newBuffer = service.allocate();
-            return service.writeBigPackageToBuffer(array, newBuffer);
+            return service.writeToBuffer(array, newBuffer);
         } else {
             bb = service.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, calcPacketSize());
@@ -216,4 +217,8 @@ public class RowDataPacket extends MySQLPacket {
         return fieldValues;
     }
 
+    @Override
+    public boolean isEndOfQuery() {
+        return false;
+    }
 }

@@ -18,6 +18,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.LoadDataRouteResultsetNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -36,9 +37,12 @@ import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -215,7 +219,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         pauseTime((MySQLResponseService) service);
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-connection-closed");
         TraceManager.finishSpan(service, traceObject);
@@ -276,7 +280,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-sql-execute-error");
         TraceManager.finishSpan(service, traceObject);
         pauseTime((MySQLResponseService) service);
@@ -301,7 +305,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 if (session.closed()) {
                     cleanBuffer();
                 } else if (byteBuffer != null) {
-                    session.getSource().write(byteBuffer);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 }
                 //just for normal error
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
@@ -358,7 +362,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         return sb.toString();
     }
 
-    public void okResponse(byte[] data, AbstractService service) {
+    @Override
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-response");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
@@ -438,7 +443,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketList, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketList, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         this.netOutBytes += header.length;
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
@@ -562,12 +567,12 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     }
 
     @Override
-    public void rowEofResponse(final byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(final byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         specialOkResponse(service);
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             RouteResultsetNode rrn = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
@@ -594,18 +599,18 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     }
 
     @Override
-    public void requestDataResponse(byte[] data, MySQLResponseService service) {
+    public void requestDataResponse(byte[] data, @Nonnull MySQLResponseService service) {
         LoadDataUtil.requestFileDataResponse(data, service);
     }
 
-    private void executeError(MySQLResponseService service) {
+    private void executeError(@Nullable MySQLResponseService service) {
         if (!isFail()) {
             setFail(new String(err.getMessage()));
         }
         if (errConnection == null) {
             errConnection = new ArrayList<>();
         }
-        if (service != null) {
+        if (service != null && !service.isFakeClosed()) {
             errConnection.add(service);
             if (service.getConnection().isClosed() && (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart())) {
                 session.getShardingService().setTxInterrupt(error);
@@ -620,7 +625,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 cleanBuffer();
             } else {
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
-                session.getSource().write(byteBuffer);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         }

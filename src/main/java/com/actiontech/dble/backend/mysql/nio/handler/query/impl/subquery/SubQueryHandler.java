@@ -9,9 +9,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             // callBack after terminated
@@ -72,7 +73,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         lock.lock();
         try {
             ErrorPacket errPacket = new ErrorPacket();

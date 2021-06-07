@@ -95,7 +95,7 @@ public final class RW implements Runnable {
                     if (key.isValid() && key.isReadable()) {
                         try {
                             con.asyncRead();
-                        } catch (AsynchronousCloseException e) {
+                        } catch (ClosedChannelException e) {
                             //happens when close and read running in parallel.
                             //sometimes ,no byte could be read,but an  read event triggered with  zero bytes although cause this.
                             LOGGER.info("read bytes but the  connection is closed .connection is {}. May be the connection closed suddenly.", con);

@@ -30,6 +30,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -95,7 +96,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         }
 
         //finally route for the result
-        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal);
+        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal, Sets.newHashSet(schemaInfo.getSchema() + "." + tableName));
 
         String sql = rrs.getStatement();
         for (Pair<String, String> table : ctx.getTables()) {
@@ -215,36 +216,33 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         return true;
     }
 
-    void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ShardingService service, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            //get child result will be blocked, so use ComplexQueryExecutor
-            @Override
-            public void run() {
-                // route by sql query root parent's shardingNode
-                String findRootTBSql = tc.getLocateRTableKeySql() + joinColumnVal;
+    void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ShardingService service, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain, String tableName) {
+        //get child result will be blocked, so use ComplexQueryExecutor
+        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+            // route by sql query root parent's shardingNode
+            String findRootTBSql = tc.getLocateRTableKeySql() + joinColumnVal;
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
+            }
+            FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, service.getSession2());
+            try {
+                String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getShardingNodes());
+                if (dn == null) {
+                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
+                    return;
+                }
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
+                    LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
                 }
-                FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, service.getSession2());
-                try {
-                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getShardingNodes());
-                    if (dn == null) {
-                        service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
-                        return;
-                    }
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
-                    }
-                    RouterUtil.routeToSingleNode(rrs, dn);
-                    if (isExplain) {
-                        ExplainHandler.writeOutHeadAndEof(service, rrs);
-                    } else {
-                        service.getSession2().execute(rrs);
-                    }
-                } catch (Exception e) {
-                    service.setTxInterrupt(e.toString());
-                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
+                RouterUtil.routeToSingleNode(rrs, dn, Sets.newHashSet(schema.getName() + "." + tableName));
+                if (isExplain) {
+                    ExplainHandler.writeOutHeadAndEof(service, rrs);
+                } else {
+                    service.getSession2().execute(rrs);
                 }
+            } catch (Exception e) {
+                service.setTxInterrupt(e.toString());
+                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
             }
         });
     }

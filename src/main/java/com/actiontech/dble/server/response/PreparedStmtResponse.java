@@ -1,14 +1,15 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.PreparedOkPacket;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 import java.nio.ByteBuffer;
@@ -19,6 +20,7 @@ import java.nio.ByteBuffer;
 public final class PreparedStmtResponse {
     private PreparedStmtResponse() {
     }
+
     public static void response(PreparedStatement pStmt, ShardingService service) {
         byte packetId = 0;
 
@@ -57,8 +59,7 @@ public final class PreparedStmtResponse {
         }
 
         // send buffer
-        service.writeDirectly(buffer);
-        service.getConnectionSerializableLock().unLock();
+        service.writeDirectly(buffer, WriteFlags.QUERY_END);
     }
 
 }

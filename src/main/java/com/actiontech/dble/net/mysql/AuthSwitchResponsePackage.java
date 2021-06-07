@@ -45,7 +45,7 @@ public class AuthSwitchResponsePackage extends MySQLPacket {
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
         buffer.put(authPluginData);
-        connection.write(buffer);
+        connection.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
     @Override
@@ -60,5 +60,10 @@ public class AuthSwitchResponsePackage extends MySQLPacket {
 
     public void setAuthPluginData(byte[] authPluginData) {
         this.authPluginData = authPluginData;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

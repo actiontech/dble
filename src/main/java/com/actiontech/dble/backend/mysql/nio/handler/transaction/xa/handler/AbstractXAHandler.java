@@ -19,6 +19,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         if (logger.isDebugEnabled()) {
             logger.debug("receive ok from " + service);
         }
@@ -97,7 +98,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ((MySQLResponseService) service).syncAndExecute();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
@@ -114,7 +115,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void connectionClose(final AbstractService service, final String reason) {
+    public void connectionClose(@NotNull final AbstractService service, final String reason) {
         boolean[] result = decrementToZeroAndCheckNode((MySQLResponseService) service);
         boolean finished = result[0];
         boolean justRemoved = result[1];
@@ -213,18 +214,18 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         logger.warn("unexpected filed eof response in xa transaction");
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         logger.warn("unexpected row response in xa transaction");
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         logger.warn("unexpected row eof response in xa transaction");
     }
 }

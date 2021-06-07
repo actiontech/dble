@@ -13,6 +13,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Sets;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +166,8 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
-    public void connectionClose(AbstractService service, String reason) {
+    @Override
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         this.setFail("closed connection:" + reason + " con:" + service.toString());
         if (error == null) {
             error = "back connection closed ";

@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
@@ -21,14 +20,15 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.sql.SQLNonTransientException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,27 +41,28 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
     private NonBlockingSession session;
     private RouteResultset rrs;
     private volatile byte packetId;
-    private AtomicInteger viewNum;
+    private AtomicInteger viewNodeNum;
     private ViewMeta vm; //if only for replace from a no sharding view to a sharding view
 
-    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNum, ViewMeta vm) {
+    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNodeNum, ViewMeta vm) {
         this.session = session;
         this.rrs = rrs;
         this.packetId = (byte) session.getPacketId().get();
-        this.viewNum = new AtomicInteger(viewNum);
+        this.viewNodeNum = new AtomicInteger(viewNodeNum);
         this.vm = vm;
     }
 
     public void execute() throws Exception {
         DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
-        RouteResultsetNode node = rrs.getNodes()[0];
-        BackendConnection conn = session.getTarget(node);
-        if (session.tryExistsCon(conn, node)) {
-            innerExecute(conn, node);
-        } else {
-            // create new connection
-            ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
-            dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
+        for (RouteResultsetNode node : rrs.getNodes()) {
+            BackendConnection conn = session.getTarget(node);
+            if (session.tryExistsCon(conn, node)) {
+                innerExecute(conn, node);
+            } else {
+                // create new connection
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
+                dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), session.getShardingService().isAutocommit(), node, this, node);
+            }
         }
     }
 
@@ -94,7 +95,7 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
         DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with execution failure");
@@ -105,13 +106,16 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
     }
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + service);
+        }
         if (!executeResponse) {
             return;
         }
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
-        if (viewNum.decrementAndGet() == 0) {
+        if (viewNodeNum.decrementAndGet() == 0) {
             if (vm != null) { // replace a new sharding view
                 try {
                     vm.addMeta(true);
@@ -137,13 +141,13 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
         }
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, MySQLResponseService service, boolean syncFinished) {
+    private void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
         ShardingService shardingService = session.getShardingService();
         UserName errUser = shardingService.getUser();
         String errHost = shardingService.getConnection().getHost();
         int errPort = shardingService.getConnection().getLocalPort();
         String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        if (service != null) {
+        if (service != null && !service.isFakeClosed()) {
             LOGGER.info("execute sql err :" + errMsg + " con:" + service +
                     " frontend host:" + errHost + "/" + errPort + "/" + errUser);
             if (syncFinished) {
@@ -154,30 +158,30 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
             }
         }
 
-        if (viewNum.decrementAndGet() == 0) {
+        if (viewNodeNum.decrementAndGet() == 0) {
             shardingService.setTxInterrupt(errMsg);
             errPkg.write(shardingService.getConnection());
         }
     }
 
     @Override
-    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, AbstractService service) {
+    public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         //not happen
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         //not happen
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         //not happen
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_CLOSE);
         DDLTraceManager.getInstance().endDDL(session.getShardingService(), reason);

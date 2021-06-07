@@ -41,7 +41,7 @@ public class HintShardingNodeHandler implements HintHandler {
         }
         ShardingNode shardingNode = DbleServer.getInstance().getConfig().getShardingNodes().get(hintSQLValue);
         if (shardingNode != null) {
-            rrs = RouterUtil.routeToSingleNode(rrs, shardingNode.getName());
+            rrs = RouterUtil.routeToSingleNode(rrs, shardingNode.getName(), null);
         } else {
             String msg = "can't find hint shardingnode:" + hintSQLValue;
             LOGGER.info(msg);

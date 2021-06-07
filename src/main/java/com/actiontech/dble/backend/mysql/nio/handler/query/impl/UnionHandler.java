@@ -14,6 +14,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +55,9 @@ public class UnionHandler extends BaseDMLHandler {
         return HandlerType.UNION;
     }
 
+    @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             session.setHandlerStart(this);
@@ -134,14 +136,16 @@ public class UnionHandler extends BaseDMLHandler {
     /**
      * need wait for all field merged
      */
-    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    @Override
+    public boolean rowResponse(byte[] rowNull, final RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get())
             return true;
         nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
         return false;
     }
 
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    @Override
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get())
             return;
         if (nodeCount.decrementAndGet() == 0) {

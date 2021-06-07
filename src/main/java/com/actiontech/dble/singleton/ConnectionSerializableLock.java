@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,19 +21,22 @@ public final class ConnectionSerializableLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionSerializableLock.class);
     private boolean working = false;
     private final long frontId;
+    private long index = -1;
     private final List<Runnable> callbacks = new ArrayList<>();
+    private final FrontendService frontendService;
 
 
-    public ConnectionSerializableLock(long frontId) {
+    public ConnectionSerializableLock(long frontId, FrontendService frontendService) {
         this.frontId = frontId;
-
+        this.frontendService = frontendService;
     }
 
     public synchronized boolean tryLock() {
 
         if (!working) {
             working = true;
-            LOGGER.debug("locked success. connection id " + frontId);
+            index = frontendService.getConsumedTaskId();
+            LOGGER.debug("locked success. connection id : {} , index : {}", frontId, index);
             return true;
         }
         return false;
@@ -53,13 +57,14 @@ public final class ConnectionSerializableLock {
     }
 
     public synchronized void unLock() {
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(" unlock connection id " + frontId);
-
+        if (working) {
+            LOGGER.debug(" unlock success. connection id : {} , index : {}", frontId, index);
         }
         if (!working) {
-            LOGGER.warn("find useless unlock.");
+            //locked before
+            if (frontendService.getConsumedTaskId() == index) {
+                LOGGER.warn("find useless unlock. connection id : {} , index : {}", frontId, index);
+            }
         }
         working = false;
 
@@ -77,20 +82,5 @@ public final class ConnectionSerializableLock {
 
     }
 
-    private String printTrace() {
-        StackTraceElement[] st = Thread.currentThread().getStackTrace();
-        if (st == null) {
-            return "";
-        }
-        StringBuilder sbf = new StringBuilder();
-        for (StackTraceElement e : st) {
-            if (sbf.length() > 0) {
-                sbf.append(" <- ");
-                sbf.append(System.getProperty("line.separator"));
-            }
-            sbf.append(java.text.MessageFormat.format("{0}.{1}() {2}", e.getClassName(), e.getMethodName(), e.getLineNumber()));
-        }
-        sbf.append("==============================================");
-        return sbf.toString();
-    }
+
 }

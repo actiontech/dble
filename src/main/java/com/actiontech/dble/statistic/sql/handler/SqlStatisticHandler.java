@@ -103,7 +103,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         private final List<SQLRecord> sqls;
 
         TxRecord(StatisticFrontendSqlEntry frontendSqlEntry) {
-            this.startTime = frontendSqlEntry.getStartTime();
+            this.startTime = frontendSqlEntry.getStartTimeMs();
             this.info = frontendSqlEntry.getFrontend();
             this.duration = frontendSqlEntry.getDuration();
             this.sqls = new ArrayList<>(1);
@@ -111,7 +111,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         }
 
         TxRecord(StatisticTxEntry txEntry) {
-            this.startTime = txEntry.getStartTime();
+            this.startTime = txEntry.getStartTimeMs();
             this.info = txEntry.getFrontend();
             this.duration = txEntry.getDuration();
             final List<StatisticFrontendSqlEntry> entryList = txEntry.getEntryList();
@@ -182,7 +182,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             this.user = frontendInfo.getUser();
             this.entry = frontendInfo.getUserId();
             // time
-            this.startTime = entry.getStartTime();
+            this.startTime = entry.getStartTimeMs();
             this.duration = entry.getDuration();
             // rows
             this.rows = entry.getRows();

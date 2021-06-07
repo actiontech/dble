@@ -24,4 +24,9 @@ public class ResetConnectionPacket extends MySQLPacket {
     protected String getPacketInfo() {
         return "MySQL Reset Connection Packet";
     }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
+    }
 }

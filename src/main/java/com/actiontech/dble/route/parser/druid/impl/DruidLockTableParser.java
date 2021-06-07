@@ -23,6 +23,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -39,12 +40,14 @@ public class DruidLockTableParser extends DruidImplicitCommitParser {
             throws SQLException {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, Set<String>> shardingNodeToLocks = new HashMap<>();
+        Set<String> tableSet = Sets.newHashSet();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schema == null ? null : schema.getName(), item.getTableSource());
             String table = schemaInfo.getTable();
             String schemaName = schemaInfo.getSchema();
             SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
             BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
+            tableSet.add(schemaName + "." + table);
             if (tableConfig != null) {
                 handleConfigTable(shardingNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
@@ -66,12 +69,12 @@ public class DruidLockTableParser extends DruidImplicitCommitParser {
         }
         List<RouteResultsetNode> nodes = new ArrayList<>();
         for (Map.Entry<String, Set<String>> entry : shardingNodeToLocks.entrySet()) {
-            RouteResultsetNode node = new RouteResultsetNode(entry.getKey(), ServerParse.LOCK, " LOCK TABLES " + StringUtil.join(entry.getValue(), ","));
+            RouteResultsetNode node = new RouteResultsetNode(entry.getKey(), ServerParse.LOCK, " LOCK TABLES " + StringUtil.join(entry.getValue(), ","), tableSet);
             nodes.add(node);
             lockedNodes.remove(node);
         }
         for (RouteResultsetNode toUnlockedNode : lockedNodes) {
-            RouteResultsetNode node = new RouteResultsetNode(toUnlockedNode.getName(), ServerParse.UNLOCK, " UNLOCK TABLES ");
+            RouteResultsetNode node = new RouteResultsetNode(toUnlockedNode.getName(), ServerParse.UNLOCK, " UNLOCK TABLES ", tableSet);
             nodes.add(node);
         }
         rrs.setNodes(nodes.toArray(new RouteResultsetNode[nodes.size()]));

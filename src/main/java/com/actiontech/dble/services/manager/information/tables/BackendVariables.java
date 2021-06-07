@@ -46,21 +46,19 @@ public class BackendVariables extends ManagerBaseTable {
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> rows = new ArrayList<>(100);
         for (IOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
-            p.getBackends().
-                    values().
-                    forEach(bc -> {
-                        AbstractService service = bc.getService();
-                        if (service != null) {
-                            for (MysqlVariable var : service.getAllVars()) {
-                                LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
-                                row.put(COLUMN_BACKED_ID, bc.getId() + "");
-                                row.put(COLUMN_VAR_NAME, var.getName());
-                                row.put(COLUMN_VAR_VALUE, var.getValue());
-                                row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");
-                                rows.add(row);
-                            }
-                        }
-                    });
+            p.getBackends().values().forEach(bc -> {
+                AbstractService service = bc.getService();
+                if (!service.isFakeClosed()) {
+                    for (MysqlVariable var : service.getAllVars()) {
+                        LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
+                        row.put(COLUMN_BACKED_ID, bc.getId() + "");
+                        row.put(COLUMN_VAR_NAME, var.getName());
+                        row.put(COLUMN_VAR_VALUE, var.getValue());
+                        row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");
+                        rows.add(row);
+                    }
+                }
+            });
         }
 
         return rows;

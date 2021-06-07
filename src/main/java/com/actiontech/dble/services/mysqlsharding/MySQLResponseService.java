@@ -11,6 +11,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.response.*;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -128,7 +129,7 @@ public class MySQLResponseService extends BackendService {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }
 
-        writeDirectly(originPacket);
+        write(originPacket, WriteFlags.QUERY_END);
     }
 
     //-------------------------------------- for sharding ----------------------------------------------------
@@ -424,6 +425,7 @@ public class MySQLResponseService extends BackendService {
         COMMIT.write(this);
     }
 
+    @Override
     public BackendConnection getConnection() {
         return connection;
     }

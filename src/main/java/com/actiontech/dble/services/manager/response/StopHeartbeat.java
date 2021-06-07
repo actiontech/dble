@@ -7,10 +7,10 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParseStop;
 import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ public final class StopHeartbeat {
             for (String key : keys.getKey()) {
                 PhysicalDbGroup dn = dns.get(key);
                 if (dn != null) {
-                    dn.getWriteDbInstance().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
+                    dn.getWriteDbInstance().getHeartbeat().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
                     ++count;
                     StringBuilder s = new StringBuilder();
                     s.append(dn.getGroupName()).append(" stop heartbeat '");

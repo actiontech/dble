@@ -117,7 +117,7 @@ public final class TraceManager {
 
     public static TraceObject crossThread(AbstractService service, String traceMessage, AbstractService fService) {
         if (INSTANCE.tracer != null) {
-            if (fService != null) {
+            if (fService != null && !fService.isFakeClosed()) {
                 TraceObject fSpan = popServiceSpan(fService, false);
                 TraceObject span = spanCreateActive(traceMessage, true, fSpan, service);
                 List<TraceObject> spanList = new ArrayList<>();

@@ -13,6 +13,9 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nullable;
 
 /**
  * Created by szf on 2019/12/3.
@@ -43,7 +46,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
         DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with execution failure");
@@ -51,7 +54,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_CLOSE);
         DDLTraceManager.getInstance().endDDL(session.getShardingService(), reason);
@@ -60,7 +63,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
 
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
@@ -109,8 +112,8 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     }
 
     @Override
-    protected void backConnectionErr(ErrorPacket errPkg, MySQLResponseService service, boolean syncFinished) {
-        if (service != null) {
+    protected void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
+        if (service != null && !service.isFakeClosed()) {
             if (service.getConnection().isClosed()) {
                 if (service.getAttachment() != null) {
                     RouteResultsetNode rNode = (RouteResultsetNode) service.getAttachment();

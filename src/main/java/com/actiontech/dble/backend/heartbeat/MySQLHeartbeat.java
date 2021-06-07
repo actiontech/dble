@@ -5,12 +5,15 @@
  */
 package com.actiontech.dble.backend.heartbeat;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.statistic.DbInstanceSyncRecorder;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
+import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,6 +61,7 @@ public class MySQLHeartbeat {
     private volatile ScheduledFuture scheduledFuture;
     private AtomicLong errorTimeInLast5Min = new AtomicLong();
     private int errorTimeInLast5MinCount = 0;
+    private volatile long heartbeatRecoveryTime;
 
     public MySQLHeartbeat(PhysicalDbInstance dbInstance) {
         this.source = dbInstance;
@@ -74,10 +79,6 @@ public class MySQLHeartbeat {
         return source;
     }
 
-    public void setScheduledFuture(ScheduledFuture scheduledFuture) {
-        this.scheduledFuture = scheduledFuture;
-    }
-
     public String getLastActiveTime() {
         if (detector == null) {
             return null;
@@ -87,8 +88,16 @@ public class MySQLHeartbeat {
         return sdf.format(new Date(t));
     }
 
-    public void start() {
-        isStop = false;
+    public void start(long heartbeatPeriodMillis) {
+        this.isStop = false;
+        this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                    return;
+                }
+                heartbeat();
+            }
+        }, 0L, heartbeatPeriodMillis, TimeUnit.MILLISECONDS);
     }
 
     public void stop(String reason) {
@@ -213,7 +222,7 @@ public class MySQLHeartbeat {
         }
     }
 
-    public void recordErrorCount() {
+    private void recordErrorCount() {
         long currentTimeMillis = System.currentTimeMillis();
         if (errorTimeInLast5Min.intValue() == 0) {
             errorTimeInLast5Min.set(currentTimeMillis);
@@ -222,7 +231,6 @@ public class MySQLHeartbeat {
             errorTimeInLast5MinCount++;
         }
     }
-
 
     private void setTimeout() {
         LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
@@ -297,4 +305,13 @@ public class MySQLHeartbeat {
     public int getErrorTimeInLast5MinCount() {
         return errorTimeInLast5MinCount;
     }
+
+    public long getHeartbeatRecoveryTime() {
+        return heartbeatRecoveryTime;
+    }
+
+    public void setHeartbeatRecoveryTime(long heartbeatRecoveryTime) {
+        this.heartbeatRecoveryTime = heartbeatRecoveryTime;
+    }
+
 }

@@ -47,21 +47,19 @@ public class SessionVariables extends ManagerBaseTable {
     protected List<LinkedHashMap<String, String>> getRows() {
         List<LinkedHashMap<String, String>> rows = new ArrayList<>(100);
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
-            p.getFrontends().
-                    values().
-                    forEach(fc -> {
-                        AbstractService service = fc.getService();
-                        if (service != null) {
-                            for (MysqlVariable var : ((VariablesService) fc.getService()).getAllVars()) {
-                                LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
-                                row.put(COLUMN_FRONT_ID, fc.getId() + "");
-                                row.put(COLUMN_VAR_NAME, var.getName());
-                                row.put(COLUMN_VAR_VALUE, var.getValue());
-                                row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");
-                                rows.add(row);
-                            }
-                        }
-                    });
+            p.getFrontends().values().forEach(fc -> {
+                AbstractService service = fc.getService();
+                if (!service.isFakeClosed()) {
+                    for (MysqlVariable var : ((VariablesService) fc.getService()).getAllVars()) {
+                        LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
+                        row.put(COLUMN_FRONT_ID, fc.getId() + "");
+                        row.put(COLUMN_VAR_NAME, var.getName());
+                        row.put(COLUMN_VAR_VALUE, var.getValue());
+                        row.put(COLUMN_VAR_TYPE, var.getType() == VariableType.SYSTEM_VARIABLES ? "sys" : "user");
+                        rows.add(row);
+                    }
+                }
+            });
         }
 
         return rows;

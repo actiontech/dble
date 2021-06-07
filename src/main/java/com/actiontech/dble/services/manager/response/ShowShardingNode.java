@@ -14,9 +14,9 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.PairUtil;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -152,7 +152,7 @@ public final class ShowShardingNode {
             row.add(IntegerUtil.toBytes(idle));
             row.add(IntegerUtil.toBytes(ds.getConfig().getMaxCon()));
             row.add(LongUtil.toBytes(0));
-            long recoveryTime = ds.getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
+            long recoveryTime = ds.getHeartbeat().getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
             row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));
             return row;
         } else {

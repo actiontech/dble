@@ -22,6 +22,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
 import com.actiontech.dble.singleton.BufferPoolManager;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class TempTableHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get()) {
             return;
         }
@@ -73,7 +74,7 @@ public class TempTableHandler extends BaseDMLHandler {
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
-                String charSet = service != null ? service.getCharset().getResults() : session.getSource().getService().getCharset().getResults();
+                String charSet = !service.isFakeClosed() ? service.getCharset().getResults() : session.getSource().getService().getCharset().getResults();
                 tempTable.setCharset(charSet);
                 tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), BufferPoolManager.getBufferPool(),
                         CharsetUtil.getJavaCharset(charSet)).setMemSizeController(session.getOtherBufferMC()));
@@ -94,7 +95,7 @@ public class TempTableHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             if (terminate.get()) {
@@ -120,7 +121,7 @@ public class TempTableHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             // callBack after terminated

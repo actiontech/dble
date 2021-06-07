@@ -31,7 +31,7 @@ public final class ShowVariables {
 
         RouteResultset rrs = new RouteResultset(stmt, ServerParse.SHOW);
         try {
-            RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
+            RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode(), null);
             ShowVariablesHandler handler = new ShowVariablesHandler(rrs, shardingService.getSession2());
             try {
                 handler.execute();

@@ -23,6 +23,7 @@ import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -56,7 +57,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         ShardingService shardingService = session.getShardingService();
         PackageBufINf bufInf;
         lock.lock();
@@ -94,7 +95,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         RowDataPacket rowDataPacket = new RowDataPacket(1);
         rowDataPacket.read(row);
         String table = StringUtil.decode(rowDataPacket.fieldValues.get(0), session.getShardingService().getCharset().getResults());

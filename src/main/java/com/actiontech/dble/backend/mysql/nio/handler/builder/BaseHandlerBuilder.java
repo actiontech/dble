@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public abstract class BaseHandlerBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseHandlerBuilder.class);
@@ -177,7 +178,8 @@ public abstract class BaseHandlerBuilder {
             sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
         }
         String randomShardingNode = getRandomNode(node.getNoshardNode());
-        RouteResultsetNode rrsNode = new RouteResultsetNode(randomShardingNode, ServerParse.SELECT, sql);
+        Set<String> tableSet = mapTableToSimple.entrySet().stream().map(table -> table.getKey().replace("`", "")).collect(Collectors.toSet());
+        RouteResultsetNode rrsNode = new RouteResultsetNode(randomShardingNode, ServerParse.SELECT, sql, tableSet);
         RouteResultsetNode[] rrss = new RouteResultsetNode[]{rrsNode};
         hBuilder.checkRRSs(rrss);
         if (session.getTargetCount() > 0 && session.getTarget(rrss[0]) == null) {

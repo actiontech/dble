@@ -248,4 +248,9 @@ public class FieldPacket extends MySQLPacket {
     public void setDefaultVal(byte[] defaultVal) {
         this.defaultVal = defaultVal;
     }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return false;
+    }
 }

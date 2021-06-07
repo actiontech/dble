@@ -1,13 +1,12 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.StreamUtil;
-
 import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ public class Reply323Packet extends MySQLPacket {
         } else {
             BufferUtil.writeWithNull(buffer, seed);
         }
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
     @Override
@@ -60,5 +59,10 @@ public class Reply323Packet extends MySQLPacket {
 
     public void setSeed(byte[] seed) {
         this.seed = seed;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

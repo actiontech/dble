@@ -99,4 +99,9 @@ public class ResultSetHeaderPacket extends MySQLPacket {
     public void setExtra(long extra) {
         this.extra = extra;
     }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return false;
+    }
 }

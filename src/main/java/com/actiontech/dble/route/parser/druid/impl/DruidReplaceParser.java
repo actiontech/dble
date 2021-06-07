@@ -33,6 +33,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -78,7 +79,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             String sql = rrs.getStatement();
             sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             rrs.setStatement(sql);
-            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
+            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
             rrs.setFinishedRoute(true);
             return schema;
         } else if (tc instanceof ChildTableConfig) { // insert childTable will finished router while parser
@@ -296,7 +297,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
-            fetchChildTableToRoute(tc, joinColumnVal, service, schema, sql, rrs, isExplain);
+            fetchChildTableToRoute(tc, joinColumnVal, service, schema, sql, rrs, isExplain, tableName);
         }
     }
 
@@ -367,7 +368,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             replace.getValuesList().clear();
             replace.getValuesList().addAll(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getShardingNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema()), Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
             count++;
         }
         rrs.setNodes(nodes);
@@ -400,7 +401,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(tableConfig.getShardingNodes().get(nodeIndex),
-                rrs.getSqlType(), RouterUtil.removeSchema(statementToString(replaceStatement), schemaInfo.getSchema()));
+                rrs.getSqlType(), RouterUtil.removeSchema(statementToString(replaceStatement), schemaInfo.getSchema()), Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
 
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);

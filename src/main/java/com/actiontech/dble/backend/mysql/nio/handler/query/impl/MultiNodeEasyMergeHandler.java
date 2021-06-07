@@ -12,6 +12,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service.toString() + "'s field is reached.");
         }
@@ -91,14 +92,14 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get())
             return true;
         return nextHandler.rowResponse(null, rowPacket, this.isLeft, service);
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service.toString() + " 's rowEof is reached.");
         }

@@ -56,7 +56,7 @@ public class AuthSwitchRequestPackage extends MySQLPacket {
         buffer.put(STATUS);
         BufferUtil.writeWithNull(buffer, authPluginName);
         BufferUtil.writeWithNull(buffer, authPluginData);
-        c.write(buffer);
+        c.getService().writeDirectly(buffer, getLastWriteFlag());
     }
 
     @Override
@@ -78,5 +78,10 @@ public class AuthSwitchRequestPackage extends MySQLPacket {
 
     public byte[] getAuthPluginData() {
         return authPluginData;
+    }
+
+    @Override
+    public boolean isEndOfQuery() {
+        return true;
     }
 }

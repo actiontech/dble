@@ -20,6 +20,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.TraceManager;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,14 +91,14 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void okResponse(byte[] ok, AbstractService service) {
+    public void okResponse(byte[] ok, @NotNull AbstractService service) {
         LOGGER.debug("receive ok packet for sync context, service {}", service);
         ((MySQLResponseService) service).syncAndExecute();
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         serverSession.setHandlerEnd(this);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service.toString() + "'s field is reached.");
@@ -119,7 +120,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService conn) {
         if (terminate.get())
             return true;
         RowDataPacket rp = new RowDataPacket(fieldCounts);
@@ -129,7 +130,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service.toString() + " 's rowEof is reached.");
         }
@@ -161,7 +162,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         if (terminate.get())
             return;
         LOGGER.warn(service.toString() + "|connectionClose()|" + reason);
@@ -171,7 +172,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
-    public void errorResponse(byte[] err, AbstractService service) {
+    public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg;

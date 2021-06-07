@@ -16,6 +16,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitH
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandlerManager;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
@@ -53,6 +54,7 @@ import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -533,6 +535,7 @@ public class NonBlockingSession extends Session {
 
                 setTraceSimpleHandler((ResponseHandler) executableHandler);
                 readyToDeliver();
+                ClusterDelayProvider.delayDdLToDeliver();
                 executableHandler.execute();
                 discard = true;
             } else {
@@ -604,7 +607,14 @@ public class NonBlockingSession extends Session {
         try {
             String nodeName = builder.build();
             if (!StringUtil.isBlank(nodeName)) {
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement())};
+                Set<String> tableSet = Sets.newHashSet();
+                for (RouteResultsetNode routeResultsetNode : builder.getRrsNodes()) {
+                    Set<String> set = routeResultsetNode.getTableSet();
+                    if (null != set) {
+                        tableSet.addAll(set);
+                    }
+                }
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement(), tableSet)};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select

@@ -37,8 +37,6 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service + (sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql));
         }
-        String finalSql = sql;
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "handle-query-sql");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
@@ -57,6 +55,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             if (this.service.isMultiStatementAllow() && this.service.getSession2().generalNextStatement(sql)) {
                 sql = sql.substring(0, ParseUtil.findNextBreak(sql));
             }
+            String finalSql = sql;
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));
             this.service.setExecuteSql(sql);
             ShardingServerParse serverParse = ServerParseFactory.getShardingParser();
             int rs = serverParse.parse(sql);

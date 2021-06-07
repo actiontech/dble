@@ -1,15 +1,18 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.WriteFlag;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.HashMap;
 
 /**
@@ -202,7 +205,19 @@ public abstract class MySQLPacket {
         connection.getService().write(this);
     }
 
+    //todo
     public abstract void bufferWrite(AbstractConnection connection);
+
+
+    public final EnumSet<WriteFlag> getLastWriteFlag() {
+        if (isEndOfSession()) {
+            return WriteFlags.SESSION_END;
+        } else if (isEndOfQuery()) {
+            return WriteFlags.QUERY_END;
+        } else {
+            return WriteFlags.PART;
+        }
+    }
 
     /**
      * calcPacketSize,not contains header size
@@ -233,9 +248,7 @@ public abstract class MySQLPacket {
         this.packetId = (byte) packetID;
     }
 
-    public boolean isEndOfQuery() {
-        return false;
-    }
+    public abstract boolean isEndOfQuery();
 
     public boolean isEndOfSession() {
         return false;

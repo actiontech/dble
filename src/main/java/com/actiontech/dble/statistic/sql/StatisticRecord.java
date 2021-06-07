@@ -1,5 +1,6 @@
 package com.actiontech.dble.statistic.sql;
 
+import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeDdlPrepareHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.BusinessService;
@@ -82,6 +83,9 @@ public class StatisticRecord {
     protected volatile boolean isStartFsql = false;
     protected volatile long txid;
 
+    public void onFrontendMultiSqlStart() {
+    }
+
     public void onFrontendSqlStart() {
         isStartFsql = true;
         frontendSqlEntry = new StatisticFrontendSqlEntry(frontendInfo, System.nanoTime());
@@ -95,7 +99,7 @@ public class StatisticRecord {
             if (sql == null || sql.toLowerCase().startsWith("explain")) {
                 onFrontendSqlClose();
             } else {
-                frontendSqlEntry.setSql(sql);
+                frontendSqlEntry.setSql(sql.trim());
                 frontendSqlEntry.setSchema(schema);
                 if (isStartTx && txEntry != null) {
                     frontendSqlEntry.setTxId(txid);
@@ -150,7 +154,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlFirstEnd(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && frontendSqlEntry.getBackendSqlEntry(key).getFirstEndTime() == 0L) {
@@ -160,7 +164,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlSetRows(MySQLResponseService service, long rows) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
@@ -171,7 +175,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlAddRows(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
@@ -182,7 +186,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlEnd(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
@@ -226,6 +230,14 @@ public class StatisticRecord {
     protected void pushXa(StatisticTxEntry xaEntry) {
         StatisticManager.getInstance().push(xaEntry);
     }
+
+    protected boolean isPassSql(MySQLResponseService service) {
+        // Prepare SQL('select 1') issued by executing DDL statements does not participate in the statistics
+        if (service.getResponseHandler() instanceof MultiNodeDdlPrepareHandler)
+            return false;
+        return true;
+    }
+
 
     public StatisticRecord(BusinessService service) {
         this.frontendInfo = new FrontendInfo(service.getUserConfig().getId(),

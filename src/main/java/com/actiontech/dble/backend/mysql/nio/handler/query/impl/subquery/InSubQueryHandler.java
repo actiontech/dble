@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
@@ -15,9 +16,9 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.plan.node.ManagerTableNode;
 import com.actiontech.dble.plan.node.PlanNode;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +40,7 @@ public class InSubQueryHandler extends SubQueryHandler {
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
-                                 byte[] eofNull, boolean isLeft, AbstractService service) {
+                                 byte[] eofNull, boolean isLeft, @NotNull AbstractService service) {
         session.setHandlerStart(this);
         if (terminate.get()) {
             return;
@@ -64,7 +65,7 @@ public class InSubQueryHandler extends SubQueryHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
             if (terminate.get()) {

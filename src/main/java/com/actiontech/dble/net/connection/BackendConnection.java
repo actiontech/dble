@@ -9,6 +9,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.QuitPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -54,7 +55,7 @@ public class BackendConnection extends PooledConnection {
             this.getBackendService().setResponseHandler(null);
             this.getService().cleanup();
         }
-        this.setService(null);
+        this.getService().setFakeClosed(true);
         this.close(reason);
     }
 
@@ -86,9 +87,9 @@ public class BackendConnection extends PooledConnection {
     @Override
     public synchronized void close(final String reason) {
         LOGGER.info("connection id " + threadId + " close for reason " + reason);
-        boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
+        boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
-            if ((isAuthed || this.getService() == null) && channel.isOpen() && closeReason == null) {
+            if ((isAuthed || this.getService().isFakeClosed()) && channel.isOpen() && closeReason == null) {
                 try {
                     closeGracefullyPassive(reason);
                 } catch (Throwable e) {
@@ -117,7 +118,7 @@ public class BackendConnection extends PooledConnection {
     @Override
     public synchronized void closeImmediately(final String reason) {
         LOGGER.info("connection id " + threadId + " close for reason " + reason);
-        boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
+        boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
             super.closeImmediately(reason);
             if (isAuthed) {
@@ -145,7 +146,7 @@ public class BackendConnection extends PooledConnection {
 
     private void closeGracefullyPassive(String reason) {
         this.closeReason = reason;
-        writeClose(writeToBuffer(QuitPacket.QUIT, allocate()));
+        writeClose(getService().writeToBuffer(QuitPacket.QUIT, allocate()));
     }
 
     public void writeClose(ByteBuffer buffer) {
@@ -163,7 +164,8 @@ public class BackendConnection extends PooledConnection {
     }
 
     public MySQLResponseService getBackendService() {
-        return getService() instanceof MySQLResponseService ? (MySQLResponseService) getService() : null;
+        final AbstractService service = getService();
+        return service instanceof MySQLResponseService ? (MySQLResponseService) service : null;
     }
 
     public ReadTimeStatusInstance getInstance() {

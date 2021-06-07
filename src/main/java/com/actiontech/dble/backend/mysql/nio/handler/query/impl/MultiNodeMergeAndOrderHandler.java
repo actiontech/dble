@@ -19,6 +19,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,7 +90,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service.toString() + "'s field is reached.");
         }
@@ -115,7 +116,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         if (terminate.get() || noNeedRows)
             return true;
 
@@ -133,7 +134,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public void rowEofResponse(byte[] data, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         AbstractService responseService = (MySQLResponseService) service;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(responseService.toString() + " 's rowEof is reached.");

@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.parser.PrepareChangeVisitor;
 import com.actiontech.dble.server.parser.PrepareStatementParseInfo;
@@ -123,7 +124,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 LOGGER.debug("reset prepare sql : " + pStmtForId.get(psId));
             }
             pStmt.resetLongData();
-            service.writeDirectly(OkPacket.OK, true);
+            service.write(OkPacket.OK, WriteFlags.QUERY_END);
         } else {
             service.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId));
         }
@@ -257,7 +258,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 ok.setStatus(statusFlag);
                 ok.setWarningCount(0);
                 ok.write(buffer, service, true);
-                service.writeDirectly(buffer);
+                service.writeDirectly(buffer, WriteFlags.QUERY_END);
 
 
             } finally {

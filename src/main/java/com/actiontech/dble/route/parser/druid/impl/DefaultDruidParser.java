@@ -186,7 +186,7 @@ public class DefaultDruidParser implements DruidParser {
         if (StringUtil.isBlank(table)) {
             tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
         } else {
-            tableSet = Sets.newHashSet(schema.getName() + "." + table);
+            tableSet = Sets.newHashSet(null == schema ? "" : schema.getName() + "." + table);
         }
         RouterUtil.routeToSingleNode(rrs, shardingNodeTarget, tableSet);
         rrs.setFinishedRoute(true);

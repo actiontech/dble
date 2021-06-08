@@ -6,11 +6,10 @@
 package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.route.parser.util.Pair;
+import com.alibaba.druid.stat.TableStat;
+import com.google.common.collect.Sets;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * druid parser result
@@ -27,6 +26,8 @@ public class DruidShardingParseInfo {
      * key table alias, value table real name;
      */
     private Map<String, String> tableAliasMap = new LinkedHashMap<>();
+
+    private Set<TableStat.Relationship> relationship = Sets.newHashSet();
 
     public Map<String, String> getTableAliasMap() {
         return tableAliasMap;
@@ -64,4 +65,11 @@ public class DruidShardingParseInfo {
         routeCalculateUnits.clear();
     }
 
+    public Set<TableStat.Relationship> getRelationship() {
+        return relationship;
+    }
+
+    public void setRelationship(Set<TableStat.Relationship> relationship) {
+        this.relationship = relationship;
+    }
 }

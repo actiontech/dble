@@ -18,6 +18,7 @@ import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.stat.TableStat;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +88,44 @@ public final class ConditionUtil {
             }
         }
     }
+
+    public static Set<TableStat.Relationship> getUseFulRelationship(Set<TableStat.Relationship> relationshipSet, Map<String, String> tableAliasMap, String defaultSchema) {
+        Set<TableStat.Relationship> newRelationshipSet = Sets.newHashSet();
+        relationshipSet.forEach(relationship -> {
+            TableStat.Column newLeftColumn = genNewColumn(relationship.getLeft(), tableAliasMap, defaultSchema);
+            TableStat.Column newRightColumn = genNewColumn(relationship.getRight(), tableAliasMap, defaultSchema);
+            newRelationshipSet.add(new TableStat.Relationship(newLeftColumn, newRightColumn, relationship.getOperator()));
+        });
+        return newRelationshipSet;
+
+    }
+
+    private static TableStat.Column genNewColumn(TableStat.Column column, Map<String, String> tableAliasMap, String defaultSchema) {
+        Pair<String, String> table = getTableInfoFromColumn(column, tableAliasMap, defaultSchema);
+        if (table == null) return null;
+
+        String schemaName = table.getKey();
+        if (schemaName == null) {
+            return null;
+        }
+        String tableName = table.getValue();
+        String tableFullName = schemaName + "." + tableName;
+        return new TableStat.Column(tableFullName, column.getName());
+    }
+
+    private static Pair<String, String> getTableInfoFromColumn(TableStat.Column column, Map<String, String> tableAliasMap, String defaultSchema) {
+        String tableFullName = column.getTable();
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tableFullName = tableFullName.toLowerCase();
+        }
+        if (tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
+            return null;
+        }
+
+        Pair<String, String> table = getTableInfo(tableAliasMap, tableFullName, defaultSchema);
+        return table;
+    }
+
 
     private static TableStat.Condition getUsefulCondition(TableStat.Condition condition, Map<String, String> tableAliasMap, String defaultSchema) {
         Pair<String, String> table = getTrueTableName(condition, tableAliasMap, defaultSchema);

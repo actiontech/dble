@@ -80,6 +80,8 @@ public class DefaultDruidParser implements DruidParser {
         }
         Map<String, String> tableAliasMap = getTableAliasMap(schemaName, visitor.getAliasMap());
         ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schemaName));
+        ctx.setRelationship(ConditionUtil.getUseFulRelationship(visitor.getRelationships(), tableAliasMap, schemaName));
+
 
         return schemaConfig;
     }

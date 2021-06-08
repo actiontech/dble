@@ -39,6 +39,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.stat.TableStat;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -532,10 +533,11 @@ public final class RouterUtil {
     /**
      * DBLE0REQ-504
      *
+     * @param ctx
      * @param selectStmt
      * @return
      */
-    public static boolean canMergeJoin(SQLSelectStatement selectStmt) {
+    public static boolean canMergeJoin(DruidShardingParseInfo ctx, SQLSelectStatement selectStmt) {
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             //check the select into sql is not supported
@@ -543,7 +545,13 @@ public final class RouterUtil {
 
             //three types of select route according to the from item in select sql
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
-            return isInnerJoin(mysqlFrom);
+            boolean isShardingRelationship = true;
+            for (TableStat.Relationship relationship : ctx.getRelationship()) {
+                boolean leftFlag = isShardingColumn(relationship.getLeft());
+                boolean rightFlag = isShardingColumn(relationship.getRight());
+                isShardingRelationship = isShardingRelationship && leftFlag && rightFlag;
+            }
+            return isInnerJoin(mysqlFrom) && isShardingRelationship;
         }
         return false;
     }
@@ -556,11 +564,38 @@ public final class RouterUtil {
             SQLTableSource right = joinTableSource.getRight();
 
             SQLJoinTableSource.JoinType joinType = joinTableSource.getJoinType();
+            //on condition
             canMerge = isInnerJoin(left) && isInnerJoin(right) && (joinType.equals(SQLJoinTableSource.JoinType.INNER_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.JOIN) || joinType.equals(SQLJoinTableSource.JoinType.CROSS_JOIN) || joinType.equals(SQLJoinTableSource.JoinType.STRAIGHT_JOIN));
         } else {
             canMerge = true;
         }
         return canMerge;
+    }
+
+    private static boolean isShardingColumn(TableStat.Column column) {
+        String columnName = column.getName();
+        boolean isSharding = false;
+        String table = column.getTable();
+        if (null == table) {
+            return false;
+        }
+        String[] split = table.split("\\.");
+        if (split.length == 2) {
+            String schemaName = split[0];
+            String tableName = split[1];
+            SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig instanceof ShardingTableConfig) {
+                ShardingTableConfig shardingTableConfig = (ShardingTableConfig) tableConfig;
+                String partitionCol = shardingTableConfig.getShardingColumn();
+                isSharding = StringUtil.equalsIgnoreCase(partitionCol, columnName);
+            } else if (tableConfig instanceof ChildTableConfig) {
+                ChildTableConfig childTableConfig = (ChildTableConfig) tableConfig;
+                String joinColumn = childTableConfig.getJoinColumn();
+                isSharding = StringUtil.equalsIgnoreCase(joinColumn, columnName);
+            }
+        }
+        return isSharding;
     }
 
     public static String tryRouteTablesToOneNodeForComplex(
@@ -571,7 +606,7 @@ public final class RouterUtil {
         Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
         int unrepeatedTableSize = ctx.getTables().size();
         extractSchema(ctx, schemaList);
-        if (unrepeatedTableSize != tableSize && (!canMergeJoin(selectStmt))) {
+        if (unrepeatedTableSize != tableSize && (!canMergeJoin(ctx, selectStmt))) {
             //DBLE0REQ-504
             return null;
         }

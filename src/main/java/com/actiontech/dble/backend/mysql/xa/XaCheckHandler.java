@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,14 +84,7 @@ public final class XaCheckHandler {
                     for (String shardingNode : table.getShardingNodes()) {
                         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
                         if (participantLogEntry.compareAddress(dn.getDbGroup().getWriteDbInstance().getConfig().getIp(), dn.getDbGroup().getWriteDbInstance().getConfig().getPort(), dn.getDatabase())) {
-                            xaCmd.append(coordinatorLogEntry.getId(), 0, coordinatorLogEntry.getId().length() - 1);
-                            xaCmd.append(".");
-                            xaCmd.append(dn.getDatabase());
-                            if (participantLogEntry.getExpires() != 0) {
-                                xaCmd.append(".");
-                                xaCmd.append(participantLogEntry.getExpires());
-                            }
-                            xaCmd.append("'");
+                            appendXACmd(coordinatorLogEntry, dn, xaCmd, participantLogEntry);
                             XAAnalysisHandler xaAnalysisHandler = new XAAnalysisHandler(dn.getDbGroup().getWriteDbInstance());
                             xaAnalysisHandler.executeXaCmd(xaCmd.toString(), needCommit, participantLogEntry);
                             if (!xaAnalysisHandler.isSuccess()) {
@@ -116,6 +110,22 @@ public final class XaCheckHandler {
         }
         XAStateLog.saveXARecoveryLog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITTED_STATE : TxState.TX_ROLLBACKED_STATE);
         XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
+    }
+
+    private static void appendXACmd(CoordinatorLogEntry coordinatorLogEntry, ShardingNode dn, StringBuilder xaCmd, ParticipantLogEntry participantLogEntry) {
+        xaCmd.append(coordinatorLogEntry.getId(), 0, coordinatorLogEntry.getId().length() - 1);
+        xaCmd.append(".");
+        xaCmd.append(dn.getDatabase());
+        if (participantLogEntry.getExpires() != 0) {
+            xaCmd.append(".");
+            xaCmd.append(participantLogEntry.getExpires());
+        }
+        if (!StringUtil.isBlank(participantLogEntry.getTableName())) {
+            xaCmd.append(".");
+            xaCmd.append(participantLogEntry.getTableName());
+            xaCmd.append(participantLogEntry.getRepeatTableIndex() == 0 ? "" : "." + participantLogEntry.getRepeatTableIndex());
+        }
+        xaCmd.append("'");
     }
 
     // covert the collection to array

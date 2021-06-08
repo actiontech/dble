@@ -494,7 +494,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
         if (SchemaUtil.isNoSharding(service, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
-            return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+            return routeToNoSharding(schema, rrs, schemas, noShardingNode, null);
         } else if (schemas.size() > 0 && SchemaUtil.MYSQL_SYS_SCHEMA.containsAll(schemas)) {
             MysqlSystemSchemaHandler.handle(service, null, selectStmt.getSelect().getQuery());
             rrs.setFinishedExecute(true);

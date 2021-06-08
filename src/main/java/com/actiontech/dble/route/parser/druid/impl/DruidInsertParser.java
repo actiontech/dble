@@ -158,7 +158,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                     return false;
                 }
             }
-            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr);
+            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr, schemaInfo.getTable());
             return true;
         }
         return false;
@@ -306,8 +306,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
     }
-
-
 
 
     /**

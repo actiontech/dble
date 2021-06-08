@@ -6,13 +6,13 @@
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
+import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceHandler;
 import com.actiontech.dble.util.ResourceUtil;
+import com.google.gson.JsonObject;
 
 import java.io.*;
 import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -44,19 +44,20 @@ public final class PropertiesUtil {
         return props;
     }
 
-    public static Map<String, String> getOrderedMap(String propsFile) {
+    public static JsonObject getOrderedMap(String propsFile) {
         try (InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile)) {
             if (inp == null) {
                 throw new java.lang.RuntimeException("sequence properties not found " + propsFile);
             }
-            Map<String, String> mp = new LinkedHashMap<>();
+            final JsonObjectWriter mp = new JsonObjectWriter();
             (new Properties() {
                 @Override
                 public synchronized Object put(Object key, Object value) {
-                    return mp.put((String) key, (String) value);
+                    mp.addProperty((String) key, (String) value);
+                    return value;
                 }
             }).load(inp);
-            return mp;
+            return mp.toJsonObject();
         } catch (IOException e) {
             throw new java.lang.RuntimeException(e);
         }

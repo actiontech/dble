@@ -5,6 +5,7 @@
 package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
@@ -17,7 +18,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
@@ -42,7 +42,6 @@ public class DbleConfig extends ManagerBaseTable {
 
     @Override
     protected List<LinkedHashMap<String, String>> getRows() {
-        JsonParser jsonParser = new JsonParser();
         JsonObject resultJson = new JsonObject();
         List<RawJson> jsonStrList = Lists.newArrayList(DbleServer.getInstance().getConfig().getDbConfig(), DbleServer.getInstance().getConfig().getShardingConfig(),
                 DbleServer.getInstance().getConfig().getUserConfig(), DbleServer.getInstance().getConfig().getSequenceConfig());
@@ -54,7 +53,7 @@ public class DbleConfig extends ManagerBaseTable {
             if (null != jsonObj && !jsonObj.isJsonNull()) {
                 jsonObj.entrySet().forEach(elementEntry -> {
                     if (elementEntry.getKey().contains("sequence")) {
-                        elementEntry.setValue(jsonParser.parse(elementEntry.getValue().getAsString()).getAsJsonObject());
+                        //nothing
                     } else if (StringUtil.equals(elementEntry.getKey(), "function")) {
                         JsonProcessBase base = new JsonProcessBase();
                         Type parseType = new TypeToken<List<Function>>() {
@@ -68,7 +67,7 @@ public class DbleConfig extends ManagerBaseTable {
             }
         }
         LinkedHashMap<String, String> rowMap = Maps.newLinkedHashMap();
-        rowMap.put(COLUMN_CONTENT, resultJson.toString());
+        rowMap.put(COLUMN_CONTENT, JsonFactory.getJson().toJson(resultJson));
         return Lists.newArrayList(rowMap);
     }
 }

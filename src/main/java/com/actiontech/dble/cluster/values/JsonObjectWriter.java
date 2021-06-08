@@ -9,12 +9,15 @@ package com.actiontech.dble.cluster.values;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.Serializable;
+
 /**
  * @author dcy
  * Create Date: 2021-05-21
  */
-public class JsonObjectWriter {
-    private JsonObject jsonObject = new JsonObject();
+public class JsonObjectWriter implements Serializable {
+    private final transient JsonObject jsonObject = new JsonObject();
+    private static final long serialVersionUID = 1L;
 
     public void add(String property, JsonElement value) {
         if (value == null || value.isJsonNull()) {
@@ -63,7 +66,7 @@ public class JsonObjectWriter {
     }
 
 
-    protected JsonObject toJsonObject() {
+    public JsonObject toJsonObject() {
         return jsonObject;
     }
 }

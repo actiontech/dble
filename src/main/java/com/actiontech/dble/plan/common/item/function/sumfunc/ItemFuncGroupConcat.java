@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.common.item.function.sumfunc;
 
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
@@ -23,7 +24,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -35,12 +35,13 @@ public class ItemFuncGroupConcat extends ItemSum {
     private List<Order> orders;
     private boolean alwaysNull; // if contains null
     private RowDataComparator rowComparator;
-    private Queue<OrderResult> reusltList;
+    private Queue<OrderResult> resultList;
+
     public ItemFuncGroupConcat(List<Item> selItems, boolean distinct, List<Order> orders, String isSeparator,
                                boolean isPushDown, List<Field> fields, int charsetIndex) {
         super(selItems, isPushDown, fields, charsetIndex);
         seperator = isSeparator;
-        this.resultSb = new StringBuilder();
+        this.resultSb = new StringBuilder(SystemConfig.getInstance().getGroupConcatMaxLen() + 1);
         this.orders = orders;
         this.alwaysNull = false;
         setDistinct(distinct);
@@ -74,8 +75,8 @@ public class ItemFuncGroupConcat extends ItemSum {
     @Override
     public void clear() {
         resultSb.setLength(0);
-        if (reusltList != null) {
-            reusltList.clear();
+        if (resultList != null) {
+            resultList.clear();
         }
         nullValue = true;
     }
@@ -101,32 +102,27 @@ public class ItemFuncGroupConcat extends ItemSum {
             String s = item.valStr();
             if (item.isNull())
                 return false;
-            rowStr.append(s);
+            rowStr.append(s).append(seperator);
         }
         if (orders != null) {
             if (sourceFields != null && rowComparator == null) {
                 rowComparator = new RowDataComparator(sourceFields, orders);
-                reusltList = new PriorityQueue<>(11, new Comparator<OrderResult>() {
-                    @Override
-                    public int compare(OrderResult o1, OrderResult o2) {
-                        RowDataPacket row1 = o1.row;
-                        RowDataPacket row2 = o2.row;
-                        if (row1 == null || row2 == null) {
-                            if (row1 == row2)
-                                return 0;
-                            if (row1 == null)
-                                return -1;
-                            return 1;
-                        }
-                        return rowComparator.compare(row1, row2);
+                resultList = new PriorityQueue<>(11, (o1, o2) -> {
+                    RowDataPacket row1 = o1.row;
+                    RowDataPacket row2 = o2.row;
+                    if (row1 == null || row2 == null) {
+                        if (row1 == row2)
+                            return 0;
+                        if (row1 == null)
+                            return -1;
+                        return 1;
                     }
+                    return rowComparator.compare(row1, row2);
                 });
             }
-            reusltList.add(new OrderResult(rowStr.toString(), row));
+            resultList.add(new OrderResult(rowStr, row));
         } else {
-            if (resultSb.length() > 0)
-                resultSb.append(seperator);
-            resultSb.append(rowStr);
+            append(rowStr);
         }
         nullValue = false;
         return false;
@@ -162,13 +158,21 @@ public class ItemFuncGroupConcat extends ItemSum {
         if (nullValue)
             return null;
         if (orders != null) {
-            for (OrderResult orderResult : reusltList) {
-                if (resultSb.length() > 0)
-                    resultSb.append(seperator);
-                resultSb.append(orderResult.result);
+            for (OrderResult orderResult : resultList) {
+                append(orderResult.result);
             }
         }
-        return resultSb.toString();
+        return resultSb.substring(0, resultSb.length() - 1);
+    }
+
+    // append a row string
+    private void append(StringBuilder s) {
+        int remaining = resultSb.capacity() - resultSb.length();
+        if (s.length() >= remaining) {
+            resultSb.append(s, 0, remaining);
+        } else {
+            resultSb.append(s);
+        }
     }
 
     @Override
@@ -262,23 +266,24 @@ public class ItemFuncGroupConcat extends ItemSum {
             Item arg = order.getItem();
             Item fixedArg = arg.fixFields(context);
             if (fixedArg == null)
-                return ;
+                return;
             order.setItem(fixedArg);
             getReferTables().addAll(fixedArg.getReferTables());
         }
     }
+
     public List<Order> getOrders() {
         return orders;
     }
 
     private static class OrderResult {
-        private String result;
+        private StringBuilder result;
         private RowDataPacket row;
 
-        OrderResult(String result, RowDataPacket row) {
+        OrderResult(StringBuilder result, RowDataPacket row) {
             this.result = result;
             this.row = row;
-
         }
     }
+
 }

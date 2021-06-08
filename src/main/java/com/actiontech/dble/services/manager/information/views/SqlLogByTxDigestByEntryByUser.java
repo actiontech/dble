@@ -47,7 +47,7 @@ public class SqlLogByTxDigestByEntryByUser extends ManagerBaseView {
         columns.put(COLUMN_SOURCE_PORT, new ColumnMeta(COLUMN_SOURCE_PORT, "int(11)", false));
         columnsType.put(COLUMN_SOURCE_PORT, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_SQL_IDS, new ColumnMeta(COLUMN_SQL_IDS, "VARCHAR(1024)", false));
+        columns.put(COLUMN_SQL_IDS, new ColumnMeta(COLUMN_SQL_IDS, "varchar(1024)", false));
         columnsType.put(COLUMN_SQL_IDS, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_TX_DURATION, new ColumnMeta(COLUMN_TX_DURATION, "int(11)", false));

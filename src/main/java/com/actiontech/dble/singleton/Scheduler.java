@@ -163,7 +163,7 @@ public final class Scheduler {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.info("resultSetMapClear err " + e);
+                    LOGGER.info("resultSetMapClear err ", e);
                 }
             }
 

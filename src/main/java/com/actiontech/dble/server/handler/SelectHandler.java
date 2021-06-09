@@ -9,6 +9,7 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseSelect;
 import com.actiontech.dble.server.response.*;
+import com.actiontech.dble.services.manager.response.SelectMaxAllowedPacket;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 
@@ -108,7 +109,7 @@ public final class SelectHandler {
                 SelectRowCount.response(service);
                 break;
             case ServerParseSelect.MAX_ALLOWED_PACKET:
-                SelectMaxAllowedPacket.response(service);
+                SelectMaxAllowedPacket.execute(service);
                 break;
             default:
                 service.execute(stmt, ServerParse.SELECT);

@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.util.LongUtil;
 
 import java.nio.ByteBuffer;
@@ -38,7 +38,7 @@ public final class SelectMaxAllowedPacket {
         EOF.setPacketId(++packetId);
     }
 
-    public static void execute(ManagerService service) {
+    public static void execute(AbstractService service) {
         ByteBuffer buffer = service.allocate();
 
         // write header

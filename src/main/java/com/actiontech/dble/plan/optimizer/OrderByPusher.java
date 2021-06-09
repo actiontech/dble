@@ -8,6 +8,7 @@ package com.actiontech.dble.plan.optimizer;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
@@ -36,6 +37,13 @@ public final class OrderByPusher {
         try {
             qtn = preOrderByPusher(qtn);
             qtn = pushOrderBy(qtn);
+            // subQuery need push down order by
+            if (qtn.isContainsSubQuery()) {
+                for (ItemSubQuery subQuery : qtn.getSubQueries()) {
+                    PlanNode planNode = optimize(subQuery.getPlanNode());
+                    subQuery.setPlanNode(planNode);
+                }
+            }
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);

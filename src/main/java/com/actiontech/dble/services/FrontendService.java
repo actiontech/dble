@@ -32,13 +32,18 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class FrontendService<T extends UserConfig> extends AbstractService {
     private static final Logger LOGGER = LogManager.getLogger(FrontendService.class);
     private final AtomicInteger packetId;
     private final Queue<ServiceTask> taskQueue = new PriorityQueue<>();
+    // will non null if is dong task
     private volatile Long doingTaskThread = null;
-    private long taskId = 1;
+    private AtomicLong taskId = new AtomicLong(1);
+    // current task index，Will increased when every new task is processed。
+    private long currentTaskIndex = 0;
+    // consumed task  id，Used to indicate next task id.(this=nextTaskId-1)
     private volatile long consumedTaskId = 0;
     // client capabilities
     private final long clientCapabilities;
@@ -86,7 +91,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     @Override
     public void handle(ServiceTask task) {
         beforeHandlingTask();
-        task.setTaskId(taskId++);
+        task.setTaskId(taskId.getAndIncrement());
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }
 
@@ -111,8 +116,10 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
                 synchronized (connectionSerializableLock) {
                     try {
 
-                        if (task != null && !task.getType().equals(ServiceTaskType.NOTIFICATION)) {
-                            taskToLocalQueue(task);
+                        if (task != null) {
+                            if (!task.getType().equals(ServiceTaskType.NOTIFICATION)) {
+                                taskToLocalQueue(task);
+                            }
                             //make sure only enqueue once
                             task = null;
                         }
@@ -140,8 +147,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
                         }
 
                         if (connectionSerializableLock.isLocking()) {
-                            connectionSerializableLock.addListener(this::createNotifyTask);
-                            //return true when it was locking and register listener successful.
+                            //return  if it is locking .will create notify task when unlock.
                             releaseHandle(currentThreadId);
                             return;
                         }
@@ -149,6 +155,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
                         //begin consume now.
                         taskQueue.poll();
+                        currentTaskIndex++;
                         if (executeTask.getTaskId() == nextConsumedTaskId()) {
                             consumedTaskId = nextConsumedTaskId();
                         }
@@ -177,6 +184,14 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             }
         }
 
+    }
+
+    public long getCurrentTaskIndex() {
+        return currentTaskIndex;
+    }
+
+    public boolean isDoingTask() {
+        return doingTaskThread != null;
     }
 
     @Override
@@ -220,9 +235,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         }
     }
 
-    void createNotifyTask() {
-        taskToPriorityQueue(new NotificationServiceTask(this));
-    }
 
     /**
      * for multi statement
@@ -233,8 +245,9 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         final ServiceTask task = new NormalServiceTask(packetData, this, true);
         //high priority;
         task.setTaskId(-1);
-        taskQueue.add(task);
-        createNotifyTask();
+        synchronized (connectionSerializableLock) {
+            taskQueue.add(task);
+        }
     }
 
     @Override
@@ -251,11 +264,8 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         taskQueue.offer(task);
     }
 
-    private void taskToPriorityQueue(ServiceTask task) {
-        if (task == null) {
-            throw new IllegalStateException("null task is illegal");
-        }
-        DbleServer.getInstance().getFrontHandlerQueue().offerFirst(task);
+    public void notifyTaskThread() {
+        DbleServer.getInstance().getFrontHandlerQueue().offerFirst(new NotificationServiceTask(this));
     }
 
 

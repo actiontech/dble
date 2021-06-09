@@ -36,11 +36,11 @@ public class UserConfig {
         this.isEncrypt = isEncrypt;
         this.whiteIPs = genWhiteIPs(strWhiteIPs);
 
-        int maxConn = -1;
+        int maxConn = 0;
         if (!StringUtil.isEmpty(strMaxCon)) {
             maxConn = Integer.parseInt(strMaxCon);
             if (maxConn < 0) {
-                maxConn = -1;
+                maxConn = 0;
             }
         }
         this.maxCon = maxConn;

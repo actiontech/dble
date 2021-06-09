@@ -61,7 +61,7 @@ public class XAPrepareStage extends XAStage {
         } else {
             try {
                 RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
-                String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
+                String xaTxId = service.getConnXID(session.getSessionXaID(), rrn);
                 if (logger.isDebugEnabled()) {
                     logger.debug("XA PREPARE " + xaTxId + " to " + service);
                 }

@@ -27,6 +27,7 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +164,7 @@ public class DefaultDruidParser implements DruidParser {
         }
     }
 
-    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, Set<String> schemas, StringPtr shardingNode) {
+    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, Set<String> schemas, StringPtr shardingNode, String table) {
         String statement = rrs.getStatement();
         for (String realSchema : schemas) {
             statement = RouterUtil.removeSchema(statement, realSchema);
@@ -181,7 +182,12 @@ public class DefaultDruidParser implements DruidParser {
             }
             shardingNodeTarget = schema.getRandomShardingNode();
         }
-        Set<String> tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
+        Set<String> tableSet;
+        if (StringUtil.isBlank(table)) {
+            tableSet = ctx.getTables().stream().map(tableEntry -> tableEntry.getKey() + "." + tableEntry.getValue()).collect(Collectors.toSet());
+        } else {
+            tableSet = Sets.newHashSet(null == schema ? "" : schema.getName() + "." + table);
+        }
         RouterUtil.routeToSingleNode(rrs, shardingNodeTarget, tableSet);
         rrs.setFinishedRoute(true);
         return schema;

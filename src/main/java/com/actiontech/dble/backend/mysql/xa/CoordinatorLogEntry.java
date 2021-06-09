@@ -20,6 +20,8 @@ public class CoordinatorLogEntry implements Serializable {
     public static final String P_STATE = "p_state";
     public static final String P_EXPIRES = "expires";
     public static final String P_SCHEMA = "schema";
+    public static final String P_TABLE_NAME = "tableName";
+    public static final String P_REPEAT_TABLE_INDEX = "repeatTableIndex";
     private final String id;
     private final ParticipantLogEntry[] participants;
     /* session TxState */
@@ -55,7 +57,7 @@ public class CoordinatorLogEntry implements Serializable {
             }
             newParticipants[i] = new ParticipantLogEntry(participants[i].getCoordinatorId(), participants[i].getHost(),
                     participants[i].getPort(), participants[i].getExpires(), participants[i].getSchema(),
-                    participants[i].getTxState());
+                    participants[i].getTxState(), participants[i].getTableName(), participants[i].getRepeatTableIndex());
         }
         return new CoordinatorLogEntry(id, newParticipants, txState);
     }

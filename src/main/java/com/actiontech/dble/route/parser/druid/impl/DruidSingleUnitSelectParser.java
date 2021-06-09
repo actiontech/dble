@@ -45,7 +45,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 Set<String> schemas = new HashSet<>();
                 if ((schemaMap != null && schemaMap.size() == 1) &&
                         SchemaUtil.isNoSharding(service, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
-                    return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+                    return routeToNoSharding(schema, rrs, schemas, noShardingNode, null);
                 } else {
                     super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
                     return schema;
@@ -75,7 +75,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             Set<String> schemas = new HashSet<>();
             if ((schemaMap != null && schemaMap.size() == 1) &&
                     SchemaUtil.isNoSharding(service, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
-                return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+                return routeToNoSharding(schema, rrs, schemas, noShardingNode, null);
             } else {
                 super.visitorParse(schema, rrs, stmt, visitor, service, isExplain);
             }

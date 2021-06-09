@@ -27,7 +27,9 @@ import com.actiontech.dble.net.executor.FrontendCurrentRunnable;
 import com.actiontech.dble.net.executor.WriteToBackendRunnable;
 import com.actiontech.dble.net.impl.aio.AIOAcceptor;
 import com.actiontech.dble.net.impl.aio.AIOConnector;
-import com.actiontech.dble.net.impl.nio.*;
+import com.actiontech.dble.net.impl.nio.NIOAcceptor;
+import com.actiontech.dble.net.impl.nio.NIOConnector;
+import com.actiontech.dble.net.impl.nio.RW;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -46,7 +48,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.*;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -411,7 +416,7 @@ public final class DbleServer {
                                 p.checkBackendCons();
                             }
                         } catch (Exception e) {
-                            LOGGER.info("checkBackendCons caught err:" + e);
+                            LOGGER.info("checkBackendCons caught err:", e);
                         }
                     }
                 });

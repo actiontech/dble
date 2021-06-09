@@ -180,7 +180,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
                             result.getViolations().get(0).getMessage());
                 } else {
-                    String violation = "[" + WallErrorCode.get(result.getViolations().get(0).getErrorCode()) + "]";
+                    String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
                     String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
                     LOGGER.warn("Firewall message:{}, {}",
                             result.getViolations().get(0).getMessage(), msg);

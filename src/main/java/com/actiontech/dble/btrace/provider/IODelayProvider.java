@@ -17,19 +17,50 @@ public final class IODelayProvider {
     private IODelayProvider() {
     }
 
+
     public static void beforeErrorResponse(Service service) {
 
     }
 
+    /**
+     * begin create the fake close packet
+     *
+     * @param serviceTask
+     * @param service
+     */
+    public static void beforePushInnerServiceTask(ServiceTask serviceTask, Service service) {
+
+    }
+
+    /**
+     * before create the normal packet
+     *
+     * @param serviceTask
+     * @param service
+     */
+    public static void beforePushServiceTask(ServiceTask serviceTask, Service service) {
+
+    }
+
+
+    /**
+     * begin process the fake close packet
+     *
+     * @param serviceTask
+     * @param service
+     */
     public static void beforeInnerClose(ServiceTask serviceTask, Service service) {
 
     }
 
+    /**
+     * after process the fake close packet and the connection is closed.
+     *
+     * @param serviceTask
+     * @param service
+     */
     public static void afterImmediatelyClose(ServiceTask serviceTask, Service service) {
 
     }
 
-    public static void beforePushInnerServiceTask(ServiceTask serviceTask, Service service) {
-
-    }
 }

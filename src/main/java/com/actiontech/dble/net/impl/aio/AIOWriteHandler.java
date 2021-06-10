@@ -24,7 +24,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
             if (result >= 0) {
                 wr.onWriteFinished(result);
             } else {
-                wr.con.pushInnerServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose("write errno " + result));
+                wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose("write errno " + result));
             }
         } catch (Exception e) {
             AIOSocketWR.LOGGER.info("caught aio process err:", e);
@@ -43,7 +43,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
         } else {
             //self problem.
             LOGGER.info("con {} write err:{}", wr.con.getService(), exc.getMessage());
-            wr.con.pushInnerServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose(exc.getMessage()));
+            wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose(exc.getMessage()));
         }
     }
 

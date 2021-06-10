@@ -61,12 +61,12 @@ public final class DebugUtil {
         return line;
     }
 
-    public static void printLocation() {
+    public static void printLocation(Object context) {
         if (LOGGER.isDebugEnabled()) {
             try {
                 throw new DebugPrinter();
             } catch (DebugPrinter e) {
-                LOGGER.debug("location", e);
+                LOGGER.debug("location:, context:{}", context, e);
             }
 
         }

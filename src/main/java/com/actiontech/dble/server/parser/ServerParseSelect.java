@@ -32,6 +32,7 @@ public final class ServerParseSelect {
     public static final int SESSION_TRANSACTION_ISOLATION = 13;
     public static final int SESSION_TRANSACTION_READ_ONLY = 14;
     public static final int ROW_COUNT = 15;
+    public static final int MAX_ALLOWED_PACKET = 16;
 
     private static final char[] TRACE_STR = "TRACE".toCharArray();
     private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
@@ -492,8 +493,22 @@ public final class ServerParseSelect {
                 case 't':
                 case 'T':
                     return traceCheck(stmt, offset);
+                case 'm':
+                case 'M':
+                    return maxCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // select @@max_allowed_packet;
+    private static int maxCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 17) {
+            String suffix = stmt.substring(offset).toUpperCase();
+            if (suffix.startsWith("MAX_ALLOWED_PACKET") && (stmt.length() == offset + 18 || ParseUtil.isEOF(stmt, offset + 18))) {
+                return MAX_ALLOWED_PACKET;
             }
         }
         return OTHER;

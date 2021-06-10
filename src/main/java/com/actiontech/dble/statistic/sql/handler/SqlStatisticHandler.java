@@ -47,7 +47,11 @@ public class SqlStatisticHandler implements StatisticDataHandler {
                 if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
                     txRecords.pollFirstEntry();
                 }
-                txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
+                if (null == txRecords.get(frontendSqlEntry.getTxId())) {
+                    txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
+                } else {
+                    txRecords.get(frontendSqlEntry.getTxId()).getSqls().add(new SQLRecord(frontendSqlEntry));
+                }
             }
         }
     }
@@ -106,7 +110,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             this.startTime = frontendSqlEntry.getStartTimeMs();
             this.info = frontendSqlEntry.getFrontend();
             this.duration = frontendSqlEntry.getDuration();
-            this.sqls = new ArrayList<>(1);
+            this.sqls = new ArrayList<>(2);
             this.sqls.add(new SQLRecord(frontendSqlEntry));
         }
 

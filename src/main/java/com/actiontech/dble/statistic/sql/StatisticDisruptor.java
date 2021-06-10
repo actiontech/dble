@@ -74,16 +74,19 @@ public class StatisticDisruptor {
         @Override
         public void handleEventException(Throwable ex, long sequence, Object event) {
             LOGGER.warn("Exception processing: {} {} ,exception：{}", sequence, event, ex);
+            ex.printStackTrace();
         }
 
         @Override
         public void handleOnStartException(Throwable ex) {
             LOGGER.error("Exception during onStart for statistic's disruptor ,exception：{}", ex);
+            ex.printStackTrace();
         }
 
         @Override
         public void handleOnShutdownException(Throwable ex) {
             LOGGER.error("Exception during onShutdown for statistic's disruptor ,exception：{}", ex);
+            ex.printStackTrace();
         }
     }
 }

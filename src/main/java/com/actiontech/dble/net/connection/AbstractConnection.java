@@ -143,7 +143,7 @@ public abstract class AbstractConnection implements Connection {
         if (isClosed.compareAndSet(false, true)) {
             if (service instanceof BusinessService)
                 ((BusinessService) service).transactionsCountInTx();
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEndByExit());
+            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             closeSocket();
             LOGGER.info("connection id close for reason " + reason + " with connection " + toString());

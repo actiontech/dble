@@ -54,18 +54,29 @@ public class StatisticRecord {
     public void onTxEnd() {
     }
 
-    public void onTxEndByExit() {
+    public void onExit(String reason) {
+        long txEndTime = System.nanoTime();
         if (isStartTx && txEntry != null) {
-            long txEndTime = System.nanoTime();
             isStartTx = false;
-            frontendSqlEntry = new StatisticFrontendSqlEntry(frontendInfo, txEndTime);
-            frontendSqlEntry.setSql("exit");
-            frontendSqlEntry.setAllEndTime(txEndTime);
-            frontendSqlEntry.setXaId(xaId);
-            frontendSqlEntry.setTxId(txid);
-            txEntry.add(frontendSqlEntry);
+            if (reason.contains("quit cmd")) {
+                StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, txEndTime);
+                f.setSql("exit");
+                f.setAllEndTime(txEndTime);
+                f.setXaId(xaId);
+                f.setTxId(txid);
+                txEntry.add(f);
+            }
             txEntry.setAllEndTime(txEndTime);
             pushTx();
+        } else {
+            if (!reason.contains("quit cmd")) return;
+            StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, txEndTime);
+            f.setSql("exit");
+            f.setAllEndTime(txEndTime);
+            f.setXaId(xaId);
+            f.setTxId(txid);
+            f.setNeedToTx(true);
+            pushFrontendSql();
         }
     }
 

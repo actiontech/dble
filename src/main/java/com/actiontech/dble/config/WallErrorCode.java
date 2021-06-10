@@ -1,5 +1,6 @@
 package com.actiontech.dble.config;
 
+import com.alibaba.druid.wall.Violation;
 import com.alibaba.druid.wall.violation.ErrorCode;
 
 import java.util.HashMap;
@@ -90,10 +91,21 @@ public final class WallErrorCode {
 
     }
 
-    public static String get(int code) {
-        if (null != CODE_MAP.get(code)) {
-            return CODE_MAP.get(code);
+    public static String get(Violation violation) {
+        if (violation.getErrorCode() == 2200) {
+            if (violation.getMessage().startsWith("limit")) {
+                return "limitZeroAllow";
+            } else {
+                return "mustParameterized";
+            }
+        } else if (violation.getErrorCode() == 2201) {
+            if (violation.getMessage().startsWith("multi-statement")) {
+                return "multiStatementAllow";
+            }
         }
-        return code + "";
+        if (null != CODE_MAP.get(violation.getErrorCode())) {
+            return CODE_MAP.get(violation.getErrorCode());
+        }
+        return violation.getErrorCode() + "";
     }
 }

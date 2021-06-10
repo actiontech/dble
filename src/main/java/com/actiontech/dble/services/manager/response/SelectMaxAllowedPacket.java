@@ -7,12 +7,16 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.util.LongUtil;
 
 import java.nio.ByteBuffer;
 
+/**
+ * @author yuanlinzhu
+ */
 public final class SelectMaxAllowedPacket {
     private SelectMaxAllowedPacket() {
     }
@@ -34,7 +38,7 @@ public final class SelectMaxAllowedPacket {
         EOF.setPacketId(++packetId);
     }
 
-    public static void execute(ManagerService service) {
+    public static void execute(AbstractService service) {
         ByteBuffer buffer = service.allocate();
 
         // write header
@@ -52,7 +56,7 @@ public final class SelectMaxAllowedPacket {
         byte packetId = EOF.getPacketId();
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.setPacketId(++packetId);
-        row.add(LongUtil.toBytes(1048576));
+        row.add(LongUtil.toBytes(SystemConfig.getInstance().getMaxPacketSize()));
         buffer = row.write(buffer, service, true);
 
         // write last eof

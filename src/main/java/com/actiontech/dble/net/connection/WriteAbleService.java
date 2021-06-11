@@ -44,6 +44,16 @@ public interface WriteAbleService {
     void afterWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags);
 
 
+    /**
+     * NOTICE: this method is not a good practice,may deprecated in the future
+     * .It doesn't call beforePacket() method.So you should mark multi-result status by yourself.
+     * <p>
+     * if you are writing the last packet ,use write(Packet)/writeWithBuffer(Packet) instead.
+     * if you are writing the non-last packet, use the writeToBuffer(packet,buffer) is better .
+     *
+     * @param data
+     * @param writeFlags
+     */
     default void write(byte[] data, @Nonnull EnumSet<WriteFlag> writeFlags) {
         ByteBuffer buffer = getConnection().allocate();
         ByteBuffer writeBuffer = writeToBuffer(data, buffer);
@@ -56,21 +66,42 @@ public interface WriteAbleService {
      * @param packet
      */
     default void write(MySQLPacket packet) {
+        beforePacket(packet);
         packet.bufferWrite(getConnection());
     }
 
     default void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
-        // this must instanceof AbstractService
-        assert this instanceof AbstractService;
-        buffer = packet.write(buffer, (AbstractService) this, true);
-        this.writeDirectly(buffer, packet.getLastWriteFlag());
+        this.writeDirectly(writeToBuffer(packet, buffer), packet.getLastWriteFlag());
     }
 
     default ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
         return getConnection().checkWriteBuffer(buffer, capacity, writeSocketIfFull);
     }
 
+    default void beforePacket(MySQLPacket packet) {
+
+    }
+
+    /**
+     * NOTICE: this method is not a good practice for write last packet,may deprecated in the future
+     * It doesn't call beforePacket() method.So you should mark multi-result status by yourself.
+     * <p>
+     * use writeToBuffer(packet,buffer) is better.
+     *
+     * @param src
+     * @param buffer
+     */
     ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer);
+
+
+    default ByteBuffer writeToBuffer(MySQLPacket packet, ByteBuffer buffer) {
+
+        // this must instanceof AbstractService
+        assert this instanceof AbstractService;
+        beforePacket(packet);
+        buffer = packet.write(buffer, (AbstractService) this, true);
+        return buffer;
+    }
 
 
     default void recycleBuffer(ByteBuffer buffer) {

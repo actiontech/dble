@@ -537,14 +537,12 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
 
     @Override
-    public void write(MySQLPacket packet) {
+    public void beforePacket(MySQLPacket packet) {
         if (packet instanceof OkPacket) {
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
         session.multiStatementPacket(packet);
-        super.write(packet);
     }
-
 
     public void multiStatementNextSql(boolean flag) {
         if (flag) {

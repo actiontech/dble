@@ -302,6 +302,9 @@ public class MySQLResponseService extends BackendService {
 
     // send query
     public void sendQueryCmd(String query, CharsetNames clientCharset) {
+        if (connection.isClosed()) {
+            onConnectionClose("connection is closed before sending cmd");
+        }
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
@@ -411,6 +414,9 @@ public class MySQLResponseService extends BackendService {
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
+        if (connection.isClosed()) {
+            onConnectionClose("connection is closed before sending cmd");
+        }
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);

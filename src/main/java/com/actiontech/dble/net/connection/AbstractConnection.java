@@ -15,6 +15,7 @@ import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,13 +92,13 @@ public abstract class AbstractConnection implements Connection {
         lastReadTime = TimeUtil.currentTimeMillis();
         if (got == -1) {
             if (doingGracefulClose.get()) {
-                pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose(graceClosedReasons));
+                pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose(graceClosedReasons));
             } else {
-                pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream closed by peer"));
+                pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream closed by peer"));
             }
             return;
         } else if (got == 0 && !this.channel.isOpen()) {
-            pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream is closed when reading zero byte"));
+            pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream is closed when reading zero byte"));
             return;
         } else {
             netInBytes += got;
@@ -125,7 +126,7 @@ public abstract class AbstractConnection implements Connection {
                         LOGGER.error("close gracefully cause error.ignored reason is {}", reason, e);
                     } else {
                         LOGGER.error("close gracefully cause error.reason is {}", reason, e);
-                        pushInnerServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason));
+                        pushServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason));
                     }
                 }
 
@@ -146,7 +147,7 @@ public abstract class AbstractConnection implements Connection {
             Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             closeSocket();
-            LOGGER.info("connection id close for reason " + reason + " with connection " + toString());
+            LOGGER.info("connection id close for reason [{}] with connection {}", reason, this);
             if (processor != null) {
                 processor.removeConnection(this);
             }
@@ -156,9 +157,6 @@ public abstract class AbstractConnection implements Connection {
             // ignore null information
             if (Strings.isNullOrEmpty(reason)) {
                 return;
-            }
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("close connection,reason:" + reason + " ," + this);
             }
             if (reason.contains("connection,reason:java.net.ConnectException")) {
                 throw new RuntimeException(reason);
@@ -170,14 +168,37 @@ public abstract class AbstractConnection implements Connection {
     }
 
 
-    public boolean pushInnerServiceTask(InnerServiceTask innerServiceTask) {
-        IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
-        if (isClosed()) {
-            LOGGER.info("can't delay process the service task ,connection is closed already. just ignored.  {}", innerServiceTask.getType());
-            return false;
+    public boolean pushServiceTask(@Nonnull ServiceTask serviceTask) {
+        if (serviceTask.getType().equals(ServiceTaskType.NORMAL)) {
+            IODelayProvider.beforePushServiceTask(serviceTask, service);
+            service.handle(serviceTask);
+            return true;
+        } else {
+            InnerServiceTask innerServiceTask = (InnerServiceTask) serviceTask;
+            IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
+            if (isClosed()) {
+                if (innerServiceTask.getType().equals(ServiceTaskType.CLOSE)) {
+                    // repeat close. May close by quit cmd before. just ignore
+                } else {
+                    LOGGER.info("can't delay process the service task ,connection is closed already. just ignored.  {}", innerServiceTask.getType());
+                }
+                return false;
+            }
+            beforeHandleInnerServiceTask(innerServiceTask);
+            service.handle(innerServiceTask);
+            return true;
         }
-        service.handle(innerServiceTask);
-        return true;
+    }
+
+    private void beforeHandleInnerServiceTask(@NotNull InnerServiceTask innerServiceTask) {
+        switch (innerServiceTask.getType()) {
+            case CLOSE:
+                //prevent most of repeat close.
+                this.getSocketWR().disableRead();
+                break;
+            default:
+                break;
+        }
     }
 
 
@@ -226,7 +247,7 @@ public abstract class AbstractConnection implements Connection {
             int tmpCount = extraPartOfBigPacketCount;
             if (!isSupportCompress) {
                 extraPartOfBigPacketCount = 0;
-                service.handle(new NormalServiceTask(packetData, service, tmpCount));
+                pushServiceTask(new NormalServiceTask(packetData, service, tmpCount));
             } else {
                 List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
                 if (decompressUnfinishedDataQueue.isEmpty()) {
@@ -234,7 +255,7 @@ public abstract class AbstractConnection implements Connection {
                 }
                 for (byte[] pack : packs) {
                     if (pack.length != 0) {
-                        service.handle(new NormalServiceTask(pack, service, tmpCount));
+                        pushServiceTask(new NormalServiceTask(pack, service, tmpCount));
                     }
                 }
             }
@@ -390,7 +411,7 @@ public abstract class AbstractConnection implements Connection {
             return this.socketWR.registerWrite(buffer);
         } catch (Exception e) {
             LOGGER.info("writeDirectly err:", e);
-            this.pushInnerServiceTask(ServiceTaskFactory.getInstance(this.getService()).createForForceClose(e.getMessage()));
+            this.pushServiceTask(ServiceTaskFactory.getInstance(this.getService()).createForForceClose(e.getMessage()));
             return false;
         }
     }
@@ -507,7 +528,7 @@ public abstract class AbstractConnection implements Connection {
 
             graceClosedReasons.add(e.toString());
             this.socketWR.disableRead();
-            pushInnerServiceTask(ServiceTaskFactory.getInstance(getService()).createForGracefulClose(graceClosedReasons));
+            pushServiceTask(ServiceTaskFactory.getInstance(getService()).createForGracefulClose(graceClosedReasons));
         }
     }
 

@@ -16,6 +16,7 @@ import java.util.Collection;
 public class CloseServiceTask extends InnerServiceTask {
     boolean gracefullyClose;
     Collection<String> reasons;
+    int delayedTimes = 0;
 
     public CloseServiceTask(Service service, boolean gracefullyClose, Collection<String> reasons) {
         super(service);
@@ -35,6 +36,15 @@ public class CloseServiceTask extends InnerServiceTask {
     @Override
     public ServiceTaskType getType() {
         return ServiceTaskType.CLOSE;
+    }
+
+    public int getDelayedTimes() {
+        return delayedTimes;
+    }
+
+    public CloseServiceTask setDelayedTimes(int timesTmp) {
+        delayedTimes = timesTmp;
+        return this;
     }
 
     @Override

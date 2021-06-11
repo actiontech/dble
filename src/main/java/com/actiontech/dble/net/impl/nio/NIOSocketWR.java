@@ -86,13 +86,13 @@ public class NIOSocketWR extends SocketWR {
             } else {
                 //self problem.
                 LOGGER.info("con {} write err:", con.getService(), e);
-                con.pushInnerServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
+                con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
             }
 
         } catch (Exception e) {
             writeDataErr = true;
             LOGGER.info("con {} write err:", con.getService(), e);
-            con.pushInnerServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
+            con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
 
         } finally {
             if (writeDataErr) {

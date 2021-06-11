@@ -8,6 +8,7 @@ import com.actiontech.dble.net.connection.WriteAbleService;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.singleton.TraceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,6 +18,7 @@ import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -25,7 +27,6 @@ import java.util.EnumSet;
 public abstract class AbstractService extends VariablesService implements Service, WriteAbleService {
     private static final Logger LOGGER = LogManager.getLogger(AbstractService.class);
     protected AbstractConnection connection;
-    private long firstGraceCloseTime = -1;
     private boolean fakeClosed = false;
 
     public AbstractService(AbstractConnection connection) {
@@ -146,30 +147,36 @@ public abstract class AbstractService extends VariablesService implements Servic
         final ServiceTaskType taskType = serviceTask.getType();
         switch (taskType) {
             case CLOSE: {
+                if (connection.isClosed()) {
+                    return;
+                }
                 IODelayProvider.beforeInnerClose(serviceTask, this);
                 final CloseServiceTask task = (CloseServiceTask) serviceTask;
                 final Collection<String> closedReasons = task.getReasons();
                 if (task.isGracefullyClose()) {
-                    if (firstGraceCloseTime == -1) {
-                        firstGraceCloseTime = System.currentTimeMillis();
-                    }
                     connection.doNextWriteCheck();
                     if (connection.getSocketWR().isWriteComplete()) {
-                        connection.closeImmediately(Strings.join(closedReasons, ','));
+                        connection.closeImmediately(Strings.join(closedReasons, ';'));
                         IODelayProvider.afterImmediatelyClose(serviceTask, this);
                     } else {
-                        if (System.currentTimeMillis() - firstGraceCloseTime > 10 * 1000) {
-                            LOGGER.error("conn graceful close take so long time. {}.", this);
-                            connection.closeImmediately(Strings.join(closedReasons, ','));
+                        if (task.getDelayedTimes() > 20) {
+                            LOGGER.error("conn graceful close take so long time. {}.so force close it.", this);
+                            connection.closeImmediately(Strings.join(closedReasons, ';'));
                             return;
+                        } else {
+
+                            LOGGER.debug("conn graceful close should delay. {}.", this);
+                            task.setDelayedTimes(task.getDelayedTimes() + 1);
+                            /*
+                            delayed, push back to queue.
+                             */
+                            Scheduler.getInstance().getScheduledExecutor().schedule(() -> {
+                                connection.pushServiceTask(serviceTask);
+                            }, 500, TimeUnit.MILLISECONDS);
                         }
-                        /*
-                        delayed, push back to queue.
-                         */
-                        connection.pushInnerServiceTask(serviceTask);
                     }
                 } else {
-                    connection.closeImmediately(Strings.join(closedReasons, ','));
+                    connection.closeImmediately(Strings.join(closedReasons, ';'));
                     IODelayProvider.afterImmediatelyClose(serviceTask, this);
                 }
 

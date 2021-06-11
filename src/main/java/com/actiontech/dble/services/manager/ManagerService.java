@@ -125,8 +125,7 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
             return;
         }
         this.schema = db;
-        OkPacket okPacket = new OkPacket();
-        okPacket.read(OkPacket.OK);
+        OkPacket okPacket = OkPacket.getDefault();
         okPacket.write(this.getConnection());
     }
 

@@ -332,9 +332,8 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     // write
     public void writeOkPacket() {
-        OkPacket ok = new OkPacket();
+        OkPacket ok = OkPacket.getDefault();
         byte packet = (byte) this.packetId.incrementAndGet();
-        ok.read(OkPacket.OK);
         ok.setPacketId(packet);
         write(ok);
     }

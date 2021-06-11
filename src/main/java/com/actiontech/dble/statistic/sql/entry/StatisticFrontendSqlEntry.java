@@ -56,6 +56,9 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     }
 
     public int getSqlType() {
+        if (null == sql) {
+            return sqlType;
+        }
         if (sqlType == -99) {
             this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
         }

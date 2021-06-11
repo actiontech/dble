@@ -131,6 +131,8 @@ public final class ManagerTableUtil {
     }
 
     public static List<String> getTables(String defaultSchema, String sql) {
+        if (null == sql)
+            return new ArrayList<>();
         int hintLength = RouteService.isHintSql(sql);
         if (hintLength != -1) {
             int endPos = sql.substring(hintLength).indexOf("*/") + hintLength;

@@ -55,6 +55,11 @@ public final class InsertHandler {
         if (null == managerTable) {
             return;
         }
+        List<String> columns = getColumn(insert, managerTable, service);
+        if (null == columns) {
+            return;
+        }
+        //cluster-lock
         DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
             distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
@@ -64,10 +69,7 @@ public final class InsertHandler {
             }
             LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
         }
-        List<String> columns = getColumn(insert, managerTable, service);
-        if (null == columns) {
-            return;
-        }
+        //stand-alone lock
         List<LinkedHashMap<String, String>> rows;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
@@ -189,8 +191,8 @@ public final class InsertHandler {
             return null;
         }
         ManagerBaseTable managerBaseTable = ManagerSchemaInfo.getInstance().getTables().get(schemaInfo.getTable());
-        if (!managerBaseTable.isWritable()) {
-            service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
+        if (managerBaseTable == null || !managerBaseTable.isWritable()) {
+            service.writeErrMessage("42000", "Access denied for table '" + schemaInfo.getTable() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return null;
         }
         return (ManagerWritableTable) managerBaseTable;

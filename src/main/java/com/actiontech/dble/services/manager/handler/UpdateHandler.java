@@ -56,6 +56,14 @@ public final class UpdateHandler {
         if (null == managerTable) {
             return;
         }
+        LinkedHashMap<String, String> values;
+        try {
+            values = getUpdateValues(managerTable, update.getItems());
+        } catch (SQLException e) {
+            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
+            return;
+        }
+        //cluster-lock
         DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
             distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
@@ -65,13 +73,7 @@ public final class UpdateHandler {
             }
             LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
         }
-        LinkedHashMap<String, String> values;
-        try {
-            values = getUpdateValues(managerTable, update.getItems());
-        } catch (SQLException e) {
-            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
-        }
+        //stand-alone lock
         int rowSize;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {

@@ -94,6 +94,7 @@ public final class DeleteHandler {
             return;
         }
 
+        //cluster-lock
         DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
             distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
@@ -104,6 +105,7 @@ public final class DeleteHandler {
             LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
         }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
+        //stand-alone lock
         int rowSize;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {

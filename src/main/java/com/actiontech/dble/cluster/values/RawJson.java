@@ -11,6 +11,8 @@ import com.google.gson.JsonParser;
 import org.apache.logging.log4j.util.Strings;
 
 /**
+ * used for store JsonObject in  the cluster metadata.
+ *
  * @author dcy
  * Create Date: 2021-04-06
  */
@@ -39,6 +41,13 @@ public abstract class RawJson {
         return new RawJsonForJson(data.toJsonObject());
     }
 
+    /**
+     * use it outside is not a good idea.
+     * so , keep it be 'protected'.
+     *
+     * @param data
+     * @return
+     */
     protected static RawJson of(JsonObject data) {
         if (data == null) {
             return new RawJsonForJson(null);
@@ -46,6 +55,7 @@ public abstract class RawJson {
         return new RawJsonForJson(data);
     }
 
+    @Deprecated
     private static final class RawJsonForStr extends RawJson {
         String data;
 

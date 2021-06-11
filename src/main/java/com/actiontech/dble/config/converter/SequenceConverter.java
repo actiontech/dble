@@ -8,10 +8,8 @@ import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.cluster.values.RawJson;
 import com.actiontech.dble.route.util.OrderedProperties;
 import com.actiontech.dble.route.util.PropertiesUtil;
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.util.Map;
 import java.util.Properties;
@@ -22,20 +20,20 @@ public class SequenceConverter {
 
     public static RawJson sequencePropsToJson(String fileName) {
         JsonObjectWriter jsonObject = new JsonObjectWriter();
-        Map<String, String> properties = PropertiesUtil.getOrderedMap(fileName);
-        jsonObject.addProperty(fileName, (new Gson()).toJson(properties));
+        JsonObject properties = PropertiesUtil.getOrderedMap(fileName);
+        jsonObject.add(fileName, properties);
         return RawJson.of(jsonObject);
     }
 
     public Properties jsonToProperties(RawJson sequenceJson) {
         JsonObject jsonObj = sequenceJson.getJsonObject();
+        //must only one entry
         Map.Entry<String, JsonElement> sequenceEntry = jsonObj.entrySet().iterator().next();
         if (null == sequenceEntry) {
             return null;
         }
         this.fileName = sequenceEntry.getKey();
-        JsonElement fileContent = sequenceEntry.getValue();
-        JsonObject fileContentJson = new JsonParser().parse(fileContent.getAsString()).getAsJsonObject();
+        JsonObject fileContentJson = (JsonObject) sequenceEntry.getValue();
         Properties props = new OrderedProperties();
         fileContentJson.entrySet().forEach(jsonEntry -> props.setProperty(jsonEntry.getKey(), jsonEntry.getValue().getAsString()));
         return props;

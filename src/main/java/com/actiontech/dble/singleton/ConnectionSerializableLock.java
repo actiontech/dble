@@ -9,8 +9,8 @@ import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * guarantee all packet in one connection are consumed one by one with order.
@@ -22,7 +22,7 @@ public final class ConnectionSerializableLock {
     private boolean working = false;
     private final long frontId;
     private long index = -1;
-    private final List<Runnable> callbacks = new ArrayList<>();
+    private final Set<Runnable> callbacks = new LinkedHashSet<>();
     private final FrontendService frontendService;
 
 
@@ -35,7 +35,7 @@ public final class ConnectionSerializableLock {
 
         if (!working) {
             working = true;
-            index = frontendService.getConsumedTaskId();
+            index = frontendService.getCurrentTaskIndex();
             LOGGER.debug("locked success. connection id : {} , index : {}", frontId, index);
             return true;
         }
@@ -56,15 +56,20 @@ public final class ConnectionSerializableLock {
         return working;
     }
 
+    /**
+     * should be unlocked if is locking.Then the next packet can begin to processing.
+     * notice: lock once and unlock twice is a bad idea
+     */
     public synchronized void unLock() {
         if (working) {
             LOGGER.debug(" unlock success. connection id : {} , index : {}", frontId, index);
         }
         if (!working) {
             //locked before
-            if (frontendService.getConsumedTaskId() == index) {
+            if (frontendService.getCurrentTaskIndex() == index) {
                 LOGGER.warn("find useless unlock. connection id : {} , index : {}", frontId, index);
             }
+            return;
         }
         working = false;
 
@@ -79,6 +84,9 @@ public final class ConnectionSerializableLock {
 
         this.callbacks.clear();
 
+        if (frontendService.getRecvTaskQueueSize() > 0 && !frontendService.isDoingTask()) {
+            frontendService.notifyTaskThread();
+        }
 
     }
 

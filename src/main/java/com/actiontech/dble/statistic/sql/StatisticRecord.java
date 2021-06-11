@@ -224,7 +224,11 @@ public class StatisticRecord {
 
     protected void pushFrontendSql() {
         if (frontendSqlEntry != null) {
-            StatisticManager.getInstance().push(frontendSqlEntry);
+            if (frontendSqlEntry.getSql() != null) {
+                StatisticManager.getInstance().push(frontendSqlEntry);
+            } else {
+                onFrontendSqlClose();
+            }
             frontendSqlEntry = null;
         }
     }

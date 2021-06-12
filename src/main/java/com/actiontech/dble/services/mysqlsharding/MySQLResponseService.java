@@ -155,7 +155,7 @@ public class MySQLResponseService extends BackendService {
         try {
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
-                //Optional.ofNullable(StatisticListener2.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStartByBegin(service));
+                //Optional.ofNullable(StatisticListener2.getInstance().getRecorder(service, r ->r.onTxStartByBegin(service));
             }
             if (rrn.getSqlType() == ServerParse.DDL) {
                 isDDL = true;
@@ -342,7 +342,7 @@ public class MySQLResponseService extends BackendService {
     public void onConnectionClose(String reason) {
         final ResponseHandler handler = responseHandler;
         final MySQLResponseService responseService = this;
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onBackendSqlEnd(responseService));
+        StatisticListener.getInstance().record(session, r -> r.onBackendSqlEnd(responseService));
         DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
             try {
                 responseService.backendSpecialCleanUp();

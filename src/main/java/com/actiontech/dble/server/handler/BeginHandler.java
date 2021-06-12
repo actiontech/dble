@@ -9,8 +9,6 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 
-import java.util.Optional;
-
 public final class BeginHandler {
     private BeginHandler() {
     }
@@ -20,7 +18,7 @@ public final class BeginHandler {
             service.beginInTx(stmt);
         } else {
             service.setTxStart(true);
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStart(service));
+            StatisticListener.getInstance().record(service, r -> r.onTxStart(service));
             TxnLogHelper.putTxnLog(service, stmt);
             service.writeOkPacket();
         }

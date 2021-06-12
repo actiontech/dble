@@ -13,7 +13,6 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.sql.SQLException;
-import java.util.Optional;
 
 public class DruidImplicitCommitParser extends DefaultDruidParser {
     private boolean isSyntaxNotSupported = false;  // Syntax not supported or error
@@ -86,10 +85,10 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
     private void resetTxState(ShardingService service) {
         if (service.isTxStart()) {
             service.setTxStart(false);
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEnd());
+            StatisticListener.getInstance().record(service, r -> r.onTxEnd());
             service.getAndIncrementXid();
             if (!service.isAutocommit()) {
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxStartByImplicitly(service));
+                StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));
             }
         }
     }

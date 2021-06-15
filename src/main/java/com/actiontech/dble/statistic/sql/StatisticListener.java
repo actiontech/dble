@@ -9,11 +9,16 @@ import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 public class StatisticListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StatisticManager.class);
     private static final StatisticListener INSTANCE = new StatisticListener();
     private volatile boolean enable = false;
 
@@ -63,22 +68,22 @@ public class StatisticListener {
         }
     }
 
-    public StatisticRecord getRecorder(Session session) {
-        if (enable && session != null) {
-            return recorders.get(session);
+    public void record(Session session, Consumer<StatisticRecord> consumer) {
+        try {
+            if (enable && session != null) {
+                Optional.ofNullable(recorders.get(session)).ifPresent(consumer);
+            }
+        } catch (Exception ex) {
+            LOGGER.error("exception occurred when the statistics were recorded", ex);
         }
-        return null;
     }
 
-    public StatisticRecord getRecorder(AbstractService service) {
-        if (enable) {
-            if (service instanceof ShardingService) {
-                return recorders.get(((ShardingService) service).getSession2());
-            } else if (service instanceof RWSplitService) {
-                return recorders.get(((RWSplitService) service).getSession());
-            }
+    public void record(AbstractService service, Consumer<StatisticRecord> consumer) {
+        if (service instanceof ShardingService) {
+            record(((ShardingService) service).getSession2(), consumer);
+        } else if (service instanceof RWSplitService) {
+            record(((RWSplitService) service).getSession(), consumer);
         }
-        return null;
     }
 
     public void remove(Session session) {

@@ -108,7 +108,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+                        StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                         if (session.getTargetCount() > 0) {
                             setNoAutoCommit = true;
                             session.implicitCommit(() -> {
@@ -129,7 +129,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 } else {
                     if (autocommit) {
                         if (!txStarted) {
-                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStart(this));
+                            StatisticListener.getInstance().record(this, r -> r.onTxStart(this));
                         }
                         autocommit = false;
                         txStarted = true;
@@ -519,7 +519,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             session.setKilled(false);
             session.setDiscard(false);
         }
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
+        StatisticListener.getInstance().record(session, r -> r.onFrontendSqlEnd());
     }
 
     @Override
@@ -539,7 +539,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void write(MySQLPacket packet) {
         if (packet instanceof OkPacket) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+            StatisticListener.getInstance().record(session, r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
         session.multiStatementPacket(packet);
         super.write(packet);

@@ -4,8 +4,6 @@ import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 
-import java.util.Optional;
-
 public final class XaHandler {
 
     private XaHandler() {
@@ -15,9 +13,9 @@ public final class XaHandler {
         String xaId = StringUtil.removeAllApostrophe(stmt.substring(offset).trim());
         service.getSession().execute(true, (isSuccess, rwSplitService) -> {
             if (isSuccess) {
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onXaStart(xaId));
+                StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStart(xaId));
                 rwSplitService.getAndIncrementTxId();
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onTxStart(service));
+                StatisticListener.getInstance().record(service.getSession(), r -> r.onTxStart(service));
             }
         });
     }
@@ -25,8 +23,8 @@ public final class XaHandler {
     public static void xaFinish(RWSplitService service) {
         service.getSession().execute(true, (isSuccess, rwSplitService) -> {
             if (isSuccess) {
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onXaStop());
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onTxEnd());
+                StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStop());
+                StatisticListener.getInstance().record(service.getSession(), r -> r.onTxEnd());
             }
         });
     }

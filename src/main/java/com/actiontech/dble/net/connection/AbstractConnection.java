@@ -28,7 +28,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NetworkChannel;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -144,7 +143,7 @@ public abstract class AbstractConnection implements Connection {
         if (isClosed.compareAndSet(false, true)) {
             if (service instanceof BusinessService)
                 ((BusinessService) service).transactionsCountInTx();
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onExit(reason));
+            StatisticListener.getInstance().record(service, r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             closeSocket();
             LOGGER.info("connection id close for reason [{}] with connection {}", reason, this);

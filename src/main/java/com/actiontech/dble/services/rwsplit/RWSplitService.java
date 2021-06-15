@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,7 +67,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(var.getValue())) {
                     if (!autocommit) {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+                        StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                         session.execute(true, (isSuccess, rwSplitService) -> {
                             //if (this.isTxStart() || !this.isAutocommit()) {
                             rwSplitService.setAutocommit(true);
@@ -82,15 +81,15 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     }
                 } else {
                     if (autocommit) {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
+                        StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
                         autocommit = false;
                         txStarted = true;
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
+                        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
                         writeOkPacket();
                         return;
                     }
                 }
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
+                StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
                 writeOkPacket();
                 break;
             default:
@@ -101,7 +100,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     @Override
     protected void beforeHandlingTask() {
         TraceManager.sessionStart(this, "rwSplit-server-start");
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlStart());
+        StatisticListener.getInstance().record(session, r -> r.onFrontendSqlStart());
     }
 
     @Override
@@ -280,12 +279,12 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     public void implicitlyDeal() {
         if (!this.isAutocommit()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
             this.getAndIncrementTxId();
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxStartByImplicitly(this));
+            StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(this));
         }
         if (this.isTxStart()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onTxEnd());
+            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
         }
         if (this.isTxStart() || !this.isAutocommit()) {
             this.setTxStart(false);

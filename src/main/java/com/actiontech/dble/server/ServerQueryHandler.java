@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
 /**
  * @author mycat
  */
@@ -56,7 +54,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 sql = sql.substring(0, ParseUtil.findNextBreak(sql));
             }
             String finalSql = sql;
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession2())).ifPresent(r -> r.onFrontendSetSql(service.getSchema(), finalSql));
+            StatisticListener.getInstance().record(service.getSession2(), r -> r.onFrontendSetSql(service.getSchema(), finalSql));
             this.service.setExecuteSql(sql);
             ShardingServerParse serverParse = ServerParseFactory.getShardingParser();
             int rs = serverParse.parse(sql);

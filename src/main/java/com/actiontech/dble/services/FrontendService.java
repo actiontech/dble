@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -362,7 +361,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlClose());
+        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlClose());
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);

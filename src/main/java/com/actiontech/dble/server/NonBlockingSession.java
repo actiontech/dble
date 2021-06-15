@@ -138,7 +138,7 @@ public class NonBlockingSession extends Session {
 
     public void setRequestTime() {
         sessionStage = SessionStage.Read_SQL;
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlStart());
+        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlStart());
         long requestTime = 0;
 
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
@@ -247,7 +247,7 @@ public class NonBlockingSession extends Session {
     }
 
     public void setBackendRequestTime(MySQLResponseService service) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onBackendSqlStart(service));
+        StatisticListener.getInstance().record(this, r -> r.onBackendSqlStart(service));
         if (!timeCost) {
             return;
         }
@@ -265,7 +265,7 @@ public class NonBlockingSession extends Session {
 
     public void setBackendResponseTime(MySQLResponseService service) {
         sessionStage = SessionStage.Fetching_Result;
-        // Optional.ofNullable(StatisticListener2.getInstance().getRecorder(this)).ifPresent(r -> r.onBackendSqlFirstEnd(service));
+        // Optional.ofNullable(StatisticListener2.getInstance().getRecorder(this, r ->r.onBackendSqlFirstEnd(service));
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
@@ -351,7 +351,7 @@ public class NonBlockingSession extends Session {
 
     public void setBackendResponseEndTime(MySQLResponseService service) {
         sessionStage = SessionStage.First_Node_Fetched_Result;
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onBackendSqlEnd(service));
+        StatisticListener.getInstance().record(this, r -> r.onBackendSqlEnd(service));
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             ResponseHandler responseHandler = service.getResponseHandler();
@@ -722,7 +722,7 @@ public class NonBlockingSession extends Session {
 
     public void commit() {
         if (!shardingService.isAutocommit() || shardingService.isTxStart()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+            StatisticListener.getInstance().record(this, r -> r.onTxEnd());
         }
         checkBackupStatus();
         transactionManager.commit();
@@ -948,7 +948,7 @@ public class NonBlockingSession extends Session {
         }
         needWaitFinished = false;
         if (shardingService.isTxChainBegin() && shardingService.isAutocommit()) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByImplicitly(shardingService));
+            StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
         }
         shardingService.setTxStart(false);
         shardingService.getAndIncrementXid();
@@ -956,7 +956,7 @@ public class NonBlockingSession extends Session {
             shardingService.setSetNoAutoCommit(false);
         } else {
             if (!shardingService.isAutocommit()) {
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartByImplicitly(shardingService));
+                StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
             }
         }
     }

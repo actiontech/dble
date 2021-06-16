@@ -31,7 +31,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     private final byte[] originPacket;
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
-    private long selectRows = 0;
+    private volatile long selectRows = 0;
     /**
      * When client send one request. dble should return one and only one response.
      * But , maybe OK event and connection closed event are run in parallel.

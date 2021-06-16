@@ -28,11 +28,6 @@ public class StatisticRecord {
 
     // tx
     protected volatile StatisticTxEntry txEntry;
-    protected volatile boolean isStartTx;
-
-    public void setTxEntry(StatisticTxEntry txEntry) {
-        this.txEntry = txEntry;
-    }
 
     public void onTxPreStart() {
     }
@@ -56,8 +51,7 @@ public class StatisticRecord {
 
     public void onExit(String reason) {
         long txEndTime = System.nanoTime();
-        if (isStartTx && txEntry != null) {
-            isStartTx = false;
+        if (txEntry != null) {
             if (reason.contains("quit cmd")) {
                 StatisticFrontendSqlEntry f = new StatisticFrontendSqlEntry(frontendInfo, txEndTime);
                 f.setSql("exit");
@@ -76,12 +70,12 @@ public class StatisticRecord {
             f.setXaId(xaId);
             f.setTxId(txid);
             f.setNeedToTx(true);
-            pushFrontendSql();
+            pushFrontendSql(f);
         }
     }
 
     protected void onTxData(StatisticFrontendSqlEntry frontendSqlentry) {
-        if (isStartTx && txEntry != null && txEntry.getTxId() > 0) {
+        if (txEntry != null && txEntry.getTxId() > 0 && frontendSqlentry.getSql() != null) {
             frontendSqlentry.setNeedToTx(false);
             if (frontendSqlentry.getTxId() == txEntry.getTxId()) {
                 txEntry.add(frontendSqlentry);
@@ -91,28 +85,28 @@ public class StatisticRecord {
 
     // frontend sql
     protected volatile StatisticFrontendSqlEntry frontendSqlEntry;
-    protected volatile boolean isStartFsql = false;
     protected volatile long txid;
 
     public void onFrontendMultiSqlStart() {
     }
 
     public void onFrontendSqlStart() {
-        isStartFsql = true;
-        frontendSqlEntry = new StatisticFrontendSqlEntry(frontendInfo, System.nanoTime());
-        if (xaId != null) {
-            frontendSqlEntry.setXaId(xaId);
+        if (frontendSqlEntry == null) {
+            frontendSqlEntry = new StatisticFrontendSqlEntry(frontendInfo, System.nanoTime());
+            if (xaId != null) {
+                frontendSqlEntry.setXaId(xaId);
+            }
         }
     }
 
     public void onFrontendSetSql(String schema, String sql) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (frontendSqlEntry != null) {
             if (sql == null || sql.toLowerCase().startsWith("explain")) {
                 onFrontendSqlClose();
             } else {
                 frontendSqlEntry.setSql(sql.trim());
                 frontendSqlEntry.setSchema(schema);
-                if (isStartTx && txEntry != null) {
+                if (txEntry != null) {
                     frontendSqlEntry.setTxId(txid);
                 } else {
                     txid = STATISTIC.getIncrementVirtualTxID();
@@ -124,33 +118,32 @@ public class StatisticRecord {
     }
 
     public void onFrontendSqlClose() {
-        if (isStartFsql && frontendSqlEntry != null) {
-            if (frontendSqlEntry.getBackendSqlEntrys().size() <= 0) {
-                isStartFsql = false;
-                frontendSqlEntry = null;
-            }
-        }
+        frontendSqlEntry = null;
+        //if (frontendSqlEntry != null) {
+        //if (frontendSqlEntry.getBackendSqlEntrys().size() <= 0) {
+        //frontendSqlEntry = null;
+        //}
+        //}
     }
 
     public void onFrontendSetRows(long rows) {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (frontendSqlEntry != null) {
             frontendSqlEntry.setRows(rows);
         }
     }
 
     public void onFrontendAddRows() {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (frontendSqlEntry != null) {
             frontendSqlEntry.addRows();
         }
     }
 
     public void onFrontendSqlEnd() {
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (frontendSqlEntry != null) {
             if (frontendSqlEntry.getSql() == null) {
                 onFrontendSqlClose();
             } else {
                 frontendSqlEntry.setAllEndTime(System.nanoTime());
-                isStartFsql = false;
                 onTxData(frontendSqlEntry);
                 pushFrontendSql();
             }
@@ -165,7 +158,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlFirstEnd(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
+        if (frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && frontendSqlEntry.getBackendSqlEntry(key).getFirstEndTime() == 0L) {
@@ -175,7 +168,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlSetRows(MySQLResponseService service, long rows) {
-        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
+        if (frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
@@ -186,7 +179,7 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlAddRows(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
+        if (frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
@@ -197,12 +190,13 @@ public class StatisticRecord {
     }
 
     public void onBackendSqlEnd(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
+        if (frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + node.getStatementHash();
             if (frontendSqlEntry.getBackendSqlEntry(key) != null && !frontendSqlEntry.getBackendSqlEntry(key).isEnd()) {
                 frontendSqlEntry.getBackendSqlEntry(key).setAllEndTime(System.nanoTime());
-                frontendSqlEntry.getBackendSqlEntry(key).setNeedToTx(frontendSqlEntry.isNeedToTx());
+                frontendSqlEntry.getBackendSqlEntry(key).
+                        setNeedToTx(frontendSqlEntry.isNeedToTx());
                 pushBackendSql(frontendSqlEntry.getBackendSqlEntry(key));
             }
         }
@@ -226,18 +220,26 @@ public class StatisticRecord {
         if (frontendSqlEntry != null) {
             if (frontendSqlEntry.getSql() != null) {
                 StatisticManager.getInstance().push(frontendSqlEntry);
+                frontendSqlEntry = null;
             } else {
                 onFrontendSqlClose();
             }
-            frontendSqlEntry = null;
+        }
+    }
+
+    public void pushFrontendSql(StatisticFrontendSqlEntry f) {
+        if (f != null) {
+            if (f.getSql() != null) {
+                StatisticManager.getInstance().push(f);
+            }
         }
     }
 
     protected void pushTx() {
         if (txEntry != null) {
-            if (txEntry.getEntryList().size() != 0) {
-                StatisticManager.getInstance().push(txEntry);
-            }
+            //if (txEntry.getEntryList().size() != 0) {
+            StatisticManager.getInstance().push(txEntry);
+            //}
             txEntry = null;
         }
     }

@@ -18,9 +18,9 @@ public class RwSplitStatisticRecord extends StatisticRecord {
     protected volatile int multiIndex = -1;
 
     public void onTxPreStart() {
-        if (frontendSqlEntry != null) {
+        /*if (frontendSqlEntry != null) {
             frontendSqlEntry.setNeedToTx(false);
-        }
+        }*/
     }
 
     public void onTxStartBySet(BusinessService businessService) {
@@ -31,23 +31,35 @@ public class RwSplitStatisticRecord extends StatisticRecord {
         if (isImplicitly) {
             txid = STATISTIC.getIncrementVirtualTxID();
         }
-        isStartTx = true;
         txEntry = new StatisticTxEntry(frontendInfo, xaId, txid, System.nanoTime(), isImplicitly);
         if (!isImplicitly && !isSet) {
-            txEntry.add(frontendSqlEntry);
+            if (frontendSqlEntry != null)
+                txEntry.add(frontendSqlEntry);
         }
     }
 
     public void onTxEnd() {
-        if (isStartTx && txEntry != null) {
+        if (txEntry != null) {
             long txEndTime = System.nanoTime();
-            isStartTx = false;
             if (frontendSqlEntry != null && frontendSqlEntry.getAllEndTime() == 0L) {
                 frontendSqlEntry.setAllEndTime(txEndTime);
                 txEntry.add(frontendSqlEntry);
             }
+            frontendSqlEntry = null;
             txEntry.setAllEndTime(txEndTime);
             pushTx();
+        }
+    }
+
+    public void onFrontendSqlEnd() {
+        if (frontendSqlEntry != null) {
+            if (frontendSqlEntry.getSql() == null) {
+                onFrontendSqlClose();
+            } else {
+                frontendSqlEntry.setAllEndTime(System.nanoTime());
+                onTxData(frontendSqlEntry);
+                pushFrontendSql();
+            }
         }
     }
 
@@ -60,7 +72,7 @@ public class RwSplitStatisticRecord extends StatisticRecord {
             onMultiSqlStart(connection);
             return;
         }
-        if (!isMultiFlag() && isStartFsql && frontendSqlEntry != null) {
+        if (!isMultiFlag() && frontendSqlEntry != null) {
             StatisticBackendSqlEntry entry = new StatisticBackendSqlEntry(
                     frontendInfo,
                     ((MySQLInstance) connection.getInstance()).getName(), connection.getHost(), connection.getPort(), "-",
@@ -74,7 +86,7 @@ public class RwSplitStatisticRecord extends StatisticRecord {
             onBackendMultiSqlSetRowsAndEnd(rows);
             return;
         }
-        if (isStartFsql && frontendSqlEntry != null) {
+        if (frontendSqlEntry != null) {
             if (frontendSqlEntry.getBackendSqlEntry("&statistic_rw_key") == null)
                 return;
             frontendSqlEntry.getBackendSqlEntry("&statistic_rw_key").setRows(rows);
@@ -172,13 +184,7 @@ public class RwSplitStatisticRecord extends StatisticRecord {
         multiIndex = -1;
     }
 
-    protected void pushFrontendSql() {
-        if (frontendSqlEntry != null) {
-            StatisticManager.getInstance().push(frontendSqlEntry);
-        }
-    }
-
-    protected void pushFrontendSql(StatisticFrontendSqlEntry f) {
+    public void pushFrontendSql(StatisticFrontendSqlEntry f) {
         if (f != null) {
             StatisticManager.getInstance().push(f);
         }

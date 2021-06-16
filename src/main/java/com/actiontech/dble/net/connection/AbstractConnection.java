@@ -190,13 +190,17 @@ public abstract class AbstractConnection implements Connection {
     }
 
     private void beforeHandleInnerServiceTask(@NotNull InnerServiceTask innerServiceTask) {
-        switch (innerServiceTask.getType()) {
-            case CLOSE:
-                //prevent most of repeat close.
-                this.getSocketWR().disableRead();
-                break;
-            default:
-                break;
+        try {
+            switch (innerServiceTask.getType()) {
+                case CLOSE:
+                    //prevent most of repeat close.
+                    this.getSocketWR().disableRead();
+                    break;
+                default:
+                    break;
+            }
+        } catch (Exception e) {
+            LOGGER.error("", e);
         }
     }
 

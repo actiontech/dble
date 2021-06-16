@@ -132,7 +132,9 @@ public class NIOSocketWR extends SocketWR {
     @Override
     public void disableRead() {
         SelectionKey key = this.processKey;
-        key.interestOps(key.interestOps() & OP_NOT_READ);
+        if (key != null && key.isValid()) {
+            key.interestOps(key.interestOps() & OP_NOT_READ);
+        }
     }
 
     @Override

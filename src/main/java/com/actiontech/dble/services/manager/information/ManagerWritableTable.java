@@ -98,15 +98,19 @@ public abstract class ManagerWritableTable extends ManagerBaseTable {
                 String columnName = column.getKey();
                 String insertColumn;
                 index = insertColumns.indexOf(columnName);
+                String insertColumnVal;
                 if (-1 != index && insertColumns.size() > index && columnName.equals(insertColumn = insertColumns.get(index))) {
-                    String insertColumnVal = ManagerTableUtil.valueToString(value.get(index));
+                    insertColumnVal = ManagerTableUtil.valueToString(value.get(index));
                     if (this.notWritableColumnSet.contains(columnName) && !StringUtil.isEmpty(insertColumnVal)) {
                         throw new SQLException("Column '" + insertColumn + "' is not writable", "42S22", ErrorCode.ER_ERROR_ON_WRITE);
                     }
-                    row.put(columnName, insertColumnVal);
+                    if (null == insertColumnVal) {
+                        insertColumnVal = column.getValue().getDefaultVal();
+                    }
                 } else {
-                    row.put(columnName, column.getValue().getDefaultVal());
+                    insertColumnVal = column.getValue().getDefaultVal();
                 }
+                row.put(columnName, insertColumnVal);
             }
             lst.add(row);
         }

@@ -71,6 +71,7 @@ public final class FilterPusher {
             mergeJoinOnFilter(qtn);
             qtn = pushJoinOnFilter(qtn);
             qtn = pushFilter(qtn, new ArrayList<>());
+            //todo all subQueries will do
             if (qtn instanceof NoNameNode && qtn.isContainsSubQuery()) {
                 for (ItemSubQuery subQuery : qtn.getSubQueries()) {
                     PlanNode subQtn = optimize(subQuery.getPlanNode());

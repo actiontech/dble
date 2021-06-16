@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.logic.ClusterOperation;
@@ -39,6 +40,7 @@ import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class UpdateHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateHandler.class);
@@ -76,7 +78,8 @@ public final class UpdateHandler {
         }
         //stand-alone lock
         int rowSize;
-        boolean lockFlag = managerTable.getLock().tryLock();
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        boolean lockFlag = lock.writeLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
@@ -103,7 +106,7 @@ public final class UpdateHandler {
             return;
         } finally {
             managerTable.updateTempConfig();
-            managerTable.getLock().unlock();
+            lock.writeLock().unlock();
             if (distributeLock != null) {
                 distributeLock.release();
             }

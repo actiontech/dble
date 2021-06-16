@@ -71,7 +71,7 @@ public final class UpdateHandler {
             ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
             distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
             if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
                 return;
             }
             LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
@@ -81,7 +81,7 @@ public final class UpdateHandler {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         boolean lockFlag = lock.writeLock().tryLock();
         if (!lockFlag) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing reload config or management commands(insert/update/delete), please try again later.");
             return;
         }
         try {

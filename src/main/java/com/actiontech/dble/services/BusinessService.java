@@ -11,7 +11,6 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.statistic.CommandCount;
 
@@ -145,11 +144,11 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
             int optCommand = mm.readUB2();
             if (optCommand == 0) {
                 multiStatementAllow = true;
-                write(EOFPacket.EOF, WriteFlags.QUERY_END);
+                write(EOFPacket.getDefault());
                 return;
             } else if (optCommand == 1) {
                 multiStatementAllow = false;
-                write(EOFPacket.EOF, WriteFlags.QUERY_END);
+                write(EOFPacket.getDefault());
                 return;
             }
         }

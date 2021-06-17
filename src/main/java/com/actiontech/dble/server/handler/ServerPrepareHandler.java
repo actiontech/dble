@@ -124,7 +124,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 LOGGER.debug("reset prepare sql : " + pStmtForId.get(psId));
             }
             pStmt.resetLongData();
-            service.write(OkPacket.OK, WriteFlags.QUERY_END);
+            service.write(OkPacket.getDefault());
         } else {
             service.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId));
         }

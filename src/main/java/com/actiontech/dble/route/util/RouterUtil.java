@@ -573,6 +573,9 @@ public final class RouterUtil {
     }
 
     private static boolean isShardingColumn(TableStat.Column column) {
+        if (null == column) {
+            return false;
+        }
         String columnName = column.getName();
         boolean isSharding = false;
         String table = column.getTable();

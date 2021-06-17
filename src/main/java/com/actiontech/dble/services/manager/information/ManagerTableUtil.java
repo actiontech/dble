@@ -29,7 +29,7 @@ import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.sql.parser.ParserException;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
@@ -140,8 +140,14 @@ public final class ManagerTableUtil {
                 sql = sql.substring(endPos + "*/".length()).trim();
             }
         }
-        SQLStatementParser parser = new MySqlStatementParser(sql);
-        SQLStatement sqlStatement = parser.parseStatement();
+        SQLStatement sqlStatement;
+        try {
+            sqlStatement = new MySqlStatementParser(sql).
+                    parseStatement();
+        } catch (ParserException e) {
+            // ignore
+            return new ArrayList<>();
+        }
         MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
         sqlStatement.accept(visitor);
         List<SQLName> tables2 = visitor.getOriginalTables();

@@ -162,7 +162,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
-            this.selectRows++;
+            selectRows++;
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }

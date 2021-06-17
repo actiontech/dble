@@ -15,25 +15,24 @@ public class ShardingStatisticRecord extends StatisticRecord {
         if (isImplicitly) {
             txid = STATISTIC.getIncrementVirtualTxID();
         }
-        isStartTx = true;
         txEntry = new StatisticTxEntry(frontendInfo, xaId, txid, System.nanoTime(), isImplicitly);
     }
 
     public void onTxEnd() {
-        if (isStartTx && txEntry != null) {
+        if (txEntry != null) {
             long txEndTime = System.nanoTime();
-            isStartTx = false;
             if (frontendSqlEntry != null) {
                 frontendSqlEntry.setAllEndTime(txEndTime);
                 txEntry.add(frontendSqlEntry);
             }
+            frontendSqlEntry = null;
             txEntry.setAllEndTime(txEndTime);
             pushTx();
         }
     }
 
     public void onBackendSqlStart(MySQLResponseService service) {
-        if (isStartFsql && frontendSqlEntry != null && isPassSql(service)) {
+        if (frontendSqlEntry != null && isPassSql(service)) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             BackendConnection connection = service.getConnection();
             ShardingService shardingService = service.getSession().getShardingService();

@@ -4,7 +4,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.server.response.FieldList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,7 @@ public class MySQLProtoLogicHandler {
         }
         service.setSchema(db);
         service.getSession2().setRowCount(0);
-        service.write(OkPacket.OK, WriteFlags.QUERY_END);
+        service.write(OkPacket.getDefault());
     }
 
 

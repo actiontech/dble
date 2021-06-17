@@ -31,7 +31,18 @@ import java.nio.ByteBuffer;
  */
 public class EOFPacket extends MySQLPacket {
     public static final byte FIELD_COUNT = (byte) 0xfe;
+    // don't use ,use getDefault() instead.
+    @Deprecated
     public static final byte[] EOF = new byte[]{7, 0, 0, 1, FIELD_COUNT, 0, 0, 0, 0, 0, 0};
+
+
+    public static EOFPacket getDefault() {
+        EOFPacket packet = new EOFPacket();
+        packet.setPacketId(1);
+        return packet;
+    }
+
+
     private byte fieldCount = FIELD_COUNT;
     private int warningCount;
     private int status = 2;
@@ -60,7 +71,6 @@ public class EOFPacket extends MySQLPacket {
         BufferUtil.writeUB2(buffer, status);
         return buffer;
     }
-
 
 
     @Override

@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler {
 
@@ -32,7 +31,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     private final byte[] originPacket;
     private final AbstractConnection frontedConnection;
     protected volatile ByteBuffer buffer;
-    private volatile AtomicLong selectRows = new AtomicLong(0);
+    private long selectRows = 0;
     /**
      * When client send one request. dble should return one and only one response.
      * But , maybe OK event and connection closed event are run in parallel.
@@ -163,7 +162,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
-            selectRows.getAndIncrement();
+            selectRows++;
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
@@ -176,8 +175,8 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
-            StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(selectRows.get()));
-            selectRows.set(0);
+            StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(selectRows));
+            selectRows = 0;
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {

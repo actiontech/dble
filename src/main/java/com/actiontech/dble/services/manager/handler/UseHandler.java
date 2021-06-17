@@ -40,8 +40,7 @@ public final class UseHandler {
             return;
         }
         service.setSchema(schema);
-        OkPacket okPacket = new OkPacket();
-        okPacket.read(OkPacket.OK);
+        OkPacket okPacket = OkPacket.getDefault();
         okPacket.write(service.getConnection());
     }
 

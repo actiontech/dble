@@ -7,7 +7,6 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.net.service.WriteFlags;
 
 /**
  * @author mycat
@@ -32,7 +31,7 @@ public class PingPacket extends MySQLPacket {
 
 
     public static void response(AbstractService service) {
-        service.write(OkPacket.OK, WriteFlags.QUERY_END);
+        service.write(OkPacket.getDefault());
     }
 
     @Override

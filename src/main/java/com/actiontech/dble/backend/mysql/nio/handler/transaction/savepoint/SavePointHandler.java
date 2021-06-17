@@ -31,7 +31,7 @@ public class SavePointHandler extends MultiNodeHandler {
         SAVE, ROLLBACK, RELEASE
     }
 
-    private byte[] sendData = OkPacket.OK;
+    private byte[] sendData = OkPacket.getDefault().toBytes();
 
     public SavePointHandler(NonBlockingSession session) {
         super(session);

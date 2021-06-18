@@ -38,12 +38,12 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
             session.getService().queryCount();
             if (serverParse.isMultiStatement(sql)) {
-                session.getService().transactionsCount();
                 if (!session.getService().isMultiStatementAllow()) {
                     LOGGER.warn("use multi-query without set CLIENT_MULTI_STATEMENTS flag");
                     session.getService().writeErrMessage(ErrorCode.ERR_WRONG_USED, "Your client must enable multi-query param .For example in jdbc,you should set allowMultiQueries=true in URL.");
                     return;
                 }
+                session.getService().singleTransactionsCount();
                 StatisticListener.getInstance().record(session.getService(), r -> r.onFrontendMultiSqlStart());
                 session.execute(true, null);
                 return;
@@ -87,7 +87,6 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, (isSuccess, rwSplitService) -> {
                             boolean isImplicitly = false;
                             if (rwSplitService.isTxStart() || !rwSplitService.isAutocommit()) {
-                                rwSplitService.transactionsCount();
                                 isImplicitly = true;
                                 StatisticListener.getInstance().record(session, r -> r.onTxEnd());
                             }
@@ -104,7 +103,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     case RwSplitServerParse.ROLLBACK:
                         session.execute(true, (isSuccess, rwSplitService) -> {
                             rwSplitService.setTxStart(false);
-                            rwSplitService.transactionsCount();
+                            rwSplitService.singleTransactionsCount();
                             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
                             if (!rwSplitService.isAutocommit()) {
                                 rwSplitService.getAndIncrementTxId();

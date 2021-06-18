@@ -64,30 +64,25 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     public void handleVariable(MysqlVariable var) {
         switch (var.getType()) {
             case AUTOCOMMIT:
-                if (Boolean.parseBoolean(var.getValue())) {
-                    if (!autocommit) {
-                        StatisticListener.getInstance().record(this, r -> r.onTxEnd());
-                        session.execute(true, (isSuccess, rwSplitService) -> {
-                            //if (this.isTxStart() || !this.isAutocommit()) {
-                            rwSplitService.setAutocommit(true);
-                            rwSplitService.setTxStart(false);
-                            this.transactionsCount();
-                            //}
-                        });
-                        return;
-                    } else if (!txStarted) {
-                        this.transactionsCount();
-                    }
-                } else {
-                    if (autocommit) {
-                        StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
-                        autocommit = false;
-                        txStarted = true;
-                        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
-                        writeOkPacket();
-                        return;
-                    }
+                String ac = var.getValue();
+                if (autocommit && !Boolean.parseBoolean(ac)) {
+                    StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
+                    autocommit = false;
+                    txStarted = true;
+                    StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
+                    writeOkPacket();
+                    return;
                 }
+                if (!autocommit && Boolean.parseBoolean(ac)) {
+                    StatisticListener.getInstance().record(this, r -> r.onTxEnd());
+                    session.execute(true, (isSuccess, rwSplitService) -> {
+                        rwSplitService.setAutocommit(true);
+                        txStarted = false;
+                        this.singleTransactionsCount();
+                    });
+                    return;
+                }
+                this.singleTransactionsCount();
                 StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
                 writeOkPacket();
                 break;
@@ -274,10 +269,8 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         if (this.isTxStart()) {
             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
         }
-        if (this.isTxStart() || !this.isAutocommit()) {
-            this.setTxStart(false);
-            this.transactionsCount();
-        }
+        this.setTxStart(false);
+        session.getService().singleTransactionsCount();
     }
 
     public boolean isLocked() {

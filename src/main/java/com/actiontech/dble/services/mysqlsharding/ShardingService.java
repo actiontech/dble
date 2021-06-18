@@ -434,7 +434,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
-            this.transactionsCount();
             txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }

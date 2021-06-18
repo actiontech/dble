@@ -164,7 +164,7 @@ public final class JavaUtils {
         String lower = str.toLowerCase().trim();
 
         try {
-            Matcher m = Pattern.compile("(-?[0-9]+)([a-z]+)?").matcher(lower);
+            Matcher m = Pattern.compile("([0-9]+)([a-z]+)?").matcher(lower);
             if (!m.matches()) {
                 throw new NumberFormatException("Failed to parse time string: " + str);
             }

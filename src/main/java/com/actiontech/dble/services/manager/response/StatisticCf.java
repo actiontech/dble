@@ -16,6 +16,8 @@ import com.actiontech.dble.services.manager.information.tables.statistic.Fronten
 import com.actiontech.dble.services.manager.information.tables.statistic.SqlLog;
 import com.actiontech.dble.services.manager.information.tables.statistic.TableByUserByEntry;
 import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.sql.UsageData;
+import com.actiontech.dble.statistic.sql.UsageDataBlock;
 import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
@@ -378,7 +380,8 @@ public class StatisticCf {
                 service.writeErrMessage(ErrorCode.ER_YES, "Check the sql statistics is disabled or samplingRate value is 0");
                 return;
             }
-            timer.schedule(new MonitorTask(
+            timer.schedule(
+                    new MonitorTask(
                             observeTime,
                             intervalTime),
                     0,
@@ -402,13 +405,16 @@ public class StatisticCf {
             buffer = EOF.write(buffer, service, true);
             byte packetId = EOF.getPacketId();
             RowDataPacket row;
+            UsageData usageData;
 
-            for (Map.Entry<String, String> entry : StatisticManager.getInstance().getUsageData().entrySet()) {
-                row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(entry.getKey(), service.getCharset().getResults()));
-                row.add(StringUtil.encode(entry.getValue(), service.getCharset().getResults()));
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, service, true);
+            for (UsageDataBlock block : StatisticManager.getInstance().getUsageData()) {
+                if ((usageData = block.get()) != null) {
+                    row = new RowDataPacket(FIELD_COUNT);
+                    row.add(StringUtil.encode(usageData.getDataTime(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(usageData.getUsage(), service.getCharset().getResults()));
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
             }
             EOFRowPacket lastEof = new EOFRowPacket();
             lastEof.setPacketId(++packetId);
@@ -423,25 +429,25 @@ public class StatisticCf {
         public static class MonitorTask extends TimerTask {
             private static final DecimalFormat DF = new DecimalFormat("0.00%");
             private double queueSize = SystemConfig.getInstance().getStatisticQueueSize();
-            private LinkedHashMap<String, String> usageData;
-            private long recordNum;
             private long interval;
-            long count;
+            private long observe;
+            private long count = 0L;
 
             public MonitorTask(long observe, long interval) {
                 super();
-                this.recordNum = observe / interval;
                 this.interval = interval;
-                this.usageData = StatisticManager.getInstance().getUsageData();
+                this.observe = observe;
             }
 
             @Override
             public void run() {
-                if (usageData.keySet().size() == recordNum + 1) {
+                if (count > observe) {
                     StatisticManager.getInstance().cancelMonitoring();
                     return;
                 }
-                usageData.put(DateUtil.parseStr(System.currentTimeMillis(), DateUtil.DEFAULT_DATE_PATTERN), DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize)));
+                StatisticManager.getInstance().
+                        getUsageData().add(new UsageDataBlock(DateUtil.parseStr(System.currentTimeMillis(), DateUtil.DEFAULT_DATE_PATTERN),
+                        DF.format(1 - (StatisticManager.getInstance().getDisruptorRemaining() / queueSize))));
                 count += interval;
             }
         }

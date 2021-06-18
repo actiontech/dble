@@ -9,10 +9,15 @@ import com.actiontech.dble.statistic.sql.handler.SqlStatisticHandler;
 import com.actiontech.dble.statistic.sql.handler.StatisticDataHandler;
 import com.google.common.collect.Maps;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class SqlLog extends ManagerBaseTable {
     public static final String TABLE_NAME = "sql_log";
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.US);
 
     private static final String COLUMN_SQL_ID = "sql_id";
     private static final String COLUMN_SQL_STMT = "sql_stmt";
@@ -64,8 +69,8 @@ public class SqlLog extends ManagerBaseTable {
         columns.put(COLUMN_EXAMINED_ROWS, new ColumnMeta(COLUMN_EXAMINED_ROWS, "int(11)", false));
         columnsType.put(COLUMN_EXAMINED_ROWS, Fields.FIELD_TYPE_LONG);
 
-        columns.put(COLUMN_START_TIME, new ColumnMeta(COLUMN_START_TIME, "int(11)", false));
-        columnsType.put(COLUMN_START_TIME, Fields.FIELD_TYPE_LONG);
+        columns.put(COLUMN_START_TIME, new ColumnMeta(COLUMN_START_TIME, "timestamp", false));
+        columnsType.put(COLUMN_START_TIME, Fields.FIELD_TYPE_TIMESTAMP);
 
         columns.put(COLUMN_DURATION, new ColumnMeta(COLUMN_DURATION, "int(11)", false));
         columnsType.put(COLUMN_DURATION, Fields.FIELD_TYPE_LONG);
@@ -97,8 +102,8 @@ public class SqlLog extends ManagerBaseTable {
             map.put(COLUMN_SOURCE_PORT, sqlRecord.getSourcePort() + "");
             map.put(COLUMN_ROWS, sqlRecord.getRows() + "");
             map.put(COLUMN_EXAMINED_ROWS, sqlRecord.getExaminedRows() + "");
-            map.put(COLUMN_DURATION, sqlRecord.getDuration() / 1000000 + "");
-            map.put(COLUMN_START_TIME, sqlRecord.getStartTime() + "");
+            map.put(COLUMN_DURATION, sqlRecord.getDuration() + "");
+            map.put(COLUMN_START_TIME, FORMATTER.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(sqlRecord.getStartTime()), ZoneId.systemDefault())));
             list.add(map);
         }));
         return list;

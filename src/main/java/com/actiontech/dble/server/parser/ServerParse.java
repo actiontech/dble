@@ -6,6 +6,8 @@
 
 package com.actiontech.dble.server.parser;
 
+import java.util.LinkedList;
+
 /**
  * @author dcy
  * Create Date: 2021-01-12
@@ -71,4 +73,6 @@ public interface ServerParse {
     boolean startWithHint(String stmt);
 
     boolean isMultiStatement(String sql);
+
+    LinkedList<String> getMultiStatement(String sql, LinkedList<String> splitSql);
 }

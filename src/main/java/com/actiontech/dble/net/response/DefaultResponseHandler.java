@@ -5,13 +5,12 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * for select and dml response packet
@@ -40,7 +39,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
                 if (service.getSession() != null) {
                     OkPacket ok = new OkPacket();
                     ok.read(data);
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onBackendSqlSetRows(service, ok.getAffectedRows()));
+                    StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlSetRows(service, ok.getAffectedRows()));
                 }
                 respHand.okResponse(data, service);
             }
@@ -61,9 +60,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
             status = INITIAL;
         }
         if (respHand != null) {
-            Optional.ofNullable(service.getSession()).ifPresent(e ->
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r ->
-                            r.onBackendSqlEnd(service)));
+            StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlEnd(service));
             respHand.errorResponse(data, service);
         } else {
             closeNoHandler();
@@ -99,9 +96,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     protected void closeNoHandler() {
         if (!service.getConnection().isClosed()) {
             LOGGER.info("no handler bind in this service " + service);
-            Optional.ofNullable(service.getSession()).ifPresent(e ->
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r ->
-                            r.onBackendSqlEnd(service)));
+            StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlEnd(service));
             service.getConnection().close("no handler");
         }
     }
@@ -121,7 +116,7 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         ResponseHandler respHand = service.getResponseHandler();
         if (respHand != null) {
             if (service.getSession() != null) {
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(service.getSession())).ifPresent(r -> r.onBackendSqlAddRows(service));
+                StatisticListener.getInstance().record(service.getSession(), r -> r.onBackendSqlAddRows(service));
             }
             respHand.rowResponse(data, null, false, service);
         } else {

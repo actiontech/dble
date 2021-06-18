@@ -26,7 +26,6 @@ import com.actiontech.dble.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -258,8 +257,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlClose());
-        markFinished();
+        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlClose());
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);

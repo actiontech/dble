@@ -10,8 +10,6 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
 public class TransactionHandlerManager {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(TransactionHandlerManager.class);
@@ -34,10 +32,10 @@ public class TransactionHandlerManager {
         if (xaTXEnabled && this.xaTxId == null) {
             LOGGER.info("XA Transaction enabled ,con " + service.getConnection());
             xaTxId = DbleServer.getInstance().genXaTxId();
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onXaStart(xaTxId));
+            StatisticListener.getInstance().record(service, r -> r.onXaStart(xaTxId));
         } else if (!xaTXEnabled && this.xaTxId != null) {
             LOGGER.info("XA Transaction disabled ,con " + service.getConnection());
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onXaStop());
+            StatisticListener.getInstance().record(service, r -> r.onXaStop());
             xaTxId = null;
         }
     }

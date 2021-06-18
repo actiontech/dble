@@ -13,7 +13,7 @@ public class StatisticTxEntry extends StatisticEntry {
         this.isImplicitly = isImplicitly;
     }
 
-    public void add(StatisticFrontendSqlEntry entry) {
+    public void add(final StatisticFrontendSqlEntry entry) {
         frontendSqlEntry.add(entry);
     }
 

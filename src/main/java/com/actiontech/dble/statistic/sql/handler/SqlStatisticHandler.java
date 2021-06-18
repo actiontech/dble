@@ -9,11 +9,12 @@ import com.actiontech.dble.statistic.sql.entry.StatisticFrontendSqlEntry;
 import com.actiontech.dble.statistic.sql.entry.StatisticTxEntry;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class SqlStatisticHandler implements StatisticDataHandler {
 
-    private final TreeMap<Long, TxRecord> txRecords = new TreeMap<>();
+    private final ConcurrentSkipListMap<Long, TxRecord> txRecords = new ConcurrentSkipListMap<>();
     private volatile BitSet sampleDecisions;
 
     public SqlStatisticHandler() {
@@ -30,11 +31,13 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         if (entry instanceof StatisticTxEntry) {
             StatisticTxEntry txEntry = (StatisticTxEntry) entry;
             if (sampleDecisions.get((int) (txEntry.getTxId() % 100))) {
-                synchronized (txRecords) {
+                if (null == txRecords.get(txEntry.getTxId())) {
                     if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
                         txRecords.pollFirstEntry();
                     }
                     txRecords.put(txEntry.getTxId(), new TxRecord(txEntry));
+                } else {
+                    txRecords.get(txEntry.getTxId()).addSqls(txEntry.getEntryList());
                 }
             }
         } else if (entry instanceof StatisticFrontendSqlEntry) {
@@ -43,23 +46,23 @@ public class SqlStatisticHandler implements StatisticDataHandler {
                 return;
             }
             if (sampleDecisions.get((int) (frontendSqlEntry.getTxId() % 100))) {
-                synchronized (txRecords) {
+                if (null == txRecords.get(frontendSqlEntry.getTxId())) {
                     if (txRecords.size() >= StatisticManager.getInstance().getSqlLogSize()) {
                         txRecords.pollFirstEntry();
                     }
                     txRecords.put(frontendSqlEntry.getTxId(), new TxRecord(frontendSqlEntry));
+                } else {
+                    txRecords.get(frontendSqlEntry.getTxId()).getSqls().add(new SQLRecord(frontendSqlEntry));
                 }
             }
         }
     }
 
     private void checkEliminate() {
-        synchronized (txRecords) {
-            int removeIndex;
-            if ((removeIndex = txRecords.size() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
-                while (removeIndex-- > 0) {
-                    txRecords.pollFirstEntry();
-                }
+        int removeIndex;
+        if ((removeIndex = txRecords.size() - StatisticManager.getInstance().getSqlLogSize()) > 0) {
+            while (removeIndex-- > 0) {
+                txRecords.pollFirstEntry();
             }
         }
     }
@@ -72,9 +75,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
 
     @Override
     public void clear() {
-        synchronized (txRecords) {
-            txRecords.clear();
-        }
+        txRecords.clear();
     }
 
     private BitSet randomBitSet(int cardinality, Random rnd) {
@@ -109,21 +110,28 @@ public class SqlStatisticHandler implements StatisticDataHandler {
         private final List<SQLRecord> sqls;
 
         TxRecord(StatisticFrontendSqlEntry frontendSqlEntry) {
-            this.startTime = frontendSqlEntry.getStartTime();
+            this.startTime = frontendSqlEntry.getStartTimeMs();
             this.txId = frontendSqlEntry.getTxId();
             this.info = frontendSqlEntry.getFrontend();
             this.duration = frontendSqlEntry.getDuration();
-            this.sqls = new ArrayList<>(1);
+            this.sqls = new ArrayList<>(2);
             this.sqls.add(new SQLRecord(frontendSqlEntry));
         }
 
         TxRecord(StatisticTxEntry txEntry) {
-            this.startTime = txEntry.getStartTime();
+            this.startTime = txEntry.getStartTimeMs();
             this.txId = txEntry.getTxId();
             this.info = txEntry.getFrontend();
             this.duration = txEntry.getDuration();
             final List<StatisticFrontendSqlEntry> entryList = txEntry.getEntryList();
-            this.sqls = new ArrayList<>(entryList.size());
+            this.sqls = new ArrayList<>();
+            for (StatisticFrontendSqlEntry sql : entryList) {
+                this.sqls.add(new SQLRecord(sql));
+            }
+        }
+
+        public void addSqls(final List<StatisticFrontendSqlEntry> entryList) {
+            if (this.sqls == null) return;
             for (StatisticFrontendSqlEntry sql : entryList) {
                 this.sqls.add(new SQLRecord(sql));
             }
@@ -184,7 +192,7 @@ public class SqlStatisticHandler implements StatisticDataHandler {
             this.user = frontendInfo.getUser();
             this.entry = frontendInfo.getUserId();
             // time
-            this.startTime = entry.getStartTime();
+            this.startTime = entry.getStartTimeMs();
             this.duration = entry.getDuration();
             // rows
             this.rows = entry.getRows();

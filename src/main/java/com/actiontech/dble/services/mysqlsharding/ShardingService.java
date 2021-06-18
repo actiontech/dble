@@ -49,7 +49,6 @@ import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -105,45 +104,41 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         switch (var.getType()) {
             case XA:
                 session.getTransactionManager().setXaTxEnabled(Boolean.parseBoolean(val), this);
-                this.singleTransactionsCount();
                 break;
             case TRACE:
                 session.setTrace(Boolean.parseBoolean(val));
-                this.singleTransactionsCount();
-                break;
-            case TX_READ_ONLY:
-                sessionReadOnly = Boolean.parseBoolean(val);
-                this.singleTransactionsCount();
                 break;
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+                        StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                         if (session.getTargetCount() > 0) {
                             setNoAutoCommit = true;
                             session.implicitCommit(() -> {
                                 autocommit = true;
                                 txStarted = false;
-                                this.singleTransactionsCount();
+                                this.transactionsCount();
                                 writeOkPacket();
                             });
                             return;
-                        } else if (txStarted) {
+                        } else {
                             txStarted = false;
+                            this.transactionsCount();
                         }
+                    } else if (!txStarted) {
+                        this.transactionsCount();
                     }
                     autocommit = true;
                 } else {
                     if (autocommit) {
                         if (!txStarted) {
-                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStart(this));
+                            StatisticListener.getInstance().record(this, r -> r.onTxStart(this));
                         }
                         autocommit = false;
                         txStarted = true;
                         TxnLogHelper.putTxnLog(this, executeSql);
                     }
                 }
-                this.singleTransactionsCount();
                 writeOkPacket();
                 break;
             default:
@@ -424,7 +419,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 session.setKilled(false);
                 session.setDiscard(false);
             }
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
+            StatisticListener.getInstance().record(session, r -> r.onFrontendSqlEnd());
         }
     }
 
@@ -435,6 +430,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
+            this.transactionsCount();
             txStarted = true;
             TxnLogHelper.putTxnLog(session.getShardingService(), stmt);
         }
@@ -554,7 +550,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void write(MySQLPacket packet) {
         if (packet instanceof OkPacket) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+            StatisticListener.getInstance().record(session, r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
         boolean multiQueryFlag = session.multiStatementPacket(packet);
         markFinished();

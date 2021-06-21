@@ -264,13 +264,13 @@ public class DbleDbGroup extends ManagerWritableTable {
             String heartbeatTimeoutStr = row.get(COLUMN_HEARTBEAT_TIMEOUT);
             String heartbeatRetryStr = row.get(COLUMN_HEARTBEAT_RETRY);
             if (!StringUtil.isBlank(delayThresholdStr) && IntegerUtil.parseInt(delayThresholdStr) < -1) {
-                throw new ConfigException("Column '" + COLUMN_DELAY_THRESHOLD + " should be a positive integer greater than -1!");
+                throw new ConfigException("Column '" + COLUMN_DELAY_THRESHOLD + "' should be a positive integer greater than -1!");
             }
             if (!StringUtil.isBlank(heartbeatTimeoutStr) && IntegerUtil.parseInt(heartbeatTimeoutStr) < 0) {
-                throw new ConfigException("Column '" + COLUMN_HEARTBEAT_TIMEOUT + " should be a positive integer greater than 0!");
+                throw new ConfigException("Column '" + COLUMN_HEARTBEAT_TIMEOUT + "' should be a positive integer greater than 0!");
             }
             if (!StringUtil.isBlank(heartbeatRetryStr) && IntegerUtil.parseInt(heartbeatRetryStr) < 0) {
-                throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + " should be a positive integer greater than 0!");
+                throw new ConfigException("Column '" + COLUMN_HEARTBEAT_RETRY + "' should be a positive integer greater than 0!");
             }
         }
     }

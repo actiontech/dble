@@ -77,33 +77,35 @@ public final class UpdateHandler {
             LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
         }
         //stand-alone lock
-        int rowSize;
+        int rowSize = 0;
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         boolean lockFlag = lock.writeLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing reload config or management commands(insert/update/delete), please try again later.");
             return;
         }
+        boolean isSuccess = true;
+        String errorMsg = null;
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
             rowSize = updateRows(service, managerTable, affectPks, values);
         } catch (SQLException e) {
-            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
+            isSuccess = false;
+            errorMsg = e.getMessage();
         } catch (ConfigException e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
-            return;
+            isSuccess = false;
+            errorMsg = "Update failure.The reason is " + e.getMessage();
         } catch (Exception e) {
+            isSuccess = false;
             if (e.getCause() instanceof ConfigException) {
+                errorMsg = "Update failure.The reason is " + e.getMessage();
                 //reload fail
-                service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
                 LOGGER.warn("Update failure.The reason is ", e);
             } else {
-                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
+                errorMsg = "unknown error:" + e.getMessage();
                 LOGGER.warn("unknown error:", e);
             }
-            return;
         } finally {
             managerTable.updateTempConfig();
             lock.writeLock().unlock();
@@ -111,10 +113,18 @@ public final class UpdateHandler {
                 distributeLock.release();
             }
         }
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(rowSize);
-        ok.write(service.getConnection());
+        writePacket(isSuccess, rowSize, service, errorMsg);
+    }
+
+    private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg) {
+        if (isSuccess) {
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(rowSize);
+            ok.write(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
     }
 
 

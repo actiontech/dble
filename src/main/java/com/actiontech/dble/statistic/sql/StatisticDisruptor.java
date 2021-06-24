@@ -51,6 +51,10 @@ public class StatisticDisruptor {
         return true;
     }
 
+    public Disruptor<StatisticEvent> getDisruptor() {
+        return disruptor;
+    }
+
     private static final EventFactory<StatisticEvent> EVENTFACTORY = new EventFactory<StatisticEvent>() {
         @Override
         public StatisticEvent newInstance() {
@@ -69,17 +73,17 @@ public class StatisticDisruptor {
     public static final class StatisticExceptionHandler implements ExceptionHandler {
         @Override
         public void handleEventException(Throwable ex, long sequence, Object event) {
-            LOGGER.warn("Exception processing: {} {} ,exception：{}", sequence, event, ex);
+            LOGGER.error("Exception processing: {} {} ,exception：", sequence, event, ex);
         }
 
         @Override
         public void handleOnStartException(Throwable ex) {
-            LOGGER.error("Exception during onStart for statistic's disruptor ,exception：{}", ex);
+            LOGGER.error("Exception during onStart for statistic's disruptor ,exception：", ex);
         }
 
         @Override
         public void handleOnShutdownException(Throwable ex) {
-            LOGGER.error("Exception during onShutdown for statistic's disruptor ,exception：{}", ex);
+            LOGGER.error("Exception during onShutdown for statistic's disruptor ,exception：", ex);
         }
     }
 }

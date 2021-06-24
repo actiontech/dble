@@ -15,10 +15,6 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     private volatile LongAdder examinedRows = new LongAdder();
     private boolean isNeedToTx;
 
-    public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long txId, long startTime) {
-        super(frontendInfo, txId, startTime);
-    }
-
     public StatisticFrontendSqlEntry(FrontendInfo frontendInfo, long startTime) {
         super(frontendInfo, startTime);
     }
@@ -60,6 +56,9 @@ public class StatisticFrontendSqlEntry extends StatisticEntry {
     }
 
     public int getSqlType() {
+        if (null == sql) {
+            return sqlType;
+        }
         if (sqlType == -99) {
             this.sqlType = ServerParseFactory.getShardingParser().parse(sql) & 0xff;
         }

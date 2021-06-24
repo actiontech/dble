@@ -24,7 +24,6 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -153,7 +152,7 @@ public abstract class AbstractConnection implements Connection {
 
     public void close(String reason) {
         if (isClosed.compareAndSet(false, true)) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(service)).ifPresent(r -> r.onTxEndByExit());
+            StatisticListener.getInstance().record(service, r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             closeSocket();
             LOGGER.info("connection id close for reason " + reason + " with connection " + toString());

@@ -49,7 +49,6 @@ import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -118,7 +117,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
-                        Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+                        StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                         if (session.getTargetCount() > 0) {
                             setNoAutoCommit = true;
                             session.implicitCommit(() -> {
@@ -136,7 +135,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 } else {
                     if (autocommit) {
                         if (!txStarted) {
-                            Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStart(this));
+                            StatisticListener.getInstance().record(this, r -> r.onTxStart(this));
                         }
                         autocommit = false;
                         txStarted = true;
@@ -424,7 +423,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                 session.setKilled(false);
                 session.setDiscard(false);
             }
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlEnd());
+            StatisticListener.getInstance().record(session, r -> r.onFrontendSqlEnd());
         }
     }
 
@@ -554,7 +553,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void write(MySQLPacket packet) {
         if (packet instanceof OkPacket) {
-            Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
+            StatisticListener.getInstance().record(session, r -> r.onFrontendSetRows(((OkPacket) packet).getAffectedRows()));
         }
         boolean multiQueryFlag = session.multiStatementPacket(packet);
         markFinished();

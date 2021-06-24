@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,15 +66,15 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             case AUTOCOMMIT:
                 String ac = var.getValue();
                 if (autocommit && !Boolean.parseBoolean(ac)) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxStartBySet(this));
+                    StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
                     autocommit = false;
                     txStarted = true;
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
+                    StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
                     writeOkPacket();
                     return;
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
-                    Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onTxEnd());
+                    StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                     session.execute(true, (isSuccess, rwSplitService) -> {
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
@@ -84,7 +83,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     return;
                 }
                 this.singleTransactionsCount();
-                Optional.ofNullable(StatisticListener.getInstance().getRecorder(this)).ifPresent(r -> r.onFrontendSqlEnd());
+                StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
                 writeOkPacket();
                 break;
             default:
@@ -95,7 +94,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     @Override
     protected void beforeHandlingTask() {
         TraceManager.sessionStart(this, "rwSplit-server-start");
-        Optional.ofNullable(StatisticListener.getInstance().getRecorder(session)).ifPresent(r -> r.onFrontendSqlStart());
+        StatisticListener.getInstance().record(session, r -> r.onFrontendSqlStart());
     }
 
     @Override
@@ -261,6 +260,19 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return executeSqlBytes;
     }
 
+    public void implicitlyDeal() {
+        if (!this.isAutocommit()) {
+            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
+            this.getAndIncrementTxId();
+            StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(this));
+        }
+        if (this.isTxStart()) {
+            StatisticListener.getInstance().record(session, r -> r.onTxEnd());
+        }
+        this.setTxStart(false);
+        session.getService().singleTransactionsCount();
+    }
+
     public boolean isLocked() {
         return isLocked;
     }
@@ -309,7 +321,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return !tmpTableSet.isEmpty();
     }
 
-
     public Set<String> getTmpTableSet() {
         if (tmpTableSet == null) {
             synchronized (this) {
@@ -321,7 +332,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         }
         return tmpTableSet;
     }
-
 
     public void setInPrepare(boolean inPrepare) {
         this.inPrepare = inPrepare;

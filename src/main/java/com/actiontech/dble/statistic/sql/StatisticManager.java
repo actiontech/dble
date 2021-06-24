@@ -19,7 +19,8 @@ public final class StatisticManager {
     private StatisticDisruptor disruptor;
     private static Map<String, StatisticDataHandler> statisticDataHandlers = new HashMap<>(8);
     private static StatisticListener statisticListener = StatisticListener.getInstance();
-    private static volatile LinkedHashMap<String, String> usageData = new LinkedHashMap<>();
+
+    private static volatile LinkedList<UsageDataBlock> usageData = new LinkedList<>();
     private boolean isStart = false;
     private Timer queueMonitor;
     private static final ReentrantReadWriteLock MONITO_RLOCK = new ReentrantReadWriteLock();
@@ -34,7 +35,6 @@ public final class StatisticManager {
     // sampling
     private volatile int sqlLogSize = SystemConfig.getInstance().getSqlLogTableSize();
     private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
-    private boolean isSampling = false;
 
     private StatisticManager() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
@@ -58,12 +58,7 @@ public final class StatisticManager {
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
         statisticListener.start();
-        if (enable) {
-            isStart = true;
-        }
-        if (samplingRate > 0) {
-            isSampling = true;
-        }
+        isStart = true;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("start sql statistic success");
         }
@@ -77,7 +72,6 @@ public final class StatisticManager {
             disruptor = null;
         }
         isStart = false;
-        isSampling = false;
         cancelMonitoring();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("stop sql statistic success");
@@ -130,7 +124,7 @@ public final class StatisticManager {
         }
     }
 
-    public LinkedHashMap<String, String> getUsageData() {
+    public LinkedList<UsageDataBlock> getUsageData() {
         return usageData;
     }
 
@@ -144,11 +138,11 @@ public final class StatisticManager {
 
     public void setEnable(boolean enable) {
         this.enable = enable;
-        if (enable && !isStart && !isSampling) {
+        if (enable && !isStart) {
             start();
             return;
         }
-        if (!enable && isStart && !isSampling) {
+        if (!enable && (isStart && samplingRate == 0)) {
             stop();
         }
     }
@@ -190,12 +184,12 @@ public final class StatisticManager {
         if (samplingRate > 0) {
             final SqlStatisticHandler handler = ((SqlStatisticHandler) statisticDataHandlers.get(SqlLog.TABLE_NAME));
             handler.setSampleDecisions(samplingRate);
-            if (!isSampling && !isStart) {
+            if (!isStart) {
                 start();
             }
             return;
         }
-        if (samplingRate == 0 && isSampling && !isStart) {
+        if (samplingRate == 0 && (isStart && !enable)) {
             stop();
         }
     }

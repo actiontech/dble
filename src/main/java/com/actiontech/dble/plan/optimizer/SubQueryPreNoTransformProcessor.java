@@ -108,6 +108,9 @@ public final class SubQueryPreNoTransformProcessor {
     private static void addSubQuery(PlanNode node, ItemSubQuery subQuery) {
         node.getSubQueries().add(subQuery);
         PlanNode subNode = handlerComparisonsSubQuery(subQuery.getPlanNode());
+        if (subQuery instanceof ItemInSubQuery) {
+            subNode.setDistinct(true);
+        }
         subQuery.setPlanNode(subNode);
     }
 

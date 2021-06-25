@@ -11,10 +11,12 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.CommandCount;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.UnsupportedEncodingException;
 
@@ -68,8 +70,9 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
     }
 
     @Override
-    protected void beforeHandlingTask() {
+    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
         TraceManager.sessionStart(this, "manager-server-start");
+        return true;
     }
 
     public void killAndClose(String reason) {

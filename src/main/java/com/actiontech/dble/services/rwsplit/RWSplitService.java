@@ -10,6 +10,8 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
 import com.actiontech.dble.net.service.NormalServiceTask;
+import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.RwSplitServerParseSelect;
@@ -23,6 +25,7 @@ import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,9 +101,15 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     }
 
     @Override
-    protected void beforeHandlingTask() {
+    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
         TraceManager.sessionStart(this, "rwSplit-server-start");
-        StatisticListener.getInstance().record(session, r -> r.onFrontendSqlStart());
+        if (task.getType() == ServiceTaskType.NORMAL) {
+            final int packetType = ((NormalServiceTask) task).getPacketType();
+            if (packetType == MySQLPacket.COM_STMT_PREPARE || packetType == MySQLPacket.COM_STMT_EXECUTE || packetType == MySQLPacket.COM_QUERY) {
+                StatisticListener.getInstance().record(session, r -> r.onFrontendSqlStart());
+            }
+        }
+        return true;
     }
 
     @Override

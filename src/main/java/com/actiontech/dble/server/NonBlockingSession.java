@@ -138,7 +138,7 @@ public class NonBlockingSession extends Session {
 
     public void setRequestTime() {
         sessionStage = SessionStage.Read_SQL;
-        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlStart());
+
         long requestTime = 0;
 
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {

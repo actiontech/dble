@@ -170,8 +170,6 @@ public abstract class AbstractConnection implements Connection {
     public boolean pushServiceTask(@Nonnull ServiceTask serviceTask) {
         if (serviceTask.getType().equals(ServiceTaskType.NORMAL)) {
             IODelayProvider.beforePushServiceTask(serviceTask, service);
-            service.handle(serviceTask);
-            return true;
         } else {
             InnerServiceTask innerServiceTask = (InnerServiceTask) serviceTask;
             IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
@@ -183,18 +181,21 @@ public abstract class AbstractConnection implements Connection {
                 }
                 return false;
             }
-            beforeHandleInnerServiceTask(innerServiceTask);
-            service.handle(innerServiceTask);
-            return true;
         }
+        beforeInsertServiceTask(serviceTask);
+        service.handle(serviceTask);
+        return true;
     }
 
-    private void beforeHandleInnerServiceTask(@NotNull InnerServiceTask innerServiceTask) {
+    private void beforeInsertServiceTask(@NotNull ServiceTask serviceTask) {
+
         try {
-            switch (innerServiceTask.getType()) {
+            switch (serviceTask.getType()) {
                 case CLOSE:
                     //prevent most of repeat close.
                     this.getSocketWR().disableRead();
+                    break;
+                case NORMAL:
                     break;
                 default:
                     break;

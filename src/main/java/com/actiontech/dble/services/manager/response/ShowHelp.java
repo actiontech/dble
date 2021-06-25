@@ -236,6 +236,7 @@ public final class ShowHelp {
         HELPS.put("start @@statistic_queue_monitor [observeTime = ? [and intervalTime = ?]]", "Start monitoring queue usage, Unit: (s,m/min,h)");
         HELPS.put("stop @@statistic_queue_monitor", "Stop monitoring queue usage");
 
+        HELPS.put("select @@max_allowed_packet", "Show the size of maxPacketSize");
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

@@ -153,4 +153,11 @@ public final class RW implements Runnable {
     public Selector getSelector() {
         return selector;
     }
+
+    public int getSelectorKeySize() {
+        if (selector.isOpen()) {
+            return selector.keys().size();
+        }
+        return 0;
+    }
 }

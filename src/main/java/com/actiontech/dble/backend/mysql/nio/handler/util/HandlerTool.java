@@ -295,7 +295,9 @@ public final class HandlerTool {
         int index = findField(col, fields, startIndex);
         if (index < 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "field not found:" + col);
-        ItemField ret = new ItemField(fields.get(index));
+        Field field = fields.get(index);
+        ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName());
+        ret.setField(fields, index);
         ret.setItemName(col.getPushDownName() == null ? col.getItemName() : col.getPushDownName());
         return ret;
     }

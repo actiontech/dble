@@ -34,6 +34,7 @@ import java.nio.channels.Selector;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.BlockingDeque;
+import java.util.stream.Collectors;
 
 public final class DbleThreadPool extends ManagerWritableTable {
 
@@ -175,10 +176,10 @@ public final class DbleThreadPool extends ManagerWritableTable {
             Runnable runnable = threadRunnableEntry.getValue();
             boolean isNormalBackendExecutor = SystemConfig.getInstance().getUsePerformanceMode() != 1 && nameableExecutor.getName().equals(DbleServer.BACKEND_BUSINESS_EXECUTOR_NAME);
             if (runnable != null && !thread.isInterrupted() && !nameableExecutor.getName().equals(DbleServer.COMPLEX_QUERY_EXECUTOR_NAME) && !isNormalBackendExecutor) {
-                if (decreaseVal-- > 0) {
+                if (decreaseVal-- > 0 && runnableMap.size() > 1) {
                     LOGGER.debug("will interrupt thread:{}", thread.toString());
                     iterator.remove();
-                    if (runnable instanceof RW && !((RW) runnable).getSelector().keys().isEmpty()) {
+                    if (runnable instanceof RW && ((RW) runnable).getSelectorKeySize() != 0) {
                         //register selector
                         Runnable tailRunnable = getEntryFromTail(runnableMap, ++registerCount);
                         reRegisterSelector(((RW) runnable).getSelector(), tailRunnable);
@@ -216,11 +217,14 @@ public final class DbleThreadPool extends ManagerWritableTable {
      */
     private LinkedHashMap<Thread, Runnable> reorderRunnableMap(Map<Thread, Runnable> runnableMap) {
         LinkedHashMap<Thread, Runnable> orderMap = Maps.newLinkedHashMap();
-        runnableMap.entrySet().stream().sorted((o1, o2) -> {
+        Map<Thread, Runnable> result = runnableMap.entrySet().stream().sorted((o1, o2) -> {
             RW rw1 = (RW) o1.getValue();
             RW rw2 = (RW) o2.getValue();
-            return rw1.getSelector().keys().size() - rw2.getSelector().keys().size();
-        }).forEach(threadRunnableEntry -> orderMap.put(threadRunnableEntry.getKey(), threadRunnableEntry.getValue()));
+            return rw1.getSelectorKeySize() - rw2.getSelectorKeySize();
+        }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldVal, newVal) -> oldVal, LinkedHashMap::new));
+        for (Map.Entry<Thread, Runnable> threadRunnableEntry : result.entrySet()) {
+            orderMap.put(threadRunnableEntry.getKey(), threadRunnableEntry.getValue());
+        }
         return orderMap;
     }
 

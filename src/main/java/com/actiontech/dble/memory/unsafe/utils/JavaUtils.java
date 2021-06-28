@@ -170,6 +170,9 @@ public final class JavaUtils {
             }
 
             long val = Long.parseLong(m.group(1));
+            if (val == 0) {
+                throw new NumberFormatException("Cannot be zero");
+            }
             String suffix = m.group(2);
 
             // Check for invalid suffixes
@@ -342,9 +345,9 @@ public final class JavaUtils {
 
 
     /* Calculates 'x' modulo 'mod', takes to consideration sign of x,
-  * i.e. if 'x' is negative, than 'x' % 'mod' is negative too
-  * so function return (x % mod) + mod in that case.
-  */
+     * i.e. if 'x' is negative, than 'x' % 'mod' is negative too
+     * so function return (x % mod) + mod in that case.
+     */
     public static int nonNegativeMod(int x, int mod) {
         int rawMod = x % mod;
         int temp;

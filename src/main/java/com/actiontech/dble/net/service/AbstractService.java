@@ -171,7 +171,7 @@ public abstract class AbstractService extends VariablesService implements Servic
                         IODelayProvider.afterImmediatelyClose(serviceTask, this);
                     } else {
                         if (task.getDelayedTimes() > 20) {
-                            LOGGER.error("conn graceful close take so long time. {}.so force close it.", this);
+                            LOGGER.warn("conn graceful close take so long time. {}.so force close it.", this);
                             connection.closeImmediately(Strings.join(closedReasons, ';'));
                             return;
                         } else {

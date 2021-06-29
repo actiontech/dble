@@ -16,10 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class NIOSocketWR extends SocketWR {
     private static final Logger LOGGER = LoggerFactory.getLogger(NIOSocketWR.class);
     public static final int NOT_USED = -1;
-    private SelectionKey processKey;
+    private volatile SelectionKey processKey;
     private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
     private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
     private AbstractConnection con;
@@ -131,17 +128,25 @@ public class NIOSocketWR extends SocketWR {
 
     @Override
     public void disableRead() {
-        SelectionKey key = this.processKey;
-        if (key != null && key.isValid()) {
-            key.interestOps(key.interestOps() & OP_NOT_READ);
+        try {
+            SelectionKey key = this.processKey;
+            if (key != null && key.isValid()) {
+                key.interestOps(key.interestOps() & OP_NOT_READ);
+            }
+        } catch (CancelledKeyException e) {
+            //ignore error
         }
     }
 
     @Override
     public void enableRead() {
-        SelectionKey key = this.processKey;
-        key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-        processKey.selector().wakeup();
+        try {
+            SelectionKey key = this.processKey;
+            key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+            processKey.selector().wakeup();
+        } catch (CancelledKeyException e) {
+            //ignore error
+        }
     }
 
     @Override

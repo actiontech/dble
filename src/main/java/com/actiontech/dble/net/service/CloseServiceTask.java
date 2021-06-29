@@ -6,6 +6,8 @@
 
 package com.actiontech.dble.net.service;
 
+import org.apache.logging.log4j.util.Strings;
+
 import javax.annotation.Nonnull;
 import java.util.Collection;
 
@@ -30,6 +32,14 @@ public class CloseServiceTask extends InnerServiceTask {
 
     public Collection<String> getReasons() {
         return reasons;
+    }
+
+    public String getReasonsStr() {
+        return Strings.join(reasons, ';');
+    }
+
+    public boolean isFirst() {
+        return delayedTimes == 0;
     }
 
     @Nonnull

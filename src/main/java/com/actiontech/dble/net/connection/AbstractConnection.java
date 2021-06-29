@@ -194,6 +194,11 @@ public abstract class AbstractConnection implements Connection {
                 case CLOSE:
                     //prevent most of repeat close.
                     this.getSocketWR().disableRead();
+                    final CloseServiceTask closeTask = (CloseServiceTask) serviceTask;
+                    if (closeTask.isFirst()) {
+                        LOGGER.info("prepare close for conn.conn id {},reason [{}]", this.getId(), closeTask.getReasonsStr());
+                    }
+
                     break;
                 case NORMAL:
                     break;

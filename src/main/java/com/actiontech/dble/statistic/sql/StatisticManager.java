@@ -32,7 +32,6 @@ public final class StatisticManager {
     // sampling
     private volatile int sqlLogSize = SystemConfig.getInstance().getSqlLogTableSize();
     private volatile int samplingRate = SystemConfig.getInstance().getSamplingRate();
-    private boolean isSampling = false;
 
     private StatisticManager() {
         Runtime.getRuntime().addShutdownHook(new Thread(this::close));
@@ -56,12 +55,7 @@ public final class StatisticManager {
         ArrayList list = new ArrayList<>(statisticDataHandlers.values());
         disruptor = new StatisticDisruptor(statisticQueueSize, (StatisticDataHandler[]) list.toArray(new StatisticDataHandler[list.size()]));
         statisticListener.start();
-        if (enable) {
-            isStart = true;
-        }
-        if (samplingRate > 0) {
-            isSampling = true;
-        }
+        isStart = true;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("start sql statistic success");
         }
@@ -70,10 +64,11 @@ public final class StatisticManager {
     // stop
     public void stop() {
         statisticListener.stop();
-        if (disruptor != null)
+        if (disruptor != null) {
             disruptor.stop();
+            disruptor = null;
+        }
         isStart = false;
-        isSampling = false;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("stop sql statistic success");
         }
@@ -95,11 +90,11 @@ public final class StatisticManager {
 
     public void setEnable(boolean enable) {
         this.enable = enable;
-        if (enable && !isStart && !isSampling) {
+        if (enable && !isStart) {
             start();
             return;
         }
-        if (!enable && isStart && !isSampling) {
+        if (!enable && (isStart && samplingRate == 0)) {
             stop();
         }
     }
@@ -141,12 +136,12 @@ public final class StatisticManager {
         if (samplingRate > 0) {
             final SqlStatisticHandler handler = ((SqlStatisticHandler) statisticDataHandlers.get(SqlLog.TABLE_NAME));
             handler.setSampleDecisions(samplingRate);
-            if (!isSampling && !isStart) {
+            if (!isStart) {
                 start();
             }
             return;
         }
-        if (samplingRate == 0 && isSampling && !isStart) {
+        if (samplingRate == 0 && (isStart && !enable)) {
             stop();
         }
     }

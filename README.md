@@ -61,8 +61,13 @@ Read the [Quick Start](./docs/QUICKSTART.md) or [Quick Start With Docker](./docs
 ## Official website
 For more information, please visit the [official website](https://opensource.actionsky.com).
 
+## Download
+[Releases Download Link](https://github.com/actiontech/dble/releases) Or [The Other Image](https://hub.fastgit.org/actiontech/dble/releases)
+
+
 ## Documentation
 + [简体中文](https://actiontech.github.io/dble-docs-cn/)
++ [文档PDF下载](https://github.com/actiontech/dble-docs-cn/tree/pdf/dble-manual.pdf)  或者[github镜像站下载](https://hub.fastgit.org/actiontech/dble-docs-cn/tree/pdf/dble-manual.pdf)
 + [中文公开课](https://opensource.actionsky.com/dble-lessons/)
 + English(Comming soon)
 

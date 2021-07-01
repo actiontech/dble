@@ -63,7 +63,8 @@ public final class SubQueryPreProcessor {
         for (Item itemSelect : qtn.getColumnsSelected()) {
             if (itemSelect instanceof ItemSubQuery) {
                 ItemSubQuery subQuery = (ItemSubQuery) itemSelect;
-                findComparisonsSubQueryToJoinNode(subQuery.getPlanNode(), childTransform);
+                final PlanNode node = findComparisonsSubQueryToJoinNode(subQuery.getPlanNode(), childTransform);
+                subQuery.setPlanNode(node);
             }
         }
         if (qtn.type() == PlanNode.PlanNodeType.JOIN) {
@@ -81,6 +82,8 @@ public final class SubQueryPreProcessor {
         boolean canTrans = canTransform(where, new LongPtr(0));
         SubQueryFilter result = buildSubQuery(qtn, find, where, !canTrans, childTransform);
         if (result != find) {
+            //subquery has been transformed .
+
             // that means where filter only contains sub query,just replace it
             result.query.query(result.filter);
             qtn.query(null);
@@ -89,6 +92,7 @@ public final class SubQueryPreProcessor {
             childTransform.set(true);
             return result.query;
         } else {
+            //subquery hasn't been transformed .
             if (childTransform.get()) {
                 qtn.setUpFields();
             }
@@ -183,6 +187,14 @@ public final class SubQueryPreProcessor {
         subQuery.setPlanNode(subNode);
     }
 
+    /**
+     * transform subquery to join
+     *
+     * @param qtn
+     * @param filter
+     * @param childTransform
+     * @return
+     */
     private static SubQueryFilter transformInSubQuery(SubQueryFilter qtn, ItemInSubQuery filter, BoolPtr childTransform) {
         Item leftColumn = filter.getLeftOperand();
         PlanNode query = filter.getPlanNode();

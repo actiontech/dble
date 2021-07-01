@@ -62,10 +62,6 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         this.seed = new byte[0];
     }
 
-    @Override
-    protected boolean beforeHandlingTask() {
-        return true;
-    }
 
     @Override
     protected void handleInnerData(byte[] data) {

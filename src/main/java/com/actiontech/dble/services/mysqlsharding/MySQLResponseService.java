@@ -11,6 +11,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.response.*;
+import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -26,11 +27,15 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -453,7 +458,7 @@ public class MySQLResponseService extends BackendService {
     }
 
     @Override
-    protected boolean beforeHandlingTask() {
+    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
         if (session != null) {
             if (session.isKilled()) {
                 return false;

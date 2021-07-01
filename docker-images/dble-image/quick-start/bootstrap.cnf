@@ -10,7 +10,28 @@
 -Dcom.sun.management.jmxremote.host=127.0.0.1
 -Xmx4G
 -Xms1G
--XX:MaxDirectMemorySize=2G
+-Xss256k
+-XX:MaxDirectMemorySize=1G
+-XX:MetaspaceSize=100M
+# GC Log
+-XX:+PrintHeapAtGC
+-XX:+PrintGCDateStamps
+-Xloggc:./logs/gc_%WRAPPER_TIME_YYYYMMDDHHIISS%_%p.log
+-XX:+PrintGCTimeStamps
+-XX:+PrintGCDetails
+-XX:+PrintTenuringDistribution
+# CMS
+-XX:+UseConcMarkSweepGC
+-XX:+UseParNewGC
+-XX:+CMSParallelRemarkEnabled
+-XX:+UseCMSCompactAtFullCollection
+-XX:CMSFullGCsBeforeCompaction=0
+-XX:+CMSClassUnloadingEnabled
+-XX:LargePageSizeInBytes=128M
+-XX:+UseFastAccessorMethods
+-XX:+UseCMSInitiatingOccupancyOnly
+-XX:CMSInitiatingOccupancyFraction=70
+-XX:+UseCMSCompactAtFullCollection
 #  base config
 -DhomePath=.
 -DinstanceName=1

@@ -31,7 +31,6 @@
 -XX:+UseFastAccessorMethods
 -XX:+UseCMSInitiatingOccupancyOnly
 -XX:CMSInitiatingOccupancyFraction=70
--XX:+UseCMSCompactAtFullCollection
 #  base config
 -DhomePath=.
 -DinstanceName=1

@@ -14,9 +14,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.NormalServiceTask;
-import com.actiontech.dble.net.service.WriteFlag;
+import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.ServerQueryHandler;
@@ -46,7 +44,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLSyntaxErrorException;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -197,9 +198,16 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     @Override
-    protected void beforeHandlingTask() {
+    protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
         TraceManager.sessionStart(this, "sharding-server-start");
+        if (task.getType() == ServiceTaskType.NORMAL) {
+            final int packetType = ((NormalServiceTask) task).getPacketType();
+            if (packetType == MySQLPacket.COM_STMT_PREPARE || packetType == MySQLPacket.COM_STMT_EXECUTE || packetType == MySQLPacket.COM_QUERY) {
+                StatisticListener.getInstance().record(this, r -> r.onFrontendSqlStart());
+            }
+        }
         session.setRequestTime();
+        return true;
     }
 
     @Override
@@ -546,8 +554,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public void multiStatementNextSql(boolean flag) {
         if (flag) {
-            session.setRequestTime();
-            session.setQueryStartTime(System.currentTimeMillis());
             taskMultiQueryCreate(protoLogicHandler.getMultiQueryData());
         }
     }

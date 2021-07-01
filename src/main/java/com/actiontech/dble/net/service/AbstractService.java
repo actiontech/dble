@@ -132,15 +132,26 @@ public abstract class AbstractService extends VariablesService implements Servic
 
     protected abstract void handleInnerData(byte[] data);
 
+    protected boolean beforeHandlingTask(@Nonnull ServiceTask task) {
+        return true;
+    }
+
+    protected void afterDispatchTask(@Nonnull ServiceTask task) {
+
+    }
 
     public void consumeSingleTask(ServiceTask serviceTask) {
-        if (serviceTask.getType() == ServiceTaskType.NORMAL) {
-            final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
-            handleInnerData(data);
+        if (beforeHandlingTask(serviceTask)) {
+            if (serviceTask.getType() == ServiceTaskType.NORMAL) {
+                final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
+                handleInnerData(data);
 
-        } else {
-            handleSpecialInnerData((InnerServiceTask) serviceTask);
+            } else {
+                handleSpecialInnerData((InnerServiceTask) serviceTask);
+            }
         }
+
+        afterDispatchTask(serviceTask);
     }
 
     protected void handleSpecialInnerData(InnerServiceTask serviceTask) {

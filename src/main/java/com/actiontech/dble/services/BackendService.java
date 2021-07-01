@@ -88,7 +88,7 @@ public abstract class BackendService extends AbstractService {
      */
     @Override
     public void handle(ServiceTask task) {
-        if (beforeHandlingTask()) {
+        if (beforeHandlingTask(task)) {
             taskQueue.offer(task);
             doHandle(task);
         }
@@ -112,7 +112,6 @@ public abstract class BackendService extends AbstractService {
         }
     }
 
-    protected abstract boolean beforeHandlingTask();
 
     /**
      * used when Performance Mode

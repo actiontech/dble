@@ -141,7 +141,8 @@ public abstract class AbstractService extends VariablesService implements Servic
     }
 
     public void consumeSingleTask(ServiceTask serviceTask) {
-        if (beforeHandlingTask(serviceTask)) {
+        //The close packet can't be filtered
+        if (beforeHandlingTask(serviceTask) || (serviceTask.getType() == ServiceTaskType.CLOSE)) {
             if (serviceTask.getType() == ServiceTaskType.NORMAL) {
                 final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
                 handleInnerData(data);
@@ -171,7 +172,7 @@ public abstract class AbstractService extends VariablesService implements Servic
                         IODelayProvider.afterImmediatelyClose(serviceTask, this);
                     } else {
                         if (task.getDelayedTimes() > 20) {
-                            LOGGER.error("conn graceful close take so long time. {}.so force close it.", this);
+                            LOGGER.warn("conn graceful close take so long time. {}.so force close it.", this);
                             connection.closeImmediately(Strings.join(closedReasons, ';'));
                             return;
                         } else {

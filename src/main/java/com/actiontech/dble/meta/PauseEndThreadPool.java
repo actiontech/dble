@@ -57,7 +57,7 @@ public class PauseEndThreadPool {
         queueNumber = new AtomicInteger(0);
         this.queueLimit = queueLimit;
         if (queueLimit > 0) {
-            for (int i = 0; i < pauseThreadNum; i++) {
+            for (int i = 0; i < pauseThreadNum - 1; i++) {
                 executor.execute(new PauseThreadRunnable());
             }
         }
@@ -98,14 +98,11 @@ public class PauseEndThreadPool {
             queueLock.unlock();
         }
 
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                while (!(pauseThreadNum == idleCount.intValue())) {
-                    LockSupport.parkNanos(100);
-                }
-                executor.shutdownNow();
+        executor.execute(() -> {
+            while (!handlerQueue.isEmpty()) {
+                LockSupport.parkNanos(100);
             }
+            executor.shutdownNow();
         });
 
 
@@ -118,6 +115,10 @@ public class PauseEndThreadPool {
         public void run() {
             while (true) {
                 try {
+                    if (Thread.currentThread().isInterrupted()) {
+                        LOGGER.debug("the pause end thread exit");
+                        break;
+                    }
                     PauseTask task = handlerQueue.take();
 
                     if (waitForPause(task)) {
@@ -137,8 +138,11 @@ public class PauseEndThreadPool {
                         break;
                     }
 
+                } catch (InterruptedException e) {
+                    LOGGER.debug("the pause end thread exit");
+                    break;
                 } catch (Exception e) {
-                    LOGGER.info("the pause end thread with error", e);
+                    LOGGER.warn("the pause end thread with error", e);
                 }
             }
             idleCount.getAndIncrement();

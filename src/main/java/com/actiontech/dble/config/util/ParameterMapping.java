@@ -56,9 +56,9 @@ public final class ParameterMapping {
                         value = convert(cls, valStr);
                     } catch (NumberFormatException nfe) {
                         if (problemReporter != null) {
-                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                            problemReporter.error("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         } else {
-                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                            throw new ConfigException("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         }
                         src.remove(pd.getName());
                         continue;

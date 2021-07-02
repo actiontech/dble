@@ -213,7 +213,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         try {
             // @bug1042
             for (int i = 0; i < bucketSize; i++)
-                queue.put(new RowDataPacket(0));
+                queue.put(TERMINATED_ROW);
         } catch (InterruptedException e) {
             //ignore error
         }
@@ -313,7 +313,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     protected void terminateThread() throws Exception {
         this.queue.clear();
         for (int i = 0; i < bucketSize; i++)
-            queue.put(new RowDataPacket(0));
+            queue.put(TERMINATED_ROW);
     }
 
     @Override

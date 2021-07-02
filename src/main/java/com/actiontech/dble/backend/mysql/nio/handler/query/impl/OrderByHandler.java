@@ -86,7 +86,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
         if (terminate.get())
             return;
         try {
-            queue.put(new RowDataPacket(0));
+            queue.put(TERMINATED_ROW);
         } catch (InterruptedException e) {
             //ignore error
         }
@@ -147,9 +147,9 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     @Override
-    protected void terminateThread() throws Exception {
+    protected void terminateThread() {
         this.queue.clear();
-        this.queue.add(new RowDataPacket(0));
+        this.queue.add(TERMINATED_ROW);
     }
 
     @Override

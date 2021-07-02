@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.directgroupby;
 
+import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.backend.mysql.store.GroupByLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
@@ -50,13 +51,19 @@ public class GroupByBucket extends GroupByLocalResult {
                     RowDataPacket groupedRow = null;
                     while ((groupedRow = next()) != null)
                         outData.put(groupedRow);
-                    outData.put(new RowDataPacket((0)));
+                    outData.put(OwnThreadDMLHandler.TERMINATED_ROW);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
         thread.start();
+    }
+
+    @Override
+    public void close() {
+        inData.add(OwnThreadDMLHandler.TERMINATED_ROW);
+        super.close();
     }
 
 }

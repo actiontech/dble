@@ -141,7 +141,8 @@ public abstract class AbstractService extends VariablesService implements Servic
     }
 
     public void consumeSingleTask(ServiceTask serviceTask) {
-        if (beforeHandlingTask(serviceTask)) {
+        //The close packet can't be filtered
+        if (beforeHandlingTask(serviceTask) || (serviceTask.getType() == ServiceTaskType.CLOSE)) {
             if (serviceTask.getType() == ServiceTaskType.NORMAL) {
                 final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
                 handleInnerData(data);

@@ -12,12 +12,25 @@
 -Xms1G
 -Xss256k
 -XX:MaxDirectMemorySize=2G
+-XX:MetaspaceSize=100M
+# GC Log
 -XX:+PrintHeapAtGC
 -XX:+PrintGCDateStamps
 -Xloggc:./logs/gc_%WRAPPER_TIME_YYYYMMDDHHIISS%_%p.log
 -XX:+PrintGCTimeStamps
 -XX:+PrintGCDetails
--XX:MetaspaceSize=50M
+-XX:+PrintTenuringDistribution
+# CMS
+-XX:+UseConcMarkSweepGC
+-XX:+UseParNewGC
+-XX:+CMSParallelRemarkEnabled
+-XX:+UseCMSCompactAtFullCollection
+-XX:CMSFullGCsBeforeCompaction=0
+-XX:+CMSClassUnloadingEnabled
+-XX:LargePageSizeInBytes=128M
+-XX:+UseFastAccessorMethods
+-XX:+UseCMSInitiatingOccupancyOnly
+-XX:CMSInitiatingOccupancyFraction=70
 #  base config
 -DhomePath=.
 -DinstanceName=1

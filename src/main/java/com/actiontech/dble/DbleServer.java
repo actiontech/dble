@@ -9,6 +9,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.xa.XaCheckHandler;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
+import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -89,6 +90,8 @@ public final class DbleServer {
     private boolean aio = false;
 
     private final AtomicLong xaIDInc = new AtomicLong();
+
+    private volatile boolean callback = false;
 
     public static DbleServer getInstance() {
         return INSTANCE;
@@ -284,6 +287,11 @@ public final class DbleServer {
         LOGGER.info("====================================CronScheduler started=========================================");
 
         CustomMySQLHa.getInstance().start();
+
+        if (callback) {
+            XmltoZkMain.initFileToZK();
+            LOGGER.info("init file to Zk success");
+        }
 
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
@@ -644,5 +652,13 @@ public final class DbleServer {
 
     public long getXaIDInc() {
         return xaIDInc.get();
+    }
+
+    public boolean isCallback() {
+        return callback;
+    }
+
+    public void setCallback(boolean callback) {
+        this.callback = callback;
     }
 }

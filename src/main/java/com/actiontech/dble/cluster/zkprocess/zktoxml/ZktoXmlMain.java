@@ -5,11 +5,12 @@
 
 package com.actiontech.dble.cluster.zkprocess.zktoxml;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.cluster.general.response.PauseShardingNodeResponse;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.*;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -42,11 +43,7 @@ public final class ZktoXmlMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZktoXmlMain.class);
 
     public static void loadZkToFile() throws Exception {
-
-        //if first start,init zk
-        initZKIfNot();
         // load zk listen
-
         initListenerFromZK();
     }
 
@@ -82,7 +79,7 @@ public final class ZktoXmlMain {
         zkListen.clearInited();
     }
 
-    private static void initZKIfNot() throws Exception {
+    public static boolean initZK() throws Exception {
         // get zk conn
         CuratorFramework zkConn = ZKUtils.getConnection();
         String confInited = KVPathUtil.getConfInitedPath();
@@ -102,12 +99,14 @@ public final class ZktoXmlMain {
                         try {
                             if (zkConn.checkExists().forPath(confInited) == null) {
                                 LOGGER.info("initFileToZK start");
-                                XmltoZkMain.initFileToZK();
-                                LOGGER.info("initFileToZK end");
+                                DbleServer.getInstance().setCallback(true);
+                                ClusterController.startup();
+                                return true;
                             }
                             break;
                         } finally {
                             LOGGER.info("initZKIfNot finish");
+                            DbleServer.getInstance().setCallback(false);
                             confLock.release();
                         }
                     }
@@ -115,13 +114,17 @@ public final class ZktoXmlMain {
             } else {
                 try {
                     LOGGER.info("initFileToZK start");
-                    XmltoZkMain.initFileToZK();
+                    DbleServer.getInstance().setCallback(true);
+                    ClusterController.startup();
+                    return true;
                 } finally {
                     LOGGER.info("initFileToZK end");
+                    DbleServer.getInstance().setCallback(false);
                     confLock.release();
                 }
             }
         }
+        return false;
     }
 
     public static Map<String, OnlineType> getOnlineMap() {

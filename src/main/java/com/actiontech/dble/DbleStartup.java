@@ -37,14 +37,16 @@ public final class DbleStartup {
                 }
                 System.exit(-1);
             }
-            ClusterController.init();
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("Server execute ShutdownHook.");
-                OnlineStatus.getInstance().shutdownClear();
-                CustomMySQLHa.getInstance().stop(true);
-            }));
-            // startup
-            DbleServer.getInstance().startup();
+            if (!ClusterController.tryStartup()) {
+                ClusterController.init();
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    System.out.println("Server execute ShutdownHook.");
+                    OnlineStatus.getInstance().shutdownClear();
+                    CustomMySQLHa.getInstance().stop(true);
+                }));
+                // startup
+                DbleServer.getInstance().startup();
+            }
             System.out.println("Server startup successfully. dble version is [" + new String(Versions.getServerVersion()) + "]. Please see logs in logs/dble.log");
         } catch (Throwable e) {
             e.printStackTrace();

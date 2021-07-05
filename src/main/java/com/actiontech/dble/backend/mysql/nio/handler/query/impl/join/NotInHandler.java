@@ -113,7 +113,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
         if (terminate.get()) {
             return;
         }
-        RowDataPacket eofRow = new RowDataPacket(0);
+        RowDataPacket eofRow = TERMINATED_ROW;
         try {
             if (isLeft) {
                 // logger.debug("row eof left");
@@ -229,16 +229,15 @@ public class NotInHandler extends OwnThreadDMLHandler {
     /**
      * only for terminate.
      *
-     * @param row
      * @param columnCount
      * @param deque
      * @throws InterruptedException
      */
-    private void addEndRowToDeque(RowDataPacket row, int columnCount, FairLinkedBlockingDeque<LocalResult> deque)
+    private void addEndRowToDeque(int columnCount, FairLinkedBlockingDeque<LocalResult> deque)
             throws InterruptedException {
         LocalResult newLocalResult = new UnSortedLocalResult(columnCount, pool, this.charset).
                 setMemSizeController(session.getJoinBufferMC());
-        newLocalResult.add(row);
+        newLocalResult.add(TERMINATED_ROW);
         newLocalResult.done();
         LocalResult localResult = deque.addOrReplaceLast(newLocalResult);
         if (localResult != null)
@@ -247,10 +246,8 @@ public class NotInHandler extends OwnThreadDMLHandler {
 
     @Override
     protected void terminateThread() throws Exception {
-        RowDataPacket eofRow = new RowDataPacket(0);
-        addEndRowToDeque(eofRow, leftFieldPackets.size(), leftQueue);
-        RowDataPacket eofRow2 = new RowDataPacket(0);
-        addEndRowToDeque(eofRow2, rightFieldPackets.size(), rightQueue);
+        addEndRowToDeque(leftFieldPackets.size(), leftQueue);
+        addEndRowToDeque(rightFieldPackets.size(), rightQueue);
     }
 
     @Override

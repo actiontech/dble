@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.service.WriteFlags;
 
 /**
  * for heartbeat.
@@ -26,7 +25,7 @@ public final class Ping {
 
     public static void response(AbstractConnection c) {
         if (DbleServer.getInstance().isOnline()) {
-            c.getService().writeDirectly(c.getService().writeToBuffer(OkPacket.getDefault(), c.allocate()), WriteFlags.QUERY_END);
+            c.getService().write(OkPacket.getDefault());
         } else {
             ERROR.write(c);
         }

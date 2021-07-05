@@ -9,6 +9,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.mysql.QuitPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -51,8 +52,15 @@ public class BackendConnection extends PooledConnection {
     @Override
     public void businessClose(String reason) {
         if (!(getService() instanceof AuthService)) {
-            this.getBackendService().setResponseHandler(null);
-            this.getService().cleanup();
+            final MySQLResponseService backendService = this.getBackendService();
+            if (backendService != null) {
+                backendService.setResponseHandler(null);
+            }
+            final AbstractService service = this.getService();
+            if (service != null) {
+                service.cleanup();
+            }
+
         }
         this.setService(null);
         this.close(reason);

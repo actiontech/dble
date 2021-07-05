@@ -391,7 +391,7 @@ public final class DbleServer {
                                 p.checkBackendCons();
                             }
                         } catch (Exception e) {
-                            LOGGER.info("checkBackendCons caught err:" + e);
+                            LOGGER.info("checkBackendCons caught err:", e);
                         }
                     }
                 });

@@ -15,6 +15,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.statistic.CommandCount;
@@ -195,12 +196,16 @@ public final class IOProcessor {
                 continue;
             }
 
-            if (c.getBackendService().getXaStatus() != null && c.getBackendService().getXaStatus() != TxState.TX_INITIALIZE_STATE) {
+            final MySQLResponseService backendService = c.getBackendService();
+            if (backendService == null) {
+                continue;
+            }
+            if (backendService.getXaStatus() != null && backendService.getXaStatus() != TxState.TX_INITIALIZE_STATE) {
                 continue;
             }
 
             // close the conn which executeTimeOut
-            if (!c.getBackendService().isDDL() && c.getState() == PooledConnection.STATE_IN_USE && c.getBackendService().isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
+            if (!backendService.isDDL() && c.getState() == PooledConnection.STATE_IN_USE && backendService.isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
                 LOGGER.info("found backend connection SQL timeout ,close it " + c);
                 c.close("sql timeout");
             }

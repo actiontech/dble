@@ -28,6 +28,7 @@ import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.StatusFlags;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
@@ -811,7 +812,8 @@ public class NonBlockingSession extends Session {
                 if (shardingService.isFlowControlled()) {
                     releaseConnectionFromFlowCntrolled(c);
                 }
-                if (c.getService().isAutocommit()) {
+                final AbstractService service = c.getService();
+                if (service != null && service.isAutocommit()) {
                     c.release();
                 } else if (needClose) {
                     //c.rollback();

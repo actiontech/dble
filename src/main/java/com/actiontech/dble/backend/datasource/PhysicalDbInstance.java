@@ -195,7 +195,11 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
             // need do sharding syn in before sql send
             con.setSchema(schema);
         }
-        ((MySQLResponseService) con.getService()).setAttachment(attachment);
+        final AbstractService service = con.getService();
+        if (service == null) {
+            throw new IllegalStateException("create backend connection  failed.");
+        }
+        ((MySQLResponseService) service).setAttachment(attachment);
         return con;
     }
 

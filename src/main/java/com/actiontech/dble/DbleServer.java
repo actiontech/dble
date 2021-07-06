@@ -9,7 +9,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.xa.XaCheckHandler;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
-import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
+import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -289,7 +289,7 @@ public final class DbleServer {
         CustomMySQLHa.getInstance().start();
 
         if (callback) {
-            XmltoZkMain.initFileToZK();
+            ZktoXmlMain.loadZkToFile();
             LOGGER.info("init file to Zk success");
         }
 
@@ -308,7 +308,8 @@ public final class DbleServer {
     }
 
     private void initServerConfig() throws Exception {
-        if (ClusterConfig.getInstance().isClusterEnable()) {
+        //compatible with ZK first initialized
+        if (ClusterConfig.getInstance().isClusterEnable() && !isCallback()) {
             this.config = new ServerConfig(DbleTempConfig.getInstance().getUserConfig(), DbleTempConfig.getInstance().getDbConfig(),
                     DbleTempConfig.getInstance().getShardingConfig(), DbleTempConfig.getInstance().getSequenceConfig());
             DbleTempConfig.getInstance().clean();

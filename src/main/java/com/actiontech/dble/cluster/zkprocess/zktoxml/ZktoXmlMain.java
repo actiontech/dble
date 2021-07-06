@@ -6,11 +6,12 @@
 package com.actiontech.dble.cluster.zkprocess.zktoxml;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.DbleStartup;
 import com.actiontech.dble.cluster.general.response.PauseShardingNodeResponse;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
+import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.*;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -43,6 +44,7 @@ public final class ZktoXmlMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZktoXmlMain.class);
 
     public static void loadZkToFile() throws Exception {
+        XmltoZkMain.initFileToZK();
         // load zk listen
         initListenerFromZK();
     }
@@ -79,7 +81,7 @@ public final class ZktoXmlMain {
         zkListen.clearInited();
     }
 
-    public static boolean initZK() throws Exception {
+    public static boolean serverStartDuringInitZKData() throws Exception {
         // get zk conn
         CuratorFramework zkConn = ZKUtils.getConnection();
         String confInited = KVPathUtil.getConfInitedPath();
@@ -100,7 +102,7 @@ public final class ZktoXmlMain {
                             if (zkConn.checkExists().forPath(confInited) == null) {
                                 LOGGER.info("initFileToZK start");
                                 DbleServer.getInstance().setCallback(true);
-                                ClusterController.startup();
+                                DbleStartup.initClusterAndServerStart();
                                 return true;
                             }
                             break;
@@ -115,7 +117,7 @@ public final class ZktoXmlMain {
                 try {
                     LOGGER.info("initFileToZK start");
                     DbleServer.getInstance().setCallback(true);
-                    ClusterController.startup();
+                    DbleStartup.initClusterAndServerStart();
                     return true;
                 } finally {
                     LOGGER.info("initFileToZK end");

@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
@@ -27,13 +28,20 @@ import java.util.Map;
 public class ZkSender implements ClusterSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkSender.class);
 
+    /**
+     * only first init Lazy load
+     *
+     * @throws Exception
+     */
     @Override
     public void initCluster() throws Exception {
-        try {
-            ZktoXmlMain.loadZkToFile();
-        } catch (Exception e) {
-            LOGGER.error("error:", e);
-            throw e;
+        if (!DbleServer.getInstance().isCallback()) {
+            try {
+                ZktoXmlMain.loadZkToFile();
+            } catch (Exception e) {
+                LOGGER.error("error:", e);
+                throw e;
+            }
         }
     }
 

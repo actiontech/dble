@@ -5,13 +5,10 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
-import com.actiontech.dble.singleton.CustomMySQLHa;
-import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
@@ -94,28 +91,16 @@ public final class ClusterController {
         return pros;
     }
 
-
-    public static boolean tryStartup() throws Exception {
+    public static boolean tryServerStartDuringInitClusterData() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             switch (ClusterConfig.getInstance().getClusterMode()) {
+                // now only init zk data start dble
                 case ClusterController.CONFIG_MODE_ZK:
-                    return ZktoXmlMain.initZK();
+                    return ZktoXmlMain.serverStartDuringInitZKData();
                 default:
                     return false;
             }
         }
         return false;
     }
-
-    public static void startup() throws Exception {
-        init();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Server execute ShutdownHook.");
-            OnlineStatus.getInstance().shutdownClear();
-            CustomMySQLHa.getInstance().stop(true);
-        }));
-        // startup
-        DbleServer.getInstance().startup();
-    }
-
 }

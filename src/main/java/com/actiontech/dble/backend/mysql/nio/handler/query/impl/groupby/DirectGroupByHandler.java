@@ -117,6 +117,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
                 localResultReferredSums, this.isAllPushDown(), charSet).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
+            if (terminate.get())
+                break;
             RowDataComparator tmpComparator = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type());
             GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpComparator,

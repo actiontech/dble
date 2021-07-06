@@ -569,6 +569,7 @@ public class ShardingConverter {
                 throw new ConfigException("These properties of function [" + functionName + "] is not recognized: " + StringUtil.join(propItem, ","));
             }
 
+            ParameterMapping.checkMappingResult();
             //init for AbstractPartitionAlgorithm
             functionInstance.selfCheck();
             functionInstance.init();

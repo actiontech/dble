@@ -114,6 +114,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
                 localResultReferredSums, this.isAllPushDown(), CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
                 setMemSizeController(session.getOtherBufferMC());
         for (int i = 0; i < bucketSize; i++) {
+            if (terminate.get())
+                break;
             RowDataComparator tmpComparator = new RowDataComparator(this.localResultFps, this.groupBys,
                     this.isAllPushDown(), this.type());
             GroupByBucket bucket = new GroupByBucket(queue, outQueue, pool, localResultFps.size(), tmpComparator,
@@ -207,7 +209,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         try {
             // @bug1042
             for (int i = 0; i < bucketSize; i++)
-                queue.put(new RowDataPacket(0));
+                queue.put(TERMINATED_ROW);
         } catch (InterruptedException e) {
             //ignore error
         }
@@ -307,7 +309,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     protected void terminateThread() throws Exception {
         this.queue.clear();
         for (int i = 0; i < bucketSize; i++)
-            queue.put(new RowDataPacket(0));
+            queue.put(TERMINATED_ROW);
     }
 
     @Override

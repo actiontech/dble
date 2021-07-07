@@ -138,9 +138,9 @@ public final class SystemParams {
 
     public List<ParamInfo> getVolatileParams() {
         List<ParamInfo> params = new ArrayList<>();
-        params.add(new ParamInfo("enableFlowControl", WriteQueueFlowController.isEnableFlowControl() + "", "Whether use flow control feature"));
-        params.add(new ParamInfo("flowControlStartThreshold", WriteQueueFlowController.getFlowStart() + "", "The start threshold of write queue to start the flow control"));
-        params.add(new ParamInfo("flowControlStopThreshold", WriteQueueFlowController.getFlowEnd() + "", "The recover threshold of write queue to stop the flow control"));
+        params.add(new ParamInfo("enableFlowControl", FlowController.isEnableFlowControl() + "", "Whether use flow control feature"));
+        params.add(new ParamInfo("flowControlStartThreshold", FlowController.getFlowStart() + "", "The start threshold of write queue to start the flow control"));
+        params.add(new ParamInfo("flowControlStopThreshold", FlowController.getFlowEnd() + "", "The recover threshold of write queue to stop the flow control"));
         params.add(new ParamInfo("enableSlowLog", SlowQueryLog.getInstance().isEnableSlowLog() + "", "Enable Slow Query Log"));
         params.add(new ParamInfo("sqlSlowTime", SlowQueryLog.getInstance().getSlowTime() + "ms", "The threshold of Slow Query, the default is 100ms"));
         params.add(new ParamInfo("flushSlowLogPeriod", SlowQueryLog.getInstance().getFlushPeriod() + "s", "The period for flushing log to disk, the default is 1 second"));

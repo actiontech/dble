@@ -5,7 +5,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
@@ -57,7 +57,7 @@ public final class FlowControlShow {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        FlowControllerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
+        FlowControllerConfig config = FlowController.getFlowCotrollerConfig();
         //find
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(config.isEnableFlowControl() ? "true" : "false", service.getCharset().getResults()));

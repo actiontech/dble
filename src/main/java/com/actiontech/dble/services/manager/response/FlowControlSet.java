@@ -6,7 +6,7 @@ import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
+import com.actiontech.dble.singleton.FlowController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public final class FlowControlSet {
             service.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the flow_control command");
             return;
         }
-        FlowControllerConfig oldConfig = WriteQueueFlowController.getFlowCotrollerConfig();
+        FlowControllerConfig oldConfig = FlowController.getFlowCotrollerConfig();
         //create a new FlowCotrollerConfig
         FlowControllerConfig config =
                 new FlowControllerConfig(enable == null ? oldConfig.isEnableFlowControl() : Boolean.valueOf(enable),
@@ -61,7 +61,7 @@ public final class FlowControlSet {
             service.writeErrMessage(ErrorCode.ER_YES, msg);
             return;
         }
-        WriteQueueFlowController.configChange(config);
+        FlowController.configChange(config);
         OkPacket packet = new OkPacket();
         packet.setPacketId(1);
         packet.setAffectedRows(0);

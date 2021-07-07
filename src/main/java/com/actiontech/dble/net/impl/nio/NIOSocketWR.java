@@ -5,12 +5,11 @@
 
 package com.actiontech.dble.net.impl.nio;
 
-import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.ServiceTaskFactory;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
+import com.actiontech.dble.singleton.FlowController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,7 +205,7 @@ public class NIOSocketWR extends SocketWR {
                 }
             }
 
-            flowControlCount = checkFlowControl(flowControlCount);
+            flowControlCount = FlowController.tryRemoveFlowControl(flowControlCount, con);
 
             if (quitFlag) {
                 con.recycle(buffer);
@@ -246,7 +245,7 @@ public class NIOSocketWR extends SocketWR {
                 throw e;
             }
 
-            flowControlCount = checkFlowControl(flowControlCount);
+            flowControlCount = FlowController.tryRemoveFlowControl(flowControlCount, con);
 
             if (quitFlag) {
                 con.recycle(buffer);
@@ -263,38 +262,6 @@ public class NIOSocketWR extends SocketWR {
         }
         return true;
     }
-
-    private int checkFlowControl(int flowControlCount) {
-        FlowControllerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
-        if (con.isFlowControlled()) {
-            if (!config.isEnableFlowControl()) {
-                con.stopFlowControl();
-                return -1;
-            } else if ((flowControlCount != -1) &&
-                    (flowControlCount <= config.getEnd())) {
-                int currentSize = this.writeQueue.size();
-                if (currentSize <= config.getEnd()) {
-                    con.stopFlowControl();
-                    return -1;
-                } else {
-                    return currentSize;
-                }
-            } else if (flowControlCount == -1) {
-                int currentSize = this.writeQueue.size();
-                if (currentSize <= config.getEnd()) {
-                    con.stopFlowControl();
-                    return -1;
-                } else {
-                    return currentSize;
-                }
-            } else {
-                return --flowControlCount;
-            }
-        } else {
-            return -1;
-        }
-    }
-
 
     private void disableWrite() {
         try {
@@ -339,7 +306,6 @@ public class NIOSocketWR extends SocketWR {
         int got = channel.read(theBuffer);
         con.onReadData(got);
     }
-
 
     @Override
     public void shutdownInput() throws IOException {

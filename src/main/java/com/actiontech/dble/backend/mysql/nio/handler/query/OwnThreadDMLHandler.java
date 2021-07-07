@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,6 +18,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @CreateTime 2014/11/27
  */
 public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
+
+    public static final RowDataPacket TERMINATED_ROW = new RowDataPacket(0);
+
     /* if the own thread need to terminated, true if own thread running */
     private AtomicBoolean ownJobFlag;
     private Object ownThreadLock = new Object();

@@ -99,14 +99,15 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
         String[] physicalSchemas = dbGroup.getSchemas();
         int initSize = physicalSchemas.length;
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema), so dble will create at least 1 conn for every schema, " +
+            LOGGER.warn("For db instance[{}], minIdle is less than (the count of shardingNodes), so dble will create at least 1 conn for every schema, " +
                     "minCon size before:{}, now:{}", this.dbGroup.getGroupName() + "." + name, size, initSize);
             config.setMinCon(initSize);
         }
 
+        initSize = Math.max(initSize, config.getMinCon());
         size = config.getMaxCon();
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", this.dbGroup.getGroupName() + "." + name, size, initSize);
+            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the minCon or the count of shardingNodes,change the maxCon into {}", this.dbGroup.getGroupName() + "." + name, size, initSize);
             config.setMaxCon(initSize);
         }
 

@@ -31,6 +31,9 @@ public class TestParser {
                 ") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
         //		obj.test("drop table char_columns_test;");
         //		obj.test("truncate table char_columns_test;");
+
+        obj.test("select * from single for share skip locked;"); // druid 1.2.6 not support
+        obj.test("create table test(id int,fist_name varchar(20),last_name varchar(20),age int,sex char(1) check (sex='女' or sex='男') enforced, constraint name_ck check (fist_name<>last_name) not enforced, constraint age_ck check (age>=16 and age<65))engine=innodb default charset=utf8;;"); // druid 1.2.6 not support
         String strSetSql = "SELECT\n" +
                 "\t@@SESSION .auto_increment_increment AS auto_increment_increment,\n" +
                 "\t@@character_set_client AS character_set_client,\n" +

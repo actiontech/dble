@@ -9,7 +9,9 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGr
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinInnerHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
@@ -74,8 +76,8 @@ public final class FlowController {
             if (!INSTANCE.config.isEnableFlowControl()) {
                 con.stopFlowControl();
                 return -1;
-            } else if (flowControlCount == -1 ||
-                    ((flowControlCount != -1) && (flowControlCount <= INSTANCE.config.getEnd()))) {
+            } else if (((flowControlCount != -1) && (flowControlCount <= INSTANCE.config.getEnd())) ||
+                    flowControlCount == -1) {
                 int currentWriteQueueSize = con.getWriteQueue().size();
                 if (currentWriteQueueSize <= INSTANCE.config.getEnd()) {
                     con.stopFlowControl();
@@ -129,13 +131,16 @@ public final class FlowController {
         while (true) {
             if (nextHandler == null) {
                 return true;
-            } else if (nextHandler instanceof SubQueryHandler ||
+            } else if (nextHandler instanceof AllAnySubQueryHandler ||
+                    nextHandler instanceof InSubQueryHandler ||
+                    nextHandler instanceof SingleRowSubQueryHandler ||
+                    // nextHandler instanceof SubQueryHandler ||
                     nextHandler instanceof AggregateHandler ||
                     nextHandler instanceof DistinctHandler ||
                     nextHandler instanceof OrderByHandler ||
                     nextHandler instanceof NotInHandler ||
-                    nextHandler instanceof JoinHandler ||
                     nextHandler instanceof JoinInnerHandler ||
+                    nextHandler instanceof JoinHandler ||
                     nextHandler instanceof DirectGroupByHandler ||
                     nextHandler instanceof TempTableHandler) { // These handler have a caching mechanism and do not adapt to flow control
                 return false;

@@ -95,6 +95,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         this.sessionAutocommit = session.getShardingService().isAutocommit();
         this.modifiedSQL = rrs.getNodes()[0].isModifySQL();
         requestScope = session.getShardingService().getRequestScope();
+        TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
         initDebugInfo();
     }
 
@@ -135,15 +136,8 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 lock.unlock();
             }
             LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
-            StringBuilder sb = new StringBuilder();
-            for (final RouteResultsetNode node : rrs.getNodes()) {
+            for (RouteResultsetNode node : rrs.getNodes()) {
                 unResponseRrns.add(node);
-                if (node.isModifySQL()) {
-                    sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
-                }
-            }
-            if (sb.length() > 0) {
-                TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
             }
             Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap = rrs.getMultiRouteResultSetNodeMap();
             for (Map.Entry<String, List<LoadDataRouteResultsetNode>> entry : multiRouteResultSetNodeMap.entrySet()) {

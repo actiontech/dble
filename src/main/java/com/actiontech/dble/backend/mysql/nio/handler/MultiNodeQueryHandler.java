@@ -89,6 +89,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.modifiedSQL = rrs.getNodes()[0].isModifySQL();
         initDebugInfo();
         requestScope = session.getShardingService().getRequestScope();
+        TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
 
     @Override
@@ -134,18 +135,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             for (RouteResultsetNode node : rrs.getNodes()) {
                 unResponseRrns.add(node);
             }
-            if (SystemConfig.getInstance().getRecordTxn() == 1) {
-                StringBuilder sb = new StringBuilder();
-                for (final RouteResultsetNode node : rrs.getNodes()) {
-                    if (node.isModifySQL()) {
-                        sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
-                    }
-                }
-                if (sb.length() > 0) {
-                    TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
-                }
-            }
-
             for (final RouteResultsetNode node : rrs.getNodes()) {
                 BackendConnection conn = session.getTarget(node);
                 if (session.tryExistsCon(conn, node)) {

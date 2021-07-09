@@ -78,7 +78,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         this.session = session;
         requestScope = session.getShardingService().getRequestScope();
-
+        TxnLogHelper.putTxnLog(session.getShardingService(), node);
     }
 
 
@@ -127,9 +127,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
         boolean isAutocommit = session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart();
-        if (!isAutocommit && node.isModifySQL()) {
-            TxnLogHelper.putTxnLog(session.getShardingService(), node.getStatement());
-        }
         conn.getBackendService().execute(node, session.getShardingService(), isAutocommit);
     }
 

@@ -4,6 +4,7 @@ import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
@@ -84,10 +85,9 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 sessionShardingService.setLastInsertId(ok.getInsertId());
                 session.setBackendResponseEndTime((MySQLResponseService) service);
                 session.releaseConnectionIfSafe((MySQLResponseService) service, false);
-                session.setResponseTime(true);
                 session.multiStatementPacket(ok);
                 if (writeToClient.compareAndSet(false, true)) {
-                    ok.write(sessionShardingService.getConnection());
+                    handleEndPacket(ok, true);
                 }
             }
         }
@@ -103,11 +103,10 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
         session.setBackendResponseEndTime(service);
         session.releaseConnectionIfSafe(service, false);
-        session.setResponseTime(false);
         session.multiStatementPacket(errPacket);
         doSqlStat();
         if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
+            handleEndPacket(errPacket, false);
         }
     }
 
@@ -140,8 +139,14 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         shardingService.setTxInterrupt(errMsg);
         if (writeToClient.compareAndSet(false, true)) {
             session.handleSpecial(rrs, false, null);
-            errPkg.write(shardingService.getConnection());
+            handleEndPacket(errPkg, false);
         }
     }
 
+
+    private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
+        session.setResponseTime(isSuccess);
+        session.clearResources(false);
+        packet.write(session.getSource());
+    }
 }

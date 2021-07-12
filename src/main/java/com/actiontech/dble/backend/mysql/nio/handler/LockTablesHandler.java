@@ -7,11 +7,9 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -45,6 +43,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         this.rrs = rrs;
         unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         this.autocommit = session.getShardingService().isAutocommit();
+        TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
 
     public void execute() throws Exception {
@@ -147,7 +146,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
                     lock.unlock();
                 }
                 session.multiStatementPacket(ok);
-                ok.write(session.getSource());
+                handleEndPacket(ok, true);
             }
         }
     }
@@ -173,6 +172,12 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         LOGGER.info("unexpected packet for " +
                 service + " bound by " + session.getSource() +
                 ": row's eof");
+    }
+
+    private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
+        session.setResponseTime(isSuccess);
+        session.clearResources(false);
+        packet.write(session.getSource());
     }
 
 }

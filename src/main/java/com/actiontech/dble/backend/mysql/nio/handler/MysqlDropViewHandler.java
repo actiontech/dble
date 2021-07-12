@@ -10,12 +10,10 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -50,6 +48,7 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
         this.packetId = (byte) session.getPacketId().get();
         this.viewNodeNum = new AtomicInteger(viewNodeNum);
         this.vm = vm;
+        TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
 
     public void execute() throws Exception {
@@ -136,8 +135,7 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
             ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
             session.setBackendResponseEndTime(((MySQLResponseService) service));
             session.releaseConnectionIfSafe(((MySQLResponseService) service), false);
-            session.setResponseTime(true);
-            ok.write(session.getSource());
+            handleEndPacket(ok, true);
         }
     }
 
@@ -160,7 +158,7 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
 
         if (viewNodeNum.decrementAndGet() == 0) {
             shardingService.setTxInterrupt(errMsg);
-            errPkg.write(shardingService.getConnection());
+            handleEndPacket(errPkg, false);
         }
     }
 
@@ -196,5 +194,11 @@ public class MysqlDropViewHandler implements ResponseHandler, ExecutableHandler 
     @Override
     public void writeRemainBuffer() {
 
+    }
+
+    private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
+        session.setResponseTime(isSuccess);
+        session.clearResources(false);
+        packet.write(session.getSource());
     }
 }

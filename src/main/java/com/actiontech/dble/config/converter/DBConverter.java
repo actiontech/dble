@@ -235,6 +235,7 @@ public class DBConverter {
             if (errorMsgList.size() > 0) {
                 throw new ConfigException("Incorrect connection pool parameters: " + StringUtil.join(errorMsgList, ","));
             }
+            ParameterMapping.checkMappingResult();
         }
 
         Integer maxCon = dbInstance.getMaxCon();

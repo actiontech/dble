@@ -13,6 +13,7 @@
 -Xss256k
 -XX:MaxDirectMemorySize=2G
 -XX:MetaspaceSize=100M
+-XX:-OmitStackTraceInFastThrow
 # GC Log
 -XX:+PrintHeapAtGC
 -XX:+PrintGCDateStamps

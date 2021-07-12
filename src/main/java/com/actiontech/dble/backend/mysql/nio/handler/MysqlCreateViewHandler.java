@@ -10,12 +10,10 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -46,6 +44,7 @@ public class MysqlCreateViewHandler implements ResponseHandler, ExecutableHandle
         this.rrs = rrs;
         this.packetId = (byte) session.getPacketId().get();
         this.vm = vm;
+        TxnLogHelper.putTxnLog(session.getShardingService(), rrs.getNodes()[0]);
     }
 
     public void execute() throws Exception {
@@ -126,9 +125,8 @@ public class MysqlCreateViewHandler implements ResponseHandler, ExecutableHandle
         ok.setServerStatus(session.getShardingService().isAutocommit() ? 2 : 1);
         session.setBackendResponseEndTime(responseService);
         session.releaseConnectionIfSafe(responseService, false);
-        session.setResponseTime(true);
         session.multiStatementPacket(ok, packetId);
-        ok.write(session.getSource());
+        handleEndPacket(ok, true);
     }
 
     private void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
@@ -149,7 +147,7 @@ public class MysqlCreateViewHandler implements ResponseHandler, ExecutableHandle
             }
         }
         shardingService.setTxInterrupt(errMsg);
-        errPkg.write(shardingService.getConnection());
+        handleEndPacket(errPkg, false);
     }
 
     @Override
@@ -184,5 +182,12 @@ public class MysqlCreateViewHandler implements ResponseHandler, ExecutableHandle
     @Override
     public void writeRemainBuffer() {
 
+    }
+
+
+    private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
+        session.setResponseTime(isSuccess);
+        session.clearResources(false);
+        packet.write(session.getSource());
     }
 }

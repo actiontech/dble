@@ -10,7 +10,7 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
@@ -66,7 +66,7 @@ public final class FlowControlList {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        if (WriteQueueFlowController.isEnableFlowControl()) {
+        if (FlowController.isEnableFlowControl()) {
             //find all server connection
             packetId = findAllServerConnection(buffer, service, packetId);
             //find all mysql connection

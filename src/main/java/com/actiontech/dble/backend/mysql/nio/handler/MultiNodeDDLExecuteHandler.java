@@ -9,8 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -63,18 +61,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             for (RouteResultsetNode node : rrs.getNodes()) {
                 unResponseRrns.add(node);
             }
-            if (SystemConfig.getInstance().getRecordTxn() == 1) {
-                StringBuilder sb = new StringBuilder();
-                for (final RouteResultsetNode node : rrs.getNodes()) {
-                    if (node.isModifySQL()) {
-                        sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
-                    }
-                }
-                if (sb.length() > 0) {
-                    TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
-                }
-            }
-
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.EXECUTE_START, session.getShardingService());
             for (final RouteResultsetNode node : rrs.getNodes()) {
                 BackendConnection conn = session.getTarget(node);

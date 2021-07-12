@@ -19,6 +19,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -38,6 +39,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     private volatile int fieldCounts = -1;
     private final RouteResultsetNode rrss;
     private final NonBlockingSession serverSession;
+    private volatile boolean isSupportFlowControl = false;
 
     public BaseSelectHandler(long id, RouteResultsetNode rrss, boolean autocommit, Session session) {
         super(id, session);
@@ -123,6 +125,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService conn) {
         if (terminate.get())
             return true;
+        FlowController.tryFlowControl2(isSupportFlowControl, serverSession);
         RowDataPacket rp = new RowDataPacket(fieldCounts);
         rp.read(row);
         nextHandler.rowResponse(null, rp, this.isLeft, conn);
@@ -132,8 +135,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(service.toString() + " 's rowEof is reached.");
+            LOGGER.debug(service + " 's rowEof is reached.");
         }
+        FlowController.tryRemoveFlowControl(service);
         if (this.terminate.get()) {
             return;
         }
@@ -202,4 +206,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
         return HandlerType.BASESEL;
     }
 
+
+    public void setSupportFlowControl(boolean supportFlowControl) {
+        isSupportFlowControl = supportFlowControl;
+    }
 }

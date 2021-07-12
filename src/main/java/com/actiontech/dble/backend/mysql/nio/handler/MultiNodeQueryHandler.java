@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandl
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -27,8 +26,8 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
@@ -89,6 +88,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         this.modifiedSQL = rrs.getNodes()[0].isModifySQL();
         initDebugInfo();
         requestScope = session.getShardingService().getRequestScope();
+        TxnLogHelper.putTxnLog(session.getShardingService(), rrs);
     }
 
     @Override
@@ -134,18 +134,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             for (RouteResultsetNode node : rrs.getNodes()) {
                 unResponseRrns.add(node);
             }
-            if (SystemConfig.getInstance().getRecordTxn() == 1) {
-                StringBuilder sb = new StringBuilder();
-                for (final RouteResultsetNode node : rrs.getNodes()) {
-                    if (node.isModifySQL()) {
-                        sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
-                    }
-                }
-                if (sb.length() > 0) {
-                    TxnLogHelper.putTxnLog(session.getShardingService(), sb.toString());
-                }
-            }
-
             for (final RouteResultsetNode node : rrs.getNodes()) {
                 BackendConnection conn = session.getTarget(node);
                 if (session.tryExistsCon(conn, node)) {
@@ -512,12 +500,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             this.resultSize += row.length;
 
             if (!errorResponse.get() && byteBuffer != null) {
-                FlowControllerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
-                if (fconfig.isEnableFlowControl() &&
-                        session.getSource().getWriteQueue().size() > fconfig.getStart()) {
-                    session.getSource().startFlowControl();
-                }
-
+                FlowController.tryFlowControl(session);
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
                 if (!requestScope.isUsingCursor()) {
                     row[3] = (byte) session.getShardingService().nextPacketId();

@@ -29,6 +29,7 @@ public final class ParameterMapping {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
+    private static List<String> errorParameters = new ArrayList<>();
 
     public static void mapping(Object target, Properties src, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
@@ -56,9 +57,11 @@ public final class ParameterMapping {
                         value = convert(cls, valStr);
                     } catch (NumberFormatException nfe) {
                         if (problemReporter != null) {
-                            problemReporter.error("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                            String message = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "";
+                            problemReporter.warn(message);
+                            errorParameters.add(message);
                         } else {
-                            throw new ConfigException("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                         }
                         src.remove(pd.getName());
                         continue;
@@ -206,6 +209,15 @@ public final class ParameterMapping {
             value = null;
         }
         return (value);
+    }
+
+    public static void checkMappingResult() {
+        if (!errorParameters.isEmpty()) {
+            String[] errorArray = new String[errorParameters.size()];
+            errorParameters.toArray(errorArray);
+            errorParameters.clear();
+            throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(errorArray, ","));
+        }
     }
 
     private static boolean isPrimitiveType(Class<?> cls) {

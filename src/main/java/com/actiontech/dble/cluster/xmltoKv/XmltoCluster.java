@@ -37,6 +37,11 @@ public final class XmltoCluster {
 
         new XmlServerLoader(xmlProcess, ucoreListen);
 
+        //must before upload db data
+        if (ClusterHelper.useClusterHa()) {
+            new DataHostHaResponse().notifyCluster();
+        }
+
         new XmlSchemaLoader(xmlProcess, ucoreListen);
 
         new XmlEhcachesLoader(xmlProcess, ucoreListen);
@@ -47,9 +52,7 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        if (ClusterHelper.useClusterHa()) {
-            new DataHostHaResponse().notifyCluster();
-        }
+
     }
 
 }

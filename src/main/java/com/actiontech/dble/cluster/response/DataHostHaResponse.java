@@ -2,6 +2,7 @@ package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -75,6 +76,7 @@ public class DataHostHaResponse implements ClusterXmlLoader {
     @Override
     public void notifyCluster() throws Exception {
         HaConfigManager.getInstance().init();
+        ClusterDelayProvider.delayBeforeUploadHa();
         if (ClusterHelper.useClusterHa()) {
             Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
             for (Map.Entry<String, String> entry : map.entrySet()) {

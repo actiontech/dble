@@ -297,6 +297,7 @@ public class UserConverter {
                 props.keySet().toArray(propItem);
                 throw new ConfigException("blacklist item(s) is not recognized: " + StringUtil.join(propItem, ","));
             }
+            ParameterMapping.checkMappingResult();
             WallProvider provider = new MySqlWallProvider(wallConfig);
             provider.setBlackListEnable(true);
             blackListMap.put(name, provider);

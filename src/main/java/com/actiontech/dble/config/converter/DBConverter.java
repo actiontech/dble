@@ -244,6 +244,7 @@ public class DBConverter {
                 props.keySet().toArray(propItem);
                 throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
             }
+            ParameterMapping.checkMappingResult();
         }
 
         Integer maxCon = dbInstance.getMaxCon();

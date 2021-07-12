@@ -10,12 +10,11 @@ import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 
 import java.io.*;
 import java.util.List;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by nange on 2015/3/31.
@@ -72,14 +71,7 @@ public final class LoadDataUtil {
             int len = -1;
 
             while ((len = inputStream.read(buffer)) != -1) {
-
-                if (WriteQueueFlowController.isEnableFlowControl() &&
-                        service.getConnection().getWriteQueue().size() > WriteQueueFlowController.getFlowStart()) {
-                    service.getConnection().startFlowControl();
-                }
-                while (service.getConnection().isFlowControlled()) {
-                    LockSupport.parkNanos(100);
-                }
+                FlowController.tryFlowControl(service);
                 byte[] temp = null;
                 if (len == packSize) {
                     temp = buffer;

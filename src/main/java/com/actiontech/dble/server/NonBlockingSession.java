@@ -118,7 +118,7 @@ public class NonBlockingSession extends Session {
     private volatile long rowCountCurrentSQL = -1;
     private volatile long rowCountLastSQL = 0;
 
-    private final HashSet<BackendConnection> flowControlledBackendConnections = new HashSet<>();
+    private final HashSet<BackendConnection> flowControlledTarget = new HashSet<>();
 
     public NonBlockingSession(ShardingService service) {
         this.shardingService = service;
@@ -826,7 +826,7 @@ public class NonBlockingSession extends Session {
             BackendConnection c = target.remove(rrn);
             if (c != null && !c.isClosed()) {
                 if (shardingService.isFlowControlled()) {
-                    releaseConnectionFromFlowCntrolled(c);
+                    releaseFlowCntroll(c);
                 }
                 if (c.getService().isAutocommit()) {
                     c.release();
@@ -1065,7 +1065,6 @@ public class NonBlockingSession extends Session {
         return false;
     }
 
-
     public void rowCountRolling() {
         rowCountLastSQL = rowCountCurrentSQL;
         rowCountCurrentSQL = -1;
@@ -1097,7 +1096,6 @@ public class NonBlockingSession extends Session {
         }
     }
 
-
     public MemSizeController getJoinBufferMC() {
         return joinBufferMC;
     }
@@ -1110,7 +1108,6 @@ public class NonBlockingSession extends Session {
         return otherBufferMC;
     }
 
-
     public AtomicBoolean getIsMultiStatement() {
         return isMultiStatement;
     }
@@ -1122,7 +1119,6 @@ public class NonBlockingSession extends Session {
     public AtomicInteger getPacketId() {
         return shardingService.getPacketId();
     }
-
 
     public long getQueryStartTime() {
         return queryStartTime;
@@ -1159,7 +1155,6 @@ public class NonBlockingSession extends Session {
         return transactionManager.isRetryXa();
     }
 
-
     public boolean isKilled() {
         return killed;
     }
@@ -1177,36 +1172,38 @@ public class NonBlockingSession extends Session {
     }
 
     public void stopFlowControl() {
-        LOGGER.info("Session stop flow control " + this.getSource());
-        synchronized (flowControlledBackendConnections) {
+        synchronized (flowControlledTarget) {
+            LOGGER.info("This connection {} remove flow control", this.getSource());
             shardingService.getConnection().setFlowControlled(false);
-            for (BackendConnection entry : flowControlledBackendConnections) {
-                entry.getSocketWR().enableRead();
+            for (BackendConnection con : flowControlledTarget) {
+                con.getSocketWR().enableRead();
             }
-            flowControlledBackendConnections.clear();
+            flowControlledTarget.clear();
         }
     }
 
     public void startFlowControl() {
-        synchronized (flowControlledBackendConnections) {
-            if (!shardingService.isFlowControlled()) {
-                LOGGER.info("Session start flow control " + this.getSource());
-            }
+        synchronized (flowControlledTarget) {
+            LOGGER.info("This connection {} begins flow control", this.getSource());
             shardingService.getConnection().setFlowControlled(true);
-            for (BackendConnection backendConnection : target.values()) {
-                backendConnection.getSocketWR().disableRead();
-                flowControlledBackendConnections.add(backendConnection);
+            for (BackendConnection con : target.values()) {
+                con.getSocketWR().disableRead();
+                flowControlledTarget.add(con);
             }
         }
     }
 
-    public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
-        synchronized (flowControlledBackendConnections) {
-            if (flowControlledBackendConnections.remove(con)) {
+    public void releaseFlowCntroll(BackendConnection con) {
+        synchronized (flowControlledTarget) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("This connection {} remove flow control because of release", con);
+            }
+            if (flowControlledTarget.remove(con)) {
                 con.getSocketWR().enableRead();
-                if (flowControlledBackendConnections.size() == 0) {
-                    shardingService.getConnection().setFlowControlled(false);
-                }
+            }
+            if (flowControlledTarget.size() == 0) {
+                LOGGER.info("This connection {} remove flow control because of release", this.getSource());
+                shardingService.getConnection().setFlowControlled(false);
             }
         }
     }

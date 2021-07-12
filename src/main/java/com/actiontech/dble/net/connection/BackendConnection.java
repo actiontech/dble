@@ -65,17 +65,15 @@ public class BackendConnection extends PooledConnection {
         processor.addBackend(this);
     }
 
-
     @Override
     public void stopFlowControl() {
-        LOGGER.info("Session stop flow control " + this);
+        LOGGER.info("This connection {} remove flow control", this);
         this.setFlowControlled(false);
     }
 
-
     @Override
     public void startFlowControl() {
-        LOGGER.info("Session start flow control " + this);
+        LOGGER.info("This connection {} begins flow control", this);
         this.setFlowControlled(true);
     }
 

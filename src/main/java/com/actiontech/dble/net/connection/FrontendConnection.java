@@ -55,12 +55,14 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public void startFlowControl() {
-        ((ShardingService) this.getService()).getSession2().startFlowControl();
+        if (this.getService() instanceof ShardingService)
+            ((ShardingService) this.getService()).getSession2().startFlowControl();
     }
 
     @Override
     public void stopFlowControl() {
-        ((ShardingService) this.getService()).getSession2().stopFlowControl();
+        if (this.getService() instanceof ShardingService)
+            ((ShardingService) this.getService()).getSession2().stopFlowControl();
     }
 
     @Override
@@ -113,6 +115,6 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "skipCheck = " + isSkipCheck() + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " + isSkipCheck() + " isFlowControl = " + isFlowControlled() + "]";
     }
 }

@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -25,8 +24,8 @@ import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
@@ -421,12 +420,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
-                FlowControllerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
-                if (fconfig.isEnableFlowControl() &&
-                        session.getSource().getWriteQueue().size() > fconfig.getStart()) {
-                    session.getSource().startFlowControl();
-                }
-
+                FlowController.tryFlowControl(session);
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
                 if (!requestScope.isUsingCursor()) {
                     row[3] = (byte) session.getShardingService().nextPacketId();

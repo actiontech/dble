@@ -17,6 +17,11 @@ public final class ClusterDelayProvider {
 
     }
 
+    public static void delayBeforeUploadHa() {
+
+    }
+
+
     public static void delayAfterViewSetKey() {
 
     }

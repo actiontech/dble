@@ -41,6 +41,11 @@ public final class XmltoZkMain {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
+
+        //must before upload db data
+        new DataHostStatusTozkLoader(zkListen, zkConn);
+
+
         // xmltozk for schema
         new SchemasxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
@@ -50,7 +55,6 @@ public final class XmltoZkMain {
         // xmltozk for rule
         new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
-        new DataHostStatusTozkLoader(zkListen, zkConn);
 
         xmlProcess.initJaxbClass();
 
@@ -69,6 +73,9 @@ public final class XmltoZkMain {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
+        //must before upload db data
+        new DataHostStatusTozkLoader(zkListen, zkConn);
+
         new SchemasxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
         new ServerxmlTozkLoader(zkListen, zkConn, xmlProcess);
@@ -81,7 +88,6 @@ public final class XmltoZkMain {
 
         new OthermsgTozkLoader(zkListen, zkConn);
 
-        new DataHostStatusTozkLoader(zkListen, zkConn);
 
         xmlProcess.initJaxbClass();
 

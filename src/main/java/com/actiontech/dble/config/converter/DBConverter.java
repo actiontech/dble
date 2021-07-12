@@ -29,6 +29,7 @@ import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -220,8 +221,9 @@ public class DBConverter {
         PoolConfig poolConfig = new PoolConfig();
         if (!propertyList.isEmpty()) {
             Properties props = new Properties();
+            List<String> errorMsgList = Lists.newArrayList();
             for (Property property : propertyList) {
-                checkProperty(property);
+                checkProperty(errorMsgList, property);
                 props.put(property.getName(), property.getValue());
             }
             ParameterMapping.mapping(poolConfig, props, problemReporter);
@@ -229,6 +231,9 @@ public class DBConverter {
                 String[] propItem = new String[props.size()];
                 props.keySet().toArray(propItem);
                 throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
+            }
+            if (errorMsgList.size() > 0) {
+                throw new ConfigException("Incorrect connection pool parameters: " + StringUtil.join(errorMsgList, ","));
             }
         }
 
@@ -253,18 +258,19 @@ public class DBConverter {
         return conf;
     }
 
-    private void checkProperty(Property property) {
+    private void checkProperty(List<String> errorMsgList, Property property) {
         String value = property.getValue();
         if (StringUtil.isBlank(value)) {
             return;
         }
+
         switch (property.getName()) {
             case "testOnCreate":
             case "testOnBorrow":
             case "testOnReturn":
             case "testWhileIdle":
                 if (!StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
-                    throw new ConfigException("Column '" + property.getName() + "' values only support 'false' or 'true'.");
+                    errorMsgList.add("Column '" + property.getName() + "' values only support 'false' or 'true'.");
                 }
                 break;
             case "connectionTimeout":
@@ -274,7 +280,7 @@ public class DBConverter {
             case "heartbeatPeriodMillis":
             case "evictorShutdownTimeoutMillis":
                 if (!StringUtil.isBlank(value) && IntegerUtil.parseInt(value) <= 0) {
-                    throw new ConfigException("Column '" + property.getName() + "' should be an integer greater than 0!");
+                    errorMsgList.add("Column '" + property.getName() + "' should be an integer greater than 0!");
                 }
                 break;
             default:

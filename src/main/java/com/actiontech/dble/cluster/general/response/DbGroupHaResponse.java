@@ -1,7 +1,6 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.general.bean.KvBean;
@@ -44,7 +43,6 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
 
     @Override
     public void notifyCluster() throws Exception {
-        ClusterDelayProvider.delayBeforeUploadHa();
         ClusterLogic.syncDbGroupStatusToCluster();
     }
 }

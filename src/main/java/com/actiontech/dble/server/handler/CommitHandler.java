@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 public final class CommitHandler {
@@ -13,9 +12,6 @@ public final class CommitHandler {
     }
 
     public static void handle(String stmt, ShardingService service) {
-        if (service.isTxStart() || !service.isAutocommit()) {
-            TxnLogHelper.putTxnLog(service, stmt);
-        }
         service.transactionsCount();
         service.commit(stmt);
     }

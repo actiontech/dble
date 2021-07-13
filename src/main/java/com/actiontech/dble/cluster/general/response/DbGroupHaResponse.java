@@ -1,6 +1,7 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.path.ChildPathMeta;
@@ -48,6 +49,7 @@ public class DbGroupHaResponse extends AbstractGeneralListener<Empty> {
 
     @Override
     public void notifyCluster() throws Exception {
+        ClusterDelayProvider.delayBeforeUploadHa();
         ClusterLogic.forHA().syncDbGroupStatusToCluster();
     }
 }

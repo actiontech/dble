@@ -205,8 +205,12 @@ public abstract class MySQLPacket {
         connection.getService().write(this);
     }
 
-    //todo
-    public abstract void bufferWrite(AbstractConnection connection);
+
+    public void bufferWrite(AbstractConnection connection) {
+        ByteBuffer buffer = connection.allocate();
+        buffer = this.write(buffer, connection.getService(), true);
+        connection.getService().writeDirectly(buffer, getLastWriteFlag());
+    }
 
 
     public final EnumSet<WriteFlag> getLastWriteFlag() {

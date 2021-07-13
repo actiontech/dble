@@ -14,6 +14,7 @@ public class EOFRowPacket extends EOFPacket {
         service.writeWithBuffer(this, buffer);
     }
 
+    @Override
     public boolean isEndOfQuery() {
         return true;
     }

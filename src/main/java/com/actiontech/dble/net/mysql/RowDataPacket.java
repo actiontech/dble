@@ -10,14 +10,16 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
-import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * From server to client. One packet for each row in the result set.
@@ -126,10 +128,7 @@ public class RowDataPacket extends MySQLPacket {
         }
     }
 
-    @Override
-    public void bufferWrite(AbstractConnection connection) {
 
-    }
 
     private void writeBody(ByteBuffer buffer) {
         for (int i = 0; i < fieldCount; i++) {

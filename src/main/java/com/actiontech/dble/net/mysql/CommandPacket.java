@@ -8,7 +8,6 @@ package com.actiontech.dble.net.mysql;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
-import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
@@ -112,10 +111,7 @@ public class CommandPacket extends MySQLPacket {
         }
     }
 
-    @Override
-    public void bufferWrite(AbstractConnection connection) {
 
-    }
 
     public void writeBigPackage(MySQLResponseService service, int size) {
         ByteBuffer buffer;

@@ -34,6 +34,8 @@ public final class XmltoZkMain {
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
+        //must before upload db data
+        new DbGroupStatusToZkLoader(zkListen);
 
         new DbXmlToZkLoader(zkListen, xmlProcess);
 
@@ -45,7 +47,6 @@ public final class XmltoZkMain {
 
         new OtherMsgTozkLoader(zkListen);
 
-        new DbGroupStatusToZkLoader(zkListen);
 
         xmlProcess.initJaxbClass();
 

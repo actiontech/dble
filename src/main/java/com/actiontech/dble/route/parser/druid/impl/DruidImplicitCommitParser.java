@@ -37,20 +37,18 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
                     // Implicit commit does not take effect if a syntax error occurs or if a library is not selected
                     service.getSession2().syncImplicitCommit();
                     service.transactionsCountInTx();
-                    preNextTxState(service,
-                            endCurrentTxState(service));
+                    resetTxState(service);
                 }
                 throw sqlException;
             } else {
                 service.getSession2().syncImplicitCommit();
                 service.transactionsCountInTx();
                 if (rrs.isFinishedExecute()) {
-                    preNextTxState(service,
-                            endCurrentTxState(service));
+                    resetTxState(service);
                     service.writeOkPacket();
                 } else {
                     rrs.setFinishedRoute(true);
-                    endCurrentTxState(service);
+                    resetTxState2(service);
                     rrs.setDdlHandler(visitorParseEnd(rrs, service));
                 }
             }
@@ -85,21 +83,31 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
         isSyntaxNotSupported = syntaxNotSupported;
     }
 
-    private boolean endCurrentTxState(ShardingService service) {
-        if (service.isTxStart()) {
+    /**
+     * Reset tx state
+     *
+     * @param service
+     */
+    private void resetTxState(ShardingService service) {
+        if (service.isTxStart() || !service.isAutocommit()) {
             service.setTxStart(false);
             StatisticListener.getInstance().record(service, r -> r.onTxEnd());
-            return true;
+            service.getAndIncrementXid();
         }
-        return false;
+        if (!service.isAutocommit()) {
+            StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));
+        }
     }
 
-    private void preNextTxState(ShardingService service, boolean exec) {
-        if (exec) {
-            service.getAndIncrementXid();
-            if (!service.isAutocommit()) {
-                StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));
-            }
+    /**
+     * Only record tx here
+     * In fact, the tx state is reset in the com.actiontech.dble.server.NonBlockingSession.clearResources method
+     *
+     * @param service
+     */
+    private void resetTxState2(ShardingService service) {
+        if (service.isTxStart() || !service.isAutocommit()) {
+            StatisticListener.getInstance().record(service, r -> r.onTxEnd());
         }
     }
 }

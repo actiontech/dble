@@ -21,7 +21,7 @@ public class ZookeeperProcessListen {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZookeeperProcessListen.class);
 
-    private Set<NotifyService> initCache = new HashSet<>();
+    private Set<NotifyService> initCache = new LinkedHashSet<>();
     private Map<String, NotifyService> watchMap = new HashMap<>();
 
     public void addToInit(NotifyService service) {

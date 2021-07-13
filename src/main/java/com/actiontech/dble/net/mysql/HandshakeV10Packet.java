@@ -73,6 +73,7 @@ public class HandshakeV10Packet extends MySQLPacket {
         return serverVersion;
     }
 
+    @Override
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSize());

@@ -7,7 +7,6 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.singleton.BufferPoolManager;
 
@@ -56,6 +55,7 @@ public class EOFPacket extends MySQLPacket {
         status = mm.readUB2();
     }
 
+    @Override
     public void markMoreResultsExists() {
         status = status | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
     }
@@ -73,10 +73,7 @@ public class EOFPacket extends MySQLPacket {
     }
 
 
-    @Override
-    public void bufferWrite(AbstractConnection connection) {
 
-    }
 
     @Override
     public int calcPacketSize() {
@@ -127,6 +124,7 @@ public class EOFPacket extends MySQLPacket {
         this.status = status;
     }
 
+    @Override
     public boolean isEndOfQuery() {
         return false;
     }

@@ -111,6 +111,7 @@ public class OkPacket extends MySQLPacket {
     }
 
 
+    @Override
     public void markMoreResultsExists() {
         serverStatus = serverStatus | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
     }
@@ -192,6 +193,7 @@ public class OkPacket extends MySQLPacket {
         this.message = message;
     }
 
+    @Override
     public boolean isEndOfQuery() {
         return true;
     }

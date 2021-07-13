@@ -223,6 +223,7 @@ public class AuthPacket extends MySQLPacket {
         }
     }
 
+    @Override
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSizeWithKey());

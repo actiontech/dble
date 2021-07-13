@@ -6,7 +6,6 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
-import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 
 import java.nio.ByteBuffer;
@@ -33,10 +32,7 @@ public class RequestFilePacket extends MySQLPacket {
         return buffer;
     }
 
-    @Override
-    public void bufferWrite(AbstractConnection connection) {
 
-    }
 
     @Override
     public int calcPacketSize() {

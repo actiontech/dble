@@ -6,7 +6,6 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.MySQLMessage;
-import com.actiontech.dble.net.connection.AbstractConnection;
 
 /**
  * <pre>
@@ -43,10 +42,7 @@ public class ResetPacket extends MySQLPacket {
         pStmtId = mm.readUB4();
     }
 
-    @Override
-    public void bufferWrite(AbstractConnection connection) {
 
-    }
 
     @Override
     public int calcPacketSize() {

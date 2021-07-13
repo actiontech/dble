@@ -169,10 +169,12 @@ public class ErrorPacket extends MySQLPacket {
         this.message = message;
     }
 
+    @Override
     public boolean isEndOfQuery() {
         return true;
     }
 
+    @Override
     public boolean isEndOfSession() {
         return true;
     }

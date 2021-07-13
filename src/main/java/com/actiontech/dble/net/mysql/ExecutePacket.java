@@ -9,7 +9,6 @@ import com.actiontech.dble.backend.mysql.BindValue;
 import com.actiontech.dble.backend.mysql.BindValueUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.PreparedStatement;
-import com.actiontech.dble.net.connection.AbstractConnection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
@@ -126,10 +125,7 @@ public class ExecutePacket extends MySQLPacket {
         }
     }
 
-    @Override
-    public void bufferWrite(AbstractConnection connection) {
 
-    }
 
     @Override
     public int calcPacketSize() {

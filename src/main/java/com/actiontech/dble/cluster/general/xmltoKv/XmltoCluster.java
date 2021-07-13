@@ -42,6 +42,8 @@ public final class XmltoCluster {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
+        //must before upload db data
+        new DbGroupHaResponse().notifyCluster();
         new XmlDbLoader(xmlProcess, ucoreListen);
 
         new XmlShardingLoader(xmlProcess, ucoreListen);
@@ -52,7 +54,7 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        new DbGroupHaResponse().notifyCluster();
+
     }
 
 }

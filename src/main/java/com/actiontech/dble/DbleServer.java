@@ -118,7 +118,7 @@ public final class DbleServer {
     private ConcurrentLinkedQueue<AbstractConnection> backendRegisterQueue;
 
     private volatile boolean startup = false;
-    private Map<String, Map<Thread, Runnable>> runnableMap = Maps.newHashMap();
+    private Map<String, Map<Thread, Runnable>> runnableMap = Maps.newConcurrentMap();
 
     private DbleServer() {
     }

@@ -27,7 +27,9 @@ import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
+import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -168,24 +170,6 @@ public class DBConverter {
         return new PhysicalDbGroup(conf.getName(), conf, writeSource, readSources, conf.getRwSplitMode());
     }
 
-    private void beanValidate(DbGroups dbs) {
-        if (null == dbs) {
-            return;
-        }
-        List<DBGroup> dbGroupList = dbs.getDbGroup();
-        if (dbGroupList == null || dbGroupList.isEmpty()) {
-            throw new ConfigException("dbGroup is empty");
-        }
-        for (DBGroup dbGroup : dbGroupList) {
-            if (dbGroup.getDbInstance() == null || dbGroup.getDbInstance().isEmpty()) {
-                throw new ConfigException("The content of element type \"dbGroup\" is incomplete, it must match \"(heartbeat,dbInstance+)\"");
-            }
-            if (dbGroup.getHeartbeat() == null) {
-                throw new ConfigException("The content of element type \"dbGroup\" is incomplete, it must match \"(heartbeat,dbInstance+)\"");
-            }
-        }
-    }
-
     private static RawJson parseDbGroupXmlFileToJson(XmlProcessBase xmlParseBase) throws Exception {
         return parseDbGroupXmlFileToJson(xmlParseBase, ConfigFileName.DB_XML, ConfigFileName.DB_XSD);
     }
@@ -237,12 +221,19 @@ public class DBConverter {
         PoolConfig poolConfig = new PoolConfig();
         if (!propertyList.isEmpty()) {
             Properties props = new Properties();
-            propertyList.forEach(property -> props.put(property.getName(), property.getValue()));
+            List<String> errorMsgList = Lists.newArrayList();
+            for (Property property : propertyList) {
+                checkProperty(errorMsgList, property);
+                props.put(property.getName(), property.getValue());
+            }
             ParameterMapping.mapping(poolConfig, props, problemReporter);
             if (props.size() > 0) {
                 String[] propItem = new String[props.size()];
                 props.keySet().toArray(propItem);
                 throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
+            }
+            if (errorMsgList.size() > 0) {
+                throw new ConfigException("Incorrect connection pool parameters: " + StringUtil.join(errorMsgList, ","));
             }
             ParameterMapping.checkMappingResult();
         }
@@ -266,6 +257,36 @@ public class DBConverter {
         }
         conf.setPoolConfig(poolConfig);
         return conf;
+    }
+
+    private void checkProperty(List<String> errorMsgList, Property property) {
+        String value = property.getValue();
+        if (StringUtil.isBlank(value)) {
+            return;
+        }
+
+        switch (property.getName()) {
+            case "testOnCreate":
+            case "testOnBorrow":
+            case "testOnReturn":
+            case "testWhileIdle":
+                if (!StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
+                    errorMsgList.add("Column '" + property.getName() + "' values only support 'false' or 'true'.");
+                }
+                break;
+            case "connectionTimeout":
+            case "connectionHeartbeatTimeout":
+            case "timeBetweenEvictionRunsMillis":
+            case "idleTimeout":
+            case "heartbeatPeriodMillis":
+            case "evictorShutdownTimeoutMillis":
+                if (!StringUtil.isBlank(value) && IntegerUtil.parseInt(value) <= 0) {
+                    errorMsgList.add("Column '" + property.getName() + "' should be an integer greater than 0!");
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     public Map<String, PhysicalDbGroup> getDbGroupMap() {

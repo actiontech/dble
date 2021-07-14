@@ -109,6 +109,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             case AUTOCOMMIT:
                 if (Boolean.parseBoolean(val)) {
                     if (!autocommit) {
+                        TxnLogHelper.putTxnLog(this, executeSql);
                         StatisticListener.getInstance().record(this, r -> r.onTxEnd());
                         if (session.getTargetCount() > 0) {
                             setNoAutoCommit = true;
@@ -464,7 +465,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
-            TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
+            if (session.getShardingService().isTxStart() || !session.getShardingService().isAutocommit()) {
+                TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
+            }
             session.commit();
         }
     }

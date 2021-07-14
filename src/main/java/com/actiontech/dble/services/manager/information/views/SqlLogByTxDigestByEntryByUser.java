@@ -21,7 +21,7 @@ public class SqlLogByTxDigestByEntryByUser extends ManagerBaseView {
     private static final String COLUMN_EXAMINED_ROWS = "examined_rows";
 
     public SqlLogByTxDigestByEntryByUser() {
-        super(VIEW_NAME, 11, "select tx_digest,count(tx_digest) exec, user,entry,sum(sql_exec) sql_exec,source_host,source_port,group_concat(sql_ids) sql_ids,sum(tx_duration) tx_duration,sum(busy_time) busy_time,sum(examined_rows) examined_rows from (select group_concat(sql_digest) tx_digest,user,entry,COUNT(sql_id) sql_exec,source_host,source_port,GROUP_CONCAT(sql_id) sql_ids,max(start_time + duration) - min(start_time) tx_duration,sum(duration) busy_time,sum(examined_rows) examined_rows from sql_log group by tx_id) a group by a.tx_digest,a.entry");
+        super(VIEW_NAME, 11, "select tx_digest,count(tx_digest) exec, user,entry,sum(sql_exec) sql_exec,source_host,source_port,group_concat(sql_ids) sql_ids,sum(tx_duration) tx_duration,sum(busy_time) busy_time,sum(examined_rows) examined_rows from (select group_concat(sql_digest order by sql_id) tx_digest,user,entry,COUNT(sql_id) sql_exec,source_host,source_port,GROUP_CONCAT(sql_id) sql_ids,max(start_time + duration) - min(start_time) tx_duration,sum(duration) busy_time,sum(examined_rows) examined_rows from sql_log group by tx_id) a group by a.tx_digest,a.entry");
     }
 
     @Override

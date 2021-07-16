@@ -441,7 +441,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                         if (session.closed()) {
                             cleanBuffer();
                         } else if (byteBuffer != null) {
-                            session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END);
+                            session.getShardingService().writeDirectly(byteBuffer, WriteFlags.PART);
                         }
                         ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
                         handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);

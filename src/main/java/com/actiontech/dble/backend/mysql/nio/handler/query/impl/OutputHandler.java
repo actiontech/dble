@@ -256,7 +256,7 @@ public class OutputHandler extends BaseDMLHandler {
     private void recycleResources() {
         if (buffer != null) {
             if (buffer.position() > 0) {
-                serverSession.getShardingService().writeDirectly(buffer, WriteFlags.SESSION_END);
+                serverSession.getShardingService().writeDirectly(buffer, WriteFlags.PART);
             } else {
                 serverSession.getSource().recycle(buffer);
                 buffer = null;

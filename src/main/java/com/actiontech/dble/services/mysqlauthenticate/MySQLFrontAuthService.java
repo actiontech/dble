@@ -2,6 +2,7 @@ package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
@@ -64,6 +65,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
                 pingResponse();
                 return;
             }
+            GeneralProvider.beforeAuthSuccess();
 
             if (needAuthSwitched) {
                 handleSwitchResponse(data);

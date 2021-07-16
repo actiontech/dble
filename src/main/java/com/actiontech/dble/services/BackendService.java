@@ -88,6 +88,7 @@ public abstract class BackendService extends AbstractService {
      */
     @Override
     public void handle(ServiceTask task) {
+        beforeInsertServiceTask(task);
         taskQueue.offer(task);
         doHandle(task);
     }

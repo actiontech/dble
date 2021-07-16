@@ -13,6 +13,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.util.Strings;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
@@ -132,12 +133,46 @@ public abstract class AbstractService extends VariablesService implements Servic
 
     protected abstract void handleInnerData(byte[] data);
 
+
+    /**
+     * before the  task  begin process。
+     *
+     * @param task
+     */
     protected boolean beforeHandlingTask(@Nonnull ServiceTask task) {
         return true;
     }
 
     protected void afterDispatchTask(@Nonnull ServiceTask task) {
 
+    }
+
+    /**
+     * before the  task  enqueue。
+     *
+     * @param task
+     */
+    protected void beforeInsertServiceTask(@NotNull ServiceTask task) {
+
+        try {
+            switch (task.getType()) {
+                case CLOSE:
+                    //prevent most of repeat close.
+                    connection.getSocketWR().disableRead();
+                    final CloseServiceTask closeTask = (CloseServiceTask) task;
+                    if (closeTask.isFirst()) {
+                        LOGGER.info("prepare close for conn.conn id {},reason [{}]", connection.getId(), closeTask.getReasonsStr());
+                    }
+
+                    break;
+                case NORMAL:
+                    break;
+                default:
+                    break;
+            }
+        } catch (Exception e) {
+            LOGGER.error("", e);
+        }
     }
 
     public void consumeSingleTask(ServiceTask serviceTask) {

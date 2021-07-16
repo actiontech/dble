@@ -102,6 +102,9 @@ public final class DbleFrontConnections extends ManagerBaseTable {
         Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
+                if (fc == null || !fc.isAuthorized()) {
+                    continue;
+                }
                 if (!fc.isClosed()) {
                     lst.add(getRow(fc, users));
                 }

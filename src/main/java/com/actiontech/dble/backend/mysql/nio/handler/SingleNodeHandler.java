@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -50,7 +49,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
-    private final RouteResultsetNode node;
+    protected final RouteResultsetNode node;
     protected final RouteResultset rrs;
     protected final NonBlockingSession session;
 
@@ -67,19 +66,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private final RequestScope requestScope;
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
-        this.rrs = rrs;
-        this.node = rrs.getNodes()[0];
-        if (node == null) {
-            throw new IllegalArgumentException("routeNode is null!");
-        }
         if (session == null) {
             throw new IllegalArgumentException("session is null!");
         }
+        if (rrs.getNodes() == null) {
+            throw new IllegalArgumentException("routeNode is null!");
+        }
+        this.node = rrs.getNodes()[0];
+        this.rrs = rrs;
         this.session = session;
-        requestScope = session.getShardingService().getRequestScope();
+        this.requestScope = session.getShardingService().getRequestScope();
         TxnLogHelper.putTxnLog(session.getShardingService(), node);
     }
-
 
     @Override
     public void execute() throws Exception {
@@ -125,8 +123,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
-        boolean isAutocommit = session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart();
-        conn.getBackendService().execute(node, session.getShardingService(), isAutocommit);
+        conn.getBackendService().execute(node, session.getShardingService(), session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart());
     }
 
     protected void executeInExistsConnection(BackendConnection conn) {
@@ -138,7 +135,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
     }
-
 
     @Override
     public void clearAfterFailExecute() {
@@ -160,7 +156,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void connectionError(Throwable e, Object attachment) {
         RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
         String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
@@ -170,11 +165,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void errorResponse(byte[] data, @NotNull AbstractService service) {
+        session.resetMultiStatementStatus();
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        err.setPacketId(session.getShardingService().nextPacketId());
         backConnectionErr(err, (MySQLResponseService) service, ((MySQLResponseService) service).syncAndExecute());
-        session.resetMultiStatementStatus();
     }
 
     public void recycleBuffer() {
@@ -191,13 +185,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
         ShardingService shardingService = session.getShardingService();
-        UserName errUser = shardingService.getUser();
-        String errHost = shardingService.getConnection().getHost();
-        int errPort = shardingService.getConnection().getLocalPort();
-
-        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err :" + errMsg + " con:" + service +
-                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+        String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, service,
+                shardingService.getConnection().getHost(),
+                shardingService.getConnection().getLocalPort(),
+                shardingService.getUser());
 
         if (service != null && !service.isFakeClosed()) {
             if (service.getConnection().isClosed()) {
@@ -455,7 +447,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
         session.getSource().setSkipCheck(false);
         ErrorPacket err = new ErrorPacket();
-        err.setPacketId((byte) session.getShardingService().nextPacketId());
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getShardingService().getCharset().getResults()));
         this.backConnectionErr(err, (MySQLResponseService) service, true);

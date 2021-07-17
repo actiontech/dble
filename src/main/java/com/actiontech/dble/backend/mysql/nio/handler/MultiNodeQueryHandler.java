@@ -173,7 +173,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void clearAfterFailExecute() {
-        if (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart()) {
+        if ((!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart()) &&
+                !(this instanceof MultiNodeDDLExecuteHandler)) {
             session.getShardingService().setTxInterrupt("ROLLBACK");
         }
         waitAllConnConnectorError();
@@ -551,7 +552,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         if (service != null && !service.isFakeClosed()) {
             errConnection.add(service);
-            if (service.getConnection().isClosed() && (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart())) {
+            if (service.getConnection().isClosed() &&
+                    (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart()) &&
+                    !(this instanceof MultiNodeDDLExecuteHandler)) {
                 session.getShardingService().setTxInterrupt(error);
             }
         }
@@ -718,7 +721,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
 
             // Explicit Distributed Transaction
-            if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
+            if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation) &&
+                    !(this instanceof MultiNodeDDLExecuteHandler)) {
                 service.setTxInterrupt("ROLLBACK");
             }
             session.setResponseTime(isSuccess);

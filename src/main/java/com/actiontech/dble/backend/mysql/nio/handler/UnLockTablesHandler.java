@@ -110,8 +110,8 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             boolean isEndPack = decrementToZero(((MySQLResponseService) service));
             session.releaseConnection(((MySQLResponseService) service).getConnection());
             if (isEndPack) {
-                if (this.isFail() || session.closed()) {
-                    tryErrorFinished(true);
+                if (this.isFail()) {
+                    this.tryErrorFinished(true);
                     return;
                 }
                 OkPacket ok = new OkPacket();

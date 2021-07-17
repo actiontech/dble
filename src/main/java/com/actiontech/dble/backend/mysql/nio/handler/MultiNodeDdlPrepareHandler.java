@@ -277,8 +277,8 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
                     if (!session.isKilled()) {
                         handler.execute();
                     } else {
-                        DDLTraceManager.getInstance().endDDL(shardingService, "Query was interrupted");
                         session.handleSpecial(oriRrs, false, null);
+                        DDLTraceManager.getInstance().endDDL(shardingService, "Query was interrupted");
                         ErrorPacket errPacket = new ErrorPacket();
                         errPacket.setPacketId(session.getShardingService().nextPacketId());
                         errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
@@ -286,9 +286,9 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
                         handleRollbackPacket(errPacket.toBytes(), "Query was interrupted");
                     }
                 } catch (Exception e) {
-                    DDLTraceManager.getInstance().endDDL(shardingService, "take Connection error:" + e.getMessage());
                     LOGGER.warn(String.valueOf(shardingService) + oriRrs, e);
                     session.handleSpecial(oriRrs, false, null);
+                    DDLTraceManager.getInstance().endDDL(shardingService, "take Connection error:" + e.getMessage());
                     shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
             }
@@ -327,12 +327,10 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     private void handleRollbackPacket(byte[] data, String reason) {
         ShardingService source = session.getShardingService();
         boolean inTransaction = !source.isAutocommit() || source.isTxStart();
+        LOGGER.warn(reason);
         if (!inTransaction) {
             // normal query
             session.closeAndClearResources(reason);
-        } else {
-            // Explicit distributed transaction
-            source.setTxInterrupt(reason);
         }
         source.write(data, WriteFlags.SESSION_END);
     }

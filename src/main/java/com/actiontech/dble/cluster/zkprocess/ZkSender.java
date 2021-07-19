@@ -13,6 +13,7 @@ import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.zookeeper.KeeperException;
@@ -27,10 +28,17 @@ import java.util.Map;
 public class ZkSender implements ClusterSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkSender.class);
 
+    /**
+     * only first init Lazy load
+     *
+     * @throws Exception
+     */
     @Override
     public void initCluster() throws Exception {
         try {
-            ZktoXmlMain.loadZkToFile();
+            if (!ClusterConfig.getInstance().isInitZkFirst()) {
+                ZktoXmlMain.loadZkListen();
+            }
         } catch (Exception e) {
             LOGGER.error("error:", e);
             throw e;

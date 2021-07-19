@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster;
 
+import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
@@ -90,4 +91,16 @@ public final class ClusterController {
         return pros;
     }
 
+    public static boolean tryServerStartDuringInitClusterData() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            switch (ClusterConfig.getInstance().getClusterMode()) {
+                // now only init zk data start dble
+                case ClusterController.CONFIG_MODE_ZK:
+                    return ZktoXmlMain.serverStartDuringInitZKData();
+                default:
+                    return false;
+            }
+        }
+        return false;
+    }
 }

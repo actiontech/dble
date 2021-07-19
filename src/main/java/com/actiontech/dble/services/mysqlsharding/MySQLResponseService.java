@@ -463,9 +463,16 @@ public class MySQLResponseService extends BackendService {
             if (session.isKilled()) {
                 return false;
             }
-            session.setBackendResponseTime(this);
         }
         return true;
+    }
+
+    @Override
+    protected void beforeInsertServiceTask(@NotNull ServiceTask task) {
+        super.beforeInsertServiceTask(task);
+        if (session != null) {
+            session.setBackendResponseTime(this);
+        }
     }
 
     @Override

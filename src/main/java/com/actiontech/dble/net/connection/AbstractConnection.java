@@ -15,7 +15,6 @@ import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,34 +181,10 @@ public abstract class AbstractConnection implements Connection {
                 return false;
             }
         }
-        beforeInsertServiceTask(serviceTask);
+
         service.handle(serviceTask);
         return true;
     }
-
-    private void beforeInsertServiceTask(@NotNull ServiceTask serviceTask) {
-
-        try {
-            switch (serviceTask.getType()) {
-                case CLOSE:
-                    //prevent most of repeat close.
-                    this.getSocketWR().disableRead();
-                    final CloseServiceTask closeTask = (CloseServiceTask) serviceTask;
-                    if (closeTask.isFirst()) {
-                        LOGGER.info("prepare close for conn.conn id {},reason [{}]", this.getId(), closeTask.getReasonsStr());
-                    }
-
-                    break;
-                case NORMAL:
-                    break;
-                default:
-                    break;
-            }
-        } catch (Exception e) {
-            LOGGER.error("", e);
-        }
-    }
-
 
     private void handle(ByteBuffer dataBuffer) {
         boolean hasRemaining = true;

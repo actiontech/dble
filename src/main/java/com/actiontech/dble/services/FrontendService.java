@@ -89,6 +89,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
      */
     @Override
     public void handle(ServiceTask task) {
+        beforeInsertServiceTask(task);
         task.setTaskId(taskId.getAndIncrement());
         DbleServer.getInstance().getFrontHandlerQueue().offer(task);
     }

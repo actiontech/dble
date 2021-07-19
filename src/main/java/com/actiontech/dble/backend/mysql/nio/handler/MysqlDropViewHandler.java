@@ -28,7 +28,7 @@ public class MysqlDropViewHandler extends MultiNodeDDLExecuteHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MysqlDropViewHandler.class);
     private ViewMeta vm; //if only for replace from a no sharding view to a sharding view
 
-    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, int viewNodeNum, ViewMeta vm) {
+    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, ViewMeta vm) {
         super(rrs, session);
         this.vm = vm;
     }

@@ -166,11 +166,20 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                     try {
                         connection(node);
                     } catch (Exception e) {
-                        handleDataProcessException(e);
+                        if (!dnSet.contains(node.getName())) {
+                            setFail(e.toString());
+                            dnSet.add(node.getName());
+                        }
                         unResponseRrns.remove(node);
+                        if (unResponseRrns.isEmpty()) {
+                            handleDataProcessException(e);
+                        }
                     }
                 } else {
                     unResponseRrns.remove(node);
+                    if (unResponseRrns.isEmpty() && !Strings.isNullOrEmpty(this.error)) {
+                        handleDataProcessException(new Exception(this.error));
+                    }
                 }
             }
         });
@@ -255,7 +264,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         session.resetMultiStatementStatus();
         lock.lock();
         try {
-            errorConnsCnt++;
             removeNode(rrn.getName());
             dnSet.add(rrn.getName());
             rrn.setLoadDataRrnStatus((byte) 1);
@@ -610,7 +618,7 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
                 session.getShardingService().setTxInterrupt(error);
             }
         }
-        if (canResponse()) {
+        if (unResponseRrns.isEmpty()) {
             session.getShardingService().getLoadDataInfileHandler().clear();
             if (byteBuffer == null) {
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
@@ -645,7 +653,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
         if (!errorResponse.get()) {
             this.error = e.toString();
             LOGGER.info("caught exception ", e);
-            setFail(e.toString());
             this.tryErrorFinished(true);
         }
     }
@@ -671,13 +678,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
     void handleEndPacket(MySQLPacket curPacket, AutoTxOperation txOperation, boolean isSuccess) {
         ShardingService service = session.getShardingService();
         service.getLoadDataInfileHandler().clear();
-        if (errorConnsCnt == rrs.getNodes().length) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("all nodes can't connect.");
-            }
-            curPacket.write(session.getSource());
-            return;
-        }
 
         if (service.isAutocommit() && !service.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically

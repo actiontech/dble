@@ -158,7 +158,8 @@ public class ItemFuncGroupConcat extends ItemSum {
         if (nullValue)
             return null;
         if (orders != null) {
-            for (OrderResult orderResult : resultList) {
+            OrderResult orderResult;
+            while ((orderResult = resultList.poll()) != null) {
                 append(orderResult.result);
             }
         }

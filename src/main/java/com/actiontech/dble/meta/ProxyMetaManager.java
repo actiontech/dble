@@ -358,7 +358,7 @@ public class ProxyMetaManager {
 
     private void tryAddSyncMetaLock() throws Exception {
         //compatible with ZK first initialized
-        if (ClusterConfig.getInstance().isClusterEnable() && !DbleServer.getInstance().isCallback()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isInitZkFirst()) {
             int times = 0;
             final ClusterHelper metaHelper = ClusterHelper.getInstance(ClusterOperation.META);
             DistributeLock lock = metaHelper.createDistributeLock(ClusterMetaUtil.getSyncMetaLockPath(), new ClusterTime(String.valueOf(System.currentTimeMillis())));
@@ -415,7 +415,7 @@ public class ProxyMetaManager {
                 ClusterToXml.startMetaListener();
             }
             // syncMeta UNLOCK
-            if (!DbleServer.getInstance().isCallback()) {
+            if (!ClusterConfig.getInstance().isInitZkFirst()) {
                 DistributeLockManager.releaseLock(ClusterPathUtil.getSyncMetaLockPath());
             }
         }

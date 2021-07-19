@@ -91,8 +91,6 @@ public final class DbleServer {
 
     private final AtomicLong xaIDInc = new AtomicLong();
 
-    private volatile boolean callback = false;
-
     public static DbleServer getInstance() {
         return INSTANCE;
     }
@@ -288,7 +286,7 @@ public final class DbleServer {
 
         CustomMySQLHa.getInstance().start();
 
-        if (callback) {
+        if (ClusterConfig.getInstance().isInitZkFirst()) {
             ZktoXmlMain.loadZkToFile();
             LOGGER.info("init file to Zk success");
         }
@@ -309,7 +307,7 @@ public final class DbleServer {
 
     private void initServerConfig() throws Exception {
         //compatible with ZK first initialized
-        if (ClusterConfig.getInstance().isClusterEnable() && !isCallback()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isInitZkFirst()) {
             this.config = new ServerConfig(DbleTempConfig.getInstance().getUserConfig(), DbleTempConfig.getInstance().getDbConfig(),
                     DbleTempConfig.getInstance().getShardingConfig(), DbleTempConfig.getInstance().getSequenceConfig());
             DbleTempConfig.getInstance().clean();
@@ -653,13 +651,5 @@ public final class DbleServer {
 
     public long getXaIDInc() {
         return xaIDInc.get();
-    }
-
-    public boolean isCallback() {
-        return callback;
-    }
-
-    public void setCallback(boolean callback) {
-        this.callback = callback;
     }
 }

@@ -46,6 +46,7 @@ public final class ClusterConfig {
     private long showBinlogStatusTimeout = 60 * 1000;
     private String sequenceStartTime;
     private boolean sequenceInstanceByZk = true;
+    private boolean initZkFirst = false;
 
     private long startTimeMilliseconds = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
 
@@ -166,6 +167,14 @@ public final class ClusterConfig {
         return startTimeMilliseconds;
     }
 
+    public boolean isInitZkFirst() {
+        return initZkFirst;
+    }
+
+    public void setInitZkFirst(boolean initZkFirst) {
+        this.initZkFirst = initZkFirst;
+    }
+
     @Override
     public String toString() {
         return "ClusterConfig [" +
@@ -180,6 +189,7 @@ public final class ClusterConfig {
                 ", sequenceHandlerType=" + sequenceHandlerType +
                 ", sequenceStartTime=" + sequenceStartTime +
                 ", sequenceInstanceByZk=" + sequenceInstanceByZk +
+                ", initZkFirst=" + initZkFirst +
                 "]";
     }
 
@@ -189,7 +199,7 @@ public final class ClusterConfig {
         JsonObject jsonObject = new JsonParser().parse(strJson).getAsJsonObject();
         for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
             String key = entry.getKey();
-            if (key.equals("problemReporter") || key.equals("startTimeMilliseconds")) {
+            if (key.equals("problemReporter") || key.equals("startTimeMilliseconds") || key.equals("initZkFirst")) {
                 continue;
             }
             props.put(key, entry.getValue().getAsString());

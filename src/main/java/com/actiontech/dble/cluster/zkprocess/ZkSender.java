@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster.zkprocess;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
@@ -14,6 +13,7 @@ import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.zookeeper.KeeperException;
@@ -35,13 +35,13 @@ public class ZkSender implements ClusterSender {
      */
     @Override
     public void initCluster() throws Exception {
-        if (!DbleServer.getInstance().isCallback()) {
-            try {
-                ZktoXmlMain.loadZkToFile();
-            } catch (Exception e) {
-                LOGGER.error("error:", e);
-                throw e;
+        try {
+            if (!ClusterConfig.getInstance().isInitZkFirst()) {
+                ZktoXmlMain.loadZkListen();
             }
+        } catch (Exception e) {
+            LOGGER.error("error:", e);
+            throw e;
         }
     }
 

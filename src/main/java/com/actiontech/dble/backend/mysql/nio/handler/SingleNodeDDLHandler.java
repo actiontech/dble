@@ -76,6 +76,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 ShardingService sessionShardingService = session.getShardingService();
                 OkPacket ok = new OkPacket();
                 ok.read(data);
+                ok.setPacketId(sessionShardingService.nextPacketId()); // OK_PACKET
                 ok.setMessage(null);
                 ok.setServerStatus(sessionShardingService.isAutocommit() ? 2 : 1);
                 sessionShardingService.setLastInsertId(ok.getInsertId());
@@ -91,6 +92,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
     public void executeMetaDataFailed(MySQLResponseService service, String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
         if (errMsg == null) {
             errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
@@ -141,7 +143,6 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     protected void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
         session.clearResources(false);
         session.setResponseTime(isSuccess);
-        packet.setPacketId(session.getShardingService().nextPacketId());
         packet.write(session.getSource());
     }
 }

@@ -156,6 +156,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void connectionError(Throwable e, Object attachment) {
         RouteResultsetNode rrn = (RouteResultsetNode) attachment;
         ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
         String errMsg = "can't connect to shardingNode[" + rrn.getName() + "], due to " + e.getMessage();
         errPacket.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
@@ -168,6 +169,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.resetMultiStatementStatus();
         ErrorPacket err = new ErrorPacket();
         err.read(data);
+        err.setPacketId(session.getShardingService().nextPacketId());
         backConnectionErr(err, (MySQLResponseService) service, ((MySQLResponseService) service).syncAndExecute());
     }
 
@@ -447,6 +449,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";
         session.getSource().setSkipCheck(false);
         ErrorPacket err = new ErrorPacket();
+        err.setPacketId((byte) session.getShardingService().nextPacketId());
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getShardingService().getCharset().getResults()));
         this.backConnectionErr(err, (MySQLResponseService) service, true);

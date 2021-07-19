@@ -103,14 +103,15 @@ public abstract class AbstractConsulSender implements ClusterSender {
         ClusterClearKeyListener ucoreListen = new ClusterClearKeyListener(this);
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
-
+        //must before upload db data
+        new DbGroupHaResponse().notifyCluster();
         new XmlDbLoader(xmlProcess, ucoreListen);
         new XmlShardingLoader(xmlProcess, ucoreListen);
         new XmlUserLoader(xmlProcess, ucoreListen);
         new SequencePropertiesLoader(ucoreListen);
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        new DbGroupHaResponse().notifyCluster();
+
     }
 
     @Override

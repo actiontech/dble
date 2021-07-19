@@ -1,5 +1,6 @@
 package com.actiontech.dble.cluster.zkprocess.xmltozk.listen;
 
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterLogic;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
@@ -15,6 +16,7 @@ public class DbGroupStatusToZkLoader implements NotifyService {
 
     @Override
     public boolean notifyProcess() throws Exception {
+        ClusterDelayProvider.delayBeforeUploadHa();
         ClusterLogic.syncDbGroupStatusToCluster();
         return true;
     }

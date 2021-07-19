@@ -2,6 +2,7 @@ package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.WallErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -290,6 +291,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
                     commands.doOther();
                     final MySQLChangeUserService fService = new MySQLChangeUserService(connection, this);
                     connection.setService(fService);
+                    GeneralProvider.beforeChangeUserSuccess();
                     fService.consumeSingleTask(new NormalServiceTask(data, this, 0));
                     break;
                 case MySQLPacket.COM_RESET_CONNECTION:

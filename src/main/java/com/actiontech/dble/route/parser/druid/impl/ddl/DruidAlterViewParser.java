@@ -54,7 +54,7 @@ public class DruidAlterViewParser extends DruidImplicitCommitParser {
             if (isCreate) {
                 return new MysqlCreateViewHandler(service.getSession2(), rrs, vm);
             } else {
-                return new MysqlDropViewHandler(service.getSession2(), rrs, 1, vm);
+                return new MysqlDropViewHandler(service.getSession2(), rrs, vm);
             }
         }
         return null;

@@ -25,7 +25,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class DruidDropViewParser extends DruidImplicitCommitParser {
-    int viewNodeNum = 0;
 
     @Override
     public SchemaConfig doVisitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ShardingService service, boolean isExplain) throws SQLException {
@@ -70,7 +69,6 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
                 nodes.add(new RouteResultsetNode(n.getKey(), rrs.getSqlType(), dropStmt.toString()));
             }
             rrs.setNodes(nodes.toArray(new RouteResultsetNode[nodes.size()]));
-            viewNodeNum = nodes.size();
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
@@ -80,7 +78,7 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
 
     @Override
     public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
-        return new MysqlDropViewHandler(service.getSession2(), rrs, viewNodeNum, null);
+        return new MysqlDropViewHandler(service.getSession2(), rrs, null);
     }
 
     private void checkView(String defaultSchema, SQLDropViewStatement dropViewStatement) throws SQLException {

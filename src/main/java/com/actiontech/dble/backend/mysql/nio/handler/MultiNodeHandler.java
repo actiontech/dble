@@ -144,7 +144,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         return false;
     }
 
-    void tryErrorFinished(boolean allEnd) {
+    protected void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
             // clear session resources,release all
             if (LOGGER.isDebugEnabled()) {
@@ -157,7 +157,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
-    private void clearSessionResources() {
+    protected void clearSessionResources() {
         if (session.getShardingService().isAutocommit()) {
             session.closeAndClearResources(error);
         } else {
@@ -175,7 +175,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         RouteResultsetNode rNode = (RouteResultsetNode) ((MySQLResponseService) service).getAttachment();
         session.getTargetMap().remove(rNode);
         ((MySQLResponseService) service).setResponseHandler(null);
-        tryErrorFinished(decrementToZero((MySQLResponseService) service));
+        this.tryErrorFinished(decrementToZero((MySQLResponseService) service));
     }
 
     public void clearResources() {

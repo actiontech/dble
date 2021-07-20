@@ -78,7 +78,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         }
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
-        conn.getBackendService().execute(node, session.getShardingService(), autocommit);
+        conn.getBackendService().execute(node, session.getShardingService(), autocommit && !session.getShardingService().isTxStart());
     }
 
     @Override
@@ -132,8 +132,8 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
                 session.releaseConnection((BackendConnection) service.getConnection());
             }
             if (isEndPack) {
-                if (this.isFail() || session.closed()) {
-                    tryErrorFinished(true);
+                if (this.isFail()) {
+                    this.tryErrorFinished(true);
                     return;
                 }
                 OkPacket ok = new OkPacket();
@@ -180,4 +180,25 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
         packet.write(session.getSource());
     }
 
+    protected void tryErrorFinished(boolean allEnd) {
+        if (allEnd && !session.closed()) {
+            LOGGER.warn("Lock tables execution failed");
+            // clear session resources,release all
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("error all end ,clear session resource ");
+            }
+            clearSessionResources();
+            if (errorResponse.compareAndSet(false, true)) {
+                handleEndPacket(createErrPkg(this.error, 0), false);
+            }
+        }
+    }
+
+    protected void clearSessionResources() {
+        if (session.getShardingService().isAutocommit()) {
+            session.closeAndClearResources(error);
+        } else {
+            this.clearResources();
+        }
+    }
 }

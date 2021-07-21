@@ -236,7 +236,7 @@ public final class ExplainHandler {
                 routeNode = HandlerBuilder.canRouteToOneNode(merges);
             }
             if (!StringUtil.isBlank(routeNode)) {
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), rrs.getStatement())};
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), builder.getNode().getSql())};
                 for (RouteResultsetNode node : nodes) {
                     RowDataPacket row = getRow(node, service.getCharset().getResults());
                     row.setPacketId(++packetId);

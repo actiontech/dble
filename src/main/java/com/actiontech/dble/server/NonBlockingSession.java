@@ -614,7 +614,7 @@ public class NonBlockingSession extends Session {
                         tableSet.addAll(set);
                     }
                 }
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement(), tableSet)};
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), node.getSql(), tableSet)};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select

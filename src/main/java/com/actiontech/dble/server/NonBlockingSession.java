@@ -614,7 +614,7 @@ public class NonBlockingSession extends Session {
                         tableSet.addAll(set);
                     }
                 }
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), rrs.getStatement(), tableSet)};
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), node.getSql(), tableSet)};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select
@@ -1003,10 +1003,16 @@ public class NonBlockingSession extends Session {
     }
 
     public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
+        if (rrs.getDdlHandler() == null ||
+                // rrs.getDdlHandler() instanceof LockTablesHandler ||
+                rrs.getDdlHandler() instanceof MysqlCreateViewHandler ||
+                rrs.getDdlHandler() instanceof MysqlDropViewHandler) {
+            return true;
+        }
         if (rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (rrs.isOnline()) {
-                LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+                LOGGER.info("Online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
                 return true;
             }
             if (!isSuccess) {

@@ -3,7 +3,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -157,13 +156,13 @@ public class FieldListHandler implements ResponseHandler {
 
     private void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService responseService, boolean syncFinished) {
         ShardingService shardingService = session.getShardingService();
-        UserName errUser = shardingService.getUser();
-        String errHost = shardingService.getConnection().getHost();
-        int errPort = shardingService.getConnection().getLocalPort();
-        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
         if (responseService != null && !responseService.isFakeClosed()) {
-            LOGGER.info("execute sql err :" + errMsg + " con:" + responseService +
-                    " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+            LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, responseService,
+                    shardingService.getConnection().getHost(),
+                    shardingService.getConnection().getLocalPort(),
+                    shardingService.getUser());
+
             if (responseService.getConnection().isClosed()) {
                 if (responseService.getAttachment() != null) {
                     RouteResultsetNode rNode = (RouteResultsetNode) responseService.getAttachment();

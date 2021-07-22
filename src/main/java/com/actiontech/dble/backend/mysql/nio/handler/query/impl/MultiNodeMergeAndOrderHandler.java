@@ -168,7 +168,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                             if (!itemToDiscard.isNullItem()) {
                                 BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
                                 while (true) {
-                                    if (terminate.get() || discardQueue.take().isNullItem()) {
+                                    if (discardQueue.take().isNullItem() || terminate.get()) {
                                         break;
                                     }
                                 }

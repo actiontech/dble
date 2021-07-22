@@ -35,6 +35,9 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     @Override
     public void ok(byte[] data) {
         if (status == INITIAL) {
+            if (service.getSession() != null) {
+                service.getSession().startExecuteBackend();
+            }
             ResponseHandler respHand = service.getResponseHandler();
             if (respHand != null) {
                 if (service.getSession() != null) {
@@ -56,6 +59,9 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
         final ResponseHandler respHand = service.getResponseHandler();
         service.setExecuting(false);
         if (status != INITIAL) {
+            if (service.getSession() != null) {
+                service.getSession().startExecuteBackend();
+            }
             service.setRowDataFlowing(false);
             service.signal();
             status = INITIAL;
@@ -85,6 +91,9 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
     @Override
     public void data(byte[] data) {
         if (status == INITIAL) {
+            if (service.getSession() != null) {
+                service.getSession().startExecuteBackend();
+            }
             status = FIELD;
             header = data;
             fields = new ArrayList<>((int) ByteUtil.readLength(data, 4));

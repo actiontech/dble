@@ -195,7 +195,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         for (Entry<MySQLConnection, BlockingQueue<HeapItem>> entry : this.queues.entrySet()) {
             // add EOF to signal atoMerge thread
             entry.getValue().clear();
-            entry.getValue().put(new HeapItem(null, null, entry.getKey()));
+            entry.getValue().put(HeapItem.nullItem());
         }
         recycleConn();
     }

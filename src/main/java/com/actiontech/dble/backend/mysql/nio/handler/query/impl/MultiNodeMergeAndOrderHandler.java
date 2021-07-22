@@ -134,20 +134,17 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     @Override
     protected void ownThreadJob(Object... objects) {
         try {
-            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>(new Comparator<HeapItem>() {
-                @Override
-                public int compare(HeapItem o1, HeapItem o2) {
-                    RowDataPacket row1 = o1.getRowPacket();
-                    RowDataPacket row2 = o2.getRowPacket();
-                    if (row1 == null || row2 == null) {
-                        if (row1 == row2)
-                            return 0;
-                        if (row1 == null)
-                            return -1;
-                        return 1;
-                    }
-                    return rowComparator.compare(row1, row2);
+            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>((o1, o2) -> {
+                RowDataPacket row1 = o1.getRowPacket();
+                RowDataPacket row2 = o2.getRowPacket();
+                if (row1 == null || row2 == null) {
+                    if (row1 == row2)
+                        return 0;
+                    if (row1 == null)
+                        return -1;
+                    return 1;
                 }
+                return rowComparator.compare(row1, row2);
             });
             // init heap
             for (Entry<MySQLConnection, BlockingQueue<HeapItem>> entry : queues.entrySet()) {
@@ -171,7 +168,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                             if (!itemToDiscard.isNullItem()) {
                                 BlockingQueue<HeapItem> discardQueue = queues.get(itemToDiscard.getIndex());
                                 while (true) {
-                                    if (discardQueue.take().isNullItem() || terminate.get()) {
+                                    if (terminate.get() || discardQueue.take().isNullItem()) {
                                         break;
                                     }
                                 }

@@ -67,7 +67,7 @@ public class KVStoreRepository implements Repository {
                 viewCreateSqlMap.computeIfAbsent(schema.getKey(), k -> new ConcurrentHashMap<>());
             }
         } catch (Exception e) {
-            LOGGER.info("init viewData from zk error :　" + e.getMessage());
+            throw new RuntimeException("init viewData from zk error," + e.getMessage(), e);
         }
     }
 

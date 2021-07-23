@@ -422,7 +422,8 @@ public class ProxyMetaManager {
     }
 
     private void initViewMeta() {
-        if (ClusterConfig.getInstance().isClusterEnable()) {
+        //compatible with ZK first initialized
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isInitZkFirst()) {
             loadViewFromKV();
         } else {
             loadViewFromFile();

@@ -58,6 +58,7 @@ public class FileSystemRepository implements Repository {
             viewCreateSqlMap = this.getObject();
         } catch (Exception e) {
             LOGGER.info("init view from file error make sure the file is correct :" + e.getMessage());
+            e.printStackTrace();
         }
     }
 

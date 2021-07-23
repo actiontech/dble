@@ -35,7 +35,7 @@ public class NameableExecutor extends ThreadPoolExecutor {
     protected void beforeExecute(Thread t, Runnable r) {
         super.beforeExecute(t, r);
         if (null != runnableMap) {
-            Map<Thread, Runnable> map = Maps.newHashMap();
+            Map<Thread, Runnable> map = Maps.newConcurrentMap();
             map.put(t, r);
             Map<Thread, Runnable> oldVal = runnableMap.putIfAbsent(name, map);
             if (null != oldVal) {

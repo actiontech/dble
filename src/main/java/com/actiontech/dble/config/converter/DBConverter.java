@@ -27,7 +27,7 @@ import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
-import com.actiontech.dble.util.IntegerUtil;
+import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -232,10 +232,10 @@ public class DBConverter {
                 props.keySet().toArray(propItem);
                 throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
             }
-            if (errorMsgList.size() > 0) {
-                throw new ConfigException("Incorrect connection pool parameters: " + StringUtil.join(errorMsgList, ","));
-            }
             ParameterMapping.checkMappingResult();
+            if (errorMsgList.size() > 0) {
+                throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(errorMsgList, ","));
+            }
         }
 
         Integer maxCon = dbInstance.getMaxCon();
@@ -271,7 +271,7 @@ public class DBConverter {
             case "testOnReturn":
             case "testWhileIdle":
                 if (!StringUtil.equalsIgnoreCase(value, Boolean.FALSE.toString()) && !StringUtil.equalsIgnoreCase(value, Boolean.TRUE.toString())) {
-                    errorMsgList.add("Column '" + property.getName() + "' values only support 'false' or 'true'.");
+                    errorMsgList.add("property [ " + property.getName() + " ] '" + value + "' data type should be boolean");
                 }
                 break;
             case "connectionTimeout":
@@ -280,8 +280,12 @@ public class DBConverter {
             case "idleTimeout":
             case "heartbeatPeriodMillis":
             case "evictorShutdownTimeoutMillis":
-                if (!StringUtil.isBlank(value) && IntegerUtil.parseInt(value) <= 0) {
-                    errorMsgList.add("Column '" + property.getName() + "' should be an integer greater than 0!");
+                if (!StringUtil.isBlank(value)) {
+                    if (!LongUtil.isLong(value)) {
+                        errorMsgList.add("property [ " + property.getName() + " ] '" + value + "' data type should be long");
+                    } else if (LongUtil.parseLong(value) <= 0) {
+                        errorMsgList.add("property [ " + property.getName() + " ] '" + value + "' should be an integer greater than 0!");
+                    }
                 }
                 break;
             default:

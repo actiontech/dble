@@ -26,6 +26,7 @@ import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,9 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void init(String userJson, String dbJson, String shardingJson, String sequenceJson, boolean syncHaStatus) {
+        if (StringUtil.isBlank(userJson) || StringUtil.isBlank(dbJson) || StringUtil.isBlank(shardingJson)) {
+            throw new ConfigException("the configuration file is missing or the content is empty,pls check the file/zk/ucore configuration");
+        }
         //user
         UserConverter userConverter = new UserConverter();
         userConverter.userJsonToMap(userJson, this);

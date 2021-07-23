@@ -29,7 +29,7 @@ public final class PartitionByJumpConsistentHash extends AbstractPartitionAlgori
     /**
      * 0 means str.length(), -1 means str.length()-1
      */
-    private int hashSliceEnd = -1;
+    private int hashSliceEnd = 0;
 
     @Override
     public Integer calculate(String columnValue) {

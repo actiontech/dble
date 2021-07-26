@@ -58,21 +58,18 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
      * @param objects
      */
     protected final void startOwnThread(final Object... objects) {
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                if (terminate.get())
-                    return;
-                if (ownJobFlag.compareAndSet(false, true)) {
-                    try {
-                        ownThreadJob(objects);
-                    } finally {
-                        synchronized (ownThreadLock) {
-                            recycleConn();
-                            preparedToRecycle = true;
-                        }
-                        recycleResources();
+        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+            if (terminate.get())
+                return;
+            if (ownJobFlag.compareAndSet(false, true)) {
+                try {
+                    ownThreadJob(objects);
+                } finally {
+                    synchronized (ownThreadLock) {
+                        recycleConn();
+                        preparedToRecycle = true;
                     }
+                    recycleResources();
                 }
             }
         });

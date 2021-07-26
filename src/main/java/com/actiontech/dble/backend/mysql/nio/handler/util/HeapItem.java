@@ -10,19 +10,28 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 public class HeapItem {
+
+    private static final HeapItem NULL_ITEM;
+
     private byte[] row;
     private RowDataPacket rowPacket;
     private MySQLResponseService hashIndex;
     private boolean isNull = false;
 
+    static {
+        NULL_ITEM = new HeapItem();
+        NULL_ITEM.isNull = true;
+    }
+
     public static HeapItem nullItem() {
-        HeapItem nullItem = new HeapItem(null, null, null);
-        nullItem.isNull = true;
-        return nullItem;
+        return NULL_ITEM;
     }
 
     public boolean isNullItem() {
         return row == null && isNull;
+    }
+
+    private HeapItem() {
     }
 
     public HeapItem(byte[] row, RowDataPacket rdp, MySQLResponseService index) {

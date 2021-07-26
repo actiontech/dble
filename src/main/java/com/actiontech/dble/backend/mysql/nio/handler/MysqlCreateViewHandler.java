@@ -51,6 +51,7 @@ public class MysqlCreateViewHandler extends SingleNodeDDLHandler {
             ShardingService sessionShardingService = session.getShardingService();
             OkPacket ok = new OkPacket();
             ok.read(data);
+            ok.setPacketId(sessionShardingService.nextPacketId()); // OK_PACKET
             ok.setMessage(null);
             ok.setServerStatus(sessionShardingService.isAutocommit() ? 2 : 1);
             sessionShardingService.setLastInsertId(ok.getInsertId());

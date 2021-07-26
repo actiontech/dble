@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -130,8 +131,14 @@ public final class DbleFrontConnections extends ManagerBaseTable {
             row.put("sql_stage", "Manager connection");
             row.put("in_transaction", "Manager connection");
         } else {
-            row.put("sql_stage", ((ShardingService) service).getSession2().getSessionStage().toString());
-            row.put("in_transaction", !service.isAutocommit() + "");
+            if (service instanceof ShardingService) {
+                NonBlockingSession session = ((ShardingService) service).getSession2();
+                row.put("in_transaction", String.valueOf(((ShardingService) service).isTxStart() || !service.isAutocommit()));
+                row.put("sql_stage", session.getSessionStage().toString());
+            } else {
+                row.put("in_transaction", !service.isAutocommit() + "");
+                row.put("sql_stage", "NULL");
+            }
         }
         row.put("schema", service.getSchema() == null ? "NULL" : service.getSchema());
         row.put("conn_net_in", c.getNetInBytes() + "");

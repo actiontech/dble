@@ -23,4 +23,9 @@ public final class GeneralProvider {
     public static void beforeChangeUserSuccess() {
 
     }
+
+    // Because issues-1231, so this btrace method is required for validation
+    public static void sqlJobDoFinished() {
+
+    }
 }

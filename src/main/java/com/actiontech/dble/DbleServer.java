@@ -288,6 +288,7 @@ public final class DbleServer {
 
         if (ClusterConfig.getInstance().isInitZkFirst()) {
             ZktoXmlMain.loadZkToFile();
+            ProxyMeta.getInstance().getTmManager().init(this.getConfig());
             LOGGER.info("init file to Zk success");
         }
 
@@ -481,7 +482,10 @@ public final class DbleServer {
         }
         //init tmManager
         try {
-            tmManager.init(this.getConfig());
+            // zk first start will lazy init
+            if (!ClusterConfig.getInstance().isInitZkFirst()) {
+                tmManager.init(this.getConfig());
+            }
         } catch (Exception e) {
             throw new IOException(e);
         }

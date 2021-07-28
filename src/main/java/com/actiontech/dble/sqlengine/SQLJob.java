@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -118,6 +119,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     protected boolean doFinished(boolean failed) {
         if (finished.compareAndSet(false, true)) {
+            GeneralProvider.sqlJobDoFinished();
             jobHandler.finished(shardingNode == null ? schema : shardingNode, failed);
             return true;
         }

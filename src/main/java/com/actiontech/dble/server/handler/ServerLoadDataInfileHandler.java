@@ -396,7 +396,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         RouteResultset rrs = tryDirectRoute(sql, line);
-
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
             //do nothing
             throw new Exception("record " + StringUtil.join(line, loadData.getLineTerminatedBy()) + "has no route result");
@@ -494,7 +493,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         boolean first = Strings.isNullOrEmpty(data.getFileName());
         if (!first) index++;
         tempFileName = FileUtils.getName(tempFileName);
-        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.lastIndexOf(".")) + "-" + name + ".txt";
+        String curFileName = index + "-" + tempFileName.substring(0, tempFileName.lastIndexOf(".")) + "-" + tableName + "-" + name + ".txt";
         String dnPath = loadDataPath + curFileName;
         File dnFile = new File(dnPath);
         try {

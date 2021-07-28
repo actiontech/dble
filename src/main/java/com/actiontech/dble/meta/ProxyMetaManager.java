@@ -356,8 +356,7 @@ public class ProxyMetaManager {
     }
 
     private void tryAddSyncMetaLock() throws Exception {
-        //compatible with ZK first initialized
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isInitZkFirst()) {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
             int times = 0;
             final ClusterHelper metaHelper = ClusterHelper.getInstance(ClusterOperation.META);
             DistributeLock lock = metaHelper.createDistributeLock(ClusterMetaUtil.getSyncMetaLockPath(), new ClusterTime(String.valueOf(System.currentTimeMillis())));
@@ -414,15 +413,12 @@ public class ProxyMetaManager {
                 ClusterToXml.startMetaListener();
             }
             // syncMeta UNLOCK
-            if (!ClusterConfig.getInstance().isInitZkFirst()) {
-                DistributeLockManager.releaseLock(ClusterPathUtil.getSyncMetaLockPath());
-            }
+            DistributeLockManager.releaseLock(ClusterPathUtil.getSyncMetaLockPath());
         }
     }
 
     private void initViewMeta() {
-        //compatible with ZK first initialized
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isInitZkFirst()) {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
             loadViewFromKV();
         } else {
             loadViewFromFile();

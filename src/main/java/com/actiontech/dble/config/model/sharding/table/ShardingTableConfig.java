@@ -44,8 +44,10 @@ public class ShardingTableConfig extends BaseTableConfig {
 
     @Override
     public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
-        return new ShardingTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes,
+        ShardingTableConfig config = new ShardingTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes,
                 this.incrementColumn, this.function, this.shardingColumn, this.sqlRequiredSharding);
+        config.setId(this.getId());
+        return config;
     }
 
 

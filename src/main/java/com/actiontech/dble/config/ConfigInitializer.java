@@ -98,7 +98,7 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void init(String userJson, String dbJson, String shardingJson, String sequenceJson, boolean syncHaStatus) {
-        if (StringUtil.isBlank(userJson) || StringUtil.isBlank(dbJson) || StringUtil.isBlank(shardingJson)) {
+        if (StringUtil.isBlank(userJson) || StringUtil.isBlank(dbJson)) {
             throw new ConfigException("the configuration file is missing or the content is empty,pls check the file/zk/ucore configuration");
         }
         //user

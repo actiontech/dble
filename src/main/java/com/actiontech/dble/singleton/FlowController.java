@@ -18,11 +18,15 @@ import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 public final class FlowController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlowController.class);
     private static final FlowController INSTANCE = new FlowController();
     private volatile FlowControllerConfig config = null;
 
@@ -44,23 +48,31 @@ public final class FlowController {
 
     // load data
     public static void tryFlowControl(final MySQLResponseService backendService) {
-        if (INSTANCE.config.isEnableFlowControl() &&
-                !backendService.getConnection().isFlowControlled() &&
-                backendService.getConnection().getWriteQueue().size() > INSTANCE.config.getStart()) {
-            backendService.getConnection().startFlowControl();
-        }
-        while (backendService.getConnection().isFlowControlled()) {
-            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+        try {
+            if (INSTANCE.config.isEnableFlowControl() &&
+                    !backendService.getConnection().isFlowControlled() &&
+                    backendService.getConnection().getWriteQueue().size() > INSTANCE.config.getStart()) {
+                backendService.getConnection().startFlowControl();
+            }
+            while (backendService.getConnection().isFlowControlled()) {
+                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
+            }
+        } catch (Exception ex) {
+            LOGGER.warn("FlowControl exception：{}", ex);
         }
     }
 
     // simpleQuery
     public static void tryFlowControl(final NonBlockingSession session) {
-        int size = session.getSource().getWriteQueue().size();
-        if (INSTANCE.config.isEnableFlowControl() &&
-                !session.getShardingService().getConnection().isFlowControlled() &&
-                size > INSTANCE.config.getStart()) {
-            session.getSource().startFlowControl();
+        try {
+            int size = session.getSource().getWriteQueue().size();
+            if (INSTANCE.config.isEnableFlowControl() &&
+                    !session.getShardingService().getConnection().isFlowControlled() &&
+                    size > INSTANCE.config.getStart()) {
+                session.getSource().startFlowControl();
+            }
+        } catch (Exception ex) {
+            LOGGER.warn("FlowControl exception：{}", ex);
         }
     }
 
@@ -72,37 +84,45 @@ public final class FlowController {
 
     // control on_the nio side, try to remove flow control
     public static int tryRemoveFlowControl(int flowControlCount, final AbstractConnection con) {
-        if (con.isFlowControlled()) {
-            if (!INSTANCE.config.isEnableFlowControl()) {
-                con.stopFlowControl();
-                return -1;
-            } else if (((flowControlCount != -1) && (flowControlCount <= INSTANCE.config.getEnd())) ||
-                    flowControlCount == -1) {
-                int currentWriteQueueSize = con.getWriteQueue().size();
-                if (currentWriteQueueSize <= INSTANCE.config.getEnd()) {
+        try {
+            if (con.isFlowControlled()) {
+                if (!INSTANCE.config.isEnableFlowControl()) {
                     con.stopFlowControl();
                     return -1;
+                } else if (((flowControlCount != -1) && (flowControlCount <= INSTANCE.config.getEnd())) ||
+                        flowControlCount == -1) {
+                    int currentWriteQueueSize = con.getWriteQueue().size();
+                    if (currentWriteQueueSize <= INSTANCE.config.getEnd()) {
+                        con.stopFlowControl();
+                        return -1;
+                    } else {
+                        return currentWriteQueueSize;
+                    }
                 } else {
-                    return currentWriteQueueSize;
+                    return --flowControlCount;
                 }
             } else {
-                return --flowControlCount;
+                return -1;
             }
-        } else {
+        } catch (Exception ex) {
+            LOGGER.warn("FlowControl exception：{}", ex);
             return -1;
         }
     }
 
     // when complexQuery receives rowEofResponse, try to remove flow control
     public static void tryRemoveFlowControl(final AbstractService service) {
-        MySQLResponseService service1;
-        if (service instanceof MySQLResponseService &&
-                (service1 = ((MySQLResponseService) service)).
-                        getSession().
-                        getShardingService().isFlowControlled()) {
-            service1.getSession().
-                    releaseFlowCntroll(
-                            service1.getConnection());
+        NonBlockingSession session;
+        ShardingService shardingService;
+        try {
+            if (service instanceof MySQLResponseService &&
+                    (session = ((MySQLResponseService) service).getSession()) != null &&
+                    (shardingService = session.getShardingService()) != null &&
+                    shardingService.isFlowControlled()) {
+                session.releaseFlowCntroll(((MySQLResponseService) service).getConnection());
+            }
+        } catch (Exception ex) {
+            LOGGER.warn("FlowControl exception：{}", ex);
         }
     }
 

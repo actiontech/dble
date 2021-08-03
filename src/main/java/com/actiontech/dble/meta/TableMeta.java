@@ -86,9 +86,10 @@ public final class TableMeta {
         }
 
         TableMeta temp = (TableMeta) other;
-        return id == temp.getId() && schemaName.equals(temp.getSchemaName()) && tableName.equals(temp.getTableName()) &&
+        return schemaName.equals(temp.getSchemaName()) && tableName.equals(temp.getTableName()) &&
                 version == temp.getVersion() && createSql.equals(temp.getCreateSql()) && columns.equals(temp.getColumns());
     }
+
 
     @Override
     public int hashCode() {
@@ -96,7 +97,6 @@ public final class TableMeta {
         result = 31 * result + (int) (version ^ (version >>> 32));
         result = 31 * result + createSql.hashCode();
         result = 31 * result + columns.hashCode();
-        result = 31 * result + Integer.hashCode(id);
         if (null != schemaName) {
             result = 31 * result + schemaName.hashCode();
         }

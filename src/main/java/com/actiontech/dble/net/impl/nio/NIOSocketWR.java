@@ -81,7 +81,7 @@ public class NIOSocketWR extends SocketWR {
             if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") || e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
-                LOGGER.warn("Connection was closed while read. Detail reason:{}. {}.", e.toString(), con.getService());
+                LOGGER.warn("Connection was closed while write. Detail reason:{}. {}.", e.toString(), con.getService());
             } else {
                 //self problem.
                 LOGGER.info("con {} write err:", con.getService(), e);

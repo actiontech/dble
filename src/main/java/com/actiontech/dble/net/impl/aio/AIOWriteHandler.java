@@ -40,7 +40,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
         if (Objects.equals(exc.getMessage(), "Broken pipe") || Objects.equals(exc.getMessage(), "Connection reset by peer") || exc instanceof ClosedChannelException) {
             // target problem,
             //ignore this exception,will close by read side.
-            LOGGER.warn("Connection was closed while read. Detail reason:{}. {}.", exc, wr.con.getService());
+            LOGGER.warn("Connection was closed while write. Detail reason:{}. {}.", exc, wr.con.getService());
         } else {
             //self problem.
             LOGGER.info("con {} write err:{}", wr.con.getService(), exc.getMessage());

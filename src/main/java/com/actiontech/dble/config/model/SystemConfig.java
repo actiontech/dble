@@ -83,7 +83,7 @@ public final class SystemConfig {
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
     // connection will force close if received close packet but haven't been closed after closeTimeout seconds.
-    private long closeTimeout = 120;
+    private long closeTimeout = 1;
 
     //transaction log
     private int recordTxn = 0;

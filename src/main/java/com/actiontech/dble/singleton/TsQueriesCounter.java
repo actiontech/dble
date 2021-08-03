@@ -27,7 +27,7 @@ public final class TsQueriesCounter {
         try {
             for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (FrontendConnection fc : processor.getFrontends().values()) {
-                    if (!fc.isManager()) {
+                    if (!fc.isManager() && fc.getService() instanceof BusinessService) {
                         long query = ((BusinessService) (fc.getService())).getQueriesCounter();
                         long transaction = ((BusinessService) (fc.getService())).getTransactionsCounter();
                         queries += query > 0 ? query : 0;

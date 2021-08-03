@@ -145,7 +145,9 @@ public final class IOProcessor {
                 this.frontEndsLength.decrementAndGet();
             } else {
                 checkConSendQueue(c);
-                if (c.isIdleTimeout()) {
+                if (c.isPrepareClosedTimeout()) {
+                    c.close("close timeout");
+                } else if (c.isIdleTimeout()) {
                     if (!c.isManager()) {
                         if (c.getService() instanceof ShardingService) {
                             ShardingService s = (ShardingService) c.getService();
@@ -187,6 +189,11 @@ public final class IOProcessor {
             //Active/IDLE/PREPARED XA backends will not be checked
             if (c.isClosed()) {
                 it.remove();
+                continue;
+            }
+
+            if (c.isPrepareClosedTimeout()) {
+                c.close("close timeout");
                 continue;
             }
 

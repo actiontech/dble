@@ -22,6 +22,8 @@ public abstract class SocketWR {
 
     public abstract void enableRead();
 
+    public abstract void disableReadForever();
+
     public abstract void initFromConnection(com.actiontech.dble.net.connection.AbstractConnection connection);
 
     /**

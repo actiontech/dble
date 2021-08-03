@@ -19,11 +19,17 @@ public class CloseServiceTask extends InnerServiceTask {
     boolean gracefullyClose;
     Collection<String> reasons;
     int delayedTimes = 0;
+    CloseType closeType;
 
-    public CloseServiceTask(Service service, boolean gracefullyClose, Collection<String> reasons) {
+    public CloseServiceTask(Service service, boolean gracefullyClose, Collection<String> reasons, CloseType closeType) {
         super(service);
         this.gracefullyClose = gracefullyClose;
         this.reasons = reasons;
+        this.closeType = closeType;
+    }
+
+    public CloseType getCloseType() {
+        return closeType;
     }
 
     public boolean isGracefullyClose() {
@@ -62,6 +68,8 @@ public class CloseServiceTask extends InnerServiceTask {
         return "CloseServiceTask{" +
                 "gracefullyClose=" + gracefullyClose +
                 ", reasons=" + reasons +
+                ", delayedTimes=" + delayedTimes +
+                ", closeType=" + closeType +
                 ", service=" + service +
                 '}';
     }

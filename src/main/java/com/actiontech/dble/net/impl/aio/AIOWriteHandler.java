@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.net.impl.aio;
 
+import com.actiontech.dble.net.service.CloseType;
 import com.actiontech.dble.net.service.ServiceTaskFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,6 +16,7 @@ import java.util.Objects;
 
 class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
     private static final Logger LOGGER = LogManager.getLogger(AIOWriteHandler.class);
+
     @Override
     public void completed(final Integer result, final AIOSocketWR wr) {
         try {
@@ -24,7 +26,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
             if (result >= 0) {
                 wr.onWriteFinished(result);
             } else {
-                wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose("write errno " + result));
+                wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose("write errno " + result, CloseType.WRITE));
             }
         } catch (Exception e) {
             AIOSocketWR.LOGGER.info("caught aio process err:", e);
@@ -35,15 +37,14 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
     @Override
     public void failed(Throwable exc, AIOSocketWR wr) {
         wr.writing.set(false);
-
-        if (Objects.equals(exc.getMessage(), "Broken pipe") || exc instanceof ClosedChannelException) {
+        if (Objects.equals(exc.getMessage(), "Broken pipe") || Objects.equals(exc.getMessage(), "Connection reset by peer") || exc instanceof ClosedChannelException) {
             // target problem,
             //ignore this exception,will close by read side.
-            LOGGER.debug("Connection was closed while read. Detail reason:{}. {}.", exc, wr.con.getService());
+            LOGGER.warn("Connection was closed while read. Detail reason:{}. {}.", exc, wr.con.getService());
         } else {
             //self problem.
             LOGGER.info("con {} write err:{}", wr.con.getService(), exc.getMessage());
-            wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose(exc.getMessage()));
+            wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose(exc.getMessage(), CloseType.WRITE));
         }
     }
 

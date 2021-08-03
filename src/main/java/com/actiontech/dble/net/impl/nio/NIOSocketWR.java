@@ -8,6 +8,7 @@ package com.actiontech.dble.net.impl.nio;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.CloseType;
 import com.actiontech.dble.net.service.ServiceTaskFactory;
 import com.actiontech.dble.singleton.FlowController;
 import org.slf4j.Logger;
@@ -33,6 +34,8 @@ public class NIOSocketWR extends SocketWR {
 
     private volatile WriteOutTask leftoverWriteTask;
     private volatile boolean writeDataErr = false;
+
+    private volatile boolean disableReadForever = false;
 
     public void initFromConnection(AbstractConnection connection) {
         this.con = connection;
@@ -75,24 +78,27 @@ public class NIOSocketWR extends SocketWR {
 
         } catch (IOException e) {
             writeDataErr = true;
-            if (Objects.equals(e.getMessage(), "Broken pipe") || e instanceof ClosedChannelException) {
+            if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") || e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
-                LOGGER.debug("Connection was closed while read. Detail reason:{}. {}.", e.toString(), con.getService());
+                LOGGER.warn("Connection was closed while read. Detail reason:{}. {}.", e.toString(), con.getService());
             } else {
                 //self problem.
                 LOGGER.info("con {} write err:", con.getService(), e);
-                con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
+                con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
             }
 
         } catch (Exception e) {
             writeDataErr = true;
             LOGGER.info("con {} write err:", con.getService(), e);
-            con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage()));
+            con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
 
         } finally {
             if (writeDataErr) {
                 this.writeQueue.clear();
+                if ((processKey.isValid() && (processKey.interestOps() & SelectionKey.OP_WRITE) != 0)) {
+                    disableWrite();
+                }
             }
             writing.compareAndSet(threadId, NOT_USED);
 
@@ -138,7 +144,16 @@ public class NIOSocketWR extends SocketWR {
     }
 
     @Override
+    public void disableReadForever() {
+        this.disableReadForever = true;
+        disableRead();
+    }
+
+    @Override
     public void enableRead() {
+        if (disableReadForever) {
+            return;
+        }
         try {
             SelectionKey key = this.processKey;
             key.interestOps(key.interestOps() | SelectionKey.OP_READ);

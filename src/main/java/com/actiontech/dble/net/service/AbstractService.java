@@ -157,9 +157,12 @@ public abstract class AbstractService extends VariablesService implements Servic
         try {
             switch (task.getType()) {
                 case CLOSE:
-                    //prevent most of repeat close.
-                    connection.getSocketWR().disableRead();
+                    connection.markPrepareClose();
                     final CloseServiceTask closeTask = (CloseServiceTask) task;
+                    if (closeTask.getCloseType() == CloseType.READ) {
+                        //prevent most of nio repeat create close task.
+                        connection.getSocketWR().disableReadForever();
+                    }
                     if (closeTask.isFirst()) {
                         LOGGER.info("prepare close for conn.conn id {},reason [{}]", connection.getId(), closeTask.getReasonsStr());
                     }

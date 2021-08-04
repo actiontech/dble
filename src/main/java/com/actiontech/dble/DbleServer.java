@@ -272,6 +272,14 @@ public final class DbleServer {
         LOGGER.info("===================================Sync cluster pause status start====================================");
         PauseShardingNodeManager.getInstance().fetchClusterStatus();
         LOGGER.info("===================================Sync cluster pause status end  ====================================");
+
+        // upload before the service start
+        if (ClusterConfig.getInstance().isInitZkFirst()) {
+            ZktoXmlMain.loadZkToFile();
+            ProxyMeta.getInstance().getTmManager().init(this.getConfig());
+            LOGGER.info("init file to Zk success");
+        }
+
         manager.start();
         LOGGER.info(manager.getName() + " is started and listening on " + manager.getPort());
         server.start();
@@ -285,13 +293,6 @@ public final class DbleServer {
         LOGGER.info("====================================CronScheduler started=========================================");
 
         CustomMySQLHa.getInstance().start();
-
-        if (ClusterConfig.getInstance().isInitZkFirst()) {
-            ZktoXmlMain.loadZkToFile();
-            ProxyMeta.getInstance().getTmManager().init(this.getConfig());
-            LOGGER.info("init file to Zk success");
-        }
-
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
         startup = true;
     }

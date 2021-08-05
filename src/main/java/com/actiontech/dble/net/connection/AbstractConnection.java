@@ -42,6 +42,9 @@ public abstract class AbstractConnection implements Connection {
     protected final SocketWR socketWR;
     protected final AtomicBoolean isClosed;
 
+    private volatile boolean isPrepareClosed = false;
+    private volatile Long prepareClosedTime;
+
     protected long id;
     protected String host;
     protected int localPort;
@@ -90,13 +93,13 @@ public abstract class AbstractConnection implements Connection {
         lastReadTime = TimeUtil.currentTimeMillis();
         if (got == -1) {
             if (doingGracefulClose.get()) {
-                pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose(graceClosedReasons));
+                pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose(graceClosedReasons, CloseType.READ));
             } else {
-                pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream closed by peer"));
+                pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream closed by peer", CloseType.READ));
             }
             return;
         } else if (got == 0 && !this.channel.isOpen()) {
-            pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream is closed when reading zero byte"));
+            pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose("stream is closed when reading zero byte", CloseType.READ));
             return;
         } else {
             netInBytes += got;
@@ -124,7 +127,7 @@ public abstract class AbstractConnection implements Connection {
                         LOGGER.error("close gracefully cause error.ignored reason is {}", reason, e);
                     } else {
                         LOGGER.error("close gracefully cause error.reason is {}", reason, e);
-                        pushServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason));
+                        pushServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason, CloseType.READ));
                     }
                 }
 
@@ -165,6 +168,16 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
+    public void markPrepareClose() {
+        if (prepareClosedTime == null) {
+            prepareClosedTime = System.currentTimeMillis();
+        }
+        isPrepareClosed = true;
+    }
+
+    public boolean isPrepareClosedTimeout() {
+        return isPrepareClosed && (System.currentTimeMillis() - prepareClosedTime >= SystemConfig.getInstance().getCloseTimeout());
+    }
 
     public boolean pushServiceTask(@Nonnull ServiceTask serviceTask) {
         if (serviceTask.getType().equals(ServiceTaskType.NORMAL)) {
@@ -395,7 +408,7 @@ public abstract class AbstractConnection implements Connection {
             return this.socketWR.registerWrite(buffer);
         } catch (Exception e) {
             LOGGER.info("writeDirectly err:", e);
-            this.pushServiceTask(ServiceTaskFactory.getInstance(this.getService()).createForForceClose(e.getMessage()));
+            this.pushServiceTask(ServiceTaskFactory.getInstance(this.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
             return false;
         }
     }
@@ -511,8 +524,7 @@ public abstract class AbstractConnection implements Connection {
             }
 
             graceClosedReasons.add(e.toString());
-            this.socketWR.disableRead();
-            pushServiceTask(ServiceTaskFactory.getInstance(getService()).createForGracefulClose(graceClosedReasons));
+            pushServiceTask(ServiceTaskFactory.getInstance(getService()).createForGracefulClose(graceClosedReasons, CloseType.READ));
         }
     }
 

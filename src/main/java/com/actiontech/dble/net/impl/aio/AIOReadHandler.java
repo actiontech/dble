@@ -6,6 +6,9 @@
 package com.actiontech.dble.net.impl.aio;
 
 
+import com.actiontech.dble.net.service.CloseType;
+import com.actiontech.dble.net.service.ServiceTaskFactory;
+
 import java.io.IOException;
 import java.nio.channels.CompletionHandler;
 
@@ -20,7 +23,7 @@ class AIOReadHandler implements CompletionHandler<Integer, AIOSocketWR> {
                 wr.con.close("handle err:" + e);
             }
         } else if (i == -1) {
-            wr.con.close("client closed");
+            wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForGracefulClose("client closed", CloseType.READ));
         }
     }
 

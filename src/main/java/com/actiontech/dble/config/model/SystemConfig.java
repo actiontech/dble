@@ -82,6 +82,9 @@ public final class SystemConfig {
     private long idleTimeout = DEFAULT_IDLE_TIMEOUT;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
+    // connection will force close if received close packet but haven't been closed after closeTimeout milliseconds.
+    // set the value too big is not a good idea.
+    private long closeTimeout = 100;
 
     //transaction log
     private int recordTxn = 0;
@@ -597,6 +600,10 @@ public final class SystemConfig {
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "idleTimeout", idleTimeout, this.idleTimeout));
         }
+    }
+
+    public long getCloseTimeout() {
+        return closeTimeout;
     }
 
     public long getXaSessionCheckPeriod() {
@@ -1436,6 +1443,7 @@ public final class SystemConfig {
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
                 ", processorCheckPeriod=" + processorCheckPeriod +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
+                ", closeTimeout=" + closeTimeout +
                 ", recordTxn=" + recordTxn +
                 ", transactionLogBaseDir=" + transactionLogBaseDir +
                 ", transactionLogBaseName=" + transactionLogBaseName +

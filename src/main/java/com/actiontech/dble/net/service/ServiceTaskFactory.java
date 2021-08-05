@@ -20,21 +20,21 @@ public class ServiceTaskFactory {
     }
 
 
-    public InnerServiceTask createForGracefulClose(Collection<String> reasons) {
-        return new CloseServiceTask(service, true, reasons);
+    public InnerServiceTask createForGracefulClose(Collection<String> reasons, CloseType closeType) {
+        return new CloseServiceTask(service, true, reasons, closeType);
     }
 
-    public InnerServiceTask createForGracefulClose(String reason) {
-        return new CloseServiceTask(service, true, Lists.newArrayList(reason));
+    public InnerServiceTask createForGracefulClose(String reason, CloseType closeType) {
+        return new CloseServiceTask(service, true, Lists.newArrayList(reason), closeType);
     }
 
 
-    public InnerServiceTask createForForceClose(Collection<String> reasons) {
-        return new CloseServiceTask(service, false, reasons);
+    public InnerServiceTask createForForceClose(Collection<String> reasons, CloseType closeType) {
+        return new CloseServiceTask(service, false, reasons, closeType);
     }
 
-    public InnerServiceTask createForForceClose(String reason) {
-        return new CloseServiceTask(service, false, Lists.newArrayList(reason));
+    public InnerServiceTask createForForceClose(String reason, CloseType closeType) {
+        return new CloseServiceTask(service, false, Lists.newArrayList(reason), closeType);
     }
 }
 

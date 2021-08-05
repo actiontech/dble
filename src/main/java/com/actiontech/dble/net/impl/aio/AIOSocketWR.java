@@ -187,6 +187,15 @@ public class AIOSocketWR extends SocketWR {
     }
 
     @Override
+    public void disableReadForever() {
+        try {
+            channel.shutdownInput();
+        } catch (IOException e) {
+            LOGGER.info("disable read error", e);
+        }
+    }
+
+    @Override
     public void shutdownInput() throws IOException {
         channel.shutdownInput();
     }

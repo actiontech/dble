@@ -8,7 +8,6 @@ import com.actiontech.dble.net.connection.WriteAbleService;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.singleton.TraceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,7 +18,6 @@ import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -157,9 +155,12 @@ public abstract class AbstractService extends VariablesService implements Servic
         try {
             switch (task.getType()) {
                 case CLOSE:
-                    //prevent most of repeat close.
-                    connection.getSocketWR().disableRead();
+                    connection.markPrepareClose();
                     final CloseServiceTask closeTask = (CloseServiceTask) task;
+                    if (closeTask.getCloseType() == CloseType.READ) {
+                        //prevent most of nio repeat create close task.
+                        connection.getSocketWR().disableReadForever();
+                    }
                     if (closeTask.isFirst()) {
                         LOGGER.info("prepare close for conn.conn id {},reason [{}]", connection.getId(), closeTask.getReasonsStr());
                     }
@@ -217,9 +218,7 @@ public abstract class AbstractService extends VariablesService implements Servic
                             /*
                             delayed, push back to queue.
                              */
-                            Scheduler.getInstance().getScheduledExecutor().schedule(() -> {
-                                connection.pushServiceTask(serviceTask);
-                            }, 500, TimeUnit.MILLISECONDS);
+                            connection.pushServiceTask(serviceTask);
                         }
                     }
                 } else {

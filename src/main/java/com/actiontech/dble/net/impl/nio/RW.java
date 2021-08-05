@@ -139,14 +139,16 @@ public final class RW implements Runnable {
         if (registerQueue.isEmpty()) {
             return;
         }
-        while ((c = registerQueue.poll()) != null) {
-            try {
-                ((NIOSocketWR) c.getSocketWR()).register(finalSelector);
-                c.register();
-            } catch (Exception e) {
-                //todo 确认调用register的时候会发生什么
-                LOGGER.warn("register err", e);
-            }
+        c = registerQueue.poll();
+        if (c == null) {
+            return;
+        }
+        try {
+            ((NIOSocketWR) c.getSocketWR()).register(finalSelector);
+            c.register();
+        } catch (Exception e) {
+            //todo 确认调用register的时候会发生什么
+            LOGGER.warn("register err", e);
         }
     }
 

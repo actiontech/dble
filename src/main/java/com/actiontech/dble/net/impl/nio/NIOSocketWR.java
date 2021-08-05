@@ -78,6 +78,8 @@ public class NIOSocketWR extends SocketWR {
 
         } catch (IOException e) {
             writeDataErr = true;
+            //when write errored,the flow control doesn't work
+            FlowController.tryRemoveFlowControl(-1, con);
             if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") || e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
@@ -91,6 +93,8 @@ public class NIOSocketWR extends SocketWR {
         } catch (Exception e) {
             writeDataErr = true;
             LOGGER.info("con {} write err:", con.getService(), e);
+            //when write errored,the flow control doesn't work
+            FlowController.tryRemoveFlowControl(-1, con);
             con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
 
         } finally {

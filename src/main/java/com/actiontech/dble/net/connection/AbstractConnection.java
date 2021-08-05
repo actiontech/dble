@@ -176,7 +176,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public boolean isPrepareClosedTimeout() {
-        return isPrepareClosed && (System.currentTimeMillis() / 1000 - prepareClosedTime >= SystemConfig.getInstance().getCloseTimeout());
+        return isPrepareClosed && (System.currentTimeMillis() - prepareClosedTime >= SystemConfig.getInstance().getCloseTimeout());
     }
 
     public boolean pushServiceTask(@Nonnull ServiceTask serviceTask) {

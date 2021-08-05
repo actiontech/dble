@@ -146,6 +146,23 @@ public final class IOProcessor {
             } else {
                 checkConSendQueue(c);
                 if (c.isPrepareClosedTimeout()) {
+                    if (!c.isManager()) {
+                        if (c.getService() instanceof ShardingService) {
+                            ShardingService s = (ShardingService) c.getService();
+                            String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                            if (xaStage != null) {
+                                if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE)) {
+                                    // Active/IDLE/PREPARED XA FrontendS will be rollbacked
+                                    s.getConnection().close("Close Timeout");
+                                    XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                                } else {
+                                    s.getConnection().close("Close Timeout");
+                                    XASessionCheck.getInstance().addCommitSession(s.getSession2());
+                                }
+                                continue;
+                            }
+                        }
+                    }
                     c.close("close timeout");
                 } else if (c.isIdleTimeout()) {
                     if (!c.isManager()) {
@@ -158,7 +175,7 @@ public final class IOProcessor {
                                     s.getConnection().close("Idle Timeout");
                                     XASessionCheck.getInstance().addRollbackSession(s.getSession2());
                                 }
-                                return;
+                                continue;
                             }
                         }
                     }

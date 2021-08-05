@@ -128,10 +128,12 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
     //wakeup selector
     private void wakeupFrontedSelector() {
         Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(DbleServer.FRONT_EXECUTOR_NAME);
-        for (Map.Entry<Thread, Runnable> runnableEntry : threadRunnableMap.entrySet()) {
-            RW rw = (RW) runnableEntry.getValue();
-            rw.getSelector().wakeup();
-        }
+        Map.Entry<Thread, Runnable> threadRunnableEntry = threadRunnableMap.entrySet().stream().sorted((o1, o2) -> {
+            RW value1 = (RW) o1.getValue();
+            RW value2 = (RW) o2.getValue();
+            return value1.getSelectorKeySize() - value2.getSelectorKeySize();
+        }).findFirst().get();
+        ((RW) threadRunnableEntry.getValue()).getSelector().wakeup();
     }
 
     /**

@@ -59,6 +59,7 @@ public class RWSplitService extends BusinessService {
                 }
                 if (!autocommit && Boolean.parseBoolean(ac)) {
                     session.execute(true, (isSuccess, rwSplitService) -> {
+                        session.getConn().getBackendService().setAutocommit(true);
                         rwSplitService.setAutocommit(true);
                         txStarted = false;
                         this.singleTransactionsCount();

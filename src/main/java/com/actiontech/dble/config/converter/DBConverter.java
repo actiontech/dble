@@ -280,6 +280,8 @@ public class DBConverter {
             case "idleTimeout":
             case "heartbeatPeriodMillis":
             case "evictorShutdownTimeoutMillis":
+            case "flowHighLevel":
+            case "flowLowLevel":
                 if (!StringUtil.isBlank(value)) {
                     if (!LongUtil.isLong(value)) {
                         errorMsgList.add("property [ " + property.getName() + " ] '" + value + "' data type should be long");

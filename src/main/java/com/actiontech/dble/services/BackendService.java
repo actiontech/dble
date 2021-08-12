@@ -20,9 +20,15 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.response.ProtocolResponseHandler;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.net.executor.ThreadPoolStatistic;
+import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.StringUtil;
@@ -66,6 +72,8 @@ public abstract class BackendService extends AbstractService {
     protected boolean isolationSynced;
     private final BackendOnetimeRunnable taskRunnable = new BackendOnetimeRunnable();
 
+    private final AtomicInteger readSize = new AtomicInteger(0);
+
     public BackendService(BackendConnection connection) {
         super(connection);
         this.connection = connection;
@@ -95,8 +103,13 @@ public abstract class BackendService extends AbstractService {
     @Override
     public void handle(ServiceTask task) {
         beforeInsertServiceTask(task);
+        productReadingData(task);
         taskQueue.offer(task);
         doHandle(task);
+    }
+
+    public int getReadSize() {
+        return readSize.get();
     }
 
     protected void doHandle(ServiceTask task) {
@@ -110,8 +123,6 @@ public abstract class BackendService extends AbstractService {
     /**
      * used when Performance Mode
      *
-     * @param task
-     * @param threadContext
      */
     @Override
     public void execute(ServiceTask task, ThreadContext threadContext) {
@@ -155,6 +166,9 @@ public abstract class BackendService extends AbstractService {
                 // handleData
                 while ((task = taskQueue.poll()) != null) {
                     DbleThreadPoolProvider.beginProcessBackendBusinessTask();
+                    if (isSupportFlowControl() && FlowController.isEnableFlowControl()) {
+                        consumeReadingData(task);
+                    }
                     this.consumeSingleTask(task);
                     ThreadPoolStatistic.getBackendBusiness().getCompletedTaskCount().increment();
                 }
@@ -199,6 +213,7 @@ public abstract class BackendService extends AbstractService {
         connection.close("handle data error:" + e.getMessage());
         while (taskQueue.size() > 0) {
             taskQueue.clear();
+            readSize.set(0);
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
@@ -207,6 +222,7 @@ public abstract class BackendService extends AbstractService {
     @Override
     public void cleanup() {
         this.taskQueue.clear();
+        readSize.set(0);
         backendSpecialCleanUp();
         TraceManager.sessionFinish(this);
     }
@@ -230,6 +246,44 @@ public abstract class BackendService extends AbstractService {
         connection.getPoolRelated().release(connection);
     }
 
+
+    private void productReadingData(ServiceTask task) {
+        if (needCalcReadingData(task) != null) {
+            int currentReadSize = readSize.addAndGet(((NormalServiceTask) task).getOrgData().length);
+            if (currentReadSize > connection.getFlowHighLevel()) {
+                LOGGER.debug("This backend connection begins flow control, currentWritingSize= {},conn info:{}", currentReadSize, connection);
+                connection.disableRead();
+            }
+        }
+    }
+
+    private void consumeReadingData(ServiceTask task) {
+        ShardingService shardingService;
+        if ((shardingService = needCalcReadingData(task)) != null) {
+            int currentReadSize = readSize.addAndGet(-((NormalServiceTask) task).getOrgData().length);
+            if (connection.isFrontWriteFlowControlled() &&
+                    currentReadSize <= connection.getFlowLowLevel() &&
+                    !shardingService.isFlowControlled()) {
+                LOGGER.debug("This backend connection stop flow control, currentWritingSize= {},conn info:{}", currentReadSize, connection);
+                connection.enableRead();
+            }
+        }
+    }
+
+    private ShardingService needCalcReadingData(ServiceTask task) {
+        NonBlockingSession session;
+        ShardingService shardingService;
+        if (FlowController.isEnableFlowControl() &&
+                isSupportFlowControl() &&
+                task.getType() == ServiceTaskType.NORMAL &&
+                (session = ((MySQLResponseService) this).getSession()) != null &&
+                (shardingService = session.getShardingService()) != null) {
+            return shardingService;
+        } else return null;
+    }
+
+    protected abstract boolean isSupportFlowControl();
+
     protected void innerRelease() {
     }
 
@@ -242,9 +296,6 @@ public abstract class BackendService extends AbstractService {
         isRowDataFlowing = rowDataFlowing;
     }
 
-    public BackEndCleaner getRecycler() {
-        return recycler;
-    }
 
     public void setRecycler(BackEndCleaner recycler) {
         this.recycler = recycler;
@@ -495,7 +546,6 @@ public abstract class BackendService extends AbstractService {
         /**
          * only for xa
          *
-         * @param synCount
          */
         StatusSync(int synCount) {
             this.schema = null;

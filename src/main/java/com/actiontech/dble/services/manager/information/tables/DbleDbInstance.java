@@ -19,6 +19,7 @@ import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.converter.DBConverter;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -106,6 +107,10 @@ public class DbleDbInstance extends ManagerWritableTable {
     private static final String COLUMN_IDLE_TIMEOUT = "idle_timeout";
 
     private static final String COLUMN_HEARTBEAT_PERIOD_MILLIS = "heartbeat_period_millis";
+
+    private static final String COLUMN_FLOW_HIGH_LEVEL = "flow_HighLevel";
+
+    private static final String COLUMN_FLOW_LOW_LEVEL = "flowLowLevel";
 
     public DbleDbInstance() {
         super(TABLE_NAME, 30);
@@ -212,6 +217,13 @@ public class DbleDbInstance extends ManagerWritableTable {
 
         columns.put(COLUMN_HEARTBEAT_PERIOD_MILLIS, new ColumnMeta(COLUMN_HEARTBEAT_PERIOD_MILLIS, "int(11)", true, String.valueOf(PoolConfig.DEFAULT_HEARTBEAT_PERIOD)));
         columnsType.put(COLUMN_HEARTBEAT_PERIOD_MILLIS, Fields.FIELD_TYPE_LONG);
+
+
+        columns.put(COLUMN_FLOW_HIGH_LEVEL, new ColumnMeta(COLUMN_FLOW_HIGH_LEVEL, "int(11)", true, String.valueOf(SystemConfig.FLOW_CONTROL_HIGH_LEVEL)));
+        columnsType.put(COLUMN_FLOW_HIGH_LEVEL, Fields.FIELD_TYPE_LONG);
+
+        columns.put(COLUMN_FLOW_LOW_LEVEL, new ColumnMeta(COLUMN_FLOW_LOW_LEVEL, "int(11)", true, String.valueOf(SystemConfig.FLOW_CONTROL_LOW_LEVEL)));
+        columnsType.put(COLUMN_FLOW_LOW_LEVEL, Fields.FIELD_TYPE_LONG);
     }
 
     @Override
@@ -257,6 +269,9 @@ public class DbleDbInstance extends ManagerWritableTable {
                 map.put(COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS, String.valueOf(poolConfig.getEvictorShutdownTimeoutMillis()));
                 map.put(COLUMN_IDLE_TIMEOUT, String.valueOf(poolConfig.getIdleTimeout()));
                 map.put(COLUMN_HEARTBEAT_PERIOD_MILLIS, String.valueOf(poolConfig.getHeartbeatPeriodMillis()));
+                map.put(COLUMN_FLOW_HIGH_LEVEL, String.valueOf(poolConfig.getFlowHighLevel()));
+                map.put(COLUMN_FLOW_LOW_LEVEL, String.valueOf(poolConfig.getFlowLowLevel()));
+
                 rowList.add(map);
             }
         }));
@@ -424,6 +439,8 @@ public class DbleDbInstance extends ManagerWritableTable {
                 case COLUMN_IDLE_TIMEOUT:
                 case COLUMN_HEARTBEAT_PERIOD_MILLIS:
                 case COLUMN_EVICTOR_SHUTDOWN_TIMEOUT_MILLIS:
+                case COLUMN_FLOW_HIGH_LEVEL:
+                case COLUMN_FLOW_LOW_LEVEL:
                     String key = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, entry.getKey());
                     propertyList.add(new Property(entry.getValue(), key));
                     break;

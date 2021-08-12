@@ -71,7 +71,9 @@ public final class LoadDataUtil {
             int len = -1;
 
             while ((len = inputStream.read(buffer)) != -1) {
-                FlowController.tryFlowControl(service);
+                if (FlowController.isEnableFlowControl()) {
+                    FlowController.checkFlowControl(service);
+                }
                 byte[] temp = null;
                 if (len == packSize) {
                     temp = buffer;

@@ -1,8 +1,13 @@
 package com.actiontech.dble.services.manager.response;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.FlowControllerConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.config.model.db.PoolConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.FlowController;
@@ -10,6 +15,7 @@ import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * Created by szf on 2020/4/10.
@@ -25,14 +31,14 @@ public final class FlowControlShow {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("FLOW_CONTROL_ENABLE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("FLOW_CONTROL_TYPE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("FLOW_CONTROL_START", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i] = PacketUtil.getField("FLOW_CONTROL_HIGH_LEVEL", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("FLOW_CONTROL_END", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("FLOW_CONTROL_LOW_LEVEL", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -57,15 +63,32 @@ public final class FlowControlShow {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        FlowControllerConfig config = FlowController.getFlowCotrollerConfig();
-        //find
-        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(config.isEnableFlowControl() ? "true" : "false", service.getCharset().getResults()));
-        row.add(LongUtil.toBytes(config.getStart()));
-        row.add(LongUtil.toBytes(config.getEnd()));
-        row.setPacketId(++packetId);
-        buffer = row.write(buffer, service, true);
+        FlowControllerConfig config = FlowController.getFlowControllerConfig();
+        if (config.isEnableFlowControl()) {
+            //find
+            {
+                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                row.add(StringUtil.encode("FRONT_END", service.getCharset().getResults()));
+                row.add(LongUtil.toBytes(config.getHighWaterLevel()));
+                row.add(LongUtil.toBytes(config.getLowWaterLevel()));
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
+            }
 
+            Map<String, PhysicalDbGroup> dbGroups = DbleServer.getInstance().getConfig().getDbGroups();
+            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+                for (PhysicalDbInstance dbInstance : dbGroup.getDbInstances(true)) {
+                    DbInstanceConfig dbInstanceConfig = dbInstance.getConfig();
+                    PoolConfig poolConfig = dbInstanceConfig.getPoolConfig();
+                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                    row.add(StringUtil.encode(dbGroup.getGroupName() + "-" + dbInstance.getName(), service.getCharset().getResults()));
+                    row.add(LongUtil.toBytes(poolConfig.getFlowHighLevel()));
+                    row.add(LongUtil.toBytes(poolConfig.getFlowLowLevel()));
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, service, true);
+                }
+            }
+        }
         // write last eof
         EOFRowPacket lastEof = new EOFRowPacket();
         lastEof.setPacketId(++packetId);

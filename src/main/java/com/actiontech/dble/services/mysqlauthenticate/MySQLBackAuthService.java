@@ -283,4 +283,8 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         }
     }
 
+
+    protected boolean isSupportFlowControl() {
+        return false;
+    }
 }

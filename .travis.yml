@@ -3,13 +3,19 @@ language: java
 jdk:
   - oraclejdk8
 
+# safelist
+branches:
+  only:
+    - master
+    - /((\d)|(\.))+((\/)tag)$/
+
 cache:
   directories:
     - '$HOME/.m2/repository'
 deploy:
   provider: releases
   api_key:
-    secure: DFHA9ih6bRqHAylBXmxRta620oXz6ASCDLBOFrDxHVivGZNec7eXKWqvwq6SAMU3KUzPVlK0rsGsNmyNnVGf75QTnaJioajWiJikBnt5yBe/lqQJLIbHG65465zin194XtGBU4H8COOsTBfyCte5I2Xz5huNoTU06uUU8JFdCqn/Bdl4agNrJVMTlA+rUiypa+jrrnLS2/Nvg99UeLR+zMdzu4H0gbDqDci/FKjLrXRNxcFsXUQVVDcHl2xiDIJjJlQD5LLMweFuN0hu4O2Y2fVhRW4pdwOen4i19IQQI6AbTFyllWXr4iIavXAApVzHYF49Bd5G8kTwQaJHLQl3rOhvy9YE0Gzu9aE8rhdLaToKQ1tFzIZs01YgGXq52ov2RI+GUOf6VQSdD6tSvt25iPpC3V5vlTD89UsUPGkJz+CpSqoVqsC7/wGacWG5jLRmuP9lldXhnmZcwiw1TEiMLTnXc8/mG9Eam2VFgXRWiCtZ40h4/wyUQGtxa30TcHohVl3sr63WP9nwx+OzNLe5JhhSrdxMicgSgdWxYfMetI7m3cA6iR3xGDV4s+HlvKcFUVPN2bb1U9YjYFZr7884/oIBxULZ7Nq6eEkBhHR1AvLfUPymO3OkuoYbs/qyZXTwIjsBOXUKwBH30pmTpSAa+3C3g2GqTiElJEqF/i3fHpc=
+    secure: BSUg1adCcO1vZJ1Jiyv/atERsQgphVUgj2WL5/cIJvXXBHp1DSNyQHPv8CyDkz7vH1cZbKe6ev+Bz2V/OyE9NMQVXRS5qwrUCw+ScGQHmMfuNkIPtpzGCuyNOUCwpGB28LzlTLmXgGGI/WhOokc3eCh7sJ6OftOkoRmGDD4x+2OyXy3Yd7rtyggzohfksmJ0oNqwA50f0vXXDC/KD51xOY3Ik4txi1sf65ccpJ2mR9nbDUphYbA6mzokX1L8cvuVyhV0N1Dd+SDpHE2eOXoretDQ1vK/i3K0fLoPpGsbagTSl75lgJi5LB4jQIxHAibLT+/St70WpB+7P2JqBq9ocaJnldLGgNmRb4osEnH/8lpurRkvonHY5kWgl3XBcolw/wd0c1fJmftJCyPwjJceSGg/+hG7516dqA2GEavgs8mMEMgxEcPH9Jp7fP9K72Ck7X28nyddBDH5AwI7lUY6PKTwmXBsH0hXupVWK7+d1nfMgK3hK6b2F1wE6TC82rLf7IwQUxIVcfSL/kuzzgJpaF0ccTTBNWHCf/At2hunTK1USPRj8AOteK99ype+6/0xhhiOFdNxWtu95IhFfpJPVeGtAVrh4fln2nA7erWmuD58QBGfoWFNJMhT8zshdg0AQpwAu5qcxgQBOddU8IO44g+eA5rosqH3AM7Yj3HvIXw=
   file_glob: true
   file: target/*-linux.tar.gz
   skip_cleanup: true

@@ -42,6 +42,7 @@ import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
@@ -696,6 +697,9 @@ public class NonBlockingSession extends Session {
             ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             //lock self meta
             ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
+        } catch (NeedDelayedException e) {
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            throw e;
         } catch (Exception e) {
             ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");

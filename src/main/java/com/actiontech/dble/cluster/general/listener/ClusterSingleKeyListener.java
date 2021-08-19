@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster.general.listener;
 
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
+import com.actiontech.dble.util.exception.DetachedException;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.general.response.ClusterXmlLoader;
@@ -13,6 +14,7 @@ import com.actiontech.dble.cluster.values.OriginClusterEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -41,6 +43,11 @@ public class ClusterSingleKeyListener implements Runnable {
     public void run() {
         for (; ; ) {
             try {
+                if (sender.isDetach()) {
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
+                    index = 0;
+                    continue;
+                }
                 SubscribeRequest request = new SubscribeRequest();
                 request.setIndex(index);
                 request.setDuration(60);
@@ -51,8 +58,15 @@ public class ClusterSingleKeyListener implements Runnable {
                     handle(diffList);
                     index = output.getIndex();
                 }
+            } catch (DetachedException e) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
+            } catch (IOException e) {
+                if (!sender.isDetach()) {
+                    LOGGER.info("error in deal with key,may be the ucore is shut down", e);
+                }
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             } catch (Exception e) {
-                LOGGER.info("error in deal with key,may be the ucore is shut down");
+                LOGGER.info("error in deal with key,may be the ucore is shut down", e);
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }
         }

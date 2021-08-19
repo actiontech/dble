@@ -156,4 +156,6 @@ public abstract class AbstractConsulSender implements ClusterSender {
             OnlineStatus.getInstance().nodeListenerInitClusterOnline();
         }
     }
+
+    public abstract boolean isDetach();
 }

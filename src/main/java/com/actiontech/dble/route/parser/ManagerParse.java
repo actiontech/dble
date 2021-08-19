@@ -47,6 +47,7 @@ public final class ManagerParse {
     public static final int KILL_LOAD_DATA = 33;
     public static final int START = 34;
     public static final int DROP_STATISTIC_QUEUE_USAGE = 35;
+    public static final int CLUSTER = 36;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -317,9 +318,19 @@ public final class ManagerParse {
                 case 'H':
                 case 'h':
                     return chCheck(stmt, offset);
+                case 'l':
+                case 'L':
+                    return clCheck(stmt, offset);
                 default:
                     return OTHER;
             }
+        }
+        return OTHER;
+    }
+
+    private static int clCheck(String stmt, int offset) {
+        if (ParseUtil.compare(stmt, offset, "LUSTER")) {
+            return CLUSTER;
         }
         return OTHER;
     }

@@ -109,7 +109,14 @@ public interface ClusterSender {
 
     /**
      * forceResumePause sharding node
-     * @throws Exception   io or net error
+     *
+     * @throws Exception io or net error
      */
     void forceResumePause() throws Exception;
+
+
+    void detachCluster() throws Exception;
+
+
+    void attachCluster() throws Exception;
 }

@@ -10,7 +10,11 @@ import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.singleton.CustomMySQLHa;
+import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.util.exception.DetachedException;
 import io.grpc.Channel;
+import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import java.io.IOException;
@@ -33,12 +37,13 @@ public class UshardSender extends AbstractConsulSender {
     private final String sourceComponentType = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
+    private volatile boolean detached = false;
 
     @Override
     public void initConInfo() {
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-        stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+        setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
     }
 
     @Override
@@ -47,7 +52,7 @@ public class UshardSender extends AbstractConsulSender {
         sourceComponentId = SystemConfig.getInstance().getInstanceName();
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-        stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+        setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
         startUpdateNodes();
         ClusterToXml.loadKVtoFile(this);
     }
@@ -276,21 +281,82 @@ public class UshardSender extends AbstractConsulSender {
             public void run() {
                 for (; ; ) {
                     try {
+                        if (isDetach()) {
+                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
+                            continue;
+                        }
                         UshardInterface.SubscribeKvPrefixInput input = UshardInterface.SubscribeKvPrefixInput.newBuilder().
                                 setIndex(0).setDuration(60).setKeyPrefix(ClusterPathUtil.BASE_PATH).build();
                         stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
                         firstReturnToCluster();
                         return;
+                    } catch (DetachedException e) {
+                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
                     } catch (Exception e) {
+                        if (isDetach()) {
+                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
+                            continue;
+                        }
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-                        stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                        UshardSender.this.setStubIfPossible(DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
                     }
                 }
             }
         });
         nodes.setName("USHARD_RECONNECT_LISTENER");
         nodes.start();
+    }
+
+
+    @Override
+    public void detachCluster() throws Exception {
+        detached = true;
+        OnlineStatus.getInstance().shutdownClear();
+        CustomMySQLHa.getInstance().stop(false);
+        LOGGER.info("cluster detach begin close connection");
+        ((ManagedChannel) stub.getChannel()).shutdownNow();
+
+
+    }
+
+    @Override
+    public boolean isDetach() {
+
+        return detached;
+    }
+
+    @Override
+    public void attachCluster() throws Exception {
+        ManagedChannel channel = null;
+        try {
+            channel = ManagedChannelBuilder.forAddress("127.0.0.1",
+                    ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+            stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+            //check connection is ready
+            ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
+        } catch (Exception e) {
+            if (channel != null) {
+                channel.shutdownNow();
+            }
+            throw new IllegalStateException("can't connect to ucore. ");
+        }
+
+        detached = false;
+        LOGGER.info("cluster attach begin rebuild online information");
+        if (!OnlineStatus.getInstance().rebuildOnline()) {
+            ((ManagedChannel) stub.getChannel()).shutdownNow();
+            throw new IllegalStateException("can't create online information to ucore. ");
+        }
+        CustomMySQLHa.getInstance().start();
+    }
+
+    public void setStubIfPossible(DbleClusterGrpc.DbleClusterBlockingStub stubTmp) {
+        if (detached) {
+            return;
+        }
+        this.stub = stubTmp;
     }
 }

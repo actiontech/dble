@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster.zkprocess;
 
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.util.exception.DetachedException;
 import com.actiontech.dble.util.ZKUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,12 @@ public class ZkDistributeLock extends DistributeLock {
         try {
             ZKUtils.createTempNode(path, value.getBytes(StandardCharsets.UTF_8));
             return true;
+        } catch (IllegalStateException e) {
+            if (e.getMessage() != null && e.getMessage().contains("Expected state [STARTED] was [STOPPED]")) {
+                throw new DetachedException("cluster is detached");
+            }
+            LOGGER.warn("acquire ZkDistributeLock failed ", e);
+            return false;
         } catch (Exception e) {
             LOGGER.warn("acquire ZkDistributeLock failed ", e);
             return false;

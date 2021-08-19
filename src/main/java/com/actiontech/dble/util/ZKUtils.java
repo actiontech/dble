@@ -7,6 +7,7 @@ package com.actiontech.dble.util;
 
 
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -17,6 +18,9 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public final class ZKUtils {
@@ -25,6 +29,7 @@ public final class ZKUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZKUtils.class);
     private static CuratorFramework curatorFramework = null;
+    private static Map<ListenerContext, PathChildrenCache> caches = Maps.newConcurrentMap();
 
     static {
         try {
@@ -40,6 +45,33 @@ public final class ZKUtils {
                     curatorFramework.close();
             }
         }));
+    }
+
+    public static Map<ListenerContext, PathChildrenCache> getCaches() {
+        return caches;
+    }
+
+    public static void recreateCaches() {
+        try {
+            final Map<ListenerContext, PathChildrenCache> oldCaches = ZKUtils.caches;
+            ZKUtils.caches = new ConcurrentHashMap<>();
+            oldCaches.forEach((key, value) -> {
+                addChildPathCache(key.getPath(), key.getListener());
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public static void recreateConnection() {
+        try {
+            curatorFramework.close();
+            curatorFramework = createConnection();
+        } catch (RuntimeException e) {
+            LOGGER.error("create zk connection error" + e);
+            throw e;
+        }
     }
 
     public static CuratorFramework getConnection() {
@@ -67,12 +99,16 @@ public final class ZKUtils {
         throw new RuntimeException("failed to connect to zookeeper service : " + url);
     }
 
-    public static void addChildPathCache(String path, PathChildrenCacheListener listener) {
+    public static PathChildrenCache addChildPathCache(String path, PathChildrenCacheListener listener) {
         try {
             //watch the child status
             final PathChildrenCache childrenCache = new PathChildrenCache(getConnection(), path, true);
-            childrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
             childrenCache.getListenable().addListener(listener);
+            childrenCache.start(PathChildrenCache.StartMode.POST_INITIALIZED_EVENT);
+
+            caches.put(new ListenerContext(path, listener), childrenCache);
+            return childrenCache;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -86,5 +122,38 @@ public final class ZKUtils {
 
     public static void createTempNode(String path, byte[] data) throws Exception {
         curatorFramework.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL).forPath(path, data);
+    }
+
+
+    public static class ListenerContext {
+        private String path;
+        private PathChildrenCacheListener listener;
+
+        public ListenerContext(String path, PathChildrenCacheListener listener) {
+            this.path = path;
+            this.listener = listener;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public PathChildrenCacheListener getListener() {
+            return listener;
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof ListenerContext)) return false;
+            ListenerContext that = (ListenerContext) o;
+            return Objects.equals(path, that.path) && Objects.equals(listener, that.listener);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(path, listener);
+        }
     }
 }

@@ -36,6 +36,7 @@ public class ManagerQueryHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(service + sql);
         }
+        service.getClusterDelayService().markDoingOrDelay(false);
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "manager-query-handle");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
@@ -150,6 +151,9 @@ public class ManagerQueryHandler {
                     break;
                 case ManagerParse.TRUNCATE_TABLE:
                     TruncateHander.handle(sql, service);
+                    break;
+                case ManagerParse.CLUSTER:
+                    ClusterManageHandler.handle(sql, service);
                     break;
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

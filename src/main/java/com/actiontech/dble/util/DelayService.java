@@ -1,0 +1,56 @@
+/*
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.util;
+
+import com.actiontech.dble.util.exception.DirectPrintException;
+import com.actiontech.dble.util.exception.NeedDelayedException;
+
+import java.util.function.Supplier;
+
+/**
+ * @author dcy
+ * Create Date: 2021-09-01
+ */
+public class DelayService {
+    private volatile boolean doing = false;
+    private final Supplier<Boolean> delayCondition;
+    private final Supplier<String> checkOperationAvailableCondition;
+
+    public DelayService(Supplier<Boolean> delayCondition, Supplier<String> checkOperationAvailableCondition) {
+        this.delayCondition = delayCondition;
+        this.checkOperationAvailableCondition = checkOperationAvailableCondition;
+    }
+
+    public boolean isNeedDelay() {
+        return delayCondition.get();
+    }
+
+    public boolean isDoing() {
+        return doing;
+    }
+
+    public void markDone() {
+        this.doing = false;
+    }
+
+
+    public void markDoingOrDelay(boolean checkOperationAvailable) throws NeedDelayedException, DirectPrintException {
+        this.doing = true;
+        if (delayCondition.get()) {
+            throw new NeedDelayedException();
+        } else {
+            //no need delay. then check operation available
+            if (checkOperationAvailable) {
+                final String msg = checkOperationAvailableCondition.get();
+                if (msg != null) {
+                    throw new DirectPrintException(msg);
+                }
+            }
+
+        }
+    }
+}

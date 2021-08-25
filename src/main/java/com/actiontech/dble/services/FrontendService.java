@@ -7,16 +7,19 @@ package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
+import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.executor.ThreadContext;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.net.executor.ThreadPoolStatistic;
 import com.actiontech.dble.singleton.ConnectionSerializableLock;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
@@ -95,7 +98,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     }
 
     @Override
-    public void execute(ServiceTask task) {
+    public void execute(ServiceTask task, ThreadContext threadContext) {
 
 
         if (connection.isClosed()) {
@@ -107,7 +110,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         final long currentThreadId = Thread.currentThread().getId();
         boolean isHandleByCurrentThread = false;
         try {
-
 
             do {
                 ServiceTask executeTask = null;
@@ -167,8 +169,14 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
                     }
 
                 }
+                threadContext.setDoingTask(true);
+                try {
+                    DbleThreadPoolProvider.beginProcessFrontBusinessTask();
+                    consumeSingleTask(executeTask);
+                } finally {
+                    threadContext.setDoingTask(false);
+                }
 
-                consumeSingleTask(executeTask);
             } while (true);
         } catch (Throwable e) {
             LOGGER.error("frontExecutor process error: ", e);
@@ -205,6 +213,8 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             }
 
             super.consumeSingleTask(serviceTask);
+            ThreadPoolStatistic.getFrontBusiness().getCompletedTaskCount().increment();
+
         } catch (Throwable e) {
             connectionSerializableLock.unLock();
             String msg = e.getMessage();

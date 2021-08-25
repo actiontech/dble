@@ -12,13 +12,19 @@ import java.util.Deque;
 /**
  * Created by szf on 2020/7/9.
  */
-public class FrontendCurrentRunnable implements Runnable {
+public class FrontendCurrentRunnable implements FrontendRunnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendCurrentRunnable.class);
 
     private final Deque<ServiceTask> frontNormalTasks;
+    private final ThreadContext threadContext = new ThreadContext();
 
     public FrontendCurrentRunnable(Deque<ServiceTask> frontEndTasks) {
         this.frontNormalTasks = frontEndTasks;
+    }
+
+    @Override
+    public ThreadContextView getThreadContext() {
+        return threadContext;
     }
 
     @Override
@@ -49,7 +55,7 @@ public class FrontendCurrentRunnable implements Runnable {
                     if (task.getService() == null) {
                         continue;
                     }
-                    task.getService().execute(task);
+                    task.getService().execute(task, threadContext);
                 }
 
                 //threadUsageStat end

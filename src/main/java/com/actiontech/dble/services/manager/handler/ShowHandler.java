@@ -164,6 +164,9 @@ public final class ShowHandler {
             case ManagerParseShow.THREADPOOL:
                 ShowThreadPool.execute(service);
                 break;
+            case ManagerParseShow.THREAD_POOL_TASK:
+                ShowThreadPoolTask.execute(service);
+                break;
             case ManagerParseShow.CACHE:
                 ShowCache.execute(service);
                 break;

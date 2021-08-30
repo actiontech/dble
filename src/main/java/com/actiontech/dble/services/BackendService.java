@@ -6,9 +6,13 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.executor.BackendRunnable;
+import com.actiontech.dble.net.executor.ThreadContext;
+import com.actiontech.dble.net.executor.ThreadContextView;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -18,6 +22,7 @@ import com.actiontech.dble.net.response.ProtocolResponseHandler;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.net.executor.ThreadPoolStatistic;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.StringUtil;
@@ -59,6 +64,7 @@ public abstract class BackendService extends AbstractService {
 
     protected boolean autocommitSynced;
     protected boolean isolationSynced;
+    private final BackendOnetimeRunnable taskRunnable = new BackendOnetimeRunnable();
 
     public BackendService(BackendConnection connection) {
         super(connection);
@@ -96,18 +102,7 @@ public abstract class BackendService extends AbstractService {
     protected void doHandle(ServiceTask task) {
         if (isHandling.compareAndSet(false, true)) {
             Executor executor = getExecutor();
-            executor.execute(() -> {
-                try {
-                    handleTaskQueue();
-                } catch (Exception e) {
-                    handleDataError(e);
-                } finally {
-                    isHandling.set(false);
-                    if (taskQueue.size() > 0) {
-                        doHandle(null);
-                    }
-                }
-            });
+            executor.execute(taskRunnable);
         }
     }
 
@@ -116,11 +111,12 @@ public abstract class BackendService extends AbstractService {
      * used when Performance Mode
      *
      * @param task
+     * @param threadContext
      */
     @Override
-    public void execute(ServiceTask task) {
+    public void execute(ServiceTask task, ThreadContext threadContext) {
         try {
-            handleTaskQueue();
+            handleTaskQueue(threadContext);
         } catch (Exception e) {
             handleDataError(e);
         } finally {
@@ -135,7 +131,7 @@ public abstract class BackendService extends AbstractService {
         return DbleServer.getInstance().getBackendBusinessExecutor();
     }
 
-    private void handleTaskQueue() {
+    private void handleTaskQueue(ThreadContext threadContext) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "loop-handle-back-data");
         try {
             ServiceTask task;
@@ -154,10 +150,18 @@ public abstract class BackendService extends AbstractService {
 
                 workStart = System.nanoTime();
             }
-            // handleData
-            while ((task = taskQueue.poll()) != null) {
-                this.consumeSingleTask(task);
+            threadContext.setDoingTask(true);
+            try {
+                // handleData
+                while ((task = taskQueue.poll()) != null) {
+                    DbleThreadPoolProvider.beginProcessBackendBusinessTask();
+                    this.consumeSingleTask(task);
+                    ThreadPoolStatistic.getBackendBusiness().getCompletedTaskCount().increment();
+                }
+            } finally {
+                threadContext.setDoingTask(false);
             }
+
             // threadUsageStat end
             if (workUsage != null && threadName.startsWith("backend")) {
                 workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
@@ -474,6 +478,10 @@ public abstract class BackendService extends AbstractService {
         return sb.toString();
     }
 
+    public long getRecvTaskQueueSize() {
+        return taskQueue.size();
+    }
+
     private static final class StatusSync {
         private final String schema;
         private final CharsetNames clientCharset;
@@ -551,4 +559,27 @@ public abstract class BackendService extends AbstractService {
         }
     }
 
+
+    private class BackendOnetimeRunnable implements BackendRunnable {
+        private final ThreadContext threadContext = new ThreadContext();
+
+        @Override
+        public ThreadContextView getThreadContext() {
+            return threadContext;
+        }
+
+        @Override
+        public void run() {
+            try {
+                handleTaskQueue(threadContext);
+            } catch (Exception e) {
+                handleDataError(e);
+            } finally {
+                isHandling.set(false);
+                if (taskQueue.size() > 0) {
+                    doHandle(null);
+                }
+            }
+        }
+    }
 }

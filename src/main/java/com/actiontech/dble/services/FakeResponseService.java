@@ -8,6 +8,7 @@ package com.actiontech.dble.services;
 
 
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.executor.ThreadContext;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import org.apache.logging.log4j.LogManager;
@@ -35,7 +36,7 @@ public class FakeResponseService extends MySQLResponseService implements FakeSer
     }
 
     @Override
-    public void execute(ServiceTask task) {
+    public void execute(ServiceTask task, ThreadContext threadContext) {
         LOGGER.debug("can't process this packet.{}", task);
     }
 

@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.heartbeat;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -32,7 +33,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     public HeartbeatSQLJob(MySQLHeartbeat heartbeat, SQLJobHandler jobHandler) {
         super();
-        this.sql = heartbeat.getHeartbeatSQL();
+        this.sql = "/*# from=" + SystemConfig.getInstance().getInstanceName() + " reason=heartbeat*/" + heartbeat.getHeartbeatSQL();
         this.jobHandler = jobHandler;
         this.heartbeat = heartbeat;
     }

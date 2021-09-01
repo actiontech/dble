@@ -65,14 +65,11 @@ public interface ServerParse {
     /* don't set the constant to 255 */
     int UNSUPPORT = 254;
 
-
     int parse(String stmt);
-
-    int parseSpecial(int sqlType, String stmt);
 
     boolean startWithHint(String stmt);
 
     boolean isMultiStatement(String sql);
 
-    LinkedList<String> getMultiStatement(String sql, LinkedList<String> splitSql);
+    void getMultiStatement(String sql, LinkedList<String> splitSql);
 }

@@ -17,8 +17,8 @@ import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,7 +33,7 @@ import java.util.concurrent.locks.LockSupport;
  * Create Date: 2021-04-30
  */
 public class PauseResumeClusterLogic extends AbstractClusterLogic {
-    private static final Logger LOGGER = LogManager.getLogger(PauseResumeClusterLogic.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PauseResumeClusterLogic.class);
 
     PauseResumeClusterLogic() {
         super(ClusterOperation.PAUSE_RESUME);
@@ -49,7 +49,7 @@ public class PauseResumeClusterLogic extends AbstractClusterLogic {
             @Override
             public void run() {
                 try {
-                    LOGGER.info("Strat pause shardingNode " + shardingNodes);
+                    LOGGER.info("Start to pause shardingNode " + shardingNodes);
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(shardingNodes.split(",")));
                     PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, shardingNodes, pauseInfo.getQueueLimit());
 
@@ -89,7 +89,7 @@ public class PauseResumeClusterLogic extends AbstractClusterLogic {
                     LOGGER.info("pause for slave done. interruptedFlag:" + Thread.currentThread().isInterrupted());
 
                 } catch (Exception e) {
-                    LOGGER.warn(" the ucore pause error " + e.getMessage());
+                    LOGGER.warn("the ucore pause error", e);
                 }
 
             }

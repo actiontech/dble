@@ -93,7 +93,7 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public synchronized void close(final String reason) {
-        LOGGER.info("connection id " + threadId + " close for reason " + reason);
+        LOGGER.info("connection id " + id + " mysqlId " + threadId + " close for reason " + reason);
         boolean isAuthed = this.getService() != null && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
             if ((isAuthed || this.getService() == null) && channel.isOpen() && closeReason == null) {
@@ -162,6 +162,6 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public String toString() {
-        return "BackendConnection[id = " + id + " host = " + host + " port = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
+        return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
     }
 }

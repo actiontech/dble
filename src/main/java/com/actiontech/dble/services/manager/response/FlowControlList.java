@@ -67,10 +67,41 @@ public final class FlowControlList {
         byte packetId = EOF.getPacketId();
 
         if (FlowController.isEnableFlowControl()) {
-            //find all server connection
-            packetId = findAllServerConnection(buffer, service, packetId);
+            {
+                //find all server connection
+                IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
+                for (IOProcessor p : processors) {
+                    for (FrontendConnection fc : p.getFrontends().values()) {
+                        if (!fc.isManager() && fc.isFlowControlled()) {
+                            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                            row.add(StringUtil.encode("ServerConnection", service.getCharset().getResults()));
+                            row.add(LongUtil.toBytes(fc.getId()));
+                            row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((ShardingService) fc.getService()).getSchema() + " user = " + ((ShardingService) fc.getService()).getUser(), service.getCharset().getResults()));
+                            row.add(LongUtil.toBytes(fc.getWriteQueue().size()));
+                            row.setPacketId(++packetId);
+                            buffer = row.write(buffer, service, true);
+                        }
+                    }
+                }
+            }
             //find all mysql connection
-            packetId = findAllMySQLConnection(buffer, service, packetId);
+            {
+                IOProcessor[] processors = DbleServer.getInstance().getBackendProcessors();
+                for (IOProcessor p : processors) {
+                    for (BackendConnection bc : p.getBackends().values()) {
+                        MySQLResponseService mc = bc.getBackendService();
+                        if (mc.isFlowControlled()) {
+                            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                            row.add(StringUtil.encode("MySQLConnection", service.getCharset().getResults()));
+                            row.add(LongUtil.toBytes(mc.getConnection().getThreadId()));
+                            row.add(StringUtil.encode(mc.getConnection().getInstance().getConfig().getUrl() + "/" + mc.getSchema() + " id = " + mc.getConnection().getThreadId(), service.getCharset().getResults()));
+                            row.add(LongUtil.toBytes(mc.getConnection().getWriteQueue().size()));
+                            row.setPacketId(++packetId);
+                            buffer = row.write(buffer, service, true);
+                        }
+                    }
+                }
+            }
         }
 
         // write last eof
@@ -79,43 +110,5 @@ public final class FlowControlList {
 
 
         lastEof.write(buffer, service);
-    }
-
-
-    private static byte findAllServerConnection(ByteBuffer buffer, ManagerService c, byte packetId) {
-        IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
-        for (IOProcessor p : processors) {
-            for (FrontendConnection fc : p.getFrontends().values()) {
-                if (!fc.isManager() && fc.isFlowControlled()) {
-                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                    row.add(StringUtil.encode("ServerConnection", c.getCharset().getResults()));
-                    row.add(LongUtil.toBytes(fc.getId()));
-                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((ShardingService) fc.getService()).getSchema() + " user = " + ((ShardingService) fc.getService()).getUser(), c.getCharset().getResults()));
-                    row.add(LongUtil.toBytes(fc.getWriteQueue().size()));
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
-                }
-            }
-        }
-        return packetId;
-    }
-
-    private static byte findAllMySQLConnection(ByteBuffer buffer, ManagerService c, byte packetId) {
-        IOProcessor[] processors = DbleServer.getInstance().getBackendProcessors();
-        for (IOProcessor p : processors) {
-            for (BackendConnection bc : p.getBackends().values()) {
-                MySQLResponseService mc = bc.getBackendService();
-                if (mc.isFlowControlled()) {
-                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                    row.add(StringUtil.encode("MySQLConnection", c.getCharset().getResults()));
-                    row.add(LongUtil.toBytes(mc.getConnection().getThreadId()));
-                    row.add(StringUtil.encode(mc.getConnection().getInstance().getConfig().getUrl() + "/" + mc.getSchema() + " id = " + mc.getConnection().getThreadId(), c.getCharset().getResults()));
-                    row.add(LongUtil.toBytes(mc.getConnection().getWriteQueue().size()));
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
-                }
-            }
-        }
-        return packetId;
     }
 }

@@ -108,9 +108,9 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     private static final String COLUMN_HEARTBEAT_PERIOD_MILLIS = "heartbeat_period_millis";
 
-    private static final String COLUMN_FLOW_HIGH_LEVEL = "flow_HighLevel";
+    private static final String COLUMN_FLOW_HIGH_LEVEL = "flow_high_level";
 
-    private static final String COLUMN_FLOW_LOW_LEVEL = "flowLowLevel";
+    private static final String COLUMN_FLOW_LOW_LEVEL = "flow_low_level";
 
     public DbleDbInstance() {
         super(TABLE_NAME, 30);

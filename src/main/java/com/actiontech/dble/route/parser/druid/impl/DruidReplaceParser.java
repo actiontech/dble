@@ -22,6 +22,7 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
@@ -85,14 +86,14 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         } else if (tc instanceof ChildTableConfig) { // insert childTable will finished router while parser
             ChildTableConfig child = (ChildTableConfig) tc;
             if (child.getIncrementColumn() != null) {
-                replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, child.getIncrementColumn());
+                replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, child.getIncrementColumn(), service);
             }
             parserChildTable(schemaInfo, rrs, replace, service, isExplain);
             return schema;
         } else if (tc instanceof ShardingTableConfig) {
             ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
             if (tableConfig.getIncrementColumn() != null) {
-                replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, tableConfig.getIncrementColumn());
+                replace = genNewSqlReplaceStatement(rrs, replace, schemaInfo, tableConfig.getIncrementColumn(), service);
             }
             String partitionColumn = tableConfig.getShardingColumn();
             if (isMultiReplace(replace)) {
@@ -108,9 +109,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return schema;
     }
 
-    private SQLReplaceStatement genNewSqlReplaceStatement(RouteResultset rrs, SQLReplaceStatement replace, SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
+    private SQLReplaceStatement genNewSqlReplaceStatement(RouteResultset rrs, SQLReplaceStatement replace, SchemaInfo schemaInfo, String incrementColumn, FrontendService service) throws SQLNonTransientException {
         SQLStatement stmt;
-        String sql = changeReplaceSQLByIncrement(schemaInfo, replace, rrs.getStatement(), incrementColumn);
+        String sql = changeReplaceSQLByIncrement(schemaInfo, replace, rrs.getStatement(), incrementColumn, service);
         rrs.setStatement(sql);
         SQLStatementParser parser = new MySqlStatementParser(sql);
         stmt = parser.parseStatement();
@@ -168,7 +169,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private String changeReplaceSQLByIncrement(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, String incrementColumn) throws SQLNonTransientException {
+    private String changeReplaceSQLByIncrement(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, String incrementColumn, FrontendService service) throws SQLNonTransientException {
         TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
@@ -205,13 +206,13 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         if (vcl != null && vcl.size() > 1) { // batch insert
             for (int j = 0; j < vcl.size(); j++) {
                 if (j != vcl.size() - 1)
-                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize).append(",");
+                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize, service).append(",");
                 else
-                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
+                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize, service);
             }
         } else { // single line insert
             List<SQLExpr> values = replace.getValuesList().get(0).getValues();
-            appendValues(tableKey, values, sb, autoIncrement, idxGlobal, colSize);
+            appendValues(tableKey, values, sb, autoIncrement, idxGlobal, colSize, service);
         }
 
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
@@ -234,7 +235,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
 
     private static StringBuilder appendValues(String tableKey, List<SQLExpr> values, StringBuilder sb,
-                                              int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
+                                              int autoIncrement, int idxGlobal, int colSize, FrontendService service) throws SQLNonTransientException {
         // check the value number & the column number is all right
         int size = values.size();
         int checkSize = colSize - (idxGlobal < 0 ? 0 : 1);
@@ -257,7 +258,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 sb.append(String.valueOf(new Date().getTime()));
             } else if (i == autoIncrement) {
                 if (checkSize > size) {
-                    long id = SequenceManager.getHandler().nextId(tableKey);
+                    long id = SequenceManager.getHandler().nextId(tableKey, service);
                     sb.append(id);
                 } else {
                     String value = SQLUtils.toMySqlString(values.get(iValue++));

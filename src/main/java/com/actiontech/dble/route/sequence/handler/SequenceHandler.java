@@ -6,7 +6,9 @@
 package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.cluster.values.RawJson;
+import com.actiontech.dble.services.FrontendService;
 
+import javax.annotation.Nullable;
 import java.sql.SQLNonTransientException;
 
 /**
@@ -16,7 +18,7 @@ import java.sql.SQLNonTransientException;
  */
 public interface SequenceHandler {
 
-    long nextId(String prefixName) throws SQLNonTransientException;
+    long nextId(String prefixName, @Nullable FrontendService frontendService) throws SQLNonTransientException;
 
     void load(boolean isLowerCaseTableNames);
 

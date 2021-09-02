@@ -6,9 +6,11 @@
 package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
 /**
@@ -33,7 +35,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
     public abstract Boolean fetchNextPeriod(String prefixName);
 
     @Override
-    public synchronized long nextId(String prefixName) {
+    public synchronized long nextId(String prefixName, @Nullable FrontendService frontendService) {
         Map<String, String> paraMap = this.getParaValMap(prefixName);
         if (null == paraMap) {
             String msg = "can't find definition for sequence :" + prefixName;
@@ -44,7 +46,7 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
         long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));
         if (nextId > maxId) {
             fetchNextPeriod(prefixName);
-            return nextId(prefixName);
+            return nextId(prefixName, frontendService);
         }
         updateCurIDVal(prefixName, nextId);
         return nextId;

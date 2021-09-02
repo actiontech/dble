@@ -445,12 +445,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             String[] newLine = new String[line.length + 1];
             System.arraycopy(line, 0, newLine, 0, line.length);
             String tableKey = StringUtil.getFullName(schema.getName(), tableName);
-            newLine[line.length] = String.valueOf(SequenceManager.getHandler().nextId(tableKey));
+            newLine[line.length] = String.valueOf(SequenceManager.getHandler().nextId(tableKey, service));
             line = newLine;
         } else {
             if (StringUtil.isEmpty(line[autoIncrementIndex])) {
                 String tableKey = StringUtil.getFullName(schema.getName(), tableName);
-                line[autoIncrementIndex] = String.valueOf(SequenceManager.getHandler().nextId(tableKey));
+                line[autoIncrementIndex] = String.valueOf(SequenceManager.getHandler().nextId(tableKey, service));
             } else if (!appendAutoIncrementColumn) {
                 throw new Exception("you can't set value for Autoincrement column!");
             }

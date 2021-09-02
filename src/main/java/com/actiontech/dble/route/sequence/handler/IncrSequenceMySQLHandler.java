@@ -10,6 +10,7 @@ import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.route.util.PropertiesUtil;
+import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     private ConcurrentHashMap<String, SequenceVal> seqValueMap = new ConcurrentHashMap<>();
 
     @Override
-    public long nextId(String seqName) throws SQLNonTransientException {
+    public long nextId(String seqName, FrontendService frontendService) throws SQLNonTransientException {
         SequenceVal seqVal = seqValueMap.get(seqName);
         if (seqVal == null) {
             throw new ConfigException("can't find definition for sequence :" + seqName);

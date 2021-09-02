@@ -16,8 +16,10 @@ import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
 import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.zookeeper.KeeperException;
@@ -176,6 +178,9 @@ public class ZkSender implements ClusterSender {
             }
             OnlineStatus.getInstance().shutdownClear();
             CustomMySQLHa.getInstance().stop(false);
+            if (SequenceManager.getHandler() instanceof IncrSequenceZKHandler) {
+                ((IncrSequenceZKHandler) SequenceManager.getHandler()).detach();
+            }
             LOGGER.info("cluster detach begin close connection");
             ZKUtils.getConnection().close();
         }
@@ -195,6 +200,9 @@ public class ZkSender implements ClusterSender {
                 throw new IllegalStateException("can't create online information to zk. ");
             }
             LOGGER.info("cluster attach begin restart listener");
+            if (SequenceManager.getHandler() instanceof IncrSequenceZKHandler) {
+                ((IncrSequenceZKHandler) SequenceManager.getHandler()).attach();
+            }
             ZKUtils.recreateCaches();
             CustomMySQLHa.getInstance().start();
 

@@ -27,6 +27,9 @@ public class Schema implements Named {
     @XmlAttribute
     protected String shardingNode;
 
+    @XmlAttribute
+    protected String function;
+
     @XmlElementRefs({
             @XmlElementRef(name = "SingleTable", type = SingleTable.class),
             @XmlElementRef(name = "ShardingTable", type = ShardingTable.class),
@@ -65,7 +68,13 @@ public class Schema implements Named {
         this.shardingNode = shardingNode;
     }
 
+    public String getFunction() {
+        return function;
+    }
 
+    public void setFunction(String function) {
+        this.function = function;
+    }
 
     @Override
     public String toString() {
@@ -75,6 +84,8 @@ public class Schema implements Named {
                 sqlMaxLimit +
                 ", shardingNode=" +
                 shardingNode +
+                ", function=" +
+                function +
                 ", table=" +
                 table +
                 "]";

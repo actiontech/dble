@@ -38,10 +38,7 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.meta.table.AbstractSchemaMetaHandler;
-import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
-import com.actiontech.dble.meta.table.SchemaCheckMetaHandler;
-import com.actiontech.dble.meta.table.ServerMetaHandler;
+import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -72,11 +69,19 @@ public class ProxyMetaManager {
     private AtomicInteger version = new AtomicInteger(0);
     private long timestamp;
     private AtomicInteger tableIndex = new AtomicInteger();
+    private AtomicInteger tableIndex2 = new AtomicInteger();
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
         this.lockTables = new HashMap<>();
         this.timestamp = System.currentTimeMillis();
+    }
+
+    public ProxyMetaManager(AtomicInteger tableIndex2) {
+        this.catalogs = new ConcurrentHashMap<>();
+        this.lockTables = new HashMap<>();
+        this.timestamp = System.currentTimeMillis();
+        this.tableIndex2 = tableIndex2;
     }
 
     public ProxyMetaManager(ProxyMetaManager origin) {
@@ -89,6 +94,7 @@ public class ProxyMetaManager {
         this.repository = origin.repository;
         this.version = origin.version;
         this.tableIndex = origin.tableIndex;
+        this.tableIndex2 = origin.tableIndex2;
         for (Map.Entry<String, SchemaMeta> entry : origin.catalogs.entrySet()) {
             catalogs.put(entry.getKey(), entry.getValue().metaCopy());
         }
@@ -213,6 +219,8 @@ public class ProxyMetaManager {
             tm.setId(tableIndex.incrementAndGet());
             schemaMeta.addTableMeta(tbName, tm);
         }
+
+        SchemaUtil.tryAddDefaultShardingTableConfig(schema, tbName, tm.getCreateSql(), tableIndex2);
     }
 
     public void addView(String schema, ViewMeta vm) {
@@ -223,10 +231,11 @@ public class ProxyMetaManager {
         }
     }
 
-    private void dropTable(String schema, String tbName) {
+    public void dropTable(String schema, String tbName) {
         SchemaMeta schemaMeta = catalogs.get(schema);
         if (schemaMeta != null)
             schemaMeta.dropTable(tbName);
+        SchemaUtil.tryDropDefaultShardingTableConfig(schema, tbName);
     }
 
     /**
@@ -338,7 +347,7 @@ public class ProxyMetaManager {
         Set<String> selfNode = getSelfNodes(config);
         List<String> shardingNodes;
         if (config.getSchemas().get(schema).getTables().get(tableName) == null) {
-            shardingNodes = Collections.singletonList(config.getSchemas().get(schema).getShardingNode());
+            shardingNodes = config.getSchemas().get(schema).getDefaultShardingNodes();
         } else {
             shardingNodes = config.getSchemas().get(schema).getTables().get(tableName).getShardingNodes();
         }
@@ -519,6 +528,8 @@ public class ProxyMetaManager {
         if (handler.execute()) {
             initViewMeta();
             if (SystemConfig.getInstance().getCheckTableConsistency() == 1) {
+                if (scheduler != null)
+                    scheduler.shutdown();
                 scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
                 checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
             }
@@ -653,14 +664,18 @@ public class ProxyMetaManager {
         boolean result = isSuccess;
         if (isSuccess) {
             BaseTableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(table);
-            String showShardingNode = schemaInfo.getSchemaConfig().getShardingNode();
+            String showShardingNode = null;
+            List<String> shardingNodes;
             if (tbConfig != null) {
-                for (String shardingNode : tbConfig.getShardingNodes()) {
-                    showShardingNode = shardingNode;
-                    String tableId = "sharding_node[" + shardingNode + "]:Table[" + table + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
-                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId), ToResolveContainer.TABLE_LACK, tableId);
-                    }
+                shardingNodes = tbConfig.getShardingNodes();
+            } else {
+                shardingNodes = schemaInfo.getSchemaConfig().getDefaultShardingNodes();
+            }
+            for (String shardingNode : shardingNodes) {
+                showShardingNode = shardingNode;
+                String tableLackKey = AlertUtil.getTableLackKey(shardingNode, table);
+                if (ToResolveContainer.TABLE_LACK.contains(tableLackKey)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableLackKey), ToResolveContainer.TABLE_LACK, tableLackKey);
                 }
             }
             DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showShardingNode), null);
@@ -706,16 +721,22 @@ public class ProxyMetaManager {
     private boolean genTableMetaByShow(SchemaInfo schemaInfo) {
         String tableName = schemaInfo.getTable();
         BaseTableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
-        String showShardingNode = schemaInfo.getSchemaConfig().getShardingNode();
+        String showShardingNode = null;
         if (tbConfig != null) {
             for (String shardingNode : tbConfig.getShardingNodes()) {
                 showShardingNode = shardingNode;
                 break;
             }
+        } else {
+            showShardingNode = schemaInfo.getSchemaConfig().getDefaultShardingNodes().get(0); // randomly take a shardingNode
         }
         DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showShardingNode), null);
         handler.execute();
         return handler.isMetaInited();
+    }
+
+    public AtomicInteger getTableIndex2() {
+        return tableIndex2;
     }
 
     public Repository getRepository() {

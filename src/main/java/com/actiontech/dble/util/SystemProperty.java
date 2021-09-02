@@ -73,5 +73,7 @@ public final class SystemProperty {
         innerProperties.add("user.script");
         innerProperties.add("user.timezone");
         innerProperties.add("user.variant");
+        innerProperties.add("user.language.format");
+        innerProperties.add("user.country.format");
     }
 }

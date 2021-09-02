@@ -46,7 +46,7 @@ public class DruidDropViewParser extends DruidImplicitCommitParser {
                 proxyManger.getRepository().delete(vSchema, viewName);
                 ViewMeta vm = proxyManger.getCatalogs().get(vSchema).getViewMetas().remove(viewName);
                 if (vm != null && vm.getViewQuery() instanceof TableNode) {
-                    nodeName = DbleServer.getInstance().getConfig().getSchemas().get(vSchema).getShardingNode();
+                    nodeName = DbleServer.getInstance().getConfig().getSchemas().get(vSchema).getDefaultSingleNode();
                     if (!deleteMysqlViewMaps.containsKey(nodeName)) {
                         deleteMysqlViewMaps.put(nodeName, new HashSet<>(4));
                     }

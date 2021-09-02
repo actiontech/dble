@@ -25,7 +25,7 @@ public class DefaultHandler implements StatementHandler {
         if (context.getTable() == null) {
             context.getWriter().writeAll(stmt);
         } else if (context.getTableConfig() == null) {
-            context.getWriter().write(context.getDefaultShardingNode(), stmt);
+            context.getWriter().write(context.getDefaultShardingNodes().get(0), stmt);
         } else {
             for (String shardingNode : context.getTableConfig().getShardingNodes()) {
                 context.getWriter().write(shardingNode, stmt);

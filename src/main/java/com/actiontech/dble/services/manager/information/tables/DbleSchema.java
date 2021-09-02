@@ -23,10 +23,12 @@ public class DbleSchema extends ManagerBaseTable {
 
     private static final String COLUMN_SHARDING_NODE = "sharding_node";
 
+    private static final String COLUMN_FUNCTION = "function";
+
     private static final String COLUMN_SQL_MAX_LIMIT = "sql_max_limit";
 
     public DbleSchema() {
-        super(TABLE_NAME, 3);
+        super(TABLE_NAME, 4);
     }
 
     @Override
@@ -36,6 +38,9 @@ public class DbleSchema extends ManagerBaseTable {
 
         columns.put(COLUMN_SHARDING_NODE, new ColumnMeta(COLUMN_SHARDING_NODE, "varchar(64)", true));
         columnsType.put(COLUMN_SHARDING_NODE, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_FUNCTION, new ColumnMeta(COLUMN_FUNCTION, "varchar(64)", true));
+        columnsType.put(COLUMN_FUNCTION, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_SQL_MAX_LIMIT, new ColumnMeta(COLUMN_SQL_MAX_LIMIT, "int(11)", true));
         columnsType.put(COLUMN_SQL_MAX_LIMIT, Fields.FIELD_TYPE_LONG);
@@ -48,7 +53,8 @@ public class DbleSchema extends ManagerBaseTable {
         return schemaMap.values().stream().map(e -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_NAME, e.getName());
-            map.put(COLUMN_SHARDING_NODE, e.getShardingNode());
+            map.put(COLUMN_SHARDING_NODE, String.join(",", e.getDefaultShardingNodes()));
+            map.put(COLUMN_FUNCTION, e.getFunction() == null ? "-" : e.getFunction().getName());
             map.put(COLUMN_SQL_MAX_LIMIT, String.valueOf(e.getDefaultMaxLimit()));
             return map;
         }).collect(Collectors.toList());

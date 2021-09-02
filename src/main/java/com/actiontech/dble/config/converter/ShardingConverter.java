@@ -57,6 +57,7 @@ public class ShardingConverter {
     private final Map<String, AbstractPartitionAlgorithm> functionMap = Maps.newLinkedHashMap();
     private final Map<String, SchemaConfig> schemaConfigMap = Maps.newLinkedHashMap();
     private final Map<ERTable, Set<ERTable>> erRelations = Maps.newLinkedHashMap();
+    private final Map<String, Set<ERTable>> funcNodeERMap = Maps.newLinkedHashMap();
     private final AtomicInteger tableIndex = new AtomicInteger(0);
     private final Gson gson = JsonFactory.getJson();
 
@@ -184,22 +185,46 @@ public class ShardingConverter {
     }
 
     private void schemaListToMap(List<Schema> schemaList, Map<String, ShardingNodeConfig> shardingNodeConfigMap, ProblemReporter problemReporter) {
-        Map<String, Set<ERTable>> funcNodeERMap = Maps.newLinkedHashMap();
         for (com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema schema : schemaList) {
             String schemaName = schema.getName();
             String schemaShardingNode = schema.getShardingNode();
+            String schemaFunction = schema.getFunction();
             String schemaSqlMaxLimitStr = null == schema.getSqlMaxLimit() ? null : String.valueOf(schema.getSqlMaxLimit());
             List<Object> tableList = Optional.ofNullable(schema.getTable()).orElse(Lists.newArrayList());
 
             int schemaSqlMaxLimit = getSqlMaxLimit(schemaSqlMaxLimitStr, -1);
+            List<String> shardingNodeList = null;
+            AbstractPartitionAlgorithm algorithm = null;
             //check and add shardingNode
             if (schemaShardingNode != null && !schemaShardingNode.isEmpty()) {
-                List<String> shardingNodeLst = new ArrayList<>(1);
-                shardingNodeLst.add(schemaShardingNode);
-                checkShardingNodeExists(shardingNodeLst, shardingNodeConfigMap);
-            } else {
-                schemaShardingNode = null;
+                if (schemaFunction != null && !schemaFunction.isEmpty()) {
+                    if (StringUtil.isBlank(schemaFunction)) {
+                        throw new ConfigException("function of " + schemaFunction + " is empty");
+                    }
+                    algorithm = this.functionMap.get(schemaFunction);
+                    if (algorithm == null) {
+                        throw new ConfigException("can't find function of name :" + schemaFunction + " in schema " + schemaName);
+                    }
+
+                    if (StringUtil.isBlank(schemaShardingNode)) {
+                        throw new ConfigException("shardingNode of " + schemaShardingNode + " is empty");
+                    }
+                    String[] theShardingNodes = SplitUtil.split(schemaShardingNode, ',', '$', '-');
+                    final long distinctCount = Arrays.stream(theShardingNodes).distinct().count();
+                    if (distinctCount != theShardingNodes.length) {
+                        //detected repeat props;
+                        throw new ConfigException("invalid schema config: " + schemaShardingNode + " for schema " + schemaShardingNode + " ,the nodes duplicated!");
+                    }
+                    shardingNodeList = Arrays.asList(theShardingNodes);
+                    checkShardingNodeExists(shardingNodeList, shardingNodeConfigMap);
+                    checkRuleSuitSchema(schema, schemaFunction, algorithm, shardingNodeList, problemReporter);
+                } else {
+                    shardingNodeList = new ArrayList<>(1);
+                    shardingNodeList.add(schemaShardingNode);
+                    checkShardingNodeExists(shardingNodeList, shardingNodeConfigMap);
+                }
             }
+
             //load tables from sharding
             Map<String, BaseTableConfig> tableConfigMap = Maps.newLinkedHashMap();
             if (this.schemaConfigMap.containsKey(schemaName)) {
@@ -217,16 +242,16 @@ public class ShardingConverter {
             }
 
             // if sharding has no default shardingNode,it must contains at least one table
-            if (schemaShardingNode == null && tableConfigMap.size() == 0) {
+            if (shardingNodeList == null && tableConfigMap.size() == 0) {
                 throw new ConfigException(
                         "sharding " + schemaName + " didn't config tables,so you must set shardingNode property!");
             }
-            SchemaConfig schemaConfig = new SchemaConfig(schemaName, schemaShardingNode, tableConfigMap, schemaSqlMaxLimit);
-            mergeFuncNodeERMap(schemaConfig, funcNodeERMap);
+            SchemaConfig schemaConfig = new SchemaConfig(schemaName, shardingNodeList, algorithm, tableConfigMap, schemaSqlMaxLimit);
+            mergeFuncNodeERMap(schemaConfig);
             mergeFkERMap(schemaConfig);
             this.schemaConfigMap.put(schemaName, schemaConfig);
         }
-        makeAllErRelations(funcNodeERMap);
+        makeAllErRelations();
     }
 
     public static void removeFileContent(List<Function> functionList) {
@@ -411,17 +436,15 @@ public class ShardingConverter {
         }
     }
 
-    private void makeAllErRelations(Map<String, Set<ERTable>> funcNodeERMap) {
-        if (funcNodeERMap == null) {
-            return;
-        }
-        Iterator<Map.Entry<String, Set<ERTable>>> iterator = funcNodeERMap.entrySet().iterator();
+    private void makeAllErRelations() {
+        Iterator<Map.Entry<String, Set<ERTable>>> iterator = this.funcNodeERMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, Set<ERTable>> entry = iterator.next();
             if (entry.getValue().size() == 1) {
-                iterator.remove();
+                // iterator.remove();
                 continue;
             }
+            this.funcNodeERMap.put(entry.getKey(), entry.getValue());
             for (ERTable erTable : entry.getValue()) {
                 Set<ERTable> relations = this.erRelations.get(erTable);
                 if (relations == null) {
@@ -477,20 +500,17 @@ public class ShardingConverter {
         this.erRelations.putAll(schemaFkERMap);
     }
 
-    private void mergeFuncNodeERMap(SchemaConfig schemaConfig, Map<String, Set<ERTable>> funcNodeERMap) {
+    private void mergeFuncNodeERMap(SchemaConfig schemaConfig) {
         Map<String, Set<ERTable>> schemaFuncNodeER = schemaConfig.getFuncNodeERMap();
         if (schemaFuncNodeER == null) {
             return;
         }
         for (Map.Entry<String, Set<ERTable>> entry : schemaFuncNodeER.entrySet()) {
             String key = entry.getKey();
-            if (funcNodeERMap == null) {
-                funcNodeERMap = new HashMap<>();
-            }
-            if (!funcNodeERMap.containsKey(key)) {
-                funcNodeERMap.put(key, entry.getValue());
+            if (!this.funcNodeERMap.containsKey(key)) {
+                this.funcNodeERMap.put(key, entry.getValue());
             } else {
-                Set<ERTable> setFuncNode = funcNodeERMap.get(key);
+                Set<ERTable> setFuncNode = this.funcNodeERMap.get(key);
                 setFuncNode.addAll(entry.getValue());
             }
         }
@@ -541,11 +561,23 @@ public class ShardingConverter {
         int suitValue = function.suitableFor(tableConf.getShardingNodes().size());
         if (suitValue < 0) {
             throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
-                    functionName + " ] partition size : " + tableConf.getShardingColumn() + " > table shardingNode size : " +
+                    functionName + " ] partition size : " + tableConf.getFunction().getPartitionNum() + " > table shardingNode size : " +
                     tableConf.getShardingNodes().size() + ", please make sure table shardingnode size = function partition size");
         } else if (suitValue > 0) {
             problemReporter.warn("table conf : table [ " + tableConf.getName() + " ] rule function [ " + functionName + " ] " +
                     "partition size : " + tableConf.getFunction().getPartitionNum() + " < table shardingNode size : " + tableConf.getShardingNodes().size());
+        }
+    }
+
+    private void checkRuleSuitSchema(Schema schema, String functionName, AbstractPartitionAlgorithm function, List<String> shardingNodeLst, ProblemReporter problemReporter) {
+        int suitValue = function.suitableFor(shardingNodeLst.size());
+        if (suitValue < 0) {
+            throw new ConfigException("Illegal schema conf : schema [ " + schema.getName() + " ] rule function [ " +
+                    functionName + " ] partition size : " + function.getPartitionNum() + " > schema shardingNode size : " +
+                    shardingNodeLst.size() + ", please make sure schema shardingnode size = function partition size");
+        } else if (suitValue > 0) {
+            problemReporter.warn("schema conf : schema [ " + schema.getName() + " ] rule function [ " + functionName + " ] " +
+                    "partition size : " + function.getPartitionNum() + " < schema shardingNode size : " + shardingNodeLst.size());
         }
     }
 
@@ -658,16 +690,16 @@ public class ShardingConverter {
                     String dnName = dnNames[k];
                     String databaseName = hd[1];
                     String hostName = hd[0];
-                    createSharingNode(dnName, databaseName, hostName, checkSet, shardingNodeConfigMap);
+                    createShardingNode(dnName, databaseName, hostName, checkSet, shardingNodeConfigMap);
                 }
             } else {
-                createSharingNode(shardingNodeName, shardingNodeDatabase, shardingNodeDbGroup, checkSet, shardingNodeConfigMap);
+                createShardingNode(shardingNodeName, shardingNodeDatabase, shardingNodeDbGroup, checkSet, shardingNodeConfigMap);
             }
         }
         this.shardingNodeMap = initShardingNodes(shardingNodeConfigMap, dbGroupMap);
     }
 
-    private void createSharingNode(String dnName, String database, String host, Set<String> checkSet, Map<String, ShardingNodeConfig> shardingNodeConfigMap) {
+    private void createShardingNode(String dnName, String database, String host, Set<String> checkSet, Map<String, ShardingNodeConfig> shardingNodeConfigMap) {
 
         ShardingNodeConfig conf = new ShardingNodeConfig(dnName, database, host);
         if (checkSet.contains(host + "#" + database)) {
@@ -706,6 +738,10 @@ public class ShardingConverter {
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
         return erRelations;
+    }
+
+    public Map<String, Set<ERTable>> getFuncNodeERMap() {
+        return funcNodeERMap;
     }
 
     private static int getSqlMaxLimit(String sqlMaxLimitStr, int defaultMaxLimit) {

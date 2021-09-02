@@ -22,6 +22,7 @@ import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableFakeConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -37,6 +38,7 @@ import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.gson.Gson;
@@ -61,6 +63,7 @@ public class ServerConfig {
     private volatile Map<String, ShardingNode> shardingNodes;
     private volatile Map<String, PhysicalDbGroup> dbGroups;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
+    private volatile Map<String, Set<ERTable>> funcNodeERMap;
     private volatile boolean fullyConfigured;
     private volatile long reloadTime;
     private volatile boolean changing = false;
@@ -82,6 +85,7 @@ public class ServerConfig {
         this.schemas = confInitNew.getSchemas();
         this.shardingNodes = confInitNew.getShardingNodes();
         this.erRelations = confInitNew.getErRelations();
+        this.funcNodeERMap = confInitNew.getFuncNodeERMap();
         this.functions = confInitNew.getFunctions();
         this.fullyConfigured = confInitNew.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
@@ -104,6 +108,7 @@ public class ServerConfig {
         this.schemas = confInit.getSchemas();
         this.shardingNodes = confInit.getShardingNodes();
         this.erRelations = confInit.getErRelations();
+        this.funcNodeERMap = confInit.getFuncNodeERMap();
         this.functions = confInit.getFunctions();
         this.fullyConfigured = confInit.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
@@ -122,6 +127,7 @@ public class ServerConfig {
         this.schemas = confInitNew.getSchemas();
         this.shardingNodes = confInitNew.getShardingNodes();
         this.erRelations = confInitNew.getErRelations();
+        this.funcNodeERMap = confInitNew.getFuncNodeERMap();
         this.functions = confInitNew.getFunctions();
         this.fullyConfigured = confInitNew.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
@@ -195,6 +201,11 @@ public class ServerConfig {
         return erRelations;
     }
 
+    public Map<String, Set<ERTable>> getFuncNodeERMap() {
+        waitIfChanging();
+        return funcNodeERMap;
+    }
+
     public ReentrantReadWriteLock getLock() {
         return lock;
     }
@@ -208,10 +219,11 @@ public class ServerConfig {
                           Map<String, ShardingNode> newShardingNodes, Map<String, PhysicalDbGroup> newDbGroups,
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
+                          Map<String, Set<ERTable>> newFuncNodeERMap,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
                           final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
                           RawJson userJsonConfig, RawJson sequenceJsonConfig, RawJson shardingJsonConfig, RawJson dbJsonConfig) throws SQLNonTransientException {
-        boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations,
+        boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, recycleDbGroups, newErRelations, newFuncNodeERMap,
                 newSystemVariables, isFullyConfigured, loadAllMode, newBlacklistConfig, newFunctions, userJsonConfig,
                 sequenceJsonConfig, shardingJsonConfig, dbJsonConfig);
         this.reloadTime = TimeUtil.currentTimeMillis();
@@ -228,13 +240,13 @@ public class ServerConfig {
                 delSchema.add(oldSchema);
             } else if ((loadAllMode & ManagerParseConfig.OPTR_MODE) == 0) { // reload @@config_all not contains -r
                 SchemaConfig oldSchemaConfig = schemaEntry.getValue();
-                if (!StringUtil.equalsWithEmpty(oldSchemaConfig.getShardingNode(), newSchemaConfig.getShardingNode())) {
+                if (!CollectionUtil.equalsWithEmpty(oldSchemaConfig.getDefaultShardingNodes(), newSchemaConfig.getDefaultShardingNodes())) {
                     delSchema.add(oldSchema);
                     reloadSchema.add(oldSchema);
                 } else {
-                    if (newSchemaConfig.getShardingNode() != null) { // reload config_all
+                    if (newSchemaConfig.getDefaultShardingNodes() != null) { // reload config_all
                         //check shardingNode and dbGroup change
-                        List<String> strShardingNodes = Collections.singletonList(newSchemaConfig.getShardingNode());
+                        List<String> strShardingNodes = newSchemaConfig.getDefaultShardingNodes();
                         if (isShardingNodeChanged(strShardingNodes, newShardingNodes)) {
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
@@ -264,7 +276,11 @@ public class ServerConfig {
             String oldTable = tableEntry.getKey();
             BaseTableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
             if (newTableConfig == null) {
-                delTables.add(new Pair<>(oldSchema, oldTable));
+                if (tableEntry.getValue() instanceof ShardingTableFakeConfig) {
+                    newSchemaConfig.getTables().put(tableEntry.getKey(), tableEntry.getValue());
+                } else {
+                    delTables.add(new Pair<>(oldSchema, oldTable));
+                }
             } else {
                 BaseTableConfig oldTableConfig = tableEntry.getValue();
                 if (newTableConfig.getClass() != oldTableConfig.getClass()) {
@@ -325,6 +341,7 @@ public class ServerConfig {
                           Map<String, PhysicalDbGroup> newDbGroups,
                           Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
+                          Map<String, Set<ERTable>> newFuncNodeERMap,
                           SystemVariables newSystemVariables,
                           boolean isFullyConfigured, final int loadAllMode, Map<String, Properties> newBlacklistConfig, Map<String, AbstractPartitionAlgorithm> newFunctions,
                           RawJson userJsonConfig, RawJson sequenceJsonConfig, RawJson shardingJsonConfig, RawJson dbJsonConfig) throws SQLNonTransientException {
@@ -374,6 +391,7 @@ public class ServerConfig {
             this.users = newUsers;
             this.schemas = newSchemas;
             this.erRelations = newErRelations;
+            this.funcNodeERMap = newFuncNodeERMap;
             this.blacklistConfig = newBlacklistConfig;
             this.functions = newFunctions;
             this.userConfig = userJsonConfig;

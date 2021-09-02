@@ -1,12 +1,8 @@
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -40,34 +36,5 @@ public final class ProxyMeta {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
         return tmManager;
-    }
-
-
-    public boolean reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {
-        this.metaChanging = true;
-        ReloadManager.metaReload();
-        try {
-            //back up orgin meta data
-            ProxyMetaManager tmpManager = tmManager;
-            ProxyMetaManager newManager;
-            if (CollectionUtil.isEmpty(specifiedSchemas)) {
-                newManager = new ProxyMetaManager();
-            } else {
-                //if the meta just reload partly,create a deep coyp of the ProxyMetaManager as new ProxyMetaManager
-                newManager = new ProxyMetaManager(tmpManager);
-            }
-            if (newManager.initMeta(conf, specifiedSchemas)) {
-                tmManager = newManager;
-                if (CollectionUtil.isEmpty(specifiedSchemas)) {
-                    //deep copy do not terminate the scheduler
-                    tmpManager.terminate();
-                }
-                return true;
-            }
-
-        } finally {
-            this.metaChanging = false;
-        }
-        return false;
     }
 }

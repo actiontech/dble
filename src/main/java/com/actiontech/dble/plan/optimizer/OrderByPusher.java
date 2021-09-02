@@ -103,9 +103,7 @@ public final class OrderByPusher {
         }
 
         for (PlanNode child : qtn.getChildren()) {
-            if (child instanceof PlanNode) {
-                pushOrderBy(child);
-            }
+            pushOrderBy(child);
         }
 
         return qtn;

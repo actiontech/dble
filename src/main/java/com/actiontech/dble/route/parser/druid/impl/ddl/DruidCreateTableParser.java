@@ -57,14 +57,11 @@ public class DruidCreateTableParser extends DruidImplicitCommitParser {
         } else {
             statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         }
-
         rrs.setStatement(statement);
-        String noShardingNode = RouterUtil.isNoShardingDDL(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
-        if (noShardingNode != null) {
-            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
+        if (RouterUtil.tryRouteToSingleDDLNode(schemaInfo, rrs, schemaInfo.getTable())) {
             return schemaInfo.getSchemaConfig();
         }
-        sharingTableCheck(createStmt);
+        shardingTableCheck(createStmt);
         try {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);
         } catch (SQLException e) {
@@ -74,7 +71,7 @@ public class DruidCreateTableParser extends DruidImplicitCommitParser {
         return schemaInfo.getSchemaConfig();
     }
 
-    private void sharingTableCheckHelp(SQLAssignItem sqlAssignItem, MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
+    private void shardingTableCheckHelp(SQLAssignItem sqlAssignItem, MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
         String sqlAssignItemTarget = sqlAssignItem.getTarget().toString();
         String sqlAssignItemValue = sqlAssignItem.getValue().toString();
         //ALLOW InnoDB ONLY
@@ -93,10 +90,10 @@ public class DruidCreateTableParser extends DruidImplicitCommitParser {
 
     }
 
-    private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
+    private void shardingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
         if (createStmt.getTableOptions().size() == 0) return;
         for (SQLAssignItem sqlAssignItem : createStmt.getTableOptions()) {
-            sharingTableCheckHelp(sqlAssignItem, createStmt);
+            shardingTableCheckHelp(sqlAssignItem, createStmt);
         }
     }
 

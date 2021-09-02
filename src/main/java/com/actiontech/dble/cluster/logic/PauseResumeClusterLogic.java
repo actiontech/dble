@@ -49,7 +49,7 @@ public class PauseResumeClusterLogic extends AbstractClusterLogic {
             @Override
             public void run() {
                 try {
-                    LOGGER.info("Strat pause shardingNode " + shardingNodes);
+                    LOGGER.info("Start pause shardingNode " + shardingNodes);
                     Set<String> shardingNodeSet = new HashSet<>(Arrays.asList(shardingNodes.split(",")));
                     PauseShardingNodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), shardingNodeSet, shardingNodes, pauseInfo.getQueueLimit());
 

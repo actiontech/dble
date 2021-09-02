@@ -33,13 +33,13 @@ public class DruidAlterViewParser extends DruidImplicitCommitParser {
         if (oldViewNode instanceof TableNode && vm.getViewQuery() instanceof QueryNode) {
             rrs.setStatement("drop view `" + vm.getViewName() + "`");
             rrs.setSchema(vm.getSchema());
-            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getShardingNode(), null);
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getDefaultSingleNode(), null);
             rrs.setFinishedRoute(true);
             isCreate = false;
         } else if (vm.getViewQuery() instanceof TableNode) {
             rrs.setStatement(RouterUtil.removeSchema(sql, vm.getSchema()));
             rrs.setSchema(vm.getSchema());
-            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getShardingNode(), null);
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(vm.getSchema()).getDefaultSingleNode(), null);
             rrs.setFinishedRoute(true);
             isCreate = true;
         } else {

@@ -75,11 +75,11 @@ public final class ShowDataDistribution {
         }
         BaseTableConfig tableConfig = schemaConfig.getTables().get(schemaInfo[1]);
         if (tableConfig == null) {
-            final String defaultShardingNode = getDefaultShardingNode(schemaConfig);
-            if (defaultShardingNode == null) {
+            final String defaultSingleShardingNode = getDefaultSingleShardingNode(schemaConfig);
+            if (defaultSingleShardingNode == null) {
                 service.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn't exist");
             } else {
-                parserAndExecuteShowTables(service, defaultShardingNode, schemaInfo[1], name);
+                parserAndExecuteShowTables(service, defaultSingleShardingNode, schemaInfo[1], name);
             }
             return;
         } else if (tableConfig instanceof SingleTableConfig) {
@@ -143,8 +143,8 @@ public final class ShowDataDistribution {
         lastEof.write(buffer, service);
     }
 
-    private static String getDefaultShardingNode(SchemaConfig schema) {
-        String node = schema.getShardingNode();
+    private static String getDefaultSingleShardingNode(SchemaConfig schema) {
+        String node = schema.getDefaultSingleNode();
         return Strings.isNullOrEmpty(node) ? null : node;
     }
 

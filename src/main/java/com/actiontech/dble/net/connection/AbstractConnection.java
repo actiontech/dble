@@ -434,7 +434,7 @@ public abstract class AbstractConnection implements Connection {
             bufferSize = newBuffer.position();
         } else {
             writeTask = new WriteOutTask(buffer, false);
-            bufferSize = buffer.position();
+            bufferSize = buffer == null ? 0 : buffer.position();
         }
 
         if (FlowController.isEnableFlowControl()) {

@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess;
 
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.util.exception.DetachedException;
 import com.actiontech.dble.util.ZKUtils;
@@ -25,7 +26,7 @@ public class ZkDistributeLock extends DistributeLock {
 
     @Override
     public boolean acquire() {
-
+        ClusterDelayProvider.delayBeforeGetLock();
         try {
             ZKUtils.createTempNode(path, value.getBytes(StandardCharsets.UTF_8));
             return true;

@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +32,7 @@ public final class ClusterManageHandler {
     private static final Pattern PATTERN_DETACH = Pattern.compile("^\\s*cluster\\s*@@detach(\\s*timeout\\s*=\\s*([0-9]+))?\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_ATTACH = Pattern.compile("^\\s*cluster\\s*@@attach(\\s*timeout\\s*=\\s*([0-9]+))?\\s*$", Pattern.CASE_INSENSITIVE);
     public static final int DEFAULT_PAUSE_TIME = 10;
-    private static boolean detached = false;
+    private static volatile boolean detached = false;
 
     private ClusterManageHandler() {
     }
@@ -172,6 +173,10 @@ public final class ClusterManageHandler {
         List<FrontendService> waitServices = Lists.newArrayList();
 
         final long startTime = System.currentTimeMillis();
+        /*
+        if query is executing ,the isDoing must be true, then wait for complete.
+        if the query is going to execute, it will be block,won't set Doing from false to true.
+         */
         for (IOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             p.getFrontends().
                     values().
@@ -200,6 +205,11 @@ public final class ClusterManageHandler {
                 return true;
             }
         }
+        final StringJoiner msg = new StringJoiner(",", "{", "}");
+        waitServices.forEach(service -> {
+            msg.add(String.valueOf(service.getConnection().getId()));
+        });
+        LOGGER.info("cluster operation timeout because of {} connections, connections id is {}", waitServices.size(), msg);
         return false;
     }
 

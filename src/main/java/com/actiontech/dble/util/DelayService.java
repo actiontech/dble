@@ -6,6 +6,7 @@
 
 package com.actiontech.dble.util;
 
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.util.exception.DirectPrintException;
 import com.actiontech.dble.util.exception.NeedDelayedException;
 
@@ -39,18 +40,21 @@ public class DelayService {
 
 
     public void markDoingOrDelay(boolean checkOperationAvailable) throws NeedDelayedException, DirectPrintException {
+        /*
+        'doing' must be set before 'delayCondition'
+         */
         this.doing = true;
         if (delayCondition.get()) {
             throw new NeedDelayedException();
         } else {
-            //no need delay. then check operation available
+            //if no need delay, then check operation available
             if (checkOperationAvailable) {
                 final String msg = checkOperationAvailableCondition.get();
                 if (msg != null) {
                     throw new DirectPrintException(msg);
                 }
             }
-
+            GeneralProvider.afterDelayServiceMarkDoing();
         }
     }
 }

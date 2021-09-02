@@ -51,7 +51,7 @@ public final class UcoreSender extends AbstractConsulSender {
     private static final String SOURCE_COMPONENT_TYPE = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
-
+    private volatile boolean detached = false;
     @Override
     public void initConInfo() {
         try {
@@ -572,8 +572,6 @@ public final class UcoreSender extends AbstractConsulSender {
         return false;
     }
 
-
-    private volatile boolean detached = false;
 
     @Override
     public void detachCluster() throws Exception {

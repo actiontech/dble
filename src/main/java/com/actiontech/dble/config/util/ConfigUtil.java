@@ -8,6 +8,7 @@ package com.actiontech.dble.config.util;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -94,7 +95,7 @@ public final class ConfigUtil {
             Set<String> firstGroup = new HashSet<>();
             Set<String> secondGroup = new HashSet<>();
             int minNodePacketSize = Integer.MAX_VALUE;
-            int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
+            int minVersion = VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion());
             for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
                 String dataSourceName = entry.getKey();
                 Future<KeyVariables> future = entry.getValue();
@@ -108,8 +109,12 @@ public final class ConfigUtil {
                         secondGroup.add(dataSourceName);
                     }
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
-                    int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
-                    minVersion = Math.min(minVersion, version);
+                    Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
+                    if (majorVersion == null) {
+                        LOGGER.warn("the backend mysql server version  [{}] is unrecognized, we will treat as default official  mysql version 5.*. ", keyVariables.getVersion(), 5);
+                        majorVersion = 5;
+                    }
+                    minVersion = Math.min(minVersion, majorVersion);
                 }
             }
             if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
@@ -117,7 +122,7 @@ public final class ConfigUtil {
                 msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
                 LOGGER.warn(msg);
             }
-            if (minVersion < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
+            if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
                 throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
             }
             if (secondGroup.size() != 0) {

@@ -111,7 +111,7 @@ public final class ConfigUtil {
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                     Integer majorVersion = VersionUtil.getMajorVersionWithoutDefaultValue(keyVariables.getVersion());
                     if (majorVersion == null) {
-                        LOGGER.warn("the backend mysql server version  [{}] is unrecognized, we will treat as default official  mysql version 5.*. ", keyVariables.getVersion(), 5);
+                        LOGGER.warn("the backend mysql server version  [{}] is unrecognized, we will treat as default official  mysql version 5.*. ", keyVariables.getVersion());
                         majorVersion = 5;
                     }
                     minVersion = Math.min(minVersion, majorVersion);

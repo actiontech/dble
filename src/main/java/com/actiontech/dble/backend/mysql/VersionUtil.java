@@ -23,7 +23,7 @@ public final class VersionUtil {
         if (version == null) {
             return null;
         } else {
-            final Integer versionNumber = getMajorVersion(version);
+            final int versionNumber = getMajorVersion(version);
             if (versionNumber == 8) {
                 return TRANSACTION_ISOLATION;
             } else {

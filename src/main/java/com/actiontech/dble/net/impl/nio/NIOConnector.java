@@ -21,12 +21,12 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * @author mycat
@@ -141,12 +141,9 @@ public final class NIOConnector extends Thread implements SocketConnector {
     //wakeup selector
     private void wakeupBackendSelector() {
         Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(DbleServer.BACKEND_EXECUTOR_NAME);
-        Map.Entry<Thread, Runnable> threadRunnableEntry = threadRunnableMap.entrySet().stream().sorted((o1, o2) -> {
-            RW value1 = (RW) o1.getValue();
-            RW value2 = (RW) o2.getValue();
-            return value1.getSelectorKeySize() - value2.getSelectorKeySize();
-        }).findFirst().get();
-        ((RW) threadRunnableEntry.getValue()).getSelector().wakeup();
+        Map<Runnable, Integer> runnableMap = threadRunnableMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, entry -> ((RW) entry.getValue()).getSelectorKeySize()));
+        Map.Entry<Runnable, Integer> runnableIntegerEntry = runnableMap.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getValue)).findFirst().get();
+        ((RW) runnableIntegerEntry.getKey()).getSelector().wakeup();
     }
 
     /**

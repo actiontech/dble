@@ -14,7 +14,6 @@ import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.meta.TableMeta;
-import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -30,7 +29,10 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLReplaceStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.Sets;
@@ -62,9 +64,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         //No sharding table check
         schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
-        if (parserNoSharding(service, schemaName, schemaInfo, rrs, replace)) {
-            return schema;
-        }
         if (replace.getQuery() != null) {
             tryRouteInsertQuery(service, rrs, stmt, visitor, schemaInfo);
             return schema;
@@ -145,28 +144,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         throw new SQLNonTransientException("bad insert sql, shardingColumn/joinColumn:" + partitionColumn + " not provided," + replaceStmt);
     }
 
-    /**
-     * check if the nosharding tables are Involved
-     */
-    private boolean parserNoSharding(ShardingService service, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
-        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
-        if (noShardingNode != null) {
-            StringPtr noShardingNodePr = new StringPtr(noShardingNode);
-            Set<String> schemas = new HashSet<>();
-            if (replace.getQuery() != null) {
-                //replace into ...select  if the both table is nosharding table
-                SQLSelect select = replace.getQuery().getSubQuery();
-                SQLSelectStatement selectStmt = new SQLSelectStatement(select);
-                if (!SchemaUtil.isNoSharding(service, select.getQuery(), replace, selectStmt, contextSchema, schemas, noShardingNodePr)) {
-                    return false;
-                }
-            }
-            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr, schemaInfo.getTable());
-            return true;
-        }
-        return false;
-    }
-
 
     private String changeReplaceSQLByIncrement(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, String incrementColumn) throws SQLNonTransientException {
         TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
@@ -217,7 +194,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
-    private boolean containsIncrementColumns(String incrementColumn, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
+    private boolean containsIncrementColumns(String incrementColumn, StringBuilder sb, List<SQLExpr> columns) {
         sb.append("(");
         boolean hasIncrementInSql = false;
         for (int i = 0; i < columns.size(); i++) {
@@ -254,7 +231,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         //put the value number into string buffer
         for (int i = 0; i < colSize; i++) {
             if (i == idxGlobal) {
-                sb.append(String.valueOf(new Date().getTime()));
+                sb.append(new Date().getTime());
             } else if (i == autoIncrement) {
                 if (checkSize > size) {
                     long id = SequenceManager.getHandler().nextId(tableKey);

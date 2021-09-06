@@ -10,17 +10,12 @@ import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
 import com.actiontech.dble.cluster.values.ClusterEvent;
 import com.actiontech.dble.cluster.values.RawJson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
  * Created by szf on 2018/1/29.
  */
 public class SequencePropertiesLoader extends AbstractGeneralListener<RawJson> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SequencePropertiesLoader.class);
-
 
     public SequencePropertiesLoader() {
         super(ClusterChildMetaUtil.getSequencesCommonPath());

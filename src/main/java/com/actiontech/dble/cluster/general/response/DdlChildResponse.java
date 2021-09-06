@@ -63,15 +63,12 @@ public class DdlChildResponse extends AbstractGeneralListener<DDLInfo> {
 
     }
 
-
     @Override
     public void notifyCluster() throws Exception {
     }
 
-
     private void processDDL(String keyName, DDLInfo ddlInfo, String path) {
         ClusterLogic.forDDL().processStatusEvent(keyName, ddlInfo, ddlInfo.getStatus(), path);
     }
-
 
 }

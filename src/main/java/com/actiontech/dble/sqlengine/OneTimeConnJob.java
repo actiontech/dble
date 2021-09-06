@@ -6,6 +6,7 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.service.AbstractService;
@@ -30,7 +31,7 @@ public class OneTimeConnJob extends SQLJob {
         this.jobHandler = jobHandler;
         this.ds = ds;
         this.schema = schema;
-        this.sql = sql;
+        this.sql = "/*#timestamp=" + System.currentTimeMillis() + " from=" + SystemConfig.getInstance().getInstanceName() + " reason=one time job*/" + sql;
         this.finished = new AtomicBoolean(false);
     }
 
@@ -52,7 +53,7 @@ public class OneTimeConnJob extends SQLJob {
         try {
             conn.getBackendService().query(sql);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.debug("execute sql {} error", sql, e);
             doFinished(true);
         }
     }

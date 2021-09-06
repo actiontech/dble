@@ -7,6 +7,7 @@ package com.actiontech.dble.services.manager;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.parser.ManagerParse;
@@ -31,19 +32,19 @@ public class ManagerQueryHandler {
         this.service = service;
     }
 
-
     public void query(String sql) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(service + sql);
-        }
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "manager-query-handle");
         TraceManager.log(ImmutableMap.of("sql", sql), traceObject);
         try {
             int rs = ManagerParse.parse(sql);
             int sqlType = rs & 0xff;
-            if (readOnly && sqlType != ManagerParse.SELECT && sqlType != ManagerParse.SHOW) {
-                service.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");
-                return;
+            if (sqlType > ManagerParse.MAX_READ_SEQUENCE) {
+                if (readOnly) {
+                    service.writeErrMessage(ErrorCode.ER_USER_READ_ONLY, "User READ ONLY");
+                    return;
+                }
+                FrontendConnection con = service.getConnection();
+                LOGGER.info("execute manager cmd from {}@{}:{}: {} ", service.getUser(), con.getHost(), con.getLocalPort(), sql);
             }
             switch (sqlType) {
                 case ManagerParse.SELECT:

@@ -36,7 +36,7 @@ public class HintDbInstanceHandler implements HintHandler {
             LOGGER.debug("route dbInstance sql hint from " + realSQL);
         }
 
-        RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) service.getUserConfig();
+        RwSplitUserConfig rwSplitUserConfig = service.getUserConfig();
         hintSQLValue = hintSQLValue.trim();
         PhysicalDbInstance dbInstance = findDbInstance(rwSplitUserConfig, hintSQLValue);
         if (null == dbInstance) {
@@ -62,7 +62,7 @@ public class HintDbInstanceHandler implements HintHandler {
             return slaveInstance.get();
         } else {
             Optional<PhysicalDbInstance> masterInstance = dbInstanceSet.stream().filter(instance -> instance.getConfig().isPrimary()).findFirst();
-            return masterInstance.isPresent() ? masterInstance.get() : null;
+            return masterInstance.orElse(null);
         }
     }
 

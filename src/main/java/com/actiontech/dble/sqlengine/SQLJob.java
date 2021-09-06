@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -49,7 +50,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDbInstance ds) {
         super();
-        this.sql = sql;
+        this.sql = "/*#timestamp=" + System.currentTimeMillis() + " from=" + SystemConfig.getInstance().getInstanceName() + " reason=sql job*/" + sql;
         this.jobHandler = jobHandler;
         this.ds = ds;
         this.schema = schema;
@@ -58,7 +59,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     public SQLJob(String sql, String shardingNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
         super();
-        this.sql = sql;
+        this.sql = "/*#timestamp=" + System.currentTimeMillis() + " from=" + SystemConfig.getInstance().getInstanceName() + " reason=sql job*/" + sql;
         this.jobHandler = jobHandler;
         this.ds = null;
         this.shardingNode = shardingNode;

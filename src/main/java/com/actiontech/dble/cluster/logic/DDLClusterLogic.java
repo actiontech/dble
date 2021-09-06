@@ -38,28 +38,6 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         super(ClusterOperation.DDL);
     }
 
-
-    public void initDDLEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
-        String[] tableInfo = keyName.split("\\.");
-        final String schema = StringUtil.removeBackQuote(tableInfo[0]);
-        final String table = StringUtil.removeBackQuote(tableInfo[1]);
-        String fullName = schema + "." + table;
-        ddlLockMap.put(fullName, ddlInfo.getFrom());
-        LOGGER.info("init of ddl " + schema + " " + table);
-        boolean metaLocked = false;
-        try {
-            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
-            metaLocked = true;
-            clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
-        } catch (Exception t) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-            if (!metaLocked) {
-                clusterHelper.createSelfTempNode(path, FeedBackType.ofError(t.getMessage()));
-            }
-            throw t;
-        }
-    }
-
     public void processStatusEvent(String keyName, DDLInfo ddlInfo, DDLInfo.DDLStatus status, String path) {
         try {
             switch (status) {
@@ -80,33 +58,38 @@ public class DDLClusterLogic extends AbstractClusterLogic {
 
             }
         } catch (Exception e) {
-            LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString(), e);
+            LOGGER.warn("Error when update the meta data of the DDL " + ddlInfo.toString(), e);
         }
 
     }
 
-    public void deleteDDLNodeEvent(DDLInfo ddlInfo, String path) throws Exception {
-        LOGGER.info("DDL node " + path + " removed , and DDL info is " + ddlInfo.toString());
-    }
-
-    public void ddlFailedEvent(String keyName, String path) throws Exception {
+    private void initDDLEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
         String[] tableInfo = keyName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         String fullName = schema + "." + table;
-        LOGGER.info("ddl execute failed notice, table is " + fullName);
-        //if the start node executing ddl with error,just release the lock
-        ddlLockMap.remove(fullName);
-        ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-        clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
+        ddlLockMap.put(fullName, ddlInfo.getFrom());
+        LOGGER.info("initialize ddl of {}, sql is {}", fullName, ddlInfo.getSql());
+        boolean metaLocked = false;
+        try {
+            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
+            metaLocked = true;
+            clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
+        } catch (Exception t) {
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            if (!metaLocked) {
+                clusterHelper.createSelfTempNode(path, FeedBackType.ofError(t.getMessage()));
+            }
+            throw t;
+        }
     }
 
-    public void ddlSuccessEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
-        LOGGER.info("ddl execute success notice");
+    private void ddlSuccessEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
         String[] tableInfo = keyName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         String fullName = schema + "." + table;
+        LOGGER.info("ddl of {} execute success notice", fullName);
         // if the start node is done the ddl execute
         ddlLockMap.remove(fullName);
         ClusterDelayProvider.delayBeforeUpdateMeta();
@@ -120,6 +103,22 @@ public class DDLClusterLogic extends AbstractClusterLogic {
 
         ClusterDelayProvider.delayBeforeDdlResponse();
         clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
+    }
+
+    private void ddlFailedEvent(String keyName, String path) throws Exception {
+        String[] tableInfo = keyName.split("\\.");
+        final String schema = StringUtil.removeBackQuote(tableInfo[0]);
+        final String table = StringUtil.removeBackQuote(tableInfo[1]);
+        String fullName = schema + "." + table;
+        LOGGER.info("ddl of {} execute failed notice", fullName);
+        //if the start node executing ddl with error,just release the lock
+        ddlLockMap.remove(fullName);
+        ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+        clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
+    }
+
+    public void deleteDDLNodeEvent(DDLInfo ddlInfo, String path) throws Exception {
+        LOGGER.info("DDL node " + path + " removed , and DDL info is " + ddlInfo.toString());
     }
 
     public void checkDDLAndRelease(String crashNode) {

@@ -14,15 +14,13 @@ import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.ChangeType;
 import com.actiontech.dble.cluster.values.ClusterEvent;
 import com.actiontech.dble.cluster.values.Empty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/1/31.
  */
 public class BinlogPauseStatusResponse extends AbstractGeneralListener<Empty> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusResponse.class);
-    public static final ChildPathMeta<Empty> BINLOG_PAUSE_PATH = ClusterChildMetaUtil.getBinlogPausePath();
+
+    private static final ChildPathMeta<Empty> BINLOG_PAUSE_PATH = ClusterChildMetaUtil.getBinlogPausePath();
 
     public BinlogPauseStatusResponse() {
         super(BINLOG_PAUSE_PATH);
@@ -40,11 +38,10 @@ public class BinlogPauseStatusResponse extends AbstractGeneralListener<Empty> {
             return;
         }
 
-        String instanceName = configValue.getValue().getInstanceName();
         if (ChangeType.REMOVED.equals(configValue.getChangeType())) {
-            ClusterLogic.forBinlog().executeBinlogPauseDeleteEvent(instanceName);
+            ClusterLogic.forBinlog().executeBinlogPauseDeleteEvent(configValue);
         } else {
-            ClusterLogic.forBinlog().executeBinlogPauseEvent(instanceName);
+            ClusterLogic.forBinlog().executeBinlogPauseEvent(configValue);
         }
     }
 

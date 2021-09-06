@@ -35,7 +35,7 @@ public final class UseHandler {
                 schema = schema.toLowerCase();
             }
         }
-        if (schema == null || !ManagerSchemaInfo.SCHEMA_NAME.equals(schema)) {
+        if (!ManagerSchemaInfo.SCHEMA_NAME.equals(schema)) {
             service.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
             return;
         }

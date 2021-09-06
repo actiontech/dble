@@ -46,30 +46,30 @@ public final class MyOptimizer {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
                 //node = SubQueryProcessor.optimize(node);
                 // transform right join to left join
-                node = JoinPreProcessor.optimize(node);
+                JoinPreProcessor.optimize(node);
 
                 //  filter expr which is always true/false
-                node = FilterPreProcessor.optimize(node);
+                FilterPreProcessor.optimize(node);
                 //  push down the filter which may contains ER KEY
                 node = FilterJoinColumnPusher.optimize(node);
 
                 node = JoinERProcessor.optimize(node);
 
                 if (existGlobal >= 0) {
-                    node = GlobalTableProcessor.optimize(node);
+                    GlobalTableProcessor.optimize(node);
                 }
                 //  push down filter
                 node = FilterPusher.optimize(node);
 
                 node = OrderByPusher.optimize(node);
 
-                node = LimitPusher.optimize(node);
+                LimitPusher.optimize(node);
 
                 node = SelectedProcessor.optimize(node);
 
                 boolean useJoinStrategy = SystemConfig.getInstance().isUseJoinStrategy();
                 if (useJoinStrategy) {
-                    node = JoinStrategyProcessor.optimize(node);
+                    JoinStrategyProcessor.optimize(node);
                 }
             }
             return node;
@@ -87,17 +87,17 @@ public final class MyOptimizer {
             node = SubQueryPreProcessor.optimize(node);
 
             // transform right join to left join
-            node = JoinPreProcessor.optimize(node);
+            JoinPreProcessor.optimize(node);
 
             //  filter expr which is always true/false
-            node = FilterPreProcessor.optimize(node);
+            FilterPreProcessor.optimize(node);
 
             //  push down filter
             node = FilterPusher.optimize(node);
 
             node = OrderByPusher.optimize(node);
 
-            node = LimitPusher.optimize(node);
+            LimitPusher.optimize(node);
 
             node = SelectedProcessor.optimize(node);
 
@@ -126,7 +126,7 @@ public final class MyOptimizer {
     /**
      * existShardTable
      *
-     * @param node
+     * @param  node PlanNode
      * @return return 1 if it's all no name table or all global table node;
      * return -1 if all the table is not global table,need not global optimizer;
      * return 0 for other ,may need to global optimizer ;
@@ -143,8 +143,7 @@ public final class MyOptimizer {
                 isContainGlobal = true;
                 if (isAllGlobal) {
                     if (shardingNodes == null) {
-                        shardingNodes = new HashSet<>();
-                        shardingNodes.addAll(tn.getNoshardNode());
+                        shardingNodes = new HashSet<>(tn.getNoshardNode());
                     } else {
                         shardingNodes.retainAll(tn.getNoshardNode());
                     }

@@ -369,8 +369,6 @@ public final class JavaUtils {
 
         if (Integer.MAX_VALUE != hash && Integer.MIN_VALUE != hash)
             hashAbs = Math.abs(hash);
-        else
-            hashAbs = 0;
 
         // Nothing else to guard against ?
         return hashAbs;

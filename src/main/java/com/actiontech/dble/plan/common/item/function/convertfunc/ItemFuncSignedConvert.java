@@ -86,8 +86,8 @@ public class ItemFuncSignedConvert extends ItemIntFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         method.setMethodName("CONVERT");
-        method.addParameter(args.get(0).toExpression());
-        method.addParameter(new SQLIdentifierExpr("SIGNED"));
+        method.addArgument(args.get(0).toExpression());
+        method.addArgument(new SQLIdentifierExpr("SIGNED"));
         return method;
     }
 

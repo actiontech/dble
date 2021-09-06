@@ -48,7 +48,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
     private RBTNode<E> search(E e) {
         RBTNode<E> t = root;
         if (t == null)
-            return t;
+            return null;
         while (t != null) {
             int cmp = comparator.compare(e, t.value);
             if (cmp < 0)
@@ -58,7 +58,7 @@ public class RBTMinHeap<E> implements MinHeap<E> {
             else
                 return t;
         }
-        return t;
+        return null;
 
     }
 

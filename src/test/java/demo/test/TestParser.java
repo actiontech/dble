@@ -575,7 +575,7 @@ public class TestParser {
                         } else if (func instanceof SQLMethodInvokeExpr) {
                             System.out.println("SQLMethodInvokeExpr:");
                             SQLMethodInvokeExpr method = (SQLMethodInvokeExpr) func;
-                            System.out.println("MethodName:" + method.getMethodName() + ",getArguments size =" + method.getParameters().size() + ",OWNER:" + method.getOwner());
+                            System.out.println("MethodName:" + method.getMethodName() + ",getArguments size =" + method.getArguments().size() + ",OWNER:" + method.getOwner());
                             System.out.println("---------------------------");
                         } else if (func instanceof SQLCastExpr) {
                             SQLCastExpr cast = (SQLCastExpr) func;

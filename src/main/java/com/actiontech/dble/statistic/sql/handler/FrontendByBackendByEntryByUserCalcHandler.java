@@ -69,39 +69,37 @@ public class FrontendByBackendByEntryByUserCalcHandler implements StatisticDataH
             } else if (entry instanceof StatisticBackendSqlEntry) {
                 StatisticBackendSqlEntry backendSqlEntry = (StatisticBackendSqlEntry) entry;
                 String key = backendSqlEntry.getKey();
-                Record currRecord;
-                boolean isNew = false;
-                if (isNew = ((currRecord = records.get(key)) == null)) {
+                Record currRecord = records.get(key);
+                boolean isNew = currRecord == null;
+                if (isNew) {
                     checkEliminate();
                     currRecord = new Record(entry.getFrontend().getUserId(), entry.getFrontend(), backendSqlEntry.getBackend());
                 }
-                if (currRecord != null) {
-                    if (backendSqlEntry.isNeedToTx()) {
-                        currRecord.addTxRows(backendSqlEntry.getRows());
-                        currRecord.addTx(entry.getDuration());
+                if (backendSqlEntry.isNeedToTx()) {
+                    currRecord.addTxRows(backendSqlEntry.getRows());
+                    currRecord.addTx(entry.getDuration());
+                }
+                if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
+                    switch (backendSqlEntry.getSqlType()) {
+                        case ServerParse.INSERT:
+                            currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        case ServerParse.UPDATE:
+                            currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        case ServerParse.DELETE:
+                            currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        case ServerParse.SELECT:
+                            currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
+                            break;
+                        default:
+                            // ignore
+                            break;
                     }
-                    if (backendSqlEntry.getSqlType() == 4 || backendSqlEntry.getSqlType() == 11 || backendSqlEntry.getSqlType() == 3 || backendSqlEntry.getSqlType() == 7) {
-                        switch (backendSqlEntry.getSqlType()) {
-                            case ServerParse.INSERT:
-                                currRecord.addInsert(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                                break;
-                            case ServerParse.UPDATE:
-                                currRecord.addUpdate(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                                break;
-                            case ServerParse.DELETE:
-                                currRecord.addDelete(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                                break;
-                            case ServerParse.SELECT:
-                                currRecord.addSelect(backendSqlEntry.getRows(), backendSqlEntry.getDuration());
-                                break;
-                            default:
-                                // ignore
-                                break;
-                        }
-                    }
-                    if (isNew) {
-                        records.put(key, currRecord);
-                    }
+                }
+                if (isNew) {
+                    records.put(key, currRecord);
                 }
             }
         }

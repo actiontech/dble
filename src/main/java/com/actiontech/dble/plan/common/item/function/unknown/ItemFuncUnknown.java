@@ -76,7 +76,7 @@ public class ItemFuncUnknown extends ItemFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName);
         for (Item arg : args) {
-            method.addParameter(arg.toExpression());
+            method.addArgument(arg.toExpression());
         }
         return method;
     }

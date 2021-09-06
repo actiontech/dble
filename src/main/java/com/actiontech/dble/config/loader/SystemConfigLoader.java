@@ -60,7 +60,7 @@ public final class SystemConfigLoader {
                 String key = line.substring(0, ind).trim();
                 String value = line.substring(ind + 1).trim();
                 if (key.startsWith("-D")) {
-                    pros.put(key.substring(2), value);
+                    pros.setProperty(key.substring(2), value);
                 } else {
                     throw new IOException("bootStrapConf format error:" + line);
                 }
@@ -122,11 +122,9 @@ public final class SystemConfigLoader {
         }
 
         Properties systemDynamic = readBootStrapDynamicConf();
-        for (Map.Entry<Object, Object> item : systemDynamic.entrySet()) {
-            system.put(item.getKey(), item.getValue());
-        }
+        system.putAll(systemDynamic);
         //must be first
-        if (null != system && !StringUtil.isEmpty(system.getProperty("fakeMySQLVersion"))) {
+        if (!StringUtil.isEmpty(system.getProperty("fakeMySQLVersion"))) {
             systemConfig.setFakeMySQLVersion(system.getProperty("fakeMySQLVersion"));
         }
         ParameterMapping.mapping(systemConfig, system, StartProblemReporter.getInstance());
@@ -148,7 +146,6 @@ public final class SystemConfigLoader {
     /**
      * do postCheck and postSetting here
      *
-     * @param systemConfig
      */
     private static void postSet(SystemConfig systemConfig) {
         final StartProblemReporter problemReporter = StartProblemReporter.getInstance();
@@ -166,6 +163,7 @@ public final class SystemConfigLoader {
                     // version is x.y.z ,just compare the x.y
                     if (majorMySQLVersion.equals(ver)) {
                         validVersion = true;
+                        break;
                     }
                 }
             }

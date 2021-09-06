@@ -24,7 +24,7 @@ public abstract class ItemFuncIntVal extends ItemFuncNum1 {
 
     @Override
     public void findNumType() {
-        ItemResult i = hybridType = args.get(0).resultType();
+        ItemResult i = args.get(0).resultType();
         if (i == ItemResult.STRING_RESULT || i == ItemResult.REAL_RESULT) {
             hybridType = ItemResult.REAL_RESULT;
             maxLength = floatLength(decimals);
@@ -36,6 +36,7 @@ public abstract class ItemFuncIntVal extends ItemFuncNum1 {
             hybridType = ItemResult.DECIMAL_RESULT;
 
         } else {
+            hybridType = i;
             assert (false);
         }
     }

@@ -553,7 +553,7 @@ public class ShardingServerParse extends AbstractServerParse {
 
     // delete or drop
     protected int deleteOrdCheck(String stmt, int offset) {
-        int sqlType = OTHER;
+        int sqlType;
         switch (stmt.charAt((offset + 1))) {
             case 'E':
             case 'e':
@@ -767,7 +767,7 @@ public class ShardingServerParse extends AbstractServerParse {
     }
 
     protected int cCheck(String stmt, int offset) {
-        int sqlType = OTHER;
+        int sqlType;
         switch (stmt.charAt((offset + 1))) {
             case 'A':
             case 'a':

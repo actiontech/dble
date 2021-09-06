@@ -153,11 +153,11 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
             funcName = "date_sub";
         }
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName);
-        method.addParameter(args.get(0).toExpression());
+        method.addArgument(args.get(0).toExpression());
         SQLIntervalExpr intervalExpr = new SQLIntervalExpr();
         intervalExpr.setValue(args.get(1).toExpression());
         intervalExpr.setUnit(intType);
-        method.addParameter(intervalExpr);
+        method.addArgument(intervalExpr);
         return method;
     }
 

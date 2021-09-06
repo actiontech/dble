@@ -286,12 +286,11 @@ public class RotateLogStore {
                         LOGGER.warn("Copy file {} to {} with source.renameTo",
                                 source.getAbsolutePath(), destination.getAbsolutePath(), exCopy);
                     }
-                    result = true;
                 } else {
                     LOGGER.warn("Renamed file {} to {} with source.renameTo",
                             source.getAbsolutePath(), destination.getAbsolutePath());
                 }
-                return result;
+                return true;
             }
         }
 

@@ -37,7 +37,7 @@ public class PoolBase {
         try {
             return factory.make(instance, listener, schema);
         } catch (IOException ioe) {
-            listener.onCreateFail(conn, ioe);
+            listener.onCreateFail(null, ioe);
             return null;
         }
     }

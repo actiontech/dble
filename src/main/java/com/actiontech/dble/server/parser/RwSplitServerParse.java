@@ -933,8 +933,8 @@ public final class RwSplitServerParse extends AbstractServerParse {
     }
 
     // delete or drop
-    protected int deleteOrdCheck(String stmt, int offset) {
-        int sqlType = OTHER;
+    private int deleteOrdCheck(String stmt, int offset) {
+        int sqlType;
         switch (stmt.charAt((offset + 1))) {
             case 'E':
             case 'e':
@@ -951,7 +951,7 @@ public final class RwSplitServerParse extends AbstractServerParse {
     }
 
     // HELP' '
-    protected int helpCheck(String stmt, int offset) {
+    private int helpCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ELP ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1148,7 +1148,7 @@ public final class RwSplitServerParse extends AbstractServerParse {
     }
 
     protected int cCheck(String stmt, int offset) {
-        int sqlType = OTHER;
+        int sqlType;
         switch (stmt.charAt((offset + 1))) {
             case 'A':
             case 'a':

@@ -142,7 +142,7 @@ public class MySQLInstance extends PhysicalDbInstance {
                             if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FAST_COMPLETE) {        //fast Authentication
                                 break;
                             } else if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FULL) {   //full Authentication
-                                isConnected = PasswordAuthPlugin.sendEncryptedPassword(out, in, authPluginData, PasswordAuthPlugin.GETPUBLICKEY, this.getConfig().getPassword());
+                                isConnected = PasswordAuthPlugin.sendEncryptedPassword(out, in, null, PasswordAuthPlugin.GETPUBLICKEY, this.getConfig().getPassword());
                             } else {
                                 isConnected = false;
                             }

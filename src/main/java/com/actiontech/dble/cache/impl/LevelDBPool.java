@@ -114,7 +114,7 @@ public class LevelDBPool implements CachePool {
     public Object toObject(byte[] bytes) {
         Object obj = null;
         if ((bytes == null) || (bytes.length <= 0)) {
-            return obj;
+            return null;
         }
         try {
             ByteArrayInputStream bis = new ByteArrayInputStream(bytes);

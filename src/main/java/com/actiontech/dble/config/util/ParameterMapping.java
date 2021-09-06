@@ -35,7 +35,7 @@ public final class ParameterMapping {
             InvocationTargetException {
         PropertyDescriptor[] pds = getDescriptors(target.getClass());
         for (PropertyDescriptor pd : pds) {
-            Object obj = src.get(pd.getName());
+            Object obj = src.getProperty(pd.getName());
             Object value = obj;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
@@ -164,7 +164,7 @@ public final class ParameterMapping {
 
     private static Object convert(Class<?> cls, String string) throws NumberFormatException, IllegalStateException {
         Method method = null;
-        Object value = null;
+        Object value;
         if (cls.equals(String.class)) {
             value = string;
         } else if (cls.equals(Boolean.TYPE)) {

@@ -101,10 +101,7 @@ public class PrepareStatementParseInfo {
                             continue; // inline quote escape
                         }
 
-                        inQuotes = !inQuotes;
-                        quoteChar = 0;
-                    } else if (((tmpC == '\'') || (tmpC == '"')) && tmpC == quoteChar) {
-                        inQuotes = !inQuotes;
+                        inQuotes = false;
                         quoteChar = 0;
                     }
                 } else {

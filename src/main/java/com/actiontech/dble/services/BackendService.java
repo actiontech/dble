@@ -491,6 +491,7 @@ public abstract class BackendService extends AbstractService {
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
+                assert value != null;
                 new BigDecimal(value);
             } catch (NumberFormatException e) {
                 value = "`" + value + "`";

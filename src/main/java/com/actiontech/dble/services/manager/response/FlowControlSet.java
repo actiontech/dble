@@ -2,6 +2,7 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowControllerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -34,10 +35,15 @@ public final class FlowControlSet {
             service.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the flow_control command");
             return;
         }
+        boolean enableFlowControl = Boolean.parseBoolean(enable);
+        if (enableFlowControl && SystemConfig.getInstance().getUsingAIO() == 1) {
+            service.writeErrMessage(ErrorCode.ER_YES, "flow control is not support AIO, please check property [usingAIO] of your bootstrap.cnf");
+            return;
+        }
         FlowControllerConfig oldConfig = FlowController.getFlowControllerConfig();
         //create a new FlowControllerConfig
         FlowControllerConfig config =
-                new FlowControllerConfig(enable == null ? oldConfig.isEnableFlowControl() : Boolean.parseBoolean(enable),
+                new FlowControllerConfig(enable == null ? oldConfig.isEnableFlowControl() : enableFlowControl,
                         flowControlHighLevel == null ? oldConfig.getHighWaterLevel() : Integer.parseInt(flowControlHighLevel),
                         flowControlLowLevel == null ? oldConfig.getLowWaterLevel() : Integer.parseInt(flowControlLowLevel));
 

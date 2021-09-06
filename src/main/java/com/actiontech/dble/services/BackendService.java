@@ -166,9 +166,7 @@ public abstract class BackendService extends AbstractService {
                 // handleData
                 while ((task = taskQueue.poll()) != null) {
                     DbleThreadPoolProvider.beginProcessBackendBusinessTask();
-                    if (isSupportFlowControl() && FlowController.isEnableFlowControl()) {
-                        consumeReadingData(task);
-                    }
+                    consumeReadingData(task);
                     this.consumeSingleTask(task);
                     ThreadPoolStatistic.getBackendBusiness().getCompletedTaskCount().increment();
                 }
@@ -261,8 +259,7 @@ public abstract class BackendService extends AbstractService {
         ShardingService shardingService;
         if ((shardingService = needCalcReadingData(task)) != null) {
             int currentReadSize = readSize.addAndGet(-((NormalServiceTask) task).getOrgData().length);
-            if (connection.isFrontWriteFlowControlled() &&
-                    currentReadSize <= connection.getFlowLowLevel() &&
+            if (currentReadSize <= connection.getFlowLowLevel() &&
                     !shardingService.isFlowControlled()) {
                 LOGGER.debug("This backend connection stop flow control, currentWritingSize= {},conn info:{}", currentReadSize, connection);
                 connection.enableRead();

@@ -56,13 +56,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             throw new SQLNonTransientException(msg);
         }
 
-        if (insert.getValuesList().isEmpty()) {
-            String msg = "Insert syntax error,no values in sql";
-            throw new SQLNonTransientException(msg);
-        }
-
         schema = schemaInfo.getSchemaConfig();
-        String tableName = schemaInfo.getTable();
         if (parserNoSharding(sc, schemaName, schemaInfo, rrs, insert)) {
             return schema;
         }
@@ -74,6 +68,12 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             throw new SQLNonTransientException(msg);
         }
 
+        if (insert.getValuesList().isEmpty()) {
+            String msg = "Insert syntax error,no values in sql";
+            throw new SQLNonTransientException(msg);
+        }
+
+        String tableName = schemaInfo.getTable();
         TableConfig tc = schema.getTables().get(tableName);
         checkTableExists(tc, schema.getName(), tableName, CheckType.INSERT);
         if (tc.isGlobalTable()) {

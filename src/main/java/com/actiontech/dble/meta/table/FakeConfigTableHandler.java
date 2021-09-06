@@ -52,7 +52,7 @@ public class FakeConfigTableHandler extends ConfigTableHandler {
             if (entry.getValue().size() == schemaConfig.getDefaultShardingNodes().size()) { // entry.getValue().equals(new TreeSet<>(schemaConfig.getDefaultShardingNodes())
                 this.tmManager.dropTable(schema, table);
                 String tableId = schema + "." + table;
-                LOGGER.warn("found the table[{}] in all defaultNode{} has been lost, will be removed from the xx table's metadata",
+                LOGGER.warn("found the table[{}] in all defaultNode{} has been lost, will remove his metadata",
                         tableId, schemaConfig.getDefaultShardingNodes());
                 for (String shardingNode : entry.getValue()) {
                     ToResolveContainer.TABLE_LACK.remove(AlertUtil.getTableLackKey(shardingNode, table));

@@ -53,7 +53,7 @@ public class DbleSchema extends ManagerBaseTable {
         return schemaMap.values().stream().map(e -> {
             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
             map.put(COLUMN_NAME, e.getName());
-            map.put(COLUMN_SHARDING_NODE, String.join(",", e.getDefaultShardingNodes()));
+            map.put(COLUMN_SHARDING_NODE, e.getDefaultShardingNodes() == null ? null : String.join(",", e.getDefaultShardingNodes()));
             map.put(COLUMN_FUNCTION, e.getFunction() == null ? "-" : e.getFunction().getName());
             map.put(COLUMN_SQL_MAX_LIMIT, String.valueOf(e.getDefaultMaxLimit()));
             return map;

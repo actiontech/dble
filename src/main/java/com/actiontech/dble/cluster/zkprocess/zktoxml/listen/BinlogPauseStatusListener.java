@@ -26,18 +26,14 @@ public class BinlogPauseStatusListener extends AbstractGeneralListener<Empty> {
     @Override
     public void onEvent(ClusterEvent<Empty> event) throws Exception {
         switch (event.getChangeType()) {
-            case ADDED: {
+            case ADDED:
                 LOGGER.info("childEvent " + event.getPath() + " " + event.getChangeType());
-                String instanceName = event.getValue().getInstanceName();
-                ClusterLogic.forBinlog().executeBinlogPauseEvent(instanceName);
-            }
-            break;
-            case REMOVED: {
+                ClusterLogic.forBinlog().executeBinlogPauseEvent(event);
+                break;
+            case REMOVED:
                 LOGGER.info("childEvent " + event.getPath() + " " + event.getChangeType());
-                String instanceName = event.getValue().getInstanceName();
-                ClusterLogic.forBinlog().executeBinlogPauseDeleteEvent(instanceName);
-            }
-            break;
+                ClusterLogic.forBinlog().executeBinlogPauseDeleteEvent(event);
+                break;
             default:
                 break;
         }

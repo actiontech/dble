@@ -16,15 +16,11 @@ import com.actiontech.dble.cluster.values.ChangeType;
 import com.actiontech.dble.cluster.values.ClusterEvent;
 import com.actiontech.dble.cluster.values.ConfStatus;
 import com.actiontech.dble.config.model.SystemConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/1/31.
  */
 public class ConfigStatusResponse extends AbstractGeneralListener<ConfStatus> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(BinlogPauseStatusResponse.class);
 
     private static final ChildPathMeta<ConfStatus> CONFIG_STATUS_OPERATOR_PATH = ClusterChildMetaUtil.getConfStatusOperatorPath();
 
@@ -54,8 +50,6 @@ public class ConfigStatusResponse extends AbstractGeneralListener<ConfStatus> {
         }
 
         //step 1 check if the change is from itself
-
-
         if (status.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             //self node
             return;

@@ -74,12 +74,12 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
         try {
             ClusterDelayProvider.delayBeforeSlaveReload();
 
-            LOGGER.info("reload_all " + ClusterMetaUtil.getConfStatusOperatorPath() + " " + value);
+            LOGGER.info("reload config from " + ClusterMetaUtil.getConfStatusOperatorPath() + " " + value);
             final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
             lock.writeLock().lock();
             try {
                 if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.RELOAD_ALL)) {
-                    LOGGER.info("reload config failed because self is in reloading");
+                    LOGGER.info("fail to reload config because current dble is in reloading");
                     clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(),
                             FeedBackType.ofError("Reload status error ,other client or cluster may in reload"));
                     return;
@@ -455,8 +455,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
         return dbs;
     }
 
-
-    static void writeMapFileAddFunction(List<Function> functionList) {
+    private static void writeMapFileAddFunction(List<Function> functionList) {
         if (functionList == null) {
             return;
         }

@@ -11,7 +11,9 @@ import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.path.PathMeta;
+import com.actiontech.dble.cluster.values.ClusterEvent;
 import com.actiontech.dble.cluster.values.ClusterValue;
+import com.actiontech.dble.cluster.values.Empty;
 import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -36,11 +38,12 @@ public class BinlogClusterLogic extends AbstractClusterLogic {
         super(ClusterOperation.BINGLOG);
     }
 
-    public void executeBinlogPauseDeleteEvent(String value) {
-        if (StringUtils.isEmpty(value)) {
+    public void executeBinlogPauseDeleteEvent(ClusterEvent<Empty> event) {
+        String instanceName = event.getValue().getInstanceName();
+        if (StringUtils.isEmpty(instanceName)) {
             return;
         }
-        if (value.equals(SystemConfig.getInstance().getInstanceName())) {
+        if (instanceName.equals(SystemConfig.getInstance().getInstanceName())) {
             LOGGER.info("Self Notice,Do nothing return");
             return;
         }
@@ -48,18 +51,19 @@ public class BinlogClusterLogic extends AbstractClusterLogic {
         DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
     }
 
-    public void executeBinlogPauseEvent(String value) throws Exception {
-        if (StringUtils.isEmpty(value)) {
+    public void executeBinlogPauseEvent(ClusterEvent<Empty> event) throws Exception {
+        String instanceName = event.getValue().getInstanceName();
+        if (StringUtils.isEmpty(instanceName)) {
             return;
         }
-        if (value.equals(SystemConfig.getInstance().getInstanceName())) {
+        if (instanceName.equals(SystemConfig.getInstance().getInstanceName())) {
             LOGGER.info("Self Notice,Do nothing return");
             return;
         }
 
         //step 2  try to lock all the commit
         DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
-        LOGGER.info("start pause for binlog status");
+        LOGGER.info("start to pause for binlog status");
         boolean isPaused = ShowBinlogStatus.waitAllSession();
         if (!isPaused) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
@@ -70,7 +74,7 @@ public class BinlogClusterLogic extends AbstractClusterLogic {
             clusterHelper.createSelfTempNode(ClusterPathUtil.getBinlogPauseStatusPath(), FeedBackType.SUCCESS);
         } catch (Exception e) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-            LOGGER.warn("create binlogPause instance failed", e);
+            LOGGER.warn("fail to create binlogPause instance", e);
         }
     }
 

@@ -26,7 +26,6 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
@@ -501,7 +500,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             this.resultSize += row.length;
 
             if (!errorResponse.get() && byteBuffer != null) {
-                FlowController.tryFlowControl(session);
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
                 if (!requestScope.isUsingCursor()) {
                     row[3] = (byte) session.getShardingService().nextPacketId();

@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.executor;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -18,9 +19,14 @@ import java.util.concurrent.BlockingQueue;
 public class WriteToBackendRunnable implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteToBackendRunnable.class);
     private final BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
+    private final ThreadContext threadContext = new ThreadContext();
 
     public WriteToBackendRunnable(BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue) {
         this.writeToBackendQueue = writeToBackendQueue;
+    }
+
+    public ThreadContextView getThreadContext() {
+        return threadContext;
     }
 
     @Override
@@ -45,11 +51,20 @@ public class WriteToBackendRunnable implements Runnable {
                     workStart = System.nanoTime();
                 }
 
-                //execute the tasks
-                for (WriteToBackendTask task : tasks) {
-                    task.execute();
-                }
 
+                threadContext.setDoingTask(true);
+                try {
+
+                    //execute the tasks
+                    for (WriteToBackendTask task : tasks) {
+                        DbleThreadPoolProvider.beginProcessWriteToBackendTask();
+                        task.execute();
+                        ThreadPoolStatistic.getWriteToBackend().getCompletedTaskCount().increment();
+                    }
+
+                } finally {
+                    threadContext.setDoingTask(false);
+                }
                 //threadUsageStat end
                 if (workUsage != null) {
                     workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);

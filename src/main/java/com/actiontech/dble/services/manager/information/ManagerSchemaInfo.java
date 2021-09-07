@@ -33,6 +33,7 @@ public final class ManagerSchemaInfo {
         registerTable(new Version());
         registerTable(new DbleVariables());
         registerTable(new DbleThreadPool());
+        registerTable(new DbleThreadPoolTask());
         registerTable(new DbleFrontConnections());
         registerTable(new DbleBackendConnections());
         registerTable(new DbleShardingNode());
@@ -67,6 +68,8 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleXaRecover());
         // sampling
         registerTable(new SqlLog());
+
+        registerTable(new DbleFlowControl());
     }
 
     private void initViews() {

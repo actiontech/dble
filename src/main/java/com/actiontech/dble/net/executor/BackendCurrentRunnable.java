@@ -12,14 +12,21 @@ import java.util.Queue;
 /**
  * Created by szf on 2020/7/9.
  */
-public class BackendCurrentRunnable implements Runnable {
+public class BackendCurrentRunnable implements BackendRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BackendCurrentRunnable.class);
 
     private final Queue<ServiceTask> concurrentBackQueue;
+    private final ThreadContext threadContext = new ThreadContext();
 
     public BackendCurrentRunnable(Queue<ServiceTask> concurrentBackQueue) {
         this.concurrentBackQueue = concurrentBackQueue;
+    }
+
+
+    @Override
+    public ThreadContextView getThreadContext() {
+        return threadContext;
     }
 
     @Override
@@ -44,7 +51,7 @@ public class BackendCurrentRunnable implements Runnable {
                     if (workUsage != null) {
                         workStart = System.nanoTime();
                     }
-                    task.getService().execute(task);
+                    task.getService().execute(task, threadContext);
                     //threadUsageStat end
                     if (workUsage != null) {
                         workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);

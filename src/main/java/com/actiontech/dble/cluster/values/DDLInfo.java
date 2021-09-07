@@ -51,7 +51,6 @@ public class DDLInfo {
         this.type = ddlType;
     }
 
-
     @Override
     public String toString() {
         return TimeUtil.currentTimeNanos() + split + status.toString() + split + type.toString() + split + schema + split + from + split + sql;
@@ -69,10 +68,8 @@ public class DDLInfo {
         return status;
     }
 
-
     public DDLType getType() {
         return type;
     }
-
 
 }

@@ -43,7 +43,7 @@ public abstract class XAStage implements TransactionStage {
                 if (backendService != null && !backendService.isFakeClosed()) {
                     onEnterStage(backendService);
                 } else {
-                    session.releaseConnection(rrn, LOGGER.isDebugEnabled(), false);
+                    session.releaseConnection(rrn, false);
                     xaHandler.fakedResponse(rrn);
                 }
             }

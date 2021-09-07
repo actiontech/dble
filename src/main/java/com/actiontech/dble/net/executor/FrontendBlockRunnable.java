@@ -14,15 +14,20 @@ import java.util.concurrent.BlockingDeque;
 /**
  * Created by szf on 2020/6/18.
  */
-public class FrontendBlockRunnable implements Runnable {
+public class FrontendBlockRunnable implements FrontendRunnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendBlockRunnable.class);
     private final BlockingDeque<ServiceTask> frontNormalTasks;
+    private final ThreadContext threadContext = new ThreadContext();
 
     public FrontendBlockRunnable(BlockingDeque<ServiceTask> frontEndTasks) {
         this.frontNormalTasks = frontEndTasks;
     }
 
+    @Override
+    public ThreadContextView getThreadContext() {
+        return threadContext;
+    }
 
     @Override
     public void run() {
@@ -52,7 +57,7 @@ public class FrontendBlockRunnable implements Runnable {
                     workStart = System.nanoTime();
                 }
                 //handler data
-                task.getService().execute(task);
+                task.getService().execute(task, threadContext);
 
                 //threadUsageStat end
                 if (workUsage != null) {

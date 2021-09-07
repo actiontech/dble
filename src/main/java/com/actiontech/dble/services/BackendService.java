@@ -6,9 +6,13 @@
 package com.actiontech.dble.services;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.BackendConnection;
+import com.actiontech.dble.net.executor.BackendRunnable;
+import com.actiontech.dble.net.executor.ThreadContext;
+import com.actiontech.dble.net.executor.ThreadContextView;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -16,8 +20,15 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.response.ProtocolResponseHandler;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.net.executor.ThreadPoolStatistic;
+import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.StringUtil;
@@ -59,6 +70,9 @@ public abstract class BackendService extends AbstractService {
 
     protected boolean autocommitSynced;
     protected boolean isolationSynced;
+    private final BackendOnetimeRunnable taskRunnable = new BackendOnetimeRunnable();
+
+    private final AtomicInteger readSize = new AtomicInteger(0);
 
     public BackendService(BackendConnection connection) {
         super(connection);
@@ -89,25 +103,19 @@ public abstract class BackendService extends AbstractService {
     @Override
     public void handle(ServiceTask task) {
         beforeInsertServiceTask(task);
+        productReadingData(task);
         taskQueue.offer(task);
         doHandle(task);
+    }
+
+    public int getReadSize() {
+        return readSize.get();
     }
 
     protected void doHandle(ServiceTask task) {
         if (isHandling.compareAndSet(false, true)) {
             Executor executor = getExecutor();
-            executor.execute(() -> {
-                try {
-                    handleTaskQueue();
-                } catch (Exception e) {
-                    handleDataError(e);
-                } finally {
-                    isHandling.set(false);
-                    if (taskQueue.size() > 0) {
-                        doHandle(null);
-                    }
-                }
-            });
+            executor.execute(taskRunnable);
         }
     }
 
@@ -115,12 +123,11 @@ public abstract class BackendService extends AbstractService {
     /**
      * used when Performance Mode
      *
-     * @param task
      */
     @Override
-    public void execute(ServiceTask task) {
+    public void execute(ServiceTask task, ThreadContext threadContext) {
         try {
-            handleTaskQueue();
+            handleTaskQueue(threadContext);
         } catch (Exception e) {
             handleDataError(e);
         } finally {
@@ -135,7 +142,7 @@ public abstract class BackendService extends AbstractService {
         return DbleServer.getInstance().getBackendBusinessExecutor();
     }
 
-    private void handleTaskQueue() {
+    private void handleTaskQueue(ThreadContext threadContext) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "loop-handle-back-data");
         try {
             ServiceTask task;
@@ -154,10 +161,19 @@ public abstract class BackendService extends AbstractService {
 
                 workStart = System.nanoTime();
             }
-            // handleData
-            while ((task = taskQueue.poll()) != null) {
-                this.consumeSingleTask(task);
+            threadContext.setDoingTask(true);
+            try {
+                // handleData
+                while ((task = taskQueue.poll()) != null) {
+                    DbleThreadPoolProvider.beginProcessBackendBusinessTask();
+                    consumeReadingData(task);
+                    this.consumeSingleTask(task);
+                    ThreadPoolStatistic.getBackendBusiness().getCompletedTaskCount().increment();
+                }
+            } finally {
+                threadContext.setDoingTask(false);
             }
+
             // threadUsageStat end
             if (workUsage != null && threadName.startsWith("backend")) {
                 workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
@@ -195,6 +211,7 @@ public abstract class BackendService extends AbstractService {
         connection.close("handle data error:" + e.getMessage());
         while (taskQueue.size() > 0) {
             taskQueue.clear();
+            readSize.set(0);
             // clear all data from the client
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
@@ -203,6 +220,7 @@ public abstract class BackendService extends AbstractService {
     @Override
     public void cleanup() {
         this.taskQueue.clear();
+        readSize.set(0);
         backendSpecialCleanUp();
         TraceManager.sessionFinish(this);
     }
@@ -226,6 +244,43 @@ public abstract class BackendService extends AbstractService {
         connection.getPoolRelated().release(connection);
     }
 
+
+    private void productReadingData(ServiceTask task) {
+        if (needCalcReadingData(task) != null) {
+            int currentReadSize = readSize.addAndGet(((NormalServiceTask) task).getOrgData().length);
+            if (currentReadSize > connection.getFlowHighLevel()) {
+                LOGGER.debug("This backend connection begins flow control, currentWritingSize= {},conn info:{}", currentReadSize, connection);
+                connection.disableRead();
+            }
+        }
+    }
+
+    private void consumeReadingData(ServiceTask task) {
+        ShardingService shardingService;
+        if ((shardingService = needCalcReadingData(task)) != null) {
+            int currentReadSize = readSize.addAndGet(-((NormalServiceTask) task).getOrgData().length);
+            if (currentReadSize <= connection.getFlowLowLevel() &&
+                    !shardingService.isFlowControlled()) {
+                LOGGER.debug("This backend connection stop flow control, currentWritingSize= {},conn info:{}", currentReadSize, connection);
+                connection.enableRead();
+            }
+        }
+    }
+
+    private ShardingService needCalcReadingData(ServiceTask task) {
+        NonBlockingSession session;
+        ShardingService shardingService;
+        if (FlowController.isEnableFlowControl() &&
+                isSupportFlowControl() &&
+                task.getType() == ServiceTaskType.NORMAL &&
+                (session = ((MySQLResponseService) this).getSession()) != null &&
+                (shardingService = session.getShardingService()) != null) {
+            return shardingService;
+        } else return null;
+    }
+
+    protected abstract boolean isSupportFlowControl();
+
     protected void innerRelease() {
     }
 
@@ -238,9 +293,6 @@ public abstract class BackendService extends AbstractService {
         isRowDataFlowing = rowDataFlowing;
     }
 
-    public BackEndCleaner getRecycler() {
-        return recycler;
-    }
 
     public void setRecycler(BackEndCleaner recycler) {
         this.recycler = recycler;
@@ -474,6 +526,10 @@ public abstract class BackendService extends AbstractService {
         return sb.toString();
     }
 
+    public long getRecvTaskQueueSize() {
+        return taskQueue.size();
+    }
+
     private static final class StatusSync {
         private final String schema;
         private final CharsetNames clientCharset;
@@ -487,7 +543,6 @@ public abstract class BackendService extends AbstractService {
         /**
          * only for xa
          *
-         * @param synCount
          */
         StatusSync(int synCount) {
             this.schema = null;
@@ -551,4 +606,27 @@ public abstract class BackendService extends AbstractService {
         }
     }
 
+
+    private class BackendOnetimeRunnable implements BackendRunnable {
+        private final ThreadContext threadContext = new ThreadContext();
+
+        @Override
+        public ThreadContextView getThreadContext() {
+            return threadContext;
+        }
+
+        @Override
+        public void run() {
+            try {
+                handleTaskQueue(threadContext);
+            } catch (Exception e) {
+                handleDataError(e);
+            } finally {
+                isHandling.set(false);
+                if (taskQueue.size() > 0) {
+                    doHandle(null);
+                }
+            }
+        }
+    }
 }

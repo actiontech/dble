@@ -108,6 +108,12 @@ public final class ShowConnectionPoolProperty {
                 row = getRow(group.getGroupName(), instance.getName(), "timeBetweenEvictionRunsMillis", poolConfig.getTimeBetweenEvictionRunsMillis() + "", service.getCharset().getClient());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, service, true);
+                row = getRow(group.getGroupName(), instance.getName(), "flowHighLevel", poolConfig.getFlowHighLevel() + "", service.getCharset().getClient());
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
+                row = getRow(group.getGroupName(), instance.getName(), "flowLowLevel", poolConfig.getFlowLowLevel() + "", service.getCharset().getClient());
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
             }
         }
 

@@ -159,7 +159,7 @@ public final class RouterUtil {
                 rrs.setAlwaysFalse(true);
             }
             RouteResultset rrsTmp = RouterUtil.tryRouteForTablesComplex(schemaMap, druidParser.getCtx(), unit, rrs, service.getCharset().getClient());
-            if (rrsTmp != null && (rrsTmp.getNodes() != null || rrsTmp.getNodes().length != 0)) {
+            if (rrsTmp != null && rrsTmp.getNodes() != null && rrsTmp.getNodes().length != 0) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {
                     break;
@@ -1157,7 +1157,6 @@ public final class RouterUtil {
         }
         if (shardingNodeSet.size() > 1) {
             routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, shardingNodeSet, Sets.newHashSet(schemaName + "." + tableConfig.getName()));
-            rrs.setFinishedRoute(true);
         } else {
             rrs.setSqlRouteCacheAble(true);
             routeToSingleNode(rrs, shardingNodeSet.iterator().next(), Sets.newHashSet(schemaName + "." + tableConfig.getName()));

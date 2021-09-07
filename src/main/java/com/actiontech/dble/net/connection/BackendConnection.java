@@ -13,6 +13,7 @@ import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.nio.ByteBuffer;
@@ -25,7 +26,10 @@ public class BackendConnection extends PooledConnection {
 
     private long threadId = 0;
 
-    private ReadTimeStatusInstance instance;
+    private final ReadTimeStatusInstance instance;
+    private final int flowHighLevel;
+    private final int flowLowLevel;
+    private volatile boolean backendWriteFlowControlled;
 
     public BackendConnection(NetworkChannel channel, SocketWR socketWR, ReadTimeStatusInstance instance, ResponseHandler handler, String schema) {
         super(channel, socketWR);
@@ -33,6 +37,8 @@ public class BackendConnection extends PooledConnection {
         DbInstanceConfig config = instance.getConfig();
         this.host = config.getIp();
         this.port = config.getPort();
+        this.flowLowLevel = config.getPoolConfig().getFlowLowLevel();
+        this.flowHighLevel = config.getPoolConfig().getFlowHighLevel();
         this.lastTime = TimeUtil.currentTimeMillis();
         this.setService(new MySQLBackAuthService(this, config.getUser(), schema, config.getPassword(), null, handler));
 
@@ -44,6 +50,8 @@ public class BackendConnection extends PooledConnection {
         DbInstanceConfig config = instance.getConfig();
         this.host = config.getIp();
         this.port = config.getPort();
+        this.flowLowLevel = config.getPoolConfig().getFlowLowLevel();
+        this.flowHighLevel = config.getPoolConfig().getFlowHighLevel();
         this.lastTime = TimeUtil.currentTimeMillis();
         this.setService(new MySQLBackAuthService(this, config.getUser(), schema, config.getPassword(), listener, null));
     }
@@ -66,15 +74,35 @@ public class BackendConnection extends PooledConnection {
     }
 
     @Override
-    public void stopFlowControl() {
-        LOGGER.info("This connection {} remove flow control", this);
-        this.setFlowControlled(false);
+    public void stopFlowControl(int currentWritingSize) {
+        if (backendWriteFlowControlled && currentWritingSize <= flowLowLevel) {
+            LOGGER.debug("This connection stop flow control, currentWritingSize= {},the connection info is {}", currentWritingSize, this);
+            backendWriteFlowControlled = false;
+        }
     }
 
     @Override
-    public void startFlowControl() {
-        LOGGER.info("This connection {} begins flow control", this);
-        this.setFlowControlled(true);
+    public void startFlowControl(int currentWritingSize) {
+        if (!backendWriteFlowControlled && currentWritingSize > flowHighLevel) {
+            LOGGER.debug("This connection start flow control, currentWritingSize= {}, the connection info is {}", currentWritingSize, this);
+            backendWriteFlowControlled = true;
+        }
+    }
+
+    public void enableRead() {
+        if (frontWriteFlowControlled) {
+            LOGGER.debug("This connection enableRead because of flow control, the connection info is {}", this);
+            socketWR.enableRead();
+            frontWriteFlowControlled = false;
+        }
+    }
+
+    public void disableRead() {
+        if (!frontWriteFlowControlled) {
+            LOGGER.debug("This connection disableRead because of flow control, the connection info is {}", this);
+            socketWR.disableRead();
+            frontWriteFlowControlled = true;
+        }
     }
 
     @Override
@@ -84,7 +112,7 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public synchronized void close(final String reason) {
-        LOGGER.info("connection id " + threadId + " close for reason " + reason);
+        LOGGER.info("connection id " + id + " mysqlId " + threadId + " close for reason " + reason);
         boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
             if ((isAuthed || this.getService().isFakeClosed()) && channel.isOpen() && closeReason == null) {
@@ -115,7 +143,7 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public synchronized void closeImmediately(final String reason) {
-        LOGGER.info("connection id " + threadId + " close for reason " + reason);
+        LOGGER.info("connection id " + id + " mysqlId " + threadId + " close for reason " + reason);
         boolean isAuthed = !this.getService().isFakeClosed() && !(this.getService() instanceof AuthService);
         if (!isClosed.get()) {
             super.closeImmediately(reason);
@@ -134,6 +162,19 @@ public class BackendConnection extends PooledConnection {
         }
     }
 
+
+
+    public boolean isBackendWriteFlowControlled() {
+        return backendWriteFlowControlled;
+    }
+
+    public int getFlowHighLevel() {
+        return flowHighLevel;
+    }
+
+    public int getFlowLowLevel() {
+        return flowLowLevel;
+    }
     public void closeWithFront(String reason) {
         if (getBackendService().getSession() != null) {
             getBackendService().getSession().getSource().close(reason);
@@ -149,7 +190,9 @@ public class BackendConnection extends PooledConnection {
 
     public void writeClose(ByteBuffer buffer) {
         writeQueue.offer(new WriteOutTask(buffer, true));
-
+        if (FlowController.isEnableFlowControl()) {
+            writingSize.addAndGet(5);
+        }
         this.socketWR.doNextWriteCheck();
     }
 
@@ -172,6 +215,6 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public String toString() {
-        return "BackendConnection[id = " + id + " host = " + host + " port = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
+        return "BackendConnection[id = " + id + " host = " + host + " port = " + port + " localPort = " + localPort + " mysqlId = " + threadId + " db config = " + instance;
     }
 }

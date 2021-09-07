@@ -82,6 +82,8 @@ public final class ManagerParseShow {
     public static final int STATISTIC = 72;
     public static final int LOAD_DATA_FAIL = 73;
     public static final int STATISTIC_QUEUE_USAGE = 74;
+
+    public static final int THREAD_POOL_TASK = 75;
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
@@ -1707,7 +1709,12 @@ public final class ManagerParseShow {
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'O' || c1 == 'o') &&
                     (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l')) {
-                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                ++offset;
+                // SHOW @@THREADPOOL.TASK
+                if (ParseUtil.compare(stmt, offset, ".TASK")) {
+                    return THREAD_POOL_TASK;
+                }
+                if (ParseUtil.isErrorTail(offset, stmt)) {
                     return OTHER;
                 }
                 return THREADPOOL;

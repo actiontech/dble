@@ -80,7 +80,7 @@ public class NIOSocketWR extends SocketWR {
             writeDataErr = true;
             //when write errored,the flow control doesn't work
             this.writeQueue.clear();
-            FlowController.tryRemoveFlowControl(-1, con);
+            con.getWritingSize().set(0);
             if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") || e instanceof ClosedChannelException) {
                 // target problem,
                 //ignore this exception,will close by read side.
@@ -95,8 +95,7 @@ public class NIOSocketWR extends SocketWR {
             writeDataErr = true;
             LOGGER.info("con {} write err:", con.getService(), e);
             this.writeQueue.clear();
-            //when write errored,the flow control doesn't work
-            FlowController.tryRemoveFlowControl(-1, con);
+            con.getWritingSize().set(0);
             con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
 
         } finally {
@@ -122,6 +121,9 @@ public class NIOSocketWR extends SocketWR {
             }
         }
         leftoverWriteTask = new WriteOutTask(buffer, false);
+        if (FlowController.isEnableFlowControl()) {
+            con.getWritingSize().addAndGet(buffer.position());
+        }
         buffer.flip();
         try {
             write0();
@@ -198,18 +200,20 @@ public class NIOSocketWR extends SocketWR {
     }
 
     private boolean write0() throws IOException {
-
-        int flowControlCount = -1;
         int written = 0;
         boolean quitFlag = false;
-        ByteBuffer buffer = leftoverWriteTask == null ? null : leftoverWriteTask.getBuffer();
-        if (buffer != null) {
+        if (leftoverWriteTask != null) {
+            ByteBuffer buffer = leftoverWriteTask.getBuffer();
             while (buffer.hasRemaining()) {
-                quitFlag = leftoverWriteTask == null ? false : leftoverWriteTask.closeFlag();
+                quitFlag = leftoverWriteTask.closeFlag();
                 try {
                     written = channel.write(buffer);
                     if (written > 0) {
                         con.writeStatistics(written);
+                        if (FlowController.isEnableFlowControl()) {
+                            int currentWritingSize = con.getWritingSize().addAndGet(-written);
+                            con.stopFlowControl(currentWritingSize);
+                        }
                     } else {
                         break;
                     }
@@ -226,7 +230,6 @@ public class NIOSocketWR extends SocketWR {
                 }
             }
 
-            flowControlCount = FlowController.tryRemoveFlowControl(flowControlCount, con);
 
             if (quitFlag) {
                 con.recycle(buffer);
@@ -242,6 +245,7 @@ public class NIOSocketWR extends SocketWR {
             }
         }
         WriteOutTask task;
+        ByteBuffer buffer;
         while ((task = writeQueue.poll()) != null) {
             quitFlag = task.closeFlag();
             buffer = task.getBuffer();
@@ -257,6 +261,10 @@ public class NIOSocketWR extends SocketWR {
                     written = channel.write(buffer);
                     if (written > 0) {
                         con.writeStatistics(written);
+                        if (FlowController.isEnableFlowControl()) {
+                            int currentWritingSize = con.getWritingSize().addAndGet(-written);
+                            con.stopFlowControl(currentWritingSize);
+                        }
                     } else {
                         break;
                     }
@@ -265,8 +273,6 @@ public class NIOSocketWR extends SocketWR {
                 con.recycle(buffer);
                 throw e;
             }
-
-            flowControlCount = FlowController.tryRemoveFlowControl(flowControlCount, con);
 
             if (quitFlag) {
                 con.recycle(buffer);

@@ -2,6 +2,7 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowControllerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -27,37 +28,42 @@ public final class FlowControlSet {
     public static void execute(Matcher set, ManagerService service) {
 
         String enable = set.group(2);
-        String flowControlStart = set.group(4);
-        String flowControlEnd = set.group(6);
+        String flowControlHighLevel = set.group(4);
+        String flowControlLowLevel = set.group(6);
 
-        if (enable == null && flowControlStart == null && flowControlEnd == null) {
+        if (enable == null && flowControlHighLevel == null && flowControlLowLevel == null) {
             service.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the flow_control command");
             return;
         }
-        FlowControllerConfig oldConfig = FlowController.getFlowCotrollerConfig();
-        //create a new FlowCotrollerConfig
+        boolean enableFlowControl = Boolean.parseBoolean(enable);
+        if (enableFlowControl && SystemConfig.getInstance().getUsingAIO() == 1) {
+            service.writeErrMessage(ErrorCode.ER_YES, "flow control is not support AIO, please check property [usingAIO] of your bootstrap.cnf");
+            return;
+        }
+        FlowControllerConfig oldConfig = FlowController.getFlowControllerConfig();
+        //create a new FlowControllerConfig
         FlowControllerConfig config =
-                new FlowControllerConfig(enable == null ? oldConfig.isEnableFlowControl() : Boolean.valueOf(enable),
-                        flowControlStart == null ? oldConfig.getStart() : Integer.parseInt(flowControlStart),
-                        flowControlEnd == null ? oldConfig.getEnd() : Integer.parseInt(flowControlEnd));
+                new FlowControllerConfig(enable == null ? oldConfig.isEnableFlowControl() : enableFlowControl,
+                        flowControlHighLevel == null ? oldConfig.getHighWaterLevel() : Integer.parseInt(flowControlHighLevel),
+                        flowControlLowLevel == null ? oldConfig.getLowWaterLevel() : Integer.parseInt(flowControlLowLevel));
 
         //check if the config is legal
-        if (config.getEnd() < 0 || config.getStart() <= 0) {
-            service.writeErrMessage(ErrorCode.ER_YES, "The flowControlStartThreshold & flowControlStopThreshold must be positive integer");
+        if (config.getLowWaterLevel() < 0 || config.getHighWaterLevel() <= 0) {
+            service.writeErrMessage(ErrorCode.ER_YES, "The flowControlHighLevel & flowControlLowLevel must be positive integer");
             return;
-        } else if (config.getEnd() >= config.getStart()) {
-            service.writeErrMessage(ErrorCode.ER_YES, "The flowControlStartThreshold must bigger than flowControlStopThreshold");
+        } else if (config.getLowWaterLevel() >= config.getHighWaterLevel()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "The flowControlHighLevel must bigger than flowControlLowLevel");
             return;
         }
         try {
             List<Pair<String, String>> props = new ArrayList<>();
             props.add(new Pair<>("enableFlowControl", String.valueOf(config.isEnableFlowControl())));
-            props.add(new Pair<>("flowControlStartThreshold", Integer.toString(config.getStart())));
-            props.add(new Pair<>("flowControlStopThreshold", Integer.toString(config.getEnd())));
+            props.add(new Pair<>("flowControlHighLevel", Integer.toString(config.getHighWaterLevel())));
+            props.add(new Pair<>("flowControlLowLevel", Integer.toString(config.getLowWaterLevel())));
             WriteDynamicBootstrap.getInstance().changeValue(props);
         } catch (IOException e) {
             String msg = "flow_control @@set failed";
-            LOGGER.warn(String.valueOf(service) + " " + msg, e);
+            LOGGER.warn(service + " " + msg, e);
             service.writeErrMessage(ErrorCode.ER_YES, msg);
             return;
         }

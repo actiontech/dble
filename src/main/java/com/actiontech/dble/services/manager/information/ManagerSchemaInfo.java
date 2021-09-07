@@ -68,6 +68,8 @@ public final class ManagerSchemaInfo {
         registerTable(new DbleXaRecover());
         // sampling
         registerTable(new SqlLog());
+
+        registerTable(new DbleFlowControl());
     }
 
     private void initViews() {

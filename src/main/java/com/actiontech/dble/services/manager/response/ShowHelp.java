@@ -167,7 +167,7 @@ public final class ShowHelp {
 
         HELPS.put("flow_control @@show", "Show the current config of the flow control");
         HELPS.put("flow_control @@list", "List all the connection be flow-control now");
-        HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlStart = ?] [flowControlEnd = ?]", "Change the config of flow control");
+        HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlHighLevel = ?] [flowControlLowLevel = ?]", "Change the config of flow control");
 
         //dryrun
         HELPS.put("dryrun", "Dry run to check config before reload xml");

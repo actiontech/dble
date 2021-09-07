@@ -1,5 +1,6 @@
 package com.actiontech.dble.config.model.db;
 
+import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,25 +25,14 @@ public class PoolConfig {
     private volatile boolean testOnReturn = false;
     private volatile boolean testWhileIdle = false;
     private volatile long timeBetweenEvictionRunsMillis = HOUSEKEEPING_PERIOD_MS;
-    private volatile int numTestsPerEvictionRun = 3;
     private volatile long evictorShutdownTimeoutMillis = DEFAULT_SHUTDOWN_TIMEOUT;
     private volatile long idleTimeout = DEFAULT_IDLE_TIMEOUT;
     private volatile long heartbeatPeriodMillis = DEFAULT_HEARTBEAT_PERIOD;
 
-    public PoolConfig() {
-    }
+    private volatile int flowHighLevel = SystemConfig.FLOW_CONTROL_HIGH_LEVEL;
+    private volatile int flowLowLevel = SystemConfig.FLOW_CONTROL_LOW_LEVEL;
 
-    public PoolConfig(long connectionTimeout, long connectionHeartbeatTimeout, boolean testOnCreate, boolean testOnBorrow, boolean testOnReturn, boolean testWhileIdle, long timeBetweenEvictionRunsMillis, long evictorShutdownTimeoutMillis, long idleTimeout, long heartbeatPeriodMillis) {
-        this.connectionTimeout = connectionTimeout;
-        this.connectionHeartbeatTimeout = connectionHeartbeatTimeout;
-        this.testOnCreate = testOnCreate;
-        this.testOnBorrow = testOnBorrow;
-        this.testOnReturn = testOnReturn;
-        this.testWhileIdle = testWhileIdle;
-        this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
-        this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
-        this.idleTimeout = idleTimeout;
-        this.heartbeatPeriodMillis = heartbeatPeriodMillis;
+    public PoolConfig() {
     }
 
     /**
@@ -74,6 +64,7 @@ public class PoolConfig {
      * @see #getTestOnCreate
      * @since 2.2
      */
+    @SuppressWarnings("unused")
     public final void setTestOnCreate(final boolean testOnCreate) {
         this.testOnCreate = testOnCreate;
     }
@@ -107,6 +98,7 @@ public class PoolConfig {
      *                     <code>borrowObject()</code> method
      * @see #getTestOnBorrow
      */
+    @SuppressWarnings("unused")
     public final void setTestOnBorrow(final boolean testOnBorrow) {
         this.testOnBorrow = testOnBorrow;
     }
@@ -138,6 +130,7 @@ public class PoolConfig {
      *                     <code>returnObject()</code> method
      * @see #getTestOnReturn
      */
+    @SuppressWarnings("unused")
     public final void setTestOnReturn(final boolean testOnReturn) {
         this.testOnReturn = testOnReturn;
     }
@@ -172,6 +165,7 @@ public class PoolConfig {
      * @see #getTestWhileIdle
      * @see #setTimeBetweenEvictionRunsMillis
      */
+    @SuppressWarnings("unused")
     public final void setTestWhileIdle(final boolean testWhileIdle) {
         this.testWhileIdle = testWhileIdle;
     }
@@ -198,20 +192,13 @@ public class PoolConfig {
      * @param timeBetweenEvictionRunsMillis number of milliseconds to sleep between evictor runs
      * @see #getTimeBetweenEvictionRunsMillis
      */
+    @SuppressWarnings("unused")
     public final void setTimeBetweenEvictionRunsMillis(final long timeBetweenEvictionRunsMillis) {
         if (timeBetweenEvictionRunsMillis <= 0) {
             LOGGER.warn(String.format(WARNING_FORMAT, "timeBetweenEvictionRunsMillis", timeBetweenEvictionRunsMillis, this.timeBetweenEvictionRunsMillis));
         } else {
             this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
         }
-    }
-
-    public final int getNumTestsPerEvictionRun() {
-        return numTestsPerEvictionRun;
-    }
-
-    public final void setNumTestsPerEvictionRun(final int numTestsPerEvictionRun) {
-        this.numTestsPerEvictionRun = numTestsPerEvictionRun;
     }
 
     /**
@@ -235,6 +222,7 @@ public class PoolConfig {
      *                                     will be used while waiting for the
      *                                     Evictor to shut down.
      */
+    @SuppressWarnings("unused")
     public final void setEvictorShutdownTimeoutMillis(final long evictorShutdownTimeoutMillis) {
         if (evictorShutdownTimeoutMillis <= 0) {
             LOGGER.warn(String.format(WARNING_FORMAT, "evictorShutdownTimeoutMillis", evictorShutdownTimeoutMillis, this.evictorShutdownTimeoutMillis));
@@ -258,7 +246,7 @@ public class PoolConfig {
     public long getConnectionHeartbeatTimeout() {
         return connectionHeartbeatTimeout;
     }
-
+    @SuppressWarnings("unused")
     public void setConnectionHeartbeatTimeout(long connectionHeartbeatTimeout) {
         if (connectionHeartbeatTimeout <= 0) {
             LOGGER.warn(String.format(WARNING_FORMAT, "connectionHeartbeatTimeout", connectionHeartbeatTimeout, this.connectionHeartbeatTimeout));
@@ -270,7 +258,7 @@ public class PoolConfig {
     public long getIdleTimeout() {
         return idleTimeout;
     }
-
+    @SuppressWarnings("unused")
     public void setIdleTimeout(long idleTimeout) {
         if (idleTimeout < 0) {
             LOGGER.warn(String.format(WARNING_FORMAT, "idleTimeout", idleTimeout, this.idleTimeout));
@@ -282,7 +270,7 @@ public class PoolConfig {
     public long getHeartbeatPeriodMillis() {
         return heartbeatPeriodMillis;
     }
-
+    @SuppressWarnings("unused")
     public void setHeartbeatPeriodMillis(long heartbeatPeriodMillis) {
         if (heartbeatPeriodMillis <= 0) {
             LOGGER.warn(String.format(WARNING_FORMAT, "heartbeatPeriodMillis", heartbeatPeriodMillis, this.heartbeatPeriodMillis));
@@ -291,6 +279,29 @@ public class PoolConfig {
         }
     }
 
+    public int getFlowHighLevel() {
+        return flowHighLevel;
+    }
+    @SuppressWarnings("unused")
+    public void setFlowHighLevel(int flowHighLevel) {
+        if (flowHighLevel <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "flowHighLevel", flowHighLevel, this.flowHighLevel));
+        } else {
+            this.flowHighLevel = flowHighLevel;
+        }
+    }
+
+    public int getFlowLowLevel() {
+        return flowLowLevel;
+    }
+    @SuppressWarnings("unused")
+    public void setFlowLowLevel(int flowLowLevel) {
+        if (flowLowLevel <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "flowLowLevel", flowLowLevel, this.flowLowLevel));
+        } else {
+            this.flowLowLevel = flowLowLevel;
+        }
+    }
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -305,9 +316,10 @@ public class PoolConfig {
         if (testOnReturn != that.testOnReturn) return false;
         if (testWhileIdle != that.testWhileIdle) return false;
         if (timeBetweenEvictionRunsMillis != that.timeBetweenEvictionRunsMillis) return false;
-        if (numTestsPerEvictionRun != that.numTestsPerEvictionRun) return false;
         if (evictorShutdownTimeoutMillis != that.evictorShutdownTimeoutMillis) return false;
         if (idleTimeout != that.idleTimeout) return false;
+        if (flowHighLevel != that.flowHighLevel) return false;
+        if (flowLowLevel != that.flowLowLevel) return false;
         return heartbeatPeriodMillis == that.heartbeatPeriodMillis;
     }
 

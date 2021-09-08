@@ -17,7 +17,6 @@ import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.PropertiesUtil;
@@ -51,7 +50,7 @@ public final class UcoreSender extends AbstractConsulSender {
     private static final String SOURCE_COMPONENT_TYPE = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
-    private volatile boolean detached = false;
+    private volatile boolean connectionDetached = false;
     @Override
     public void initConInfo() {
         try {
@@ -557,7 +556,7 @@ public final class UcoreSender extends AbstractConsulSender {
     }
 
     private List<String> getAvailableIpList() {
-        if (detached) {
+        if (connectionDetached) {
             return new ArrayList<String>();
         }
         return ipList;
@@ -575,9 +574,8 @@ public final class UcoreSender extends AbstractConsulSender {
 
     @Override
     public void detachCluster() throws Exception {
-        detached = true;
+        connectionDetached = true;
         OnlineStatus.getInstance().shutdownClear();
-        CustomMySQLHa.getInstance().stop(false);
         LOGGER.info("cluster detach begin close connection");
         stopConnection();
 
@@ -587,7 +585,7 @@ public final class UcoreSender extends AbstractConsulSender {
     @Override
     public boolean isDetach() {
 
-        return detached;
+        return connectionDetached;
     }
 
     @Override
@@ -616,17 +614,16 @@ public final class UcoreSender extends AbstractConsulSender {
             throw new IllegalStateException("all cluster connect error");
         }
 
-        detached = false;
+        connectionDetached = false;
         LOGGER.info("cluster attach begin rebuild online information");
         if (!OnlineStatus.getInstance().rebuildOnline()) {
             ((ManagedChannel) stub.getChannel()).shutdownNow();
             throw new IllegalStateException("can't create online information to ucore. ");
         }
-        CustomMySQLHa.getInstance().start();
     }
 
     public void setStubIfPossible(UcoreGrpc.UcoreBlockingStub stubTemp) {
-        if (detached) {
+        if (connectionDetached) {
             return;
         }
         this.stub = stubTemp;

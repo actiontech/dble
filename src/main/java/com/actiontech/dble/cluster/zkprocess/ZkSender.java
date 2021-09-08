@@ -17,7 +17,6 @@ import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
-import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.ZKUtils;
@@ -177,7 +176,6 @@ public class ZkSender implements ClusterSender {
                 cache.close();
             }
             OnlineStatus.getInstance().shutdownClear();
-            CustomMySQLHa.getInstance().stop(false);
             if (SequenceManager.getHandler() instanceof IncrSequenceZKHandler) {
                 ((IncrSequenceZKHandler) SequenceManager.getHandler()).detach();
             }
@@ -204,7 +202,6 @@ public class ZkSender implements ClusterSender {
                 ((IncrSequenceZKHandler) SequenceManager.getHandler()).attach();
             }
             ZKUtils.recreateCaches();
-            CustomMySQLHa.getInstance().start();
 
 
         }

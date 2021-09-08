@@ -3,24 +3,24 @@ package com.actiontech.dble.config;
 public class FlowControllerConfig {
 
     private final boolean enableFlowControl;
-    private final int start;
-    private final int end;
+    private final int highWaterLevel;
+    private final int lowWaterLevel;
 
-    public FlowControllerConfig(boolean enableFlowControl, int start, int end) {
+    public FlowControllerConfig(boolean enableFlowControl, int highWaterLevel, int lowWaterLevel) {
         this.enableFlowControl = enableFlowControl;
-        this.start = start;
-        this.end = end;
+        this.highWaterLevel = highWaterLevel;
+        this.lowWaterLevel = lowWaterLevel;
     }
 
     public boolean isEnableFlowControl() {
         return enableFlowControl;
     }
 
-    public int getStart() {
-        return start;
+    public int getHighWaterLevel() {
+        return highWaterLevel;
     }
 
-    public int getEnd() {
-        return end;
+    public int getLowWaterLevel() {
+        return lowWaterLevel;
     }
 }

@@ -14,23 +14,26 @@ public final class ManagerParse {
     private ManagerParse() {
     }
 
+    public static final int MAX_READ_SEQUENCE = 10;
+
     public static final int OTHER = -1;
+    // for read operation,max is 10
     public static final int SELECT = 1;
     public static final int SET = 2;
     public static final int SHOW = 3;
     public static final int DESCRIBE = 4;
-    public static final int KILL_CONN = 5;
-    public static final int STOP = 6;
-    public static final int RELOAD = 7;
-    public static final int OFFLINE = 9;
-    public static final int ONLINE = 10;
-    public static final int CHECK = 11;
-    public static final int PAUSE = 14;
-    public static final int RESUME = 15;
-    public static final int CREATE_DB = 16;
-    public static final int DRY_RUN = 17;
-    public static final int ENABLE = 18;
-    public static final int DISABLE = 19;
+    public static final int USE = 5;
+
+    // for non-read operation
+    public static final int STOP = 11;
+    public static final int RELOAD = 12;
+    public static final int OFFLINE = 13;
+    public static final int ONLINE = 14;
+    public static final int CHECK = 15;
+    public static final int PAUSE = 16;
+    public static final int RESUME = 17;
+    public static final int CREATE_DB = 18;
+    public static final int DRY_RUN = 19;
     public static final int KILL_DDL_LOCK = 20;
     public static final int KILL_XA_SESSION = 21;
     public static final int RELEASE_RELOAD_METADATA = 22;
@@ -42,12 +45,15 @@ public final class ManagerParse {
     public static final int DELETE = 28;
     public static final int UPDATE = 29;
     public static final int FRESH_CONN = 30;
-    public static final int USE = 31;
+    public static final int KILL_CONN = 31;
     public static final int TRUNCATE_TABLE = 32;
     public static final int KILL_LOAD_DATA = 33;
     public static final int START = 34;
     public static final int DROP_STATISTIC_QUEUE_USAGE = 35;
-    public static final int CLUSTER = 36;
+    
+    public static final int ENABLE = 36;
+    public static final int DISABLE = 37;
+    public static final int CLUSTER = 38;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {

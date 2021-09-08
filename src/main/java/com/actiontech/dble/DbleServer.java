@@ -221,6 +221,10 @@ public final class DbleServer {
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
+
+        FlowController.init();
+        LOGGER.info("===================================flow controller finish===================================");
+
         this.config.testConnection();
         LOGGER.info("==========================================Test connection finish==================================");
 
@@ -243,10 +247,6 @@ public final class DbleServer {
 
         SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
         LOGGER.info("===================================Sequence manager init finish===================================");
-
-
-        FlowController.init();
-        LOGGER.info("===================================flow controller finish===================================");
 
         LOGGER.info("==============================Pull metaData from MySQL start======================================");
         pullVarAndMeta();

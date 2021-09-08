@@ -6,11 +6,8 @@
 
 package com.actiontech.dble.cluster.logic;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public final class ClusterLogic {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClusterLogic.class);
+
     private static final BinlogClusterLogic BINLOG_CLUSTER_LOGIC = new BinlogClusterLogic();
     private static final ConfigClusterLogic CONFIG_CLUSTER_LOGIC = new ConfigClusterLogic();
     private static final DDLClusterLogic DDL_CLUSTER_LOGIC = new DDLClusterLogic();
@@ -18,13 +15,11 @@ public final class ClusterLogic {
     private static final MetaClusterLogic META_CLUSTER_LOGIC = new MetaClusterLogic();
     private static final PauseResumeClusterLogic PAUSE_RESUME_CLUSTER_LOGIC = new PauseResumeClusterLogic();
     private static final ViewClusterLogic VIEW_CLUSTER_LOGIC = new ViewClusterLogic();
-    public static final OnlineClusterLogic ONLINE_CLUSTER_LOGIC = new OnlineClusterLogic();
-    public static final GeneralClusterLogic GENERAL_CLUSTER_LOGIC = new GeneralClusterLogic();
-
+    private static final OnlineClusterLogic ONLINE_CLUSTER_LOGIC = new OnlineClusterLogic();
+    private static final GeneralClusterLogic GENERAL_CLUSTER_LOGIC = new GeneralClusterLogic();
 
     private ClusterLogic() {
     }
-
 
     public static GeneralClusterLogic forGeneral() {
         return GENERAL_CLUSTER_LOGIC;
@@ -58,15 +53,12 @@ public final class ClusterLogic {
         return ONLINE_CLUSTER_LOGIC;
     }
 
-
     public static PauseResumeClusterLogic forPauseResume() {
         return PAUSE_RESUME_CLUSTER_LOGIC;
     }
 
-
     public static ViewClusterLogic forView() {
         return VIEW_CLUSTER_LOGIC;
     }
-
 
 }

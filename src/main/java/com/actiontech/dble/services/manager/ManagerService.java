@@ -83,7 +83,7 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
         connection.close(reason);
     }
 
-    public String getCommand(byte[] data, CharsetNames charsetName) throws UnsupportedEncodingException {
+    private String getCommand(byte[] data, CharsetNames charsetName) throws UnsupportedEncodingException {
         String sql = null;
         try {
             MySQLMessage mm = new MySQLMessage(data);
@@ -113,7 +113,7 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
         return session;
     }
 
-    public void initDB(byte[] data) {
+    private void initDB(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
         String db = null;

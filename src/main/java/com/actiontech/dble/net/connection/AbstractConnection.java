@@ -10,6 +10,7 @@ import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by szf on 2020/6/15.
@@ -57,7 +59,7 @@ public abstract class AbstractConnection implements Connection {
     protected volatile IOProcessor processor;
     protected volatile String closeReason;
     protected volatile ByteBuffer readBuffer;
-    private volatile boolean flowControlled;
+    protected volatile boolean frontWriteFlowControlled = false;
     protected int readBufferChunk;
     protected final long startupTime;
     protected volatile long lastReadTime;
@@ -74,6 +76,7 @@ public abstract class AbstractConnection implements Connection {
     protected final ConcurrentLinkedQueue<WriteOutTask> writeQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> decompressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
+    protected final AtomicInteger writingSize = new AtomicInteger(0);
 
     public AbstractConnection(NetworkChannel channel, SocketWR socketWR) {
         this.channel = channel;
@@ -179,24 +182,22 @@ public abstract class AbstractConnection implements Connection {
         return isPrepareClosed && (System.currentTimeMillis() - prepareClosedTime >= SystemConfig.getInstance().getCloseTimeout());
     }
 
-    public boolean pushServiceTask(@Nonnull ServiceTask serviceTask) {
+    public void pushServiceTask(@Nonnull ServiceTask serviceTask) {
         if (serviceTask.getType().equals(ServiceTaskType.NORMAL)) {
             IODelayProvider.beforePushServiceTask(serviceTask, service);
         } else {
             InnerServiceTask innerServiceTask = (InnerServiceTask) serviceTask;
             IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
             if (isClosed()) {
-                if (innerServiceTask.getType().equals(ServiceTaskType.CLOSE)) {
-                    // repeat close. May close by quit cmd before. just ignore
-                } else {
+                if (!innerServiceTask.getType().equals(ServiceTaskType.CLOSE)) {
                     LOGGER.info("can't delay process the service task ,connection is closed already. just ignored.  {}", innerServiceTask.getType());
+                    // else repeat close. May close by quit cmd before. just ignore
                 }
-                return false;
+                return;
             }
         }
 
         service.handle(serviceTask);
-        return true;
     }
 
     private void handle(ByteBuffer dataBuffer) {
@@ -367,6 +368,7 @@ public abstract class AbstractConnection implements Connection {
         return true;
     }
 
+
     @Nonnull
     public synchronized AbstractService getService() {
         return service;
@@ -399,17 +401,16 @@ public abstract class AbstractConnection implements Connection {
     }
 
 
-    public final boolean registerWrite(ByteBuffer buffer) {
+    public final void registerWrite(ByteBuffer buffer) {
 
         // if async writeDirectly finished event got lock before me ,then writing
         // flag is set false but not start a writeDirectly request
         // so we check again
         try {
-            return this.socketWR.registerWrite(buffer);
+            this.socketWR.registerWrite(buffer);
         } catch (Exception e) {
             LOGGER.info("writeDirectly err:", e);
             this.pushServiceTask(ServiceTaskFactory.getInstance(this.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
-            return false;
         }
     }
 
@@ -425,13 +426,25 @@ public abstract class AbstractConnection implements Connection {
             this.cleanup();
             return;
         }
-
+        int bufferSize;
+        WriteOutTask writeTask;
         if (isSupportCompress) {
             ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
-            writeQueue.offer(new WriteOutTask(newBuffer, false));
+            writeTask = new WriteOutTask(newBuffer, false);
+            bufferSize = newBuffer.position();
         } else {
-            writeQueue.offer(new WriteOutTask(buffer, false));
+            writeTask = new WriteOutTask(buffer, false);
+            bufferSize = buffer == null ? 0 : buffer.position();
         }
+
+        if (FlowController.isEnableFlowControl()) {
+            //if flowControl after push to queue, maybe the order is that:
+            // thread1:push;thread2:pop,stop flow-control;thread1:start flow-control
+            // and then queue is empty and no new data can be received
+            int currentWritingSize = writingSize.addAndGet(bufferSize);
+            startFlowControl(currentWritingSize);
+        }
+        writeQueue.offer(writeTask);
 
         // if async writeDirectly finished event got lock before me ,then writing
         // flag is set false but not start a writeDirectly request
@@ -481,6 +494,7 @@ public abstract class AbstractConnection implements Connection {
         while ((task = writeQueue.poll()) != null) {
             recycle(task.getBuffer());
         }
+        writingSize.set(0);
     }
 
     public void writeStatistics(int outBytes) {
@@ -520,7 +534,7 @@ public abstract class AbstractConnection implements Connection {
             if (e.getMessage() == null) {
                 LOGGER.info("cause exception while read , service is {}", getService(), e);
             } else {
-                LOGGER.debug("cause exception while read {}, service is {}", e.toString(), getService());
+                LOGGER.debug("cause exception while read {}, service is {}", e.getMessage(), getService());
             }
 
             graceClosedReasons.add(e.toString());
@@ -538,17 +552,17 @@ public abstract class AbstractConnection implements Connection {
         this.id = id;
     }
 
-    public boolean isFlowControlled() {
-        return flowControlled;
+    public boolean isFrontWriteFlowControlled() {
+        return frontWriteFlowControlled;
     }
 
-    public void setFlowControlled(boolean flowControlled) {
-        this.flowControlled = flowControlled;
+    public void setFrontWriteFlowControlled(boolean frontWriteFlowControlled) {
+        this.frontWriteFlowControlled = frontWriteFlowControlled;
     }
 
-    public abstract void startFlowControl();
+    public abstract void startFlowControl(int currentWritingSize);
 
-    public abstract void stopFlowControl();
+    public abstract void stopFlowControl(int currentWritingSize);
 
     public int getLocalPort() {
         return localPort;
@@ -556,6 +570,10 @@ public abstract class AbstractConnection implements Connection {
 
     public void setLocalPort(int localPort) {
         this.localPort = localPort;
+    }
+
+    public AtomicInteger getWritingSize() {
+        return writingSize;
     }
 
     public String getHost() {
@@ -576,10 +594,6 @@ public abstract class AbstractConnection implements Connection {
 
     public synchronized void setService(@Nonnull AbstractService service) {
         this.service = service;
-    }
-
-    public int getReadBufferChunk() {
-        return readBufferChunk;
     }
 
     public void setReadBufferChunk(int readBufferChunk) {

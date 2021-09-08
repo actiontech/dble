@@ -19,8 +19,10 @@ import static com.actiontech.dble.config.model.db.PoolConfig.DEFAULT_IDLE_TIMEOU
 
 
 public final class SystemConfig {
-    private ProblemReporter problemReporter = StartProblemReporter.getInstance();
+    private final ProblemReporter problemReporter = StartProblemReporter.getInstance();
     private static final SystemConfig INSTANCE = new SystemConfig();
+    public static final int FLOW_CONTROL_LOW_LEVEL = 256 * 1024;
+    public static final int FLOW_CONTROL_HIGH_LEVEL = 4096 * 1024;
 
     public static SystemConfig getInstance() {
         return INSTANCE;
@@ -173,8 +175,8 @@ public final class SystemConfig {
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
 
     private boolean enableFlowControl = false;
-    private int flowControlStartThreshold = 4096;
-    private int flowControlStopThreshold = 256;
+    private int flowControlHighLevel = FLOW_CONTROL_HIGH_LEVEL;
+    private int flowControlLowLevel = FLOW_CONTROL_LOW_LEVEL;
     private boolean useOuterHa = true;
     private String traceEndPoint = null;
     private String fakeMySQLVersion = "5.7.21";
@@ -198,7 +200,7 @@ public final class SystemConfig {
     public int getSamplingRate() {
         return samplingRate;
     }
-
+    @SuppressWarnings("unused")
     public void setSamplingRate(int samplingRate) {
         if (samplingRate >= 0 && samplingRate <= 100) {
             this.samplingRate = samplingRate;
@@ -210,7 +212,7 @@ public final class SystemConfig {
     public int getSqlLogTableSize() {
         return sqlLogTableSize;
     }
-
+    @SuppressWarnings("unused")
     public void setSqlLogTableSize(int sqlLogTableSize) {
         if (sqlLogTableSize > 0) {
             this.sqlLogTableSize = sqlLogTableSize;
@@ -223,7 +225,7 @@ public final class SystemConfig {
     public int getEnableStatistic() {
         return enableStatistic;
     }
-
+    @SuppressWarnings("unused")
     public void setEnableStatistic(int enableStatistic) {
         if (enableStatistic >= 0 && enableStatistic <= 1) {
             this.enableStatistic = enableStatistic;
@@ -235,7 +237,7 @@ public final class SystemConfig {
     public int getAssociateTablesByEntryByUserTableSize() {
         return associateTablesByEntryByUserTableSize;
     }
-
+    @SuppressWarnings("unused")
     public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
         if (associateTablesByEntryByUserTableSize < 1) {
             problemReporter.warn(String.format(WARNING_FORMAT, "associateTablesByEntryByUserTableSize", associateTablesByEntryByUserTableSize, this.associateTablesByEntryByUserTableSize));
@@ -247,7 +249,7 @@ public final class SystemConfig {
     public int getFrontendByBackendByEntryByUserTableSize() {
         return frontendByBackendByEntryByUserTableSize;
     }
-
+    @SuppressWarnings("unused")
     public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
         if (frontendByBackendByEntryByUserTableSize < 1) {
             problemReporter.warn(String.format(WARNING_FORMAT, "frontendByBackendByEntryByUserTableSize", frontendByBackendByEntryByUserTableSize, this.frontendByBackendByEntryByUserTableSize));
@@ -259,7 +261,7 @@ public final class SystemConfig {
     public int getTableByUserByEntryTableSize() {
         return tableByUserByEntryTableSize;
     }
-
+    @SuppressWarnings("unused")
     public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
         if (tableByUserByEntryTableSize < 1) {
             problemReporter.warn(String.format(WARNING_FORMAT, "tableByUserByEntryTableSize", tableByUserByEntryTableSize, this.tableByUserByEntryTableSize));
@@ -271,7 +273,7 @@ public final class SystemConfig {
     public int getStatisticQueueSize() {
         return statisticQueueSize;
     }
-
+    @SuppressWarnings("unused")
     public void setStatisticQueueSize(int statisticQueueSize) {
         if (statisticQueueSize < 1 || Integer.bitCount(statisticQueueSize) != 1) {
             problemReporter.warn("Property [ statisticQueueSize ] '" + statisticQueueSize + "' in bootstrap.cnf is illegal, size must not be less than 1 and must be a power of 2, you may need use the default value " + this.statisticQueueSize + " replaced");
@@ -283,7 +285,7 @@ public final class SystemConfig {
     public int getEnableGeneralLog() {
         return enableGeneralLog;
     }
-
+    @SuppressWarnings("unused")
     public void setEnableGeneralLog(int enableGeneralLog) {
         if (enableGeneralLog >= 0 && enableGeneralLog <= 1) {
             this.enableGeneralLog = enableGeneralLog;
@@ -295,7 +297,7 @@ public final class SystemConfig {
     public String getGeneralLogFile() {
         return generalLogFile;
     }
-
+    @SuppressWarnings("unused")
     public void setGeneralLogFile(String generalLogFile) {
         this.generalLogFile = generalLogFile;
     }
@@ -303,7 +305,7 @@ public final class SystemConfig {
     public int getGeneralLogFileSize() {
         return generalLogFileSize;
     }
-
+    @SuppressWarnings("unused")
     public void setGeneralLogFileSize(int generalLogFileSize) {
         if (generalLogFileSize > 0) {
             this.generalLogFileSize = generalLogFileSize;
@@ -315,7 +317,7 @@ public final class SystemConfig {
     public int getGeneralLogQueueSize() {
         return generalLogQueueSize;
     }
-
+    @SuppressWarnings("unused")
     public void setGeneralLogQueueSize(int generalLogQueueSize) {
         if (generalLogQueueSize < 1 || Integer.bitCount(generalLogQueueSize) != 1) {
             problemReporter.warn("Property [ generalLogQueueSize ] '" + generalLogQueueSize + "' in bootstrap.cnf is illegal, size must not be less than 1 and must be a power of 2, you may need use the default value " + this.generalLogQueueSize + " replaced");
@@ -466,7 +468,7 @@ public final class SystemConfig {
     public boolean isCapClientFoundRows() {
         return capClientFoundRows;
     }
-
+    @SuppressWarnings("unused")
     public void setCapClientFoundRows(boolean capClientFoundRows) {
         this.capClientFoundRows = capClientFoundRows;
     }
@@ -1302,22 +1304,30 @@ public final class SystemConfig {
         this.enableFlowControl = enableFlowControl;
     }
 
-    public int getFlowControlStartThreshold() {
-        return flowControlStartThreshold;
+    public int getFlowControlHighLevel() {
+        return flowControlHighLevel;
     }
 
     @SuppressWarnings("unused")
-    public void setFlowControlStartThreshold(int flowControlStartThreshold) {
-        this.flowControlStartThreshold = flowControlStartThreshold;
+    public void setFlowControlHighLevel(int flowControlHighLevel) {
+        if (flowControlHighLevel >= 0) {
+            this.flowControlHighLevel = flowControlHighLevel;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "flowControlHighLevel", flowControlHighLevel, this.flowControlHighLevel));
+        }
     }
 
-    public int getFlowControlStopThreshold() {
-        return flowControlStopThreshold;
+    public int getFlowControlLowLevel() {
+        return flowControlLowLevel;
     }
 
     @SuppressWarnings("unused")
-    public void setFlowControlStopThreshold(int flowControlStopThreshold) {
-        this.flowControlStopThreshold = flowControlStopThreshold;
+    public void setFlowControlLowLevel(int flowControlLowLevel) {
+        if (flowControlLowLevel >= 0) {
+            this.flowControlLowLevel = flowControlLowLevel;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "flowControlLowLevel", flowControlLowLevel, this.flowControlLowLevel));
+        }
     }
 
 
@@ -1352,7 +1362,7 @@ public final class SystemConfig {
     public int getMaxHeapTableSize() {
         return maxHeapTableSize;
     }
-
+    @SuppressWarnings("unused")
     public void setMaxHeapTableSize(int maxHeapTableSize) {
         if (maxHeapTableSize >= 0) {
             this.maxHeapTableSize = maxHeapTableSize;
@@ -1364,7 +1374,7 @@ public final class SystemConfig {
     public boolean isEnableCursor() {
         return enableCursor;
     }
-
+    @SuppressWarnings("unused")
     public void setEnableCursor(boolean enableCursor) {
         this.enableCursor = enableCursor;
     }
@@ -1380,7 +1390,7 @@ public final class SystemConfig {
     public int getEnableBatchLoadData() {
         return enableBatchLoadData;
     }
-
+    @SuppressWarnings("unused")
     public void setEnableBatchLoadData(int enableBatchLoadData) {
         if (enableBatchLoadData >= 0 && enableBatchLoadData <= 1) {
             this.enableBatchLoadData = enableBatchLoadData;
@@ -1392,7 +1402,7 @@ public final class SystemConfig {
     public boolean isInSubQueryTransformToJoin() {
         return inSubQueryTransformToJoin;
     }
-
+    @SuppressWarnings("unused")
     public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
         this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
     }
@@ -1400,7 +1410,7 @@ public final class SystemConfig {
     public int getGroupConcatMaxLen() {
         return groupConcatMaxLen;
     }
-
+    @SuppressWarnings("unused")
     public void setGroupConcatMaxLen(int maxLen) {
         if (maxLen >= 0) {
             this.groupConcatMaxLen = maxLen;
@@ -1488,8 +1498,8 @@ public final class SystemConfig {
                 ",enableBatchLoadData=" + enableBatchLoadData +
                 ", xaRetryCount=" + xaRetryCount +
                 ", enableFlowControl=" + enableFlowControl +
-                ", flowControlStartThreshold=" + flowControlStartThreshold +
-                ", flowControlStopThreshold=" + flowControlStopThreshold +
+                ", flowControlHighLevel=" + flowControlHighLevel +
+                ", flowControlLowLevel=" + flowControlLowLevel +
                 ", useOuterHa=" + useOuterHa +
                 ", fakeMySQLVersion=" + fakeMySQLVersion +
                 ", traceEndPoint=" + traceEndPoint +

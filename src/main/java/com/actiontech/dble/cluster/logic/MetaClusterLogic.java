@@ -6,19 +6,14 @@
 
 package com.actiontech.dble.cluster.logic;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 /**
  * @author dcy
  * Create Date: 2021-04-30
  */
-public class MetaClusterLogic extends AbstractClusterLogic {
-    private static final Logger LOGGER = LogManager.getLogger(MetaClusterLogic.class);
+class MetaClusterLogic extends AbstractClusterLogic {
 
     MetaClusterLogic() {
         super(ClusterOperation.META);
     }
-
 
 }

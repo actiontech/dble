@@ -142,7 +142,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     private boolean fromSlaveDB;
     private long threadId;
     private HandshakeV10Packet handshake;
-    private boolean isAuthenticated;
+    private volatile boolean isAuthenticated;
     private String user;
     private String password;
     private Object attachment;
@@ -583,7 +583,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             if (value != null) {
                 try {
-                    BigDecimal vl = new BigDecimal(value);
+                    new BigDecimal(value);
                 } catch (NumberFormatException e) {
                     value = "`" + value + "`";
                 }
@@ -772,10 +772,17 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     private synchronized void innerTerminate(String reason) {
         if (!isClosed()) {
             super.close(reason);
-            // heartbeat conn is null
-            if (dbInstance != null) {
-                dbInstance.close(this);
+            // when it happens during the connection authentication phase
+            if (!isAuthenticated) {
+                onConnectFailed(new Exception(reason));
+            } else {
+                // remove the it from the ConnectionPool
+                if (dbInstance != null) {
+                    dbInstance.close(this);
+                }
+                // else: it does not belong to the ConnectionPool, eg: heartbeat connection
             }
+
         }
     }
 

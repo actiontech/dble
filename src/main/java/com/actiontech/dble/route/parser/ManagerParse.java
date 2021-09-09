@@ -50,7 +50,7 @@ public final class ManagerParse {
     public static final int KILL_LOAD_DATA = 33;
     public static final int START = 34;
     public static final int DROP_STATISTIC_QUEUE_USAGE = 35;
-    
+
     public static final int ENABLE = 36;
     public static final int DISABLE = 37;
     public static final int CLUSTER = 38;

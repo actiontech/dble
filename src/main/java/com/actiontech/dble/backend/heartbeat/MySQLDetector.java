@@ -11,6 +11,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -141,7 +142,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             if (variables == null ||
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
                     variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize() ||
-                    Integer.parseInt(variables.getVersion().substring(0, 1)) < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
+                    VersionUtil.getMajorVersion(variables.getVersion()) < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
                 String url = heartbeat.getSource().getConfig().getUrl();
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                 String errMsg;
@@ -149,7 +150,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     errMsg = "GetAndSyncDbInstanceKeyVariables failed";
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
-                } else if (Integer.parseInt(variables.getVersion().substring(0, 1)) < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
+                } else if (VersionUtil.getMajorVersion(variables.getVersion()) < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
                     errMsg = "this dbInstance[=" + url + "]'s version[=" + variables.getVersion() + "] cannot be lower than the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "]";
                 } else {
                     errMsg = "this dbInstance[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();

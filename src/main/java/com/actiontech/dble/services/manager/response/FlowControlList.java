@@ -99,6 +99,9 @@ public final class FlowControlList {
         for (IOProcessor p : processors) {
             for (BackendConnection bc : p.getBackends().values()) {
                 MySQLResponseService mc = bc.getBackendService();
+                if (mc == null) {
+                    continue;
+                }
                 int writeSize = mc.getConnection().getWritingSize().get();
                 int readSize = mc.getReadSize();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);

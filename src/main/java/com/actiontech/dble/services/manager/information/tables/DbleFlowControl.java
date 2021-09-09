@@ -78,6 +78,9 @@ public class DbleFlowControl extends ManagerBaseTable {
             for (IOProcessor p : processors) {
                 for (BackendConnection bc : p.getBackends().values()) {
                     MySQLResponseService mc = bc.getBackendService();
+                    if (mc == null) {
+                        continue;
+                    }
                     int writeSize = mc.getConnection().getWritingSize().get();
                     int readSize = mc.getReadSize();
                     LinkedHashMap<String, String> row = Maps.newLinkedHashMap();

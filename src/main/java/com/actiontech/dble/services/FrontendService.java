@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLExc
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
@@ -65,7 +66,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     protected volatile T userConfig;
     // last execute sql
     protected volatile String executeSql;
-    private final DelayService clusterDelayService = new DelayService(() -> ClusterGeneralConfig.getInstance().isNeedBlocked(), () -> ClusterManageHandler.isDetached() ? "cluster is detached, you should attach cluster first." : null);
+    private final DelayService clusterDelayService = new DelayService(() -> ClusterConfig.getInstance().isClusterEnable() && ClusterGeneralConfig.getInstance().isNeedBlocked(), () -> ClusterManageHandler.isDetached() ? "cluster is detached, you should attach cluster first." : null);
     private boolean needDelayed = false;
     protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId(), this);
 

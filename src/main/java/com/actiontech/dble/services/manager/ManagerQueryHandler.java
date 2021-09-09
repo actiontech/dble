@@ -133,16 +133,19 @@ public class ManagerQueryHandler {
                     FlowControlHandler.handle(sql, service);
                     break;
                 case ManagerParse.INSERT:
+                    service.getClusterDelayService().markDoingOrDelay(true);
                     DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                         (new InsertHandler()).handle(sql, service);
                     });
                     break;
                 case ManagerParse.DELETE:
+                    service.getClusterDelayService().markDoingOrDelay(true);
                     DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                         (new DeleteHandler()).handle(sql, service);
                     });
                     break;
                 case ManagerParse.UPDATE:
+                    service.getClusterDelayService().markDoingOrDelay(true);
                     DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                         (new UpdateHandler()).handle(sql, service);
                     });

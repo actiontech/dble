@@ -81,7 +81,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
-                String warnMsg = "Can't show tables from shardingNode:" + phyShardingNode + "! Maybe the shardingNode is not initialized!";
+                String warnMsg = "Can't show tables from shardingNode:" + phyShardingNode.getName() + "! Maybe the shardingNode is not initialized!";
                 LOGGER.warn(warnMsg);
                 handleFinished();
                 return;

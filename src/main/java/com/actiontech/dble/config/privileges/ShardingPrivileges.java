@@ -8,19 +8,10 @@ package com.actiontech.dble.config.privileges;
 import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserPrivilegesConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class ShardingPrivileges {
-    private static ShardingPrivileges instance = new ShardingPrivileges();
+public final class ShardingPrivileges {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ShardingPrivileges.class);
-
-    public static ShardingPrivileges instance() {
-        return instance;
-    }
-
-    protected ShardingPrivileges() {
+    private ShardingPrivileges() {
 
     }
 

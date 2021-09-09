@@ -563,7 +563,7 @@ public class ShardingConverter {
             AbstractPartitionAlgorithm functionInstance = createFunction(functionName, functionClazz);
             functionInstance.setName(functionName);
             Properties props = new Properties();
-            propertyList.forEach(property -> props.put(property.getName(), property.getValue()));
+            propertyList.forEach(property -> props.setProperty(property.getName(), property.getValue()));
             ParameterMapping.mapping(functionInstance, props, problemReporter);
             if (props.size() > 0) {
                 String[] propItem = new String[props.size()];

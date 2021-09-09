@@ -49,7 +49,6 @@ public final class SelectedProcessor {
      * @return
      */
     private static PlanNode pushSelected(PlanNode qtn, Collection<Item> toPushColumns) {
-        boolean isPushDownNode = false;
         if (PlanUtil.isGlobalOrER(qtn)) {
             // TODO:buildColumnRefers for every child
             List<Item> selList = qtn.getColumnsSelected();
@@ -58,11 +57,10 @@ public final class SelectedProcessor {
                     selList.add(pdSel);
                 }
             }
-            isPushDownNode = true;
-            qtn.setUpRefers(isPushDownNode);
+            qtn.setUpRefers(true);
             return qtn;
         }
-        isPushDownNode = (qtn.type() == PlanNode.PlanNodeType.TABLE || qtn.type() == PlanNode.PlanNodeType.NONAME);
+        boolean isPushDownNode = (qtn.type() == PlanNode.PlanNodeType.TABLE || qtn.type() == PlanNode.PlanNodeType.NONAME);
         if (qtn.type() == PlanNode.PlanNodeType.MERGE) {
             return mergePushSelected((MergeNode) qtn, toPushColumns);
         } else {

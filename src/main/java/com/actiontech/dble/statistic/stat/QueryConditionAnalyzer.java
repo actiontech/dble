@@ -96,7 +96,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
             if (!"NULL".equalsIgnoreCase(cf)) {
 
                 String[] tableColumn = cf.split("&");
-                if (tableColumn != null && tableColumn.length == 2) {
+                if (tableColumn.length == 2) {
                     this.tableName = tableColumn[0];
                     this.columnName = tableColumn[1];
                     this.map.clear();

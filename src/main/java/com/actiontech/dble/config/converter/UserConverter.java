@@ -286,7 +286,7 @@ public class UserConverter {
 
             Properties props2 = new Properties();
             Properties props = new Properties();
-            propertyList.forEach(property -> props.put(property.getName(), property.getValue()));
+            propertyList.forEach(property -> props.setProperty(property.getName(), property.getValue()));
             props2.putAll(props);
             this.blackListConfigMap.put(name, props2);
 

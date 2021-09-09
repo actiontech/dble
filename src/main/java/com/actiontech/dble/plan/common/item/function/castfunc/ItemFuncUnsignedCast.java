@@ -45,7 +45,7 @@ public class ItemFuncUnsignedCast extends ItemIntFunc {
 
     @Override
     public BigInteger valInt() {
-        BigInteger value = BigInteger.ZERO;
+        BigInteger value;
 
         if (args.get(0).castToIntType() == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();

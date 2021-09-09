@@ -224,7 +224,7 @@ public class DBConverter {
             List<String> errorMsgList = Lists.newArrayList();
             for (Property property : propertyList) {
                 checkProperty(errorMsgList, property);
-                props.put(property.getName(), property.getValue());
+                props.setProperty(property.getName(), property.getValue());
             }
             ParameterMapping.mapping(poolConfig, props, problemReporter);
             if (props.size() > 0) {

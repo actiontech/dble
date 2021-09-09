@@ -45,7 +45,7 @@ public class SchemaConfig {
         }
         this.metaShardingNode = buildMetaShardingNodes();
         this.allShardingNodes = buildAllShardingNodes();
-        if (this.allShardingNodes != null && !this.allShardingNodes.isEmpty()) {
+        if (!this.allShardingNodes.isEmpty()) {
             String[] dnArr = new String[this.allShardingNodes.size()];
             dnArr = this.allShardingNodes.toArray(dnArr);
             this.allShardingNodeStrArr = dnArr;
@@ -60,13 +60,13 @@ public class SchemaConfig {
         this.tables = oldSchemaConfig.getLowerCaseTables();
         this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
         buildERMap();
-        this.noSharding = (tables == null || tables.isEmpty());
+        this.noSharding = tables.isEmpty();
         if (noSharding && shardingNode == null) {
             throw new RuntimeException(name + " in noSharding mode schema must have default shardingNode ");
         }
         this.metaShardingNode = buildMetaShardingNodes();
         this.allShardingNodes = buildAllShardingNodes();
-        if (this.allShardingNodes != null && !this.allShardingNodes.isEmpty()) {
+        if (!this.allShardingNodes.isEmpty()) {
             String[] dnArr = new String[this.allShardingNodes.size()];
             dnArr = this.allShardingNodes.toArray(dnArr);
             this.allShardingNodeStrArr = dnArr;

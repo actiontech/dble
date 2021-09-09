@@ -231,7 +231,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             } else {
                 closedConnSet.add(service);
             }
-            this.getSession().getTargetMap().remove(service.getAttachment());
+            this.getSession().getTargetMap().remove((RouteResultsetNode) (service.getAttachment()));
             return false;
         } finally {
             lock.unlock();

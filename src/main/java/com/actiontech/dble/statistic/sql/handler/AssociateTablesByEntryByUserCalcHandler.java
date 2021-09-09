@@ -43,17 +43,15 @@ public class AssociateTablesByEntryByUserCalcHandler implements StatisticDataHan
                         Collections.sort(tableList);
                         String tables = String.join(",", tableList);
                         String key = fEntry.getFrontend().getUserId() + "-" + fEntry.getFrontend().getUser() + "-" + tables;
-                        Record currRecord;
-                        boolean isNew = true;
-                        if (isNew = ((currRecord = records.get(key)) == null)) {
+                        Record currRecord = records.get(key);
+                        boolean isNew = currRecord == null;
+                        if (isNew) {
                             checkEliminate();
                             currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), tables);
                         }
-                        if (currRecord != null) {
-                            currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
-                            if (isNew) {
-                                records.put(key, currRecord);
-                            }
+                        currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
+                        if (isNew) {
+                            records.put(key, currRecord);
                         }
                     }
                 }

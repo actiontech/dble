@@ -120,8 +120,14 @@ public class ItemListDelegate implements List<Item> {
     }
 
     @Override
-    public boolean equals(Object o) {
-        return list.equals(o);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (!(obj instanceof ItemListDelegate))
+            return false;
+        return list.equals(obj);
     }
 
     @Override

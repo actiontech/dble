@@ -46,10 +46,11 @@ public final class ParameterMapping {
                 }
                 continue;
             }
-
-            valStr = valStr.trim();
+            if (valStr == null) {
+                continue;
+            }
             if (!StringUtil.isEmpty(valStr)) {
-                valStr = ConfigUtil.filter(valStr);
+                valStr = ConfigUtil.filter(valStr.trim());
             }
             if (isPrimitiveType(cls)) {
                 try {

@@ -7,8 +7,11 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.general.AbstractConsulSender;
 import com.actiontech.dble.cluster.general.bean.InstanceOnline;
 import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.path.ClusterMetaUtil;
@@ -130,6 +133,10 @@ public final class OnlineStatus {
      * @throws IOException
      */
     public synchronized boolean rebuildOnline() {
+        final ClusterSender sender = ClusterGeneralConfig.getInstance().getClusterSender();
+        if (sender instanceof AbstractConsulSender && ((AbstractConsulSender) sender).isDetach()) {
+            return false;
+        }
         if (onlineInited) {
             if (onlineLock != null) {
                 onlineLock.release();
@@ -159,9 +166,14 @@ public final class OnlineStatus {
     public void shutdownClear() {
         if (onlineLock != null) {
             onlineLock.release();
+            onlineLock = null;
             try {
-                ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
-                        SystemConfig.getInstance().getInstanceName()));
+                if (Boolean.TRUE.equals(ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(
+                        SystemConfig.getInstance().getInstanceName())))) {
+                    ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
+                            SystemConfig.getInstance().getInstanceName()));
+                }
+
             } catch (Exception e) {
                 LOGGER.info("shut down online status clear failed", e);
             }

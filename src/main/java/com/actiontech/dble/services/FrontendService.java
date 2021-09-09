@@ -8,27 +8,35 @@ package com.actiontech.dble.services;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.VariationSQLException;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.executor.ThreadContext;
+import com.actiontech.dble.net.executor.ThreadPoolStatistic;
 import com.actiontech.dble.net.mysql.AuthPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.net.executor.ThreadPoolStatistic;
+import com.actiontech.dble.services.manager.handler.ClusterManageHandler;
 import com.actiontech.dble.singleton.ConnectionSerializableLock;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.util.DelayService;
+import com.actiontech.dble.util.DelayServiceControl;
 import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.exception.DirectPrintException;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nonnull;
 import java.sql.SQLException;
 import java.util.EnumSet;
 import java.util.PriorityQueue;
@@ -57,6 +65,8 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     protected volatile T userConfig;
     // last execute sql
     protected volatile String executeSql;
+    private final DelayService clusterDelayService = new DelayService(() -> ClusterGeneralConfig.getInstance().isNeedBlocked(), () -> ClusterManageHandler.isDetached() ? "cluster is detached, you should attach cluster first." : null);
+    private boolean needDelayed = false;
     protected final ConnectionSerializableLock connectionSerializableLock = new ConnectionSerializableLock(connection.getId(), this);
 
     public FrontendService(AbstractConnection connection) {
@@ -79,6 +89,10 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         this.autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.multiStatementAllow = auth.isMultStatementAllow();
+    }
+
+    public DelayService getClusterDelayService() {
+        return clusterDelayService;
     }
 
     public long getConsumedTaskId() {
@@ -106,91 +120,45 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
             return;
         }
 
-
-        final long currentThreadId = Thread.currentThread().getId();
-        boolean isHandleByCurrentThread = false;
+        final PickTaskAlgorithm algorithm = new PickTaskAlgorithm(task);
         try {
 
+
             do {
-                ServiceTask executeTask = null;
-
-                synchronized (connectionSerializableLock) {
-                    try {
-
-                        if (task != null) {
-                            if (!task.getType().equals(ServiceTaskType.NOTIFICATION)) {
-                                taskToLocalQueue(task);
-                            }
-                            //make sure only enqueue once
-                            task = null;
-                        }
-
-                        if (doingTaskThread == null) {
-                            doingTaskThread = currentThreadId;
-                            isHandleByCurrentThread = true;
-                        } else if (doingTaskThread != currentThreadId) {
-                            //this service is handled by another thread
-                            return;
-                        }
-
-
-                        executeTask = taskQueue.peek();
-                        if (executeTask == null) {
-                            //consumed all.
-                            releaseHandle(currentThreadId);
-                            return;
-                        }
-                        //taskId <=0 used for custom event with high priority. task id> 0 must be ordered.
-                        if (executeTask.getTaskId() > 0 && executeTask.getTaskId() != nextConsumedTaskId()) {
-                            //out of order, Probably because the new data is processed slightly faster than the old data. just release and wait next turn.
-                            releaseHandle(currentThreadId);
-                            return;
-                        }
-
-                        if (connectionSerializableLock.isLocking()) {
-                            //return  if it is locking .will create notify task when unlock.
-                            releaseHandle(currentThreadId);
-                            return;
-                        }
-
-
-                        //begin consume now.
-                        taskQueue.poll();
-                        currentTaskIndex++;
-                        if (executeTask.getTaskId() == nextConsumedTaskId()) {
-                            consumedTaskId = nextConsumedTaskId();
-                        }
-
-
-                    } catch (Exception e) {
-                        LOGGER.error("", e);
-                        releaseHandle(currentThreadId);
-                        return;
-                    }
-
+                ServiceTask executeTask = algorithm.pickTask();
+                if (executeTask == null) {
+                    return;
                 }
-                threadContext.setDoingTask(true);
+
                 try {
-                    DbleThreadPoolProvider.beginProcessFrontBusinessTask();
-                    consumeSingleTask(executeTask);
-                } finally {
-                    threadContext.setDoingTask(false);
-                }
 
+                    threadContext.setDoingTask(true);
+                    try {
+                        DbleThreadPoolProvider.beginProcessFrontBusinessTask();
+                        consumeSingleTask(executeTask);
+                    } finally {
+                        threadContext.setDoingTask(false);
+                    }
+                } catch (NeedDelayedException e) {
+                    needDelayed = true;
+                }
+                algorithm.afterConsumed(executeTask);
             } while (true);
         } catch (Throwable e) {
             LOGGER.error("frontExecutor process error: ", e);
             connectionSerializableLock.unLock();
             connection.close("frontExecutor process error");
         } finally {
-            //must use synchronized to make sure  task safety added when other thread is doing return.
-            if (isHandleByCurrentThread && doingTaskThread != null) {
-                synchronized (connectionSerializableLock) {
-                    releaseHandle(currentThreadId);
-                }
-            }
+            algorithm.cleanUp();
         }
 
+    }
+
+    protected boolean isNeedDelayConsumeTask() {
+        if (clusterDelayService.isNeedDelay()) {
+            return true;
+        }
+        return false;
     }
 
     public long getCurrentTaskIndex() {
@@ -201,20 +169,21 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
         return doingTaskThread != null;
     }
 
+
     @Override
     public void consumeSingleTask(ServiceTask serviceTask) {
         try {
             if (serviceTask.getType() == ServiceTaskType.NORMAL) {
                 NormalServiceTask executeTask = (NormalServiceTask) serviceTask;
-                byte[] data = executeTask.getOrgData();
-                if (data != null && !executeTask.isReuse()) {
+                if (!executeTask.isReuse()) {
                     this.setPacketId(executeTask.getLastSequenceId());
                 }
             }
 
             super.consumeSingleTask(serviceTask);
             ThreadPoolStatistic.getFrontBusiness().getCompletedTaskCount().increment();
-
+        } catch (NeedDelayedException e) {
+            throw e;
         } catch (Throwable e) {
             connectionSerializableLock.unLock();
             String msg = e.getMessage();
@@ -231,16 +200,6 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
     public int getRecvTaskQueueSize() {
         synchronized (connectionSerializableLock) {
             return taskQueue.size();
-        }
-    }
-
-    private long nextConsumedTaskId() {
-        return consumedTaskId + 1;
-    }
-
-    private void releaseHandle(long currentThreadId) {
-        if (doingTaskThread != null && doingTaskThread == currentThreadId) {
-            doingTaskThread = null;
         }
     }
 
@@ -385,7 +344,12 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     public void executeException(Exception e, String sql) {
         sql = sql.length() > 1024 ? sql.substring(0, 1024) + "..." : sql;
-        if (e instanceof VariationSQLException) {
+        if (e instanceof NeedDelayedException) {
+            throw (NeedDelayedException) e;
+        } else if (e instanceof DirectPrintException) {
+            String msg = e.getMessage();
+            writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+        } else if (e instanceof VariationSQLException) {
             ((VariationSQLException) e).getSendData().write(getConnection());
         } else if (e instanceof SQLException) {
             SQLException sqlException = (SQLException) e;
@@ -408,6 +372,143 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
     @Override
     public void afterWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+        clusterDelayService.markDone();
         connectionSerializableLock.unLock();
+    }
+
+
+    private class PickTaskAlgorithm {
+        final long currentThreadId = Thread.currentThread().getId();
+        boolean isHandleByCurrentThread = false;
+        ServiceTask lastConsumedTask = null;
+        ServiceTask currentTask;
+
+        PickTaskAlgorithm(@Nonnull ServiceTask currentTask) {
+            this.currentTask = currentTask;
+        }
+
+
+        public ServiceTask pickTask() {
+            ServiceTask executeTask = null;
+            synchronized (connectionSerializableLock) {
+                executeTask = innerPickTask();
+                if (executeTask == null) {
+                    releaseHandle(currentThreadId);
+                    return null;
+                }
+                return executeTask;
+            }
+
+        }
+
+
+        @Nullable
+        private ServiceTask innerPickTask() {
+            ServiceTask executeTask;
+            try {
+
+                if (currentTask != null) {
+                    if (!currentTask.getType().equals(ServiceTaskType.NOTIFICATION)) {
+                        taskToLocalQueue(currentTask);
+                    }
+                    //make sure only enqueue once
+                    currentTask = null;
+                }
+
+                if (lastConsumedTask != null) {
+                    if (lastConsumedTask.getType().equals(ServiceTaskType.DELAYED)) {
+                        taskToLocalQueue(lastConsumedTask);
+                        if (lastConsumedTask.getTaskId() > 0) {
+                            //rollback
+                            consumedTaskId--;
+                        }
+                    }
+
+                    lastConsumedTask = null;
+                }
+
+
+                if (doingTaskThread == null) {
+                    doingTaskThread = currentThreadId;
+                    isHandleByCurrentThread = true;
+                } else if (doingTaskThread != currentThreadId) {
+                    //this service is handled by another thread
+                    return null;
+                }
+
+
+                executeTask = taskQueue.peek();
+                if (executeTask == null) {
+                    //consumed all.
+                    return null;
+                }
+
+                if (executeTask.getType().equals(ServiceTaskType.DELAYED)) {
+                    //need delay.
+                    if (DelayServiceControl.getInstance().blockServiceIfNeed(FrontendService.this, FrontendService.this::isNeedDelayConsumeTask)) {
+                        return null;
+                    } else {
+                        executeTask = ((DelayedServiceTask) executeTask).getOriginTask();
+                    }
+                }
+
+                //taskId <=0 used for custom event with high priority. task id> 0 must be ordered.
+                if (executeTask.getTaskId() > 0 && executeTask.getTaskId() != nextConsumedTaskId()) {
+                    //out of order, Probably because the new data is processed slightly faster than the old data. just release and wait next turn.
+                    return null;
+                }
+
+                if (connectionSerializableLock.isLocking()) {
+                    //return  if it is locking .will create notify task when unlock.
+                    return null;
+                }
+
+
+                //begin consume now.
+                taskQueue.poll();
+                currentTaskIndex++;
+                if (executeTask.getTaskId() > 0) {
+                    consumedTaskId = nextConsumedTaskId();
+                }
+
+
+            } catch (Exception e) {
+                LOGGER.error("", e);
+                return null;
+            }
+            return executeTask;
+        }
+
+        public void afterConsumed(ServiceTask executeTask) {
+            if (needDelayed) {
+                beforeWriteFinish(WriteFlags.QUERY_END);
+                afterWriteFinish(WriteFlags.QUERY_END);
+                lastConsumedTask = new DelayedServiceTask(executeTask);
+                needDelayed = false;
+            } else {
+                lastConsumedTask = executeTask;
+            }
+        }
+
+        public void cleanUp() {
+            //must use synchronized to make sure  task safety added when other thread is doing return.
+            if (isHandleByCurrentThread && doingTaskThread != null) {
+                synchronized (connectionSerializableLock) {
+                    releaseHandle(currentThreadId);
+                }
+            }
+        }
+
+        private void releaseHandle(long currentThreadIdTmp) {
+            if (doingTaskThread != null && doingTaskThread == currentThreadIdTmp) {
+                doingTaskThread = null;
+            }
+        }
+
+
+        private long nextConsumedTaskId() {
+            return consumedTaskId + 1;
+        }
+
     }
 }

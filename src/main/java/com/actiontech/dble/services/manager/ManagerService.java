@@ -16,6 +16,8 @@ import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.CommandCount;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.UnsupportedEncodingException;
@@ -24,6 +26,7 @@ import java.io.UnsupportedEncodingException;
  * Created by szf on 2020/6/28.
  */
 public class ManagerService extends FrontendService<ManagerUserConfig> {
+    private static final Logger LOGGER = LogManager.getLogger(ManagerService.class);
 
     private final ManagerQueryHandler handler;
     private final ManagerSession session;
@@ -74,6 +77,7 @@ public class ManagerService extends FrontendService<ManagerUserConfig> {
         TraceManager.sessionStart(this, "manager-server-start");
         return true;
     }
+
 
     public void killAndClose(String reason) {
         connection.close(reason);

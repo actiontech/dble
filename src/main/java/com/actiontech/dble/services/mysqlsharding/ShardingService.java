@@ -37,6 +37,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.jetbrains.annotations.NotNull;
@@ -347,6 +348,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             }
             shardingSQLHandler.routeEndExecuteSQL(sql, type, schemaConfig);
 
+        } catch (NeedDelayedException e) {
+            throw e;
         } catch (Exception e) {
             LOGGER.warn("execute sql cause error", e);
             writeErrMessage(ErrorCode.ER_YES, e.getMessage());
@@ -441,6 +444,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
+            getClusterDelayService().markDoingOrDelay(true);
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
@@ -467,6 +471,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
+            getClusterDelayService().markDoingOrDelay(true);
             if (session.getShardingService().isTxStart() || !session.getShardingService().isAutocommit()) {
                 TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
             }
@@ -475,6 +480,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     public void rollback() {
+        getClusterDelayService().markDoingOrDelay(true);
         if (txInterrupted) {
             txInterrupted = false;
         }

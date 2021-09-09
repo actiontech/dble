@@ -10,7 +10,6 @@ import com.actiontech.dble.cluster.general.impl.ushard.UshardSender;
 import com.actiontech.dble.cluster.zkprocess.ZkSender;
 import com.actiontech.dble.config.model.ClusterConfig;
 
-
 import static com.actiontech.dble.cluster.ClusterController.*;
 
 /**
@@ -21,8 +20,18 @@ public final class ClusterGeneralConfig {
     private static final ClusterGeneralConfig INSTANCE = new ClusterGeneralConfig();
     private ClusterSender clusterSender = null;
     private String clusterType = null;
+    private volatile boolean needBlocked = false;
 
     private ClusterGeneralConfig() {
+    }
+
+    public boolean isNeedBlocked() {
+        return needBlocked;
+    }
+
+    public ClusterGeneralConfig setNeedBlocked(boolean needBlockedTmp) {
+        needBlocked = needBlockedTmp;
+        return this;
     }
 
     public static void initConfig() {

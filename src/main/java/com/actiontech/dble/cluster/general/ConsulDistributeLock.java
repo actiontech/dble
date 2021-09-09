@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.cluster.general;
 
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.util.exception.DetachedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +47,10 @@ public class ConsulDistributeLock extends DistributeLock {
 
     @Override
     public boolean acquire() {
+        ClusterDelayProvider.delayBeforeGetLock();
+        if (sender.isDetach()) {
+            throw new DetachedException("cluster is detached");
+        }
         try {
             String sessionId = sender.lock(path, value);
             if ("".equals(sessionId)) {

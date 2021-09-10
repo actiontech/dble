@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.meta.TableMeta;
+import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -33,6 +34,7 @@ import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -40,10 +42,7 @@ import com.google.common.collect.Sets;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DruidInsertParser extends DruidInsertReplaceParser {
     @Override
@@ -71,6 +70,10 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
 
         String tableName = schemaInfo.getTable();
+        if (parserNoSharding(service, schemaName, schemaInfo, rrs, insert)) {
+            return schema;
+        }
+
         BaseTableConfig tc = schema.getTables().get(tableName);
         checkTableExists(tc, schema.getName(), tableName, CheckType.INSERT);
         if (tc instanceof GlobalTableConfig) {
@@ -144,9 +147,26 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         throw new SQLNonTransientException("bad insert sql, shardingColumn/joinColumn:" + partitionColumn + " not provided," + insertStmt);
     }
 
+    private boolean parserNoSharding(ShardingService service, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,
+                                     MySqlInsertStatement insert) throws SQLException {
+        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        if (noShardingNode != null) {
+            StringPtr noShardingNodePr = new StringPtr(noShardingNode);
+            Set<String> schemas = new HashSet<>();
+            if (insert.getQuery() != null) {
+                SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
+                if (!SchemaUtil.isNoSharding(service, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, schemas, noShardingNodePr)) {
+                    return false;
+                }
+            }
+            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr, schemaInfo.getTable());
+            return true;
+        }
+        return false;
+    }
 
     /**
-     * insert into ...values (),()...
+     * insert into ...values (),()... or insert into ...select.....
      *
      * @param insertStmt insertStmt
      * @return is Multi-Insert or not

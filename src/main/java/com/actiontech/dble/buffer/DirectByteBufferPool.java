@@ -83,7 +83,7 @@ public class DirectByteBufferPool implements BufferPool {
     }
 
     public void recycle(ByteBuffer theBuf) {
-        if (!(theBuf instanceof DirectBuffer)) {
+        if (!(theBuf.isDirect())) {
             theBuf.clear();
             return;
         }

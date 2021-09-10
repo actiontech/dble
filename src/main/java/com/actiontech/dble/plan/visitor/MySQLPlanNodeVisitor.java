@@ -120,10 +120,7 @@ public class MySQLPlanNodeVisitor {
                 mtv.visit(from);
                 NoNameNode innerNode = new NoNameNode(currentDb, innerFuncSelectSQL);
                 innerNode.setFakeNode(true);
-                List<Item> selectItems = handleSelectItems(selectInnerFuncList(sqlSelectQuery.getSelectList()));
-                if (selectItems != null) {
-                    innerNode.select(selectItems);
-                }
+                innerNode.select(handleSelectItems(selectInnerFuncList(sqlSelectQuery.getSelectList())));
                 this.tableNode = new JoinInnerNode(innerNode, mtv.getTableNode());
                 this.containSchema = mtv.isContainSchema();
             } else {
@@ -146,10 +143,7 @@ public class MySQLPlanNodeVisitor {
 
         List<SQLSelectItem> items = sqlSelectQuery.getSelectList();
         if (items != null) {
-            List<Item> selectItems = handleSelectItems(items);
-            if (selectItems != null) {
-                this.tableNode.select(selectItems);
-            }
+            this.tableNode.select(handleSelectItems(items));
         }
 
         SQLExpr whereExpr = sqlSelectQuery.getWhere();
@@ -181,7 +175,7 @@ public class MySQLPlanNodeVisitor {
         SQLExpr expr = tableSource.getExpr();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-            schema = StringUtil.removeBackQuote(propertyExpr.getOwnernName());
+            schema = StringUtil.removeBackQuote(propertyExpr.getOwnerName());
             tableName = StringUtil.removeBackQuote(propertyExpr.getName());
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 schema = schema.toLowerCase();

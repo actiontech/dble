@@ -82,7 +82,7 @@ public final class CacheService {
         Arrays.sort(keys);
         for (String key : keys) {
             if (key.startsWith(poolFactoryPref)) {
-                createPoolFactory(key.substring(poolFactoryPref.length()), (String) props.get(key));
+                createPoolFactory(key.substring(poolFactoryPref.length()), props.getProperty(key));
                 use = true;
             }
         }
@@ -99,7 +99,7 @@ public final class CacheService {
         for (String key : keys) {
             if (key.startsWith(poolKeyPref)) {
                 String cacheName = key.substring(poolKeyPref.length());
-                String value = (String) props.get(key);
+                String value = props.getProperty(key);
                 String[] valueItems = value.split(",");
                 if (valueItems.length < 3) {
                     throw new java.lang.IllegalArgumentException("invalid cache config, key:" + key + " value:" + value);
@@ -119,13 +119,13 @@ public final class CacheService {
                     child = child.toLowerCase();
                 }
 
-                String value = (String) props.get(key);
+                String value = props.getProperty(key);
                 String[] valueItems = value.split(",");
                 if (valueItems.length != 2) {
                     throw new java.lang.IllegalArgumentException("invalid primary cache config, key:" + key + " value:" + value + "too more values");
                 }
 
-                if ((pool == null) || !(pool instanceof LayerCachePool)) {
+                if (!(pool instanceof LayerCachePool)) {
                     throw new java.lang.IllegalArgumentException("parent pool not exists or not layered cache pool:" +
                             parent + " the child cache is:" + child);
                 }

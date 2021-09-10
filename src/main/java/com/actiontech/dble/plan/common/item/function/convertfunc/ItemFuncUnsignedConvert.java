@@ -45,7 +45,7 @@ public class ItemFuncUnsignedConvert extends ItemIntFunc {
 
     @Override
     public BigInteger valInt() {
-        BigInteger value = BigInteger.ZERO;
+        BigInteger value;
 
         if (args.get(0).castToIntType() == ItemResult.DECIMAL_RESULT) {
             BigDecimal dec = args.get(0).valDecimal();
@@ -94,8 +94,8 @@ public class ItemFuncUnsignedConvert extends ItemIntFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         method.setMethodName("CONVERT");
-        method.addParameter(args.get(0).toExpression());
-        method.addParameter(new SQLIdentifierExpr("UNSIGNED"));
+        method.addArgument(args.get(0).toExpression());
+        method.addArgument(new SQLIdentifierExpr("UNSIGNED"));
         return method;
     }
 

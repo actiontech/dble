@@ -69,7 +69,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
             FieldPacket fieldPk = fields.get(i);
             if (fv == null) {
                 storeNullBitMap(i);
-                this.fieldValues.add(fv);
+                this.fieldValues.add(null);
             } else {
                 convert(fv, fieldPk);
             }

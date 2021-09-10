@@ -40,9 +40,9 @@ public class ERTable {
         if (hashCode == 0) {
             final int constant = 37;
             int hash = 17;
-            hash += constant * (schema == null ? 0 : schema.hashCode());
-            hash += constant * (table == null ? 0 : table.hashCode());
-            hash += constant * (column == null ? 0 : column.toLowerCase().hashCode());
+            hash += constant * schema.hashCode();
+            hash += constant * table.hashCode();
+            hash += constant * column.toLowerCase().hashCode();
             hashCode = hash;
         }
         return hashCode;

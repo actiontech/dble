@@ -36,7 +36,7 @@ public class ItemFuncSoundex extends ItemStrFunc {
     @Override
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName());
-        method.addParameter(args.get(0).toExpression());
+        method.addArgument(args.get(0).toExpression());
         return method;
     }
 

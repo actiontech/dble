@@ -95,15 +95,15 @@ public class ItemFuncTrim extends ItemStrFunc {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         if (mTrimMode == TrimTypeEnum.LTRIM) {
             method.setMethodName("LTRIM");
-            method.addParameter(args.get(0).toExpression());
+            method.addArgument(args.get(0).toExpression());
 
         } else if (mTrimMode == TrimTypeEnum.RTRIM) {
             method.setMethodName("RTRIM");
-            method.addParameter(args.get(0).toExpression());
+            method.addArgument(args.get(0).toExpression());
 
         } else {
             method.setMethodName("TRIM");
-            method.addParameter(args.get(0).toExpression());
+            method.addArgument(args.get(0).toExpression());
             if (this.getArgCount() > 1) {
                 method.setFrom(args.get(1).toExpression());
             }

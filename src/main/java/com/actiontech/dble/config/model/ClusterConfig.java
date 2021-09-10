@@ -202,7 +202,7 @@ public final class ClusterConfig {
             if (key.equals("problemReporter") || key.equals("startTimeMilliseconds") || key.equals("initZkFirst")) {
                 continue;
             }
-            props.put(key, entry.getValue().getAsString());
+            props.setProperty(key, entry.getValue().getAsString());
 
         }
         return props;

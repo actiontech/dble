@@ -95,6 +95,7 @@ public final class ShowHelp {
         HELPS.put("show @@version", "Report Server version");
         HELPS.put("show @@server", "Report server status");
         HELPS.put("show @@threadpool", "Report threadPool status");
+        HELPS.put("show @@threadpool.task", "Report status of threadPool task");
         HELPS.put("show @@database", "Report databases");
         HELPS.put("show @@shardingNode [where schema = ?]", "Report shardingNodes");
         HELPS.put("show @@dbinstance [where shardingNode = ?]", "Report dbinstance");

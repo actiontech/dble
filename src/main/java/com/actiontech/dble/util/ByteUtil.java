@@ -30,7 +30,7 @@ public final class ByteUtil {
         if (!isNegetive && b1.length != b2.length) {
             return b1.length - b2.length;
         }
-        int len = b1.length > b2.length ? b2.length : b1.length;
+        int len = Math.min(b1.length, b2.length);
         int result = 0;
         int index = -1;
         for (int i = 0; i < len; i++) {

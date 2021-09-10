@@ -89,15 +89,13 @@ public final class ShowSQLSumTable {
         }
         */
         List<TableStat> list = TableStatAnalyzer.getInstance().getTableStats(isClear);
-        if (list != null) {
-            int i = 1;
-            for (TableStat tableStat : list) {
-                if (tableStat != null) {
-                    RowDataPacket row = getRow(tableStat, i, service.getCharset().getResults());
-                    i++;
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, service, true);
-                }
+        int i = 1;
+        for (TableStat tableStat : list) {
+            if (tableStat != null) {
+                RowDataPacket row = getRow(tableStat, i, service.getCharset().getResults());
+                i++;
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
             }
         }
         // write last eof

@@ -143,7 +143,6 @@ public final class TraceManager {
             if (to != null && traceObject == to) {
                 traceObject = popServiceSpan(service, true);
                 traceObject.finish();
-                return;
             }
         }
     }

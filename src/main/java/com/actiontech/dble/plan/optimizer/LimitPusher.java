@@ -19,7 +19,7 @@ public final class LimitPusher {
     public static PlanNode optimize(PlanNode qtn) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-limit");
         try {
-            qtn = findChild(qtn);
+            findChild(qtn);
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);

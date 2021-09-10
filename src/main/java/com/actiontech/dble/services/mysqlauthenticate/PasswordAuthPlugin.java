@@ -139,7 +139,7 @@ public final class PasswordAuthPlugin {
     }
 
     public static boolean sendEncryptedPassword(OutputStream out, InputStream in, byte[] authPluginData, byte[] getPublicKeyType, String password) throws Exception {
-        boolean isConnected = true;
+        boolean isConnected;
         if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
             out.write(PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST);
         } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
@@ -170,6 +170,7 @@ public final class PasswordAuthPlugin {
             return false;
         }
         LOGGER.info("send password with ");
+        assert encryptedPassword != null;
         out.write(encryptedPassword);
         out.flush();
         BinaryPacket resEncryBin = new BinaryPacket();

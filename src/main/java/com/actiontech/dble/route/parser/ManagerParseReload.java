@@ -264,7 +264,7 @@ public final class ManagerParseReload {
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w') && (c3 == '_') &&
                     (c4 == 'Q' || c4 == 'q') && (c5 == 'U' || c5 == 'u') && (c6 == 'E' || c6 == 'e') &&
                     (c7 == 'R' || c7 == 'r') && (c8 == 'Y' || c8 == 'y') && (c9 == '.') &&
-                    (stmt.length() > offset)) {
+                    (stmt.length() > offset + 1)) {
                 switch (c10) {
                     case 'T':
                     case 't':

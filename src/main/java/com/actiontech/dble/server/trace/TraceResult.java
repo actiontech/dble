@@ -499,10 +499,8 @@ public class TraceResult implements Cloneable {
             lst.addAll(fetchList);
         } else {
             for (RouteResultsetNode shardingNode : shardingNodes) {
-                if (!receivedNode.contains(shardingNode.getName())) {
-                    lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), shardingNode.getName(), shardingNode.getStatement()));
-                    lst.add(genTraceRecord("Fetch_result", shardingNode.getName(), shardingNode.getStatement()));
-                }
+                lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), shardingNode.getName(), shardingNode.getStatement()));
+                lst.add(genTraceRecord("Fetch_result", shardingNode.getName(), shardingNode.getStatement()));
             }
         }
         if (adtCommitBegin != null) {

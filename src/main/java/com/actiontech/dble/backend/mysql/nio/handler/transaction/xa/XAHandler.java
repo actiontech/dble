@@ -24,11 +24,11 @@ public class XAHandler {
     private static final String XARECOVER_SQL = "XA RECOVER";
     private static final String KILL_SQL = "KILL CONNECTION ";
     private static final String[] MYSQL_RECOVER_COLS = new String[]{"formatID", "gtrid_length", "bqual_length", "data"};
-    private Map<PhysicalDbInstance, List<Map<String, String>>> results = new HashMap<>(8);
-    private List<SQLJob> sqlJobs = new ArrayList<>();
+    private final Map<PhysicalDbInstance, List<Map<String, String>>> results = new HashMap<>(8);
+    private final List<SQLJob> sqlJobs = new ArrayList<>();
     private final AtomicInteger count = new AtomicInteger();
-    private Lock lock;
-    private Condition done;
+    private final Lock lock;
+    private final Condition done;
     private final PhysicalDbInstance pd;
     private boolean isSuccess = false;
 
@@ -115,7 +115,7 @@ public class XAHandler {
                 done.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("execute XAHandler interrupted: {}", e);
+            LOGGER.warn("execute XAHandler interrupted", e);
         } finally {
             lock.unlock();
         }
@@ -143,7 +143,7 @@ public class XAHandler {
                 dss.add(dbGroup.getWriteDbInstance());
             }
         }
-        return dss.stream().toArray(PhysicalDbInstance[]::new);
+        return dss.toArray(new PhysicalDbInstance[0]);
     }
 
     final class XARecover implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
@@ -187,9 +187,9 @@ public class XAHandler {
     }
 
     class XACmdCallback implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
-        private ParticipantLogEntry logEntry;
-        private String operator;
-        private TxState txState;
+        private final ParticipantLogEntry logEntry;
+        private final String operator;
+        private final TxState txState;
 
         XACmdCallback(boolean isCommit, ParticipantLogEntry logEntry) {
             if (isCommit) {

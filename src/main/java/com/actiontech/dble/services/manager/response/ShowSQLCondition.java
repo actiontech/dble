@@ -71,31 +71,28 @@ public final class ShowSQLCondition {
 
         String key = QueryConditionAnalyzer.getInstance().getKey();
         List<Map.Entry<Object, AtomicLong>> list = QueryConditionAnalyzer.getInstance().getValues();
-        if (list != null) {
 
-            int size = list.size();
-            long total = 0L;
+        int size = list.size();
+        long total = 0L;
 
-            for (int i = 0; i < size; i++) {
-                Map.Entry<Object, AtomicLong> entry = list.get(i);
-                Object value = entry.getKey();
-                long count = entry.getValue().get();
-                total += count;
+        for (int i = 0; i < size; i++) {
+            Map.Entry<Object, AtomicLong> entry = list.get(i);
+            Object value = entry.getKey();
+            long count = entry.getValue().get();
+            total += count;
 
-                RowDataPacket row = getRow(i, key, value.toString(), count, service.getCharset().getResults());
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, service, true);
-            }
-
-            RowDataPacket vkRow = getRow(size + 1, key + ".valuekey", "size", size, service.getCharset().getResults());
-            vkRow.setPacketId(++packetId);
-            buffer = vkRow.write(buffer, service, true);
-
-            RowDataPacket vcRow = getRow(size + 2, key + ".valuecount", "total", total, service.getCharset().getResults());
-            vcRow.setPacketId(++packetId);
-            buffer = vcRow.write(buffer, service, true);
-
+            RowDataPacket row = getRow(i, key, value.toString(), count, service.getCharset().getResults());
+            row.setPacketId(++packetId);
+            buffer = row.write(buffer, service, true);
         }
+
+        RowDataPacket vkRow = getRow(size + 1, key + ".valuekey", "size", size, service.getCharset().getResults());
+        vkRow.setPacketId(++packetId);
+        buffer = vkRow.write(buffer, service, true);
+
+        RowDataPacket vcRow = getRow(size + 2, key + ".valuecount", "total", total, service.getCharset().getResults());
+        vcRow.setPacketId(++packetId);
+        buffer = vcRow.write(buffer, service, true);
 
         // write last eof
         EOFRowPacket lastEof = new EOFRowPacket();

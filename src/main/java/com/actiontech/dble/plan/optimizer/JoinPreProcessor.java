@@ -17,7 +17,7 @@ public final class JoinPreProcessor {
     public static PlanNode optimize(PlanNode qtn) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-join-order");
         try {
-            qtn = findAndChangeRightJoinToLeftJoin(qtn);
+            findAndChangeRightJoinToLeftJoin(qtn);
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
@@ -33,7 +33,7 @@ public final class JoinPreProcessor {
      * change to B left join B on A.id = B.id
      * </pre>
      */
-    private static PlanNode findAndChangeRightJoinToLeftJoin(PlanNode qtn) {
+    private static void findAndChangeRightJoinToLeftJoin(PlanNode qtn) {
         for (PlanNode child : qtn.getChildren()) {
             findAndChangeRightJoinToLeftJoin(child);
         }
@@ -43,7 +43,6 @@ public final class JoinPreProcessor {
             jn.exchangeLeftAndRight();
         }
 
-        return qtn;
     }
 
 }

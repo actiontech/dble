@@ -77,7 +77,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private long lastInsertId;
     @Nonnull
     private final NonBlockingSession session;
-    private ServerSptPrepare sptprepare;
+    private final ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
     protected volatile boolean setNoAutoCommit = false;
 
@@ -572,10 +572,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void cleanup() {
         super.cleanup();
-        if (session != null) {
-            TsQueriesCounter.getInstance().addToHistory(this);
-            session.terminate();
-        }
+        TsQueriesCounter.getInstance().addToHistory(this);
+        session.terminate();
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
         }

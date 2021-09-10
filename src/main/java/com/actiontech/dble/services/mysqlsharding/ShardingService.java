@@ -46,10 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLSyntaxErrorException;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -175,29 +172,32 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         }
 
         WallProvider blackList = userConfig.getBlacklist();
-        if (blackList != null) {
-            WallCheckResult result = blackList.check(
-                    ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
-            if (!result.getViolations().isEmpty()) {
-                if (result.isSyntaxError()) {
-                    LOGGER.info("{}", result.getViolations().get(0).getMessage());
-                    writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
-                            result.getViolations().get(0).getMessage());
-                } else {
-                    String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
-                    String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
-                    LOGGER.warn("Firewall message:{}, {}",
-                            result.getViolations().get(0).getMessage(), msg);
-                    writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);
-                }
-                return;
-            }
-        }
-
+        if (blacklistCheck(sql, blackList)) return;
         SerializableLock.getInstance().lock(this.connection.getId());
 
         this.handler.setReadOnly(userConfig.isReadOnly());
         this.handler.query(sql);
+    }
+
+    private boolean blacklistCheck(String sql, WallProvider blackList) {
+        if (Objects.isNull(blackList)) return false;
+        WallCheckResult result = blackList.check(
+                ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
+        if (!result.getViolations().isEmpty()) {
+            if (result.isSyntaxError()) {
+                LOGGER.info("{}", result.getViolations().get(0).getMessage());
+                writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
+                        result.getViolations().get(0).getMessage());
+            } else {
+                String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
+                String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
+                LOGGER.warn("Firewall message:{}, {}",
+                        result.getViolations().get(0).getMessage(), msg);
+                writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override

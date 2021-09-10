@@ -444,7 +444,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
-            getClusterDelayService().markDoingOrDelay(true);
+            if (session.getTransactionManager().isXaEnabled()) {
+                getClusterDelayService().markDoingOrDelay(true);
+            }
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
@@ -471,7 +473,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
-            getClusterDelayService().markDoingOrDelay(true);
+            if (session.getTransactionManager().isXaEnabled()) {
+                getClusterDelayService().markDoingOrDelay(true);
+            }
             if (session.getShardingService().isTxStart() || !session.getShardingService().isAutocommit()) {
                 TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
             }
@@ -480,7 +484,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     public void rollback() {
-        getClusterDelayService().markDoingOrDelay(true);
+        if (session.getTransactionManager().isXaEnabled()) {
+            getClusterDelayService().markDoingOrDelay(true);
+        }
         if (txInterrupted) {
             txInterrupted = false;
         }

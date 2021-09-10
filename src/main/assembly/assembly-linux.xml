@@ -7,7 +7,7 @@
         xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>${timestamp}-linux</id>
+    <id>${timestamp}-java${java.version}-linux</id>
     <includeBaseDirectory>false</includeBaseDirectory>
     <formats>
         <format>tar.gz</format>

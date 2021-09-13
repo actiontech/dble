@@ -988,8 +988,8 @@ public final class RouterUtil {
         } else { //shard-ing table
             Pair<String, String> table = new Pair<>(schema.getName(), tableName);
             if (!checkSQLRequiredSharding(schema, routeUnit, (ShardingTableConfig) tc, table)) {
-                throw new IllegalArgumentException("route rule for table " + schema.getName() + "." +
-                        tc.getName() + " is required: " + rrs.getStatement());
+                throw new IllegalArgumentException("sqlRequiredSharding is true,the table '" + schema.getName() + "." +
+                        tc.getName() + "' requires the condition in sql to include the sharding column '" + ((ShardingTableConfig) tc).getShardingColumn() + "'");
 
             }
             Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();

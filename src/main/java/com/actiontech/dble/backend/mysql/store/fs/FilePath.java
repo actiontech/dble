@@ -50,7 +50,7 @@ public abstract class FilePath {
         path = path.replace('\\', '/');
         int index = path.indexOf(':');
         registerDefaultProviders();
-        if (index < 2) {
+        if (index < 2 || providers == null) {
             // use the default provider if no prefix or
             // only a single character (drive name)
             return defaultProvider.getPath(path);

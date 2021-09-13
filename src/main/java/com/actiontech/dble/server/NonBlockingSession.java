@@ -1155,7 +1155,7 @@ public class NonBlockingSession extends Session {
                 }
             }
 
-            LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now the size of keeping flow control backends is {}, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
+            LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now still have {} backend connections in flow control state, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
         }
     }
 

@@ -212,19 +212,20 @@ public final class ManagerParse {
 
     private static int disCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("DISABLE") && thePart.length() > 7 && ParseUtil.isSpace(thePart.charAt(7))) {
-            return (8 << 8) | DISABLE;
+        // DISABLE CHECK
+        if (thePart.startsWith("ISABLE") && thePart.length() > 6 && ParseUtil.isSpace(thePart.charAt(6))) {
+            return (offset + 6 << 8) | DISABLE;
         }
         return OTHER;
     }
 
     private static int descCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("DESCRIBE") && thePart.length() > 8 && ParseUtil.isSpace(thePart.charAt(8))) {
-            return (9 << 8) | DESCRIBE;
-        } else if (thePart.startsWith("DESC") && thePart.length() > 4 && ParseUtil.isSpace(thePart.charAt(4))) {
-            return (5 << 8) | DESCRIBE;
-        } else if (thePart.startsWith("DELETE") && thePart.length() > 6 && ParseUtil.isSpace(thePart.charAt(6))) {
+        if (thePart.startsWith("ESCRIBE") && thePart.length() > 7 && ParseUtil.isSpace(thePart.charAt(7))) {
+            return (offset + 7 << 8) | DESCRIBE;
+        } else if (thePart.startsWith("ESC") && thePart.length() > 3 && ParseUtil.isSpace(thePart.charAt(3))) {
+            return (offset + 3 << 8) | DESCRIBE;
+        } else if (thePart.startsWith("ELETE") && thePart.length() > 5 && ParseUtil.isSpace(thePart.charAt(5))) {
             return DELETE;
         }
         return OTHER;
@@ -233,7 +234,7 @@ public final class ManagerParse {
     private static int eCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("ENABLE") && thePart.length() > 6 && ParseUtil.isSpace(thePart.charAt(6))) {
-            return (7 << 8) | ENABLE;
+            return (offset + 6 << 8) | ENABLE;
         }
         return OTHER;
     }

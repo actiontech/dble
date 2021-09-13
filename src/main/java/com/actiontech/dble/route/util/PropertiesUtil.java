@@ -83,11 +83,9 @@ public final class PropertiesUtil {
         }
     }
 
-    public static void storeProps(Properties props, String propsFile) {
+    public static void storeProps(Properties props, String propsFile) throws IOException {
         try (OutputStream os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile)) {
             props.store(os, "\n Copyright (C) 2016-2020 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
-        } catch (IOException e) {
-            throw new java.lang.RuntimeException(e);
         }
     }
 }

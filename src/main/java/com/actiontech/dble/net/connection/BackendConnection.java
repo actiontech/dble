@@ -133,9 +133,11 @@ public class BackendConnection extends PooledConnection {
                 this.getBackendService().backendSpecialCleanUp();
             }
         } else {
-            this.cleanup();
             if (isAuthed) {
+                this.cleanup(reason);
                 this.getBackendService().onConnectionClose(reason == null ? closeReason : reason);
+            } else {
+                super.baseCleanup(reason);
             }
         }
     }
@@ -155,13 +157,14 @@ public class BackendConnection extends PooledConnection {
                 this.getBackendService().backendSpecialCleanUp();
             }
         } else {
-            this.cleanup();
             if (isAuthed) {
+                this.cleanup(reason);
                 this.getBackendService().onConnectionClose(reason == null ? closeReason : reason);
+            } else {
+                super.baseCleanup(reason);
             }
         }
     }
-
 
 
     public boolean isBackendWriteFlowControlled() {
@@ -175,6 +178,7 @@ public class BackendConnection extends PooledConnection {
     public int getFlowLowLevel() {
         return flowLowLevel;
     }
+
     public void closeWithFront(String reason) {
         if (getBackendService().getSession() != null) {
             getBackendService().getSession().getSource().close(reason);

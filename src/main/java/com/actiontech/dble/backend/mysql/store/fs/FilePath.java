@@ -25,7 +25,7 @@ public abstract class FilePath {
 
     private static volatile FilePath defaultProvider;
 
-    private static Map<String, FilePath> providers;
+    private static volatile Map<String, FilePath> providers;
 
     /**
      * The prefix for temporary files.
@@ -68,7 +68,7 @@ public abstract class FilePath {
     private static void registerProviders() {
         if (defaultProvider == null || providers == null) {
             synchronized (FilePath.class) {
-                if (defaultProvider == null) {
+                if (defaultProvider == null || providers == null) {
                     Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());
                     FilePathDisk p = new FilePathDisk();
                     map.put(p.getScheme(), p);

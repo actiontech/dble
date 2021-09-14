@@ -583,7 +583,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setFinishedExecute(true);
             return schema;
         } else {
-            { // todo: if use old logic
+            if (rrs.isRoutePenetration()) {
                 rrs = tryDirectRoute(schema, rrs);
                 if (rrs.isFinishedRoute()) {
                     return schema;

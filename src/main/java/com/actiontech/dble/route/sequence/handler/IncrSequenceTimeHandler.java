@@ -7,6 +7,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.services.FrontendService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
     }
 
     @Override
-    public long nextId(String prefixName) throws SQLNonTransientException {
+    public long nextId(String prefixName, FrontendService frontendService) throws SQLNonTransientException {
         return workey.nextId();
     }
 

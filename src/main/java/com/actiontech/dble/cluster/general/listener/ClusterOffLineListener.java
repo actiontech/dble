@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster.general.listener;
 
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
+import com.actiontech.dble.util.exception.DetachedException;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
@@ -14,11 +15,15 @@ import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 
@@ -45,6 +50,11 @@ public class ClusterOffLineListener implements Runnable {
         boolean lackSelf = false;
         for (; ; ) {
             try {
+                if (sender.isDetach()) {
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
+                    index = 0;
+                    continue;
+                }
                 SubscribeRequest request = new SubscribeRequest();
                 request.setIndex(index);
                 request.setDuration(60);
@@ -59,6 +69,9 @@ public class ClusterOffLineListener implements Runnable {
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
                 Map<String, OnlineType> newMap = new ConcurrentHashMap<>();
                 for (int i = 0; i < output.getKeysCount(); i++) {
+                    if (Strings.isEmpty(output.getValues(i))) {
+                        continue;
+                    }
                     newMap.put(output.getKeys(i), ClusterValue.readFromJson(output.getValues(i), OnlineType.class).getData());
                 }
 
@@ -78,8 +91,16 @@ public class ClusterOffLineListener implements Runnable {
                 }
                 onlineMap = newMap;
                 index = output.getIndex();
+            } catch (DetachedException e) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
+            } catch (IOException e) {
+                if (!sender.isDetach()) {
+                    LOGGER.info("error in deal with key,may be the ucore is shut down", e);
+                }
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             } catch (Exception e) {
-                LOGGER.warn("error in offline listener: ", e);
+                LOGGER.info("error in deal with key,may be the ucore is shut down", e);
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }
         }
     }

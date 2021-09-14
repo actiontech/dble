@@ -49,7 +49,7 @@ public class SchemaConfig {
         }
         this.metaShardingNode = buildMetaShardingNodes();
         this.allShardingNodes = buildAllShardingNodes();
-        if (this.allShardingNodes != null && !this.allShardingNodes.isEmpty()) {
+        if (!this.allShardingNodes.isEmpty()) {
             String[] dnArr = new String[this.allShardingNodes.size()];
             dnArr = this.allShardingNodes.toArray(dnArr);
             this.allShardingNodeStrArr = dnArr;
@@ -71,7 +71,7 @@ public class SchemaConfig {
         }
         this.metaShardingNode = buildMetaShardingNodes();
         this.allShardingNodes = buildAllShardingNodes();
-        if (this.allShardingNodes != null && !this.allShardingNodes.isEmpty()) {
+        if (!this.allShardingNodes.isEmpty()) {
             String[] dnArr = new String[this.allShardingNodes.size()];
             dnArr = this.allShardingNodes.toArray(dnArr);
             this.allShardingNodeStrArr = dnArr;

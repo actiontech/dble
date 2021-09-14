@@ -95,9 +95,9 @@ public final class RouterUtil {
         StringBuilder result = new StringBuilder();
         while (index1 >= 0 || index2 >= 0) {
             //match `sharding` or `sharding`
-            if (index1 < 0 && index2 >= 0) {
+            if (index1 < 0) {
                 flag = true;
-            } else if (index1 >= 0 && index2 < 0) {
+            } else if (index2 < 0) {
                 flag = false;
             } else {
                 flag = index2 < index1;
@@ -128,7 +128,6 @@ public final class RouterUtil {
         for (int i = 0; i < end; i++) {
             if (sql.charAt(i) == '\'' && !skipChar) {
                 count++;
-                skipChar = false;
             } else skipChar = sql.charAt(i) == '\\';
         }
         return count;
@@ -214,7 +213,7 @@ public final class RouterUtil {
                 rrs.setAlwaysFalse(true);
             }
             RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), service.getCharset().getClient());
-            if (rrsTmp != null && (rrsTmp.getNodes() != null || rrsTmp.getNodes().length != 0)) {
+            if (rrsTmp != null && rrsTmp.getNodes() != null && rrsTmp.getNodes().length != 0) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {
                     break;
@@ -354,7 +353,7 @@ public final class RouterUtil {
     }
 
     public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, boolean isGlobalTable, Set<String> tableSet) {
-        rrs = routeToMultiNode(cache, rrs, shardingNodes, tableSet);
+        routeToMultiNode(cache, rrs, shardingNodes, tableSet);
         rrs.setGlobalTable(isGlobalTable);
         return rrs;
     }
@@ -397,7 +396,7 @@ public final class RouterUtil {
         if (tc.getDirectRouteTC() != null) {
             Set<String> nodeSet = ruleCalculate(schemaName, rrs, tc.getDirectRouteTC(), colRoutePairSet, false, clientCharset);
             if (nodeSet.isEmpty()) {
-                throw new SQLNonTransientException("parent key can't find  valid shardingNode ,expect 1 but found: " + nodeSet.size());
+                throw new SQLNonTransientException("parent key can't find  valid shardingNode ,expect 1 but found: 0");
             }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("found partition node (using parent partition rule directly) for child table to insert  " + nodeSet + " sql :" + rrs.getStatement());
@@ -1030,9 +1029,7 @@ public final class RouterUtil {
             return true;
         }
         boolean hasRequiredValue = false;
-        if (routeUnit.getTablesAndConditions().get(table) == null || routeUnit.getTablesAndConditions().get(table).size() == 0) {
-            hasRequiredValue = false;
-        } else {
+        if (routeUnit.getTablesAndConditions().get(table) != null && routeUnit.getTablesAndConditions().get(table).size() != 0) {
             for (Map.Entry<String, ColumnRoute> condition : routeUnit.getTablesAndConditions().get(table).entrySet()) {
                 String colName = RouterUtil.getFixedSql(RouterUtil.removeSchema(condition.getKey(), schema.getName()));
                 //condition is partition column

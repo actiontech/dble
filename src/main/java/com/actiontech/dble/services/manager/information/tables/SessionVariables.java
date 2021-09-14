@@ -7,7 +7,6 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.server.variables.VariableType;
-import com.actiontech.dble.services.VariablesService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.google.common.collect.Maps;
 
@@ -50,7 +49,7 @@ public class SessionVariables extends ManagerBaseTable {
             p.getFrontends().values().forEach(fc -> {
                 AbstractService service = fc.getService();
                 if (!service.isFakeClosed()) {
-                    for (MysqlVariable var : ((VariablesService) fc.getService()).getAllVars()) {
+                    for (MysqlVariable var : (fc.getService()).getAllVars()) {
                         LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                         row.put(COLUMN_FRONT_ID, fc.getId() + "");
                         row.put(COLUMN_VAR_NAME, var.getName());

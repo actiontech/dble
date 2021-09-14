@@ -76,7 +76,7 @@ public final class ServerSptPrepare {
                 }
             }
         }
-        return rstmt;
+        return null;
     }
 
     public String getExePrepare() {

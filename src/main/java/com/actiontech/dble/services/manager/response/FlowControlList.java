@@ -13,15 +13,17 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by szf on 2020/4/10.
  */
 public final class FlowControlList {
-
-    private static final int FIELD_COUNT = 4;
+    private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -40,9 +42,14 @@ public final class FlowControlList {
         FIELDS[i] = PacketUtil.getField("CONNECTION_INFO", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("WRITE_QUEUE_SIZE", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("WRITING_QUEUE_BYTES", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].setPacketId(++packetId);
 
+        FIELDS[i] = PacketUtil.getField("READING_QUEUE_BYTES", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("FLOW_CONTROLLED", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
     }
 
@@ -67,40 +74,13 @@ public final class FlowControlList {
         byte packetId = EOF.getPacketId();
 
         if (FlowController.isEnableFlowControl()) {
-            {
-                //find all server connection
-                IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
-                for (IOProcessor p : processors) {
-                    for (FrontendConnection fc : p.getFrontends().values()) {
-                        if (!fc.isManager() && fc.isFlowControlled()) {
-                            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                            row.add(StringUtil.encode("ServerConnection", service.getCharset().getResults()));
-                            row.add(LongUtil.toBytes(fc.getId()));
-                            row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((ShardingService) fc.getService()).getSchema() + " user = " + ((ShardingService) fc.getService()).getUser(), service.getCharset().getResults()));
-                            row.add(LongUtil.toBytes(fc.getWriteQueue().size()));
-                            row.setPacketId(++packetId);
-                            buffer = row.write(buffer, service, true);
-                        }
-                    }
-                }
+            for (RowDataPacket row : getServerConnections(service)) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
             }
-            //find all mysql connection
-            {
-                IOProcessor[] processors = DbleServer.getInstance().getBackendProcessors();
-                for (IOProcessor p : processors) {
-                    for (BackendConnection bc : p.getBackends().values()) {
-                        MySQLResponseService mc = bc.getBackendService();
-                        if (mc.isFlowControlled()) {
-                            RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                            row.add(StringUtil.encode("MySQLConnection", service.getCharset().getResults()));
-                            row.add(LongUtil.toBytes(mc.getConnection().getThreadId()));
-                            row.add(StringUtil.encode(mc.getConnection().getInstance().getConfig().getUrl() + "/" + mc.getSchema() + " id = " + mc.getConnection().getThreadId(), service.getCharset().getResults()));
-                            row.add(LongUtil.toBytes(mc.getConnection().getWriteQueue().size()));
-                            row.setPacketId(++packetId);
-                            buffer = row.write(buffer, service, true);
-                        }
-                    }
-                }
+            for (RowDataPacket row : getBackendConnections(service)) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
             }
         }
 
@@ -111,4 +91,52 @@ public final class FlowControlList {
 
         lastEof.write(buffer, service);
     }
+
+    @NotNull
+    private static List<RowDataPacket> getBackendConnections(ManagerService service) {
+        List<RowDataPacket> rows = new ArrayList<>();
+        IOProcessor[] processors = DbleServer.getInstance().getBackendProcessors();
+        for (IOProcessor p : processors) {
+            for (BackendConnection bc : p.getBackends().values()) {
+                MySQLResponseService mc = bc.getBackendService();
+                if (mc == null) {
+                    continue;
+                }
+                int writeSize = mc.getConnection().getWritingSize().get();
+                int readSize = mc.getReadSize();
+                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                row.add(StringUtil.encode("MySQLConnection", service.getCharset().getResults()));
+                row.add(LongUtil.toBytes(mc.getConnection().getId()));
+                row.add(StringUtil.encode(mc.getConnection().getInstance().getConfig().getUrl() + "/" + mc.getSchema() + " mysqlId = " + mc.getConnection().getThreadId(), service.getCharset().getResults()));
+                row.add(LongUtil.toBytes(writeSize));
+                row.add(LongUtil.toBytes(readSize));
+                row.add(mc.isFlowControlled() ? "true".getBytes() : "false".getBytes());
+                rows.add(row);
+            }
+        }
+        return rows;
+    }
+
+    @NotNull
+    private static List<RowDataPacket> getServerConnections(ManagerService service) {
+        List<RowDataPacket> rows = new ArrayList<>();
+        IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
+        for (IOProcessor p : processors) {
+            for (FrontendConnection fc : p.getFrontends().values()) {
+                if (!fc.isManager()) {
+                    int size = fc.getWritingSize().get();
+                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                    row.add(StringUtil.encode("ServerConnection", service.getCharset().getResults()));
+                    row.add(LongUtil.toBytes(fc.getId()));
+                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((ShardingService) fc.getService()).getSchema() + " user = " + ((ShardingService) fc.getService()).getUser(), service.getCharset().getResults()));
+                    row.add(LongUtil.toBytes(size));
+                    row.add(null); // not support
+                    row.add(fc.isFrontWriteFlowControlled() ? "true".getBytes() : "false".getBytes());
+                    rows.add(row);
+                }
+            }
+        }
+        return rows;
+    }
+
 }

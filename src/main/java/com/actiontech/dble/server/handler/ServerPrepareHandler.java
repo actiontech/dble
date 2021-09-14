@@ -102,7 +102,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         PreparedStatement pStmt = pStmtForId.get(psId);
         if (pStmt != null) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("send long data to prepare sql : " + pStmtForId.get(psId));
+                LOGGER.debug("send long data to prepare sql : " + pStmtForId.get(psId).getStatement());
             }
             long paramId = packet.getParamId();
             try {
@@ -121,12 +121,12 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         PreparedStatement pStmt = pStmtForId.get(psId);
         if (pStmt != null) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("reset prepare sql : " + pStmtForId.get(psId));
+                LOGGER.debug("reset prepare sql : " + pStmtForId.get(psId).getStatement());
             }
             pStmt.resetLongData();
             service.write(OkPacket.getDefault());
         } else {
-            service.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId));
+            service.writeErrMessage(ErrorCode.ERR_FOUND_EXCEPION, "can not reset prepare statement : " + pStmtForId.get(psId).getStatement());
         }
     }
 

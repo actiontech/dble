@@ -324,7 +324,6 @@ public abstract class ItemSum extends ItemResultField {
             boolean isUnpushSum = PlanUtil.isUnPushDownSum(this);
             if (isUnpushSum) { // this function can not be push down
                 planNode.setExistUnPushDownGroup(true);
-                needAddArgToRefer = true;
                 // add args of sunfuncs
                 for (ItemSum sumfunc : planNode.getSumFuncs()) {
                     for (Item sumArg : sumfunc.args) {

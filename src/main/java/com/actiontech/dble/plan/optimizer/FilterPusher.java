@@ -69,7 +69,7 @@ public final class FilterPusher {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-filter-push-down");
         try {
             mergeJoinOnFilter(qtn);
-            qtn = pushJoinOnFilter(qtn);
+            pushJoinOnFilter(qtn);
             qtn = pushFilter(qtn, new ArrayList<>());
             //todo all subQueries will do
             if (qtn instanceof NoNameNode && qtn.isContainsSubQuery()) {
@@ -260,9 +260,9 @@ public final class FilterPusher {
      * when Left join, eg" select * from t1 left join t2 on t1.id=t2.id and t1.id = 10 and
      * t2.name = 'aaa' push down t2.id=10 and t2.name='aaa'
      */
-    private static PlanNode pushJoinOnFilter(PlanNode qtn) {
+    private static void pushJoinOnFilter(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))
-            return qtn;
+            return;
         if (qtn.type().equals(PlanNodeType.JOIN)) {
             JoinNode jn = (JoinNode) qtn;
             Item otherJoinOn = jn.getOtherJoinOnFilter();
@@ -303,7 +303,6 @@ public final class FilterPusher {
         }
         for (PlanNode child : qtn.getChildren())
             pushJoinOnFilter(child);
-        return qtn;
     }
 
     /**
@@ -325,9 +324,7 @@ public final class FilterPusher {
 
     private static Item copyFilterToJoinOnColumns(Item filter, List<Item> qnColumns, List<Item> otherColumns) {
         if (filter.type().equals(ItemType.FUNC_ITEM) || filter.type().equals(ItemType.COND_ITEM)) {
-            ItemFunc newFilter = replaceFunctionArg((ItemFunc) filter, qnColumns, otherColumns);
-            if (newFilter != null)
-                return newFilter;
+            return replaceFunctionArg((ItemFunc) filter, qnColumns, otherColumns);
         }
         return null;
     }

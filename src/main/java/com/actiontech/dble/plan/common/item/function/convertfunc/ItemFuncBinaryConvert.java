@@ -54,14 +54,14 @@ public class ItemFuncBinaryConvert extends ItemStrFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         method.setMethodName("CONVERT");
-        method.addParameter(args.get(0).toExpression());
+        method.addArgument(args.get(0).toExpression());
         if (decimals != NOT_FIXED_DEC) {
             SQLMethodInvokeExpr dataType = new SQLMethodInvokeExpr();
             dataType.setMethodName("BINARY");
-            dataType.addParameter(new SQLIntegerExpr(decimals));
-            method.addParameter(dataType);
+            dataType.addArgument(new SQLIntegerExpr(decimals));
+            method.addArgument(dataType);
         } else {
-            method.addParameter(new SQLIdentifierExpr("BINARY"));
+            method.addArgument(new SQLIdentifierExpr("BINARY"));
         }
         return method;
     }

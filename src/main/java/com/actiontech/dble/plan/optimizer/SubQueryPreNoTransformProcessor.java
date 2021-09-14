@@ -28,7 +28,7 @@ public final class SubQueryPreNoTransformProcessor {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("for-subquery");
         try {
             MergeHavingFilter.optimize(qtn);
-            qtn = handlerComparisonsSubQuery(qtn);
+            handlerComparisonsSubQuery(qtn);
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
@@ -39,8 +39,6 @@ public final class SubQueryPreNoTransformProcessor {
     /**
      * http://dev.mysql.com/doc/refman/5.0/en/comparisons-using-subqueries.html
      *
-     * @param qtn
-     * @return
      */
     private static PlanNode handlerComparisonsSubQuery(PlanNode qtn) {
         for (int i = 0; i < qtn.getChildren().size(); i++) {
@@ -99,7 +97,7 @@ public final class SubQueryPreNoTransformProcessor {
         if (filter instanceof ItemSubQuery) {
             addSubQuery(node, (ItemSubQuery) filter);
         } else if (filter instanceof ItemFunc) {
-            filter.arguments().stream().filter(item -> item.isWithSubQuery()).forEach(subQuery -> addSubQueryForExpr(node, subQuery));
+            filter.arguments().stream().filter(Item::isWithSubQuery).forEach(subQuery -> addSubQueryForExpr(node, subQuery));
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
         }

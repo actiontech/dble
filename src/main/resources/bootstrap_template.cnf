@@ -180,8 +180,8 @@
 #-DenableBatchLoadData=1
 
 #-DenableFlowControl=false
-#-DflowControlStartThreshold=4096
-#-DflowControlStopThreshold=256
+#-DflowControlHighLevel=4194304
+#-DflowControlLowLevel=262144
 
 #  if enable the general log
 #-DenableGeneralLog=1

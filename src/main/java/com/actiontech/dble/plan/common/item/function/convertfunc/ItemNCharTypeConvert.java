@@ -55,14 +55,14 @@ public class ItemNCharTypeConvert extends ItemStrFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         method.setMethodName("CONVERT");
-        method.addParameter(args.get(0).toExpression());
+        method.addArgument(args.get(0).toExpression());
         if (castLength >= 0) {
             SQLMethodInvokeExpr dataType = new SQLMethodInvokeExpr();
             dataType.setMethodName("NCHAR");
-            dataType.addParameter(new SQLIntegerExpr(castLength));
-            method.addParameter(dataType);
+            dataType.addArgument(new SQLIntegerExpr(castLength));
+            method.addArgument(dataType);
         } else {
-            method.addParameter(new SQLIdentifierExpr("NCHAR"));
+            method.addArgument(new SQLIdentifierExpr("NCHAR"));
         }
         return method;
     }

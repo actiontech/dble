@@ -44,6 +44,7 @@ public final class PauseStart {
     }
 
     public static void execute(final ManagerService c, final String sql) {
+        c.getClusterDelayService().markDoingOrDelay(true);
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {

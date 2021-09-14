@@ -1,24 +1,8 @@
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.DistinctHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OrderByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.TempTableHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinInnerHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.connection.AbstractConnection;
-import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,99 +18,31 @@ public final class FlowController {
     }
 
     public static void init() throws Exception {
-        INSTANCE.config = new FlowControllerConfig(
-                SystemConfig.getInstance().isEnableFlowControl(),
-                SystemConfig.getInstance().getFlowControlStartThreshold(),
-                SystemConfig.getInstance().getFlowControlStopThreshold());
+        boolean enableFlowControl = SystemConfig.getInstance().isEnableFlowControl();
+        if (enableFlowControl && SystemConfig.getInstance().getUsingAIO() == 1) {
+            enableFlowControl = false;
+            LOGGER.warn("flow control is not support AIO, please check property [usingAIO] of your bootstrap.cnf");
+        }
+        INSTANCE.config = new FlowControllerConfig(enableFlowControl,
+                SystemConfig.getInstance().getFlowControlHighLevel(),
+                SystemConfig.getInstance().getFlowControlLowLevel());
 
-        if (INSTANCE.config.getEnd() < 0 || INSTANCE.config.getStart() <= 0) {
-            throw new Exception("The flowControlStartThreshold & flowControlStopThreshold must be positive integer");
-        } else if (INSTANCE.config.getEnd() >= INSTANCE.config.getStart()) {
-            throw new Exception("The flowControlStartThreshold must bigger than flowControlStopThreshold");
+        if (INSTANCE.config.getLowWaterLevel() <= 0 || INSTANCE.config.getHighWaterLevel() <= 0) {
+            throw new Exception("The flowControlHighLevel & flowControlLowLevel must be positive integer");
+        } else if (INSTANCE.config.getLowWaterLevel() >= INSTANCE.config.getHighWaterLevel()) {
+            throw new Exception("The flowControlHighLevel must bigger than flowControlLowLevel");
         }
     }
 
     // load data
-    public static void tryFlowControl(final MySQLResponseService backendService) {
-        try {
-            if (INSTANCE.config.isEnableFlowControl() &&
-                    !backendService.getConnection().isFlowControlled() &&
-                    backendService.getConnection().getWriteQueue().size() > INSTANCE.config.getStart()) {
-                backendService.getConnection().startFlowControl();
-            }
-            while (backendService.getConnection().isFlowControlled()) {
-                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
-            }
-        } catch (Exception ex) {
-            LOGGER.warn("FlowControl exception：{}", ex);
+    public static void checkFlowControl(final MySQLResponseService backendService) {
+        while (backendService.getConnection().isBackendWriteFlowControlled()) {
+            LOGGER.info("wait 1s before read from file because of flow control");
+            LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1));
         }
     }
 
-    // simpleQuery
-    public static void tryFlowControl(final NonBlockingSession session) {
-        try {
-            int size = session.getSource().getWriteQueue().size();
-            if (INSTANCE.config.isEnableFlowControl() &&
-                    !session.getShardingService().getConnection().isFlowControlled() &&
-                    size > INSTANCE.config.getStart()) {
-                session.getSource().startFlowControl();
-            }
-        } catch (Exception ex) {
-            LOGGER.warn("FlowControl exception：{}", ex);
-        }
-    }
-
-    // complexQuery
-    public static void tryFlowControl2(boolean isSupportFlowControl, final NonBlockingSession session) {
-        if (isSupportFlowControl)
-            tryFlowControl(session);
-    }
-
-    // control on_the nio side, try to remove flow control
-    public static int tryRemoveFlowControl(int flowControlCount, final AbstractConnection con) {
-        try {
-            if (con.isFlowControlled()) {
-                if (!INSTANCE.config.isEnableFlowControl()) {
-                    con.stopFlowControl();
-                    return -1;
-                } else if (((flowControlCount != -1) && (flowControlCount <= INSTANCE.config.getEnd())) ||
-                        flowControlCount == -1) {
-                    int currentWriteQueueSize = con.getWriteQueue().size();
-                    if (currentWriteQueueSize <= INSTANCE.config.getEnd()) {
-                        con.stopFlowControl();
-                        return -1;
-                    } else {
-                        return currentWriteQueueSize;
-                    }
-                } else {
-                    return --flowControlCount;
-                }
-            } else {
-                return -1;
-            }
-        } catch (Exception ex) {
-            LOGGER.warn("FlowControl exception：{}", ex);
-            return -1;
-        }
-    }
-
-    // when complexQuery receives rowEofResponse, try to remove flow control
-    public static void tryRemoveFlowControl(final AbstractService service) {
-        NonBlockingSession session;
-        ShardingService shardingService;
-        try {
-            if (service instanceof MySQLResponseService &&
-                    (session = ((MySQLResponseService) service).getSession()) != null &&
-                    (shardingService = session.getShardingService()) != null &&
-                    shardingService.isFlowControlled()) {
-                session.releaseFlowCntroll(((MySQLResponseService) service).getConnection());
-            }
-        } catch (Exception ex) {
-            LOGGER.warn("FlowControl exception：{}", ex);
-        }
-    }
-
-    public static FlowControllerConfig getFlowCotrollerConfig() {
+    public static FlowControllerConfig getFlowControllerConfig() {
         return INSTANCE.config;
     }
 
@@ -138,36 +54,12 @@ public final class FlowController {
         return INSTANCE.config.isEnableFlowControl();
     }
 
-    public static int getFlowStart() {
-        return INSTANCE.config.getStart();
+    public static int getFlowHighLevel() {
+        return INSTANCE.config.getHighWaterLevel();
     }
 
-    public static int getFlowEnd() {
-        return INSTANCE.config.getEnd();
-    }
-
-    public static boolean isSupportFlowControl(BaseDMLHandler handler) {
-        BaseDMLHandler nextHandler = handler;
-        while (true) {
-            if (nextHandler == null) {
-                return true;
-            } else if (nextHandler instanceof AllAnySubQueryHandler ||
-                    nextHandler instanceof InSubQueryHandler ||
-                    nextHandler instanceof SingleRowSubQueryHandler ||
-                    // nextHandler instanceof SubQueryHandler ||
-                    nextHandler instanceof AggregateHandler ||
-                    nextHandler instanceof DistinctHandler ||
-                    nextHandler instanceof OrderByHandler ||
-                    nextHandler instanceof NotInHandler ||
-                    nextHandler instanceof JoinInnerHandler ||
-                    nextHandler instanceof JoinHandler ||
-                    nextHandler instanceof DirectGroupByHandler ||
-                    nextHandler instanceof TempTableHandler) { // These handler have a caching mechanism and do not adapt to flow control
-                return false;
-            } else {
-                nextHandler = nextHandler.getNextHandler();
-            }
-        }
+    public static int getFlowLowLevel() {
+        return INSTANCE.config.getLowWaterLevel();
     }
 }
 

@@ -29,7 +29,6 @@ import java.util.Map;
 public class KVStoreRepository implements Repository {
     public static final Logger LOGGER = LoggerFactory.getLogger(KVStoreRepository.class);
     private String logPath;
-    private CuratorFramework zkConn = ZKUtils.getConnection();
 
     public KVStoreRepository() {
         init();
@@ -59,9 +58,9 @@ public class KVStoreRepository implements Repository {
     public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries(boolean first) {
         String data = null;
         try {
-            if (zkConn.checkExists().forPath(logPath) != null) {
+            if (getZkConn().checkExists().forPath(logPath) != null) {
                 try {
-                    byte[] raw = zkConn.getData().forPath(logPath);
+                    byte[] raw = getZkConn().getData().forPath(logPath);
                     if (raw != null) {
                         data = new String(raw, StandardCharsets.UTF_8);
                     }
@@ -98,10 +97,10 @@ public class KVStoreRepository implements Repository {
                 sb.append(Serializer.toJson(coordinatorLogEntry));
             }
             byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
-            if (zkConn.checkExists().forPath(logPath) == null) {
-                zkConn.create().creatingParentsIfNeeded().forPath(logPath);
+            if (getZkConn().checkExists().forPath(logPath) == null) {
+                getZkConn().create().creatingParentsIfNeeded().forPath(logPath);
             }
-            zkConn.setData().forPath(logPath, data);
+            getZkConn().setData().forPath(logPath, data);
             return true;
         } catch (Exception e) {
             LOGGER.warn("Failed to writeDirectly checkpoint", e);
@@ -111,5 +110,9 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void close() {
+    }
+
+    private CuratorFramework getZkConn() {
+        return ZKUtils.getConnection();
     }
 }

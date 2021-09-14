@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.sequence.handler;
 
 
@@ -11,6 +11,7 @@ import com.actiontech.dble.config.ConfigFileName;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -21,6 +22,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Hash Zhang
  * @version 1.0
- *          23:35 2016/5/6
+ * 23:35 2016/5/6
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceZKHandler.class);
@@ -208,4 +210,28 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
         paraValMap.put(prefixName + KEY_CUR_NAME, val + "");
         return true;
     }
+
+    @Override
+    public synchronized long nextId(String prefixName, @Nullable FrontendService frontendService) {
+        if (frontendService != null) {
+            frontendService.getClusterDelayService().markDoingOrDelay(true);
+        }
+        return super.nextId(prefixName, frontendService);
+    }
+
+    public void detach() throws Exception {
+        if (this.client != null) {
+            this.client.close();
+        }
+    }
+
+    public void attach() throws Exception {
+        String zkAddress = ClusterConfig.getInstance().getClusterIP();
+        if (zkAddress == null) {
+            throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
+        }
+        initializeZK(this.props, zkAddress);
+
+    }
+
 }

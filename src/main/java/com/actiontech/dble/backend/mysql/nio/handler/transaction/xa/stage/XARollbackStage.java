@@ -63,7 +63,7 @@ public class XARollbackStage extends XAStage {
         if (state == TxState.TX_INITIALIZE_STATE || state == TxState.TX_CONN_QUIT ||
                 state == TxState.TX_ROLLBACKED_STATE || (lastStageIsXAEnd && service.getConnection().isClosed())) {
             //first release, then faked, to avoid retrying in faked, resulting in release delay
-            session.releaseConnection(rrn, logger.isDebugEnabled(), false);
+            session.releaseConnection(rrn, false);
             xaHandler.fakedResponse(rrn);
             return;
         }

@@ -8,6 +8,7 @@ import com.actiontech.dble.net.service.AuthService;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.io.IOException;
@@ -55,21 +56,25 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     @Override
-    public void startFlowControl() {
-        if (this.getService() instanceof ShardingService)
-            ((ShardingService) this.getService()).getSession2().startFlowControl();
+    public void startFlowControl(int currentWritingSize) {
+        if (!frontWriteFlowControlled && this.getService() instanceof ShardingService &&
+                currentWritingSize > FlowController.getFlowHighLevel()) {
+            ((ShardingService) this.getService()).getSession2().startFlowControl(currentWritingSize);
+        }
     }
 
     @Override
-    public void stopFlowControl() {
-        if (this.getService() instanceof ShardingService)
-            ((ShardingService) this.getService()).getSession2().stopFlowControl();
+    public void stopFlowControl(int currentWritingSize) {
+        if (this.getService() instanceof ShardingService &&
+                currentWritingSize <= FlowController.getFlowLowLevel()) {
+            ((ShardingService) this.getService()).getSession2().stopFlowControl(currentWritingSize);
+        }
     }
 
     @Override
-    public void cleanup() {
+    public void cleanup(String reason) {
         if (isCleanUp.compareAndSet(false, true)) {
-            super.cleanup();
+            super.cleanup(reason);
             AbstractService service = getService();
             if (service instanceof FrontendService) {
                 ((FrontendService) service).userConnectionCount();
@@ -116,6 +121,6 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " + isSkipCheck() + " isFlowControl = " + isFlowControlled() + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " + isSkipCheck() + " isFlowControl = " + isFrontWriteFlowControlled() + "]";
     }
 }

@@ -141,9 +141,9 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
     @Override
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName());
-        method.addParameter(new SQLIdentifierExpr(intType.toString()));
+        method.addArgument(new SQLIdentifierExpr(intType.toString()));
         for (Item arg : args) {
-            method.addParameter(arg.toExpression());
+            method.addArgument(arg.toExpression());
         }
         return method;
     }

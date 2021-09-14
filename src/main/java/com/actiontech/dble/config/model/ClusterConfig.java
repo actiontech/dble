@@ -35,7 +35,7 @@ public final class ClusterConfig {
     public static final int SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT = 4;
 
 
-    private boolean clusterEnable = false;
+    private volatile boolean clusterEnable = false;
     private String clusterMode = CONFIG_MODE_ZK;
     private String clusterIP;
     private int clusterPort;
@@ -202,7 +202,7 @@ public final class ClusterConfig {
             if (key.equals("problemReporter") || key.equals("startTimeMilliseconds") || key.equals("initZkFirst")) {
                 continue;
             }
-            props.put(key, entry.getValue().getAsString());
+            props.setProperty(key, entry.getValue().getAsString());
 
         }
         return props;

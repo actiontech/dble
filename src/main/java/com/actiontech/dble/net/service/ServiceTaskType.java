@@ -13,5 +13,6 @@ package com.actiontech.dble.net.service;
 public enum ServiceTaskType {
     NORMAL,
     NOTIFICATION,
-    CLOSE;
+    CLOSE,
+    DELAYED;
 }

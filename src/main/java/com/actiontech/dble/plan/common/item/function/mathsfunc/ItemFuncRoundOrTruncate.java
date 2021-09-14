@@ -97,7 +97,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
         } else if (i == ItemResult.DECIMAL_RESULT) {
             hybridType = ItemResult.DECIMAL_RESULT;
             decimalsToSet = Math.min(DECIMAL_MAX_SCALE, decimalsToSet);
-            decimals = Math.min(decimalsToSet, DECIMAL_MAX_SCALE);
+            decimals = decimalsToSet;
         } else {
             assert (false); /* This result type isn't handled */
         }

@@ -38,6 +38,7 @@ public class NormalServiceTask extends ServiceTask {
         return ServiceTaskType.NORMAL;
     }
 
+    @Nonnull
     public byte[] getOrgData() {
         return orgData;
     }

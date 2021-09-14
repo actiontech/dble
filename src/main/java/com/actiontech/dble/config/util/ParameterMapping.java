@@ -35,8 +35,8 @@ public final class ParameterMapping {
             InvocationTargetException {
         PropertyDescriptor[] pds = getDescriptors(target.getClass());
         for (PropertyDescriptor pd : pds) {
-            Object obj = src.get(pd.getName());
-            Object value = obj;
+            String valStr = src.getProperty(pd.getName());
+            Object value = valStr;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
                 if (problemReporter != null) {
@@ -46,26 +46,25 @@ public final class ParameterMapping {
                 }
                 continue;
             }
-
-            if (obj instanceof String) {
-                String valStr = ((String) obj).trim();
-                if (!StringUtil.isEmpty(valStr)) {
-                    valStr = ConfigUtil.filter(valStr);
-                }
-                if (isPrimitiveType(cls)) {
-                    try {
-                        value = convert(cls, valStr);
-                    } catch (NumberFormatException nfe) {
-                        if (problemReporter != null) {
-                            String message = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "";
-                            problemReporter.warn(message);
-                            errorParameters.add(message);
-                        } else {
-                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
-                        }
-                        src.remove(pd.getName());
-                        continue;
+            if (valStr == null) {
+                continue;
+            }
+            if (!StringUtil.isEmpty(valStr)) {
+                valStr = ConfigUtil.filter(valStr.trim());
+            }
+            if (isPrimitiveType(cls)) {
+                try {
+                    value = convert(cls, valStr);
+                } catch (NumberFormatException nfe) {
+                    if (problemReporter != null) {
+                        String message = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "";
+                        problemReporter.warn(message);
+                        errorParameters.add(message);
+                    } else {
+                        LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
                     }
+                    src.remove(pd.getName());
+                    continue;
                 }
             }
             if (value != null) {
@@ -164,7 +163,7 @@ public final class ParameterMapping {
 
     private static Object convert(Class<?> cls, String string) throws NumberFormatException, IllegalStateException {
         Method method = null;
-        Object value = null;
+        Object value;
         if (cls.equals(String.class)) {
             value = string;
         } else if (cls.equals(Boolean.TYPE)) {

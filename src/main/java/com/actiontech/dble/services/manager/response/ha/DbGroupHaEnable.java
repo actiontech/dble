@@ -67,7 +67,7 @@ public final class DbGroupHaEnable {
                         clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dbGroup.getGroupName()), result);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                         return;
                     }
                 }

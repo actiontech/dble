@@ -75,7 +75,7 @@ public final class DbGroupHaDisable {
                         HaConfigManager.getInstance().haFinish(id, null, result);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        service.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        service.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                         return;
                     }
                 }

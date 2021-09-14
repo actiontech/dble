@@ -8,6 +8,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -134,7 +135,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     }
 
     @Override
-    public long nextId(String prefixName) throws SQLNonTransientException {
+    public long nextId(String prefixName, FrontendService frontendService) throws SQLNonTransientException {
         // System.out.println(instanceId);
         while (!ready) {
             try {

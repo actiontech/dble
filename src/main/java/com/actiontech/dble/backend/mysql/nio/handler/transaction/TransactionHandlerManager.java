@@ -30,6 +30,10 @@ public class TransactionHandlerManager {
         return xaTxId;
     }
 
+    public boolean isXaEnabled() {
+        return xaTxId != null;
+    }
+
     public void setXaTxEnabled(boolean xaTXEnabled, ShardingService service) {
         if (xaTXEnabled && this.xaTxId == null) {
             LOGGER.info("XA Transaction enabled ,con " + service.getConnection());

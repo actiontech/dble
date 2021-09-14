@@ -12,7 +12,6 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.singleton.FlowController;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +52,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     }
 
     private void doExecute() {
-        boolean isSupportFlowControl = FlowController.isSupportFlowControl(nextHandler);
         for (BaseSelectHandler exeHandler : exeHandlers) {
-            exeHandler.setSupportFlowControl(isSupportFlowControl);
             session.setHandlerStart(exeHandler); //base start execute
             try {
                 BackendConnection exeConn = exeHandler.initConnection();

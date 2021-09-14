@@ -172,6 +172,6 @@
 #  used for load data, because dble need save to disk if loading file contains large size
 #-DmaxRowSizeToFile=10000
 
-#enableFlowControl=false
-#flowControlStartThreshold=4096
-#flowControlStopThreshold=256
+#-DenableFlowControl=false
+#-DflowControlHighLevel=4194304
+#-DflowControlLowLevel=262144

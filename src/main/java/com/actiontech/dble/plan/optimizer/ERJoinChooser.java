@@ -206,7 +206,7 @@ public class ERJoinChooser {
                 continue;
             for (int j = i + 1; j < selList.size(); j++) {
                 JoinColumnInfo jkj = selList.get(j);
-                if (isErRelation(jki.cm, jkj.cm)) {
+                if (this.makedERJnList.isEmpty() && isErRelation(jki.cm, jkj.cm)) {
                     erKeys.add(jkj);
                 }
             }

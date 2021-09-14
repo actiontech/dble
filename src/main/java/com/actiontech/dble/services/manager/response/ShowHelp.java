@@ -95,6 +95,7 @@ public final class ShowHelp {
         HELPS.put("show @@version", "Report Server version");
         HELPS.put("show @@server", "Report server status");
         HELPS.put("show @@threadpool", "Report threadPool status");
+        HELPS.put("show @@threadpool.task", "Report status of threadPool task");
         HELPS.put("show @@database", "Report databases");
         HELPS.put("show @@shardingNode [where schema = ?]", "Report shardingNodes");
         HELPS.put("show @@dbinstance [where shardingNode = ?]", "Report dbinstance");
@@ -167,7 +168,7 @@ public final class ShowHelp {
 
         HELPS.put("flow_control @@show", "Show the current config of the flow control");
         HELPS.put("flow_control @@list", "List all the connection be flow-control now");
-        HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlStart = ?] [flowControlEnd = ?]", "Change the config of flow control");
+        HELPS.put("flow_control @@set [enableFlowControl = true/false] [flowControlHighLevel = ?] [flowControlLowLevel = ?]", "Change the config of flow control");
 
         //dryrun
         HELPS.put("dryrun", "Dry run to check config before reload xml");

@@ -68,7 +68,7 @@ public class IncrSequenceZKHandlerTest {
                             @Override
                             public void run() {
                                 for (int k = 0; k < LOOP; k++) {
-                                    long key = incrSequenceZKHandler[a].nextId("GLOBAL");
+                                    long key = incrSequenceZKHandler[a].nextId("GLOBAL", null);
                                     results.add(key);
                                 }
                             }

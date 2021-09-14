@@ -605,7 +605,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLMethodInvokeExpr x) {
-        List<Item> args = visitExprList(x.getParameters());
+        List<Item> args = visitExprList(x.getArguments());
         String funcName = x.getMethodName().toUpperCase();
         Map<String, Object> attributes = x.getAttributes();
         switch (funcName) {
@@ -651,7 +651,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "CHAR":
                 if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
-                    attributes = x.getParameters().get(0).getAttributes();
+                    attributes = x.getArguments().get(0).getAttributes();
                 }
                 if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
                     item = new ItemFuncChar(args, this.charsetIndex);
@@ -663,31 +663,31 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = new ItemFuncOrd(args, this.charsetIndex);
                 break;
             case "ADDDATE":
-                if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
+                if (x.getArguments().get(1) instanceof SQLIntegerExpr) {
                     item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, false, this.charsetIndex);
                     break;
                 }
                 // fallthrough
             case "DATE_ADD":
-                SQLIntervalExpr intervalExpr = (SQLIntervalExpr) (x.getParameters().get(1));
-                item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), false, this.charsetIndex);
+                SQLIntervalExpr intervalExpr = (SQLIntervalExpr) (x.getArguments().get(1));
+                item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUnit(x.getArguments().get(1)), false, this.charsetIndex);
                 break;
             case "SUBDATE":
-                if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
+                if (x.getArguments().get(1) instanceof SQLIntegerExpr) {
                     item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, true, this.charsetIndex);
                     break;
                 }
                 // fallthrough
             case "DATE_SUB":
-                SQLIntervalExpr valueExpr = (SQLIntervalExpr) (x.getParameters().get(1));
-                item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), true, this.charsetIndex);
+                SQLIntervalExpr valueExpr = (SQLIntervalExpr) (x.getArguments().get(1));
+                item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUnit(x.getArguments().get(1)), true, this.charsetIndex);
                 break;
             case "TIMESTAMPADD":
-                SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getParameters().get(0);
+                SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getArguments().get(0);
                 item = new ItemDateAddInterval(args.get(2), args.get(1), SQLIntervalUnit.valueOf(addUnit.getSimpleName().toUpperCase()), false, this.charsetIndex);
                 break;
             case "TIMESTAMPDIFF":
-                SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getParameters().get(0);
+                SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getArguments().get(0);
                 item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName().toUpperCase()), this.charsetIndex);
                 break;
 
@@ -703,7 +703,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = new ItemFuncIf(args, this.charsetIndex);
                 break;
             case "GET_FORMAT":
-                SQLExpr expr = x.getParameters().get(0);
+                SQLExpr expr = x.getArguments().get(0);
                 if (expr instanceof SQLIdentifierExpr) {
                     Item arg0 = new ItemString(((SQLIdentifierExpr) expr).getName(), this.charsetIndex);
                     args.set(0, arg0);

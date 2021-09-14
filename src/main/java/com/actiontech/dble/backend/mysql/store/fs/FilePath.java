@@ -66,18 +66,22 @@ public abstract class FilePath {
     }
 
     private static void registerProviders() {
-        if (defaultProvider == null || providers == null) {
+        FilePath tmpDefaultProvider = defaultProvider;
+        Map<String, FilePath> tmpProviders = providers;
+        if (tmpDefaultProvider == null || tmpProviders == null) {
             synchronized (FilePath.class) {
-                if (defaultProvider == null || providers == null) {
+                tmpDefaultProvider = defaultProvider;
+                if (tmpDefaultProvider == null) {
                     Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());
                     FilePathDisk p = new FilePathDisk();
                     map.put(p.getScheme(), p);
-                    defaultProvider = p;
+                    tmpDefaultProvider = p;
                     FilePathNio p2 = new FilePathNio();
                     map.put(p2.getScheme(), p2);
                     FilePathNioMapped p3 = new FilePathNioMapped();
                     map.put(p3.getScheme(), p3);
                     providers = map;
+                    defaultProvider = tmpDefaultProvider;
                 }
             }
         }

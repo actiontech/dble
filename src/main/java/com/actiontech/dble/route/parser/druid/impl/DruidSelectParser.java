@@ -13,8 +13,7 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -29,6 +28,8 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
@@ -217,6 +218,87 @@ public class DruidSelectParser extends DefaultDruidParser {
         return false;
     }
 
+    private RouteResultset tryDirectRoute(SchemaConfig schemaConfig, RouteResultset rrs) throws SQLException {
+        List<String> tables = ctx.getTables();
+        int index = 0;
+        RuleConfig firstRule = null;
+        boolean directRoute = true;
+        Set<String> firstDataNodes = new HashSet<>();
+        Map<String, TableConfig> tableConfigMap = schemaConfig.getTables() == null ? null : schemaConfig.getTables();
+
+        if (tableConfigMap != null) {
+            for (String tableName : tables) {
+                TableConfig tc = tableConfigMap.get(tableName);
+                if (tc == null) {
+                    Map<String, String> tableAliasMap = ctx.getTableAliasMap();
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) != null) {
+                        tc = tableConfigMap.get(tableAliasMap.get(tableName));
+                    }
+                }
+
+                if (index == 0) {
+                    if (tc != null) {
+                        firstRule = tc.getRule();
+                        if (firstRule == null) {
+                            continue;
+                        }
+                        firstDataNodes.addAll(tc.getDataNodes());
+                    }
+                } else {
+                    if (tc != null) {
+                        RuleConfig ruleCfg = tc.getRule();
+                        if (ruleCfg == null) {
+                            continue;
+                        }
+                        Set<String> dataNodes = new HashSet<>(tc.getDataNodes());
+                        if (firstRule != null && ((!ruleCfg.getRuleAlgorithm().equals(firstRule.getRuleAlgorithm())) || !dataNodes.equals(firstDataNodes))) {
+                            directRoute = false;
+                            break;
+                        }
+                    }
+                }
+                index++;
+            }
+        }
+
+        RouteResultset rrsResult = rrs;
+        if (directRoute) {
+            rrsResult = tryRoute(schemaConfig, rrs, CacheService.getTableId2DataNodeCache());
+        }
+        return rrsResult;
+    }
+
+    private RouteResultset tryRoute(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool) throws SQLException {
+        if ((ctx.getTables() == null || ctx.getTables().size() == 0) && (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
+            rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+            rrs.setFinishedRoute(true);
+            return rrs;
+        }
+        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+        boolean isAllGlobalTable = RouterUtil.isAllGlobalTable(ctx, schema);
+        for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+            RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, true, cachePool, null);
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+                nodeSet.addAll(Arrays.asList(rrsTmp.getNodes()));
+            }
+            if (isAllGlobalTable) {
+                break;
+            }
+        }
+
+        if (nodeSet.size() > 0) {
+            RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+            int i = 0;
+            for (RouteResultsetNode routeResultsetNode : nodeSet) {
+                nodes[i++] = routeResultsetNode;
+            }
+
+            rrs.setNodes(nodes);
+            rrs.setFinishedRoute(true);
+
+        }
+        return rrs;
+    }
     private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
         String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs, schema, ctx, schemaList, tableSize, true);
@@ -501,6 +583,12 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setFinishedExecute(true);
             return schema;
         } else {
+            { // todo: if use old logic
+                rrs = tryDirectRoute(schema, rrs);
+                if (rrs.isFinishedRoute()) {
+                    return schema;
+                }
+            }
             return tryRouteToOneNode(schema, rrs, sc, selectStmt, tableSize);
         }
     }
@@ -511,6 +599,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
             throws SQLException {
+
         if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
             return;
         }

@@ -38,7 +38,7 @@ public final class RoutePenetrationManager {
                 final String routePenetrationRules = config.getRoutePenetrationRules();
                 //split with ;  ,exclude the \;
                 final String[] rules = routePenetrationRules.trim().split("(?<!\\\\);");
-                for (int i = 0; i < rules.length; i += 2) {
+                for (int i = 0; i + 1 < rules.length; i += 2) {
                     String regex = rules[i];
                     //escape \; to ;
                     regex = regex.replaceAll("\\\\;", ";");

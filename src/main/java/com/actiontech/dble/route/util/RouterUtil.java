@@ -1206,4 +1206,17 @@ public final class RouterUtil {
         Object o = WallVisitorUtils.getValue(expr);
         return Boolean.FALSE.equals(o);
     }
+
+    public static boolean isAllGlobalTable(DruidShardingParseInfo ctx, SchemaConfig schema) {
+        boolean isAllGlobal = false;
+        for (String table : ctx.getTables()) {
+            TableConfig tableConfig = schema.getTables().get(table);
+            if (tableConfig != null && tableConfig.isGlobalTable()) {
+                isAllGlobal = true;
+            } else {
+                return false;
+            }
+        }
+        return isAllGlobal;
+    }
 }

@@ -10,6 +10,8 @@ import com.actiontech.dble.cluster.values.JsonObjectWriter;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceHandler;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Enumeration;
@@ -25,7 +27,7 @@ import java.util.Properties;
 public final class PropertiesUtil {
     private PropertiesUtil() {
     }
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesUtil.class);
     public static Properties loadProps(String propsFile, boolean isLowerCaseTableNames) {
         Properties props = loadProps(propsFile);
         return handleLowerCase(props, isLowerCaseTableNames);
@@ -84,8 +86,20 @@ public final class PropertiesUtil {
     }
 
     public static void storeProps(Properties props, String propsFile) throws IOException {
-        try (OutputStream os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile)) {
+        OutputStream os = null;
+        try {
+            os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile);
             props.store(os, "\n Copyright (C) 2016-2020 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
+        } catch (IOException e) {
+            throw e;
+        } finally {
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    LOGGER.warn("close error", e);
+                }
+            }
         }
     }
 }

@@ -165,6 +165,9 @@ public final class SystemConfig {
     private ProblemReporter problemReporter;
     private boolean useOuterHa = false;
 
+    private boolean enableRoutePenetration = false;
+    private String routePenetrationRules = "";
+
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
     }
@@ -1206,6 +1209,21 @@ public final class SystemConfig {
         }
     }
 
+    public boolean isEnableRoutePenetration() {
+        return enableRoutePenetration;
+    }
+
+    public void setEnableRoutePenetration(boolean enableSqlPenetrationTmp) {
+        enableRoutePenetration = enableSqlPenetrationTmp;
+    }
+
+    public String getRoutePenetrationRules() {
+        return routePenetrationRules;
+    }
+
+    public void setRoutePenetrationRules(String sqlPenetrationRegexesTmp) {
+        routePenetrationRules = sqlPenetrationRegexesTmp;
+    }
 
     @Override
     public String toString() {
@@ -1289,6 +1307,8 @@ public final class SystemConfig {
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
                 ", xaRetryCount=" + xaRetryCount +
+                ", enableRoutePenetration=" + enableRoutePenetration +
+                ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 "]";
     }
 

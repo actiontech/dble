@@ -62,6 +62,8 @@ public final class RouteResultset implements Serializable {
     private Boolean runOnSlave = null;
     private String[] groupByCols;
 
+    private boolean routePenetration = false;
+
     public String[] getGroupByCols() {
         return groupByCols;
     }
@@ -69,6 +71,7 @@ public final class RouteResultset implements Serializable {
     public void setGroupByCols(String[] groupByCols) {
         this.groupByCols = groupByCols;
     }
+
     public boolean isNeedOptimizer() {
         return needOptimizer;
     }
@@ -85,6 +88,13 @@ public final class RouteResultset implements Serializable {
         this.runOnSlave = runOnSlave;
     }
 
+    public boolean isRoutePenetration() {
+        return routePenetration;
+    }
+
+    public void setRoutePenetration(boolean routePenetration) {
+        this.routePenetration = routePenetration;
+    }
 
     public boolean isLoadData() {
         return isLoadData;

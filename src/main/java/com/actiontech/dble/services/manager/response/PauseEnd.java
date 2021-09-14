@@ -43,9 +43,7 @@ public final class PauseEnd {
 
     }
 
-
     public static void resume(ManagerService service) {
-        LOGGER.info("resume start from command");
         if (ClusterConfig.getInstance().isClusterEnable()) {
             try {
                 ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.PAUSE_RESUME);

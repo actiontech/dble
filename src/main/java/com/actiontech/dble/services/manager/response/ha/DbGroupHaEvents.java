@@ -22,7 +22,6 @@ import java.util.Map;
  */
 public final class DbGroupHaEvents {
 
-
     private static final int FIELD_COUNT = 5;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];

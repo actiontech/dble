@@ -19,8 +19,6 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.HaConfigManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -31,10 +29,7 @@ import java.util.regex.Matcher;
 public final class DbGroupHaSwitch {
 
     private DbGroupHaSwitch() {
-
     }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaSwitch.class);
 
     public static void execute(Matcher switcher, ManagerService service) {
         String dbGroupName = switcher.group(1);

@@ -5,9 +5,7 @@
  */
 package com.actiontech.dble.route.parser;
 
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
-import com.actiontech.dble.util.SplitUtil;
 
 /**
  * @author mycat
@@ -38,25 +36,11 @@ public final class ManagerParseStart {
         return OTHER;
     }
 
-    public static Pair<String[], Integer> getPair(String stmt) {
-        int offset = stmt.indexOf("@@");
-        String s = stmt.substring(offset + 11).trim();
-        int p1 = s.lastIndexOf(':');
-        if (p1 == -1) {
-            String[] src = SplitUtil.split(s, ',', '$', '-', '[', ']');
-            return new Pair<>(src, null);
-        } else {
-            String[] src = SplitUtil.split(s, ':', true);
-            String[] src1 = SplitUtil.split(src[0], ',', '$', '-', '[', ']');
-            return new Pair<>(src1, Integer.valueOf(src[1]));
-        }
-    }
-
     // STATISTIC_QUEUE_TIMER
-    static int startCheck(String stmt, int offset) {
+    private static int startCheck(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@') {
             if (stmt.length() > offset + 21 && stmt.substring(offset + 1).toUpperCase().startsWith("STATISTIC_QUEUE_MONITOR")) {
-                return STATISTIC_QUEUE_MONITOR;
+                return offset + 24 << 8 | STATISTIC_QUEUE_MONITOR;
             }
         }
         return OTHER;

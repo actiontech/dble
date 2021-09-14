@@ -155,18 +155,19 @@ public final class ManagerParse {
     }
 
     private static int dbGroupCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "Group".length()) {
+        if (stmt.length() > offset + "Group ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
             if ((c1 == 'g' || c1 == 'G') &&
                     (c2 == 'r' || c2 == 'R') &&
                     (c3 == 'o' || c3 == 'O') &&
                     (c4 == 'u' || c4 == 'U') &&
-                    (c5 == 'p' || c5 == 'P')) {
-                return DB_GROUP;
+                    (c5 == 'p' || c5 == 'P') && ParseUtil.isSpace(c6)) {
+                return offset << 8 | DB_GROUP;
             }
         }
         return OTHER;
@@ -203,8 +204,8 @@ public final class ManagerParse {
             String tmp = stmt.substring(offset + 3).trim();
             if (tmp.toUpperCase().equals("@@STATISTIC_QUEUE.USAGE")) {
                 return DROP_STATISTIC_QUEUE_USAGE;
-            } else {
-                return DROP_DB;
+            } else if (tmp.toUpperCase().startsWith("DATABASE")) {
+                return offset + 2 << 8 | DROP_DB;
             }
         }
         return OTHER;
@@ -258,7 +259,7 @@ public final class ManagerParse {
     }
 
     private static int flCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "OW_CONTROL".length()) {
+        if (stmt.length() > offset + "OW_CONTROL ".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
@@ -269,6 +270,7 @@ public final class ManagerParse {
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
             char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
             if ((c2 == 'O' || c2 == 'o') &&
                     (c3 == 'W' || c3 == 'w') &&
                     (c4 == '_') &&
@@ -278,8 +280,8 @@ public final class ManagerParse {
                     (c8 == 'T' || c8 == 't') &&
                     (c9 == 'R' || c9 == 'r') &&
                     (c10 == 'O' || c10 == 'o') &&
-                    (c11 == 'L' || c11 == 'l')) {
-                return FLOW_CONTROL;
+                    (c11 == 'L' || c11 == 'l') && ParseUtil.isSpace(c12)) {
+                return offset << 8 | FLOW_CONTROL;
             }
         }
         return OTHER;
@@ -293,7 +295,7 @@ public final class ManagerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             if ((c1 == 'E' || c1 == 'e') && (c2 == 'S' || c2 == 's') &&
-                    (c3 == 'H' || c3 == 'h') && (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                    (c3 == 'H' || c3 == 'h') && ParseUtil.isSpace(c4)) {
                 return freshCheck(stmt, offset);
             }
         }
@@ -308,8 +310,8 @@ public final class ManagerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'C' || c1 == 'c') && (c2 == 'O' || c2 == 'o') &&
-                    (c3 == 'N' || c3 == 'n') && (c4 == 'N' || c4 == 'n') && (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
-                return FRESH_CONN;
+                    (c3 == 'N' || c3 == 'n') && (c4 == 'N' || c4 == 'n') && ParseUtil.isSpace(c5)) {
+                return offset << 8 | FRESH_CONN;
             }
         }
         return OTHER;
@@ -336,8 +338,17 @@ public final class ManagerParse {
     }
 
     private static int clCheck(String stmt, int offset) {
-        if (ParseUtil.compare(stmt, offset, "LUSTER")) {
-            return CLUSTER;
+        if (stmt.length() > offset + 6) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'S' || c2 == 's') && (c3 == 'T' || c3 == 't') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == 'R' || c5 == 'r') && ParseUtil.isSpace(c6)) {
+                return offset << 8 | CLUSTER;
+            }
         }
         return OTHER;
     }
@@ -351,9 +362,16 @@ public final class ManagerParse {
     }
 
     private static int crCheck(String stmt, int offset) {
-        String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("REATE")) {
-            return CREATE_DB;
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'A' || c2 == 'a') &&
+                    (c3 == 'T' || c3 == 't') && (c4 == 'E' || c4 == 'e') && ParseUtil.isSpace(c5)) {
+                return offset << 8 | CREATE_DB;
+            }
         }
         return OTHER;
     }
@@ -619,9 +637,8 @@ public final class ManagerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             if ((c1 == 'u' || c1 == 'U') && (c2 == 'S' || c2 == 's') &&
-                    (c3 == 'E' || c3 == 'e') &&
-                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
-                return PAUSE;
+                    (c3 == 'E' || c3 == 'e') && ParseUtil.isSpace(c4)) {
+                return offset << 8 | PAUSE;
             }
         }
         return OTHER;

@@ -318,7 +318,7 @@ public class StatisticCf {
         private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
         private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
         private static final EOFPacket EOF = new EOFPacket();
-        private static final Pattern PATTERN = Pattern.compile("start\\s+@@statistic_queue_monitor(\\s+observeTime\\s*=\\s*(([^\\s])+)(\\s+and\\s+intervalTime\\s*=\\s*([^']+))?)?", Pattern.CASE_INSENSITIVE);
+        private static final Pattern PATTERN = Pattern.compile("(\\s+observeTime\\s*=\\s*(([^\\s])+)(\\s+and\\s+intervalTime\\s*=\\s*([^']+))?)?", Pattern.CASE_INSENSITIVE);
 
         private static final ImmutableMap<String, TimeUnit> TIME_SUFFIXES =
                 ImmutableMap.<String, TimeUnit>builder().
@@ -343,8 +343,9 @@ public class StatisticCf {
         }
 
         // start @@statistic_queue_monitor observeTime = 0 and intervalTime = 0;
-        public static void start(ManagerService service, String stmt) {
-            Matcher ma = PATTERN.matcher(stmt);
+        public static void start(ManagerService service, String stmt, int offset) {
+            String option = stmt.substring(offset);
+            Matcher ma = PATTERN.matcher(option);
             if (!ma.matches()) {
                 service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "The sql does not match: start @@statistic_queue_monitor observeTime = ? and intervalTime = ?");
                 return;

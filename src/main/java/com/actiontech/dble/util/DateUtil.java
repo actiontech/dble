@@ -7,7 +7,6 @@ package com.actiontech.dble.util;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
-import sun.util.calendar.CalendarUtils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -53,7 +52,6 @@ public final class DateUtil {
     }
 
     /**
-     *
      * parseStr
      *
      * @param time
@@ -169,8 +167,8 @@ public final class DateUtil {
             int timeDistance = 0;
             for (int i = year1; i < year2; i++) {
                 if (i == year1) {
-                    timeDistance += (CalendarUtils.isGregorianLeapYear(year1) ? 366 : 365) - day1;
-                } else if (CalendarUtils.isGregorianLeapYear(i)) {
+                    timeDistance += (isGregorianLeapYear(year1) ? 366 : 365) - day1;
+                } else if (isGregorianLeapYear(i)) {
                     timeDistance += 366;
                 } else {
                     timeDistance += 365;
@@ -181,6 +179,10 @@ public final class DateUtil {
             diffDays = day2 - day1;
         }
         return negativeFlag ? diffDays : -diffDays;
+    }
+
+    private static boolean isGregorianLeapYear(int gregorianYear) {
+        return (((gregorianYear % 4) == 0) && (((gregorianYear % 100) != 0) || ((gregorianYear % 400) == 0)));
     }
 
 }

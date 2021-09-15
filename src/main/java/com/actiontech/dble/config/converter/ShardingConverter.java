@@ -441,7 +441,6 @@ public class ShardingConverter {
         while (iterator.hasNext()) {
             Map.Entry<String, Set<ERTable>> entry = iterator.next();
             if (entry.getValue().size() == 1) {
-                // iterator.remove();
                 continue;
             }
             for (ERTable erTable : entry.getValue()) {

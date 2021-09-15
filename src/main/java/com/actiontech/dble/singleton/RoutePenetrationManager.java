@@ -38,6 +38,9 @@ public final class RoutePenetrationManager {
                 final String routePenetrationRules = config.getRoutePenetrationRules();
                 //split with ;  ,exclude the \;
                 final String[] rules = routePenetrationRules.trim().split("(?<!\\\\);");
+                if (rules.length % 2 != 0) {
+                    throw new IllegalStateException("rule must be pairwise.");
+                }
                 for (int i = 0; i + 1 < rules.length; i += 2) {
                     String regex = rules[i];
                     //escape \; to ;
@@ -73,7 +76,7 @@ public final class RoutePenetrationManager {
         }
 
         public boolean match(String sql) {
-            return pattern.matcher(sql).find();
+            return pattern.matcher(sql).matches();
         }
     }
 }

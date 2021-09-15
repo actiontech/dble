@@ -38,12 +38,15 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 
 public class DruidSelectParser extends DefaultDruidParser {
+    private static final Logger LOGGER = LogManager.getLogger(DruidSelectParser.class);
     private static HashSet<String> aggregateSet = new HashSet<>(16, 1);
 
     static {
@@ -584,8 +587,10 @@ public class DruidSelectParser extends DefaultDruidParser {
             return schema;
         } else {
             if (rrs.isRoutePenetration()) {
+                LOGGER.debug("the query {} match the route penetration regex", rrs.getSrcStatement());
                 rrs = tryDirectRoute(schema, rrs);
                 if (rrs.isFinishedRoute()) {
+                    LOGGER.debug("the query {} match the route penetration rule, will direct route", rrs.getSrcStatement());
                     return schema;
                 }
             }

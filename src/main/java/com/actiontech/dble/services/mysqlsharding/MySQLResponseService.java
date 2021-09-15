@@ -486,6 +486,10 @@ public class MySQLResponseService extends BackendService {
         return executor;
     }
 
+    protected boolean isSupportFlowControl() {
+        return true;
+    }
+
     public boolean isComplexQuery() {
         return complexQuery;
     }

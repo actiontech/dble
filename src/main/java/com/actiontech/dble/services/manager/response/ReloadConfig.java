@@ -575,9 +575,8 @@ public final class ReloadConfig {
 
 
     private static String initDbGroupByMap(Map<String, PhysicalDbGroup> newDbGroups, Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured) {
-        String reasonMsg = null;
         for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
-            ReloadLogHelper.info("try to init dbGroup : " + dbGroup.toString(), LOGGER);
+            ReloadLogHelper.info("try to init dbGroup : " + dbGroup.getGroupName(), LOGGER);
             String hostName = dbGroup.getGroupName();
             // set schemas
             ArrayList<String> dnSchemas = new ArrayList<>(30);
@@ -594,6 +593,6 @@ public final class ReloadConfig {
                 LOGGER.info("dbGroup[" + hostName + "] is not fullyConfigured, so doing nothing");
             }
         }
-        return reasonMsg;
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 package com.actiontech.dble.backend.mysql.proto.handler;
 
+
 import org.jetbrains.annotations.Nullable;
 
 public final class ProtoHandlerResult {

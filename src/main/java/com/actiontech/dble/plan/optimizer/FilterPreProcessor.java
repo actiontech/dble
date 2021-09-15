@@ -36,7 +36,7 @@ public final class FilterPreProcessor {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-always-true");
         try {
             MergeHavingFilter.optimize(qtn);
-            qtn = preProcess(qtn);
+            preProcess(qtn);
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
@@ -45,7 +45,7 @@ public final class FilterPreProcessor {
     }
 
 
-    private static PlanNode preProcess(PlanNode qtn) {
+    private static void preProcess(PlanNode qtn) {
         qtn.having(processFilter(qtn.getHavingFilter()));
         qtn.query(processFilter(qtn.getWhereFilter()));
         if (qtn instanceof JoinNode) {
@@ -58,7 +58,6 @@ public final class FilterPreProcessor {
         for (PlanNode child : qtn.getChildren()) {
             preProcess(child);
         }
-        return qtn;
     }
 
     private static Item processFilter(Item root) {
@@ -77,7 +76,7 @@ public final class FilterPreProcessor {
      */
     private static Item shortestFilter(Item root) {
         if (root == null)
-            return root;
+            return null;
         if (root.canValued()) {
             boolean value = root.valBool();
             if (value)

@@ -98,7 +98,7 @@ public abstract class AbstractService extends VariablesService implements Servic
 
 
     public boolean isFlowControlled() {
-        return this.connection.isFlowControlled();
+        return this.connection.isFrontWriteFlowControlled();
     }
 
     @Override

@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.cluster.zkprocess;
 
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterSender;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
@@ -15,7 +16,11 @@ import com.actiontech.dble.cluster.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
+import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.ZKUtils;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,5 +164,46 @@ public class ZkSender implements ClusterSender {
     @Override
     public void forceResumePause() throws Exception {
         ZktoXmlMain.getPauseShardingNodeListener().notifyCluster();
+    }
+
+
+    @Override
+    public void detachCluster() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            LOGGER.info("cluster detach begin stop listener");
+            final Map<ZKUtils.ListenerContext, PathChildrenCache> caches = ZKUtils.getCaches();
+            for (PathChildrenCache cache : caches.values()) {
+                cache.close();
+            }
+            OnlineStatus.getInstance().shutdownClear();
+            if (SequenceManager.getHandler() instanceof IncrSequenceZKHandler) {
+                ((IncrSequenceZKHandler) SequenceManager.getHandler()).detach();
+            }
+            LOGGER.info("cluster detach begin close connection");
+            ZKUtils.getConnection().close();
+        }
+    }
+
+    @Override
+    public void attachCluster() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            ZKUtils.recreateConnection();
+            try {
+                ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
+            } catch (Exception e) {
+                ZKUtils.getConnection().close();
+                throw new IllegalStateException("can't connect to zk. ");
+            }
+            if (!OnlineStatus.getInstance().rebuildOnline()) {
+                throw new IllegalStateException("can't create online information to zk. ");
+            }
+            LOGGER.info("cluster attach begin restart listener");
+            if (SequenceManager.getHandler() instanceof IncrSequenceZKHandler) {
+                ((IncrSequenceZKHandler) SequenceManager.getHandler()).attach();
+            }
+            ZKUtils.recreateCaches();
+
+
+        }
     }
 }

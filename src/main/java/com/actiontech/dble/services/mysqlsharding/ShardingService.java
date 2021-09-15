@@ -37,6 +37,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.jetbrains.annotations.NotNull;
@@ -45,10 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLSyntaxErrorException;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -76,7 +74,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private long lastInsertId;
     @Nonnull
     private final NonBlockingSession session;
-    private ServerSptPrepare sptprepare;
+    private final ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
     protected volatile boolean setNoAutoCommit = false;
 
@@ -174,29 +172,32 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         }
 
         WallProvider blackList = userConfig.getBlacklist();
-        if (blackList != null) {
-            WallCheckResult result = blackList.check(
-                    ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
-            if (!result.getViolations().isEmpty()) {
-                if (result.isSyntaxError()) {
-                    LOGGER.info("{}", result.getViolations().get(0).getMessage());
-                    writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
-                            result.getViolations().get(0).getMessage());
-                } else {
-                    String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
-                    String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
-                    LOGGER.warn("Firewall message:{}, {}",
-                            result.getViolations().get(0).getMessage(), msg);
-                    writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);
-                }
-                return;
-            }
-        }
-
+        if (blacklistCheck(sql, blackList)) return;
         SerializableLock.getInstance().lock(this.connection.getId());
 
         this.handler.setReadOnly(userConfig.isReadOnly());
         this.handler.query(sql);
+    }
+
+    private boolean blacklistCheck(String sql, WallProvider blackList) {
+        if (Objects.isNull(blackList)) return false;
+        WallCheckResult result = blackList.check(
+                ((ServerParseFactory.getShardingParser().parse(sql) & 0xff) == ServerParse.BEGIN) ? "start transaction" : sql);
+        if (!result.getViolations().isEmpty()) {
+            if (result.isSyntaxError()) {
+                LOGGER.info("{}", result.getViolations().get(0).getMessage());
+                writeErrMessage(ErrorCode.ER_PARSE_ERROR, "druid not support sql syntax, the reason is " +
+                        result.getViolations().get(0).getMessage());
+            } else {
+                String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
+                String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
+                LOGGER.warn("Firewall message:{}, {}",
+                        result.getViolations().get(0).getMessage(), msg);
+                writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -347,6 +348,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             }
             shardingSQLHandler.routeEndExecuteSQL(sql, type, schemaConfig);
 
+        } catch (NeedDelayedException e) {
+            throw e;
         } catch (Exception e) {
             LOGGER.warn("execute sql cause error", e);
             writeErrMessage(ErrorCode.ER_YES, e.getMessage());
@@ -441,6 +444,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
+            if (session.getTransactionManager().isXaEnabled()) {
+                getClusterDelayService().markDoingOrDelay(true);
+            }
             TxnLogHelper.putTxnLog(session.getShardingService(), "commit[because of " + stmt + "]");
             this.txChainBegin = true;
             session.commit();
@@ -467,6 +473,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (txInterrupted) {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
+            if (session.getTransactionManager().isXaEnabled()) {
+                getClusterDelayService().markDoingOrDelay(true);
+            }
             if (session.getShardingService().isTxStart() || !session.getShardingService().isAutocommit()) {
                 TxnLogHelper.putTxnLog(session.getShardingService(), logReason);
             }
@@ -475,6 +484,9 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     public void rollback() {
+        if (session.getTransactionManager().isXaEnabled()) {
+            getClusterDelayService().markDoingOrDelay(true);
+        }
         if (txInterrupted) {
             txInterrupted = false;
         }
@@ -566,10 +578,8 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     @Override
     public void cleanup() {
         super.cleanup();
-        if (session != null) {
-            TsQueriesCounter.getInstance().addToHistory(this);
-            session.terminate();
-        }
+        TsQueriesCounter.getInstance().addToHistory(this);
+        session.terminate();
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
         }

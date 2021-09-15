@@ -248,7 +248,7 @@ public final class RouteService {
         return -1;    // false
     }
 
-    private Map parseKeyValue(String substring, char splitChar) {
+    private Map<String, String> parseKeyValue(String substring, char splitChar) {
         Map<String, String> map = new HashMap<>();
         int indexOf = substring.indexOf(splitChar);
         if (indexOf != -1) {
@@ -258,9 +258,7 @@ public final class RouteService {
             if (value.endsWith("'") && value.startsWith("'")) {
                 value = value.substring(1, value.length() - 1);
             }
-            if (map.isEmpty()) {
-                map.put(HINT_TYPE, key);
-            }
+            map.put(HINT_TYPE, key);
             map.put(key, value.trim());
 
         }

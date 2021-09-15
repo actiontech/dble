@@ -224,7 +224,7 @@ public class DBConverter {
             List<String> errorMsgList = Lists.newArrayList();
             for (Property property : propertyList) {
                 checkProperty(errorMsgList, property);
-                props.put(property.getName(), property.getValue());
+                props.setProperty(property.getName(), property.getValue());
             }
             ParameterMapping.mapping(poolConfig, props, problemReporter);
             if (props.size() > 0) {
@@ -280,6 +280,8 @@ public class DBConverter {
             case "idleTimeout":
             case "heartbeatPeriodMillis":
             case "evictorShutdownTimeoutMillis":
+            case "flowHighLevel":
+            case "flowLowLevel":
                 if (!StringUtil.isBlank(value)) {
                     if (!LongUtil.isLong(value)) {
                         errorMsgList.add("property [ " + property.getName() + " ] '" + value + "' data type should be long");

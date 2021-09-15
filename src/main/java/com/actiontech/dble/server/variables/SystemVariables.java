@@ -118,7 +118,6 @@ public final class SystemVariables {
         sessionVariables.put("ndb_index_stat_enable", "1");
         sessionVariables.put("ndb_index_stat_option", "NULL");
         sessionVariables.put("ndb_join_pushdown", "1");
-        sessionVariables.put("ndb_log_bin", "1");
         sessionVariables.put("ndb_log_bin", "0");
         sessionVariables.put("ndb_table_no_logging", "0");
         sessionVariables.put("ndb_table_temporary", "0");

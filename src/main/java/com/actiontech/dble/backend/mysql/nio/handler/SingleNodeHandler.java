@@ -23,7 +23,6 @@ import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
@@ -411,7 +410,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
-                FlowController.tryFlowControl(session);
                 RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
                 if (!requestScope.isUsingCursor()) {
                     row[3] = (byte) session.getShardingService().nextPacketId();

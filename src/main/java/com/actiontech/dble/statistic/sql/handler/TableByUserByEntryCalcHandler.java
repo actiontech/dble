@@ -54,33 +54,31 @@ public class TableByUserByEntryCalcHandler implements StatisticDataHandler {
     private void toRecord(String table, StatisticFrontendSqlEntry fEntry) {
         if (fEntry.getSqlType() == 4 || fEntry.getSqlType() == 11 || fEntry.getSqlType() == 3 || fEntry.getSqlType() == 7) {
             String key = fEntry.getFrontend().getUserId() + "-" + fEntry.getFrontend().getUser() + "-" + table;
-            Record currRecord;
-            boolean isNew = true;
-            if (isNew = ((currRecord = records.get(key)) == null)) {
+            Record currRecord = records.get(key);
+            boolean isNew = currRecord == null;
+            if (isNew) {
                 checkEliminate();
                 currRecord = new Record(fEntry.getFrontend().getUserId(), fEntry.getFrontend(), table);
             }
-            if (currRecord != null) {
-                switch (fEntry.getSqlType()) {
-                    case ServerParse.INSERT:
-                        currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
-                        break;
-                    case ServerParse.UPDATE:
-                        currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
-                        break;
-                    case ServerParse.DELETE:
-                        currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
-                        break;
-                    case ServerParse.SELECT:
-                        currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
-                        break;
-                    default:
-                        // ignore
-                        break;
-                }
-                if (isNew) {
-                    records.put(key, currRecord);
-                }
+            switch (fEntry.getSqlType()) {
+                case ServerParse.INSERT:
+                    currRecord.addInsert(fEntry.getRows(), fEntry.getDuration());
+                    break;
+                case ServerParse.UPDATE:
+                    currRecord.addUpdate(fEntry.getRows(), fEntry.getDuration());
+                    break;
+                case ServerParse.DELETE:
+                    currRecord.addDelete(fEntry.getRows(), fEntry.getDuration());
+                    break;
+                case ServerParse.SELECT:
+                    currRecord.addSelect(fEntry.getExaminedRows().longValue(), fEntry.getRows(), fEntry.getDuration());
+                    break;
+                default:
+                    // ignore
+                    break;
+            }
+            if (isNew) {
+                records.put(key, currRecord);
             }
         }
     }

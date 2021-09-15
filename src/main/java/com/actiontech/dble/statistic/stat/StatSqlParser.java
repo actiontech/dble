@@ -18,7 +18,7 @@ class StatSqlParser {
             return sql.replace("\n", " ");
         }
 
-        return sql;
+        return null;
     }
 
     public String mergeSql(String sql) {

@@ -59,9 +59,6 @@ public final class SerializableLock {
 
     private String printTrace() {
         StackTraceElement[] st = Thread.currentThread().getStackTrace();
-        if (st == null) {
-            return "";
-        }
         StringBuilder sbf = new StringBuilder();
         for (StackTraceElement e : st) {
             if (sbf.length() > 0) {

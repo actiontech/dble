@@ -90,7 +90,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             session.releaseConnectionIfSafe(((MySQLResponseService) service), false);
         } else {
             service.getConnection().businessClose("unfinished sync");
-            session.getTargetMap().remove(((MySQLResponseService) service).getAttachment());
+            session.getTargetMap().remove((RouteResultsetNode) (((MySQLResponseService) service).getAttachment()));
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);

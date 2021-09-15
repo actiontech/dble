@@ -14,20 +14,8 @@ import java.util.regex.Pattern;
  * @author dcy
  */
 public abstract class AbstractServerParse implements ServerParse {
-    protected AbstractServerParse() {
-    }
 
-
-    private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
-    protected static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern SELECT_FOR_UPDATE_PATTERN = Pattern.compile(".*(\\s+for\\s+update)\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern LOCK_IN_SHARE_MODE_PATTERN = Pattern.compile(".*(\\s+lock\\s+in\\s+share\\s+mode)\\s*$", Pattern.CASE_INSENSITIVE);
-
-
-    @Override
-    public int parseSpecial(int sqlType, String stmt) {
-        return OTHER;
-    }
+    static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
 
     @Override
     public boolean startWithHint(String stmt) {
@@ -67,7 +55,7 @@ public abstract class AbstractServerParse implements ServerParse {
     }
 
     @Override
-    public LinkedList<String> getMultiStatement(String sql, LinkedList<String> splitSql) {
+    public void getMultiStatement(String sql, LinkedList<String> splitSql) {
         int index = ParseUtil.findNextBreak(sql);
         if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
             splitSql.add(sql.substring(0, index).trim());
@@ -80,6 +68,5 @@ public abstract class AbstractServerParse implements ServerParse {
                 splitSql.add(sql.trim());
             }
         }
-        return splitSql;
     }
 }

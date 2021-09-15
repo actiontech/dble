@@ -407,7 +407,7 @@ public class RBTreeList<E> extends AbstractList<E> {
     private RBTNode<E> find(E e) {
         RBTNode<E> t = root;
         if (t == null)
-            return t;
+            return null;
         while (t != null) {
             int cmp = comparator.compare(e, t.value);
             if (cmp < 0)
@@ -417,7 +417,7 @@ public class RBTreeList<E> extends AbstractList<E> {
             else
                 return t;
         }
-        return t;
+        return null;
 
     }
 

@@ -15,19 +15,19 @@ public final class TmpFileException extends RuntimeException {
     private static final Properties MESSAGES = new Properties();
 
     static {
-        MESSAGES.put("5301", "Could not open file {0}");
-        MESSAGES.put("5302", "Could not force file {0}");
-        MESSAGES.put("5303", "Could not sync file {0}");
-        MESSAGES.put("5304", "Reading from {0} failed");
-        MESSAGES.put("5305", "Writing to {0} failed");
-        MESSAGES.put("5306", "Error while renaming file {0} to {1}");
-        MESSAGES.put("5307", "Cannot delete file {0}");
-        MESSAGES.put("5308", "IO Exception: {0}");
-        MESSAGES.put("5309", "Reading from {0} failed,index out of bounds");
-        MESSAGES.put("5310", "Hex a decimal string with odd number of characters: {0}");
-        MESSAGES.put("5311", "Hex a decimal string contains non-hex character: {0}");
-        MESSAGES.put("5312", "Invalid value {0} for parameter {1}");
-        MESSAGES.put("5313", "Error while creating file {0}");
+        MESSAGES.setProperty("5301", "Could not open file {0}");
+        MESSAGES.setProperty("5302", "Could not force file {0}");
+        MESSAGES.setProperty("5303", "Could not sync file {0}");
+        MESSAGES.setProperty("5304", "Reading from {0} failed");
+        MESSAGES.setProperty("5305", "Writing to {0} failed");
+        MESSAGES.setProperty("5306", "Error while renaming file {0} to {1}");
+        MESSAGES.setProperty("5307", "Cannot delete file {0}");
+        MESSAGES.setProperty("5308", "IO Exception: {0}");
+        MESSAGES.setProperty("5309", "Reading from {0} failed,index out of bounds");
+        MESSAGES.setProperty("5310", "Hex a decimal string with odd number of characters: {0}");
+        MESSAGES.setProperty("5311", "Hex a decimal string contains non-hex character: {0}");
+        MESSAGES.setProperty("5312", "Invalid value {0} for parameter {1}");
+        MESSAGES.setProperty("5313", "Error while creating file {0}");
     }
 
     private TmpFileException(String message) {

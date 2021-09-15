@@ -534,7 +534,7 @@ public final class StringUtil {
     public static String removeAllApostrophe(String str) {
         if (str.length() > 1) {
             char firstValue = str.charAt(0);
-            if ((firstValue == '\'' | firstValue == '"') && (firstValue == str.charAt(str.length() - 1))) {
+            if ((firstValue == '\'' || firstValue == '"') && (firstValue == str.charAt(str.length() - 1))) {
                 return str.substring(1, str.length() - 1);
             } else {
                 return str;
@@ -559,10 +559,6 @@ public final class StringUtil {
             }
         }
         return str;
-    }
-
-    public static String getFullName(String schema, String tableName, char split) {
-        return String.format("`%s`" + split + "`%s`", schema, tableName);
     }
 
     public static String getFullName(String schema, String tableName) {

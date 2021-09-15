@@ -245,8 +245,6 @@ public final class HandlerTool {
                 newArg = new ItemInt(0);
             else
                 newArg = createItem(arg, fields, startIndex, allPushDown, type);
-            if (newArg == null)
-                throw new RuntimeException("Function argument not found:" + arg);
             args.add(newArg);
         }
         ItemFunc ret = (ItemFunc) f.reStruct(args, allPushDown, fields);
@@ -273,8 +271,6 @@ public final class HandlerTool {
                 newArg = new ItemInt(0);
             else
                 newArg = createItem(arg, fields, startIndex, allPushDown, type);
-            if (newArg == null)
-                throw new RuntimeException("Function argument not found:" + arg);
             args.add(newArg);
         }
         ItemSum ret = (ItemSum) f.reStruct(args, allPushDown, fields);
@@ -283,8 +279,6 @@ public final class HandlerTool {
             for (Order order : ((ItemFuncGroupConcat) ret).getOrders()) {
                 Item arg = order.getItem();
                 Item newArg = createItem(arg, fields, startIndex, allPushDown, type);
-                if (newArg == null)
-                    throw new RuntimeException("Function argument not found:" + arg);
                 order.setItem(newArg);
             }
         }

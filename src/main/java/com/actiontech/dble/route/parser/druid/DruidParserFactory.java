@@ -8,6 +8,7 @@ package com.actiontech.dble.route.parser.druid;
 import com.actiontech.dble.route.parser.druid.impl.*;
 import com.actiontech.dble.route.parser.druid.impl.ddl.*;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.services.FrontendService;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
@@ -23,7 +24,7 @@ public final class DruidParserFactory {
     private DruidParserFactory() {
     }
 
-    public static DruidParser create(SQLStatement statement, int sqlType)
+    public static DruidParser create(SQLStatement statement, int sqlType, FrontendService service)
             throws SQLNonTransientException {
         DruidParser parser;
         if (statement instanceof SQLSelectStatement) {
@@ -39,6 +40,7 @@ public final class DruidParserFactory {
         } else if (statement instanceof MySqlLockTableStatement) {
             parser = new DruidLockTableParser();
         } else if (statement instanceof SQLDDLStatement) {
+            service.getClusterDelayService().markDoingOrDelay(true);
             if (statement instanceof SQLCreateDatabaseStatement) {
                 parser = new DruidCreateDatabaseParser();
             } else if (statement instanceof MySqlCreateTableStatement) {

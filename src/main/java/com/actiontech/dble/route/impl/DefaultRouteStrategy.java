@@ -32,7 +32,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
             rrs.setStatement(originSql);
             rrs.setSrcStatement(originSql);
         }
-        DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
+        DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType(), service);
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "simple-route-detail");
         TraceManager.log(ImmutableMap.of("druidParser", druidParser.getClass().toString()), traceObject);
         try {

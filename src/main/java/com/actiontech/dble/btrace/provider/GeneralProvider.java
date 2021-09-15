@@ -28,4 +28,10 @@ public final class GeneralProvider {
     public static void sqlJobDoFinished() {
 
     }
+
+
+    public static void afterDelayServiceMarkDoing() {
+
+    }
+
 }

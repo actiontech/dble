@@ -41,7 +41,6 @@ import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
-import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -589,18 +588,16 @@ public class ServerConfig {
         xmlProcess.initJaxbClass();
 
 
-        Gson gson = JsonFactory.getJson();
         //sharding
         if ((this.shardingConfig) != null) {
-            ClusterLogic.forConfig().syncShardingXmlToLocal(this.shardingConfig, xmlProcess, gson, isWriteToLocal);
+            ClusterLogic.forConfig().syncShardingXmlToLocal(this.shardingConfig, xmlProcess, JsonFactory.getJson(), isWriteToLocal);
         }
 
         //db
         ClusterLogic.forConfig().syncDbXmlToLocal(xmlProcess, this.dbConfig, isWriteToLocal);
 
         //user
-        gson = JsonFactory.getJson();
-        ClusterLogic.forConfig().syncUserXmlToLocal(this.userConfig, xmlProcess, gson, isWriteToLocal);
+        ClusterLogic.forConfig().syncUserXmlToLocal(this.userConfig, xmlProcess, JsonFactory.getJson(), isWriteToLocal);
 
         //sequence
         ClusterLogic.forConfig().syncSequenceToLocal(this.sequenceConfig, isWriteToLocal);

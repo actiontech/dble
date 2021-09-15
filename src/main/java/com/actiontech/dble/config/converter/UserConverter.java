@@ -175,16 +175,7 @@ public class UserConverter {
             throw new ConfigException("User [" + userName + "]'s dbGroup is empty");
         }
 
-        WallProvider wallProvider = null;
-        if (!StringUtil.isEmpty(blacklistStr)) {
-            wallProvider = blackListMap.get(blacklistStr);
-            if (wallProvider == null) {
-                problemReporter.warn("blacklist[" + blacklistStr + "] for user [" + userName + "]  is not found, it will be ignore");
-            } else {
-                wallProvider.setName(blacklistStr);
-            }
-        }
-
+        WallProvider wallProvider = getWallProvider(blackListMap, problemReporter, blacklistStr, userName);
         RwSplitUserConfig rwSplitUserConfig = new RwSplitUserConfig(userConfig, userName.getTenant(), wallProvider, dbGroup);
         rwSplitUserConfig.setId(this.userId.incrementAndGet());
         this.userConfigMap.put(userName, rwSplitUserConfig);
@@ -205,6 +196,17 @@ public class UserConverter {
         }
         String[] strArray = SplitUtil.split(schemas, ',', true);
 
+        WallProvider wallProvider = getWallProvider(blackListMap, problemReporter, blacklistStr, userName);
+        // load DML Privileges
+        Privileges privileges = shardingUser.getPrivileges();
+        UserPrivilegesConfig privilegesConfig = loadPrivilegesConfig(privileges, userConfig);
+
+        ShardingUserConfig shardingUserConfig = new ShardingUserConfig(userConfig, userName.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
+        shardingUserConfig.setId(this.userId.incrementAndGet());
+        this.userConfigMap.put(userName, shardingUserConfig);
+    }
+
+    private WallProvider getWallProvider(Map<String, WallProvider> blackListMap, ProblemReporter problemReporter, String blacklistStr, UserName userName) {
         WallProvider wallProvider = null;
         if (!StringUtil.isEmpty(blacklistStr)) {
             wallProvider = blackListMap.get(blacklistStr);
@@ -214,13 +216,7 @@ public class UserConverter {
                 wallProvider.setName(blacklistStr);
             }
         }
-        // load DML Privileges
-        Privileges privileges = shardingUser.getPrivileges();
-        UserPrivilegesConfig privilegesConfig = loadPrivilegesConfig(privileges, userConfig);
-
-        ShardingUserConfig shardingUserConfig = new ShardingUserConfig(userConfig, userName.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
-        shardingUserConfig.setId(this.userId.incrementAndGet());
-        this.userConfigMap.put(userName, shardingUserConfig);
+        return wallProvider;
     }
 
     private UserPrivilegesConfig loadPrivilegesConfig(Privileges privileges, UserConfig userConfig) {
@@ -286,7 +282,7 @@ public class UserConverter {
 
             Properties props2 = new Properties();
             Properties props = new Properties();
-            propertyList.forEach(property -> props.put(property.getName(), property.getValue()));
+            propertyList.forEach(property -> props.setProperty(property.getName(), property.getValue()));
             props2.putAll(props);
             this.blackListConfigMap.put(name, props2);
 

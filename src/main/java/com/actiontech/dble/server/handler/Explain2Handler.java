@@ -47,12 +47,14 @@ public final class Explain2Handler {
                 return;
             }
             String shardingNode = stmt.substring(stmt.indexOf("=") + 1, stmt.indexOf("sql=")).trim();
-            String sql = "explain " + stmt.substring(stmt.indexOf("sql=") + 4, stmt.length()).trim();
+            String toExplainSql = stmt.substring(stmt.indexOf("sql=") + 4, stmt.length()).trim();
 
-            if (shardingNode.isEmpty() || sql.isEmpty()) {
+            if (shardingNode.isEmpty() || toExplainSql.isEmpty()) {
                 showError(stmt, service, "shardingNode or sql is empty");
                 return;
             }
+
+            String sql = "explain " + toExplainSql;
 
             RouteResultsetNode node = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
             RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);

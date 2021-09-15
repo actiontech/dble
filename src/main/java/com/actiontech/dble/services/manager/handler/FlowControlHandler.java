@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 public final class FlowControlHandler {
     private static final Pattern FLOW_CONTROL_LIST = Pattern.compile("^\\s*flow_control\\s*@@list\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern FLOW_CONTROL_SET = Pattern.compile("^\\s*flow_control\\s+@@set(\\s+enableFlowControl\\s*=\\s*(true|false))?" +
-            "(\\s+flowControlStart\\s*=\\s*(\\d*))?(\\s+flowControlEnd\\s*=\\s*(\\d*))?\\s*$", Pattern.CASE_INSENSITIVE);
+            "(\\s+flowControlHighLevel\\s*=\\s*(\\d*))?(\\s+flowControlLowLevel\\s*=\\s*(\\d*))?\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern FLOW_CONTROL_SHOW = Pattern.compile("^\\s*flow_control\\s*@@show\\s*$", Pattern.CASE_INSENSITIVE);
 
     private FlowControlHandler() {

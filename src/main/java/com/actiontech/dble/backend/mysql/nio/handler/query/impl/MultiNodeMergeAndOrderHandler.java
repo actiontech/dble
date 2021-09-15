@@ -19,7 +19,6 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.singleton.FlowController;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,9 +74,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     private void doExecute() {
-        boolean isSupportFlowControl = FlowController.isSupportFlowControl(nextHandler);
         for (BaseSelectHandler exeHandler : exeHandlers) {
-            exeHandler.setSupportFlowControl(isSupportFlowControl);
             session.setHandlerStart(exeHandler); //base start execute
             try {
                 BackendConnection exeConn = exeHandler.initConnection();

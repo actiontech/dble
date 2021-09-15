@@ -129,7 +129,7 @@ public class InsertHandler extends DefaultHandler {
         }
 
         String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
-        long val = SequenceManager.getHandler().nextId(tableKey);
+        long val = SequenceManager.getHandler().nextId(tableKey, null);
         SQLExpr value = values.get(incrementIndex);
         if (!StringUtil.isEmpty(SQLUtils.toMySqlString(value)) && !context.isNeedSkipError()) {
             context.addError("For table using global sequence, dble has set increment column values for you.");

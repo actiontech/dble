@@ -301,7 +301,7 @@ public abstract class ItemFunc extends Item {
         if (ItemCreate.getInstance().isNativeFunc(this.funcName())) {
             SQLMethodInvokeExpr nativeFe = new SQLMethodInvokeExpr(this.funcName().toUpperCase());
             for (Item item : args) {
-                nativeFe.addParameter(item.toExpression());
+                nativeFe.addArgument(item.toExpression());
             }
             return nativeFe;
         } else {

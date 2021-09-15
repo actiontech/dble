@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 public class XAAnalysisHandler extends XAHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(XAAnalysisHandler.class);
-    private ProblemReporter problemReporter = StartProblemReporter.getInstance();
+    private final ProblemReporter problemReporter = StartProblemReporter.getInstance();
     public static final Pattern XAID_STMT = Pattern.compile(DbleServer.NAME + "Server." + SystemConfig.getInstance().getInstanceName() + "[.](\\d+)(.[^\\s]+)?", Pattern.CASE_INSENSITIVE);
 
     public XAAnalysisHandler() {
@@ -51,13 +51,14 @@ public class XAAnalysisHandler extends XAHandler {
         boolean isExist = false;
         if (null != xaId) {
             Map<PhysicalDbInstance, List<Map<String, String>>> result = select();
-            if (result.isEmpty() || result.keySet().isEmpty() || null == result.values().stream().findFirst().get()) {
-                isExist = false;
-            } else {
-                String data = xaId.replace("\'", "");
-                isExist = result.values().stream().findFirst().get().
-                        stream().
-                        anyMatch(x -> x.get("data").equalsIgnoreCase(data));
+            if (!result.isEmpty()) {
+                List<Map<String, String>> values = result.get(result.keySet().stream().findFirst().get());
+                if (values != null) {
+                    String data = xaId.replace("'", "");
+                    isExist = values.
+                            stream().
+                            anyMatch(x -> x.get("data").equalsIgnoreCase(data));
+                }
             }
         }
         if (LOGGER.isDebugEnabled()) {

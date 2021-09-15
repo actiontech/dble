@@ -99,19 +99,19 @@ public class ItemDecimalTypeConvert extends ItemFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         method.setMethodName("CONVERT");
-        method.addParameter(args.get(0).toExpression());
+        method.addArgument(args.get(0).toExpression());
         if (precision >= 0 || dec > 0) {
             SQLMethodInvokeExpr dataType = new SQLMethodInvokeExpr();
             dataType.setMethodName("DECIMAL");
             if (precision >= 0) {
-                dataType.addParameter(new SQLIntegerExpr(precision));
+                dataType.addArgument(new SQLIntegerExpr(precision));
             }
             if (dec > 0) {
-                dataType.addParameter(new SQLIntegerExpr(dec));
+                dataType.addArgument(new SQLIntegerExpr(dec));
             }
-            method.addParameter(dataType);
+            method.addArgument(dataType);
         } else {
-            method.addParameter(new SQLIdentifierExpr("DECIMAL"));
+            method.addArgument(new SQLIdentifierExpr("DECIMAL"));
         }
         return method;
     }

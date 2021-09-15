@@ -28,7 +28,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.StatusFlags;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
@@ -42,6 +41,7 @@ import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
@@ -86,7 +86,7 @@ public class NonBlockingSession extends Session {
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
 
     private SavePointHandler savePointHandler;
-    private TransactionHandlerManager transactionManager;
+    private final TransactionHandlerManager transactionManager;
 
 
     private volatile boolean needWaitFinished = false;
@@ -98,20 +98,20 @@ public class NonBlockingSession extends Session {
     private OutputHandler outputHandler;
 
     // the memory controller for join,orderby,other in this session
-    private MemSizeController joinBufferMC;
-    private MemSizeController orderBufferMC;
-    private MemSizeController otherBufferMC;
+    private final MemSizeController joinBufferMC;
+    private final MemSizeController orderBufferMC;
+    private final MemSizeController otherBufferMC;
     private QueryTimeCost queryTimeCost;
     private CostTimeProvider provider;
     private ComplexQueryProvider xprovider;
     private volatile boolean timeCost = false;
-    private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
+    private final AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
 
-    private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
+    private final AtomicBoolean isMultiStatement = new AtomicBoolean(false);
     private volatile String remingSql = null;
     private volatile boolean traceEnable = false;
-    private volatile TraceResult traceResult = new TraceResult();
+    private final TraceResult traceResult = new TraceResult();
     private volatile RouteResultset complexRrs = null;
     private volatile SessionStage sessionStage = SessionStage.Init;
 
@@ -696,6 +696,9 @@ public class NonBlockingSession extends Session {
             ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             //lock self meta
             ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
+        } catch (NeedDelayedException e) {
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            throw e;
         } catch (Exception e) {
             ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
@@ -766,13 +769,6 @@ public class NonBlockingSession extends Session {
         transactionManager.rollback();
     }
 
-    /**
-     * unLockTable
-     *
-     * @param sql
-     * @author songdabin
-     * @date 2016-7-9
-     */
     public void unLockTable(String sql) {
         UnLockTablesHandler handler = new UnLockTablesHandler(this, this.shardingService.isAutocommit(), sql);
         handler.execute();
@@ -816,17 +812,17 @@ public class NonBlockingSession extends Session {
         RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
         if (node != null) {
             if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLocked()) {
-                releaseConnection((RouteResultsetNode) service.getAttachment(), LOGGER.isDebugEnabled(), needClosed);
+                releaseConnection((RouteResultsetNode) service.getAttachment(), needClosed);
             }
         }
     }
 
-    public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needClose) {
+    public void releaseConnection(RouteResultsetNode rrn, final boolean needClose) {
         if (rrn != null) {
             BackendConnection c = target.remove(rrn);
             if (c != null && !c.isClosed()) {
                 if (shardingService.isFlowControlled()) {
-                    releaseFlowCntroll(c);
+                    releaseFlowControl(c);
                 }
                 if (c.getService().isAutocommit()) {
                     c.release();
@@ -862,17 +858,13 @@ public class NonBlockingSession extends Session {
 
     // thread may not safe
     public void releaseConnections(final boolean needClosed) {
-        boolean debug = LOGGER.isDebugEnabled();
         for (RouteResultsetNode rrn : target.keySet()) {
-            releaseConnection(rrn, debug, needClosed);
+            releaseConnection(rrn, needClosed);
         }
     }
 
-    /**
-     * @return previous bound connection
-     */
-    public BackendConnection bindConnection(RouteResultsetNode key, BackendConnection conn) {
-        return target.put(key, conn);
+    public void bindConnection(RouteResultsetNode key, BackendConnection conn) {
+        target.put(key, conn);
     }
 
     public boolean tryExistsCon(final BackendConnection conn, RouteResultsetNode node) {
@@ -903,7 +895,7 @@ public class NonBlockingSession extends Session {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("release slave connection,can't be used in trasaction  " + conn + " for " + node);
                 }
-                releaseConnection(node, LOGGER.isDebugEnabled(), false);
+                releaseConnection(node, false);
             }
             return false;
         } finally {
@@ -1027,48 +1019,11 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    /**
-     * backend packet server_status change and next round start
-     */
-    public boolean multiStatementPacket(MySQLPacket packet, byte packetNum) {
+
+    public void multiStatementPacket(MySQLPacket packet) {
         if (this.isMultiStatement.get()) {
             packet.markMoreResultsExists();
-            this.getPacketId().set(packetNum);
-            return true;
         }
-        return false;
-    }
-
-    /**
-     * backend row eof packet server_status change and next round start
-     */
-    public boolean multiStatementPacket(byte[] eof, byte packetNum) {
-        if (this.getIsMultiStatement().get()) {
-            //if there is another statement is need to be executed ,start another round
-            eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-
-            this.getPacketId().set(packetNum);
-            return true;
-        }
-        return false;
-    }
-
-
-    public boolean multiStatementPacket(byte[] eof) {
-        if (this.getIsMultiStatement().get()) {
-            //if there is another statement is need to be executed ,start another round
-            eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean multiStatementPacket(MySQLPacket packet) {
-        if (this.isMultiStatement.get()) {
-            packet.markMoreResultsExists();
-            return true;
-        }
-        return false;
     }
 
     public void rowCountRolling() {
@@ -1177,50 +1132,65 @@ public class NonBlockingSession extends Session {
         this.discard = discard;
     }
 
-    public void stopFlowControl() {
+    public void stopFlowControl(int currentWritingSize) {
         synchronized (flowControlledTarget) {
-            LOGGER.info("This connection {} remove flow control", this.getSource());
-            shardingService.getConnection().setFlowControlled(false);
-            for (BackendConnection con : flowControlledTarget) {
-                con.getSocketWR().enableRead();
+            if (flowControlledTarget.size() == 0) {
+                return;
             }
-            flowControlledTarget.clear();
+            shardingService.getConnection().setFrontWriteFlowControlled(false);
+            Iterator<BackendConnection> iterator = flowControlledTarget.iterator();
+            while (iterator.hasNext()) {
+                BackendConnection con = iterator.next();
+                if (con.getService() instanceof MySQLResponseService) {
+                    int size = ((MySQLResponseService) (con.getService())).getReadSize();
+                    if (size <= con.getFlowLowLevel()) {
+                        con.enableRead();
+                        iterator.remove();
+                    } else {
+                        LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                    }
+                } else {
+                    con.enableRead();
+                    iterator.remove();
+                }
+            }
+
+            LOGGER.debug("This front connection remove flow control, currentWritingSize= {} and now still have {} backend connections in flow control state, the front conn info :{} ", currentWritingSize, flowControlledTarget.size(), this.getSource());
         }
     }
 
-    public void startFlowControl() {
+    public void startFlowControl(int currentWritingSize) {
         synchronized (flowControlledTarget) {
-            LOGGER.info("This connection {} begins flow control", this.getSource());
-            shardingService.getConnection().setFlowControlled(true);
+            LOGGER.debug("This front connection begins flow control, currentWritingSize= {},conn info:{}", currentWritingSize, this.getSource());
+            shardingService.getConnection().setFrontWriteFlowControlled(true);
             for (BackendConnection con : target.values()) {
-                con.getSocketWR().disableRead();
+                con.disableRead();
                 flowControlledTarget.add(con);
             }
         }
     }
 
-    public void releaseFlowCntroll(BackendConnection con) {
+    public void releaseFlowControl(BackendConnection con) {
         synchronized (flowControlledTarget) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("This connection {} remove flow control because of release", con);
+                LOGGER.debug("This backend connection remove flow control because of release:{}", con);
             }
             if (flowControlledTarget.remove(con)) {
                 con.getSocketWR().enableRead();
             }
             if (flowControlledTarget.size() == 0) {
-                LOGGER.info("This connection {} remove flow control because of release", this.getSource());
-                shardingService.getConnection().setFlowControlled(false);
+                LOGGER.debug("This frontend connection remove flow control because of release:{} ", this.getSource());
+                shardingService.getConnection().setFrontWriteFlowControlled(false);
             }
         }
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("");
+        StringBuilder sb = new StringBuilder();
         sb.append("NonBlockSession with target ");
-        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
-            sb.append(" rrs = [").append(entry.getKey()).append("] with connection [" + entry.getValue() + "]");
-        }
+        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet())
+            sb.append(" rrs = [").append(entry.getKey()).append("] with connection [").append(entry.getValue()).append("]");
         return sb.toString();
     }
 

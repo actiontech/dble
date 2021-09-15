@@ -45,10 +45,10 @@ public final class GeneralLogCf {
                 WriteDynamicBootstrap.getInstance().changeValue("enableGeneralLog", isOn ? "1" : "0");
                 isWrite = true;
                 if (isOn) {
-                    GeneralLog.getInstance().setEnableGeneralLog(isOn);
+                    GeneralLog.getInstance().setEnableGeneralLog(true);
                     GeneralLogProcessor.getInstance().enable();
                 } else {
-                    GeneralLog.getInstance().setEnableGeneralLog(isOn);
+                    GeneralLog.getInstance().setEnableGeneralLog(false);
                     GeneralLogProcessor.getInstance().disable();
                 }
                 LOGGER.info(service + " " + onOffStatus + " general_log success by manager");

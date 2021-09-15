@@ -45,8 +45,8 @@ public class ItemDateTypeConvert extends ItemDateFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
         method.setMethodName("CONVERT");
-        method.addParameter(args.get(0).toExpression());
-        method.addParameter(new SQLIdentifierExpr("DATE"));
+        method.addArgument(args.get(0).toExpression());
+        method.addArgument(new SQLIdentifierExpr("DATE"));
         return method;
     }
 

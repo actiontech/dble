@@ -14,6 +14,7 @@ import com.actiontech.dble.server.handler.*;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.parser.ShardingServerParse;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
@@ -158,6 +159,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                         service.execute(sql, rs & 0xff);
                 }
             }
+        } catch (NeedDelayedException e) {
+            throw e;
         } catch (Exception e) {
             service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
         } finally {

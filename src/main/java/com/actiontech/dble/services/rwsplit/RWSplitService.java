@@ -3,6 +3,7 @@ package com.actiontech.dble.services.rwsplit;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.WallErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
@@ -25,12 +26,15 @@ import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.alibaba.druid.wall.WallCheckResult;
+import com.alibaba.druid.wall.WallProvider;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -237,10 +241,29 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             }
             executeSql = sql;
             executeSqlBytes = data;
+            if (blacklistCheck(sql, userConfig.getBlacklist())) return;
             queryHandler.query(sql);
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
         }
+    }
+
+    private boolean blacklistCheck(String sql, WallProvider blackList) {
+        if (Objects.isNull(blackList)) return false;
+        WallCheckResult result = blackList.check(sql);
+        if (!result.getViolations().isEmpty()) {
+            if (result.isSyntaxError()) {
+                LOGGER.warn("{}", "druid not support sql syntax, the reason is " + result.getViolations().get(0).getMessage());
+            } else {
+                String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
+                String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
+                LOGGER.warn("Firewall message:{}, {}",
+                        result.getViolations().get(0).getMessage(), msg);
+                writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void handleComStmtPrepare(byte[] data) {
@@ -251,6 +274,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             inPrepare = true;
             String sql = mm.readString(getCharset().getClient());
             int rs = serverParse.parse(sql);
+            if (blacklistCheck(sql, userConfig.getBlacklist())) return;
             int sqlType = rs & 0xff;
             switch (sqlType) {
                 case ServerParse.SELECT:

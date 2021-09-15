@@ -35,8 +35,8 @@ public final class OrderByPusher {
     public static PlanNode optimize(PlanNode qtn) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-order-by");
         try {
-            qtn = preOrderByPusher(qtn);
-            qtn = pushOrderBy(qtn);
+            preOrderByPusher(qtn);
+            pushOrderBy(qtn);
             // subQuery need push down order by
             if (qtn.isContainsSubQuery()) {
                 for (ItemSubQuery subQuery : qtn.getSubQueries()) {
@@ -51,26 +51,25 @@ public final class OrderByPusher {
         }
     }
 
-    private static PlanNode preOrderByPusher(PlanNode qtn) {
+    private static void preOrderByPusher(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn)) {
-            return qtn;
+            return;
         }
         for (PlanNode child : qtn.getChildren()) {
             preOrderByPusher(child);
         }
         buildImplicitOrderBys(qtn);
-        return qtn;
     }
 
-    private static PlanNode pushOrderBy(PlanNode qtn) {
+    private static void pushOrderBy(PlanNode qtn) {
         if (PlanUtil.isGlobalOrER(qtn))
-            return qtn;
+            return;
         if (qtn.type() == PlanNodeType.MERGE) {
             // note:do not execute mergenode
             for (PlanNode child : qtn.getChildren()) {
                 pushOrderBy(child);
             }
-            return qtn;
+            return;
         } else if (qtn.type() == PlanNodeType.JOIN) {
             JoinNode join = (JoinNode) qtn;
 
@@ -103,10 +102,11 @@ public final class OrderByPusher {
         }
 
         for (PlanNode child : qtn.getChildren()) {
-            pushOrderBy(child);
+            if (child != null) {
+                pushOrderBy(child);
+            }
         }
 
-        return qtn;
     }
 
     /**

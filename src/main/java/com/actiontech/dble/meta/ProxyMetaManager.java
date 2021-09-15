@@ -69,19 +69,12 @@ public class ProxyMetaManager {
     private AtomicInteger version = new AtomicInteger(0);
     private long timestamp;
     private AtomicInteger tableIndex = new AtomicInteger();
-    private AtomicInteger tableIndex2 = new AtomicInteger();
+    private static AtomicInteger fakeTableIndex = new AtomicInteger();
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
         this.lockTables = new HashMap<>();
         this.timestamp = System.currentTimeMillis();
-    }
-
-    public ProxyMetaManager(AtomicInteger tableIndex2) {
-        this.catalogs = new ConcurrentHashMap<>();
-        this.lockTables = new HashMap<>();
-        this.timestamp = System.currentTimeMillis();
-        this.tableIndex2 = tableIndex2;
     }
 
     public ProxyMetaManager(ProxyMetaManager origin) {
@@ -94,7 +87,6 @@ public class ProxyMetaManager {
         this.repository = origin.repository;
         this.version = origin.version;
         this.tableIndex = origin.tableIndex;
-        this.tableIndex2 = origin.tableIndex2;
         for (Map.Entry<String, SchemaMeta> entry : origin.catalogs.entrySet()) {
             catalogs.put(entry.getKey(), entry.getValue().metaCopy());
         }
@@ -220,7 +212,7 @@ public class ProxyMetaManager {
             schemaMeta.addTableMeta(tbName, tm);
         }
 
-        SchemaUtil.tryAddDefaultShardingTableConfig(schema, tbName, tm.getCreateSql(), tableIndex2);
+        SchemaUtil.tryAddDefaultShardingTableConfig(schema, tbName, tm.getCreateSql(), fakeTableIndex);
     }
 
     public void addView(String schema, ViewMeta vm) {
@@ -733,10 +725,6 @@ public class ProxyMetaManager {
         DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showShardingNode), null);
         handler.execute();
         return handler.isMetaInited();
-    }
-
-    public AtomicInteger getTableIndex2() {
-        return tableIndex2;
     }
 
     public Repository getRepository() {

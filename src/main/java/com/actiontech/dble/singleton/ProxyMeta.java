@@ -45,7 +45,7 @@ public final class ProxyMeta {
             ProxyMetaManager tmpManager = tmManager;
             ProxyMetaManager newManager;
             if (CollectionUtil.isEmpty(specifiedSchemas)) {
-                newManager = new ProxyMetaManager(tmManager.getTableIndex2());
+                newManager = new ProxyMetaManager();
             } else {
                 //if the meta just reload partly,create a deep coyp of the ProxyMetaManager as new ProxyMetaManager
                 newManager = new ProxyMetaManager(tmpManager);

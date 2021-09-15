@@ -78,9 +78,10 @@ public class ConfigTableHandler extends ModeTableHandler {
                 }
         } else {
             for (String table : filterTableSet) {
-                if (schemaConfig.getTables().containsKey(table) && !(schemaConfig.getTables().get(table) instanceof ShardingTableFakeConfig)) {
+                boolean isFakeTable = schemaConfig.getTables().get(table) instanceof ShardingTableFakeConfig;
+                if (schemaConfig.getTables().containsKey(table) && !isFakeTable) {
                     newReload.put(table, schemaConfig.getTables().get(table));
-                } else {
+                } else if (!isFakeTable) {
                     logger.warn("reload table[" + schemaConfig.getName() + "." + table + "] metadata, but table doesn't exist");
                 }
             }
@@ -101,11 +102,11 @@ public class ConfigTableHandler extends ModeTableHandler {
 
     // show table
     class ShowTableHandler {
-        private final ConfigTableHandler perantHandler;
+        private final ConfigTableHandler parentHandler;
         private final Set<String> selfNodes;
 
-        ShowTableHandler(ConfigTableHandler perantHandler, Set<String> selfNodes) {
-            this.perantHandler = perantHandler;
+        ShowTableHandler(ConfigTableHandler parentHandler, Set<String> selfNodes) {
+            this.parentHandler = parentHandler;
             this.selfNodes = selfNodes;
         }
 
@@ -118,7 +119,7 @@ public class ConfigTableHandler extends ModeTableHandler {
                 String node = nodeInfo.getKey();
                 if (selfNodes != null && selfNodes.contains(node)) {
                     logger.info("the Node " + node + " is a selfNode,count down");
-                    perantHandler.countdown(node, null);
+                    parentHandler.countdown(node, null);
                     continue;
                 }
 
@@ -127,7 +128,7 @@ public class ConfigTableHandler extends ModeTableHandler {
                 Set<String> existTables = unitHandler.getTablesByNodeUnit();
                 if (existTables.size() == 0) {
                     logger.info("the Node " + node + " has no exist table,count down");
-                    perantHandler.countdown(node, null);
+                    parentHandler.countdown(node, null);
                     continue;
                 }
                 tableMap.put(node, existTables);
@@ -155,7 +156,7 @@ public class ConfigTableHandler extends ModeTableHandler {
         }
 
         protected Map<String, BaseTableConfig> getFilterConfigTables(Map<String, BaseTableConfig> configTables, Set<String> pfilterTables) {
-            return perantHandler.getFilterConfigTables(configTables, pfilterTables);
+            return parentHandler.getFilterConfigTables(configTables, pfilterTables);
         }
 
         class ShowTableByNodeUnitHandler extends GetNodeTablesHandler {
@@ -199,8 +200,8 @@ public class ConfigTableHandler extends ModeTableHandler {
                     if (tables.contains(table)) {
                         continue;
                     }
-                    perantHandler.checkTableConsistent(tablesStructMap, table, shardingNode, null);
-                    perantHandler.dealTableLack(shardingNode, table);
+                    parentHandler.checkTableConsistent(tablesStructMap, table, shardingNode, null);
+                    parentHandler.dealTableLack(shardingNode, table);
                 }
                 super.handleFinished();
             }
@@ -209,10 +210,10 @@ public class ConfigTableHandler extends ModeTableHandler {
 
     // show create table
     class ShowCreateTableHandler {
-        private final ConfigTableHandler perantHandler;
+        private final ConfigTableHandler parentHandler;
 
-        ShowCreateTableHandler(ConfigTableHandler perantHandler) {
-            this.perantHandler = perantHandler;
+        ShowCreateTableHandler(ConfigTableHandler parentHandler) {
+            this.parentHandler = parentHandler;
         }
 
         private void execute(Map<String, Set<String>> tableMap) {
@@ -223,11 +224,11 @@ public class ConfigTableHandler extends ModeTableHandler {
         }
 
         private void countdown(String shardingNode, Set<String> remainingTables) {
-            perantHandler.countdown(shardingNode, remainingTables);
+            parentHandler.countdown(shardingNode, remainingTables);
         }
 
         private void handleTable(String shardingNode, String table, boolean isView, String sql) {
-            perantHandler.checkTableConsistent(tablesStructMap, table, shardingNode, sql);
+            parentHandler.checkTableConsistent(tablesStructMap, table, shardingNode, sql);
         }
 
         class ShowCreateTableByNodeUnitHandler extends GetTableMetaHandler {

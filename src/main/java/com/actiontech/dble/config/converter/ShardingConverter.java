@@ -444,7 +444,6 @@ public class ShardingConverter {
                 // iterator.remove();
                 continue;
             }
-            this.funcNodeERMap.put(entry.getKey(), entry.getValue());
             for (ERTable erTable : entry.getValue()) {
                 Set<ERTable> relations = this.erRelations.get(erTable);
                 if (relations == null) {

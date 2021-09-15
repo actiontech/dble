@@ -14,6 +14,7 @@ import com.actiontech.dble.route.parser.ManagerParse;
 import com.actiontech.dble.services.manager.handler.*;
 import com.actiontech.dble.services.manager.response.*;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.exception.DirectPrintException;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,16 +133,19 @@ public class ManagerQueryHandler {
                     FlowControlHandler.handle(sql, service);
                     break;
                 case ManagerParse.INSERT:
+                    service.getClusterDelayService().markDoingOrDelay(true);
                     DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                         (new InsertHandler()).handle(sql, service);
                     });
                     break;
                 case ManagerParse.DELETE:
+                    service.getClusterDelayService().markDoingOrDelay(true);
                     DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                         (new DeleteHandler()).handle(sql, service);
                     });
                     break;
                 case ManagerParse.UPDATE:
+                    service.getClusterDelayService().markDoingOrDelay(true);
                     DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
                         (new UpdateHandler()).handle(sql, service);
                     });
@@ -161,11 +165,13 @@ public class ManagerQueryHandler {
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             }
+        } catch (DirectPrintException e) {
+            service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
         } catch (MySQLOutPutException e) {
             service.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
             LOGGER.warn("unknown error:", e);
         } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command " + e.getMessage());
+            service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command: " + e.getMessage());
             LOGGER.warn("unknown error:", e);
         }
     }

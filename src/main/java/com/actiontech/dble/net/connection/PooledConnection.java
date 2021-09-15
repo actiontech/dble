@@ -36,11 +36,15 @@ public abstract class PooledConnection extends AbstractConnection {
     }
 
     @Override
-    public synchronized void cleanup() {
-        if (this.poolRelated != null) {
-            poolRelated.close(this);
+    public synchronized void cleanup(String reason) {
+        if (getService() instanceof AuthService) {
+            ((AuthService) getService()).onConnectFailed(new Exception(reason == null ? "unknow reason" : reason));
+        } else {
+            if (this.poolRelated != null) {
+                poolRelated.close(this);
+            }
         }
-        super.cleanup();
+        super.cleanup(reason);
     }
 
     public void onConnectFailed(Throwable e) {

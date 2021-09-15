@@ -22,8 +22,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -131,8 +131,12 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
     private void wakeupFrontedSelector() {
         Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(DbleServer.FRONT_EXECUTOR_NAME);
         Map<Runnable, Integer> runnableMap = threadRunnableMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, entry -> ((RW) entry.getValue()).getSelectorKeySize()));
-        Map.Entry<Runnable, Integer> runnableIntegerEntry = runnableMap.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getValue)).findFirst().get();
-        ((RW) runnableIntegerEntry.getKey()).getSelector().wakeup();
+        Optional<Map.Entry<Runnable, Integer>> min = runnableMap.entrySet().stream().min(Map.Entry.comparingByValue());
+        if (min.isPresent()) {
+            ((RW) min.get().getKey()).getSelector().wakeup();
+        } else {
+            LOGGER.warn("wakeupFrontedSelector error");
+        }
     }
 
     /**

@@ -28,6 +28,7 @@ public final class DbGroupHAHandler {
     }
 
     public static void handle(String stmt, ManagerService service) {
+        service.getClusterDelayService().markDoingOrDelay(true);
         Matcher disable = PATTERN_DH_DISABLE.matcher(stmt);
         Matcher enable = PATTERN_DH_ENABLE.matcher(stmt);
         Matcher switcher = PATTERN_DH_SWITCH.matcher(stmt);

@@ -53,18 +53,15 @@ public class DbleBlacklist extends ManagerBaseTable {
         Map<String, Properties> blacklistConfig = DbleServer.getInstance().getConfig().getBlacklistConfig();
         List<String> blackListNames = new ArrayList<>();
         for (UserConfig userConfig : userConfigList) {
+            WallProvider blackList = null;
             if (userConfig instanceof ShardingUserConfig) {
-                WallProvider blackList = ((ShardingUserConfig) userConfig).getBlacklist();
-                if (blackList != null && !blackListNames.contains(blackList.getName())) {
-                    blackListNames.add(blackList.getName());
-                    getDetailedBlackList(list, blackList.getName(), blackList.getConfig(), blacklistConfig.get(blackList.getName()));
-                }
+                blackList = ((ShardingUserConfig) userConfig).getBlacklist();
             } else if (userConfig instanceof RwSplitUserConfig) {
-                WallProvider blackList = ((RwSplitUserConfig) userConfig).getBlacklist();
-                if (blackList != null && !blackListNames.contains(blackList.getName())) {
-                    blackListNames.add(blackList.getName());
-                    getDetailedBlackList(list, blackList.getName(), blackList.getConfig(), blacklistConfig.get(blackList.getName()));
-                }
+                blackList = ((RwSplitUserConfig) userConfig).getBlacklist();
+            }
+            if (blackList != null && !blackListNames.contains(blackList.getName())) {
+                blackListNames.add(blackList.getName());
+                getDetailedBlackList(list, blackList.getName(), blackList.getConfig(), blacklistConfig.get(blackList.getName()));
             }
         }
         return list;

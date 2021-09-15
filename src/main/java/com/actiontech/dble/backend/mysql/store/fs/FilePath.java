@@ -66,7 +66,7 @@ public abstract class FilePath {
     }
 
     private static void registerProviders() {
-        if (defaultProvider == null || providers == null) {
+        if (defaultProvider == null) {
             synchronized (FilePath.class) {
                 if (defaultProvider == null) {
                     Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());

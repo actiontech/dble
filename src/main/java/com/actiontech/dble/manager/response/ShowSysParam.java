@@ -151,7 +151,8 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getMaxCharsPerColumn() + "");
         paramValues.add(sysConfig.getMaxRowSizeToFile() + "");
         paramValues.add(sysConfig.isUseOuterHa() + "");
-
+        paramValues.add(sysConfig.isEnableRoutePenetration() + "");
+        paramValues.add(sysConfig.getRoutePenetrationRules() + "");
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
@@ -252,6 +253,8 @@ public final class ShowSysParam {
             "maxCharsPerColumn",
             "maxRowSizeToFile",
             "useOuterHa",
+            "enableRoutePenetration",
+            "routePenetrationRules",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -335,6 +338,8 @@ public final class ShowSysParam {
             "The maximum number of characters allowed for per column when load data.The default value is 65535",
             "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000",
             "Whether use outer ha component ",
+            "Whether enable route penetration",
+            "The config of route penetration",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

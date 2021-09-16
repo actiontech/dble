@@ -108,10 +108,11 @@ public class SelectInformationSchemaColumnsHandler {
 
         String shardingNode = null;
         if (!schemaConfig.getTables().containsKey(table)) {
-            if ((shardingNode = schemaConfig.getShardingNode()) == null) {
+            if (schemaConfig.getDefaultShardingNodes() == null) {
                 shardingService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
                 return;
             }
+            shardingNode = schemaConfig.getDefaultShardingNodes().get(0);
         } else {
             BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig == null) {

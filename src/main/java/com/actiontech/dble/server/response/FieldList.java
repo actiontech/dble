@@ -39,7 +39,7 @@ public final class FieldList {
 
         String shardingNode;
         if (!schemaConfig.getTables().containsKey(table)) {
-            if ((shardingNode = schemaConfig.getShardingNode()) == null) {
+            if ((shardingNode = schemaConfig.getDefaultSingleNode()) == null) {
                 service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + cSchema + "." + table + "] doesn't exist");
                 return;
             }

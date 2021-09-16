@@ -8,6 +8,8 @@ package com.actiontech.dble.server.util;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableFakeConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
@@ -16,6 +18,7 @@ import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -29,10 +32,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by magicdoom on 2016/1/26.
@@ -226,6 +227,66 @@ public final class SchemaUtil {
         SQLTableSource left = tables.getLeft();
         SQLTableSource right = tables.getRight();
         return isNoSharding(service, left, stmt, childSelectStmt, contextSchema, schemas, shardingNode) && isNoSharding(service, right, stmt, childSelectStmt, contextSchema, schemas, shardingNode);
+    }
+
+    public static void tryAddDefaultShardingTableConfig(String schema, String tableName, String createSql, AtomicInteger tableIndex) {
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
+        if (schemaConfig != null && schemaConfig.getTable(tableName) == null && schemaConfig.isDefaultShardingNode()) {
+            // fake ShardingTableConfig
+            ShardingTableFakeConfig shardingTable = new ShardingTableFakeConfig(tableName,
+                    schemaConfig.getDefaultMaxLimit(),
+                    schemaConfig.getDefaultShardingNodes(),
+                    schemaConfig.getFunction(),
+                    createSql);
+            shardingTable.setId(tableIndex.incrementAndGet());
+            schemaConfig.addTable(tableName, shardingTable);
+
+            // add er relationship
+            String key = shardingTable.getFunction().getAlias() + "_" + shardingTable.getShardingNodes().toString();
+            Set<ERTable> erTables = DbleServer.getInstance().getConfig().getFuncNodeERMap().computeIfAbsent(key, k -> new HashSet<>());
+            Map<ERTable, Set<ERTable>> localErRelations = DbleServer.getInstance().getConfig().getErRelations();
+            ERTable newErTable = new ERTable(schema, tableName, shardingTable.getShardingColumn());
+            if (erTables.size() == 1) {
+                ERTable firstERTable = erTables.iterator().next();
+                Set<ERTable> erTableSet = localErRelations.computeIfAbsent(erTables.iterator().next(), k -> new HashSet<>());
+                erTableSet.add(firstERTable);
+                erTableSet.add(newErTable);
+                localErRelations.put(newErTable, erTableSet);
+            } else if (erTables.size() > 1) {
+                ERTable firstERTable = erTables.iterator().next();
+                Set<ERTable> erTableSet = localErRelations.get(firstERTable);
+                erTableSet.add(newErTable);
+                localErRelations.put(newErTable, erTableSet);
+            }
+            erTables.add(newErTable);
+        }
+    }
+
+    public static void tryDropDefaultShardingTableConfig(String schema, String tableName) {
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
+        if (schemaConfig != null && schemaConfig.getTable(tableName) instanceof ShardingTableFakeConfig) {
+            // remove
+            ShardingTableFakeConfig shardingTable = (ShardingTableFakeConfig) schemaConfig.getTables().remove(tableName);
+
+            // remove er relationship
+            String key = shardingTable.getFunction().getAlias() + "_" + shardingTable.getShardingNodes().toString();
+            Map<String, Set<ERTable>> localFuncNodeERMap = DbleServer.getInstance().getConfig().getFuncNodeERMap();
+            Set<ERTable> erTables = localFuncNodeERMap.get(key);
+            if (!CollectionUtil.isEmpty(erTables)) {
+                if (erTables.size() == 1) {
+                    localFuncNodeERMap.remove(key);
+                } else {
+                    ERTable tmpErTable = new ERTable(schema, tableName, shardingTable.getShardingColumn());
+                    localFuncNodeERMap.get(key).remove(tmpErTable);
+                    Map<ERTable, Set<ERTable>> localErRelations = DbleServer.getInstance().getConfig().getErRelations();
+                    localErRelations.remove(tmpErTable);
+                    Set<ERTable> erTableSet = localErRelations.get(erTables.iterator().next());
+                    erTableSet.remove(tmpErTable);
+                    if (erTableSet.size() == 1)
+                        localErRelations.remove(erTableSet.iterator().next());
+                }
+            }
+        }
     }
 
     public static class SchemaInfo {

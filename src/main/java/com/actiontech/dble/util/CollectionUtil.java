@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.util;
 
 import java.util.*;
@@ -64,4 +64,20 @@ public final class CollectionUtil {
         return false;
     }
 
+
+    public static boolean equalsWithEmpty(Collection org1, Collection org2) {
+        if (isEmpty(org1)) {
+            return isEmpty(org2);
+        }
+        return org1.equals(org2);
+    }
+
+    public static Set<String> retainAll(List<Set<String>> sets) {
+        Set<String> set = new HashSet<>(sets.get(0));
+        for (int i = 1; i < sets.size(); i++) {
+            if (isEmpty(sets)) return null;
+            set.retainAll(sets.get(i));
+        }
+        return set;
+    }
 }

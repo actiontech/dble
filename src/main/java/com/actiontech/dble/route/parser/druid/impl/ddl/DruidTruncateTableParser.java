@@ -29,9 +29,7 @@ public class DruidTruncateTableParser extends DruidImplicitCommitParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), schemaName, truncateTable.getTableSources().get(0));
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        String noShardingNode = RouterUtil.isNoShardingDDL(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
-        if (noShardingNode != null) {
-            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
+        if (RouterUtil.tryRouteToSingleDDLNode(schemaInfo, rrs, schemaInfo.getTable())) {
             return schemaInfo.getSchemaConfig();
         }
         RouterUtil.routeToDDLNode(schemaInfo, rrs);

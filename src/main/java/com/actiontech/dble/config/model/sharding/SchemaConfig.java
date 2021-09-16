@@ -8,6 +8,8 @@ import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
+import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.*;
@@ -20,7 +22,8 @@ public class SchemaConfig {
     private final String name;
     private final Map<String, BaseTableConfig> tables;
     private final boolean noSharding;
-    private final String shardingNode;
+    private final List<String> defaultShardingNodes;
+    private final AbstractPartitionAlgorithm function;
     private final String metaShardingNode;
     private final Set<String> allShardingNodes;
     /**
@@ -32,15 +35,16 @@ public class SchemaConfig {
     private Map<ERTable, Set<ERTable>> fkErRelations;
     private Map<String, Set<ERTable>> funcNodeERMap;
 
-    public SchemaConfig(String name, String shardingNode,
+    public SchemaConfig(String name, List<String> defaultShardingNodes, AbstractPartitionAlgorithm function,
                         Map<String, BaseTableConfig> tables, int defaultMaxLimit) {
         this.name = name;
-        this.shardingNode = shardingNode;
+        this.defaultShardingNodes = defaultShardingNodes;
+        this.function = function;
         this.tables = tables;
         this.defaultMaxLimit = defaultMaxLimit;
         buildERMap();
-        this.noSharding = (tables == null || tables.isEmpty());
-        if (noSharding && shardingNode == null) {
+        this.noSharding = (tables == null || tables.isEmpty()) ? !(defaultShardingNodes != null && defaultShardingNodes.size() > 1) : false;
+        if (noSharding && defaultShardingNodes == null) {
             throw new RuntimeException(name + " in noSharding mode schema must have default shardingNode ");
         }
         this.metaShardingNode = buildMetaShardingNodes();
@@ -56,12 +60,13 @@ public class SchemaConfig {
 
     public SchemaConfig(SchemaConfig oldSchemaConfig) {
         this.name = oldSchemaConfig.getName().toLowerCase();
-        this.shardingNode = oldSchemaConfig.getShardingNode();
+        this.defaultShardingNodes = oldSchemaConfig.getDefaultShardingNodes();
+        this.function = oldSchemaConfig.getFunction();
         this.tables = oldSchemaConfig.getLowerCaseTables();
         this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
         buildERMap();
-        this.noSharding = tables.isEmpty();
-        if (noSharding && shardingNode == null) {
+        this.noSharding = (tables == null || tables.isEmpty()) ? !(defaultShardingNodes != null && defaultShardingNodes.size() > 1) : false;
+        if (noSharding && defaultShardingNodes == null) {
             throw new RuntimeException(name + " in noSharding mode schema must have default shardingNode ");
         }
         this.metaShardingNode = buildMetaShardingNodes();
@@ -135,13 +140,30 @@ public class SchemaConfig {
         return name;
     }
 
-    public String getShardingNode() {
-        return shardingNode;
+    public List<String> getDefaultShardingNodes() {
+        return defaultShardingNodes;
+    }
+
+    public String getDefaultSingleNode() {
+        return defaultShardingNodes == null ? null : defaultShardingNodes.get(0);
+    }
+
+    public boolean isDefaultSingleNode() {
+        return defaultShardingNodes != null && defaultShardingNodes.size() == 1;
+    }
+
+    public boolean isDefaultShardingNode() {
+        return defaultShardingNodes != null && defaultShardingNodes.size() > 1;
+    }
+
+    public void addTable(String tableName, BaseTableConfig table) {
+        this.tables.put(tableName, table);
     }
 
     public Map<String, BaseTableConfig> getTables() {
         return tables;
     }
+
     public BaseTableConfig getTable(String tableName) {
         return tables.get(tableName);
     }
@@ -188,6 +210,10 @@ public class SchemaConfig {
         return allShardingNodes;
     }
 
+    public AbstractPartitionAlgorithm getFunction() {
+        return function;
+    }
+
     public Map<ERTable, Set<ERTable>> getFkErRelations() {
         return fkErRelations;
     }
@@ -204,8 +230,8 @@ public class SchemaConfig {
      * sharding's default shardingNode,used for show tables
      */
     private String buildMetaShardingNodes() {
-        if (!isEmpty(shardingNode)) {
-            return shardingNode;
+        if (!isEmpty(defaultShardingNodes)) {
+            return defaultShardingNodes.get(0);
         } else {
             for (BaseTableConfig tc : tables.values()) {
                 return tc.getShardingNodes().get(0);
@@ -216,8 +242,8 @@ public class SchemaConfig {
 
     private Set<String> buildAllShardingNodes() {
         Set<String> set = new HashSet<>();
-        if (!isEmpty(shardingNode)) {
-            set.add(shardingNode);
+        if (!isEmpty(defaultShardingNodes)) {
+            set.addAll(defaultShardingNodes);
         }
         if (!noSharding) {
             for (BaseTableConfig tc : tables.values()) {
@@ -227,8 +253,8 @@ public class SchemaConfig {
         return set;
     }
 
-    private static boolean isEmpty(String str) {
-        return ((str == null) || (str.length() == 0));
+    private static boolean isEmpty(List<String> strs) {
+        return ((strs == null) || (strs.size() == 0));
     }
 
     public Map<String, Set<ERTable>> getFuncNodeERMap() {
@@ -239,7 +265,7 @@ public class SchemaConfig {
     public boolean equalsBaseInfo(SchemaConfig schemaConfig) {
         return StringUtil.equalsWithEmpty(this.name, schemaConfig.getName()) &&
                 this.noSharding == schemaConfig.isNoSharding() &&
-                StringUtil.equalsWithEmpty(this.shardingNode, schemaConfig.getShardingNode()) &&
+                CollectionUtil.equalsWithEmpty(this.defaultShardingNodes, schemaConfig.getDefaultShardingNodes()) &&
                 StringUtil.equalsWithEmpty(this.metaShardingNode, schemaConfig.getMetaShardingNode()) &&
                 isEquals(this.allShardingNodes, schemaConfig.getAllShardingNodes());
 

@@ -333,6 +333,7 @@ public final class ReloadConfig {
             Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
             Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
+            Map<String, Set<ERTable>> newFuncNodeERMap = serverConfig.getFuncNodeERMap();
             Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
             Map<String, Properties> newBlacklistConfig = serverConfig.getBlacklistConfig();
             Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
@@ -357,7 +358,7 @@ public final class ReloadConfig {
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations,
+                    result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations, newFuncNodeERMap,
                             newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
                             loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
                     CronScheduler.getInstance().init(config.getSchemas());
@@ -443,6 +444,7 @@ public final class ReloadConfig {
             Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
             Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
             Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
+            Map<String, Set<ERTable>> newFuncNodeERMap = serverConfig.getFuncNodeERMap();
             Map<String, Properties> newBlacklistConfig = serverConfig.getBlacklistConfig();
             Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
 
@@ -455,7 +457,7 @@ public final class ReloadConfig {
                 ReloadLogHelper.info("reload config: apply new config start", LOGGER);
                 boolean result;
                 try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations,
+                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations, newFuncNodeERMap,
                             newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
                             loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
                     CronScheduler.getInstance().init(config.getSchemas());

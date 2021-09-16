@@ -339,12 +339,12 @@ public final class HandlerTool {
         }
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(logicSchema);
         if (schemaConfig.isNoSharding()) {
-            ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getShardingNode());
+            ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getDefaultSingleNode());
             return dbNode.getDatabase().equals(sourceSchema);
         }
         BaseTableConfig tbConfig = schemaConfig.getTables().get(table);
         if (tbConfig == null) {
-            ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getShardingNode());
+            ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getDefaultSingleNode());
             return dbNode.getDatabase().equals(sourceSchema);
         } else {
             for (String shardingNode : tbConfig.getShardingNodes()) {

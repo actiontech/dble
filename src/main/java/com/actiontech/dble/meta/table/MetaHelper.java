@@ -12,17 +12,22 @@ import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
+import com.actiontech.dble.util.CollectionUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlKey;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
+import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-final class MetaHelper {
+public final class MetaHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
 
@@ -79,5 +84,46 @@ final class MetaHelper {
         tableMeta.setColumns(columns);
         return tableMeta;
     }
+
+    public static String electionShardingColumn(String sql) {
+
+        SQLStatementParser parser = new DbleCreateTableParser(sql);
+        SQLCreateTableStatement createStatement = parser.parseCreateTable();
+
+        Set<String> unavailable = new HashSet<>();
+        Set<String> available = new LinkedHashSet<>();
+
+        for (SQLTableElement tableElement : createStatement.getTableElementList()) {
+            if (tableElement instanceof SQLColumnDefinition) {
+                SQLColumnDefinition columnElement = (SQLColumnDefinition) tableElement;
+                String column = StringUtil.removeBackQuote((columnElement).getName().getSimpleName());
+                if (columnElement.isAutoIncrement())
+                    unavailable.add(column);
+                else
+                    available.add(column);
+            } else if (tableElement instanceof MySqlPrimaryKey || tableElement instanceof MySqlUnique || tableElement instanceof MySqlKey) {
+                for (SQLSelectOrderByItem item : ((MySqlKey) tableElement).getIndexDefinition().getColumns()) {
+                    String column = StringUtil.removeBackQuote(item.getExpr().toString());
+                    if (unavailable.contains(column))
+                        continue;
+                    else
+                        return column;
+                }
+            }
+        }
+
+        if (!CollectionUtil.isEmpty(available)) {
+            Iterator<String> iterator = available.iterator();
+            while (iterator.hasNext()) {
+                String column = iterator.next();
+                if ("id".equalsIgnoreCase(column))
+                    return column;
+            }
+            return available.iterator().next();
+        } else {
+            return StringUtil.removeBackQuote(((SQLColumnDefinition) createStatement.getTableElementList().get(0)).getName().getSimpleName());
+        }
+    }
+
 
 }

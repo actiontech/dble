@@ -16,7 +16,7 @@ public final class DumpFileContext {
 
     // current sharding
     private String schema;
-    private String defaultShardingNode;
+    private List<String> defaultShardingNodes;
     private Set<String> allShardingNodes;
 
     // current table
@@ -41,10 +41,10 @@ public final class DumpFileContext {
         this.config = config;
     }
 
-    public DumpFileContext(String schema, String defaultShardingNode, Set<String> allShardingNodes, DumpFileWriter writer, DumpFileConfig config,
+    public DumpFileContext(String schema, List<String> defaultShardingNodes, Set<String> allShardingNodes, DumpFileWriter writer, DumpFileConfig config,
                            String table, BaseTableConfig tableConfig, int partitionColumnIndex, int incrementColumnIndex, boolean isSkip, boolean needSkipError) {
         this.schema = schema;
-        this.defaultShardingNode = defaultShardingNode;
+        this.defaultShardingNodes = defaultShardingNodes;
         this.allShardingNodes = allShardingNodes;
         this.writer = writer;
         this.errors = Lists.newCopyOnWriteArrayList();
@@ -67,14 +67,14 @@ public final class DumpFileContext {
             throw new DumpException("schema[" + schema + "] doesn't exist in config.");
         }
         this.schema = schema;
-        this.defaultShardingNode = schemaConfig.getShardingNode();
+        this.defaultShardingNodes = schemaConfig.getDefaultShardingNodes();
         this.allShardingNodes = schemaConfig.getAllShardingNodes();
         this.table = null;
     }
 
     void setDefaultSchema(SchemaConfig schemaConfig) {
         this.schema = schemaConfig.getName();
-        this.defaultShardingNode = schemaConfig.getShardingNode();
+        this.defaultShardingNodes = schemaConfig.getDefaultShardingNodes();
         this.allShardingNodes = schemaConfig.getAllShardingNodes();
     }
 
@@ -87,8 +87,8 @@ public final class DumpFileContext {
     }
 
 
-    public String getDefaultShardingNode() {
-        return defaultShardingNode;
+    public List<String> getDefaultShardingNodes() {
+        return defaultShardingNodes;
     }
 
     public String getTable() {
@@ -112,7 +112,7 @@ public final class DumpFileContext {
             throw new DumpException("Can't tell which schema the table[" + table + "] belongs to.");
         }
         this.tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table);
-        if (this.tableConfig == null && this.defaultShardingNode == null) {
+        if (this.tableConfig == null && this.defaultShardingNodes == null) {
             throw new DumpException("schema " + schema + " has no default node.");
         }
         if (this.tableConfig != null && this.tableConfig instanceof ChildTableConfig) {
@@ -174,7 +174,7 @@ public final class DumpFileContext {
     }
 
     public DumpFileContext copyOf(DumpFileContext context) {
-        return new DumpFileContext(context.getSchema(), context.getDefaultShardingNode(), context.getAllShardingNodes(), context.getWriter(), context.getConfig(),
+        return new DumpFileContext(context.getSchema(), context.getDefaultShardingNodes(), context.getAllShardingNodes(), context.getWriter(), context.getConfig(),
                 context.getTable(), context.getTableConfig(), context.getPartitionColumnIndex(), context.getIncrementColumnIndex(), context.isSkip, context.isNeedSkipError());
     }
 

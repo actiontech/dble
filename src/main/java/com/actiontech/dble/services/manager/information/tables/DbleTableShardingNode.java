@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableFakeConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.google.common.collect.Lists;
@@ -54,12 +55,12 @@ public class DbleTableShardingNode extends ManagerBaseTable {
                 stream().
                 forEach(e -> e.getValue().getTables().entrySet().
                         stream().
-                        sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                        sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                         forEach(t -> {
                             BaseTableConfig baseTableConfig = t.getValue();
                             List<String> shardingNodes = baseTableConfig.getShardingNodes();
                             AtomicInteger index = new AtomicInteger();
-                            String id = DbleTable.PREFIX_CONFIG + baseTableConfig.getId();
+                            String id = ((baseTableConfig instanceof ShardingTableFakeConfig) ? DbleTable.PREFIX_FAKE_CONFIG : DbleTable.PREFIX_CONFIG) + baseTableConfig.getId();
                             shardingNodes.
                                     stream().
                                     filter(q -> !nameList.contains(id + "-" + q)).

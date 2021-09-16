@@ -35,7 +35,7 @@ public class DbleEntrySchema extends ManagerBaseTable {
         List<LinkedHashMap<String, String>> list = new ArrayList<>();
         DbleServer.getInstance().getConfig().getUsers().entrySet().
                 stream().
-                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                 forEach(v -> {
                     UserConfig userConfig = v.getValue();
                     if (userConfig instanceof ShardingUserConfig) {

@@ -88,4 +88,8 @@ public final class AlertUtil {
         labels.put(key, value);
         return labels;
     }
+
+    public static String getTableLackKey(String node, String table) {
+        return "shardingNode[" + node + "]:Table[" + table + "]";
+    }
 }

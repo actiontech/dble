@@ -85,16 +85,16 @@ public final class ShowTableShardingNode {
             return;
         } else if (schemaConfig.isNoSharding()) {
             if (ProxyMeta.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
-                shardingNodes = Collections.singletonList(schemaConfig.getShardingNode());
+                shardingNodes = Collections.singletonList(schemaConfig.getDefaultSingleNode());
             }
         } else {
             BaseTableConfig tableConfig = schemaConfig.getTables().get(tableName);
             if (tableConfig == null) {
-                if (schemaConfig.getShardingNode() == null) {
+                if (schemaConfig.getDefaultShardingNodes() == null) {
                     service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the table [" + tableName + "] in schema [" + schemaName + "] does not exists");
                     return;
                 } else if (ProxyMeta.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
-                    shardingNodes = Collections.singletonList(schemaConfig.getShardingNode());
+                    shardingNodes = schemaConfig.getDefaultShardingNodes();
                 }
             } else {
                 shardingNodes = tableConfig.getShardingNodes();

@@ -79,5 +79,7 @@ public final class SystemProperty {
         innerProperties.add("jdk.debug");
         innerProperties.add("java.vendor.version");
         innerProperties.add("java.version.date");
+        innerProperties.add("user.language.format");
+        innerProperties.add("user.country.format");
     }
 }

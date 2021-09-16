@@ -31,7 +31,6 @@ import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
-import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,9 +81,9 @@ public final class ShowTables {
             shardingService.writeErrMessage("42000", "Access denied for user '" + shardingService.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
-        //if sharding has default node ,show tables will send to backend
-        String node = schema.getShardingNode();
-        if (!Strings.isNullOrEmpty(node)) {
+        //if sharding has default single node ,show tables will send to backend
+        if (schema.isDefaultSingleNode()) {
+            String node = schema.getDefaultSingleNode();
             try {
                 parserAndExecuteShowTables(shardingService, stmt, node, info);
             } catch (Exception e) {

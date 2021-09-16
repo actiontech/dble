@@ -83,8 +83,8 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
             //only require when all the table and the route condition route to same node
             Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
             ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
-            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
-            routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
+            checkForSingleNodeTable(visitor, tc == null ? schema.getDefaultSingleNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
+            routeShardingNodes = ImmutableList.of(tc == null ? schema.getDefaultSingleNode() : tc.getShardingNodes().get(0));
             //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
             isGlobal = true;

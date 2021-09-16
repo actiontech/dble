@@ -56,6 +56,7 @@ public class DbleTable extends ManagerBaseTable {
     private static final String COLUMN_CHILD_PAREN_COLUMN = "paren_column";
 
     public static final String PREFIX_CONFIG = "C";
+    public static final String PREFIX_FAKE_CONFIG = "FC";
 
     public static final String PREFIX_METADATA = "M";
 
@@ -154,7 +155,7 @@ public class DbleTable extends ManagerBaseTable {
         LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
         if (null == tableMeta && null != baseTableConfig && null != schemaConfig) {
             //config
-            map.put(COLUMN_ID, PREFIX_CONFIG + baseTableConfig.getId());
+            map.put(COLUMN_ID, ((baseTableConfig instanceof ShardingTableFakeConfig) ? PREFIX_FAKE_CONFIG : PREFIX_CONFIG) + baseTableConfig.getId());
             switch (tableType == null ? TableType.NO_SHARDING : tableType) {
                 case GLOBAL:
                     GlobalTableConfig globalTableConfig = (GlobalTableConfig) baseTableConfig;

@@ -247,6 +247,14 @@ public final class RouterUtil {
         RouterUtil.routeToSingleNode(rrs, shardingNode, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
     }
 
+    public static boolean tryRouteToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs, String tableName) throws SQLException {
+        String shardingNode = isNoShardingDDL(schemaInfo.getSchemaConfig(), tableName);
+        if (shardingNode == null)
+            return false;
+        routeToSingleDDLNode(schemaInfo, rrs, shardingNode);
+        return true;
+    }
+
     public static void routeNoNameTableToSingleNode(RouteResultset rrs, SchemaConfig schema) throws SQLNonTransientException {
         if (schema == null) {
             String db = SchemaUtil.getRandomDb();
@@ -282,20 +290,24 @@ public final class RouterUtil {
 
 
     public static void routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
-        String stmt = getFixedSql(removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
         List<String> shardingNodes;
         Map<String, BaseTableConfig> tables = schemaInfo.getSchemaConfig().getTables();
         BaseTableConfig tc = tables.get(schemaInfo.getTable());
         if (tc != null) {
             shardingNodes = tc.getShardingNodes();
         } else {
-            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
-            throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            if (schemaInfo.getSchemaConfig().getDefaultShardingNodes() != null && schemaInfo.getSchemaConfig().getDefaultShardingNodes().size() > 1) {
+                shardingNodes = schemaInfo.getSchemaConfig().getDefaultShardingNodes();
+            } else {
+                String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
         }
         Iterator<String> iterator1 = shardingNodes.iterator();
         int nodeSize = shardingNodes.size();
-        RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSize];
+        String stmt = getFixedSql(removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
 
+        RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSize];
         for (int i = 0; i < nodeSize; i++) {
             String name = iterator1.next();
             nodes[i] = new RouteResultsetNode(name, ServerParse.DDL, stmt, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
@@ -723,12 +735,12 @@ public final class RouterUtil {
         if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
             return true;
         }
-        if (schema.getShardingNode() == null) {
+        if (schema.getDefaultShardingNodes() == null) {
             String msg = " Table '" + schemaName + "." + tableName + "' doesn't exist";
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         } else {
-            tmpResultNodes.add(schema.getShardingNode());
+            tmpResultNodes.addAll(schema.getDefaultShardingNodes());
             tablesSet.remove(table);
             if (tmpResultNodes.size() != 1) {
                 return true;
@@ -1166,11 +1178,11 @@ public final class RouterUtil {
             return null;
         }
         if (schemaConfig.isNoSharding()) { //sharding without table
-            return schemaConfig.getShardingNode();
+            return schemaConfig.getDefaultSingleNode();
         }
         BaseTableConfig tbConfig = schemaConfig.getTables().get(tableName);
-        if (tbConfig == null && schemaConfig.getShardingNode() != null) {
-            return schemaConfig.getShardingNode();
+        if (tbConfig == null && schemaConfig.isDefaultSingleNode()) {
+            return schemaConfig.getDefaultSingleNode();
         }
         if (tbConfig != null && tbConfig instanceof SingleTableConfig) {
             return tbConfig.getShardingNodes().get(0);
@@ -1183,11 +1195,11 @@ public final class RouterUtil {
             return null;
         }
         if (schemaConfig.isNoSharding()) { //sharding without table
-            return schemaConfig.getShardingNode();
+            return schemaConfig.getDefaultSingleNode();
         }
         BaseTableConfig tbConfig = schemaConfig.getTables().get(tableName);
-        if (tbConfig == null && schemaConfig.getShardingNode() != null) {
-            return schemaConfig.getShardingNode();
+        if (tbConfig == null && schemaConfig.isDefaultSingleNode()) {
+            return schemaConfig.getDefaultSingleNode();
         }
         if (tbConfig != null && (tbConfig instanceof SingleTableConfig)) {
             return tbConfig.getShardingNodes().get(0);

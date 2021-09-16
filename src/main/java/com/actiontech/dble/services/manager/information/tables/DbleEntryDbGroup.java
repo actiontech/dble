@@ -36,7 +36,7 @@ public class DbleEntryDbGroup extends ManagerBaseTable {
         Set<String> dbGroups = DbleServer.getInstance().getConfig().getDbGroups().keySet();
         DbleServer.getInstance().getConfig().getUsers().entrySet().
                 stream().
-                sorted((a, b) -> Integer.valueOf(a.getValue().getId()).compareTo(b.getValue().getId())).
+                sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                 forEach(v -> {
                     UserConfig userConfig = v.getValue();
                     if (userConfig instanceof RwSplitUserConfig) {

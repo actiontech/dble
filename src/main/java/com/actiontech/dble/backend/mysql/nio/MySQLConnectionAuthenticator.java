@@ -43,6 +43,10 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
             listener.connectionError(e, c);
         }
     }
+    // only for test
+    public ResponseHandler getListener() {
+        return listener;
+    }
 
     @Override
     public void handle(byte[] data) {

@@ -167,6 +167,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             } else if (nodeSet.size() > 1) {
+                if (rrs.isRoutePenetration()) {
+                    LOGGER.debug("the query {} match the route penetration regex", rrs.getSrcStatement());
+                    rrs = tryDirectRoute(schema, rrs);
+                    if (rrs.isFinishedRoute()) {
+                        LOGGER.debug("the query {} match the route penetration rule, will direct route", rrs.getSrcStatement());
+                        return;
+                    }
+                }
                 //if the sql involved node more than 1 ,Aggregate function/Group by/Order by should use complexQuery
                 parseOrderAggGroupMysql(schema, selectStmt, rrs, mysqlSelectQuery, tc);
                 if (rrs.isNeedOptimizer()) {

@@ -111,7 +111,7 @@ public final class RoutePenetrationManager {
             if (StringUtils.isBlank(regex)) {
                 throw new IllegalStateException("regex can't be null or empty.");
             }
-            int flag = 0;
+            int flag = Pattern.DOTALL;
             if (!caseSensitive) {
                 flag |= Pattern.CASE_INSENSITIVE;
             }

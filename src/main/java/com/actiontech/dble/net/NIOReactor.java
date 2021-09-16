@@ -123,10 +123,16 @@ public final class NIOReactor {
                                 con.asyncRead();
                             } catch (IOException e) {
                                 con.close("program err:" + e.toString());
+                                if (con instanceof MySQLConnection) {
+                                    ((MySQLConnection) con).onConnectFailed(e);
+                                }
                                 continue;
                             } catch (Exception e) {
                                 LOGGER.warn("caught err:", e);
                                 con.close("program err:" + e.toString());
+                                if (con instanceof MySQLConnection) {
+                                    ((MySQLConnection) con).onConnectFailed(e);
+                                }
                                 continue;
                             }
                         }

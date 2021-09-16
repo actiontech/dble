@@ -4,6 +4,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.btrace.provider.GeneralProvider;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableFakeConfig;
@@ -192,6 +193,7 @@ public class ConfigTableHandler extends ModeTableHandler {
 
             @Override
             protected void handleFinished() {
+                GeneralProvider.showTableByNodeUnitHandlerFinished();
                 if (expectedTables.size() == tables.size()) {
                     super.handleFinished();
                     return;

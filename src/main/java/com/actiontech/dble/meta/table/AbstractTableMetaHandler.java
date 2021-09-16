@@ -88,8 +88,8 @@ public abstract class AbstractTableMetaHandler {
 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
-            String tableId = "sharding_node[" + shardingNode + "]:Table[" + tableName + "]";
-            logger.info(tableId + " on result " + result.isSuccess() + " count is " + nodesNumber);
+            String tableLackKey = AlertUtil.getTableLackKey(shardingNode, tableName);
+            logger.info(tableLackKey + " on result " + result.isSuccess() + " count is " + nodesNumber);
             String key = null;
             if (ds != null) {
                 key = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
@@ -98,19 +98,19 @@ public abstract class AbstractTableMetaHandler {
                 //not thread safe
                 String warnMsg = "Can't get table " + tableName + "'s config from shardingNode:" + shardingNode + "! Maybe the table is not initialized!";
                 logger.warn(warnMsg);
-                AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
-                ToResolveContainer.TABLE_LACK.add(tableId);
+                AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableLackKey));
+                ToResolveContainer.TABLE_LACK.add(tableLackKey);
                 if (nodesNumber.decrementAndGet() == 0) {
-                    logger.info(tableId + " count down to 0 ,try to count down the table");
+                    logger.info(tableLackKey + " count down to 0 ,try to count down the table");
                     TableMeta tableMeta = genTableMeta();
                     handlerTable(tableMeta);
                     countdown();
                 }
                 return;
             } else {
-                if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
-                            ToResolveContainer.TABLE_LACK, tableId);
+                if (ToResolveContainer.TABLE_LACK.contains(tableLackKey)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableLackKey),
+                            ToResolveContainer.TABLE_LACK, tableLackKey);
                 }
                 if (ds != null && ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
@@ -131,7 +131,7 @@ public abstract class AbstractTableMetaHandler {
             }
 
             if (nodesNumber.decrementAndGet() == 0) {
-                logger.info(tableId + " count down to 0 ,try to count down the table");
+                logger.info(tableLackKey + " count down to 0 ,try to count down the table");
                 TableMeta tableMeta = genTableMeta();
                 handlerTable(tableMeta);
                 countdown();

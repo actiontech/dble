@@ -49,7 +49,7 @@ public abstract class FilePath {
     public static FilePath get(String path) {
         path = path.replace('\\', '/');
         int index = path.indexOf(':');
-        registerDefaultProviders();
+        registerProviders();
         if (index < 2) {
             // use the default provider if no prefix or
             // only a single character (drive name)
@@ -65,19 +65,19 @@ public abstract class FilePath {
         // return p;
     }
 
-    private static void registerDefaultProviders() {
+    private static void registerProviders() {
         if (defaultProvider == null) {
             synchronized (FilePath.class) {
                 if (defaultProvider == null) {
                     Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());
                     FilePathDisk p = new FilePathDisk();
                     map.put(p.getScheme(), p);
-                    defaultProvider = p;
                     FilePathNio p2 = new FilePathNio();
                     map.put(p2.getScheme(), p2);
                     FilePathNioMapped p3 = new FilePathNioMapped();
                     map.put(p3.getScheme(), p3);
                     providers = map;
+                    defaultProvider = p;
                 }
             }
         }
@@ -89,7 +89,7 @@ public abstract class FilePath {
      * @param provider the file provider
      */
     public static void register(FilePath provider) {
-        registerDefaultProviders();
+        registerProviders();
         providers.put(provider.getScheme(), provider);
     }
 
@@ -99,7 +99,7 @@ public abstract class FilePath {
      * @param provider the file provider
      */
     public static void unregister(FilePath provider) {
-        registerDefaultProviders();
+        registerProviders();
         providers.remove(provider.getScheme());
     }
 

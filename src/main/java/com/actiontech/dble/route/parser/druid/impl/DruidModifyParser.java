@@ -93,7 +93,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                 checkForERRelationship(tableAliasMap, (ChildTableConfig) tConfig, relationships, tSchema);
             }
         } else {
-            checkForOneNodeRelationship(notShardingTableMap, tName, tSchema.getShardingNode(), partNodeList);
+            checkForOneNodeRelationship(notShardingTableMap, tName, tSchema.getDefaultSingleNode(), partNodeList);
         }
 
     }
@@ -372,7 +372,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             }
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
-                if (!dataNode.equals(tSchema.getShardingNode())) {
+                if (!dataNode.equals(tSchema.getDefaultSingleNode())) {
                     throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if ((tConfig instanceof SingleTableConfig)) {
@@ -414,7 +414,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
-                if (!currentNode.equals(tSchema.getShardingNode())) {
+                if (!currentNode.equals(tSchema.getDefaultSingleNode())) {
                     throw new SQLNonTransientException(getErrorMsg());
                 }
             } else if (tConfig instanceof SingleTableConfig) {
@@ -471,7 +471,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     currentNode = tConfig.getShardingNodes().get(0);
                     involvedNodeSet.add(currentNode);
                 } else if (tConfig == null) {
-                    currentNode = tSchema.getShardingNode();
+                    currentNode = tSchema.getDefaultSingleNode();
                     involvedNodeSet.add(currentNode);
                 }
             }
@@ -571,10 +571,10 @@ abstract class DruidModifyParser extends DefaultDruidParser {
                     rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfox.getSchema()));
                 }
 
-                checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
+                checkForSingleNodeTable(visitor, tc == null ? schema.getDefaultSingleNode() : tc.getShardingNodes().get(0), rrs, service.getCharset().getClient());
             }
             //set value for route result
-            routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
+            routeShardingNodes = ImmutableList.of(tc == null ? schema.getDefaultSingleNode() : tc.getShardingNodes().get(0));
         } else if (tc instanceof GlobalTableConfig) {
             routeShardingNodes = checkForMultiNodeGlobal(service.getUser(), visitor, (GlobalTableConfig) tc, schema);
         } else {

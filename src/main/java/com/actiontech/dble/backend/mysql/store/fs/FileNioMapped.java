@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.store.fs;
 import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -174,7 +173,7 @@ class FileNioMapped extends FileBase {
                 return -1;
             }
             mapped.position(pos);
-            if (dst instanceof DirectBuffer) {
+            if (dst.isDirect()) {
                 byte[] temp = new byte[len];
                 mapped.get(temp, 0, len);
                 dst.put(temp);
@@ -199,7 +198,7 @@ class FileNioMapped extends FileBase {
         return this;
     }
 
-    public synchronized void setFileLength(long newLength) throws IOException {
+    private synchronized void setFileLength(long newLength) throws IOException {
         checkFileSizeLimit(newLength);
         final int oldPos = pos;
         unMap();
@@ -228,12 +227,12 @@ class FileNioMapped extends FileBase {
      * don't expand
      */
     @Override
-    public synchronized int write(ByteBuffer src) throws IOException {
+    public synchronized int write(ByteBuffer src) {
         int len = src.remaining();
         if (mapped.capacity() < pos + len) {
             int offset = src.position();
             int length = mapped.capacity() - pos;
-            if (src instanceof DirectBuffer) {
+            if (src.isDirect()) {
                 byte[] temp = new byte[length];
                 src.get(temp, 0, length);
                 mapped.put(temp, 0, length);

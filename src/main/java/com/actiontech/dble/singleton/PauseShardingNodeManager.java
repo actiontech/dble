@@ -148,13 +148,13 @@ public final class PauseShardingNodeManager {
     }
 
     public void lockWithShardingNodes(Set<String> shardingNodeSet) {
-        LOGGER.info("Lock shardingNodes with set size of" + shardingNodeSet.size());
+        LOGGER.info("Lock shardingNodes with set size of {}", shardingNodeSet.size());
         this.shardingNodes = shardingNodeSet;
         for (Entry<String, SchemaConfig> entry : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
-            if (shardingNodes.contains(entry.getValue().getShardingNode())) {
-                LOGGER.info("lock for schema " + entry.getValue().getName() +
-                        " shardingNode " + entry.getValue().getShardingNode());
-                SchemaConfig schemaConfig = entry.getValue();
+            SchemaConfig schemaConfig = entry.getValue();
+            if (entry.getValue().getDefaultShardingNodes() != null &&
+                    !Collections.disjoint(shardingNodes, schemaConfig.getDefaultShardingNodes())) {
+                LOGGER.info("lock for schema {} shardingNode {}", entry.getValue().getName(), String.join(",", schemaConfig.getDefaultShardingNodes()));
                 SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(entry.getKey());
                 for (Entry<String, TableMeta> tabEntry : schemaMeta.getTableMetas().entrySet()) {
                     if (!schemaConfig.getTables().containsKey(tabEntry.getKey())) {
@@ -169,9 +169,8 @@ public final class PauseShardingNodeManager {
                     }
                 }
             } else {
-                SchemaConfig schemaConfig = entry.getValue();
                 for (Entry<String, BaseTableConfig> tableEntry : schemaConfig.getTables().entrySet()) {
-                    LOGGER.info("lock for schema " + entry.getValue().getName() + " table config ");
+                    LOGGER.info("lock for schema {} table config ", entry.getValue().getName());
                     BaseTableConfig tableConfig = tableEntry.getValue();
                     for (String shardingNode : tableConfig.getShardingNodes()) {
                         if (shardingNodes.contains(shardingNode)) {
@@ -182,7 +181,6 @@ public final class PauseShardingNodeManager {
                 }
             }
         }
-
     }
 
     private void addToLockSet(String schema, String table) {

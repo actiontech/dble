@@ -18,6 +18,7 @@ public final class SystemProperty {
     }
 
     private static Set<String> innerProperties = new HashSet<>();
+
     static {
         innerProperties.add("awt.toolkit");
         innerProperties.add("file.encoding");
@@ -73,5 +74,12 @@ public final class SystemProperty {
         innerProperties.add("user.script");
         innerProperties.add("user.timezone");
         innerProperties.add("user.variant");
+        //for jdk 11
+        innerProperties.add("java.vm.compressedOopsMode");
+        innerProperties.add("jdk.debug");
+        innerProperties.add("java.vendor.version");
+        innerProperties.add("java.version.date");
+        innerProperties.add("user.language.format");
+        innerProperties.add("user.country.format");
     }
 }

@@ -142,8 +142,12 @@ public final class NIOConnector extends Thread implements SocketConnector {
     private void wakeupBackendSelector() {
         Map<Thread, Runnable> threadRunnableMap = DbleServer.getInstance().getRunnableMap().get(DbleServer.BACKEND_EXECUTOR_NAME);
         Map<Runnable, Integer> runnableMap = threadRunnableMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, entry -> ((RW) entry.getValue()).getSelectorKeySize()));
-        Map.Entry<Runnable, Integer> runnableIntegerEntry = runnableMap.entrySet().stream().sorted(Comparator.comparing(Map.Entry::getValue)).findFirst().get();
-        ((RW) runnableIntegerEntry.getKey()).getSelector().wakeup();
+        Optional<Map.Entry<Runnable, Integer>> min = runnableMap.entrySet().stream().min(Map.Entry.comparingByValue());
+        if (min.isPresent()) {
+            ((RW) min.get().getKey()).getSelector().wakeup();
+        } else {
+            LOGGER.warn("wakeupBackendSelector error");
+        }
     }
 
     /**

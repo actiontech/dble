@@ -47,6 +47,7 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile Map<String, ShardingNode> shardingNodes = Maps.newHashMap();
     private volatile Map<String, PhysicalDbGroup> dbGroups;
     private volatile Map<ERTable, Set<ERTable>> erRelations = Maps.newHashMap();
+    private volatile Map<String, Set<ERTable>> funcNodeERMap = Maps.newHashMap();
     private volatile boolean fullyConfigured = false;
     private volatile Map<String, Properties> blacklistConfig;
     private volatile Map<String, AbstractPartitionAlgorithm> functions = Maps.newHashMap();
@@ -133,6 +134,7 @@ public class ConfigInitializer implements ProblemReporter {
             shardingConverter.shardingJsonToMap(shardingJson, dbConverter.getDbGroupMap(), sequenceJson, this);
             this.schemas = shardingConverter.getSchemaConfigMap();
             this.erRelations = shardingConverter.getErRelations();
+            this.funcNodeERMap = shardingConverter.getFuncNodeERMap();
             this.shardingNodes = shardingConverter.getShardingNodeMap();
             this.functions = shardingConverter.getFunctionMap();
             this.shardingConfig = shardingJson;
@@ -341,6 +343,10 @@ public class ConfigInitializer implements ProblemReporter {
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
         return erRelations;
+    }
+
+    public Map<String, Set<ERTable>> getFuncNodeERMap() {
+        return funcNodeERMap;
     }
 
     public boolean isFullyConfigured() {

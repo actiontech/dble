@@ -57,7 +57,7 @@ public class TableNode extends PlanNode {
         }
 
         this.columns = columns;
-        this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getShardingNode())));
+        this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getDefaultSingleNode())));
         this.referedTableNodes.add(this);
         this.keepFieldSchema = true;
     }
@@ -81,14 +81,14 @@ public class TableNode extends PlanNode {
         BaseTableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
         if (this.tableMeta == null) {
             String errorMsg = "table " + this.tableName + " doesn't exist!";
-            if (tableConfig != null || schemaConfig.getShardingNode() != null) {
+            if (tableConfig != null || schemaConfig.getDefaultShardingNodes() != null) {
                 errorMsg += "You should create it OR reload metadata";
             }
             throw new RuntimeException(errorMsg);
         }
         this.referedTableNodes.add(this);
         if (tableConfig == null) {
-            this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getShardingNode())));
+            this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getDefaultSingleNode())));
         } else {
             if (!(tableConfig instanceof GlobalTableConfig) && !(tableConfig instanceof SingleTableConfig)) {
                 this.unGlobalTableCount = 1;

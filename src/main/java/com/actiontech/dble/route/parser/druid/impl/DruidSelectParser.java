@@ -282,6 +282,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     private RouteResultset tryRoute(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool) throws SQLException {
         if ((ctx.getTables() == null || ctx.getTables().size() == 0) && (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
             rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+            rrs.setSchema(schema.getName());
             rrs.setFinishedRoute(true);
             return rrs;
         }
@@ -305,6 +306,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
 
             rrs.setNodes(nodes);
+            rrs.setSchema(schema.getName());
             rrs.setFinishedRoute(true);
 
         }

@@ -114,9 +114,11 @@ public class BackendConnection extends PooledConnection {
                 this.getBackendService().backendSpecialCleanUp();
             }
         } else {
-            this.cleanup();
             if (isAuthed) {
+                this.cleanup(reason);
                 this.getBackendService().onConnectionClose(reason == null ? closeReason : reason);
+            } else {
+                super.baseCleanup(reason);
             }
         }
     }

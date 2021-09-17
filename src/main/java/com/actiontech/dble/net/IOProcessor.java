@@ -141,7 +141,7 @@ public final class IOProcessor {
 
             // clean closed conn or check timeout
             if (c.isClosed()) {
-                c.cleanup();
+                c.cleanup("check close");
                 it.remove();
                 this.frontEndsLength.decrementAndGet();
             } else {

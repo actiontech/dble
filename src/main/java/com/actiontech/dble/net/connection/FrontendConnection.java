@@ -64,9 +64,9 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     @Override
-    public void cleanup() {
+    public void cleanup(String reason) {
         if (isCleanUp.compareAndSet(false, true)) {
-            super.cleanup();
+            super.cleanup(reason);
             AbstractService service = getService();
             if (service instanceof FrontendService) {
                 ((FrontendService) service).userConnectionCount();

@@ -118,9 +118,13 @@ public class ViewMeta {
             String msg = "No database selected";
             throw new SQLException(msg, "3D000", ErrorCode.ER_NO_DB_ERROR);
         }
-        ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
+        SchemaMeta schemaMeta = tmManager.getCatalogs().get(schema);
+        if (schemaMeta == null) {
+            throw new SQLException("Schema '" + schema + "' doesn't exist", "42S02", ErrorCode.ER_NO_DB_ERROR);
+        }
+        ViewMeta viewNode = schemaMeta.getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
-        TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);
+        TableMeta tableMeta = schemaMeta.getTableMeta(viewName);
         //if the alter table
         if (type == ViewMetaParser.TYPE_ALTER_VIEW) {
             if (viewNode == null) {

@@ -1,5 +1,6 @@
 package com.actiontech.dble.meta;
 
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,27 +24,17 @@ public class ReloadLogHelper {
     }
 
     public static void infoList(String message, Logger logger, Set<String> keySet) {
-        StringBuffer sb = new StringBuffer("");
-        if (keySet != null) {
-            for (String x : keySet) {
-                sb.append(x);
-            }
-        }
+        String sb = keySet == null ? "" : StringUtil.join(keySet, ",");
         if (ReloadManager.getReloadInstance().getStatus() == null) {
-            logger.info(message + " " + sb.toString());
+            logger.info(message + " " + sb);
         } else {
             logger.info(ReloadManager.getReloadInstance().getStatus().getLogStage() + message + " " + sb.toString());
         }
     }
 
     public void infoList(String message, Set<String> keySet) {
-        StringBuffer sb = new StringBuffer("");
-        if (keySet != null) {
-            for (String x : keySet) {
-                sb.append(x);
-            }
-        }
-        LOGGER.info(getStage() + message + " " + sb.toString());
+        String sb = keySet == null ? "" : StringUtil.join(keySet, ",");
+        LOGGER.info(getStage() + message + " " + sb);
     }
 
     public static void info(String message, Logger logger) {

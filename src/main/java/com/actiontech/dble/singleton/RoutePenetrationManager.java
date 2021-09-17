@@ -8,11 +8,12 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
+import com.google.gson.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -38,9 +39,13 @@ public final class RoutePenetrationManager {
     public void init() {
         final SystemConfig config = DbleServer.getInstance().getConfig().getSystem();
         try {
-            Gson gson = new Gson();
-            if (config.isEnableRoutePenetration()) {
+            final JsonBooleanDeserializer deserializer = new JsonBooleanDeserializer();
+            final Gson gson = new GsonBuilder().registerTypeAdapter(Boolean.class, deserializer).registerTypeAdapter(boolean.class, deserializer).create();
+            if (config.isEnableRoutePenetration() == 1) {
                 final String routePenetrationRules = config.getRoutePenetrationRules();
+                if (StringUtils.isBlank(routePenetrationRules)) {
+                    throw new IllegalStateException("property routePenetrationRules can't be null");
+                }
                 final PenetrationConfig penetrationConfig = gson.fromJson(routePenetrationRules, PenetrationConfig.class);
                 if (penetrationConfig.getRules() == null) {
                     throw new IllegalStateException("rules can't be null");
@@ -49,14 +54,16 @@ public final class RoutePenetrationManager {
                 rules.forEach(PenetrationRule::init);
             }
             LOGGER.info("init {}  route-penetration rules success", rules.size());
+            LOGGER.debug("route-penetration rules :{}", rules);
         } catch (Exception e) {
-            LOGGER.error("can't parse the route-penetration rule, please check the 'routePenetrationRules', detail exception is " + e);
-            throw e;
+            final String msg = "can't parse the route-penetration rule, please check the 'routePenetrationRules', detail exception is ：" + e;
+            LOGGER.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
     public boolean isEnabled() {
-        return DbleServer.getInstance().getConfig().getSystem().isEnableRoutePenetration();
+        return DbleServer.getInstance().getConfig().getSystem().isEnableRoutePenetration() == 1;
     }
 
     public boolean match(String sql) {
@@ -130,6 +137,25 @@ public final class RoutePenetrationManager {
                     ", caseSensitive=" + caseSensitive +
                     ", partMatch=" + partMatch +
                     '}';
+        }
+    }
+
+    private static class JsonBooleanDeserializer implements JsonDeserializer<Boolean> {
+        @Override
+        public Boolean deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            try {
+                String value = json.getAsJsonPrimitive().getAsString();
+                if (value != null) {
+                    value = value.toLowerCase();
+                }
+                if ("true".equals(value) || "false".equals(value)) {
+                    return Boolean.valueOf(value);
+                } else {
+                    throw new JsonParseException("Cannot parse json '" + json.toString() + "' to boolean value");
+                }
+            } catch (Exception e) {
+                throw new JsonParseException("Cannot parse json '" + json.toString() + "' to boolean value", e);
+            }
         }
     }
 }

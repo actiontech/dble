@@ -165,7 +165,7 @@ public final class SystemConfig {
     private ProblemReporter problemReporter;
     private boolean useOuterHa = false;
 
-    private boolean enableRoutePenetration = false;
+    private int enableRoutePenetration = 0;
     private String routePenetrationRules = "";
 
     public SystemConfig(ProblemReporter problemReporter) {
@@ -1209,11 +1209,11 @@ public final class SystemConfig {
         }
     }
 
-    public boolean isEnableRoutePenetration() {
+    public int isEnableRoutePenetration() {
         return enableRoutePenetration;
     }
 
-    public void setEnableRoutePenetration(boolean enableSqlPenetrationTmp) {
+    public void setEnableRoutePenetration(int enableSqlPenetrationTmp) {
         enableRoutePenetration = enableSqlPenetrationTmp;
     }
 

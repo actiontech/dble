@@ -606,6 +606,10 @@ public final class SystemConfig {
         return closeTimeout;
     }
 
+    public void setCloseTimeout(long closeTimeout) {
+        this.closeTimeout = closeTimeout;
+    }
+
     public long getXaSessionCheckPeriod() {
         return xaSessionCheckPeriod;
     }

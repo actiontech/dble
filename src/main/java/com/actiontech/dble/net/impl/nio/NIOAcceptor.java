@@ -11,6 +11,7 @@ import com.actiontech.dble.net.SocketAcceptor;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.factory.FrontendConnectionFactory;
+import com.actiontech.dble.util.SelectorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,14 +19,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.StandardSocketOptions;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -36,7 +35,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
     private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
 
     private final int port;
-    private final Selector selector;
+    private Selector selector;
     private final ServerSocketChannel serverChannel;
     private final FrontendConnectionFactory factory;
     private ConcurrentLinkedQueue<AbstractConnection> frontRegisterQueue;
@@ -63,10 +62,42 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
 
     @Override
     public void run() {
-        final Selector tSelector = this.selector;
+        Selector tSelector = this.selector;
+        int selectReturnsImmediately = 0;
+        // use 80% of the timeout for measure
+        long minSelectTimeout = TimeUnit.MILLISECONDS.toNanos(SelectorUtil.DEFAULT_SELECT_TIMEOUT) / 100 * 80;
         for (; ; ) {
             try {
-                tSelector.select(1000L);
+                long beforeSelect = System.nanoTime();
+                int selected = tSelector.select(SelectorUtil.DEFAULT_SELECT_TIMEOUT);
+
+                //issue - https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6403933
+                //refer to https://github.com/netty/netty/pull/565
+                if (selected == 0) {
+                    long timeBlocked = System.nanoTime() - beforeSelect;
+                    boolean checkSelectReturnsImmediately = SelectorUtil.checkSelectReturnsImmediately(timeBlocked, tSelector, minSelectTimeout);
+                    if (checkSelectReturnsImmediately) {
+                        selectReturnsImmediately++;
+                    } else {
+                        selectReturnsImmediately = 0;
+                    }
+                    if (selectReturnsImmediately == 1024) {
+                        // The selector returned immediately for 10 times in a row,
+                        // so recreate one selector as it seems like we hit the
+                        // famous epoll(..) jdk bug.
+                        Selector rebuildSelector = SelectorUtil.rebuildSelector(this.selector);
+                        if (null != rebuildSelector) {
+                            this.selector = rebuildSelector;
+                        }
+                        tSelector = this.selector;
+                        selectReturnsImmediately = 0;
+                        // try to select again
+                        continue;
+                    }
+                } else {
+                    selectReturnsImmediately = 0;
+                }
+
                 Set<SelectionKey> keys = tSelector.selectedKeys();
                 try {
                     for (SelectionKey key : keys) {
@@ -133,7 +164,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
         Map<Runnable, Integer> runnableMap = threadRunnableMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, entry -> ((RW) entry.getValue()).getSelectorKeySize()));
         Optional<Map.Entry<Runnable, Integer>> min = runnableMap.entrySet().stream().min(Map.Entry.comparingByValue());
         if (min.isPresent()) {
-            ((RW) min.get().getKey()).getSelector().wakeup();
+            ((RW) min.get().getKey()).wakeUpSelector();
         } else {
             LOGGER.warn("wakeupFrontedSelector error");
         }

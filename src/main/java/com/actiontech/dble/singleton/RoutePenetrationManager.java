@@ -39,8 +39,11 @@ public final class RoutePenetrationManager {
         final SystemConfig config = DbleServer.getInstance().getConfig().getSystem();
         try {
             Gson gson = new Gson();
-            if (config.isEnableRoutePenetration()) {
+            if (config.isEnableRoutePenetration() == 1) {
                 final String routePenetrationRules = config.getRoutePenetrationRules();
+                if (StringUtils.isBlank(routePenetrationRules)) {
+                    throw new IllegalStateException("property routePenetrationRules can't be null");
+                }
                 final PenetrationConfig penetrationConfig = gson.fromJson(routePenetrationRules, PenetrationConfig.class);
                 if (penetrationConfig.getRules() == null) {
                     throw new IllegalStateException("rules can't be null");
@@ -50,13 +53,14 @@ public final class RoutePenetrationManager {
             }
             LOGGER.info("init {}  route-penetration rules success", rules.size());
         } catch (Exception e) {
-            LOGGER.error("can't parse the route-penetration rule, please check the 'routePenetrationRules', detail exception is " + e);
-            throw e;
+            final String msg = "can't parse the route-penetration rule, please check the 'routePenetrationRules', detail exception is ：" + e;
+            LOGGER.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
     public boolean isEnabled() {
-        return DbleServer.getInstance().getConfig().getSystem().isEnableRoutePenetration();
+        return DbleServer.getInstance().getConfig().getSystem().isEnableRoutePenetration() == 1;
     }
 
     public boolean match(String sql) {

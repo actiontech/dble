@@ -25,9 +25,11 @@ public final class SetItemUtil {
         switch (strValue) {
             case "1":
             case "on":
+            case "true":
                 return "true";
             case "0":
             case "off":
+            case "false":
                 return "false";
             default:
                 throw new SQLException("Variable '" + strKey + "' can't be set to the value of '" + strValue + "'", "42000", ErrorCode.ER_WRONG_VALUE_FOR_VAR);
@@ -206,8 +208,8 @@ public final class SetItemUtil {
                 valueExpr instanceof SQLVariantRefExpr) {
             strValue = valueExpr.toString();
         } else if (valueExpr instanceof SQLBooleanExpr) {
-            // SQLBooleanExpr toString is xFalse
-            strValue = valueExpr.toString().substring(1);
+            // SQLBooleanExpr toString is xFalse,and druid 1.2.x fixed
+            strValue = valueExpr.toString();
         }
         return strValue;
     }

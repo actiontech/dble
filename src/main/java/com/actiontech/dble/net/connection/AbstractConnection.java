@@ -98,7 +98,7 @@ public abstract class AbstractConnection implements Connection {
                 processor.removeConnection(this);
             }
 
-            this.cleanup();
+            this.cleanup(reason);
 
             // ignore null information
             if (Strings.isNullOrEmpty(reason)) {
@@ -112,7 +112,7 @@ public abstract class AbstractConnection implements Connection {
             }
         } else {
             // make sure buffer recycle again, avoid buffer leak
-            this.cleanup();
+            this.cleanup(reason);
         }
     }
 
@@ -316,7 +316,7 @@ public abstract class AbstractConnection implements Connection {
             if (buffer != null) {
                 recycle(buffer);
             }
-            this.cleanup();
+            this.cleanup(null);
             return;
         }
 
@@ -352,8 +352,11 @@ public abstract class AbstractConnection implements Connection {
     public void onConnectFailed(Throwable e) {
     }
 
-    public synchronized void cleanup() {
+    public synchronized void cleanup(String reason) {
+        baseCleanup(reason);
+    }
 
+    public synchronized void baseCleanup(String reason) {
         if (readBuffer != null) {
             this.recycle(readBuffer);
             this.readBuffer = null;

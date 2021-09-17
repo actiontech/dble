@@ -18,9 +18,11 @@ public final class StartHandler {
     }
 
     public static void handle(String stmt, ManagerService c, int offset) {
-        switch (ManagerParseStart.parse(stmt, offset)) {
+        int rs = ManagerParseStart.parse(stmt, offset);
+        int sqlType = rs & 0xff;
+        switch (sqlType) {
             case ManagerParseStart.STATISTIC_QUEUE_MONITOR:
-                StatisticCf.Queue.start(c, stmt);
+                StatisticCf.Queue.start(c, stmt, rs >>> 8);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

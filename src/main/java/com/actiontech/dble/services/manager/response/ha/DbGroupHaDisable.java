@@ -22,8 +22,6 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.HaConfigManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -33,7 +31,6 @@ import java.util.regex.Matcher;
  * Created by szf on 2019/10/22.
  */
 public final class DbGroupHaDisable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaDisable.class);
 
     private DbGroupHaDisable() {
 

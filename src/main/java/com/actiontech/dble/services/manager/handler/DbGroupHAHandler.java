@@ -15,24 +15,25 @@ import java.util.regex.Pattern;
  */
 public final class DbGroupHAHandler {
 
-    public static final String DB_NAME_FORMAT = "a-zA-Z_0-9\\-\\."; //nmtoken
-    private static final Pattern PATTERN_DH_DISABLE = Pattern.compile("^\\s*dbGroup\\s*@@disable\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
+    private static final String DB_NAME_FORMAT = "a-zA-Z_0-9\\-\\."; //nmtoken
+    private static final Pattern PATTERN_DH_DISABLE = Pattern.compile("@@disable\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
             "\\s*(instance\\s*=\\s*'([" + DB_NAME_FORMAT + "\\,]+)')?$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_DH_ENABLE = Pattern.compile("^\\s*dbGroup\\s*@@enable\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
+    private static final Pattern PATTERN_DH_ENABLE = Pattern.compile("@@enable\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
             "\\s*(instance\\s*=\\s*'([" + DB_NAME_FORMAT + "\\,]+)')?$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_DH_SWITCH = Pattern.compile("^\\s*dbGroup\\s*@@switch\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
+    private static final Pattern PATTERN_DH_SWITCH = Pattern.compile("@@switch\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
             "\\s*master\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_DH_EVENTS = Pattern.compile("^dbGroup\\s*@@events\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_DH_EVENTS = Pattern.compile("@@events\\s*$", Pattern.CASE_INSENSITIVE);
 
     private DbGroupHAHandler() {
     }
 
-    public static void handle(String stmt, ManagerService service) {
+    public static void handle(String stmt, ManagerService service, int offset) {
+        String options = stmt.substring(offset).trim();
         service.getClusterDelayService().markDoingOrDelay(true);
-        Matcher disable = PATTERN_DH_DISABLE.matcher(stmt);
-        Matcher enable = PATTERN_DH_ENABLE.matcher(stmt);
-        Matcher switcher = PATTERN_DH_SWITCH.matcher(stmt);
-        Matcher event = PATTERN_DH_EVENTS.matcher(stmt);
+        Matcher disable = PATTERN_DH_DISABLE.matcher(options);
+        Matcher enable = PATTERN_DH_ENABLE.matcher(options);
+        Matcher switcher = PATTERN_DH_SWITCH.matcher(options);
+        Matcher event = PATTERN_DH_EVENTS.matcher(options);
         if (disable.matches()) {
             DbGroupHaDisable.execute(disable, service);
         } else if (enable.matches()) {

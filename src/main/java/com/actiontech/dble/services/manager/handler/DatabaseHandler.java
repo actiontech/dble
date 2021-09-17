@@ -13,8 +13,8 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 public final class DatabaseHandler {
 
     private static final OkPacket OK = new OkPacket();
-    private static final Pattern PATTERN = Pattern.compile("^\\s*(create|drop)\\s*database\\s*@@shardingNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("database\\s*@@shardingNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
 
     private static final String CREATE_DATABASE = "create database if not exists `%s`";
     private static final String DROP_DATABASE = "drop database if exists `%s`";
@@ -50,14 +50,15 @@ public final class DatabaseHandler {
     private DatabaseHandler() {
     }
 
-    public static void handle(String stmt, ManagerService service, boolean isCreate) {
+    public static void handle(String stmt, ManagerService service, boolean isCreate, int offset) {
 
-        Matcher ma = PATTERN.matcher(stmt);
-        if (!ma.matches() || !ma.group(2).equals(ma.group(4))) {
+        String options = stmt.substring(offset).trim();
+        Matcher ma = PATTERN.matcher(options);
+        if (!ma.matches() || !ma.group(1).equals(ma.group(3))) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create|drop database @@shardingNode ='dn......'");
             return;
         }
-        String shardingNodeStr = ma.group(3);
+        String shardingNodeStr = ma.group(2);
         Set<String> shardingNodes = new HashSet<>(Arrays.asList(SplitUtil.split(shardingNodeStr, ',', '$', '-')));
         //check shardingNodes
         for (String singleDn : shardingNodes) {

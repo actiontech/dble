@@ -11,8 +11,10 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -104,36 +106,35 @@ public final class ShowConnectionSQL {
         row.add(LongUtil.toBytes(c.getId()));
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(StringUtil.encode(c.getFrontEndService().getUser().toString(), charset));
-        if (!c.isManager()) {
+        AbstractService service = c.getService();
+        String executeSql = c.getFrontEndService().getExecuteSql();
+        if (executeSql != null) {
+            executeSql = executeSql.length() <= 1024 ? executeSql : executeSql.substring(0, 1024);
+        } else {
+            executeSql = "";
+        }
+        if (service instanceof ShardingService) {
             row.add(StringUtil.encode(((ShardingService) c.getService()).getSchema(), charset));
+            generalTransformRow(c, executeSql, row, charset);
+            row.add(StringUtil.encode(((ShardingService) c.getService()).getSession2().getSessionStage().toString(), charset));
+        } else if (service instanceof RWSplitService) {
+            row.add(StringUtil.encode(((RWSplitService) c.getService()).getSchema(), charset));
+            generalTransformRow(c, executeSql, row, charset);
+            row.add(StringUtil.encode("RWSplit connection", charset));
         } else {
             row.add(StringUtil.encode("", charset));
+            generalTransformRow(c, executeSql, row, charset);
+            row.add(StringUtil.encode("Manager connection", charset));
         }
+        return row;
+    }
+
+    private static void generalTransformRow(FrontendConnection c, String executeSql, RowDataPacket row, String charset) {
         row.add(StringUtil.encode(FormatUtil.formatDate(c.getLastReadTime()), charset));
         long rt = c.getLastReadTime();
         long wt = c.getLastWriteTime();
         row.add(LongUtil.toBytes((wt >= rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
-        if (!c.isManager()) {
-            String executeSql = c.getFrontEndService().getExecuteSql();
-            if (executeSql != null) {
-                executeSql = executeSql.length() <= 1024 ? executeSql : executeSql.substring(0, 1024);
-            } else {
-                executeSql = "";
-            }
-            row.add(StringUtil.encode(executeSql, charset));
-            row.add(StringUtil.encode(((ShardingService) c.getService()).getSession2().getSessionStage().toString(), charset));
-        } else {
-
-            String executeSql = c.getFrontEndService().getExecuteSql();
-            if (executeSql != null) {
-                executeSql = executeSql.length() <= 1024 ? executeSql : executeSql.substring(0, 1024);
-            } else {
-                executeSql = "";
-            }
-            row.add(StringUtil.encode(executeSql, charset));
-            row.add(StringUtil.encode("Manager connection", charset));
-        }
-        return row;
+        row.add(StringUtil.encode(executeSql, charset));
     }
 
 }

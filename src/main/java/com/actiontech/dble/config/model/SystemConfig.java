@@ -705,7 +705,6 @@ public final class SystemConfig {
     }
 
 
-
     public boolean isUseDefaultPageNumber() {
         return useDefaultPageNumber;
     }
@@ -1213,8 +1212,12 @@ public final class SystemConfig {
         return enableRoutePenetration;
     }
 
-    public void setEnableRoutePenetration(int enableSqlPenetrationTmp) {
-        enableRoutePenetration = enableSqlPenetrationTmp;
+    public void setEnableRoutePenetration(int enableRoutePenetrationTmp) {
+        if (enableRoutePenetrationTmp >= 0 && enableRoutePenetrationTmp <= 1) {
+            this.enableRoutePenetration = enableRoutePenetrationTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMATE, "enableRoutePenetration", enableRoutePenetrationTmp, this.enableRoutePenetration));
+        }
     }
 
     public String getRoutePenetrationRules() {

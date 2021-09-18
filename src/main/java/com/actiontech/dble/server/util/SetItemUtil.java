@@ -206,8 +206,8 @@ public final class SetItemUtil {
                 valueExpr instanceof SQLVariantRefExpr) {
             strValue = valueExpr.toString();
         } else if (valueExpr instanceof SQLBooleanExpr) {
-            // SQLBooleanExpr toString is xFalse,and druid 1.2.x fixed
-            strValue = valueExpr.toString();
+            // SQLBooleanExpr toString is xFalse
+            strValue = valueExpr.toString().substring(1);
         }
         return strValue;
     }

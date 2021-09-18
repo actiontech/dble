@@ -207,7 +207,7 @@ public final class SetItemUtil {
             strValue = valueExpr.toString();
         } else if (valueExpr instanceof SQLBooleanExpr) {
             // SQLBooleanExpr toString is xFalse
-            strValue = valueExpr.toString().substring(1);
+            strValue = valueExpr.toString().substring(1).toLowerCase();
         }
         return strValue;
     }

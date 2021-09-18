@@ -79,9 +79,9 @@ public class ConfigInitializer implements ProblemReporter {
             init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig, false);
         } catch (Exception e) {
             if (e instanceof UnmarshalException) {
-                throw new ConfigException(((UnmarshalException) e).getLinkedException());
+                throw new ConfigException(e.getMessage() == null ? e.toString() : e.getMessage(), ((UnmarshalException) e).getLinkedException());
             }
-            throw new ConfigException(e);
+            throw new ConfigException(e.getMessage() == null ? e.toString() : e.getMessage(), e);
         } finally {
             TraceManager.finishSpan(traceObject);
         }

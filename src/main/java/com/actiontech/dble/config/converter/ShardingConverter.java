@@ -136,7 +136,8 @@ public class ShardingConverter {
             schemaListToMap(schemaList, shardingNodeConfigMap, problemReporter);
             deleteUselessShardingNode(errorInfos, sequenceJson);
         } catch (Exception e) {
-            throw new ConfigException("sharding json to map occurred  parse errors, The detailed errors are as follows .  " + e, e);
+            String message = e.getMessage() == null ? e.toString() : e.getMessage();
+            throw new ConfigException("sharding json to map occurred  parse errors, The detailed errors are as follows. " + message, e);
         }
     }
 

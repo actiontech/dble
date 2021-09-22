@@ -16,6 +16,11 @@ public abstract class SocketWR {
 
     public abstract void doNextWriteCheck();
 
+    /**
+     * return false will be filtered
+     */
+    public abstract boolean canNotWrite();
+
     public abstract boolean registerWrite(ByteBuffer buffer);
 
     public abstract void disableRead();

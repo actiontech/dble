@@ -29,6 +29,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
                 wr.con.pushServiceTask(ServiceTaskFactory.getInstance(wr.con.getService()).createForForceClose("write errno " + result, CloseType.WRITE));
             }
         } catch (Exception e) {
+            wr.setWriteDataErr(true);
             AIOSocketWR.LOGGER.info("caught aio process err:", e);
         }
 
@@ -37,6 +38,7 @@ class AIOWriteHandler implements CompletionHandler<Integer, AIOSocketWR> {
     @Override
     public void failed(Throwable exc, AIOSocketWR wr) {
         wr.writing.set(false);
+        wr.setWriteDataErr(true);
         if (Objects.equals(exc.getMessage(), "Broken pipe") || Objects.equals(exc.getMessage(), "Connection reset by peer") || exc instanceof ClosedChannelException) {
             // target problem,
             //ignore this exception,will close by read side.

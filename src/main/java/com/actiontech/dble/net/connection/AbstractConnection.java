@@ -426,6 +426,10 @@ public abstract class AbstractConnection implements Connection {
             this.cleanup(null);
             return;
         }
+        //filter out useless write
+        if (socketWR.canNotWrite()) {
+            return;
+        }
         int bufferSize;
         WriteOutTask writeTask;
         if (isSupportCompress) {

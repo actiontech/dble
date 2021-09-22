@@ -204,6 +204,15 @@ public class AIOSocketWR extends SocketWR {
     public void closeSocket() throws IOException {
         channel.close();
     }
+
+    public void setWriteDataErr(boolean writeDataErr) {
+        this.writeDataErr = writeDataErr;
+    }
+
+    @Override
+    public boolean canNotWrite() {
+        return writeDataErr;
+    }
 }
 
 

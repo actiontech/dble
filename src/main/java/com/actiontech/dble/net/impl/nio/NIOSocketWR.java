@@ -101,6 +101,10 @@ public class NIOSocketWR extends SocketWR {
         } finally {
             if (writeDataErr) {
                 this.writeQueue.clear();
+                con.getWritingSize().set(0);
+                if (FlowController.isEnableFlowControl() && con.isFrontWriteFlowControlled()) {
+                    con.stopFlowControl(0);
+                }
                 if ((processKey.isValid() && (processKey.interestOps() & SelectionKey.OP_WRITE) != 0)) {
                     disableWrite();
                 }
@@ -343,5 +347,10 @@ public class NIOSocketWR extends SocketWR {
     public void closeSocket() throws IOException {
         clearSelectionKey();
         channel.close();
+    }
+
+    @Override
+    public boolean canNotWrite() {
+        return writeDataErr;
     }
 }

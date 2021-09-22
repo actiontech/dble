@@ -141,7 +141,6 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
         }
 
         private synchronized void countdown(String shardingNode, Set<String> remainingTables) {
-            System.out.println("######shardDNSet" + shardDNSet);
             boolean isLastShardingNode = isLastShardingNode(shardingNode);
             if (schemaConfig.isDefaultSingleNode()) {
                 if (remainingTables.size() > 0) {
@@ -163,7 +162,6 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
         }
 
         public void tryComplete(String shardingNode, boolean isLastShardingNode) {
-            System.out.println("######tryComplete... isLastShardingNode：" + isLastShardingNode);
             if (isLastShardingNode) {
                 logger.info("implicit defaultNode tables in schema[" + schema + "], last shardingNode[" + shardingNode + "] ");
                 operationalHandler.tryToAddMetadata(tablesStructMap);
@@ -181,7 +179,6 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
                 }
             } else {
                 if (isView) return;
-                System.out.println("######handleTable.......");
                 operationalHandler.checkTableConsistent(tablesStructMap, table, shardingNode, createSQL);
             }
         }

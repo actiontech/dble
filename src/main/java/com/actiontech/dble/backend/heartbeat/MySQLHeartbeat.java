@@ -94,16 +94,16 @@ public class MySQLHeartbeat {
      */
     public void heartbeat() {
         if (isChecking.compareAndSet(false, true)) {
-            if (detector == null || detector.isQuit()) {
-                try {
+            try {
+                if (detector == null) {
                     detector = new MySQLDetector(this);
-                    detector.heartbeat();
-                } catch (Exception e) {
-                    LOGGER.info(source.getConfig().toString(), e);
-                    setResult(ERROR_STATUS);
+                } else if (detector.isQuit()) {
+                    detector = new MySQLDetector(this, detector.getLastReceivedQryTime());
                 }
-            } else {
                 detector.heartbeat();
+            } catch (Exception e) {
+                LOGGER.info(source.getConfig().toString(), e);
+                setResult(ERROR_STATUS);
             }
         } else {
             if (detector != null) {

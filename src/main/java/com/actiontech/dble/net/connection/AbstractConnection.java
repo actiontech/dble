@@ -3,6 +3,7 @@ package com.actiontech.dble.net.connection;
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
@@ -239,6 +240,7 @@ public abstract class AbstractConnection implements Connection {
             readBuffer = processor.getBufferPool().allocate(readBufferChunk);
         } else {
             if (readBuffer != null) {
+                IODelayProvider.inReadReachEnd();
                 readBuffer.clear();
             }
         }

@@ -92,9 +92,12 @@ public class MySQLHeartbeat {
      */
     public void heartbeat() {
         if (isChecking.compareAndSet(false, true)) {
-            if (detector == null || detector.isQuit()) {
+            if (detector == null) {
                 detector = new MySQLDetector(this);
+            } else if (detector.isQuit()) {
+                detector = new MySQLDetector(this, detector.getLastReceivedQryTime());
             }
+
             detector.heartbeat();
         } else {
             if (detector != null) {

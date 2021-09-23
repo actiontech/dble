@@ -6,9 +6,6 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnectionAuthenticator;
-import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
-import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.config.FlowCotrollerConfig;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.util.TimeUtil;
@@ -300,11 +297,6 @@ public class NIOSocketWR extends SocketWR {
 
     @Override
     public void asyncRead() throws IOException {
-        // only for test
-        if (con.getHandler() instanceof MySQLConnectionAuthenticator && ((MySQLConnectionAuthenticator) con.getHandler()).getListener() instanceof NewConnectionRespHandler) {
-            ClusterDelayProvider.heartbeat();
-        }
-
         ByteBuffer theBuffer = con.readBuffer;
         if (theBuffer == null) {
             theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());

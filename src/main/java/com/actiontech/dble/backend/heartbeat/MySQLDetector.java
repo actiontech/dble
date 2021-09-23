@@ -51,7 +51,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     private BackendConnection con;
 
     public MySQLDetector(MySQLHeartbeat heartbeat) {
+        this(heartbeat, 0L);
+    }
+
+    public MySQLDetector(MySQLHeartbeat heartbeat, long lastReceivedQryTime) {
         this.heartbeat = heartbeat;
+        this.lastReceivedQryTime = lastReceivedQryTime;
         this.isQuit = new AtomicBoolean(false);
         con = null;
         try {

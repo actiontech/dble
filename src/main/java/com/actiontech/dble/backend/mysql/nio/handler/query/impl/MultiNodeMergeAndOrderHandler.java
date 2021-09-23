@@ -135,7 +135,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, @NotNull AbstractService service) {
-        AbstractService responseService = (MySQLResponseService) service;
+        MySQLResponseService responseService = (MySQLResponseService) service;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(responseService.toString() + " 's rowEof is reached.");
         }
@@ -155,20 +155,17 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     @Override
     protected void ownThreadJob(Object... objects) {
         try {
-            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>(new Comparator<HeapItem>() {
-                @Override
-                public int compare(HeapItem o1, HeapItem o2) {
-                    RowDataPacket row1 = o1.getRowPacket();
-                    RowDataPacket row2 = o2.getRowPacket();
-                    if (row1 == null || row2 == null) {
-                        if (row1 == row2)
-                            return 0;
-                        if (row1 == null)
-                            return -1;
-                        return 1;
-                    }
-                    return rowComparator.compare(row1, row2);
+            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>((o1, o2) -> {
+                RowDataPacket row1 = o1.getRowPacket();
+                RowDataPacket row2 = o2.getRowPacket();
+                if (row1 == null || row2 == null) {
+                    if (row1 == row2)
+                        return 0;
+                    if (row1 == null)
+                        return -1;
+                    return 1;
                 }
+                return rowComparator.compare(row1, row2);
             });
             // init heap
             for (Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry : queues.entrySet()) {
@@ -223,7 +220,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         for (Entry<MySQLResponseService, BlockingQueue<HeapItem>> entry : this.queues.entrySet()) {
             // add EOF to signal atoMerge thread
             entry.getValue().clear();
-            entry.getValue().put(new HeapItem(null, null, entry.getKey()));
+            entry.getValue().put(HeapItem.nullItem());
         }
         recycleConn();
     }

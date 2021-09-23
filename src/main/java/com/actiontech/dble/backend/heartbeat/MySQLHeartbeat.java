@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.heartbeat;
 
 import com.actiontech.dble.alarm.AlarmCode;
@@ -116,16 +116,16 @@ public class MySQLHeartbeat {
         reentrantLock.lock();
         try {
             if (isChecking.compareAndSet(false, true)) {
-                if (detector == null || detector.isQuit()) {
-                    try {
+                try {
+                    if (detector == null) {
                         detector = new MySQLDetector(this);
-                        detector.heartbeat();
-                    } catch (Exception e) {
-                        LOGGER.info(source.getConfig().toString(), e);
-                        setResult(ERROR_STATUS);
+                    } else if (detector.isQuit()) {
+                        detector = new MySQLDetector(this, detector.getLastReceivedQryTime());
                     }
-                } else {
                     detector.heartbeat();
+                } catch (Exception e) {
+                    LOGGER.info(source.getConfig().toString(), e);
+                    setResult(ERROR_STATUS);
                 }
             } else {
                 if (detector != null) {
@@ -211,6 +211,7 @@ public class MySQLHeartbeat {
         LOGGER.info("heartbeat failed, retry for the " + errorCount + " times");
         heartbeat();
     }
+
     private void setTimeout() {
         LOGGER.warn("heartbeat setTimeout");
         this.isChecking.set(false);

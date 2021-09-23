@@ -122,10 +122,4 @@ public final class ClusterDelayProvider {
     public static void delayBeforeDeleterollbackLock() {
 
     }
-
-    //only for test need delete
-    public static void heartbeat() {
-
-    }
-
 }

@@ -326,6 +326,7 @@ public abstract class AbstractConnection implements Connection {
             readBuffer = processor.getBufferPool().allocate(readBufferChunk);
         } else {
             if (readBuffer != null) {
+                IODelayProvider.inReadReachEnd();
                 readBuffer.clear();
             }
         }

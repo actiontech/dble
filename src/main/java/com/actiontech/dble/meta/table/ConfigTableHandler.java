@@ -112,9 +112,12 @@ public class ConfigTableHandler extends ModeTableHandler {
         }
 
         protected Map<String, Set<String>> tryGetTablesByNode() {
-            logger.infoList("try to execute show tables in [" + schema + "] shardingNode:", getShardDNSet());
             Map<String, Set<String>> shardingNodeMap = tryGetTables0();
             if (CollectionUtil.isEmpty(shardingNodeMap)) return null;
+            if (parentHandler instanceof FakeConfigTableHandler)
+                logger.infoList("try to execute show tables in [" + schema + "] default multi shardingNode:", getShardDNSet());
+            else
+                logger.infoList("try to execute show tables in [" + schema + "] config table's shardingNode:", getShardDNSet());
             Map<String, Set<String>> tableMap = Maps.newHashMap();
             for (Map.Entry<String, Set<String>> nodeInfo : shardingNodeMap.entrySet()) {
                 String node = nodeInfo.getKey();
@@ -219,7 +222,11 @@ public class ConfigTableHandler extends ModeTableHandler {
         }
 
         private void execute(Map<String, Set<String>> tableMap) {
-            logger.infoList("try to execute show create tables in [" + schema + "] shardingNode:", getShardDNSet());
+            if (parentHandler instanceof FakeConfigTableHandler)
+                logger.infoList("try to execute show create tables in [" + schema + "] default multi shardingNode:", getShardDNSet());
+            else
+                logger.infoList("try to execute show create tables in [" + schema + "] config table's shardingNode:", getShardDNSet());
+
             for (Map.Entry<String, Set<String>> entry : tableMap.entrySet()) {
                 new ShowCreateTableByNodeUnitHandler(this, schema, logger.isReload()).execute(entry.getKey(), entry.getValue());
             }

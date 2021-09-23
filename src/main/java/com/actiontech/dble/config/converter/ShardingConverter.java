@@ -214,7 +214,7 @@ public class ShardingConverter {
                     final long distinctCount = Arrays.stream(theShardingNodes).distinct().count();
                     if (distinctCount != theShardingNodes.length) {
                         //detected repeat props;
-                        throw new ConfigException("invalid schema config: " + schemaShardingNode + " for schema " + schemaShardingNode + " ,the nodes duplicated!");
+                        throw new ConfigException("invalid schema config: " + schemaShardingNode + " for schema " + schemaName + " ,the nodes duplicated!");
                     }
                     shardingNodeList = Arrays.asList(theShardingNodes);
                     checkShardingNodeExists(shardingNodeList, shardingNodeConfigMap);

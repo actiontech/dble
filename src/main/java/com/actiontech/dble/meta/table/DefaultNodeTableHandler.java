@@ -12,14 +12,17 @@ import java.util.*;
 
 public class DefaultNodeTableHandler extends ModeTableHandler {
     private final AbstractSchemaMetaHandler operationalHandler;
+    private final String schema;
     private final SchemaConfig schemaConfig;
     private final Set<String> selfNodes;
     private final ReloadLogHelper logger;
+    private final Map<String, Map<String, List<String>>> tablesStructMap = new HashMap<>();
     private final Set<String> filterTables;
 
     public DefaultNodeTableHandler(AbstractSchemaMetaHandler operationalHandler) {
         this.operationalHandler = operationalHandler;
         this.schemaConfig = operationalHandler.getSchemaConfig();
+        this.schema = operationalHandler.getSchema();
         this.selfNodes = operationalHandler.getSelfNode();
         this.logger = operationalHandler.getLogger();
         this.filterTables = operationalHandler.getFilterTables();
@@ -30,7 +33,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
         boolean existTable = false;
         if (!CollectionUtil.isEmpty(schemaConfig.getDefaultShardingNodes()) &&
                 (selfNodes == null || Collections.disjoint(selfNodes, schemaConfig.getDefaultShardingNodes()))) {
-            Set<String> showTablesResult = new ShowTableHandler(schemaConfig).tryGetTables();
+            Set<String> showTablesResult = new ShowTableHandler().tryGetTables();
             if (!CollectionUtil.isEmpty(filterTables) && schemaConfig.isDefaultSingleNode()) {
                 showTablesResult.retainAll(filterTables);
                 filterTables.removeAll(showTablesResult);
@@ -38,19 +41,65 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
 
             if (showTablesResult.size() > 0) {
                 existTable = true;
-                new ShowCreateTableHandler(operationalHandler, schemaConfig, logger, new HashSet<>(schemaConfig.getDefaultShardingNodes())).execute(showTablesResult);
+                getShardDNSet().addAll(schemaConfig.getDefaultShardingNodes());
+                new ShowCreateTableHandler(this).
+                        execute(showTablesResult);
             }
         }
         return existTable;
     }
 
+    @Override
+    public synchronized void handleTable(String shardingNode, String table, boolean isView, String sql) {
+        if (schemaConfig.isDefaultSingleNode()) {
+            if (isView) {
+                ViewMeta viewMeta = MetaHelper.initViewMeta(schema, sql, System.currentTimeMillis(), operationalHandler.getTmManager());
+                operationalHandler.handleViewMeta(viewMeta);
+            } else {
+                TableMeta tableMeta = MetaHelper.initTableMeta(table, sql, System.currentTimeMillis(), schema);
+                operationalHandler.handleSingleMetaData(tableMeta);
+            }
+        } else {
+            if (isView) return;
+            operationalHandler.checkTableConsistent(tablesStructMap, table, shardingNode, sql);
+        }
+    }
+
+    @Override
+    public void countdown(String shardingNode, Set<String> remainingTables) {
+        boolean isLastShardingNode = isLastShardingNode(shardingNode);
+        if (schemaConfig.isDefaultSingleNode()) {
+            if (remainingTables.size() > 0) {
+                for (String table : remainingTables) {
+                    logger.warn("show create table " + table + " in shardingNode[" + shardingNode + "] has no results");
+                }
+            }
+            this.tryComplete(shardingNode, isLastShardingNode);
+        } else {
+            if (isLastShardingNode) {
+                if (remainingTables.size() > 0) {
+                    for (String table : remainingTables) {
+                        logger.warn("show create table " + table + " in shardingNode" + schemaConfig.getDefaultShardingNodes() + " has no intersection results");
+                    }
+                }
+            }
+            this.tryComplete(shardingNode, isLastShardingNode);
+        }
+    }
+
+    @Override
+    public void tryComplete(String shardingNode, boolean isLastShardingNode) {
+        if (isLastShardingNode) {
+            logger.info("implicit defaultNode tables in schema[" + schema + "], last shardingNode[" + shardingNode + "] ");
+            operationalHandler.tryToAddMetadata(tablesStructMap);
+        }
+    }
+
     // show table
-    static class ShowTableHandler {
-        private final SchemaConfig schemaConfig;
+    class ShowTableHandler {
         private List<ShowTableByNodeUnitHandler> nodeUnitHandlers;
 
-        ShowTableHandler(SchemaConfig schemaConfig) {
-            this.schemaConfig = schemaConfig;
+        ShowTableHandler() {
         }
 
         private Set<String> tryGetTables() {
@@ -77,7 +126,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
             }
         }
 
-        static class ShowTableByNodeUnitHandler extends GetNodeTablesHandler {
+        class ShowTableByNodeUnitHandler extends GetNodeTablesHandler {
             private final Map<String, BaseTableConfig> localTables;
             private final Set<String> tables = new LinkedHashSet<>();
             private final Set<String> views = new HashSet<>();
@@ -117,20 +166,11 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
     }
 
     // show create table
-    static class ShowCreateTableHandler {
-        private final AbstractSchemaMetaHandler operationalHandler;
-        private final String schema;
-        private final SchemaConfig schemaConfig;
-        private volatile Map<String, Map<String, List<String>>> tablesStructMap = new HashMap<>();
-        private final ReloadLogHelper logger;
-        private volatile Set<String> shardDNSet;
+    class ShowCreateTableHandler {
+        private final DefaultNodeTableHandler parentHandler;
 
-        ShowCreateTableHandler(AbstractSchemaMetaHandler operationalHandler, SchemaConfig schemaConfig, ReloadLogHelper logger, Set<String> shardDNSet) {
-            this.operationalHandler = operationalHandler;
-            this.schema = schemaConfig.getName();
-            this.schemaConfig = schemaConfig;
-            this.shardDNSet = shardDNSet;
-            this.logger = logger;
+        ShowCreateTableHandler(DefaultNodeTableHandler parentHandler) {
+            this.parentHandler = parentHandler;
         }
 
         private void execute(Set<String> tables) {
@@ -140,55 +180,15 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
             }
         }
 
-        private synchronized void countdown(String shardingNode, Set<String> remainingTables) {
-            boolean isLastShardingNode = isLastShardingNode(shardingNode);
-            if (schemaConfig.isDefaultSingleNode()) {
-                if (remainingTables.size() > 0) {
-                    for (String table : remainingTables) {
-                        logger.warn("show create table " + table + " in shardingNode[" + shardingNode + "] has no results");
-                    }
-                }
-                this.tryComplete(shardingNode, isLastShardingNode);
-            } else {
-                if (isLastShardingNode) {
-                    if (remainingTables.size() > 0) {
-                        for (String table : remainingTables) {
-                            logger.warn("show create table " + table + " in shardingNode" + schemaConfig.getDefaultShardingNodes() + " has no intersection results");
-                        }
-                    }
-                }
-                this.tryComplete(shardingNode, isLastShardingNode);
-            }
+        private void countdown(String shardingNode, Set<String> remainingTables) {
+            parentHandler.countdown(shardingNode, remainingTables);
         }
 
-        public void tryComplete(String shardingNode, boolean isLastShardingNode) {
-            if (isLastShardingNode) {
-                logger.info("implicit defaultNode tables in schema[" + schema + "], last shardingNode[" + shardingNode + "] ");
-                operationalHandler.tryToAddMetadata(tablesStructMap);
-            }
+        private void handleTable(String shardingNode, String table, boolean isView, String sql) {
+            parentHandler.handleTable(shardingNode, table, isView, sql);
         }
 
-        private void handleTable(String shardingNode, String table, boolean isView, String createSQL) {
-            if (schemaConfig.isDefaultSingleNode()) {
-                if (isView) {
-                    ViewMeta viewMeta = MetaHelper.initViewMeta(schema, createSQL, System.currentTimeMillis(), operationalHandler.getTmManager());
-                    operationalHandler.handleViewMeta(viewMeta);
-                } else {
-                    TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis(), schema);
-                    operationalHandler.handleSingleMetaData(tableMeta);
-                }
-            } else {
-                if (isView) return;
-                operationalHandler.checkTableConsistent(tablesStructMap, table, shardingNode, createSQL);
-            }
-        }
-
-        private boolean isLastShardingNode(String shardingNode) {
-            shardDNSet.remove(shardingNode);
-            return shardDNSet.size() == 0;
-        }
-
-        static class ShowCreateTableByNodeUnitHandler extends GetTableMetaHandler {
+        class ShowCreateTableByNodeUnitHandler extends GetTableMetaHandler {
             private ShowCreateTableHandler parentHandler;
 
             ShowCreateTableByNodeUnitHandler(ShowCreateTableHandler parentHandler, String schema, boolean isReload) {

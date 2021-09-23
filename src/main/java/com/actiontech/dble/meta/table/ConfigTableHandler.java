@@ -44,15 +44,13 @@ public class ConfigTableHandler extends ModeTableHandler {
         return true;
     }
 
-    public void tryComplete(String shardingNode) {
-        if (isLastShardingNode(shardingNode)) {
-            logger.info("explicit tables in schema[" + schema + "], last shardingNode[" + shardingNode + "] ");
-            operationalHandler.tryToAddMetadata(tablesStructMap);
-        }
+    @Override
+    public synchronized void handleTable(String table, String shardingNode, boolean isView, String sql) {
+        operationalHandler.checkTableConsistent(tablesStructMap, table, shardingNode, sql);
     }
 
-    // ============= common method
-    private void countdown(String shardingNode, Set<String> remainingTables) {
+    @Override
+    public void countdown(String shardingNode, Set<String> remainingTables) {
         if (remainingTables != null && remainingTables.size() > 0) {
             for (String table : remainingTables) {
                 String tableLackKey = AlertUtil.getTableLackKey(shardingNode, table);
@@ -62,11 +60,16 @@ public class ConfigTableHandler extends ModeTableHandler {
                 ToResolveContainer.TABLE_LACK.add(tableLackKey);
             }
         }
-        this.tryComplete(shardingNode);
+        this.tryComplete(shardingNode, false);
     }
 
-    private synchronized void checkTableConsistent(Map<String, Map<String, List<String>>> pTablesStructMap, String table, String shardingNode, String sql) {
-        operationalHandler.checkTableConsistent(pTablesStructMap, table, shardingNode, sql);
+    @Override
+    public void tryComplete(String shardingNode, boolean isLastShardingNode) {
+        isLastShardingNode = isLastShardingNode(shardingNode);
+        if (isLastShardingNode) {
+            logger.info("explicit tables in schema[" + schema + "], last shardingNode[" + shardingNode + "] ");
+            operationalHandler.tryToAddMetadata(tablesStructMap);
+        }
     }
 
     // filterTables
@@ -202,7 +205,7 @@ public class ConfigTableHandler extends ModeTableHandler {
                     if (tables.contains(table)) {
                         continue;
                     }
-                    parentHandler.checkTableConsistent(tablesStructMap, table, shardingNode, null);
+                    parentHandler.handleTable(table, shardingNode, false, null);
                     parentHandler.dealTableLack(shardingNode, table);
                 }
                 super.handleFinished();
@@ -230,7 +233,7 @@ public class ConfigTableHandler extends ModeTableHandler {
         }
 
         private void handleTable(String shardingNode, String table, boolean isView, String sql) {
-            parentHandler.checkTableConsistent(tablesStructMap, table, shardingNode, sql);
+            parentHandler.handleTable(table, shardingNode, isView, sql);
         }
 
         class ShowCreateTableByNodeUnitHandler extends GetTableMetaHandler {

@@ -152,6 +152,8 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.isEnableFlowControl() + "");
         paramValues.add(sysConfig.getFlowControlStartThreshold() + "");
         paramValues.add(sysConfig.getFlowControlStopThreshold() + "");
+        paramValues.add(sysConfig.isEnableRoutePenetration() + "");
+        paramValues.add(sysConfig.getRoutePenetrationRules() + "");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
@@ -253,6 +255,8 @@ public final class ShowSysParam {
             "enableFlowControl",
             "flowControlStartThreshold",
             "flowControlStopThreshold",
+            "enableRoutePenetration",
+            "routePenetrationRules",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -336,6 +340,8 @@ public final class ShowSysParam {
             "Whether use flow control feature",
             "The start threshold of write queue to start the flow control",
             "The recover threshold of write queue to stop the flow control",
+            "Whether enable route penetration",
+            "The config of route penetration",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

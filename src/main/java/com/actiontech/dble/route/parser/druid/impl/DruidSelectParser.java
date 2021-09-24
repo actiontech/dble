@@ -13,6 +13,7 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -38,12 +39,15 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 
 public class DruidSelectParser extends DefaultDruidParser {
+    private static final Logger LOGGER = LogManager.getLogger(DruidSelectParser.class);
     private static HashSet<String> aggregateSet = new HashSet<>(16, 1);
 
     static {
@@ -165,6 +169,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             } else if (nodeSet.size() > 1) {
+                if (rrs.isRoutePenetration()) {
+                    LOGGER.debug("the query {} match the route penetration regex", rrs.getSrcStatement());
+                    rrs = tryDirectRoute(schema, rrs);
+                    if (rrs.isFinishedRoute()) {
+                        LOGGER.debug("the query {} match the route penetration rule, will direct route", rrs.getSrcStatement());
+                        return;
+                    }
+                }
                 //if the sql involved node more than 1 ,Aggregate function/Group by/Order by should use complexQuery
                 parseOrderAggGroupMysql(schema, selectStmt, rrs, mysqlSelectQuery, tc);
                 if (rrs.isNeedOptimizer()) {
@@ -187,7 +199,6 @@ public class DruidSelectParser extends DefaultDruidParser {
      * route for from is null
      * check the sql subquery first
      * route for a NoNameTable
-     *
      */
     private void routeForNoFrom(SchemaConfig schema, RouteResultset rrs, ServerSchemaStatVisitor visitor, boolean isExplain, ServerConnection sc,
                                 SQLSelectStatement selectStmt) throws SQLException {
@@ -209,6 +220,91 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
         }
         return false;
+    }
+
+    private RouteResultset tryDirectRoute(SchemaConfig schemaConfig, RouteResultset rrs) throws SQLException {
+        List<Pair<String, String>> tables = ctx.getTables();
+        int index = 0;
+        RuleConfig firstRule = null;
+        boolean directRoute = true;
+        Set<String> firstDataNodes = new HashSet<>();
+        Map<String, TableConfig> tableConfigMap = schemaConfig.getTables() == null ? null : schemaConfig.getTables();
+
+        if (tableConfigMap != null) {
+            for (Pair<String, String> table : tables) {
+                String tableName = table.getValue();
+                TableConfig tc = tableConfigMap.get(tableName);
+                if (tc == null) {
+                    Map<String, String> tableAliasMap = ctx.getTableAliasMap();
+                    if (tableAliasMap != null && tableAliasMap.get(tableName) != null) {
+                        tc = tableConfigMap.get(tableAliasMap.get(tableName));
+                    }
+                }
+
+                if (index == 0) {
+                    if (tc != null) {
+                        firstRule = tc.getRule();
+                        if (firstRule == null) {
+                            continue;
+                        }
+                        firstDataNodes.addAll(tc.getDataNodes());
+                    }
+                } else {
+                    if (tc != null) {
+                        RuleConfig ruleCfg = tc.getRule();
+                        if (ruleCfg == null) {
+                            continue;
+                        }
+                        Set<String> dataNodes = new HashSet<>(tc.getDataNodes());
+                        if (firstRule != null && ((!ruleCfg.getRuleAlgorithm().equals(firstRule.getRuleAlgorithm())) || !dataNodes.equals(firstDataNodes))) {
+                            directRoute = false;
+                            break;
+                        }
+                    }
+                }
+                index++;
+            }
+        }
+
+        RouteResultset rrsResult = rrs;
+        if (directRoute) {
+            rrsResult = tryRoute(schemaConfig, rrs, CacheService.getTableId2DataNodeCache());
+        }
+        return rrsResult;
+    }
+
+    private RouteResultset tryRoute(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool) throws SQLException {
+        if ((ctx.getTables() == null || ctx.getTables().size() == 0) && (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
+            rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+            rrs.setSchema(schema.getName());
+            rrs.setFinishedRoute(true);
+            return rrs;
+        }
+        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+        boolean isAllGlobalTable = RouterUtil.isAllGlobalTable(ctx, schema);
+        for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+            RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, true, cachePool, null);
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+                nodeSet.addAll(Arrays.asList(rrsTmp.getNodes()));
+            }
+            if (isAllGlobalTable) {
+                break;
+            }
+        }
+
+        if (nodeSet.size() > 0) {
+            RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+            int i = 0;
+            for (RouteResultsetNode routeResultsetNode : nodeSet) {
+                nodes[i++] = routeResultsetNode;
+            }
+
+            rrs.setNodes(nodes);
+            rrs.setSchema(schema.getName());
+            rrs.setFinishedRoute(true);
+
+        }
+        return rrs;
     }
 
     private void tryRouteToOneNode(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
@@ -498,6 +594,14 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setSqlStatement(selectStmt);
             return schema;
         } else {
+            if (rrs.isRoutePenetration()) {
+                LOGGER.debug("the query {} match the route penetration regex", rrs.getSrcStatement());
+                rrs = tryDirectRoute(schema, rrs);
+                if (rrs.isFinishedRoute()) {
+                    LOGGER.debug("the query {} match the route penetration rule, will direct route", rrs.getSrcStatement());
+                    return schema;
+                }
+            }
             tryRouteToOneNode(rrs, selectStmt, tableSize);
             return schema;
         }
@@ -509,6 +613,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
             throws SQLException {
+
         if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
             return;
         }
@@ -571,6 +676,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
     }
+
     /**
      * getAllConditions
      */

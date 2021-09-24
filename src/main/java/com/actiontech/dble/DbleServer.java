@@ -117,6 +117,7 @@ public final class DbleServer {
             AlertUtil.switchAlert(true);
         }
         AlertManager.getInstance().startAlert();
+        RoutePenetrationManager.getInstance().init();
         LOGGER.info("========================================Alert Manager start finish================================");
 
         // server startup

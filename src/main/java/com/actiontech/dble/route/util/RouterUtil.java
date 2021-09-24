@@ -661,7 +661,7 @@ public final class RouterUtil {
     /**
      * tryRouteFor multiTables
      */
-    private static RouteResultset tryRouteForTables(
+    public static RouteResultset tryRouteForTables(
             SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, RouteResultset rrs,
             boolean isSelect, String clientCharset) throws SQLException {
         List<Pair<String, String>> tables = ctx.getTables();
@@ -1075,5 +1075,16 @@ public final class RouterUtil {
         return Boolean.FALSE.equals(o);
     }
 
-
+    public static boolean isAllGlobalTable(DruidShardingParseInfo ctx, SchemaConfig schema) {
+        boolean isAllGlobal = false;
+        for (Pair<String, String> table : ctx.getTables()) {
+            BaseTableConfig tableConfig = schema.getTables().get(table.getValue());
+            if (tableConfig != null && tableConfig instanceof GlobalTableConfig) {
+                isAllGlobal = true;
+            } else {
+                return false;
+            }
+        }
+        return isAllGlobal;
+    }
 }

@@ -171,7 +171,7 @@ public final class ExplainHandler {
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(c).append(stmt).toString() + " error:", e);
+                LOGGER.warn(s.append(c).append(stmt).append(" error:").toString(), e);
                 String msg = e.getMessage();
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;

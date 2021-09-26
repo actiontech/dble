@@ -514,7 +514,7 @@ public class ProxyMetaManager {
      * @param config
      * @param specifiedSchemas
      */
-    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
+    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas, boolean isResetTask) {
         Set<String> selfNode = getSelfNodes(config);
         ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(specifiedSchemas);
@@ -523,9 +523,7 @@ public class ProxyMetaManager {
         // do not reload the view meta or start a new scheduler
         if (handler.execute()) {
             initViewMeta();
-            if (SystemConfig.getInstance().getCheckTableConsistency() == 1) {
-                if (scheduler != null)
-                    scheduler.shutdown();
+            if (isResetTask && SystemConfig.getInstance().getCheckTableConsistency() == 1) {
                 scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
                 checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
             }

@@ -108,7 +108,7 @@ public abstract class AbstractSchemaMetaHandler {
                 if (tableMetas.size() > 1) {
                     consistentWarning(tableName, tableStruct);
                 } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableId)) {
-                    logger.info("Table [" + tableName + "] structures are restored to be consistent across shardingNode!");
+                    logger.info("Table [" + tableName + "] structure of all shardingNodes has been restored to be consistent!");
                     AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                 }
@@ -117,7 +117,7 @@ public abstract class AbstractSchemaMetaHandler {
             } else if (tableStruct.size() == 1 && tableStruct.keySet().iterator().next() != null) {
                 String tableId = schema + "." + tableName;
                 if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableId)) {
-                    logger.info("Table [" + tableName + "] structures are restored to be consistent across shardingNode!");
+                    logger.info("Table [" + tableName + "] structure of all shardingNodes has been restored to be consistent!");
                     AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                 }

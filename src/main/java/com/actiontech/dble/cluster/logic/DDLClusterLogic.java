@@ -98,7 +98,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
             ProxyMeta.getInstance().getTmManager().dropTable(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
         } else {
             //else get the latest table meta from db
-            ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
+            ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table, ddlInfo.getType() == DDLInfo.DDLType.CREATE_TABLE);
         }
 
         ClusterDelayProvider.delayBeforeDdlResponse();

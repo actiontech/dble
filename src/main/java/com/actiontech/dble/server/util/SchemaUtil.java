@@ -231,7 +231,7 @@ public final class SchemaUtil {
 
     public static void tryAddDefaultShardingTableConfig(String schema, String tableName, String createSql, AtomicInteger tableIndex) {
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
-        if (schemaConfig != null && schemaConfig.getTable(tableName) == null && schemaConfig.isDefaultShardingNode()) {
+        if (schemaConfig != null && (schemaConfig.getTable(tableName) == null || schemaConfig.getTable(tableName) instanceof ShardingTableFakeConfig) && schemaConfig.isDefaultShardingNode()) {
             // fake ShardingTableConfig
             ShardingTableFakeConfig shardingTable = new ShardingTableFakeConfig(tableName,
                     schemaConfig.getDefaultMaxLimit(),

@@ -12,14 +12,16 @@ import java.util.*;
 
 public class DefaultNodeTableHandler extends ModeTableHandler {
     private final AbstractSchemaMetaHandler operationalHandler;
+    protected final String schema;
     private final SchemaConfig schemaConfig;
     private final Set<String> selfNodes;
-    private final ReloadLogHelper logger;
+    protected final ReloadLogHelper logger;
     private final Set<String> filterTables;
 
     public DefaultNodeTableHandler(AbstractSchemaMetaHandler operationalHandler) {
         this.operationalHandler = operationalHandler;
         this.schemaConfig = operationalHandler.getSchemaConfig();
+        this.schema = operationalHandler.getSchema();
         this.selfNodes = operationalHandler.getSelfNode();
         this.logger = operationalHandler.getLogger();
         this.filterTables = operationalHandler.getFilterTables();
@@ -45,7 +47,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
     }
 
     // show table
-    static class ShowTableHandler {
+    class ShowTableHandler {
         private final SchemaConfig schemaConfig;
         private List<ShowTableByNodeUnitHandler> nodeUnitHandlers;
 
@@ -56,6 +58,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
         private Set<String> tryGetTables() {
             List<String> nodes;
             if ((nodes = schemaConfig.getDefaultShardingNodes()) == null) return Sets.newHashSet();
+            logger.infoList("try to execute show tables in [" + schema + "] default shardingNode:", new HashSet<>(schemaConfig.getDefaultShardingNodes()));
             this.nodeUnitHandlers = new ArrayList<>(nodes.size());
             for (String shardingNode : nodes) {
                 ShowTableByNodeUnitHandler showTablesHandler = new ShowTableByNodeUnitHandler(shardingNode, schemaConfig);
@@ -77,7 +80,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
             }
         }
 
-        static class ShowTableByNodeUnitHandler extends GetNodeTablesHandler {
+        class ShowTableByNodeUnitHandler extends GetNodeTablesHandler {
             private final Map<String, BaseTableConfig> localTables;
             private final Set<String> tables = new LinkedHashSet<>();
             private final Set<String> views = new HashSet<>();
@@ -134,6 +137,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
         }
 
         private void execute(Set<String> tables) {
+            logger.infoList("try to execute show create tables in [" + schema + "] default multi shardingNode:", shardDNSet);
             for (String sharingNode : schemaConfig.getDefaultShardingNodes()) {
                 new ShowCreateTableByNodeUnitHandler(this, schema, logger.isReload()).
                         execute(sharingNode, tables);

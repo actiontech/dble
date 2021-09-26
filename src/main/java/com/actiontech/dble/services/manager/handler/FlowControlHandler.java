@@ -13,19 +13,20 @@ import java.util.regex.Pattern;
  * Created by szf on 2020/4/10.
  */
 public final class FlowControlHandler {
-    private static final Pattern FLOW_CONTROL_LIST = Pattern.compile("^\\s*flow_control\\s*@@list\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern FLOW_CONTROL_SET = Pattern.compile("^\\s*flow_control\\s+@@set(\\s+enableFlowControl\\s*=\\s*(true|false))?" +
+    private static final Pattern FLOW_CONTROL_LIST = Pattern.compile("^\\s*@@list\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FLOW_CONTROL_SET = Pattern.compile("^\\s*@@set(\\s+enableFlowControl\\s*=\\s*(true|false))?" +
             "(\\s+flowControlHighLevel\\s*=\\s*(\\d*))?(\\s+flowControlLowLevel\\s*=\\s*(\\d*))?\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern FLOW_CONTROL_SHOW = Pattern.compile("^\\s*flow_control\\s*@@show\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FLOW_CONTROL_SHOW = Pattern.compile("^\\s*@@show\\s*$", Pattern.CASE_INSENSITIVE);
 
     private FlowControlHandler() {
 
     }
 
-    public static void handle(String stmt, ManagerService service) {
-        Matcher list = FLOW_CONTROL_LIST.matcher(stmt);
-        Matcher set = FLOW_CONTROL_SET.matcher(stmt);
-        Matcher show = FLOW_CONTROL_SHOW.matcher(stmt);
+    public static void handle(String stmt, ManagerService service, int offset) {
+        String flowOptions = stmt.substring(offset).trim();
+        Matcher list = FLOW_CONTROL_LIST.matcher(flowOptions);
+        Matcher set = FLOW_CONTROL_SET.matcher(flowOptions);
+        Matcher show = FLOW_CONTROL_SHOW.matcher(flowOptions);
         if (list.matches()) {
             FlowControlList.execute(service);
         } else if (set.matches()) {

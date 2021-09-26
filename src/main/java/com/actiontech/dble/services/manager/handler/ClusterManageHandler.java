@@ -29,19 +29,21 @@ import java.util.regex.Pattern;
  */
 public final class ClusterManageHandler {
     private static final Logger LOGGER = LogManager.getLogger(ClusterManageHandler.class);
-    private static final Pattern PATTERN_DETACH = Pattern.compile("^\\s*cluster\\s*@@detach(\\s*timeout\\s*=\\s*([0-9]+))?\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_ATTACH = Pattern.compile("^\\s*cluster\\s*@@attach(\\s*timeout\\s*=\\s*([0-9]+))?\\s*$", Pattern.CASE_INSENSITIVE);
-    public static final int DEFAULT_PAUSE_TIME = 10;
+    private static final Pattern PATTERN_DETACH = Pattern.compile("@@detach(\\s*timeout\\s*=\\s*([0-9]+))?\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_ATTACH = Pattern.compile("@@attach(\\s*timeout\\s*=\\s*([0-9]+))?\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final int DEFAULT_PAUSE_TIME = 10;
     private static volatile boolean detached = false;
 
     private ClusterManageHandler() {
     }
 
 
-    public static synchronized void handle(String sql, ManagerService selfService) {
+    public static synchronized void handle(String sql, ManagerService selfService, int offset) {
+
+        String options = sql.substring(offset).trim();
         {
             Pattern pattern = PATTERN_DETACH;
-            final Matcher matcher = pattern.matcher(sql);
+            final Matcher matcher = pattern.matcher(options);
             if (matcher.matches()) {
                 final String timeout = matcher.group(2);
                 if (timeout == null) {
@@ -57,7 +59,7 @@ public final class ClusterManageHandler {
         }
         {
             Pattern pattern = PATTERN_ATTACH;
-            final Matcher matcher = pattern.matcher(sql);
+            final Matcher matcher = pattern.matcher(options);
             if (matcher.matches()) {
                 final String timeout = matcher.group(2);
                 if (timeout == null) {

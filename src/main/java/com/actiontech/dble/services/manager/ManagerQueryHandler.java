@@ -84,7 +84,7 @@ public class ManagerQueryHandler {
                     Online.execute(service);
                     break;
                 case ManagerParse.PAUSE:
-                    PauseStart.execute(service, sql);
+                    PauseStart.execute(service, sql, rs >>> SHIFT);
                     break;
                 case ManagerParse.RESUME:
                     PauseEnd.execute(service);
@@ -102,10 +102,10 @@ public class ManagerQueryHandler {
                     ReloadHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.CREATE_DB:
-                    DatabaseHandler.handle(sql, service, true);
+                    DatabaseHandler.handle(sql, service, true, rs >>> SHIFT);
                     break;
                 case ManagerParse.DROP_DB:
-                    DatabaseHandler.handle(sql, service, false);
+                    DatabaseHandler.handle(sql, service, false, rs >>> SHIFT);
                     break;
                 case ManagerParse.DROP_STATISTIC_QUEUE_USAGE:
                     StatisticCf.Queue.drop(service);
@@ -123,14 +123,14 @@ public class ManagerQueryHandler {
                     ReleaseReloadMetadata.execute(service);
                     break;
                 case ManagerParse.DB_GROUP:
-                    DbGroupHAHandler.handle(sql, service);
+                    DbGroupHAHandler.handle(sql, service, rs >> SHIFT);
                     break;
                 case ManagerParse.SPLIT:
                     service.getClusterDelayService().markDoingOrDelay(true);
                     SplitDumpHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.FLOW_CONTROL:
-                    FlowControlHandler.handle(sql, service);
+                    FlowControlHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.INSERT:
                     service.getClusterDelayService().markDoingOrDelay(true);
@@ -151,7 +151,7 @@ public class ManagerQueryHandler {
                     });
                     break;
                 case ManagerParse.FRESH_CONN:
-                    FreshBackendConnHandler.handle(sql, service);
+                    FreshBackendConnHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.USE:
                     UseHandler.handle(sql, service, rs >>> SHIFT);
@@ -160,7 +160,7 @@ public class ManagerQueryHandler {
                     TruncateHander.handle(sql, service);
                     break;
                 case ManagerParse.CLUSTER:
-                    ClusterManageHandler.handle(sql, service);
+                    ClusterManageHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 default:
                     service.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

@@ -38,7 +38,6 @@ import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
-import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -239,7 +238,7 @@ public class ServerConfig {
                 delSchema.add(oldSchema);
             } else if ((loadAllMode & ManagerParseConfig.OPTR_MODE) == 0) { // reload @@config_all not contains -r
                 SchemaConfig oldSchemaConfig = schemaEntry.getValue();
-                if (!CollectionUtil.equalsWithEmpty(oldSchemaConfig.getDefaultShardingNodes(), newSchemaConfig.getDefaultShardingNodes())) {
+                if (!oldSchemaConfig.equalsConfigInfo(newSchemaConfig)) {
                     delSchema.add(oldSchema);
                     reloadSchema.add(oldSchema);
                 } else {

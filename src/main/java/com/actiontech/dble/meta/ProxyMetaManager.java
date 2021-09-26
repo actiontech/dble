@@ -207,7 +207,7 @@ public class ProxyMetaManager {
         return checkDbExists(schema) && strTable != null && this.catalogs.get(schema).getTableMetas().containsKey(strTable);
     }
 
-    public void addTable(String schema, TableMeta tm) {
+    public void addTable(String schema, TableMeta tm, boolean isNewCreate) {
         String tbName = tm.getTableName();
         tm.setSchemaName(schema);
         SchemaMeta schemaMeta = catalogs.get(schema);
@@ -215,8 +215,9 @@ public class ProxyMetaManager {
             tm.setId(tableIndex.incrementAndGet());
             schemaMeta.addTableMeta(tbName, tm);
         }
-
-        SchemaUtil.tryAddDefaultShardingTableConfig(schema, tbName, tm.getCreateSql(), fakeTableIndex);
+        if (isNewCreate) {
+            SchemaUtil.tryAddDefaultShardingTableConfig(schema, tbName, tm.getCreateSql(), fakeTableIndex);
+        }
     }
 
     public void addView(String schema, ViewMeta vm) {
@@ -339,7 +340,7 @@ public class ProxyMetaManager {
         return selfNode;
     }
 
-    public void updateOnetableWithBackData(ServerConfig config, String schema, String tableName) {
+    public void updateOnetableWithBackData(ServerConfig config, String schema, String tableName, boolean isCreateSql) {
         Set<String> selfNode = getSelfNodes(config);
         List<String> shardingNodes;
         if (config.getSchemas().get(schema).getTables().get(tableName) == null) {
@@ -347,7 +348,7 @@ public class ProxyMetaManager {
         } else {
             shardingNodes = config.getSchemas().get(schema).getTables().get(tableName).getShardingNodes();
         }
-        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, shardingNodes, selfNode);
+        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, shardingNodes, selfNode, isCreateSql); //  TODO 待定
         handler.execute();
         removeMetaLock(schema, tableName);
     }
@@ -672,7 +673,7 @@ public class ProxyMetaManager {
                     AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableLackKey), ToResolveContainer.TABLE_LACK, tableLackKey);
                 }
             }
-            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showShardingNode), null);
+            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showShardingNode), null, true);
             handler.execute();
             result = handler.isMetaInited();
         }
@@ -724,7 +725,7 @@ public class ProxyMetaManager {
         } else {
             showShardingNode = schemaInfo.getSchemaConfig().getDefaultShardingNodes().get(0); // randomly take a shardingNode
         }
-        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showShardingNode), null);
+        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showShardingNode), null, false);
         handler.execute();
         return handler.isMetaInited();
     }

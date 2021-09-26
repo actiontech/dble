@@ -25,11 +25,13 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
     private Condition done;
     private boolean extracting = false;
     private volatile boolean metaInited = false;
+    private boolean isCreateSql = false;
 
-    public DDLNotifyTableMetaHandler(String schema, String tableName, List<String> shardingNodes, Set<String> selfNode) {
+    public DDLNotifyTableMetaHandler(String schema, String tableName, List<String> shardingNodes, Set<String> selfNode, boolean isCreateSql) {
         super(schema, tableName, shardingNodes, selfNode, false);
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
+        this.isCreateSql = isCreateSql;
     }
 
     @Override
@@ -46,7 +48,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
     @Override
     public void handlerTable(TableMeta tableMeta) {
         if (tableMeta != null) {
-            ProxyMeta.getInstance().getTmManager().addTable(schema, tableMeta);
+            ProxyMeta.getInstance().getTmManager().addTable(schema, tableMeta, isCreateSql);
             metaInited = true;
         }
         signalDone();

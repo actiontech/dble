@@ -33,7 +33,7 @@ public class SchemaInitMetaHandler extends AbstractSchemaMetaHandler {
     @Override
     void handleSingleMetaData(TableMeta tableMeta) {
         if (tableMeta != null) {
-            getTmManager().addTable(schema, tableMeta);
+            getTmManager().addTable(schema, tableMeta, true);
         }
     }
 

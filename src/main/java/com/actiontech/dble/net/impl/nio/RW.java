@@ -7,6 +7,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+import com.actiontech.dble.util.SelectorUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,13 +15,17 @@ import java.io.IOException;
 import java.nio.channels.*;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class RW implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RW.class);
-    private final Selector selector;
+    private Selector selector;
     private final ConcurrentLinkedQueue<AbstractConnection> registerQueue;
     private boolean useThreadUsageStat = false;
     private ThreadWorkUsage workUsage;
+
+    protected final AtomicBoolean wakenUp = new AtomicBoolean();
 
     public RW(ConcurrentLinkedQueue queue) throws IOException {
         this.selector = Selector.open();
@@ -29,15 +34,20 @@ public final class RW implements Runnable {
 
     @Override
     public void run() {
-        final Selector finalSelector = this.selector;
+        Selector finalSelector = this.selector;
         Set<SelectionKey> keys = null;
         if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
             this.useThreadUsageStat = true;
             this.workUsage = new ThreadWorkUsage();
             DbleServer.getInstance().getThreadUsedMap().put(Thread.currentThread().getName(), workUsage);
         }
+        int selectReturnsImmediately = 0;
+        boolean wakenupFromLoop = false;
+        // use 80% of the timeout for measure
+        long minSelectTimeout = TimeUnit.MILLISECONDS.toNanos(SelectorUtil.DEFAULT_SELECT_TIMEOUT_RW) / 100 * 80;
         for (; ; ) {
             try {
+                wakenUp.set(false);
                 if (Thread.currentThread().isInterrupted()) {
                     DbleServer.getInstance().getThreadUsedMap().remove(Thread.currentThread().getName());
                     finalSelector.close();
@@ -48,7 +58,71 @@ public final class RW implements Runnable {
                 if (useThreadUsageStat) {
                     workStart = System.nanoTime();
                 }
-                finalSelector.select(500L);
+                long beforeSelect = System.nanoTime();
+                int selected = finalSelector.select(SelectorUtil.DEFAULT_SELECT_TIMEOUT_RW);
+
+                //issue - https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6403933
+                //refer to https://github.com/netty/netty/pull/565
+                if (selected == 0 && !wakenupFromLoop && !wakenUp.get()) {
+                    long timeBlocked = System.nanoTime() - beforeSelect;
+                    boolean checkSelectReturnsImmediately = SelectorUtil.checkSelectReturnsImmediately(timeBlocked, finalSelector, minSelectTimeout);
+                    if (checkSelectReturnsImmediately) {
+                        selectReturnsImmediately++;
+                    } else {
+                        selectReturnsImmediately = 0;
+                    }
+
+                    if (selectReturnsImmediately == 1024) {
+                        // The selector returned immediately for 10 times in a row,
+                        // so recreate one selector as it seems like we hit the
+                        // famous epoll(..) jdk bug.
+                        Selector rebuildSelector = SelectorUtil.rebuildSelector(this.selector);
+                        if (null != rebuildSelector) {
+                            this.selector = rebuildSelector;
+                        }
+                        finalSelector = this.selector;
+                        selectReturnsImmediately = 0;
+                        wakenupFromLoop = false;
+                        // try to select again
+                        continue;
+                    }
+                } else {
+                    selectReturnsImmediately = 0;
+                }
+                // 'wakenUp.compareAndSet(false, true)' is always evaluated
+                // before calling 'selector.wakeup()' to reduce the wake-up
+                // overhead. (Selector.wakeup() is an expensive operation.)
+                //
+                // However, there is a race condition in this approach.
+                // The race condition is triggered when 'wakenUp' is set to
+                // true too early.
+                //
+                // 'wakenUp' is set to true too early if:
+                // 1) Selector is waken up between 'wakenUp.set(false)' and
+                //    'selector.select(...)'. (BAD)
+                // 2) Selector is waken up between 'selector.select(...)' and
+                //    'if (wakenUp.get()) { ... }'. (OK)
+                //
+                // In the first case, 'wakenUp' is set to true and the
+                // following 'selector.select(...)' will wake up immediately.
+                // Until 'wakenUp' is set to false again in the next round,
+                // 'wakenUp.compareAndSet(false, true)' will fail, and therefore
+                // any attempt to wake up the Selector will fail, too, causing
+                // the following 'selector.select(...)' call to block
+                // unnecessarily.
+                //
+                // To fix this problem, we wake up the selector again if wakenUp
+                // is true immediately after selector.select(...).
+                // It is inefficient in that it wakes up the selector for both
+                // the first case (BAD - wake-up required) and the second case
+                // (OK - no wake-up required).
+                if (wakenUp.get()) {
+                    wakenupFromLoop = true;
+                    finalSelector.wakeup();
+                } else {
+                    wakenupFromLoop = false;
+                }
+
                 if (useThreadUsageStat) {
                     long afterSelect = System.nanoTime();
                     if (afterSelect - workStart > 3000000) { // 3ms
@@ -81,6 +155,7 @@ public final class RW implements Runnable {
             }
         }
     }
+
 
     private void executeKeys(Set<SelectionKey> keys) {
         for (SelectionKey key : keys) {
@@ -154,6 +229,12 @@ public final class RW implements Runnable {
 
     public Selector getSelector() {
         return selector;
+    }
+
+    public void wakeUpSelector() {
+        if (wakenUp.compareAndSet(false, true)) {
+            selector.wakeup();
+        }
     }
 
     public int getSelectorKeySize() {

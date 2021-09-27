@@ -370,7 +370,16 @@ public final class ManagerParse {
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'E' || c1 == 'e') && (c2 == 'A' || c2 == 'a') &&
                     (c3 == 'T' || c3 == 't') && (c4 == 'E' || c4 == 'e') && ParseUtil.isSpace(c5)) {
-                return offset << 8 | CREATE_DB;
+                while (stmt.length() > ++offset) {
+                    char c = stmt.charAt(offset);
+                    if (ParseUtil.isSpace(c)) {
+                        continue;
+                    }
+                    if (c == 'D' || c == 'd') {
+                        return offset << 8 | CREATE_DB;
+                    }
+                    break;
+                }
             }
         }
         return OTHER;

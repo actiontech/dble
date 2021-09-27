@@ -44,21 +44,22 @@ public final class ProxyMeta {
             //back up origin meta data
             ProxyMetaManager tmpManager = tmManager;
             ProxyMetaManager newManager;
+            boolean isResetTask = true;
             if (CollectionUtil.isEmpty(specifiedSchemas)) {
                 newManager = new ProxyMetaManager();
             } else {
-                //if the meta just reload partly,create a deep coyp of the ProxyMetaManager as new ProxyMetaManager
+                //if the meta just reload partly,create a deep copy of the ProxyMetaManager as new ProxyMetaManager
                 newManager = new ProxyMetaManager(tmpManager);
+                isResetTask = false;
             }
-            if (newManager.initMeta(conf, specifiedSchemas)) {
+            if (newManager.initMeta(conf, specifiedSchemas, isResetTask)) {
                 tmManager = newManager;
-                if (CollectionUtil.isEmpty(specifiedSchemas)) {
+                if (isResetTask) {
                     //deep copy do not terminate the scheduler
                     tmpManager.terminate();
                 }
                 return true;
             }
-
         } finally {
             this.metaChanging = false;
         }

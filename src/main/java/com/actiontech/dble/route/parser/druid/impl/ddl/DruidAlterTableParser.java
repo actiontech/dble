@@ -46,11 +46,26 @@ public class DruidAlterTableParser extends DruidImplicitCommitParser {
         for (SQLAlterTableItem alterItem : alterTable.getItems()) {
             if (alterItem instanceof SQLAlterTableAddColumn ||
                     alterItem instanceof SQLAlterTableDropKey ||
-                    alterItem instanceof SQLAlterTableDropPrimaryKey) {
+                    alterItem instanceof SQLAlterTableDropPrimaryKey ||
+                    //Partition
+                    alterItem instanceof SQLAlterTableAddPartition ||
+                    alterItem instanceof SQLAlterTableDropPartition ||
+                    alterItem instanceof SQLAlterTableDiscardPartition ||
+                    alterItem instanceof SQLAlterTableImportPartition ||
+                    alterItem instanceof SQLAlterTableCoalescePartition ||
+                    alterItem instanceof SQLAlterTableReOrganizePartition ||
+                    alterItem instanceof SQLAlterTableOptimizePartition ||
+                    alterItem instanceof SQLAlterTableRebuildPartition) {
                 support = true;
             } else if (alterItem instanceof SQLAlterTableAddIndex ||
                     alterItem instanceof SQLAlterTableDropIndex ||
-                    alterItem instanceof MySqlAlterTableAlterColumn) {
+                    alterItem instanceof MySqlAlterTableAlterColumn ||
+                    //Partition
+                    alterItem instanceof SQLAlterTableTruncatePartition ||
+                    alterItem instanceof SQLAlterTableExchangePartition ||
+                    alterItem instanceof SQLAlterTableAnalyzePartition ||
+                    alterItem instanceof SQLAlterTableCheckPartition ||
+                    alterItem instanceof SQLAlterTableRepairPartition) {
                 support = true;
                 rrs.setOnline(true);
             } else if (alterItem instanceof SQLAlterTableAddConstraint) {

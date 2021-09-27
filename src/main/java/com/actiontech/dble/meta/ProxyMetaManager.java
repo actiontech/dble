@@ -38,7 +38,10 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.meta.table.*;
+import com.actiontech.dble.meta.table.AbstractSchemaMetaHandler;
+import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
+import com.actiontech.dble.meta.table.SchemaCheckMetaHandler;
+import com.actiontech.dble.meta.table.ServerMetaHandler;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -80,9 +83,10 @@ public class ProxyMetaManager {
     public ProxyMetaManager(ProxyMetaManager origin) {
         this.catalogs = new ConcurrentHashMap<>();
         this.lockTables = origin.lockTables;
-        this.timestamp = origin.timestamp;
+        this.timestamp = System.currentTimeMillis();
         this.metaLock = origin.metaLock;
         this.scheduler = origin.scheduler;
+        this.checkTaskHandler = origin.checkTaskHandler;
         this.metaCount = origin.metaCount;
         this.repository = origin.repository;
         this.version = origin.version;
@@ -491,7 +495,7 @@ public class ProxyMetaManager {
      *
      * @param config
      */
-    public void initMeta(ServerConfig config) {
+    private void initMeta(ServerConfig config) {
         Set<String> selfNode = getSelfNodes(config);
         ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(null);
@@ -510,7 +514,7 @@ public class ProxyMetaManager {
      * @param config
      * @param specifiedSchemas
      */
-    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
+    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas, boolean isResetTask) {
         Set<String> selfNode = getSelfNodes(config);
         ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(specifiedSchemas);
@@ -519,9 +523,7 @@ public class ProxyMetaManager {
         // do not reload the view meta or start a new scheduler
         if (handler.execute()) {
             initViewMeta();
-            if (SystemConfig.getInstance().getCheckTableConsistency() == 1) {
-                if (scheduler != null)
-                    scheduler.shutdown();
+            if (isResetTask && SystemConfig.getInstance().getCheckTableConsistency() == 1) {
                 scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
                 checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
             }

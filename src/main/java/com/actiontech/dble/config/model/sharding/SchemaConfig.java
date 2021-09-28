@@ -271,6 +271,16 @@ public class SchemaConfig {
 
     }
 
+    public boolean equalsConfigInfo(SchemaConfig schemaConfig) {
+        boolean isEquals = CollectionUtil.equalsWithEmpty(this.defaultShardingNodes, schemaConfig.getDefaultShardingNodes());
+        if (isEquals && isDefaultShardingNode()) {
+            return this.function.equals(schemaConfig.getFunction()) &&
+                    this.defaultMaxLimit == schemaConfig.getDefaultMaxLimit();
+        } else {
+            return isEquals;
+        }
+    }
+
 
     private boolean isEquals(Set<String> o1, Set<String> o2) {
         if (o1 == null) {

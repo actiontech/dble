@@ -14,11 +14,14 @@ import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.cluster.path.ClusterPathUtil.SEPARATOR;
 
@@ -59,6 +62,9 @@ public class ClusterOffLineListener implements Runnable {
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
                 Map<String, OnlineType> newMap = new ConcurrentHashMap<>();
                 for (int i = 0; i < output.getKeysCount(); i++) {
+                    if (Strings.isEmpty(output.getValues(i))) {
+                        continue;
+                    }
                     newMap.put(output.getKeys(i), ClusterValue.readFromJson(output.getValues(i), OnlineType.class).getData());
                 }
 
@@ -80,6 +86,7 @@ public class ClusterOffLineListener implements Runnable {
                 index = output.getIndex();
             } catch (Exception e) {
                 LOGGER.warn("error in offline listener: ", e);
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }
         }
     }

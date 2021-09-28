@@ -21,5 +21,14 @@ public interface GeneralListener<T> {
      */
     void onEvent(ClusterEvent<T> event) throws Exception;
 
+    /**
+     * only support zk yet.
+     *
+     * @throws Exception
+     */
+    default void onInit() throws Exception {
+        return;
+    }
+
     GeneralListener<T> registerPrefixForZk();
 }

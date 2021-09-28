@@ -6,7 +6,6 @@
 package com.actiontech.dble.cluster.general.listener;
 
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
-import com.actiontech.dble.util.exception.DetachedException;
 import com.actiontech.dble.cluster.general.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.general.bean.SubscribeReturnBean;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
@@ -15,6 +14,7 @@ import com.actiontech.dble.cluster.values.ClusterValue;
 import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.util.exception.DetachedException;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +64,9 @@ public class ClusterOffLineListener implements Runnable {
                     if (lackSelf) {
                         lackSelf = !reInitOnlineStatus();
                     }
+                    continue;
+                }
+                if (sender.isDetach()) {
                     continue;
                 }
                 //LOGGER.debug("the index of the single key "+path+" is "+index);

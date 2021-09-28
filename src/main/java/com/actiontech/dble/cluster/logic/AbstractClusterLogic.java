@@ -116,13 +116,25 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
 
 
     private static void checkOnline(Map<String, OnlineType> expectedMap, Map<String, OnlineType> currentMap) {
-        expectedMap.entrySet().removeIf(entry -> !currentMap.containsKey(entry.getKey()) ||
-                (currentMap.containsKey(entry.getKey()) && !currentMap.get(entry.getKey()).equals(entry.getValue())));
+        expectedMap.entrySet().removeIf(entry -> removeLostNode(currentMap, entry));
 
         for (Map.Entry<String, OnlineType> entry : currentMap.entrySet()) {
             if (!expectedMap.containsKey(entry.getKey())) {
                 LOGGER.warn("NODE " + entry.getKey() + " IS NOT EXPECTED TO BE ONLINE,PLEASE CHECK IT ");
             }
         }
+    }
+
+    private static boolean removeLostNode(Map<String, OnlineType> currentMap, Map.Entry<String, OnlineType> entry) {
+        final boolean offline = !currentMap.containsKey(entry.getKey());
+        if (offline) {
+            LOGGER.warn("NODE " + entry.getKey() + " IS TO BE OFFLINE, SO WE IGNORE IT IN THE LOOP, PLEASE CHECK IT ");
+            return true;
+        }
+        final boolean valueChanged = currentMap.containsKey(entry.getKey()) && !currentMap.get(entry.getKey()).equals(entry.getValue());
+        if (valueChanged) {
+            LOGGER.warn("NODE " + entry.getKey() + " IS CHANGED, SO WE IGNORE IT IN THE LOOP, PLEASE CHECK IT  ");
+        }
+        return valueChanged;
     }
 }

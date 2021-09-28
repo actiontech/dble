@@ -6,12 +6,12 @@
 package com.actiontech.dble.util;
 
 
+import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
@@ -99,9 +99,10 @@ public final class ZKUtils {
         throw new RuntimeException("failed to connect to zookeeper service : " + url);
     }
 
-    public static PathChildrenCache addChildPathCache(String path, PathChildrenCacheListener listener) {
+    public static PathChildrenCache addChildPathCache(String path, AbstractGeneralListener listener) {
         try {
             //watch the child status
+            listener.onInit();
             final PathChildrenCache childrenCache = new PathChildrenCache(getConnection(), path, true);
 
             childrenCache.getListenable().addListener(listener);
@@ -127,9 +128,9 @@ public final class ZKUtils {
 
     public static class ListenerContext {
         private String path;
-        private PathChildrenCacheListener listener;
+        private AbstractGeneralListener listener;
 
-        public ListenerContext(String path, PathChildrenCacheListener listener) {
+        public ListenerContext(String path, AbstractGeneralListener listener) {
             this.path = path;
             this.listener = listener;
         }
@@ -138,7 +139,7 @@ public final class ZKUtils {
             return path;
         }
 
-        public PathChildrenCacheListener getListener() {
+        public AbstractGeneralListener getListener() {
             return listener;
         }
 

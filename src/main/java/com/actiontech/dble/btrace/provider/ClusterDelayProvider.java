@@ -17,6 +17,10 @@ public final class ClusterDelayProvider {
 
     }
 
+    public static void delayBeforeDiffOnlineMap() {
+
+    }
+
     public static void delayAfterGetLock() {
 
     }

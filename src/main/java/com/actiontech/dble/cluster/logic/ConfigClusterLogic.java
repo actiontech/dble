@@ -288,7 +288,6 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
 
         //the config Value in ucore is an all in one json config of the sharding.xml
         Shardings sharding = this.parseShardingJsonToBean(gson, shardingConfig);
-        this.writeMapFileAddFunction(sharding.getFunction());
 
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.SHARDING_XML;
@@ -308,6 +307,8 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
             return;
         }
 
+        Shardings sharding = this.parseShardingJsonToBean(JsonFactory.getJson(), value);
+        this.writeMapFileAddFunction(sharding.getFunction());
         DbleTempConfig.getInstance().setShardingConfig(value);
 
         LOGGER.info("end sync sharding json config:key[{}],value[{}]", path, value);

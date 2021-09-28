@@ -8,13 +8,24 @@ public abstract class ModeTableHandler {
 
     abstract boolean loadMetaData();
 
+    abstract void handleTable(String table, String shardingNode, boolean isView, String sql);
+
+    // node countdown
+    abstract void countdown(String shardingNode, Set<String> remainingTables);
+
+    // last node
+    abstract void tryComplete(String shardingNode, boolean isLastShardingNode);
+
+
     public boolean isComplete() {
         return shardDNSet.size() == 0;
     }
 
-    public synchronized boolean isLastShardingNode(String shardingNode) {
-        shardDNSet.remove(shardingNode);
-        return shardDNSet.size() == 0;
+    public boolean isLastShardingNode(String shardingNode) {
+        synchronized (shardDNSet) {
+            shardDNSet.remove(shardingNode);
+            return shardDNSet.size() == 0;
+        }
     }
 
     public Set<String> getShardDNSet() {

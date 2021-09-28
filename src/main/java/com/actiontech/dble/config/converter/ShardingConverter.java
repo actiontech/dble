@@ -136,7 +136,8 @@ public class ShardingConverter {
             schemaListToMap(schemaList, shardingNodeConfigMap, problemReporter);
             deleteUselessShardingNode(errorInfos, sequenceJson);
         } catch (Exception e) {
-            throw new ConfigException("sharding json to map occurred  parse errors, The detailed errors are as follows .  " + e, e);
+            String message = e.getMessage() == null ? e.toString() : e.getMessage();
+            throw new ConfigException("sharding json to map occurred  parse errors, The detailed errors are as follows. " + message, e);
         }
     }
 
@@ -213,7 +214,7 @@ public class ShardingConverter {
                     final long distinctCount = Arrays.stream(theShardingNodes).distinct().count();
                     if (distinctCount != theShardingNodes.length) {
                         //detected repeat props;
-                        throw new ConfigException("invalid schema config: " + schemaShardingNode + " for schema " + schemaShardingNode + " ,the nodes duplicated!");
+                        throw new ConfigException("invalid schema config: " + schemaShardingNode + " for schema " + schemaName + " ,the nodes duplicated!");
                     }
                     shardingNodeList = Arrays.asList(theShardingNodes);
                     checkShardingNodeExists(shardingNodeList, shardingNodeConfigMap);

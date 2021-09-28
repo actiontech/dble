@@ -267,7 +267,7 @@ public final class ReloadConfig {
                     loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
                 }
             } catch (Exception e) {
-                throw new Exception(e);
+                throw new Exception(e.getMessage() == null ? e.toString() : e.getMessage(), e);
             }
             ReloadLogHelper.info("reload config: load all xml info end", LOGGER);
 

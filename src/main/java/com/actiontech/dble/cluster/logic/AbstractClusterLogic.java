@@ -6,6 +6,7 @@
 
 package com.actiontech.dble.cluster.logic;
 
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.path.ChildPathMeta;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
@@ -54,6 +55,7 @@ public class AbstractClusterLogic extends GeneralClusterLogic {
         if (expectedMap.size() == 0) {
             return true;
         }
+        ClusterDelayProvider.delayBeforeDiffOnlineMap();
         Map<String, OnlineType> currentMap = ClusterHelper.getOnlineMap();
         checkOnline(expectedMap, currentMap);
         List<ClusterEntry<FeedBackType>> responseList;

@@ -274,6 +274,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
         RouteResultset rrsResult = rrs;
         if (directRoute) {
+            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaConfig.getName()));
             rrsResult = tryRoute(schemaConfig, rrs, CacheService.getTableId2DataNodeCache());
         }
         return rrsResult;

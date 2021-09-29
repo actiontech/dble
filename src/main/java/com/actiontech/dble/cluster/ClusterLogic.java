@@ -22,6 +22,7 @@ import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.function.Function;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Schema;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAdapter;
 import com.actiontech.dble.cluster.zkprocess.entity.sharding.shardingnode.ShardingNode;
 import com.actiontech.dble.cluster.zkprocess.entity.user.BlackList;
 import com.actiontech.dble.cluster.zkprocess.entity.user.User;
@@ -856,7 +857,6 @@ public final class ClusterLogic {
 
         //the config Value in ucore is an all in one json config of the sharding.xml
         Shardings sharding = ClusterLogic.parseShardingJsonToBean(gson, shardingConfig);
-        ClusterLogic.writeMapFileAddFunction(sharding.getFunction());
 
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.SHARDING_XML;
@@ -875,7 +875,10 @@ public final class ClusterLogic {
         if (lock != null && SystemConfig.getInstance().getInstanceName().equals(lock)) {
             return;
         }
-
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
+        Shardings sharding = ClusterLogic.parseShardingJsonToBean(gsonBuilder.create(), configValue.getValue());
+        ClusterLogic.writeMapFileAddFunction(sharding.getFunction());
         DbleTempConfig.getInstance().setShardingConfig(configValue.getValue());
 
         LOGGER.info("end sync sharding json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());

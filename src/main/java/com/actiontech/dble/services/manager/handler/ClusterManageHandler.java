@@ -6,6 +6,7 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
@@ -21,6 +22,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -94,7 +97,7 @@ public final class ClusterManageHandler {
         try {
             //if the session is execute query already ,wait until the response return.
             LOGGER.info("cluster attach begin waiting");
-            boolean success = waitOtherSessionBlocked(selfService, maxPauseTime);
+            boolean success = waitOtherSessionBlocked(selfService, maxPauseTime, false);
             LOGGER.info("cluster attach after waiting");
             if (!success) {
                 selfService.writeErrMessage(ErrorCode.ER_YES, "attach cluster pause timeout");
@@ -134,7 +137,7 @@ public final class ClusterManageHandler {
         try {
             //if the session is execute query already ,wait until the response return.
             LOGGER.info("cluster detach begin waiting");
-            boolean success = waitOtherSessionBlocked(selfService, maxPauseTime);
+            boolean success = waitOtherSessionBlocked(selfService, maxPauseTime, true);
             LOGGER.info("cluster detach after waiting");
             if (!success) {
                 selfService.writeErrMessage(ErrorCode.ER_YES, "detach cluster pause timeout");
@@ -146,13 +149,15 @@ public final class ClusterManageHandler {
             LOGGER.info("cluster detach complete");
         } catch (Exception e) {
             LOGGER.info("detach cluster err, try to resume", e);
+            boolean resumeResult = false;
             try {
                 ClusterGeneralConfig.getInstance().getClusterSender().attachCluster();
                 LOGGER.info("detach resume success");
+                resumeResult = true;
             } catch (Exception e2) {
                 LOGGER.info("detach cluster resume err", e2);
             }
-            selfService.writeErrMessage(ErrorCode.ER_YES, "detach cluster err：" + e);
+            selfService.writeErrMessage(ErrorCode.ER_YES, "detach cluster err：" + e + ", resume status:" + resumeResult);
             return;
         } finally {
             //resume task consume
@@ -171,7 +176,7 @@ public final class ClusterManageHandler {
      * @param maxPauseTime
      * @return
      */
-    private static boolean waitOtherSessionBlocked(ManagerService selfService, int maxPauseTime) {
+    private static boolean waitOtherSessionBlocked(ManagerService selfService, int maxPauseTime, boolean isDetach) {
         List<FrontendService> waitServices = Lists.newArrayList();
 
         final long startTime = System.currentTimeMillis();
@@ -197,22 +202,41 @@ public final class ClusterManageHandler {
                         }
                     });
         }
-        if (waitServices.isEmpty()) {
-            return true;
-        }
+
         while (System.currentTimeMillis() - startTime < maxPauseTime * 1000L) {
 
             waitServices.removeIf(tmpService -> !tmpService.getClusterDelayService().isDoing());
             if (waitServices.isEmpty()) {
-                return true;
+                break;
             }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
-        final StringJoiner msg = new StringJoiner(",", "{", "}");
-        waitServices.forEach(service -> {
-            msg.add(String.valueOf(service.getConnection().getId()));
-        });
-        LOGGER.info("cluster operation timeout because of {} connections, connections id is {}", waitServices.size(), msg);
-        return false;
+        if (!waitServices.isEmpty()) {
+            final StringJoiner msg = new StringJoiner(",", "{", "}");
+            waitServices.forEach(service -> {
+                msg.add(String.valueOf(service.getConnection().getId()));
+            });
+            LOGGER.warn("cluster operation timeout because of {} connections, connections id is {}", waitServices.size(), msg);
+            return false;
+        }
+        if (!isDetach) {
+            return true;
+        }
+
+        /*
+        detach should also guarantee ucore/zk listener isn't doing.
+         */
+        ClusterGeneralConfig.getInstance().getClusterSender().markDetach(true);
+        while (System.currentTimeMillis() - startTime < maxPauseTime * 1000L && AbstractGeneralListener.getDoingCount().get() != 0) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        }
+
+        if (AbstractGeneralListener.getDoingCount().get() != 0) {
+            LOGGER.warn("cluster operation timeout because of other server is doing cluster-related operation");
+            ClusterGeneralConfig.getInstance().getClusterSender().markDetach(false);
+            return false;
+        }
+        return true;
     }
 
 }

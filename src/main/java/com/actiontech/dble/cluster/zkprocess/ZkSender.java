@@ -32,6 +32,7 @@ import java.util.Map;
 
 public class ZkSender implements ClusterSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkSender.class);
+    private volatile boolean connectionDetached = false;
 
     /**
      * only first init Lazy load
@@ -188,6 +189,7 @@ public class ZkSender implements ClusterSender {
     public void attachCluster() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             ZKUtils.recreateConnection();
+            connectionDetached = false;
             try {
                 ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
             } catch (Exception e) {
@@ -205,5 +207,15 @@ public class ZkSender implements ClusterSender {
 
 
         }
+    }
+
+    @Override
+    public boolean isDetach() {
+        return connectionDetached;
+    }
+
+    @Override
+    public void markDetach(boolean isConnectionDetached) {
+        this.connectionDetached = isConnectionDetached;
     }
 }

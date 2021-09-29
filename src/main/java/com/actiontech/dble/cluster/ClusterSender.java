@@ -21,7 +21,6 @@ public interface ClusterSender {
      * There are several task may be start
      * 1 init the config
      * 2 start customized connection controller
-     *
      */
     void initCluster() throws Exception;
 
@@ -29,7 +28,7 @@ public interface ClusterSender {
     /**
      * put KV into cluster
      *
-     * @param path set path
+     * @param path  set path
      * @param value set value
      * @throws Exception io or net error
      */
@@ -67,34 +66,39 @@ public interface ClusterSender {
     /**
      * clean/delete single KV
      *
-     * @param path  delete path
+     * @param path delete path
      */
     void cleanKV(String path);
 
     /**
      * createSelfTempNode for sync status
-     * @param path create path
+     *
+     * @param path  create path
      * @param value content
-     * @throws Exception  io or net error
+     * @throws Exception io or net error
      */
     void createSelfTempNode(String path, String value) throws Exception;
 
     /**
      * writeDirectly xml and sequence to cluster and change status
-     * @throws Exception  io or net error
+     *
+     * @throws Exception io or net error
      */
     void writeConfToCluster() throws Exception;
 
     /**
      * createDistributeLock
-     * @param path lock path
+     *
+     * @param path  lock path
      * @param value lock value
      * @return lock
      */
     DistributeLock createDistributeLock(String path, String value);
+
     /**
      * createDistributeLock with maxErrorCnt
-     * @param path lock path
+     *
+     * @param path  lock path
      * @param value lock value
      * @return lock
      */
@@ -119,4 +123,8 @@ public interface ClusterSender {
 
 
     void attachCluster() throws Exception;
+
+    boolean isDetach();
+
+    void markDetach(boolean isConnectionDetached);
 }

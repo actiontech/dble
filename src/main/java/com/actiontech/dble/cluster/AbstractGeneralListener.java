@@ -26,6 +26,7 @@ import org.apache.logging.log4j.util.Strings;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author dcy
@@ -35,6 +36,7 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
     private final Logger logger = LogManager.getLogger(this.getClass());
     private ChildPathMeta<T> pathMeta;
     private int pathHeight;
+    private static AtomicLong doingCount = new AtomicLong();
 
     public AbstractGeneralListener(ChildPathMeta<T> pathMeta) {
         this.pathMeta = pathMeta;
@@ -93,13 +95,13 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
 
         if (oldEvent != null) {
             try {
-                onEvent(oldEvent);
+                onEvent0(oldEvent);
             } catch (Exception e) {
                 logger.info("", e);
             }
         }
         try {
-            onEvent(newEvent);
+            onEvent0(newEvent);
         } catch (Exception e) {
             logger.info("", e);
         }
@@ -109,6 +111,29 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
     @Override
     public void notifyCluster() throws Exception {
 
+    }
+
+    private void onEvent0(ClusterEvent<T> newEvent) {
+        boolean beginDo = false;
+        try {
+            if (ClusterGeneralConfig.getInstance().getClusterSender().isDetach()) {
+                logger.warn("ignore event because of detached, event:{}", newEvent);
+                return;
+            }
+            doingCount.incrementAndGet();
+            beginDo = true;
+            if (ClusterGeneralConfig.getInstance().getClusterSender().isDetach()) {
+                logger.warn("ignore event because of detached, event:{}", newEvent);
+                return;
+            }
+            onEvent(newEvent);
+        } catch (Exception e) {
+            logger.info("", e);
+        } finally {
+            if (beginDo) {
+                doingCount.decrementAndGet();
+            }
+        }
     }
 
     private Map<String/* path */, ClusterValue<T>> keyCacheMap = new ConcurrentHashMap<>();
@@ -179,16 +204,20 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
 
         if (oldEvent != null) {
             try {
-                onEvent(oldEvent);
+                onEvent0(oldEvent);
             } catch (Exception e) {
                 logger.info("", e);
             }
         }
         try {
-            onEvent(newEvent);
+            onEvent0(newEvent);
         } catch (Exception e) {
             logger.info("", e);
         }
 
+    }
+
+    public static AtomicLong getDoingCount() {
+        return doingCount;
     }
 }

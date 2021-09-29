@@ -157,5 +157,5 @@ public abstract class AbstractConsulSender implements ClusterSender {
         }
     }
 
-    public abstract boolean isDetach();
+
 }

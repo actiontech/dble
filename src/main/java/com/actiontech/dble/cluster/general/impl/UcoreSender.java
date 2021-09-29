@@ -51,6 +51,7 @@ public final class UcoreSender extends AbstractConsulSender {
     private String serverId = null;
     private String sourceComponentId = null;
     private volatile boolean connectionDetached = false;
+
     @Override
     public void initConInfo() {
         try {
@@ -574,7 +575,6 @@ public final class UcoreSender extends AbstractConsulSender {
 
     @Override
     public void detachCluster() throws Exception {
-        connectionDetached = true;
         OnlineStatus.getInstance().shutdownClear();
         LOGGER.info("cluster detach begin close connection");
         stopConnection();
@@ -586,6 +586,11 @@ public final class UcoreSender extends AbstractConsulSender {
     public boolean isDetach() {
 
         return connectionDetached;
+    }
+
+    @Override
+    public void markDetach(boolean isConnectionDetached) {
+        this.connectionDetached = isConnectionDetached;
     }
 
     @Override

@@ -223,6 +223,10 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private RouteResultset tryDirectRoute(SchemaConfig schemaConfig, RouteResultset rrs) throws SQLException {
+        if (schemaConfig == null) {
+            return rrs;
+        }
+
         List<Pair<String, String>> tables = ctx.getTables();
         int index = 0;
         RuleConfig firstRule = null;

@@ -98,18 +98,21 @@ public abstract class AbstractConnection implements Connection {
             ProtoHandlerResult result = proto.handle(dataBuffer, offset, isSupportCompress);
             switch (result.getCode()) {
                 case PART_OF_BIG_PACKET:
-
-                    extraPartOfBigPacketCount++;
                     if (!result.isHasMorePacket()) {
                         readReachEnd();
+                    }
+                    extraPartOfBigPacketCount++;
+                    if (!result.isHasMorePacket()) {
                         dataBuffer.clear();
                     }
 
                     break;
                 case COMPLETE_PACKET:
-                    processPacketData(result);
                     if (!result.isHasMorePacket()) {
                         readReachEnd();
+                    }
+                    processPacketData(result);
+                    if (!result.isHasMorePacket()) {
                         dataBuffer.clear();
                     }
                     break;
@@ -231,17 +234,18 @@ public abstract class AbstractConnection implements Connection {
         // if cur buffer is temper none direct byte buffer and not
         // received large message in recent 30 seconds
         // then change to direct buffer for performance
-        if (readBuffer != null && !readBuffer.isDirect() &&
+        ByteBuffer localReadBuffer = this.readBuffer;
+        if (localReadBuffer != null && !localReadBuffer.isDirect() &&
                 lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + readBuffer.capacity());
+                LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
-            recycle(readBuffer);
-            readBuffer = processor.getBufferPool().allocate(readBufferChunk);
+            recycle(localReadBuffer);
+            this.readBuffer = processor.getBufferPool().allocate(readBufferChunk);
         } else {
-            if (readBuffer != null) {
+            if (localReadBuffer != null) {
                 IODelayProvider.inReadReachEnd();
-                readBuffer.clear();
+                localReadBuffer.clear();
             }
         }
     }

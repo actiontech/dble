@@ -85,8 +85,6 @@ public class ProxyMetaManager {
         this.lockTables = origin.lockTables;
         this.timestamp = System.currentTimeMillis();
         this.metaLock = origin.metaLock;
-        this.scheduler = origin.scheduler;
-        this.checkTaskHandler = origin.checkTaskHandler;
         this.metaCount = origin.metaCount;
         this.repository = origin.repository;
         this.version = origin.version;
@@ -515,7 +513,7 @@ public class ProxyMetaManager {
      * @param config
      * @param specifiedSchemas
      */
-    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas, boolean isResetTask) {
+    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
         Set<String> selfNode = getSelfNodes(config);
         ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(specifiedSchemas);
@@ -524,7 +522,7 @@ public class ProxyMetaManager {
         // do not reload the view meta or start a new scheduler
         if (handler.execute()) {
             initViewMeta();
-            if (isResetTask && SystemConfig.getInstance().getCheckTableConsistency() == 1) {
+            if (SystemConfig.getInstance().getCheckTableConsistency() == 1) {
                 scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
                 checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
             }

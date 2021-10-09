@@ -105,7 +105,7 @@ public class DefaultNodeTableHandler extends ModeTableHandler {
         private Set<String> tryGetTables() {
             List<String> nodes;
             if ((nodes = schemaConfig.getDefaultShardingNodes()) == null) return Sets.newHashSet();
-            logger.infoList("try to execute show tables in [" + schema + "] default shardingNode:", getShardDNSet());
+            logger.infoList("try to execute show tables in [" + schema + "] default shardingNode:", new HashSet<>(schemaConfig.getDefaultShardingNodes()));
             this.nodeUnitHandlers = new ArrayList<>(nodes.size());
             for (String shardingNode : nodes) {
                 ShowTableByNodeUnitHandler showTablesHandler = new ShowTableByNodeUnitHandler(shardingNode, schemaConfig);

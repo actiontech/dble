@@ -312,7 +312,6 @@ public class UshardSender extends AbstractConsulSender {
 
     @Override
     public void detachCluster() throws Exception {
-        connectionDetached = true;
         OnlineStatus.getInstance().shutdownClear();
         LOGGER.info("cluster detach begin close connection");
         ((ManagedChannel) stub.getChannel()).shutdownNow();
@@ -324,6 +323,11 @@ public class UshardSender extends AbstractConsulSender {
     public boolean isDetach() {
 
         return connectionDetached;
+    }
+
+    @Override
+    public void markDetach(boolean isConnectionDetached) {
+        this.connectionDetached = isConnectionDetached;
     }
 
     @Override

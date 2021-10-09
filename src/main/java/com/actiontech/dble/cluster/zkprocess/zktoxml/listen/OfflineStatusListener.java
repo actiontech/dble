@@ -30,13 +30,24 @@ public class OfflineStatusListener extends AbstractGeneralListener<OnlineType> {
 
     public OfflineStatusListener() throws Exception {
         super(ClusterChildMetaUtil.getOnlinePath());
+    }
+
+    @Override
+    public void onInit() throws Exception {
+        Map<String, OnlineType> newMap = new ConcurrentHashMap<>();
         ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.ONLINE);
         List<ClusterEntry<OnlineType>> onlineNodes = clusterHelper.getKVPath(ClusterChildMetaUtil.getOnlinePath());
         for (ClusterEntry<OnlineType> onlineNode : onlineNodes) {
-            onlineMap.put(onlineNode.getKey(), onlineNode.getValue().getData());
+            newMap.put(onlineNode.getKey(), onlineNode.getValue().getData());
         }
+        for (Map.Entry<String, OnlineType> en : onlineMap.entrySet()) {
+            if (!newMap.containsKey(en.getKey()) ||
+                    (newMap.containsKey(en.getKey()) && !newMap.get(en.getKey()).equals(en.getValue()))) {
+                deleteNode(en.getKey());
+            }
+        }
+        onlineMap = newMap;
     }
-
 
     @Override
     public void onEvent(ClusterEvent<OnlineType> event) throws Exception {
@@ -50,7 +61,7 @@ public class OfflineStatusListener extends AbstractGeneralListener<OnlineType> {
 
                 break;
             case REMOVED:
-                deleteNode(event);
+                deleteNode(event.getPath());
                 break;
             default:
                 break;
@@ -58,8 +69,7 @@ public class OfflineStatusListener extends AbstractGeneralListener<OnlineType> {
     }
 
 
-    private void deleteNode(ClusterEvent<OnlineType> event) {
-        String path = event.getPath();
+    private void deleteNode(String path) {
         onlineMap.remove(path);
         String crashNode = path.substring(path.lastIndexOf("/") + 1);
         ClusterLogic.forDDL().checkDDLAndRelease(crashNode);

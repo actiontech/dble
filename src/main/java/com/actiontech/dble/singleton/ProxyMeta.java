@@ -52,7 +52,6 @@ public final class ProxyMeta {
             }
             if (newManager.initMeta(conf, specifiedSchemas)) {
                 tmManager = newManager;
-                //deep copy do not terminate the scheduler
                 tmpManager.terminate();
                 return true;
             }

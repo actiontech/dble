@@ -6,8 +6,6 @@
 
 package com.actiontech.dble.cluster.values;
 
-import java.util.Objects;
-
 /**
  * @author dcy
  * Create Date: 2021-04-02
@@ -45,19 +43,6 @@ public class OnlineType {
     public OnlineType setStartTime(long startTimeTmp) {
         this.startTime = startTimeTmp;
         return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof OnlineType)) return false;
-        OnlineType that = (OnlineType) o;
-        return serverPort == that.serverPort && startTime == that.startTime && Objects.equals(hostAddr, that.hostAddr);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(serverPort, hostAddr, startTime);
     }
 
     @Override

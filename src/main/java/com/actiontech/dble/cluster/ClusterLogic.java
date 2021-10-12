@@ -487,51 +487,6 @@ public final class ClusterLogic {
         return dbGroupMap;
     }
 
-    static void writeMapFileAddFunction(List<Function> functionList) {
-        if (functionList == null) {
-            return;
-        }
-        List<Property> tempData = new ArrayList<>();
-        List<Property> writeData = new ArrayList<>();
-        for (Function function : functionList) {
-            List<Property> proList = function.getProperty();
-            if (null != proList && !proList.isEmpty()) {
-                for (Property property : proList) {
-                    if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
-                        tempData.add(property);
-                    }
-                }
-
-                if (!tempData.isEmpty()) {
-                    for (Property property : tempData) {
-                        for (Property prozkdownload : proList) {
-                            if (property.getValue().equals(prozkdownload.getName())) {
-                                writeData.add(prozkdownload);
-                            }
-                        }
-                    }
-                }
-
-                if (!writeData.isEmpty()) {
-                    for (Property writeMsg : writeData) {
-                        try {
-                            ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
-                        } catch (IOException e) {
-                            LOGGER.warn("write File IOException", e);
-                        }
-                    }
-                }
-
-                proList.removeAll(writeData);
-
-                tempData.clear();
-                writeData.clear();
-            }
-        }
-
-    }
-
-
     public static Shardings parseShardingJsonToBean(Gson gson, String jsonContent) {
         //from string to json obj
         JsonObject jsonObject = new JsonParser().parse(jsonContent).getAsJsonObject();
@@ -857,7 +812,7 @@ public final class ClusterLogic {
 
         //the config Value in ucore is an all in one json config of the sharding.xml
         Shardings sharding = ClusterLogic.parseShardingJsonToBean(gson, shardingConfig);
-
+        handlerMapFileAddFunction(sharding.getFunction(), false);
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.SHARDING_XML;
 
@@ -878,10 +833,56 @@ public final class ClusterLogic {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(Table.class, new TableGsonAdapter());
         Shardings sharding = ClusterLogic.parseShardingJsonToBean(gsonBuilder.create(), configValue.getValue());
-        ClusterLogic.writeMapFileAddFunction(sharding.getFunction());
+        handlerMapFileAddFunction(sharding.getFunction(), true);
         DbleTempConfig.getInstance().setShardingConfig(configValue.getValue());
 
         LOGGER.info("end sync sharding json config:key[{}],value[{}]", configValue.getKey(), configValue.getValue());
+    }
+
+    private static void handlerMapFileAddFunction(List<Function> functionList, boolean write) {
+        if (functionList == null) {
+            return;
+        }
+        List<Property> tempData = new ArrayList<>();
+        List<Property> writeData = new ArrayList<>();
+        for (Function function : functionList) {
+            List<Property> proList = function.getProperty();
+            if (null != proList && !proList.isEmpty()) {
+                for (Property property : proList) {
+                    if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
+                        tempData.add(property);
+                    }
+                }
+
+                if (!tempData.isEmpty()) {
+                    for (Property property : tempData) {
+                        for (Property prozkdownload : proList) {
+                            if (property.getValue().equals(prozkdownload.getName())) {
+                                writeData.add(prozkdownload);
+                            }
+                        }
+                    }
+                }
+                if (write) {
+                    writeMapFileAddFunction(writeData);
+                }
+                proList.removeAll(writeData);
+                tempData.clear();
+                writeData.clear();
+            }
+        }
+    }
+
+    private static void writeMapFileAddFunction(List<Property> writeData) {
+        if (!writeData.isEmpty()) {
+            for (Property writeMsg : writeData) {
+                try {
+                    ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
+                } catch (IOException e) {
+                    LOGGER.warn("write File IOException", e);
+                }
+            }
+        }
     }
 
 

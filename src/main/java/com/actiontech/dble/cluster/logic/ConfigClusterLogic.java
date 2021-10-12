@@ -288,7 +288,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
 
         //the config Value in ucore is an all in one json config of the sharding.xml
         Shardings sharding = this.parseShardingJsonToBean(gson, shardingConfig);
-
+        this.handlerMapFileAddFunction(sharding.getFunction(), false);
         String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + ConfigFileName.SHARDING_XML;
 
@@ -308,7 +308,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
         }
 
         Shardings sharding = this.parseShardingJsonToBean(JsonFactory.getJson(), value);
-        this.writeMapFileAddFunction(sharding.getFunction());
+        this.handlerMapFileAddFunction(sharding.getFunction(), true);
         DbleTempConfig.getInstance().setShardingConfig(value);
 
         LOGGER.info("end sync sharding json config:key[{}],value[{}]", path, value);
@@ -456,8 +456,7 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
         return dbs;
     }
 
-
-    static void writeMapFileAddFunction(List<Function> functionList) {
+    private static void handlerMapFileAddFunction(List<Function> functionList, boolean write) {
         if (functionList == null) {
             return;
         }
@@ -481,24 +480,26 @@ public class ConfigClusterLogic extends AbstractClusterLogic {
                         }
                     }
                 }
-
-                if (!writeData.isEmpty()) {
-                    for (Property writeMsg : writeData) {
-                        try {
-                            ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
-                        } catch (IOException e) {
-                            LOGGER.warn("write File IOException", e);
-                        }
-                    }
+                if (write) {
+                    writeMapFileAddFunction(writeData);
                 }
-
                 proList.removeAll(writeData);
-
                 tempData.clear();
                 writeData.clear();
             }
         }
+    }
 
+    private static void writeMapFileAddFunction(List<Property> writeData) {
+        if (!writeData.isEmpty()) {
+            for (Property writeMsg : writeData) {
+                try {
+                    ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
+                } catch (IOException e) {
+                    LOGGER.warn("write File IOException", e);
+                }
+            }
+        }
     }
 
     public Users parseUserJsonToBean(Gson gson, RawJson jsonContent) {

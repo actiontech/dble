@@ -129,6 +129,14 @@ public class ServerConfig {
         return fullyConfigured;
     }
 
+    public void fulllyConfigured() {
+        if (fullyConfigured) {
+            return;
+        }
+        waitIfChanging();
+        fullyConfigured = true;
+    }
+
     public Map<UserName, UserConfig> getUsers() {
         waitIfChanging();
         return users;
@@ -516,7 +524,7 @@ public class ServerConfig {
 
     }
 
-    public void loadSequence() {
+    private void loadSequence() {
         SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
 

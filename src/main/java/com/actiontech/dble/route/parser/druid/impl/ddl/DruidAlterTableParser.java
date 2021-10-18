@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
@@ -87,6 +88,14 @@ public class DruidAlterTableParser extends DruidImplicitCommitParser {
                 }
             } else if (supportTableOption(alterItem)) {
                 support = true;
+            }
+
+            if (alterItem instanceof SQLAlterTableOptimizePartition ||
+                    alterItem instanceof SQLAlterTableAnalyzePartition ||
+                    alterItem instanceof SQLAlterTableCheckPartition ||
+                    alterItem instanceof SQLAlterTableRepairPartition
+            ) {
+                rrs.setDdlType(DDLInfo.DDLType.ALTER_TABLE_PARTITION);
             }
         }
         if (!support && alterTable.getItems().size() != 0) {

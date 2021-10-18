@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
+import com.actiontech.dble.cluster.values.DDLInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -80,7 +81,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
         this.rrs = rrs;
-        if (ServerParse.SELECT == rrs.getSqlType()) {
+        if (ServerParse.SELECT == rrs.getSqlType() || rrs.getDdlType() == DDLInfo.DDLType.ALTER_TABLE_PARTITION) {
             byteBuffer = session.getSource().allocate();
         }
         this.sessionAutocommit = session.getShardingService().isAutocommit();

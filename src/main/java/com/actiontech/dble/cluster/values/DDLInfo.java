@@ -24,6 +24,7 @@ public class DDLInfo {
         CREATE_TABLE,
         DROP_TABLE,
         ALTER_TABLE,
+        ALTER_TABLE_PARTITION,
         TRUNCATE_TABLE,
         CREATE_INDEX,
         DROP_INDEX,

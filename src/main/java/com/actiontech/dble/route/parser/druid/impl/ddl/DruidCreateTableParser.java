@@ -78,8 +78,9 @@ public class DruidCreateTableParser extends DruidImplicitCommitParser {
         String sqlAssignItemTarget = sqlAssignItem.getTarget().toString();
         String sqlAssignItemValue = sqlAssignItem.getValue().toString();
         //ALLOW InnoDB ONLY
-        if (StringUtil.equals("ENGINE", sqlAssignItemTarget) && !"InnoDB".equalsIgnoreCase(sqlAssignItemValue)) {
-            String msg = "create table only can use ENGINE InnoDB, others not supported:" + createStmt;
+        if (StringUtil.equals("ENGINE", sqlAssignItemTarget) &&
+                !("InnoDB".equalsIgnoreCase(sqlAssignItemValue) || "RocksDB".equalsIgnoreCase(sqlAssignItemValue))) {
+            String msg = "create table only can use ENGINE InnoDB or RocksDB, others not supported:" + createStmt;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }

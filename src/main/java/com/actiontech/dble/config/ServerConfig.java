@@ -469,7 +469,7 @@ public class ServerConfig {
 
     }
 
-    private void loadSequence() {
+    public void loadSequence() {
         SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
 

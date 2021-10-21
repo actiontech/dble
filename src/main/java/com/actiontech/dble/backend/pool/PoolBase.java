@@ -32,13 +32,11 @@ public class PoolBase {
         }
     }
 
-    PooledConnection newConnection(String schema, PooledConnectionListener listener) {
-        PooledConnection conn = null;
+    void newConnection(String schema, PooledConnectionListener listener) {
         try {
-            return factory.make(instance, listener, schema);
+            factory.make(instance, listener, schema);
         } catch (IOException ioe) {
-            listener.onCreateFail(conn, ioe);
-            return null;
+            listener.onCreateFail(null, ioe);
         }
     }
 }

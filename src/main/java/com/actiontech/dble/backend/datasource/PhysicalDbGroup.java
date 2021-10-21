@@ -331,7 +331,6 @@ public class PhysicalDbGroup {
             for (String dsName : nameList) {
                 allSourceMap.get(dsName).enable();
             }
-            DbleServer.getInstance().getConfig().fulllyConfigured();
             return this.getClusterHaJson();
         } finally {
             lock.readLock().unlock();

@@ -161,9 +161,6 @@ public class ServerConfig {
     }
 
     public void fulllyConfigured() {
-        if (fullyConfigured) {
-            return;
-        }
         waitIfChanging();
         fullyConfigured = true;
     }

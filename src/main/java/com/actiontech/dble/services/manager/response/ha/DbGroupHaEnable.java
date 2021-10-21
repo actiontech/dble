@@ -65,6 +65,8 @@ public final class DbGroupHaEnable {
                         RawJson result = dbGroup.enableHosts(dbInstanceName, true);
                         //only update for the status
                         clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dbGroup.getGroupName()), result);
+                        // eg: all mysql instance is disabled when dble starts up, then enable a mysql instance
+                        DbleServer.getInstance().pullVarAndMeta(dbGroup);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
                         service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
@@ -75,6 +77,8 @@ public final class DbGroupHaEnable {
                 try {
                     RawJson result = dbGroup.enableHosts(dbInstanceName, true);
                     HaConfigManager.getInstance().haFinish(id, null, result);
+                    // eg: all mysql instance is disabled when dble starts up, then enable a mysql instance
+                    DbleServer.getInstance().pullVarAndMeta(dbGroup);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
                     service.writeErrMessage(ErrorCode.ER_YES, "enable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
@@ -113,6 +117,8 @@ public final class DbGroupHaEnable {
             //only update for the status
             clusterHelper.setKV(ClusterMetaUtil.getHaStatusPath(dh.getGroupName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
+            // eg: all mysql instance is disabled when dble starts up, then enable a mysql instance
+            DbleServer.getInstance().pullVarAndMeta(dh);
         } catch (Exception e) {
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
             return false;

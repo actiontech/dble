@@ -49,10 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -461,6 +458,24 @@ public final class DbleServer {
         }
     }
 
+    // only for enable
+    public void pullVarAndMeta(PhysicalDbGroup group) {
+        if (config.isFullyConfigured()) {
+            return;
+        }
+        config.fulllyConfigured();
+        HashMap<String, PhysicalDbGroup> groupMap = new HashMap<>(4);
+        groupMap.put(group.getGroupName(), group);
+        VarsExtractorHandler handler = new VarsExtractorHandler(groupMap);
+        SystemVariables newSystemVariables = handler.execute();
+        if (newSystemVariables == null) {
+            // ignore, recover by reload
+        } else {
+            systemVariables = newSystemVariables;
+        }
+        LOGGER.info("get variables Data end");
+    }
+
     private void pullVarAndMeta() throws IOException {
         ProxyMetaManager tmManager = new ProxyMetaManager();
         ProxyMeta.getInstance().setTmManager(tmManager);
@@ -478,6 +493,7 @@ public final class DbleServer {
             initDbGroup();
             LOGGER.info("get variables Data end");
         } else {
+            LOGGER.info("skip getting variables Data");
             reviseSchemas();
         }
         //init tmManager

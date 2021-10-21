@@ -110,6 +110,11 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     private volatile boolean testing = false;
     private volatile String closeReason = null;
     private volatile BackEndCleaner recycler = null;
+    private AtomicBoolean isCreateFail = new AtomicBoolean(false);
+
+    public AtomicBoolean getIsCreateFail() {
+        return isCreateFail;
+    }
 
     private static long initClientFlags() {
         int flag = 0;

@@ -38,10 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -385,6 +382,24 @@ public final class DbleServer {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             OnlineStatus.getInstance().mainThreadInitClusterOnline();
         }
+    }
+
+    // only for enable
+    public void pullVarAndMeta(PhysicalDbGroup group) {
+        if (config.isFullyConfigured()) {
+            return;
+        }
+        config.fulllyConfigured();
+        HashMap<String, PhysicalDbGroup> groupMap = new HashMap<>(4);
+        groupMap.put(group.getGroupName(), group);
+        VarsExtractorHandler handler = new VarsExtractorHandler(groupMap);
+        SystemVariables newSystemVariables = handler.execute();
+        if (newSystemVariables == null) {
+            // ignore, recover by reload
+        } else {
+            systemVariables = newSystemVariables;
+        }
+        LOGGER.info("get variables Data end");
     }
 
     private void pullVarAndMeta() throws IOException {

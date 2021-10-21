@@ -52,7 +52,6 @@ public final class AIOConnector implements SocketConnector,
                 }
             }
         } catch (Exception e) {
-            service.getConnection().onConnectFailed(e);
             LOGGER.info("connect err ", e);
             service.getConnection().close(e.toString());
         }

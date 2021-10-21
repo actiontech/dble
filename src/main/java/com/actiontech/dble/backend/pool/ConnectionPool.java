@@ -124,17 +124,16 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
                         AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", config.getId(), labels,
                                 ToResolveContainer.REACH_MAX_CON, alertKey);
                     }
-                    return;
                 }
+            } else {
+                totalConnections.decrementAndGet();
+
+                // alert
+                String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
+                LOGGER.warn(maxConError);
+                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
+                ToResolveContainer.REACH_MAX_CON.add(alertKey);
             }
-
-            totalConnections.decrementAndGet();
-
-            // alert
-            String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + instance.getDbGroupConfig().getName() + "." + config.getInstanceName() + "]";
-            LOGGER.warn(maxConError);
-            AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", config.getId(), labels);
-            ToResolveContainer.REACH_MAX_CON.add(alertKey);
         }
     }
 

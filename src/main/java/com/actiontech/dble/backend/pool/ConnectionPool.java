@@ -158,8 +158,13 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     private void fillPool() {
         final int idleCount = getCount(STATE_NOT_IN_USE, STATE_HEARTBEAT);
-        final int connectionsToAdd = Math.min(config.getMaxCon() - totalConnections.get(), config.getMinCon() - idleCount) -
-                (totalConnections.get() - allConnections.size());
+        int tmpTotalConnections = totalConnections.get();
+        if (tmpTotalConnections < 0) {
+            LOGGER.warn("the dbInstance[{}.{}]'s totalConnections value[{}] is abnormal!", instance.getDbGroupConfig().getName(), config.getInstanceName(), tmpTotalConnections);
+            tmpTotalConnections = 0;
+        }
+        final int connectionsToAdd = Math.min(config.getMaxCon() - tmpTotalConnections, config.getMinCon() - idleCount) -
+                (tmpTotalConnections - allConnections.size());
         if (LOGGER.isDebugEnabled() && connectionsToAdd > 0) {
             LOGGER.debug("need add {}", connectionsToAdd);
         }
@@ -194,15 +199,17 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     @Override
     public void onCreateFail(BackendConnection conn, Throwable e) {
-        LOGGER.warn("create connection fail " + e.getMessage());
-        totalConnections.decrementAndGet();
-        // conn can be null if newChannel crashed (eg SocketException("too many open files"))
-        if (conn != null) {
-            conn.closeWithoutRsp("create fail");
+        if (conn == null || ((MySQLConnection) conn).getIsCreateFail().compareAndSet(false, true)) {
+            LOGGER.warn("create connection fail " + e.getMessage());
+            totalConnections.decrementAndGet();
+            // conn can be null if newChannel crashed (eg SocketException("too many open files"))
+            if (conn != null) {
+                conn.closeWithoutRsp("create fail");
+            }
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
+            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
+            ToResolveContainer.CREATE_CONN_FAIL.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
         }
-        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
-        AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
-        ToResolveContainer.CREATE_CONN_FAIL.add(instance.getDbGroupConfig().getName() + "-" + config.getInstanceName());
     }
 
     @Override

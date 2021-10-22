@@ -6,6 +6,7 @@ import com.actiontech.dble.net.service.AuthService;
 
 import java.nio.channels.NetworkChannel;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class PooledConnection extends AbstractConnection {
@@ -15,6 +16,7 @@ public abstract class PooledConnection extends AbstractConnection {
     private volatile String schema = null;
     private volatile String oldSchema;
     private volatile ConnectionPool poolRelated;
+    private AtomicBoolean isCreateFail = new AtomicBoolean(false);
 
     private AtomicInteger state = new AtomicInteger(INITIAL);
 
@@ -109,5 +111,9 @@ public abstract class PooledConnection extends AbstractConnection {
 
     public void setOldSchema(String oldSchema) {
         this.oldSchema = oldSchema;
+    }
+
+    public AtomicBoolean getIsCreateFail() {
+        return isCreateFail;
     }
 }

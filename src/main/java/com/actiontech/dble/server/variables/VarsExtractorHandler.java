@@ -29,7 +29,6 @@ public class VarsExtractorHandler {
     private Condition done;
     private Map<String, PhysicalDbGroup> dbGroups;
     private volatile SystemVariables systemVariables = null;
-    private PhysicalDbInstance usedDbInstance = null;
 
     public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
         this.dbGroups = dbGroups;
@@ -43,7 +42,6 @@ public class VarsExtractorHandler {
         try {
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
             PhysicalDbInstance ds = getPhysicalDbInstance();
-            this.usedDbInstance = ds;
             if (ds != null) {
                 OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
                 sqlJob.run();
@@ -123,11 +121,4 @@ public class VarsExtractorHandler {
         }
     }
 
-    public PhysicalDbInstance getUsedDbInstance() {
-        return usedDbInstance;
-    }
-
-    public void setUsedDbInstance(PhysicalDbInstance usedDbInstance) {
-        this.usedDbInstance = usedDbInstance;
-    }
 }

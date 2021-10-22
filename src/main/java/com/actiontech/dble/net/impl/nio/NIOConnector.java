@@ -113,8 +113,6 @@ public final class NIOConnector extends Thread implements SocketConnector {
             clearSelectionKey(key);
             LOGGER.warn("error:", e);
             c.close(e.toString());
-            c.onConnectFailed(e);
-
         }
     }
 

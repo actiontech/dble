@@ -59,7 +59,7 @@ public class VarsExtractorHandler {
         PhysicalDbInstance ds = null;
         for (PhysicalDbGroup dbGroup : dbGroups.values()) {
             PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
-            if (dsTest.isAlive()) {
+            if (dsTest.isTestConnSuccess()) {
                 ds = dsTest;
             }
             if (ds != null) {
@@ -69,7 +69,7 @@ public class VarsExtractorHandler {
         if (ds == null) {
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
                 for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
-                    if (dsTest.isAlive()) {
+                    if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;
                     }

@@ -243,11 +243,10 @@ public final class Security {
 
     /**
      * Stage one password hashing, used in MySQL 4.1 password handling
-     * @param password
-     *            plaintext password
+     * @param value password
+     * @param encoding encode
      * @return stage one hash of password
-     * @throws NoSuchAlgorithmException
-     *             if the message digest 'SHA-1' is not available.
+     * @throws NoSuchAlgorithmException if the message digest 'SHA-1' is not available.
      */
 
     public static byte[] getBytes(char[] value, String encoding) throws UnsupportedEncodingException {

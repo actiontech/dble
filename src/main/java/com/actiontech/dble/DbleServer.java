@@ -389,7 +389,9 @@ public final class DbleServer {
         if (config.isFullyConfigured()) {
             return;
         }
+        LOGGER.info("begin to get variables Data");
         config.fulllyConfigured();
+        group.getWriteDbInstance().setTestConnSuccess(true);
         HashMap<String, PhysicalDbGroup> groupMap = new HashMap<>(4);
         groupMap.put(group.getGroupName(), group);
         VarsExtractorHandler handler = new VarsExtractorHandler(groupMap);
@@ -399,14 +401,14 @@ public final class DbleServer {
         } else {
             systemVariables = newSystemVariables;
         }
-        LOGGER.info("get variables Data end");
+        LOGGER.info("end to get variables Data");
     }
 
     private void pullVarAndMeta() throws IOException {
         ProxyMetaManager tmManager = new ProxyMetaManager();
         ProxyMeta.getInstance().setTmManager(tmManager);
         if (this.getConfig().isFullyConfigured()) {
-            LOGGER.info("get variables Data start");
+            LOGGER.info("begin to get variables Data");
             //init for sys VAR
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDbGroups());
             SystemVariables newSystemVariables = handler.execute();
@@ -417,8 +419,9 @@ public final class DbleServer {
             }
             reviseSchemas();
             initDbGroup();
-            LOGGER.info("get variables Data end");
+            LOGGER.info("end to get variables Data");
         } else {
+            LOGGER.info("skip getting variables Data");
             //TODO Self check should be execute when the dbGroup not exists
             // reviseSchemas();
         }

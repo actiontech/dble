@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
@@ -22,6 +21,7 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.util.PasswordAuthPlugin;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
@@ -58,6 +58,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private long oldTimestamp;
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean testing = false;
+    private String authPluginErrorMessage = null;
 
     private volatile BackEndCleaner recycler = null;
 
@@ -87,6 +88,7 @@ public class MySQLConnection extends BackendAIOConnection {
         flag |= Capabilities.CLIENT_MULTI_RESULTS;
         return flag;
     }
+
 
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
@@ -221,19 +223,40 @@ public class MySQLConnection extends BackendAIOConnection {
     void authenticate() {
         AuthPacket packet = new AuthPacket();
         packet.setPacketId(1);
-        packet.setClientFlags(clientFlags);
         packet.setMaxPacketSize(maxPacketSize);
         int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
         packet.setCharsetIndex(charsetIndex);
-
         packet.setUser(user);
         try {
-            packet.setPassword(passwd(password, handshake));
+            String authPluginName = new String(handshake.getAuthPluginName());
+            if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
+                sendAuthPacket(packet, PasswordAuthPlugin.passwd(password, handshake), authPluginName);
+            } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
+                sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(password, handshake), authPluginName);
+            } else {
+                authPluginErrorMessage = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
+                LOGGER.warn(authPluginErrorMessage);
+                throw new RuntimeException(authPluginErrorMessage);
+            }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());
         }
+
+    }
+
+    private long getClientFlagSha() {
+        int flag = 0;
+        flag |= initClientFlags() ;
+        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+        return flag;
+    }
+
+    private void sendAuthPacket(AuthPacket packet, byte[] authPassword, String authPluginName) {
+        packet.setPassword(authPassword);
+        packet.setClientFlags(getClientFlagSha());
+        packet.setAuthPlugin(authPluginName);
         packet.setDatabase(schema);
-        packet.write(this);
+        packet.writeWithKey(this);
     }
 
     public boolean isAutocommit() {
@@ -765,20 +788,6 @@ public class MySQLConnection extends BackendAIOConnection {
         if (respHandler != null) {
             respHandler.writeQueueAvailable();
         }
-    }
-
-    private static byte[] passwd(String pass, HandshakeV10Packet hs)
-            throws NoSuchAlgorithmException {
-        if (pass == null || pass.length() == 0) {
-            return null;
-        }
-        byte[] passwd = pass.getBytes();
-        int sl1 = hs.getSeed().length;
-        int sl2 = hs.getRestOfScrambleBuff().length;
-        byte[] seed = new byte[sl1 + sl2];
-        System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
-        System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
-        return SecurityUtil.scramble411(passwd, seed);
     }
 
     @Override

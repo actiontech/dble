@@ -112,6 +112,14 @@ public class CommandPacket extends MySQLPacket {
         }
     }
 
+
+
+    public void writeGetKey(OutputStream out) throws IOException {
+        StreamUtil.writeUB3(out, 1);
+        StreamUtil.write(out, packetId);
+        StreamUtil.write(out, command);
+    }
+
     @Override
     public int calcPacketSize() {
         return 1 + arg.length;

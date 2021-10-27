@@ -143,7 +143,7 @@ public class DumpFileWriter {
                 String stmt;
                 long startTime = TimeUtil.currentTimeMillis();
                 while (!Thread.currentThread().isInterrupted()) {
-                    stmt = this.queue.poll();
+                    stmt = this.queue.take();
                     if (StringUtil.isBlank(stmt)) {
                         continue;
                     }
@@ -169,6 +169,8 @@ public class DumpFileWriter {
             } catch (IOException e) {
                 LOGGER.warn("dump file writer[" + shardingNode + "] occur error:" + e.getMessage());
             } catch (SQLSyntaxErrorException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
                 finished.decrementAndGet();

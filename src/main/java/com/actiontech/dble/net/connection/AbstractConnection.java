@@ -600,7 +600,7 @@ public abstract class AbstractConnection implements Connection {
         this.port = port;
     }
 
-    public synchronized void setService(@Nonnull AbstractService service) {
+    public void setService(@Nonnull AbstractService service) {
         this.service = service;
     }
 

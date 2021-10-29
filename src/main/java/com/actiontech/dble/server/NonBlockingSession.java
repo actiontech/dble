@@ -6,7 +6,6 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
@@ -881,13 +880,6 @@ public class NonBlockingSession extends Session {
             if (canReUse) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("found connections in session to use " + conn + " for " + node);
-                }
-                ((MySQLResponseService) conn.getService()).setAttachment(node);
-                if (Objects.isNull(node.getRunOnSlave()) && !node.canRunINReadDB(shardingService.isAutocommit()) ||
-                        Objects.nonNull(node.getRunOnSlave()) && !node.getRunOnSlave()) {
-                    ((PhysicalDbInstance) conn.getInstance()).incrementWriteCount();
-                } else {
-                    ((PhysicalDbInstance) conn.getInstance()).incrementReadCount();
                 }
                 return true;
             } else {

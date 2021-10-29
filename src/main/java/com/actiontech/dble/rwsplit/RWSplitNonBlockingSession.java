@@ -5,8 +5,8 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -77,7 +77,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void execute(Boolean master, byte[] originPacket, Callback callback) {
         try {
-            RWSplitHandler handler = getRwSplitHandler(originPacket, callback, false);
+            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
             PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master));
             checkDest(!instance.isReadInstance());
@@ -92,7 +92,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void execute(Boolean master, byte[] originPacket, Callback callback, boolean write) {
         try {
-            RWSplitHandler handler = getRwSplitHandler(originPacket, callback, isWrite(write));
+            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
             PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(master), isWrite(write));
             checkDest(!instance.isReadInstance());
@@ -106,18 +106,13 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     @Nullable
-    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback, boolean write) throws SQLSyntaxErrorException {
+    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException {
         RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
             }
             checkDest(!conn.getInstance().isReadInstance());
-            if (write) {
-                ((PhysicalDbInstance) conn.getInstance()).incrementWriteCount();
-            } else {
-                ((PhysicalDbInstance) conn.getInstance()).incrementReadCount();
-            }
             handler.execute(conn);
             return null;
         }

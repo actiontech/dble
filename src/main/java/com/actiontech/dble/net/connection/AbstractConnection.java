@@ -429,6 +429,7 @@ public abstract class AbstractConnection implements Connection {
                 recycle(buffer);
             }
             this.cleanup(null);
+            int i;
             return;
         }
         //filter out useless write

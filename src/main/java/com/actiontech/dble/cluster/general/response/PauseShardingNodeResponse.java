@@ -5,6 +5,8 @@
 package com.actiontech.dble.cluster.general.response;
 
 import com.actiontech.dble.cluster.AbstractGeneralListener;
+import com.actiontech.dble.cluster.GeneralListener;
+import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.path.ClusterChildMetaUtil;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
@@ -35,6 +37,13 @@ public class PauseShardingNodeResponse extends AbstractGeneralListener<PauseInfo
         super(ClusterChildMetaUtil.getPauseShardingNodePath());
     }
 
+
+    @Override
+    public final GeneralListener<PauseInfo> registerPrefixForUcore(ClusterClearKeyListener confListener) {
+        confListener.addChild(this, ClusterPathUtil.getPauseResultNodePath());
+        confListener.addChild(this, ClusterPathUtil.getPauseResumePath());
+        return this;
+    }
 
     @Override
     public void onEvent(ClusterEvent<PauseInfo> event) throws Exception {

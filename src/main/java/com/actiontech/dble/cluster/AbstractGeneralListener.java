@@ -42,7 +42,7 @@ public abstract class AbstractGeneralListener<T> implements GeneralListener<T>, 
     }
 
     @Override
-    public final GeneralListener<T> registerPrefixForUcore(ClusterClearKeyListener confListener) {
+    public GeneralListener<T> registerPrefixForUcore(ClusterClearKeyListener confListener) {
         confListener.addChild(this, pathMeta.getPath());
         return this;
     }

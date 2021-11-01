@@ -433,6 +433,9 @@ public abstract class AbstractConnection implements Connection {
         }
         //filter out useless write
         if (socketWR.canNotWrite()) {
+            if (buffer != null) {
+                recycle(buffer);
+            }
             return;
         }
         int bufferSize;

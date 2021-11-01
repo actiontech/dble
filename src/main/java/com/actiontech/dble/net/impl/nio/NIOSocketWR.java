@@ -61,7 +61,7 @@ public class NIOSocketWR extends SocketWR {
 
         try {
             if (writeDataErr) {
-                this.writeQueue.clear();
+                clearWriteQueue();
                 return;
             }
             boolean noMoreData = write0();
@@ -79,7 +79,7 @@ public class NIOSocketWR extends SocketWR {
         } catch (IOException e) {
             writeDataErr = true;
             //when write errored,the flow control doesn't work
-            this.writeQueue.clear();
+            clearWriteQueue();
             FlowController.tryRemoveFlowControl(-1, con);
             if (Objects.equals(e.getMessage(), "Broken pipe") || Objects.equals(e.getMessage(), "Connection reset by peer") || e instanceof ClosedChannelException) {
                 // target problem,
@@ -94,14 +94,14 @@ public class NIOSocketWR extends SocketWR {
         } catch (Exception e) {
             writeDataErr = true;
             LOGGER.info("con {} write err:", con.getService(), e);
-            this.writeQueue.clear();
+            clearWriteQueue();
             //when write errored,the flow control doesn't work
             FlowController.tryRemoveFlowControl(-1, con);
             con.pushServiceTask(ServiceTaskFactory.getInstance(con.getService()).createForForceClose(e.getMessage(), CloseType.WRITE));
 
         } finally {
             if (writeDataErr) {
-                this.writeQueue.clear();
+                clearWriteQueue();
                 if ((processKey.isValid() && (processKey.interestOps() & SelectionKey.OP_WRITE) != 0)) {
                     disableWrite();
                 }
@@ -110,6 +110,13 @@ public class NIOSocketWR extends SocketWR {
 
         }
 
+    }
+
+    protected void clearWriteQueue() {
+        WriteOutTask task;
+        while (((task = writeQueue.poll()) != null)) {
+            con.recycle(task.getBuffer());
+        }
     }
 
     public boolean registerWrite(ByteBuffer buffer) {

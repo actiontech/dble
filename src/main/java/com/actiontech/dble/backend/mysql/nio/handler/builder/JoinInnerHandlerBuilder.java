@@ -7,15 +7,17 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by szf on 2019/6/3.
  */
 public class JoinInnerHandlerBuilder extends BaseHandlerBuilder {
 
-    private JoinInnerNode node;
+    private final JoinInnerNode node;
 
     protected JoinInnerHandlerBuilder(NonBlockingSession session, JoinInnerNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -24,14 +26,15 @@ public class JoinInnerHandlerBuilder extends BaseHandlerBuilder {
 
 
     @Override
-    public boolean canDoAsMerge() {
+    protected boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) throws SQLException {
         return false;
     }
 
     @Override
-    protected void handleSubQueries() {
-        handleBlockingSubQuery();
+    public boolean canDoAsMerge() {
+        return false;
     }
+
 
     @Override
     public void mergeBuild(RouteResultset rrs) {
@@ -40,6 +43,15 @@ public class JoinInnerHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public List<DMLResponseHandler> buildPre() {
+        if (node.getSubQueries().size() != 0) {
+            // no optimizer
+            List<DMLResponseHandler> subQueryEndHandlers;
+            subQueryEndHandlers = getSubQueriesEndHandlers(node.getSubQueries());
+            if (!isExplain) {
+                // execute subquery sync
+                executeSubQueries(subQueryEndHandlers);
+            }
+        }
         List<DMLResponseHandler> pres = new ArrayList<>();
         PlanNode left = node.getLeftNode();
         PlanNode right = node.getRightNode();

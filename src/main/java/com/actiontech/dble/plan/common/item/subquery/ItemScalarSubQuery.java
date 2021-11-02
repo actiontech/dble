@@ -53,7 +53,9 @@ public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
-        return new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager, this.usrVariables, charsetIndex);
+        ItemScalarSubQuery cloneItem = new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager, this.usrVariables, charsetIndex);
+        cloneItem.value = this.value;
+        return cloneItem;
     }
 
 }

@@ -29,9 +29,12 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
     private int rowCount = 0;
     private Field sourceField;
     private ItemSingleRowSubQuery itemSubQuery;
-    public SingleRowSubQueryHandler(long id, Session session, ItemSingleRowSubQuery itemSubQuery) {
+    public SingleRowSubQueryHandler(long id, Session session, ItemSingleRowSubQuery itemSubQuery, boolean isExplain) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
+        if (isExplain) {
+            setForExplain();
+        }
     }
 
     @Override
@@ -103,5 +106,15 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
     @Override
     public void setForExplain() {
         itemSubQuery.setValue(new ItemString(NEED_REPLACE, itemSubQuery.getCharsetIndex()));
+    }
+
+    @Override
+    public void clearForExplain() {
+        itemSubQuery.setValue(null);
+    }
+
+    @Override
+    public void markAsNoSubQuery() {
+        itemSubQuery.setWithSubQuery(false);
     }
 }

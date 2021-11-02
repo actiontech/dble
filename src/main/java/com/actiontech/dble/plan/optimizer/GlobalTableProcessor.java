@@ -105,7 +105,7 @@ public final class GlobalTableProcessor {
     }
 
     private static int calcUnGlobalCount(PlanNode tn) {
-        int unGlobalCount = 0;
+        int unGlobalCount = tn.getUnGlobalTableCount();
         for (ItemSubQuery subQuery : tn.getSubQueries()) {
             PlanNode subNode = subQuery.getPlanNode();
             resetNoShardNode(tn, subNode);
@@ -123,11 +123,9 @@ public final class GlobalTableProcessor {
     private static void resetNoShardNode(PlanNode tn, PlanNode tnChild) {
         if (tn.getNoshardNode() == null) {
             if (tnChild.getNoshardNode() != null) {
-                Set<String> parentSet = new HashSet<>();
-                parentSet.addAll(tnChild.getNoshardNode());
-                tn.setNoshardNode(parentSet);
+                tn.setNoshardNode(new HashSet<>(tnChild.getNoshardNode()));
             } else {
-                tn.setNoshardNode(new HashSet<String>());
+                tn.setNoshardNode(new HashSet<>());
             }
         } else {
             if (tnChild.getNoshardNode() != null) {

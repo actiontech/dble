@@ -10,7 +10,6 @@ import com.actiontech.dble.plan.util.ToStringUtil;
 import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * NoNameNode eg:select 1,only exists selecteditems
@@ -30,9 +29,7 @@ public class NoNameNode extends PlanNode {
     public NoNameNode(String catalog, String sql) {
         this.catalog = catalog;
         this.sql = sql;
-        Set<String> set = new HashSet<>();
-        set.addAll(DbleServer.getInstance().getConfig().getShardingNodes().keySet());
-        this.setNoshardNode(set);
+        this.setNoshardNode(new HashSet<>(DbleServer.getInstance().getConfig().getShardingNodes().keySet()));
         this.keepFieldSchema = true;
     }
 

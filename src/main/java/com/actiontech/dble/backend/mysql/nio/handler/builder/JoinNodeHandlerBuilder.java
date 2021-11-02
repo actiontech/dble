@@ -25,34 +25,32 @@ import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.RouteResultset;
-import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.Lists;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
-    private JoinNode node;
-    private final int charsertIndex;
-    private boolean isJoin = true;
+    private final JoinNode node;
+    private final int charsetIndex;
+    private boolean optimizerMerge = false;
 
     JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
         this.node = node;
-        charsertIndex = CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation());
+        charsetIndex = CharsetUtil.getCollationIndex(session.getSource().getService().getCharset().getCollation());
     }
 
     @Override
     public boolean canDoAsMerge() {
         return PlanUtil.isGlobalOrER(node);
-    }
-
-    @Override
-    protected void handleSubQueries() {
-        handleBlockingSubQuery();
     }
 
     @Override
@@ -70,14 +68,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needWhereHandler = false;
             this.canPushDown = !node.existUnPushDownGroup();
             PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, pdVisitor);
-            String sql = null;
-            Map<String, String> mapTableToSimple = new HashMap<>();
-            if (node.getAst() != null && node.getParent() == null) { // it's root
-                pdVisitor.visit();
-                sql = pdVisitor.getSql().toString();
-                mapTableToSimple = pdVisitor.getMapTableToSimple();
-            }
+            RouteResultset rrs = pdVisitor.buildRouteResultset();
             SchemaConfig schemaConfig;
             String schemaName = this.session.getShardingService().getSchema();
             if (schemaName != null) {
@@ -85,12 +76,15 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             } else {
                 schemaConfig = schemaConfigMap.entrySet().iterator().next().getValue(); //random schemaConfig
             }
-            RouteResultset rrs;
+
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node);
             // maybe some node is view
-            if (sql == null) {
-                rrs = mergeBuilder.construct(schemaConfig);
+            if (node.getAst() != null && node.getParent() == null) { // it's root
+                rrs = mergeBuilder.constructByStatement(rrs, node.getAst(), schemaConfig);
             } else {
-                rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
+                SQLStatementParser parser = new MySqlStatementParser(rrs.getSrcStatement());
+                SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
+                return mergeBuilder.constructByStatement(rrs, select, schemaConfig);
             }
             return rrs;
         } catch (Exception e) {
@@ -99,11 +93,41 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
+    protected boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) {
+        //  use node.copy(),it will replace sub-queries to 'NEED_REPLACE'
+        List<DMLResponseHandler> merges = Lists.newArrayList();
+        {
+            BaseHandlerBuilder builder = hBuilder.getBuilder(session, node.getLeftNode().copy(), isExplain);
+            merges.addAll(builder.getEndHandler().getMerges());
+        }
+        {
+            BaseHandlerBuilder builder = hBuilder.getBuilder(session, node.getRightNode().copy(), isExplain);
+            merges.addAll(builder.getEndHandler().getMerges());
+        }
+        Set<String> routeNodes = HandlerBuilder.canRouteToNodes(merges);
+        if (routeNodes != null && routeNodes.size() > 0) {
+            Set<String> queryRouteNodes = tryRouteWithCurrentNode(subQueryRouteNodes, routeNodes.iterator().next(), routeNodes);
+            if (queryRouteNodes.size() >= 1) {
+                buildMergeHandlerWithSubQueries(subQueryEndHandlers, queryRouteNodes);
+                return true;
+            }
+        }
+        return false;
+    }
+    @Override
     public List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
         PlanNode left = node.getLeftNode();
         PlanNode right = node.getRightNode();
         if (node.getStrategy() == JoinNode.Strategy.NESTLOOP) {
+            if (node.getSubQueries().size() != 0) {
+                List<DMLResponseHandler> subQueryEndHandlers;
+                subQueryEndHandlers = getSubQueriesEndHandlers(node.getSubQueries());
+                if (!isExplain) {
+                    // execute subquery sync
+                    executeSubQueries(subQueryEndHandlers);
+                }
+            }
             final boolean isLeftSmall = left.getNestLoopFilters() == null;
             final PlanNode tnSmall = isLeftSmall ? left : right;
             final PlanNode tnBig = isLeftSmall ? right : left;
@@ -148,42 +172,26 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             tempHandler.setTempDoneCallBack(tempDone);
 
         } else if (node.getStrategy() == JoinNode.Strategy.SORTMERGE) {
+            try {
+                if (handleSubQueries()) {
+                    needWhereHandler = false;
+                    optimizerMerge = true;
+                    return null;
+                }
+            } catch (Exception e) {
+                throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "JoinNode buildOwn exception! Error:" + e.getMessage(), e);
+            }
             DMLResponseHandler lh = buildJoinChild(left, true);
             pres.add(lh);
             DMLResponseHandler rh = buildJoinChild(right, false);
             pres.add(rh);
-            if (!isExistView()) {
-                pres = tryRouteToOneNode(pres);
+
+            if (tryRouteToOneNode(pres)) {
+                pres.clear();
+                optimizerMerge = true;
             }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "strategy [" + node.getStrategy() + "] not implement yet!");
-        }
-        return pres;
-    }
-
-    private List<DMLResponseHandler> tryRouteToOneNode(List<DMLResponseHandler> pres) {
-        if (!pres.isEmpty()) {
-            List<DMLResponseHandler> merges = Lists.newArrayList();
-            for (DMLResponseHandler preHandler : pres) {
-                merges.addAll(preHandler.getMerges());
-            }
-            if (!merges.isEmpty()) {
-                String routeNode = HandlerBuilder.canRouteToOneNode(merges);
-                if (!StringUtil.isBlank(routeNode)) {
-                    RouteResultset routeResultset = tryMergeBuild();
-                    //compare whether the issued nodes are consistent after merging
-                    if (null != routeResultset && routeResultset.getNodes().length == 1 && StringUtil.equalsWithEmpty(routeNode, routeResultset.getNodes()[0].getName())) {
-                        String sql = routeResultset.getStatement();
-                        for (Map.Entry<String, SchemaConfig> schemaConfigEntry : schemaConfigMap.entrySet()) {
-                            sql = RouterUtil.removeSchema(sql, schemaConfigEntry.getKey());
-                        }
-                        routeResultset.setStatement(sql);
-                        mergeBuild(routeResultset);
-                        pres = null;
-                        isJoin = false;
-                    }
-                }
-            }
         }
         return pres;
     }
@@ -213,7 +221,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     public void buildOwn() {
-        if (!isJoin) {
+        if (optimizerMerge) {
             return;
         }
         if (node.isNotIn()) {
@@ -232,8 +240,8 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         List<Item> strategyFilters = tnBig.getNestLoopFilters();
         List<Item> argList = new ArrayList<>();
         argList.add(keyInBig);
-        argList.add(new ItemString(NEED_REPLACE, charsertIndex));
-        ItemFuncIn filter = new ItemFuncIn(argList, false, charsertIndex);
+        argList.add(new ItemString(NEED_REPLACE, charsetIndex));
+        ItemFuncIn filter = new ItemFuncIn(argList, false, charsetIndex);
         strategyFilters.add(filter);
     }
 
@@ -250,12 +258,12 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 partList = new ArrayList<>();
             if (value != null) {
                 // is null will never join
-                partList.add(new ItemString(value, charsertIndex));
+                partList.add(new ItemString(value, charsetIndex));
                 if (++partSize >= maxPartSize) {
                     List<Item> argList = new ArrayList<>();
                     argList.add(keyInBig);
                     argList.addAll(partList);
-                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, charsertIndex);
+                    ItemFuncIn inFilter = new ItemFuncIn(argList, false, charsetIndex);
                     strategyFilters.add(inFilter);
                     partList = null;
                     partSize = 0;
@@ -266,7 +274,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             List<Item> argList = new ArrayList<>();
             argList.add(keyInBig);
             argList.addAll(partList);
-            ItemFuncIn inFilter = new ItemFuncIn(argList, false, charsertIndex);
+            ItemFuncIn inFilter = new ItemFuncIn(argList, false, charsetIndex);
             strategyFilters.add(inFilter);
         }
         // if no data

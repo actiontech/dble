@@ -9,18 +9,19 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
-import com.actiontech.dble.plan.node.JoinNode;
-import com.actiontech.dble.plan.node.NoNameNode;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * execute like single er tables ,global * normal table
@@ -30,7 +31,7 @@ import java.util.List;
 public class PushDownVisitor extends MysqlVisitor {
 
     /* store order by list pushed down*/
-    private List<Order> pushDownOrderBy;
+    private final List<Order> pushDownOrderBy;
 
     public PushDownVisitor(PlanNode pushDownQuery, boolean isTopQuery) {
         super(pushDownQuery, isTopQuery);
@@ -49,6 +50,9 @@ public class PushDownVisitor extends MysqlVisitor {
 
             } else if (i == PlanNode.PlanNodeType.JOIN) {
                 visit((JoinNode) query);
+
+            } else if (i == PlanNode.PlanNodeType.MERGE) {
+                visit((MergeNode) query);
 
             } else if (i == PlanNode.PlanNodeType.NONAME) {
                 visit((NoNameNode) query);
@@ -84,7 +88,7 @@ public class PushDownVisitor extends MysqlVisitor {
             buildGroupBy(query);
             // having may contains aggregate function, so it need to calc by middle-ware
             buildOrderBy(query);
-            buildLimit(query, sqlBuilder);
+            buildLimit(query);
         }
 
         if (isTopQuery) {
@@ -98,7 +102,6 @@ public class PushDownVisitor extends MysqlVisitor {
             }
         }
     }
-
 
     protected void visit(JoinNode join) {
         if (!isTopQuery) {
@@ -132,13 +135,13 @@ public class PushDownVisitor extends MysqlVisitor {
         replaceableSqlBuilder.append(rightVisitor.getSql());
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
         StringBuilder joinOnFilterStr = getJoinOn(join);
-        sqlBuilder.append(joinOnFilterStr.toString());
+        sqlBuilder.append(joinOnFilterStr);
         if (join.isWithSubQuery() || isTopQuery) {
             buildWhere(join, leftVisitor, rightVisitor);
             buildGroupBy(join);
             // having may contains aggregate function, so it need to calc by middle-ware
             buildOrderBy(join);
-            buildLimit(join, sqlBuilder);
+            buildLimit(join);
         }
 
         if (!isTopQuery) {
@@ -147,6 +150,44 @@ public class PushDownVisitor extends MysqlVisitor {
                 sqlBuilder.append(" ").append(join.getAlias()).append(" ");
         }
 
+    }
+
+    protected void visit(MergeNode merge) {
+        boolean isUnion = merge.isUnion();
+        boolean isFirst = true;
+        for (PlanNode child : merge.getChildren()) {
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            childVisitor.visit();
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                sqlBuilder.append(isUnion ? " UNION " : " UNION ALL ");
+            }
+            if (child.getChildren().size() == 0) {
+                sqlBuilder.append("(");
+            }
+            mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
+            sqlBuilder.append(childVisitor.getSql());
+            if (child.getChildren().size() == 0) {
+                sqlBuilder.append(")");
+            }
+        }
+
+        if (merge.getOrderBys() != null && merge.getOrderBys().size() > 0) {
+            sqlBuilder.append(" ORDER BY ");
+            for (Order order : merge.getOrderBys()) {
+                sqlBuilder.append(order.getItem().getItemName()).append(" ").append(order.getSortOrder()).append(",");
+            }
+            sqlBuilder.setLength(sqlBuilder.length() - 1);
+        }
+
+        if (merge.getLimitTo() != -1) {
+            sqlBuilder.append(" LIMIT ");
+            if (merge.getLimitFrom() != -1) {
+                sqlBuilder.append(merge.getLimitFrom()).append(",");
+            }
+            sqlBuilder.append(merge.getLimitTo());
+        }
     }
 
     private StringBuilder getJoinOn(JoinNode join) {
@@ -281,8 +322,7 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
     private String replaceAll(String colName, String regex, String replacement) {
-        String res = colName.replaceAll(regex, replacement).replaceAll(regex.toLowerCase(), replacement);
-        return res;
+        return colName.replaceAll(regex, replacement).replaceAll(regex.toLowerCase(), replacement);
     }
 
 
@@ -355,11 +395,11 @@ public class PushDownVisitor extends MysqlVisitor {
         }
     }
 
-    private void buildLimit(PlanNode query, StringBuilder sb) {
+    private void buildLimit(PlanNode query) {
         /* both group by and limit are exist, don't push down limit */
         if (query.getGroupBys().isEmpty() && !existUnPushDownGroup) {
             if (query.getLimitFrom() != -1 && query.getLimitTo() != -1) {
-                sb.append(" LIMIT ").append(query.getLimitFrom() + query.getLimitTo());
+                sqlBuilder.append(" LIMIT ").append(query.getLimitFrom() + query.getLimitTo());
             }
         }
     }
@@ -439,5 +479,21 @@ public class PushDownVisitor extends MysqlVisitor {
                 }
             }
         }
+    }
+
+
+
+    @NotNull
+    public RouteResultset buildRouteResultset() {
+        this.visit();
+        String sql = this.getSql().toString();
+        RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
+        String pushDownSQL = rrs.getStatement();
+        for (Map.Entry<String, String> tableToSimple : this.getMapTableToSimple().entrySet()) {
+            pushDownSQL = pushDownSQL.replace(tableToSimple.getKey(), tableToSimple.getValue());
+        }
+        rrs.setStatement(pushDownSQL);
+        rrs.setComplexSQL(true);
+        return rrs;
     }
 }

@@ -7,14 +7,14 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.StringUtil;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,11 +24,11 @@ import java.util.Objects;
 import java.util.Set;
 
 public class HandlerBuilder {
-    private static Logger logger = LoggerFactory.getLogger(HandlerBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HandlerBuilder.class);
 
-    private PlanNode node;
-    private NonBlockingSession session;
-    private Set<RouteResultsetNode> rrsNodes = new HashSet<>();
+    private final PlanNode node;
+    private final NonBlockingSession session;
+    private final Set<RouteResultsetNode> rrsNodes = new HashSet<>();
 
     public HandlerBuilder(PlanNode node, NonBlockingSession session) {
         this.node = node;
@@ -95,19 +95,16 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
-            if (!builder.isExistView() && !builder.isContainSubQuery(builder.getNode())) {
-                List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
-                List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
-                subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);
-                String routeNode = canRouteToOneNode(merges);
-                if (!StringUtil.isBlank(routeNode)) {
-                    return routeNode;
+            if (endHandler.getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+                RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (endHandler.getMerges().get(0))).getRoute();
+                if (routes.length == 1) {
+                    return routes[0].getName();
                 }
             }
             HandlerBuilder.startHandler(fh);
             session.endComplexExecute();
             long endTime = System.nanoTime();
-            logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
+            LOGGER.debug("HandlerBuilder.build cost:" + (endTime - startTime));
             session.setTraceBuilder(builder);
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
@@ -119,26 +116,68 @@ public class HandlerBuilder {
      * DBLE0REQ-504
      * According to the execution plan, judge whether it can be routed to the same node to simplify the query
      *
-     * @param merges
-     * @return
      */
     public static String canRouteToOneNode(List<DMLResponseHandler> merges) {
+        Set<String> globalBackNodes = canRouteToNodes(merges);
+        if (globalBackNodes == null) return null;
+        else if (globalBackNodes.size() == 1) {
+            return globalBackNodes.iterator().next();
+        } else {
+            return RouterUtil.getRandomShardingNode(globalBackNodes);
+        }
+    }
+
+    public static Set<String> canRouteToNodes(List<DMLResponseHandler> merges) {
         String nodeName = null;
+        Set<String> globalBackNodes = null;
         for (DMLResponseHandler merge : merges) {
             if (merge instanceof MultiNodeMergeHandler) {
                 RouteResultsetNode[] route = ((MultiNodeMergeHandler) merge).getRoute();
                 if (null == route || route.length != 1) {
                     return null;
                 }
-                String name = route[0].getName();
-                if (StringUtil.isBlank(nodeName)) {
-                    nodeName = name;
-                } else if (!nodeName.equals(name)) {
-                    return null;
+                Set<String> tryGlobalBackNodes = null;
+                if (merge instanceof MultiNodeEasyMergeHandler) {
+                    tryGlobalBackNodes = ((MultiNodeEasyMergeHandler) merge).getGlobalBackNodes();
+                }
+
+                String tryNodeName = route[0].getName();
+                if (nodeName == null) {
+                    // current table is non-global table
+                    if (tryGlobalBackNodes == null) {
+                        // current table is first table
+                        if (globalBackNodes == null) {
+                            nodeName = tryNodeName;
+                            globalBackNodes = new HashSet<>();
+                            globalBackNodes.add(nodeName);
+                        } else if (globalBackNodes.contains(tryNodeName)) {
+                            // current table is not first table, and all route has tryNodeName
+                            nodeName = tryNodeName;
+                            globalBackNodes.clear();
+                            globalBackNodes.add(tryNodeName);
+                        } else { // tables before it do not contain tryNodeName
+                            return null;
+                        }
+                    } else { // current table is global table
+                        // current table is first table
+                        if (globalBackNodes == null) {
+                            globalBackNodes = tryGlobalBackNodes;
+                        } else {
+                            globalBackNodes.retainAll(tryGlobalBackNodes); // retain current table nodes
+                            if (globalBackNodes.size() == 0) {
+                                return null;
+                            }
+                        }
+                    }
+                } else if (!nodeName.equals(tryNodeName)) {
+                    // tryNodeName can not be changed ,because tryGlobalBackNodes not contains nodeName
+                    if (tryGlobalBackNodes == null || !tryGlobalBackNodes.contains(nodeName)) {
+                        return null;
+                    }
                 }
             }
         }
-        return nodeName;
+        return globalBackNodes;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

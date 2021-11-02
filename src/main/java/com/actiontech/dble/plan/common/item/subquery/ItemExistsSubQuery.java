@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
-    private boolean isNot;
+    private final boolean isNot;
     public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
         super(currentDb, query, false, metaManager, usrVariables, charsetIndex);
         this.isNot = isNot;
@@ -78,7 +78,9 @@ public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager, this.usrVariables, this.charsetIndex);
+        ItemExistsSubQuery cloneItem = new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager, this.usrVariables, this.charsetIndex);
+        cloneItem.value = this.value;
+        return cloneItem;
     }
     @Override
     public SubSelectType subType() {

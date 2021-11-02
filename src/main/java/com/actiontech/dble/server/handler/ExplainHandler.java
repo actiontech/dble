@@ -9,7 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
-import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -37,7 +37,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,11 +228,11 @@ public final class ExplainHandler {
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
             String routeNode = null;
-            if (!builder.isExistView() && !builder.isContainSubQuery(builder.getNode())) {
-                List<DMLResponseHandler> merges = Lists.newArrayList(builder.getEndHandler().getMerges());
-                List<BaseHandlerBuilder> subQueryBuilderList = builder.getSubQueryBuilderList();
-                subQueryBuilderList.stream().map(baseHandlerBuilder -> baseHandlerBuilder.getEndHandler().getMerges()).forEach(merges::addAll);
-                routeNode = HandlerBuilder.canRouteToOneNode(merges);
+            if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+                RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
+                if (routes.length == 1) {
+                    routeNode = routes[0].getName();
+                }
             }
             if (!StringUtil.isBlank(routeNode)) {
                 RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), builder.getNode().getSql())};

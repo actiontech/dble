@@ -18,12 +18,19 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
 
-import java.util.*;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 class TableNodeHandlerBuilder extends BaseHandlerBuilder {
-    private TableNode node;
-    private BaseTableConfig tableConfig = null;
+    private final TableNode node;
+    private final BaseTableConfig tableConfig;
 
     TableNodeHandlerBuilder(NonBlockingSession session, TableNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -34,11 +41,6 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
-    protected void handleSubQueries() {
-        handleBlockingSubQuery();
-    }
-
-    @Override
     public List<DMLResponseHandler> buildPre() {
         return new ArrayList<>();
     }
@@ -46,26 +48,28 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     @Override
     public void buildOwn() {
         try {
-            PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, pdVisitor);
-            String sql = null;
-            Map<String, String> mapTableToSimple = new HashMap<>();
-            if (node.getAst() != null && node.getParent() == null) { // it's root
-                pdVisitor.visit();
-                sql = pdVisitor.getSql().toString();
-                mapTableToSimple = pdVisitor.getMapTableToSimple();
-            }
-            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
-            // maybe some node is view
-            RouteResultset rrs;
-            if (sql == null) {
-                rrs = mergeBuilder.construct(schemaConfig);
-            } else {
-                rrs = mergeBuilder.constructByStatement(sql, mapTableToSimple, node.getAst(), schemaConfig);
-            }
+            if (handleSubQueries()) return;
+            // routeCurrentNode use node ,it will replace sub-queries to values
+            RouteResultset rrs = tryRouteCurrentNode(node);
             buildMergeHandler(node, rrs.getNodes());
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception! Error:" + e.getMessage(), e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "TableNode buildOwn exception! Error:" + e.getMessage(), e);
+        }
+    }
+
+    private RouteResultset tryRouteCurrentNode(TableNode testNode) throws SQLException {
+        PushDownVisitor pdVisitor = new PushDownVisitor(testNode, true);
+        RouteResultset rrs = pdVisitor.buildRouteResultset();
+
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(testNode.getSchema());
+        // maybe some node is view
+        MergeBuilder mergeBuilder = new MergeBuilder(session, testNode);
+        if (testNode.getAst() != null && testNode.getParent() == null) { // it's root
+            return mergeBuilder.constructByStatement(rrs, testNode.getAst(), schemaConfig);
+        } else {
+            SQLStatementParser parser = new MySqlStatementParser(rrs.getSrcStatement());
+            SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
+            return mergeBuilder.constructByStatement(rrs, select, schemaConfig);
         }
     }
 
@@ -77,24 +81,19 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             if (filters == null || filters.isEmpty())
                 throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "unexpected exception!");
             List<RouteResultsetNode> rrssList = new ArrayList<>();
-            MergeBuilder mergeBuilder = new MergeBuilder(session, node, pdVisitor);
+            MergeBuilder mergeBuilder = new MergeBuilder(session, node);
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
+            for (Item filter : filters) {
+                node.setWhereFilter(filter);
+                RouteResultset rrs = pdVisitor.buildRouteResultset();
+                SQLStatementParser parser = new MySqlStatementParser(rrs.getSrcStatement());
+                SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();
+                RouteResultsetNode[] rrssArray = mergeBuilder.constructByStatement(rrs, select, schemaConfig).getNodes();
+                rrssList.addAll(Arrays.asList(rrssArray));
+            }
             if (tableConfig == null || tableConfig instanceof GlobalTableConfig) {
-                for (Item filter : filters) {
-                    node.setWhereFilter(filter);
-                    RouteResultsetNode[] rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
-                    rrssList.addAll(Arrays.asList(rrssArray));
-                }
                 if (filters.size() == 1) {
                     this.needCommon = false;
-                }
-            } else {
-                boolean tryGlobal = filters.size() == 1;
-                for (Item filter : filters) {
-                    node.setWhereFilter(filter);
-                    pdVisitor.visit();
-                    RouteResultsetNode[] rrssArray = mergeBuilder.construct(schemaConfig).getNodes();
-                    rrssList.addAll(Arrays.asList(rrssArray));
                 }
             }
             RouteResultsetNode[] rrssArray = new RouteResultsetNode[rrssList.size()];
@@ -103,5 +102,19 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
         } catch (Exception e) {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", e.getMessage(), e);
         }
+    }
+
+    @Override
+    protected boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) throws SQLException {
+        // tryRouteCurrentNode use node.copy(),it will replace sub-queries to 'NEED_REPLACE'
+        RouteResultset rrs = tryRouteCurrentNode(node.copy());
+        if (rrs.getNodes().length == 1) {
+            Set<String> queryRouteNodes = tryRouteWithCurrentNode(subQueryRouteNodes, rrs.getNodes()[0].getName(), node.getNoshardNode());
+            if (queryRouteNodes.size() >= 1) {
+                buildMergeHandlerWithSubQueries(subQueryEndHandlers, queryRouteNodes);
+                return true;
+            }
+        }
+        return false;
     }
 }

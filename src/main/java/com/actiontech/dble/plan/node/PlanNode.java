@@ -264,7 +264,7 @@ public abstract class PlanNode {
         to.setAlias(this.alias);
         to.setDistinct(this.isDistinct);
         for (Item selected : this.getColumnsSelected()) {
-            Item copySel = selected.cloneItem();
+            Item copySel = selected.cloneStruct();
             copySel.setItemName(selected.getItemName());
             copySel.setCharsetIndex(selected.getCharsetIndex());
             to.columnsSelected.add(copySel);
@@ -275,8 +275,8 @@ public abstract class PlanNode {
         for (Order orderBy : this.getOrderBys()) {
             to.orderBys.add(orderBy.copy());
         }
-        to.whereFilter = this.whereFilter == null ? null : this.whereFilter.cloneItem();
-        to.havingFilter = this.havingFilter == null ? null : havingFilter.cloneItem();
+        to.whereFilter = this.whereFilter == null ? null : this.whereFilter.cloneStruct();
+        to.havingFilter = this.havingFilter == null ? null : havingFilter.cloneStruct();
         to.setLimitFrom(this.limitFrom);
         to.setLimitTo(this.limitTo);
         to.setSql(this.getSql());

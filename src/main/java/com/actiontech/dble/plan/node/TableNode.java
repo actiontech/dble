@@ -94,6 +94,7 @@ public class TableNode extends PlanNode {
                 this.unGlobalTableCount = 1;
             }
             this.setNoshardNode(new HashSet<>(tableConfig.getShardingNodes()));
+
         }
         this.keepFieldSchema = true;
     }

@@ -1,12 +1,12 @@
 package com.actiontech.dble.services.manager.dump.handler;
 
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.actiontech.dble.services.manager.dump.parse.InsertQueryPos;
+import com.actiontech.dble.singleton.SequenceManager;
+import com.actiontech.dble.util.StringUtil;
 
 import java.sql.SQLNonTransientException;
 import java.util.List;
@@ -14,46 +14,76 @@ import java.util.List;
 public class ShardingValuesHandler extends DefaultValuesHandler {
 
     @Override
-    public void preProcess(DumpFileContext context) {
-    }
-
-    @Override
-    public void postProcess(DumpFileContext context) {
-    }
-
-    @Override
-    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws SQLNonTransientException, InterruptedException {
-        Integer nodeIndex = handleShardingColumn(context, values);
+    public void process(DumpFileContext context, InsertQueryPos insertQueryPos, List<Pair<Integer, Integer>> valuePair) throws SQLNonTransientException {
+        Integer nodeIndex = handleShardingColumn(context, insertQueryPos, valuePair);
         String shardingNode = context.getTableConfig().getShardingNodes().get(nodeIndex);
-        context.getWriter().writeInsertHeader(shardingNode, insertHeader.toString() + toString(values, true));
+        long incrementColumnVal = 0;
+        if (context.getIncrementColumnIndex() != -1) {
+            String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
+            incrementColumnVal = SequenceManager.getHandler().nextId(tableKey, null);
+        }
+        context.getWriter().writeInsertHeader(shardingNode, new InsertQuery(insertQueryPos, valuePair, context.getIncrementColumnIndex(), incrementColumnVal));
     }
 
-    private Integer handleShardingColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
+    private Integer handleShardingColumn(DumpFileContext context, InsertQueryPos insertQueryPos, List<Pair<Integer, Integer>> valuePair) throws SQLNonTransientException {
         AbstractPartitionAlgorithm algorithm = ((ShardingTableConfig) context.getTableConfig()).getFunction();
-        SQLExpr expr = values.get(context.getPartitionColumnIndex());
-        String shardingValue = null;
-        if (expr instanceof SQLIntegerExpr) {
-            SQLIntegerExpr intExpr = (SQLIntegerExpr) expr;
-            shardingValue = intExpr.getNumber() + "";
-        } else if (expr instanceof SQLCharExpr) {
-            SQLCharExpr charExpr = (SQLCharExpr) expr;
-            shardingValue = charExpr.getText();
-        } // no need to consider SQLHexExpr
-
-        if (shardingValue == null && !(expr instanceof SQLNullExpr)) {
-            throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + values.toString());
-        }
+        Pair<Integer, Integer> pair = valuePair.get(context.getPartitionColumnIndex());
+        String shardingValue = getValueString(insertQueryPos.getInsertChars(), pair);
 
         Integer nodeIndex;
         try {
             nodeIndex = algorithm.calculate(shardingValue);
             // null means can't find any valid index
             if (nodeIndex == null || nodeIndex >= context.getTableConfig().getShardingNodes().size()) {
-                throw new SQLNonTransientException("can't find any valid shardingnode shardingValue" + values.toString());
+                throw new SQLNonTransientException("can't find any valid shardingnode shardingValue:" + shardingValue);
             }
         } catch (Exception e) {
-            throw new SQLNonTransientException("can't calculate valid shardingnode shardingValue" + values.toString() + ",due to " + e.getMessage());
+            throw new SQLNonTransientException("can't calculate valid shardingnode shardingValue,due to " + e.getMessage());
         }
         return nodeIndex;
+    }
+
+    private String getValueString(char[] src, Pair<Integer, Integer> range) {
+        StringBuilder target = new StringBuilder();
+        int start = range.getKey();
+        int end = range.getValue();
+        if (src[start] == '\'' && src[end - 1] == '\'') {
+            start++;
+            end--;
+        }
+        for (int i = start; i < end; i++) {
+            target.append(src[i]);
+        }
+        return target.toString();
+    }
+
+    public static class InsertQuery {
+        private final InsertQueryPos insertQueryPos;
+        private final List<Pair<Integer, Integer>> valuePair;
+        private final int incrementColumnIndex;
+        private final long incrementColumnValue;
+
+        public InsertQuery(InsertQueryPos insertQueryPos, List<Pair<Integer, Integer>> valuePair, int incrementColumnIndex, long incrementColumnValue) {
+            this.insertQueryPos = insertQueryPos;
+            this.valuePair = valuePair;
+            this.incrementColumnIndex = incrementColumnIndex;
+            this.incrementColumnValue = incrementColumnValue;
+        }
+
+        public long getIncrementColumnValue() {
+            return incrementColumnValue;
+        }
+
+        public int getIncrementColumnIndex() {
+            return incrementColumnIndex;
+        }
+
+        public InsertQueryPos getInsertQueryPos() {
+            return insertQueryPos;
+        }
+
+        public List<Pair<Integer, Integer>> getValuePair() {
+            return valuePair;
+        }
     }
 }

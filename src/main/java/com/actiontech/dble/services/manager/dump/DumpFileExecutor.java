@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.manager.dump;
 
+import com.actiontech.dble.btrace.provider.SplitFileProvider;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
@@ -11,8 +12,8 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLSyntaxErrorException;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 
@@ -27,8 +28,10 @@ public final class DumpFileExecutor implements Runnable {
     private final DumpFileContext context;
     private final NameableExecutor nameableExecutor;
     private final AtomicInteger threadNum = new AtomicInteger(0);
+    private final AtomicBoolean errorFlag;
 
-    public DumpFileExecutor(BlockingQueue<String> queue, BlockingQueue<String> insertQueue, DumpFileWriter writer, DumpFileConfig config, SchemaConfig schemaConfig, NameableExecutor nameableExecutor) {
+    public DumpFileExecutor(BlockingQueue<String> queue, BlockingQueue<String> insertQueue, DumpFileWriter writer, DumpFileConfig config,
+                            SchemaConfig schemaConfig, NameableExecutor nameableExecutor, AtomicBoolean flag) {
         this.ddlQueue = queue;
         this.insertQueue = insertQueue;
         this.context = new DumpFileContext(writer, config);
@@ -36,6 +39,7 @@ public final class DumpFileExecutor implements Runnable {
             this.context.setDefaultSchema(schemaConfig);
         }
         this.nameableExecutor = nameableExecutor;
+        this.errorFlag = flag;
     }
 
     @Override
@@ -53,10 +57,11 @@ public final class DumpFileExecutor implements Runnable {
                 //thread pool expansion
                 expansionThreadPool();
                 stmt = this.insertQueue.poll();
-                if (StringUtil.isBlank(stmt)) {
+                if (StringUtil.isEmpty(stmt)) {
                     stmt = this.ddlQueue.poll();
                 }
-                if (StringUtil.isBlank(stmt)) {
+                SplitFileProvider.getReadQueueSizeOfPoll(this.insertQueue.size());
+                if (StringUtil.isEmpty(stmt)) {
                     continue;
                 }
                 int type = ServerParseFactory.getShardingParser().parse(stmt);
@@ -80,20 +85,19 @@ public final class DumpFileExecutor implements Runnable {
                 } else {
                     handler.handle(this.context, statement);
                 }
-            } catch (DumpException | SQLSyntaxErrorException e) {
+            } catch (DumpException e) {
                 assert stmt != null;
                 String currentStmt = stmt.length() <= 1024 ? stmt : stmt.substring(0, 1024);
                 this.context.setSkipContext(true);
                 LOGGER.warn("current stmt[" + currentStmt + "] error.", e);
                 this.context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
-            } catch (InterruptedException ie) {
-                LOGGER.warn("dump file executor is interrupted.");
-                return;
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
+                LOGGER.debug("dump file executor is interrupted.");
+                break;
+            } catch (Exception | Error e) {
                 LOGGER.warn("dump file executor exit", e);
                 this.context.addError("dump file executor exit, because:" + e.getMessage());
-                stopWriter(writer);
-                this.nameableExecutor.shutdown();
+                errorFlag.compareAndSet(false, true);
                 break;
             }
         }
@@ -132,18 +136,8 @@ public final class DumpFileExecutor implements Runnable {
         return this.context;
     }
 
-    private void stopWriter(DumpFileWriter writer) {
-        try {
-            writer.setDeleteFile(true);
-            writer.writeAll(DumpFileReader.EOF);
-        } catch (InterruptedException ex) {
-            // ignore
-            LOGGER.warn("dump file executor is interrupted.");
-        }
-    }
-
     private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws
-            InterruptedException, RuntimeException {
+            RuntimeException {
         // push down statement util containing sharding
         if (!(ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) && this.context.getSchema() == null) {
             if (ServerParse.DDL == type || ServerParse.INSERT == type || ServerParse.LOCK == type) {
@@ -153,8 +147,9 @@ public final class DumpFileExecutor implements Runnable {
             return true;
         }
         // skip view
-        if (ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) {
-            return skipView(stmt);
+        if ((ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) && skipView(stmt)) {
+            context.setSkipContext(true);
+            return true;
         }
         // footer
         if (stmt.contains("=@OLD_")) {

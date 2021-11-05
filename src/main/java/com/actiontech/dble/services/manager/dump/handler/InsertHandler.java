@@ -35,11 +35,10 @@ public class InsertHandler extends DefaultHandler {
         DumpFileContext fileContext = new DumpFileContext().copyOf(context);
         // get table name simply
         int type = ServerParseFactory.getShardingParser().parse(stmt);
+
         String table = null;
-        Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
-        if (matcher.find()) {
-            table = matcher.group(2);
-        }
+        MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+        table = StringUtil.removeBackQuote(insert.getTableName().getSimpleName());
         fileContext.setTable(table);
 
         if (fileContext.isSkipContext() || !(fileContext.getTableConfig() instanceof ShardingTableConfig)) {
@@ -53,39 +52,23 @@ public class InsertHandler extends DefaultHandler {
             return null;
         }
 
-        MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
         // check columns from insert columns
         checkColumns(fileContext, insert.getColumns());
-        // add
-        StringBuilder insertHeader = new StringBuilder("INSERT ");
-        if (insert.isIgnore() || fileContext.getConfig().isIgnore()) {
-            insert.setIgnore(true);
-            insertHeader.append("IGNORE ");
-        }
-        insertHeader.append("INTO ");
-        insertHeader.append("`");
-        insertHeader.append(fileContext.getTable());
-        insertHeader.append("`");
-        if (!CollectionUtil.isEmpty(insert.getColumns())) {
-            insertHeader.append(insert.getColumns().toString());
-        }
-        insertHeader.append(" VALUES ");
         DefaultValuesHandler valuesHandler;
         if (fileContext.getTableConfig() instanceof ShardingTableConfig) {
             valuesHandler = shardingValuesHandler;
         } else {
             valuesHandler = defaultValuesHandler;
         }
-        valuesHandler.setInsertHeader(insertHeader);
         try {
-            handleStatement(fileContext, insert, valuesHandler);
+            handleStatement(fileContext, insert, valuesHandler, stmt);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         return insert;
     }
 
-    public void handleStatement(DumpFileContext context, SQLStatement sqlStatement, DefaultValuesHandler valuesHandler) throws InterruptedException {
+    public void handleStatement(DumpFileContext context, SQLStatement sqlStatement, DefaultValuesHandler valuesHandler, String stmt) throws InterruptedException {
         MySqlInsertStatement insert = (MySqlInsertStatement) sqlStatement;
         SQLInsertStatement.ValuesClause valueClause;
 
@@ -94,7 +77,14 @@ public class InsertHandler extends DefaultHandler {
             valueClause = insert.getValuesList().get(i);
             try {
                 processIncrementColumn(context, valueClause.getValues());
-                valuesHandler.process(context, valueClause.getValues(), i == 0);
+                MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
+                mySqlInsertStatement.setIgnore(insert.isIgnore());
+                mySqlInsertStatement.setTableName(insert.getTableName());
+                for (SQLExpr column : insert.getColumns()) {
+                    mySqlInsertStatement.addColumn(column);
+                }
+                mySqlInsertStatement.setValues(valueClause);
+                valuesHandler.process(context, valueClause.getValues(), i == 0, mySqlInsertStatement);
             } catch (SQLNonTransientException e) {
                 context.addError(e.getMessage());
             }

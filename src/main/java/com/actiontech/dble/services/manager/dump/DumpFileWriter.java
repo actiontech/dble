@@ -2,19 +2,21 @@ package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.services.manager.dump.handler.InsertHandler;
+import com.actiontech.dble.log.general.GeneralLogDisruptor;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.lmax.disruptor.*;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.sql.SQLSyntaxErrorException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +25,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
 
 public class DumpFileWriter {
 
@@ -33,6 +34,8 @@ public class DumpFileWriter {
     private final AtomicInteger finished = new AtomicInteger(0);
     private volatile boolean isDeleteFile = false;
     private int maxValues;
+    // translator
+    private EventTranslatorOneArg<Element, Object> TRANSLATOR = (event, sequence, arg0) -> event.set(arg0);
 
     public void open(String writePath, int writeQueueSize, int maxValue) throws IOException {
         Set<String> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes().keySet();
@@ -46,39 +49,49 @@ public class DumpFileWriter {
     }
 
     public void start() {
-        Thread writer;
         for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
-            writer = new Thread(entry.getValue(), entry.getKey() + "-writer-" + finished.incrementAndGet());
-            writer.start();
-            entry.getValue().self = writer;
+            finished.incrementAndGet();
+            entry.getValue().start();
         }
     }
 
     public void stop() {
         for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
-            if (entry.getValue().self != null) {
-                entry.getValue().self.interrupt();
-            }
+            entry.getValue().disruptor.shutdown();
         }
     }
 
-    public void write(String shardingNode, String stmt) throws InterruptedException {
+    public void shutdown() {
+        for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
+            entry.getValue().disruptor.shutdown();
+        }
+        shardingNodeWriters.clear();
+    }
+
+    public void write(String shardingNode, String stmt) {
         ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
             writer.write(stmt);
         }
     }
 
-    public void writeInsertHeader(String shardingNode, String stmt) {
+    public void write(String shardingNode, SQLStatement statement) {
         ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
-            writer.write(stmt);
+            writer.write(statement);
         }
     }
 
-    public void writeAll(String stmt) throws InterruptedException {
+    public void writeInsertHeader(String shardingNode, SQLStatement statement) {
+        ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
+        if (writer != null) {
+            writer.write(statement);
+        }
+    }
+
+    public void writeAll(Object obj) {
         for (ShardingNodeWriter writer : shardingNodeWriters.values()) {
-            writer.write(stmt);
+            writer.write(obj);
         }
     }
 
@@ -90,13 +103,34 @@ public class DumpFileWriter {
         this.isDeleteFile = deleteFile;
     }
 
-    class ShardingNodeWriter implements Runnable {
-        private FileChannel fileChannel;
-        private final BlockingQueue<String> queue;
+    class Element {
+
+        private Object value;
+
+        public Element() {
+        }
+
+        public Element(Object value) {
+            this.value = value;
+        }
+
+        public Object get() {
+            return value;
+        }
+
+        public void set(Object value) {
+            this.value = value;
+        }
+
+    }
+
+    class ShardingNodeWriter {
+        private BufferedWriter bufferedWriter;
+        private final BlockingQueue<Object> queue;
+        private Disruptor<Element> disruptor;
         private final int queueSize;
         private final String shardingNode;
         private String path;
-        private Thread self;
         private String currentTable;
         private int rows = 1;
         private boolean isFirst = true;
@@ -107,109 +141,88 @@ public class DumpFileWriter {
             this.queue = new ArrayBlockingQueue<>(queueSize);
         }
 
-        public BlockingQueue<String> getQueue() {
+        public BlockingQueue<Object> getQueue() {
             return queue;
         }
 
         void open(String fileName) throws IOException {
             this.path = fileName;
-            this.fileChannel = FileUtils.open(fileName, "rw");
+            this.bufferedWriter = new BufferedWriter(new FileWriter(fileName));
         }
 
-        void write(String stmt) {
-            try {
-                this.queue.put(stmt);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        void write(Object obj) {
+            if (null == this.disruptor) {
+                return;
+            }
+            if (!disruptor.getRingBuffer().tryPublishEvent(TRANSLATOR, obj)) {
+                disruptor.getRingBuffer().publishEvent(TRANSLATOR, obj);
             }
         }
 
         void close() throws IOException {
-            this.fileChannel.close();
-            shardingNodeWriters.remove(shardingNode);
+            this.bufferedWriter.close();
             if (isDeleteFile) {
                 FileUtils.delete(path);
             }
         }
 
-        public void setCurrentTable(String currentTable) {
-            this.currentTable = currentTable;
-        }
-
-        @Override
-        public void run() {
+        public void start() {
             String wrapStr = ";\n";
-            try {
-                String stmt;
-                long startTime = TimeUtil.currentTimeMillis();
-                while (!Thread.currentThread().isInterrupted()) {
-                    stmt = this.queue.take();
-                    if (StringUtil.isBlank(stmt)) {
-                        continue;
-                    }
-                    if (LOGGER.isDebugEnabled()) {
-                        long endTime = TimeUtil.currentTimeMillis();
-                        if (endTime - startTime > 1000) {
-                            startTime = endTime;
-                            if (queue.isEmpty()) {
-                                LOGGER.debug("dump file executor parse statement slowly.");
-                            } else if (this.queue.size() == queueSize) {
-                                LOGGER.debug("dump file writer is slow, you can try increasing write queue size.");
-                            }
-                        }
-                    }
-                    if (stmt.equals(DumpFileReader.EOF)) {
-                        this.fileChannel.write(ByteBuffer.wrap(wrapStr.getBytes()));
-                        LOGGER.info("finish to write dump file.");
-                        close();
-                        return;
-                    }
-                    writeContent(stmt, wrapStr);
+            EventFactory<Element> factory = () -> new Element();
+            EventHandler<Element> handler = (element, sequence, endOfBatch) -> {
+                SQLInsertStatement insertStatement = null;
+                Object obj = element.get();
+                String content = null;
+                if (obj instanceof SQLInsertStatement) {
+                    insertStatement = (SQLInsertStatement) obj;
+                } else {
+                    content = (String) obj;
                 }
-            } catch (IOException e) {
-                LOGGER.warn("dump file writer[" + shardingNode + "] occur error:" + e.getMessage());
-            } catch (SQLSyntaxErrorException e) {
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                finished.decrementAndGet();
-                try {
+                if (null != content && content.equals(DumpFileReader.EOF)) {
+                    this.bufferedWriter.write(wrapStr);
+                    LOGGER.info("finish to write dump file.");
                     close();
-                } catch (IOException e) {
-                    // ignore
-                    LOGGER.warn("close dump file error, because:" + e.getMessage());
+                    finished.decrementAndGet();
+                    return;
                 }
-            }
+                writeContent(insertStatement, wrapStr, content);
+            };
+            SleepingWaitStrategy strategy = new SleepingWaitStrategy();
+            this.disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("dis-split-" + shardingNode).build(), ProducerType.MULTI, strategy);
+            this.disruptor.handleEventsWith(handler);
+            this.disruptor.setDefaultExceptionHandler(new GeneralLogDisruptor.GeneralLogExceptionHandler());
+            this.disruptor.start();
         }
 
-        private void writeContent(String stmt, String wrapStr) throws IOException, SQLSyntaxErrorException {
+        private void writeContent(SQLInsertStatement insertStatement, String wrapStr, String content) throws IOException {
             String table = null;
-            Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
-            if (matcher.find()) {
-                table = matcher.group(2);
+            if (insertStatement != null) {
+                table = StringUtil.removeBackQuote(insertStatement.getTableName().getSimpleName());
             }
 
-            if (table != null && table.equalsIgnoreCase(this.currentTable) && this.rows < maxValues) {
+            if (table != null && (table.equals(this.currentTable) || table.equalsIgnoreCase(this.currentTable)) && this.rows < maxValues) {
                 //splicing insert
-                MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-                if (insert.getValuesList().size() == 1) {
-                    stmt = getSqlStr(insert.getValuesList().get(0).getValues());
+                if (insertStatement.getValuesList().size() == 1) {
+                    content = getSqlStr(insertStatement.getValuesList().get(0).getValues());
                 }
                 rows++;
             } else if (!isFirst) {
-                stmt = wrapStr + stmt;
+                if (null != insertStatement) {
+                    content = wrapStr + insertStatement.toString();
+                } else {
+                    content = wrapStr + content;
+                }
                 rows = 1;
             }
             this.currentTable = table;
-            if (this.fileChannel != null) {
+            if (this.bufferedWriter != null) {
                 isFirst = false;
-                this.fileChannel.write(ByteBuffer.wrap(stmt.getBytes()));
+                this.bufferedWriter.write(content);
             }
         }
 
         protected String getSqlStr(List<SQLExpr> values) {
-            StringBuilder sbValues = new StringBuilder();
+            StringBuilder sbValues = new StringBuilder(200);
             sbValues.append(",(");
             for (int i = 0; i < values.size(); i++) {
                 if (i != 0) {

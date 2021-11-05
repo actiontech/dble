@@ -2,10 +2,9 @@ package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.manager.dump.handler.InsertHandler;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.NameableExecutor;
-import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,9 +12,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.locks.LockSupport;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -27,18 +25,15 @@ public final class DumpFileReader {
     public static final String EOF = "dump file eof";
     public static final Pattern CREATE_VIEW = Pattern.compile("CREATE\\s+VIEW\\s+`?([a-zA-Z_0-9\\-_]+)`?\\s+", Pattern.CASE_INSENSITIVE);
     public static final Pattern CREATE_VIEW1 = Pattern.compile("CREATE\\s+ALGORITHM", Pattern.CASE_INSENSITIVE);
-    private StringBuilder tempStr = new StringBuilder(200);
-    private final BlockingQueue<String> ddlQueue;
-    private final BlockingQueue<String> insertQueue;
     private FileChannel fileChannel;
     private long fileLength;
     private long readLength;
     private int readPercent;
     private NameableExecutor nameableExecutor;
+    private BlockingQueue<String> handleQueue;
 
-    public DumpFileReader(BlockingQueue<String> queue, BlockingQueue<String> insertQueue) {
-        this.ddlQueue = queue;
-        this.insertQueue = insertQueue;
+    public DumpFileReader(BlockingQueue<String> handleQueue) {
+        this.handleQueue = handleQueue;
     }
 
     public void open(String fileName) throws IOException {
@@ -65,15 +60,12 @@ public final class DumpFileReader {
                     readPercent = (int) percent;
                     LOGGER.info("dump file has bean read " + readPercent + "%");
                 }
-                readSQLByEOF(buffer.array(), byteRead);
+                String stmt = new String(buffer.array(), 0, byteRead, StandardCharsets.UTF_8);
+                this.handleQueue.put(stmt);
                 buffer.clear();
                 byteRead = fileChannel.read(buffer);
             }
-            if (null != tempStr && !StringUtil.isBlank(tempStr.toString())) {
-                putSql(tempStr.toString());
-                this.tempStr = null;
-            }
-            putSql(EOF);
+            this.handleQueue.put(EOF);
         } finally {
             TraceManager.finishSpan(traceObject);
             try {
@@ -87,61 +79,23 @@ public final class DumpFileReader {
         }
     }
 
-    // read one statement by ;
-    private void readSQLByEOF(byte[] linesByte, int byteRead) throws InterruptedException {
-        String stmts = new String(linesByte, 0, byteRead, StandardCharsets.UTF_8);
-        boolean endWithEOF = stmts.endsWith(";") | stmts.endsWith(";\n");
-        String[] lines = stmts.split(";\\r?\\n");
-        int len = lines.length - 1;
-
-        int i = 0;
-        if (len > 0 && tempStr != null && !StringUtil.isBlank(tempStr.toString())) {
-            tempStr.append(lines[0]);
-            putSql(tempStr.toString());
-            tempStr = null;
-            i = 1;
-        }
-
-        for (; i < len; i++) {
-            if (!StringUtil.isBlank(lines[i])) {
-                putSql(lines[i]);
-            }
-        }
-
-        if (!endWithEOF) {
-            if (tempStr == null) {
-                tempStr = new StringBuilder(lines[len]);
-            } else {
-                tempStr.append(lines[len]);
-            }
-        } else {
-            if (tempStr != null && !StringUtil.isBlank(tempStr.toString())) {
-                tempStr.append(lines[len]);
-                putSql(tempStr.toString());
-                tempStr = null;
-            } else {
-                if (!StringUtil.isBlank(lines[len])) {
-                    putSql(lines[len]);
+    public static List<String> splitContent(String content, String separate) {
+        List<String> list = Lists.newArrayList();
+        while (true) {
+            int j = content.indexOf(separate);
+            if (j < 0) {
+                if (!content.isEmpty() && !content.trim().isEmpty()) {
+                    list.add(content);
                 }
+                break;
             }
+            list.add(content.substring(0, j));
+            content = content.substring(j + separate.length());
         }
+        if (list.isEmpty()) {
+            list.add(content);
+        }
+        return list;
     }
 
-    public void putSql(String sql) throws InterruptedException {
-        if (StringUtil.isBlank(sql)) {
-            return;
-        }
-        Matcher matcher = InsertHandler.INSERT_STMT.matcher(sql);
-        if (matcher.find()) {
-            while (!this.ddlQueue.isEmpty() && !this.nameableExecutor.isShutdown()) {
-                LockSupport.parkNanos(1000);
-            }
-            this.insertQueue.put(sql);
-        } else {
-            while (!this.insertQueue.isEmpty() && !this.nameableExecutor.isShutdown()) {
-                LockSupport.parkNanos(1000);
-            }
-            this.ddlQueue.put(sql);
-        }
-    }
 }

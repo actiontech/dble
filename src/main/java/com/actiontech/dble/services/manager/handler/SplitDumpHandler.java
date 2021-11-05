@@ -53,17 +53,20 @@ public final class SplitDumpHandler {
         DumpFileWriter writer = new DumpFileWriter();
         ArrayBlockingQueue<String> deque = new ArrayBlockingQueue<>(config.getReadQueueSize());
         ArrayBlockingQueue<String> insertDeque = new ArrayBlockingQueue<>(config.getReadQueueSize());
-        DumpFileReader reader = new DumpFileReader(deque, insertDeque);
+        BlockingQueue<String> handleQueue = new ArrayBlockingQueue<>(config.getReadQueueSize());
+        DumpFileReader reader = new DumpFileReader(handleQueue);
         NameableExecutor nameableExecutor = ExecutorUtil.createFixed("dump-file-executor", config.getThreadNum());
         DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(deque, insertDeque, writer, config, defaultSchemaConfig, nameableExecutor);
+        DumpFileHandler fileHandler = new DumpFileHandler(deque, insertDeque, handleQueue, nameableExecutor, service);
         try {
-            // thread for process statement
-            nameableExecutor.execute(dumpFileExecutor);
             writer.open(config.getWritePath() + FileUtils.getName(config.getReadFile()), config.getWriteQueueSize(), config.getMaxValues());
             // start write
             writer.start();
+            // thread for process statement
+            nameableExecutor.execute(dumpFileExecutor);
             // firstly check file
             reader.open(config.getReadFile());
+            new Thread(fileHandler).start();
             // start read
             reader.start(service, nameableExecutor);
         } catch (IOException | InterruptedException e) {
@@ -82,6 +85,7 @@ public final class SplitDumpHandler {
             LockSupport.parkNanos(1000);
         }
         nameableExecutor.shutdown();
+        writer.shutdown();
 
         if (service.getConnection().isClosed()) {
             LOGGER.info("finish to split dump file because the connection is closed.");

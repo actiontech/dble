@@ -7,6 +7,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
 import java.sql.SQLNonTransientException;
 import java.util.List;
@@ -22,10 +23,10 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
     }
 
     @Override
-    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws SQLNonTransientException, InterruptedException {
+    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst, MySqlInsertStatement table) throws SQLNonTransientException, InterruptedException {
         Integer nodeIndex = handleShardingColumn(context, values);
         String shardingNode = context.getTableConfig().getShardingNodes().get(nodeIndex);
-        context.getWriter().writeInsertHeader(shardingNode, insertHeader.toString() + toString(values, true));
+        context.getWriter().writeInsertHeader(shardingNode, table);
     }
 
     private Integer handleShardingColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
@@ -34,7 +35,7 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
         String shardingValue = null;
         if (expr instanceof SQLIntegerExpr) {
             SQLIntegerExpr intExpr = (SQLIntegerExpr) expr;
-            shardingValue = intExpr.getNumber() + "";
+            shardingValue = intExpr.getNumber().toString();
         } else if (expr instanceof SQLCharExpr) {
             SQLCharExpr charExpr = (SQLCharExpr) expr;
             shardingValue = charExpr.getText();

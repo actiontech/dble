@@ -1,5 +1,6 @@
 package com.actiontech.dble.services.manager.dump;
 
+import com.actiontech.dble.btrace.provider.SplitFileProvider;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
@@ -11,7 +12,6 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLSyntaxErrorException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -53,10 +53,11 @@ public final class DumpFileExecutor implements Runnable {
                 //thread pool expansion
                 expansionThreadPool();
                 stmt = this.insertQueue.poll();
-                if (StringUtil.isBlank(stmt)) {
+                if (StringUtil.isEmpty(stmt)) {
                     stmt = this.ddlQueue.poll();
                 }
-                if (StringUtil.isBlank(stmt)) {
+                SplitFileProvider.getReadQueueSizeOfPoll(this.insertQueue.size());
+                if (StringUtil.isEmpty(stmt)) {
                     continue;
                 }
                 int type = ServerParseFactory.getShardingParser().parse(stmt);
@@ -80,7 +81,7 @@ public final class DumpFileExecutor implements Runnable {
                 } else {
                     handler.handle(this.context, statement);
                 }
-            } catch (DumpException | SQLSyntaxErrorException e) {
+            } catch (DumpException e) {
                 assert stmt != null;
                 String currentStmt = stmt.length() <= 1024 ? stmt : stmt.substring(0, 1024);
                 this.context.setSkipContext(true);
@@ -133,17 +134,12 @@ public final class DumpFileExecutor implements Runnable {
     }
 
     private void stopWriter(DumpFileWriter writer) {
-        try {
-            writer.setDeleteFile(true);
-            writer.writeAll(DumpFileReader.EOF);
-        } catch (InterruptedException ex) {
-            // ignore
-            LOGGER.warn("dump file executor is interrupted.");
-        }
+        writer.setDeleteFile(true);
+        writer.writeAll(DumpFileReader.EOF);
     }
 
     private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws
-            InterruptedException, RuntimeException {
+            RuntimeException {
         // push down statement util containing sharding
         if (!(ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) && this.context.getSchema() == null) {
             if (ServerParse.DDL == type || ServerParse.INSERT == type || ServerParse.LOCK == type) {

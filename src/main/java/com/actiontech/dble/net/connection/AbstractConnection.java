@@ -115,26 +115,22 @@ public abstract class AbstractConnection implements Connection {
     @Override
     public synchronized void closeGracefully(@Nonnull String reason) {
         if (doingGracefulClose.compareAndSet(false, true)) {
-            synchronized (this) {
+            if (isClosed()) {
+                LOGGER.info("connection  gracefully ignored. for reason {}", reason);
+                return;
+            }
+            graceClosedReasons.add(reason);
+            //shutdownInput will trigger  a read event of IO reactor and return -1.
+            try {
+                socketWR.shutdownInput();
+            } catch (IOException e) {
+
                 if (isClosed()) {
-                    LOGGER.info("connection  gracefully ignored. for reason {}", reason);
-                    return;
+                    LOGGER.error("close gracefully cause error.ignored reason is {}", reason, e);
+                } else {
+                    LOGGER.error("close gracefully cause error.reason is {}", reason, e);
+                    pushServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason, CloseType.READ));
                 }
-                graceClosedReasons.add(reason);
-                //shutdownInput will trigger  a read event of IO reactor and return -1.
-                try {
-                    socketWR.shutdownInput();
-                } catch (IOException e) {
-
-                    if (isClosed()) {
-                        LOGGER.error("close gracefully cause error.ignored reason is {}", reason, e);
-                    } else {
-                        LOGGER.error("close gracefully cause error.reason is {}", reason, e);
-                        pushServiceTask(ServiceTaskFactory.getInstance(service).createForForceClose(reason, CloseType.READ));
-                    }
-                }
-
-
             }
         }
     }
@@ -375,7 +371,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     @Nonnull
-    public synchronized AbstractService getService() {
+    public AbstractService getService() {
         return service;
     }
 
@@ -607,7 +603,7 @@ public abstract class AbstractConnection implements Connection {
         this.port = port;
     }
 
-    public synchronized void setService(@Nonnull AbstractService service) {
+    public void setService(@Nonnull AbstractService service) {
         this.service = service;
     }
 

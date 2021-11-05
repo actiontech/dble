@@ -17,7 +17,7 @@ public class SchemaHandler extends DefaultHandler {
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLSyntaxErrorException {
         String schema;
-        stmt = stmt.replace("/*!", "/*#");
+        stmt = stmt.replace("/*!", "/*#").replace("\r", "");
         SQLStatement sqlStatement = DruidUtil.parseMultiSQL(stmt);
         if (sqlStatement instanceof SQLUseStatement) {
             SQLUseStatement use = (SQLUseStatement) sqlStatement;

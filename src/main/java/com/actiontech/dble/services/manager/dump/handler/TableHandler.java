@@ -21,6 +21,7 @@ public class TableHandler extends DefaultHandler {
 
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLSyntaxErrorException {
+        stmt = stmt.replace("\r", "");
         SQLStatement sqlStatement = DruidUtil.parseMultiSQL(stmt);
         String tableName;
         if (sqlStatement instanceof MySqlCreateTableStatement) {

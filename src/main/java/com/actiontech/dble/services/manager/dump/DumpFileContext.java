@@ -29,7 +29,6 @@ public final class DumpFileContext {
     private boolean isSkip = false;
     private DumpFileWriter writer;
     private List<ErrorMsg> errors;
-    private boolean needSkipError;
     private DumpFileConfig config;
 
     public DumpFileContext() {
@@ -42,7 +41,7 @@ public final class DumpFileContext {
     }
 
     public DumpFileContext(String schema, List<String> defaultShardingNodes, Set<String> allShardingNodes, DumpFileWriter writer, DumpFileConfig config,
-                           String table, BaseTableConfig tableConfig, int partitionColumnIndex, int incrementColumnIndex, boolean isSkip, boolean needSkipError) {
+                           String table, BaseTableConfig tableConfig, int partitionColumnIndex, int incrementColumnIndex, boolean isSkip) {
         this.schema = schema;
         this.defaultShardingNodes = defaultShardingNodes;
         this.allShardingNodes = allShardingNodes;
@@ -54,7 +53,6 @@ public final class DumpFileContext {
         this.partitionColumnIndex = partitionColumnIndex;
         this.incrementColumnIndex = incrementColumnIndex;
         this.isSkip = isSkip;
-        this.needSkipError = needSkipError;
     }
 
     public String getSchema() {
@@ -100,14 +98,13 @@ public final class DumpFileContext {
             this.tableConfig = null;
             return;
         }
-        if (table.equalsIgnoreCase(this.table)) {
+        if (table.equals(this.table) || table.equalsIgnoreCase(this.table)) {
             return;
         }
         this.table = table;
         this.isSkip = false;
         this.partitionColumnIndex = -1;
         this.incrementColumnIndex = -1;
-        this.needSkipError = false;
         if (this.schema == null) {
             throw new DumpException("Can't tell which schema the table[" + table + "] belongs to.");
         }
@@ -150,19 +147,25 @@ public final class DumpFileContext {
     }
 
     public void addError(String error) {
-        this.errors.add(new ErrorMsg(schema + "-" + table, error));
+        StringBuilder target = new StringBuilder(100);
+        if (schema != null) {
+            target.append(schema);
+        }
+        if (schema != null && table != null) {
+            target.append('-');
+        }
+        if (table != null) {
+            target.append(table);
+        }
+        if (schema == null && table == null) {
+            target = new StringBuilder("ERROR");
+        }
+        this.errors.add(new ErrorMsg(target.toString(), error));
     }
+
 
     public List<ErrorMsg> getErrors() {
         return errors;
-    }
-
-    public boolean isNeedSkipError() {
-        return needSkipError;
-    }
-
-    public void setNeedSkipError(boolean needSkipError) {
-        this.needSkipError = needSkipError;
     }
 
     public DumpFileConfig getConfig() {
@@ -175,7 +178,7 @@ public final class DumpFileContext {
 
     public DumpFileContext copyOf(DumpFileContext context) {
         return new DumpFileContext(context.getSchema(), context.getDefaultShardingNodes(), context.getAllShardingNodes(), context.getWriter(), context.getConfig(),
-                context.getTable(), context.getTableConfig(), context.getPartitionColumnIndex(), context.getIncrementColumnIndex(), context.isSkip, context.isNeedSkipError());
+                context.getTable(), context.getTableConfig(), context.getPartitionColumnIndex(), context.getIncrementColumnIndex(), context.isSkip);
     }
 
 }

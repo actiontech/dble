@@ -54,7 +54,9 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager, this.usrVariables, this.charsetIndex);
+        ItemAllAnySubQuery cloneItem = new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager, this.usrVariables, this.charsetIndex);
+        cloneItem.value = this.value;
+        return cloneItem;
     }
 
     public boolean isAll() {

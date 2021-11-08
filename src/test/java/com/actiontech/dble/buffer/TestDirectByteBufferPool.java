@@ -34,6 +34,7 @@ public class TestDirectByteBufferPool {
             //System.out.println("alloc "+size+" usage "+(System.nanoTime()-start));
             //start=System.nanoTime();
             pool.recycle(byteBufer);
+            pool.recycle(byteBufer2);
             pool.recycle(byteBufer3);
             //System.out.println("recycle usage "+(System.nanoTime()-start));
         }
@@ -140,43 +141,6 @@ public class TestDirectByteBufferPool {
         }
 
         Assert.assertEquals("Should out of memory when i = " + 8, i, 8);
-    }
-
-    @Test
-    public void testExpandBuffer() {
-        int size = 512;
-        int pageSize = 1024 * 1024;
-        int allocTimes = 9;
-        DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 512, (short) 64);
-        ByteBuffer byteBuffer = pool.allocate(1024);
-        String str = "DirectByteBufferPool pool = new DirectByteBufferPool(pageSize, (short) 256, (short) 8)";
-        ByteBuffer newByteBuffer = null;
-        int i = 0;
-        while (i < 10) {
-            if (byteBuffer.remaining() < str.length()) {
-                newByteBuffer = pool.expandBuffer(byteBuffer);
-                byteBuffer = newByteBuffer;
-                i++;
-            } else {
-                byteBuffer.put(str.getBytes());
-            }
-            System.out.println("remaining: " + byteBuffer.remaining() + "capacity: " + byteBuffer.capacity());
-        }
-
-        System.out.println("capacity : " + byteBuffer.capacity());
-        System.out.println("capacity : " + byteBuffer.position());
-
-        byte[] bytes = new byte[byteBuffer.position()];
-        byteBuffer.flip();
-        byteBuffer.get(bytes);
-        String body = new String(bytes);
-
-        System.out.println(byteBuffer.position());
-
-        System.out.println(body);
-
-        System.out.println("size :" + body.length());
-        pool.recycle(byteBuffer);
     }
 
 

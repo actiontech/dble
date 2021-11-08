@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * mergeHandler will merge data,if contains aggregate function,use group by handler
@@ -26,10 +27,12 @@ import java.util.List;
 public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeEasyMergeHandler.class);
     private int rowEndConCount = 0;
+    private Set<String> globalBackNodes;
 
-    public MultiNodeEasyMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session) {
+    public MultiNodeEasyMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session, Set<String> globalBackNodes) {
         super(id, route, autocommit, session);
         this.merges.add(this);
+        this.globalBackNodes = globalBackNodes;
     }
 
     @Override
@@ -134,4 +137,9 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     public HandlerType type() {
         return HandlerType.EASY_MERGE;
     }
+
+    public Set<String> getGlobalBackNodes() {
+        return globalBackNodes;
+    }
+
 }

@@ -12,11 +12,14 @@ import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
-    private MergeNode node;
+    private final MergeNode node;
+    private boolean optimizerMerge = false;
 
     protected MergeNodeHandlerBuilder(NonBlockingSession session, MergeNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -24,7 +27,8 @@ class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     @Override
-    protected void handleSubQueries() {
+    protected boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) throws SQLException {
+        return false;
     }
 
     @Override
@@ -38,11 +42,18 @@ class MergeNodeHandlerBuilder extends BaseHandlerBuilder {
             DMLResponseHandler ch = builder.getEndHandler();
             pres.add(ch);
         }
+        if (this.getSubQueryBuilderList().size() == 0 && tryRouteToOneNode(pres)) {
+            pres = null;
+            optimizerMerge = true;
+        }
         return pres;
     }
 
     @Override
     public void buildOwn() {
+        if (optimizerMerge) {
+            return;
+        }
         UnionHandler uh = new UnionHandler(getSequenceId(), session, node.getComeInFields(), node.getChildren().size());
         addHandler(uh);
         if (node.isUnion()) {

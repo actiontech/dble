@@ -31,11 +31,14 @@ public class InSubQueryHandler extends SubQueryHandler {
     private int rowCount = 0;
     private Field sourceField;
     private ItemInSubQuery itemSubQuery;
-    public InSubQueryHandler(long id, Session session, ItemInSubQuery itemSubQuery) {
+    public InSubQueryHandler(long id, Session session, ItemInSubQuery itemSubQuery, boolean isExplain) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
         this.maxPartSize = SystemConfig.getInstance().getNestLoopRowsSize();
         this.maxConnSize = SystemConfig.getInstance().getNestLoopConnSize();
+        if (isExplain) {
+            setForExplain();
+        }
     }
 
     @Override
@@ -110,5 +113,16 @@ public class InSubQueryHandler extends SubQueryHandler {
     @Override
     public void setForExplain() {
         itemSubQuery.getValue().add(new ItemString(NEED_REPLACE, itemSubQuery.getCharsetIndex()));
+    }
+
+
+    @Override
+    public void clearForExplain() {
+        itemSubQuery.getValue().clear();
+    }
+
+    @Override
+    public void markAsNoSubQuery() {
+        itemSubQuery.setWithSubQuery(false);
     }
 }

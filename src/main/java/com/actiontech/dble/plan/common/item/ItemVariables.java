@@ -80,7 +80,7 @@ public class ItemVariables extends Item {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemVariables(name, ref.cloneItem());
+        return new ItemVariables(name, ref.cloneStruct());
     }
     public Item getRef() {
         return ref;

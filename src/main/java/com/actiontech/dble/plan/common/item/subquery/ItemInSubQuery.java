@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ItemInSubQuery extends ItemMultiRowSubQuery {
-    private boolean isNeg;
+    private final boolean isNeg;
     protected Item leftOperand;
     public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
         super(currentDb, query, metaManager, usrVariables, charsetIndex);
@@ -68,7 +68,9 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg, this.metaManager, this.usrVariables, this.charsetIndex);
+        ItemInSubQuery cloneItem = new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneStruct(), this.isNeg, this.metaManager, this.usrVariables, this.charsetIndex);
+        cloneItem.value = this.value;
+        return cloneItem;
     }
 
     public Item getLeftOperand() {

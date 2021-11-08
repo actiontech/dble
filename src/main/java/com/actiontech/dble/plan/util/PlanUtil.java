@@ -480,10 +480,13 @@ public final class PlanUtil {
     private static Item rebuildSubQueryFuncItem(Item item) {
         ItemFunc func = (ItemFunc) item;
         item.setWithSubQuery(false);
-        Item itemTmp = item.cloneItem();
+        Item itemTmp = item.cloneStruct();
         for (int index = 0; index < func.getArgCount(); index++) {
             Item arg = item.arguments().get(index);
             if (arg instanceof ItemScalarSubQuery) {
+                if (!arg.isWithSubQuery()) {
+                    continue;
+                }
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {
                     itemTmp.arguments().set(index, new ItemNull());
@@ -491,6 +494,9 @@ public final class PlanUtil {
                     itemTmp.arguments().set(index, result.getResultItem());
                 }
             } else if (arg instanceof ItemInSubQuery) {
+                if (!arg.isWithSubQuery()) {
+                    continue;
+                }
                 ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
                 if (inSubItem.getValue().size() == 0 && !inSubItem.isContainNull()) {
                     itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
@@ -529,6 +535,11 @@ public final class PlanUtil {
     private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild, BoolPtr needExecuteNull, BoolPtr isAll) {
         Item arg = item.arguments().get(index);
         if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
+            //mark to not expend
+            if (!arg.isWithSubQuery()) {
+                item.setItemName(null);
+                return null;
+            }
             if (arg instanceof ItemScalarSubQuery) {
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {

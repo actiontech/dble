@@ -305,13 +305,13 @@ public abstract class ManagerBaseHandlerBuilder {
         final CopyOnWriteArrayList<ErrorPacket> errorPackets = new CopyOnWriteArrayList<>();
         for (ItemSubQuery itemSubQuery : node.getSubQueries()) {
             if (itemSubQuery instanceof ItemSingleRowSubQuery) {
-                final SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery);
+                final SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery, false);
                 handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
             } else if (itemSubQuery instanceof ItemInSubQuery) {
-                final SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery);
+                final SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery, false);
                 handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
             } else if (itemSubQuery instanceof ItemAllAnySubQuery) {
-                final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery);
+                final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery, false);
                 handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
             }
         }

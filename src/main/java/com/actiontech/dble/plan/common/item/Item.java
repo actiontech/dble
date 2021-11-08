@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
+
 public abstract class Item {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(Item.class);
@@ -944,7 +946,7 @@ public abstract class Item {
     //TODO:YHQ  NEED CHECK
 
     public final String getItemName() {
-        if (itemName == null || itemName.length() == 0) {
+        if (itemName == null || itemName.length() == 0 || itemName.indexOf(NEED_REPLACE) > 0) {
             SQLExpr expr = toExpression();
             StringBuilder sb = new StringBuilder();
             MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
@@ -959,17 +961,6 @@ public abstract class Item {
         this.itemName = itemName;
     }
 
-    /**
-     * clone item include alias
-     *
-     * @return
-     */
-    public final Item cloneItem() {
-        Item cloneItem = cloneStruct(false, null, false, null);
-        cloneItem.itemName = itemName;
-        cloneItem.aliasName = aliasName;
-        return cloneItem;
-    }
 
     public final HashSet<PlanNode> getReferTables() {
         // so if we don't use this method all the time, refertables is null
@@ -1012,6 +1003,9 @@ public abstract class Item {
         clone.correlatedSubQuery = correlatedSubQuery;
         clone.withUnValAble = withUnValAble;
         clone.pushDownName = pushDownName;
+
+        clone.itemName = itemName;
+        clone.aliasName = aliasName;
         clone.getReferTables().addAll(getReferTables());
         return clone;
     }

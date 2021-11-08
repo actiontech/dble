@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
+import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
@@ -36,13 +37,17 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
+import com.google.common.collect.Lists;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +59,7 @@ import java.util.stream.Collectors;
 
 public abstract class BaseHandlerBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseHandlerBuilder.class);
-    private static AtomicLong sequenceId = new AtomicLong(0);
+    private static final AtomicLong SEQUENCE_ID = new AtomicLong(0);
     protected NonBlockingSession session;
     HandlerBuilder hBuilder;
     protected DMLResponseHandler start;
@@ -107,7 +112,6 @@ public abstract class BaseHandlerBuilder {
             RouteResultset routeResultset = tryMergeBuild();
             mergeBuild(routeResultset);
         } else {
-            handleSubQueries();
             //need to split to simple query
             preHandlers = buildPre();
             buildOwn();
@@ -138,9 +142,66 @@ public abstract class BaseHandlerBuilder {
         }
     }
 
+    void executeSubQueries(List<DMLResponseHandler> subQueryEndHandlers) {
+        final ReentrantLock lock = new ReentrantLock();
+        final Condition finishSubQuery = lock.newCondition();
+        final AtomicBoolean finished = new AtomicBoolean(false);
+        final AtomicInteger subNodes = new AtomicInteger(node.getSubQueries().size());
+        final CopyOnWriteArrayList<ErrorPacket> errorPackets = new CopyOnWriteArrayList<>();
+
+        for (DMLResponseHandler subQueryEndHandler : subQueryEndHandlers) {
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                boolean startHandler = false;
+                try {
+                    final SubQueryHandler tempHandler = (SubQueryHandler) (subQueryEndHandler.getNextHandler());
+                    // clearExplain status
+                    tempHandler.clearForExplain();
+                    CallBackHandler tempDone = () -> {
+                        if (tempHandler.getErrorPacket() != null) {
+                            errorPackets.add(tempHandler.getErrorPacket());
+                        }
+                        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+                    };
+                    tempHandler.setTempDoneCallBack(tempDone);
+                    startHandler = true;
+                    HandlerBuilder.startHandler(subQueryEndHandler);
+                } catch (Exception e) {
+                    LOGGER.info("execute SubQuery error", e);
+                    ErrorPacket errorPackage = new ErrorPacket();
+                    errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
+                    String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+                    errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
+                    errorPackets.add(errorPackage);
+                    if (!startHandler) {
+                        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+                    }
+                }
+            });
+        }
+        lock.lock();
+        try {
+            while (!finished.get()) {
+                finishSubQuery.await();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.info("execute SubQuery error", e);
+            ErrorPacket errorPackage = new ErrorPacket();
+            errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
+            String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+            errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
+            errorPackets.add(errorPackage);
+        } finally {
+            lock.unlock();
+        }
+        if (errorPackets.size() > 0) {
+            throw new MySQLOutPutException(errorPackets.get(0).getErrNo(), "", new String(errorPackets.get(0).getMessage(), StandardCharsets.UTF_8));
+        }
+    }
     protected void nestLoopBuild() {
         throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "not implement yet, node type[" + node.type() + "]");
     }
+
+    protected abstract boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) throws SQLException;
 
     /* er join and  global *normal and table node are need not split to simple query*/
     protected boolean canDoAsMerge() {
@@ -155,8 +216,6 @@ public abstract class BaseHandlerBuilder {
         //
         return null;
     }
-
-    protected abstract void handleSubQueries();
 
     protected abstract List<DMLResponseHandler> buildPre();
 
@@ -177,8 +236,8 @@ public abstract class BaseHandlerBuilder {
         for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
             sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
         }
-        String randomShardingNode = getRandomNode(node.getNoshardNode());
-        Set<String> tableSet = mapTableToSimple.entrySet().stream().map(table -> table.getKey().replace("`", "")).collect(Collectors.toSet());
+        String randomShardingNode = RouterUtil.getRandomShardingNode(node.getNoshardNode());
+        Set<String> tableSet = mapTableToSimple.keySet().stream().map(s -> s.replace("`", "")).collect(Collectors.toSet());
         RouteResultsetNode rrsNode = new RouteResultsetNode(randomShardingNode, ServerParse.SELECT, sql, tableSet);
         RouteResultsetNode[] rrss = new RouteResultsetNode[]{rrsNode};
         hBuilder.checkRRSs(rrss);
@@ -199,8 +258,9 @@ public abstract class BaseHandlerBuilder {
             }
         }
 
-        MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(),
-                session);
+        MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss,
+                session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(),
+                session, node.getNoshardNode());
         addHandler(mh);
     }
 
@@ -293,11 +353,10 @@ public abstract class BaseHandlerBuilder {
     void addHandler(DMLResponseHandler bh) {
         if (currentLast == null) {
             start = bh;
-            currentLast = bh;
         } else {
             currentLast.setNextHandler(bh);
-            currentLast = bh;
         }
+        currentLast = bh;
         bh.setAllPushDown(canPushDown);
     }
 
@@ -381,7 +440,7 @@ public abstract class BaseHandlerBuilder {
     }
 
     public static long getSequenceId() {
-        return sequenceId.incrementAndGet();
+        return SEQUENCE_ID.incrementAndGet();
     }
 
     void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
@@ -391,25 +450,15 @@ public abstract class BaseHandlerBuilder {
 
         MultiNodeMergeHandler mh;
         if (isEasyMerge) {
-            mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session);
+            Set<String> globalBackNodes = null;
+            if (planNode.getUnGlobalTableCount() == 0) {
+                globalBackNodes = planNode.getNoshardNode();
+            }
+            mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, globalBackNodes);
         } else {
             mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, orderBys);
         }
         addHandler(mh);
-    }
-
-    String getRandomNode(Set<String> shardingNodes) {
-        String randomDatenode = null;
-        int index = (int) (System.currentTimeMillis() % shardingNodes.size());
-        int i = 0;
-        for (String shardingNode : shardingNodes) {
-            if (index == i) {
-                randomDatenode = shardingNode;
-                break;
-            }
-            i++;
-        }
-        return randomDatenode;
     }
 
     BaseTableConfig getTableConfig(String schema, String table) {
@@ -419,95 +468,126 @@ public abstract class BaseHandlerBuilder {
         return schemaConfig.getTables().get(table);
     }
 
-    void handleBlockingSubQuery() {
-        if (node.getSubQueries().size() == 0) {
-            return;
-        }
-        final ReentrantLock lock = new ReentrantLock();
-        final Condition finishSubQuery = lock.newCondition();
-        final AtomicBoolean finished = new AtomicBoolean(false);
-        final AtomicInteger subNodes = new AtomicInteger(node.getSubQueries().size());
-        final CopyOnWriteArrayList<ErrorPacket> errorPackets = new CopyOnWriteArrayList<>();
-        for (ItemSubQuery itemSubQuery : node.getSubQueries()) {
+    List<DMLResponseHandler> getSubQueriesEndHandlers(List<ItemSubQuery> subQueries) {
+        List<DMLResponseHandler> endHandlers = new ArrayList<>(subQueries.size());
+        for (ItemSubQuery itemSubQuery : subQueries) {
             if (itemSubQuery instanceof ItemSingleRowSubQuery) {
-                final SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery);
-                selectSubQueryProcess(lock, finishSubQuery, finished, subNodes, itemSubQuery, errorPackets, tempHandler);
+                SubQueryHandler tempHandler = new SingleRowSubQueryHandler(getSequenceId(), session, (ItemSingleRowSubQuery) itemSubQuery, isExplain);
+                DMLResponseHandler endHandler = getSubQueryHandler(itemSubQuery.getPlanNode(), tempHandler);
+                endHandlers.add(endHandler);
             } else if (itemSubQuery instanceof ItemInSubQuery) {
-                final SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery);
-                selectSubQueryProcess(lock, finishSubQuery, finished, subNodes, itemSubQuery, errorPackets, tempHandler);
+                SubQueryHandler tempHandler = new InSubQueryHandler(getSequenceId(), session, (ItemInSubQuery) itemSubQuery, isExplain);
+                DMLResponseHandler endHandler = getSubQueryHandler(itemSubQuery.getPlanNode(), tempHandler);
+                endHandlers.add(endHandler);
             } else if (itemSubQuery instanceof ItemAllAnySubQuery) {
-                final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery);
-                selectSubQueryProcess(lock, finishSubQuery, finished, subNodes, itemSubQuery, errorPackets, tempHandler);
+                final SubQueryHandler tempHandler = new AllAnySubQueryHandler(getSequenceId(), session, (ItemAllAnySubQuery) itemSubQuery, isExplain);
+                DMLResponseHandler endHandler = getSubQueryHandler(itemSubQuery.getPlanNode(), tempHandler);
+                endHandlers.add(endHandler);
             }
         }
-        lock.lock();
-        try {
-            while (!finished.get()) {
-                finishSubQuery.await();
-            }
-        } catch (InterruptedException e) {
-            LOGGER.info("execute ScalarSubQuery " + e);
-            ErrorPacket errorPackage = new ErrorPacket();
-            errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
-            String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
-            errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
-            errorPackets.add(errorPackage);
-        } finally {
-            lock.unlock();
-        }
-        if (errorPackets.size() > 0) {
-            throw new MySQLOutPutException(errorPackets.get(0).getErrNo(), "", new String(errorPackets.get(0).getMessage(), StandardCharsets.UTF_8));
-        }
+        return endHandlers;
     }
 
-    private void selectSubQueryProcess(ReentrantLock lock, Condition finishSubQuery, AtomicBoolean finished, AtomicInteger subNodes, ItemSubQuery itemSubQuery, CopyOnWriteArrayList<ErrorPacket> errorPackets, SubQueryHandler tempHandler) {
-        if (isExplain) {
-            handleSubQueryForExplain(lock, finishSubQuery, finished, subNodes, itemSubQuery.getPlanNode(), tempHandler);
+    Set<String> tryRouteWithCurrentNode(Set<String> subQueryRouteNodes, String tmpRouteNode, Set<String> globalNodes) {
+        if (subQueryRouteNodes.contains(tmpRouteNode)) {
+            subQueryRouteNodes.clear();
+            subQueryRouteNodes.add(tmpRouteNode);
+        } else if (globalNodes != null) {
+            subQueryRouteNodes.retainAll(globalNodes);
         } else {
-            handleSubQuery(lock, finishSubQuery, finished, subNodes, errorPackets, itemSubQuery.getPlanNode(), tempHandler);
+            subQueryRouteNodes.clear();
         }
+        return subQueryRouteNodes;
     }
 
-    private void handleSubQueryForExplain(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
-                                          final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
-        tempHandler.setForExplain();
-        BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, true);
+    Set<String> tryRouteSubQueries(List<DMLResponseHandler> subQueryEndHandlers) {
+        List<DMLResponseHandler> merges = new ArrayList<>();
+        for (DMLResponseHandler endHandler : subQueryEndHandlers) {
+            merges.addAll(endHandler.getMerges());
+            if (!isExplain) {
+                // outer table use other cond(not sub-query cond) to route
+                ((SubQueryHandler) (endHandler.getNextHandler())).setForExplain();
+            }
+        }
+        return HandlerBuilder.canRouteToNodes(merges);
+    }
+
+
+    void buildMergeHandlerWithSubQueries(List<DMLResponseHandler> subQueryEndHandlers, Set<String> queryRouteNodes) {
+
+        for (DMLResponseHandler endHandler : subQueryEndHandlers) {
+            // clearExplain status
+            SubQueryHandler subQueryHandler = (SubQueryHandler) (endHandler.getNextHandler());
+            if (!isExplain) {
+                subQueryHandler.clearForExplain();
+            }
+            subQueryHandler.markAsNoSubQuery();
+        }
+        PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
+        RouteResultset realRrs = pdVisitor.buildRouteResultset();
+        buildOneMergeHandler(queryRouteNodes, realRrs);
+    }
+
+    void buildOneMergeHandler(Set<String> queryRouteNodes, RouteResultset realRrs) {
+        String routeNode;
+        if (queryRouteNodes.size() == 1) {
+            routeNode = queryRouteNodes.iterator().next();
+        } else {
+            routeNode = RouterUtil.getRandomShardingNode(queryRouteNodes);
+        }
+        RouterUtil.routeToSingleNode(realRrs, routeNode, null);
+        // route to routeNode and backup:subQueryRouteNodes
+        if (queryRouteNodes.size() > 1) {
+            node.setUnGlobalTableCount(0);
+            node.setNoshardNode(queryRouteNodes);
+        } else {
+            node.setNoshardNode(null);
+        }
+        buildMergeHandler(node, realRrs.getNodes());
+    }
+
+
+    boolean tryRouteToOneNode(List<DMLResponseHandler> pres) {
+        List<DMLResponseHandler> merges = Lists.newArrayList();
+        for (DMLResponseHandler preHandler : pres) {
+            merges.addAll(preHandler.getMerges());
+        }
+        Set<String> routeNodes = HandlerBuilder.canRouteToNodes(merges);
+        if (routeNodes != null && routeNodes.size() > 0) {
+            this.needCommon = false;
+            PushDownVisitor visitor = new PushDownVisitor(node, true);
+            RouteResultset rrs = visitor.buildRouteResultset();
+            rrs.setComplexSQL(true);
+            buildOneMergeHandler(routeNodes, rrs);
+            return true;
+        }
+        return false;
+    }
+
+
+    boolean handleSubQueries() throws SQLException {
+        if (node.getSubQueries().size() != 0) {
+            List<DMLResponseHandler> subQueryEndHandlers;
+            subQueryEndHandlers = getSubQueriesEndHandlers(node.getSubQueries());
+            Set<String> subQueryRouteNodes = tryRouteSubQueries(subQueryEndHandlers);
+            if (subQueryRouteNodes != null && tryBuildWithCurrentNode(subQueryEndHandlers, subQueryRouteNodes)) {
+                subQueryBuilderList.clear();
+                return true;
+            }
+            if (!isExplain) {
+                // execute subquery sync
+                executeSubQueries(subQueryEndHandlers);
+            }
+        }
+        return false;
+    }
+    @NotNull
+    private DMLResponseHandler getSubQueryHandler(PlanNode planNode, SubQueryHandler tempHandler) {
+        BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, isExplain);
         DMLResponseHandler endHandler = builder.getEndHandler();
         endHandler.setNextHandler(tempHandler);
-        this.getSubQueryBuilderList().add(builder);
-        subQueryFinished(subNodes, lock, finished, finishSubQuery);
-    }
-
-    private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
-                                final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
-        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
-            boolean startHandler = false;
-            try {
-                BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
-                DMLResponseHandler endHandler = builder.getEndHandler();
-                endHandler.setNextHandler(tempHandler);
-                getSubQueryBuilderList().add(builder);
-                CallBackHandler tempDone = () -> {
-                    if (tempHandler.getErrorPacket() != null) {
-                        errorPackets.add(tempHandler.getErrorPacket());
-                    }
-                    subQueryFinished(subNodes, lock, finished, finishSubQuery);
-                };
-                tempHandler.setTempDoneCallBack(tempDone);
-                startHandler = true;
-                HandlerBuilder.startHandler(endHandler);
-            } catch (Exception e) {
-                LOGGER.info("execute ItemScalarSubQuery error", e);
-                ErrorPacket errorPackage = new ErrorPacket();
-                errorPackage.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
-                String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
-                errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
-                errorPackets.add(errorPackage);
-                if (!startHandler) {
-                    subQueryFinished(subNodes, lock, finished, finishSubQuery);
-                }
-            }
-        });
+        subQueryBuilderList.add(builder);
+        return endHandler;
     }
 
     private void subQueryFinished(AtomicInteger subNodes, ReentrantLock lock, AtomicBoolean finished, Condition finishSubQuery) {
@@ -520,15 +600,6 @@ public abstract class BaseHandlerBuilder {
                 lock.unlock();
             }
         }
-    }
-
-    public boolean isExistView() {
-        return subQueryBuilderList.stream().anyMatch(BaseHandlerBuilder::isExistView) || node.isExistView();
-    }
-
-
-    public boolean isContainSubQuery(PlanNode planNode) {
-        return planNode.getSubQueries().size() > 0 || planNode.getChildren().stream().anyMatch(this::isContainSubQuery);
     }
 
     public PlanNode getNode() {

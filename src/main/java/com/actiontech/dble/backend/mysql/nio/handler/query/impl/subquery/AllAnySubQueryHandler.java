@@ -33,9 +33,12 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
     private RowDataPacket tmpRow;
     private RowDataComparator rowComparator;
 
-    public AllAnySubQueryHandler(long id, Session session, ItemAllAnySubQuery itemSubQuery) {
+    public AllAnySubQueryHandler(long id, Session session, ItemAllAnySubQuery itemSubQuery, boolean isExplain) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
+        if (isExplain) {
+            setForExplain();
+        }
 
     }
 
@@ -184,5 +187,15 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
             default:
                 break;
         }
+    }
+
+    @Override
+    public void clearForExplain() {
+        itemSubQuery.getValue().clear();
+    }
+
+    @Override
+    public void markAsNoSubQuery() {
+        itemSubQuery.setWithSubQuery(false);
     }
 }

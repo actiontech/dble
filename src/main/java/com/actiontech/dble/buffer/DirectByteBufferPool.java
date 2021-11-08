@@ -40,23 +40,7 @@ public class DirectByteBufferPool implements BufferPool {
         }
     }
 
-    /**
-     * TODO expandBuffer...
-     *
-     * @param buffer ByteBuffer
-     * @return ByteBuffer
-     */
-    public ByteBuffer expandBuffer(ByteBuffer buffer) {
-        int oldCapacity = buffer.capacity();
-        int newCapacity = oldCapacity << 1;
-        ByteBuffer newBuffer = allocate(newCapacity);
-        int newPosition = buffer.position();
-        buffer.flip();
-        newBuffer.put(buffer);
-        newBuffer.position(newPosition);
-        recycle(buffer);
-        return newBuffer;
-    }
+
 
     public ByteBuffer allocate() {
         return allocate(chunkSize);

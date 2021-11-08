@@ -364,7 +364,7 @@ public final class RouterUtil {
         routeToSingleNode(rrs, shardingNode, Sets.newHashSet(schema.getName() + "." + tableName));
     }
 
-    public static String getRandomShardingNode(List<String> shardingNodes) {
+    public static String getRandomShardingNode(Collection<String> shardingNodes) {
         int index = rand.nextInt(shardingNodes.size());
         ArrayList<String> x = new ArrayList<>(shardingNodes);
         Map<String, ShardingNode> shardingNodeMap = DbleServer.getInstance().getConfig().getShardingNodes();

@@ -483,7 +483,7 @@ public class JoinNode extends PlanNode {
         newJoinNode.leftOuter = this.leftOuter;
         newJoinNode.rightOuter = this.rightOuter;
         newJoinNode.isNotIn = this.isNotIn;
-        newJoinNode.otherJoinOnFilter = this.otherJoinOnFilter == null ? null : this.otherJoinOnFilter.cloneItem();
+        newJoinNode.otherJoinOnFilter = this.otherJoinOnFilter == null ? null : this.otherJoinOnFilter.cloneStruct();
         return newJoinNode;
     }
 

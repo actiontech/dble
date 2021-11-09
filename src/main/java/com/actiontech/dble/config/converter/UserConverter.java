@@ -309,7 +309,8 @@ public class UserConverter {
         return blackListConfigMap;
     }
 
-    public boolean isContainsShardingUser() {
+    // containsShardingUser is true, indicates that sharding mode, Otherwise, it is pure rwSplit mode
+    public boolean isShardingMode() {
         return containsShardingUser;
     }
 }

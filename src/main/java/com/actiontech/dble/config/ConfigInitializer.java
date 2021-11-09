@@ -73,9 +73,7 @@ public class ConfigInitializer implements ProblemReporter {
             } else if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
                 this.sequenceConfig = SequenceConverter.sequencePropsToJson(ConfigFileName.SEQUENCE_DB_FILE_NAME);
             }
-            if (userConverter.isContainsShardingUser()) {
-                this.shardingConfig = new ShardingConverter().shardingXmlToJson();
-            }
+            this.shardingConfig = new ShardingConverter().shardingXmlToJson();
             init(this.userConfig, this.dbConfig, this.shardingConfig, this.sequenceConfig, false);
         } catch (Exception e) {
             if (e instanceof UnmarshalException) {
@@ -129,7 +127,7 @@ public class ConfigInitializer implements ProblemReporter {
 
 
         //sharding
-        if (userConverter.isContainsShardingUser()) {
+        if (userConverter.isShardingMode()) {
             ShardingConverter shardingConverter = new ShardingConverter();
             shardingConverter.shardingJsonToMap(shardingJson, dbConverter.getDbGroupMap(), sequenceJson, this);
             this.schemas = shardingConverter.getSchemaConfigMap();
@@ -137,6 +135,9 @@ public class ConfigInitializer implements ProblemReporter {
             this.funcNodeERMap = shardingConverter.getFuncNodeERMap();
             this.shardingNodes = shardingConverter.getShardingNodeMap();
             this.functions = shardingConverter.getFunctionMap();
+            this.shardingConfig = shardingJson;
+        } else {
+            // when pure rwSplit, sharding.xml changes need to be written to the cluster
             this.shardingConfig = shardingJson;
         }
 

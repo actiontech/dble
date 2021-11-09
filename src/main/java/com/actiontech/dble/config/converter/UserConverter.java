@@ -123,7 +123,7 @@ public class UserConverter {
         }
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Xml to Shardings is :" + usersBean);
+            LOGGER.debug("Xml to Users is :" + usersBean);
         }
         if (null == usersBean.getUser() || !usersBean.getUser().stream().anyMatch(userObj -> userObj instanceof ManagerUser)) {
             throw new ConfigException("user.xml contains at least one managerUser");

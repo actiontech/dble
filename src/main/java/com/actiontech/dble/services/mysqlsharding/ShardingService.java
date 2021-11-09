@@ -579,6 +579,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     public void cleanup() {
         super.cleanup();
         TsQueriesCounter.getInstance().addToHistory(this);
+        SerializableLock.getInstance().unLock(connection.getId());
         session.terminate();
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();

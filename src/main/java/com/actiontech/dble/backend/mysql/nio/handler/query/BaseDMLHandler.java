@@ -56,11 +56,6 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public final void setNextHandlerOnly(DMLResponseHandler next) {
-        this.nextHandler = (BaseDMLHandler) next;
-    }
-
-    @Override
     public void setLeft(boolean left) {
         this.isLeft = left;
     }

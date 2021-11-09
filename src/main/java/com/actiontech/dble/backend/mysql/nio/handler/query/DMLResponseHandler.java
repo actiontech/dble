@@ -20,8 +20,6 @@ public interface DMLResponseHandler extends ResponseHandler {
 
     void setNextHandler(DMLResponseHandler next);
 
-    void setNextHandlerOnly(DMLResponseHandler next);
-
     List<DMLResponseHandler> getMerges();
 
     boolean isAllPushDown();

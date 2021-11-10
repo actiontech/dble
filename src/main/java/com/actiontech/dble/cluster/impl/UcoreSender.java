@@ -153,11 +153,11 @@ public final class UcoreSender extends AbstractClusterSender {
     public void unlockKey(String path, String sessionId) {
         UcoreInterface.UnlockOnSessionInput put = UcoreInterface.UnlockOnSessionInput.newBuilder().setKey(path).setSessionId(sessionId).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
             Thread renewThread = lockMap.get(path);
             if (renewThread != null) {
                 renewThread.interrupt();
             }
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
         } catch (Exception e) {
             LOGGER.info(sessionId + " unlockKey " + path + " error ," + stub, e);
         }

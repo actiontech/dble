@@ -27,7 +27,8 @@ public final class JoinStrategyProcessor {
                 JoinNode jn = (JoinNode) qtn;
                 if (jn.getLeftNode().type() == PlanNode.PlanNodeType.TABLE && jn.getRightNode().type() == PlanNode.PlanNodeType.TABLE) {
                     JoinStrategyChooser chooser = new JoinStrategyChooser((JoinNode) qtn);
-                    chooser.tryNestLoop();
+                    boolean canNestLoop = chooser.tryNestLoop();
+                    //todo log
                     return qtn;
                 }
             }

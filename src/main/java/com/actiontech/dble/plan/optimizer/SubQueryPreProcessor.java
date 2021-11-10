@@ -73,7 +73,7 @@ public final class SubQueryPreProcessor {
         }
         //having contains sub query
         buildSubQuery(qtn, new SubQueryFilter(), qtn.getHavingFilter(), true, childTransform);
-        bulidOrderSubQuery(qtn);
+        buildOrderSubQuery(qtn);
 
         SubQueryFilter find = new SubQueryFilter();
         find.query = qtn;
@@ -100,7 +100,7 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static SubQueryFilter bulidOrderSubQuery(PlanNode node) {
+    private static SubQueryFilter buildOrderSubQuery(PlanNode node) {
         for (Order o : node.getOrderBys()) {
             if (o.getItem() instanceof ItemScalarSubQuery) {
                 node.getSubQueries().add((ItemScalarSubQuery) o.getItem());
@@ -190,10 +190,6 @@ public final class SubQueryPreProcessor {
     /**
      * transform subquery to join
      *
-     * @param qtn
-     * @param filter
-     * @param childTransform
-     * @return
      */
     private static SubQueryFilter transformInSubQuery(SubQueryFilter qtn, ItemInSubQuery filter, BoolPtr childTransform) {
         Item leftColumn = filter.getLeftOperand();
@@ -211,7 +207,7 @@ public final class SubQueryPreProcessor {
         final List<Item> newSelects = qtn.query.getColumnsSelected();
         SubQueryFilter result = new SubQueryFilter();
         Item rightColumn = query.getColumnsSelected().get(0);
-        qtn.query.setColumnsSelected(new ArrayList<Item>());
+        qtn.query.setColumnsSelected(new ArrayList<>());
         String rightJoinName = rightColumn.getAlias();
         if (StringUtils.isEmpty(rightJoinName)) {
             if (rightColumn instanceof ItemField) {
@@ -231,14 +227,12 @@ public final class SubQueryPreProcessor {
         result.query.select(newSelects);
         qtn.query.setWithSubQuery(false);
         if (!qtn.query.getOrderBys().isEmpty()) {
-            List<Order> orderBys = new ArrayList<>();
-            orderBys.addAll(qtn.query.getOrderBys());
+            List<Order> orderBys = new ArrayList<>(qtn.query.getOrderBys());
             result.query.setOrderBys(orderBys);
             qtn.query.getOrderBys().clear();
         }
         if (!qtn.query.getGroupBys().isEmpty()) {
-            List<Order> groupBys = new ArrayList<>();
-            groupBys.addAll(qtn.query.getGroupBys());
+            List<Order> groupBys = new ArrayList<>(qtn.query.getGroupBys());
             result.query.setGroupBys(groupBys);
             qtn.query.getGroupBys().clear();
             result.query.having(qtn.query.getHavingFilter());

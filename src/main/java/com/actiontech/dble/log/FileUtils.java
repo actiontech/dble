@@ -45,10 +45,11 @@ public final class FileUtils {
     public static Integer getFileNextIndex(String name, String path, String suffix) {
         SortedMap<Integer, Path> eligibleFiles = new TreeMap<>();
         Pattern pattern = Pattern.compile(name + "(0?\\d+)" + suffix);
+        DirectoryStream<Path> stream = null;
         try {
             File file = new File(path);
             makeParentDirs(file);
-            DirectoryStream<Path> stream = Files.newDirectoryStream(file.getParentFile().toPath());
+            stream = Files.newDirectoryStream(file.getParentFile().toPath());
             for (final Path entry : stream) {
                 Matcher matcher = pattern.matcher(entry.toFile().getName());
                 if (matcher.matches()) {
@@ -56,12 +57,20 @@ public final class FileUtils {
                         Integer index = Integer.parseInt(matcher.group(1));
                         eligibleFiles.put(index, entry);
                     } catch (NumberFormatException ex) {
-                        LOGGER.warn("Get file index exception：{}", ex);
+                        LOGGER.warn("Get file index exception：", ex);
                     }
                 }
             }
         } catch (IOException ioe) {
-            LOGGER.warn("Get file parentPath exception：{}", ioe);
+            LOGGER.warn("Get file parentPath exception：", ioe);
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    LOGGER.warn("file close exception：", e);
+                }
+            }
         }
         return eligibleFiles.isEmpty() ? 1 : eligibleFiles.lastKey() + 1;
     }

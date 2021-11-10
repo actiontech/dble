@@ -38,7 +38,7 @@ public final class MyOptimizer {
             if (SystemConfig.getInstance().isInSubQueryTransformToJoin()) {
                 node = SubQueryPreProcessor.optimize(node);
             } else {
-                node = SubQueryPreNoTransformProcessor.optimize(node);
+                SubQueryPreNoTransformProcessor.optimize(node);
             }
             updateReferredTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<>());
@@ -53,7 +53,7 @@ public final class MyOptimizer {
                 //  push down the filter which may contains ER KEY
                 node = FilterJoinColumnPusher.optimize(node);
 
-                node = JoinERProcessor.optimize(node);
+                node = JoinProcessor.optimize(node);
 
                 if (existGlobal >= 0) {
                     GlobalTableProcessor.optimize(node);
@@ -61,7 +61,7 @@ public final class MyOptimizer {
                 //  push down filter
                 node = FilterPusher.optimize(node);
 
-                node = OrderByPusher.optimize(node);
+                OrderByPusher.optimize(node);
 
                 LimitPusher.optimize(node);
 

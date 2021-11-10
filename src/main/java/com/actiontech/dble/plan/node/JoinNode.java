@@ -45,11 +45,11 @@ public class JoinNode extends PlanNode {
     }
 
     // left node's order of sort-merge-join
-    private List<Order> leftJoinOnOrders = new ArrayList<>();
+    private final List<Order> leftJoinOnOrders = new ArrayList<>();
     private boolean isLeftOrderMatch = false;
     // right node's order of sort-merge-join
-    private List<Order> rightJoinOnOrders = new ArrayList<>();
-    private boolean isRightOrderMatch = false;
+    private final List<Order> rightJoinOnOrders = new ArrayList<>();
+    private boolean rightOrderMatch = false;
 
     private List<String> usingFields;
 
@@ -72,10 +72,10 @@ public class JoinNode extends PlanNode {
     private List<ItemFuncEqual> joinFilter;
     private Item otherJoinOnFilter;
 
-    private List<ERTable> erKeys = new ArrayList<>();
+    private final List<ERTable> erKeys = new ArrayList<>();
 
     private Strategy strategy = Strategy.SORTMERGE;
-    private int charsetIndex;
+    private final int charsetIndex;
     public JoinNode(int charsetIndex) {
         this.leftOuter = false;
         this.rightOuter = false;
@@ -153,7 +153,8 @@ public class JoinNode extends PlanNode {
                     if (bf.getReferTables().iterator().next().type() == PlanNodeType.TABLE) {
                         throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '" + this.getLeftNode().getPureName() + "'");
                     } else {
-                        throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + bf.toString() + "'");
+                        //todo: query node and can push
+                        throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + bf + "'");
                     }
                 }
                 joinFilter.set(index, (ItemFuncEqual) bf);
@@ -414,16 +415,14 @@ public class JoinNode extends PlanNode {
         return this;
     }
 
-    public JoinNode setRightOuterJoin() {
+    public void setRightOuterJoin() {
         this.rightOuter = true;
         this.leftOuter = false;
-        return this;
     }
 
-    public JoinNode setInnerJoin() {
+    public void setInnerJoin() {
         this.leftOuter = false;
         this.rightOuter = false;
-        return this;
     }
 
     public boolean getLeftOuter() {
@@ -455,12 +454,6 @@ public class JoinNode extends PlanNode {
         this.needOptimizeJoinOrder = needOptimizeJoinOrder;
     }
 
-    public JoinNode setLeftRightJoin(boolean left, boolean right) {
-        this.leftOuter = left;
-        this.rightOuter = right;
-        return this;
-    }
-
     public List<Order> getLeftJoinOnOrders() {
         return leftJoinOnOrders;
     }
@@ -473,7 +466,7 @@ public class JoinNode extends PlanNode {
     public JoinNode copy() {
         JoinNode newJoinNode = new JoinNode(this.charsetIndex);
         this.copySelfTo(newJoinNode);
-        newJoinNode.setJoinFilter(new ArrayList<ItemFuncEqual>());
+        newJoinNode.setJoinFilter(new ArrayList<>());
         for (Item bf : joinFilter) {
             newJoinNode.addJoinFilter((ItemFuncEqual) bf.cloneStruct());
         }
@@ -520,14 +513,14 @@ public class JoinNode extends PlanNode {
      * @return the isRightOrderMatch
      */
     public boolean isRightOrderMatch() {
-        return isRightOrderMatch;
+        return rightOrderMatch;
     }
 
     /**
      * @param rightOrderMatch the isRightOrderMatch to set
      */
     public void setRightOrderMatch(boolean rightOrderMatch) {
-        this.isRightOrderMatch = rightOrderMatch;
+        this.rightOrderMatch = rightOrderMatch;
     }
 
     /**

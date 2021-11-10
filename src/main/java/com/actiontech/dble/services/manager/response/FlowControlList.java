@@ -91,8 +91,6 @@ public final class FlowControlList {
 
         lastEof.write(buffer, service);
     }
-
-    @NotNull
     private static List<RowDataPacket> getBackendConnections(ManagerService service) {
         List<RowDataPacket> rows = new ArrayList<>();
         IOProcessor[] processors = DbleServer.getInstance().getBackendProcessors();
@@ -117,7 +115,6 @@ public final class FlowControlList {
         return rows;
     }
 
-    @NotNull
     private static List<RowDataPacket> getServerConnections(ManagerService service) {
         List<RowDataPacket> rows = new ArrayList<>();
         IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();

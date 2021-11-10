@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 public class DelayedServiceTask extends InnerServiceTask {
     private ServiceTask originTask;
 
-    @NotNull
     @Override
     public ServiceTaskType getType() {
         return ServiceTaskType.DELAYED;

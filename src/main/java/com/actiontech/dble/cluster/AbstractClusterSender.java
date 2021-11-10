@@ -34,14 +34,24 @@ public abstract class AbstractClusterSender implements ClusterSender {
     public boolean checkResponseForOneTime(String checkString, String path, Map<String, String> expectedMap, StringBuffer errorMsg) {
         Map<String, String> currentMap = ClusterToXml.getOnlineMap();
         checkOnline(expectedMap, currentMap);
-        List<KvBean> responseList = ClusterHelper.getKVPath(path);
+        List<KvBean> responseList;
+        try {
+            responseList = ClusterHelper.getKVPath(path);
+        } catch (Exception e) {
+            LOGGER.warn("checkResponseForOneTime error :", e);
+            errorMsg.append(e.getMessage());
+            return true;
+        }
+        if (expectedMap.isEmpty()) {
+            errorMsg.append("All online key dropped or instance update its status, other instance config may out of sync, try again manually");
+            return true;
+        }
         boolean flag = false;
         for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
             flag = false;
             for (KvBean kvBean : responseList) {
                 String responseNode = last(kvBean.getKey().split("/"));
-                if (last(entry.getKey().split("/")).
-                        equals(responseNode)) {
+                if (last(entry.getKey().split("/")).equals(responseNode)) {
                     if (checkString != null) {
                         if (!checkString.equals(kvBean.getValue())) {
                             if (errorMsg != null) {
@@ -60,7 +70,6 @@ public abstract class AbstractClusterSender implements ClusterSender {
 
         return flag;
     }
-
 
     public void checkOnline(Map<String, String> expectedMap, Map<String, String> currentMap) {
         Iterator<Map.Entry<String, String>> iterator = expectedMap.entrySet().iterator();

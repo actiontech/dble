@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -39,11 +40,15 @@ public abstract class AbstractClusterSender implements ClusterSender {
             responseList = ClusterHelper.getKVPath(path);
         } catch (Exception e) {
             LOGGER.warn("checkResponseForOneTime error :", e);
-            errorMsg.append(e.getMessage());
+            if (Objects.nonNull(errorMsg)) {
+                errorMsg.append(e.getMessage());
+            }
             return true;
         }
         if (expectedMap.isEmpty()) {
-            errorMsg.append("All online key dropped or instance update its status, other instance config may out of sync, try again manually");
+            if (Objects.nonNull(errorMsg)) {
+                errorMsg.append("All online key dropped or instance update its status, other instance config may out of sync, try again manually");
+            }
             return true;
         }
         boolean flag = false;

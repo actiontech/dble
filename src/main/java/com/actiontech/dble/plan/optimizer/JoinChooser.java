@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -29,8 +30,41 @@ public class JoinChooser {
 
     private final List<JoinRelations> joinRelations = new ArrayList<>();
     private final List<PlanNode> joinUnits = new ArrayList<>();
+    private final Set<PlanNode> dagNodes = new HashSet<>();
     private final Map<ERTable, Set<ERTable>> erRelations;
     private final JoinNode orgNode;
+    private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
+        if (o1.relations.isERJoin && o2.relations.isERJoin) {
+            if (o1.relations.isInner) { // both er，o1 inner
+                return -1;
+            } else if (o2.relations.isInner) { //both er，o1 not inner,o2 inner
+                return 1;
+            } else { // both er， left join
+                return 0;
+            }
+        } else if (o1.relations.isERJoin) { // if o1 is not ER join, o1 is ER join, o1<>>o2
+            return -1;
+        } else if (o2.relations.isERJoin) { // if o1 is not ER join, o2 is ER join, o1>o2
+            return 1;
+        } else {
+            // both o1,o2 are not ER join, global table should be first
+            boolean o1Global = o1.node.getUnGlobalTableCount() == 0;
+            boolean o2Global = o2.node.getUnGlobalTableCount() == 0;
+            if (o1Global == o2Global) {
+                if (o1.relations.isInner) { //  o1 inner
+                    return -1;
+                } else if (o2.relations.isInner) { //o1 not inner,o2 inner
+                    return 1;
+                } else {
+                    return 0;
+                }
+            } else if (o1Global) {
+                return -1;
+            } else // if (o2Global) {
+                return 1;
+        }
+    };
+
     public JoinChooser(JoinNode qtn, Map<ERTable, Set<ERTable>> erRelations) {
         this.orgNode = qtn;
         this.erRelations = erRelations;
@@ -48,10 +82,8 @@ public class JoinChooser {
     }
 
 
-
     /**
      * inner join's ER, rebuild inner join's unit
-     *
      */
     private JoinNode innerJoinOptimizer(int charsetIndex) {
         initJoinUnits(orgNode);
@@ -61,31 +93,30 @@ public class JoinChooser {
         initNodeRelations(orgNode);
         JoinNode relationJoin = null;
         if (joinRelations.size() > 0) {
-            //todo: remove from joinUnits
-            JoinRelationTree root = new JoinRelationTree(joinRelations.get(0).getLeftPlanNode(), null);
-            initRightOfTree(root, joinRelations.get(0));
-            for (int i = 1; i < joinRelations.size(); i++) {
-                findTreeLeftAndInitRight(root, joinRelations.get(i));
-            }
-            //todo :other joinUnits means 笛卡尔积？
+            //make DAG
+            JoinRelationDag root = initJoinRelationDag();
+            leftCartesianNodes();
 
-            // todo custom plan or auto plan
-            //if no custom
-            relationJoin = makeBNFJoin(root, charsetIndex);
 
+            // todo:custom plan or use auto plan
+            //if custom ,check plan can Follow the rules：Topological Sorting of dag, CartesianNodes
+
+            // use auto plan
+            relationJoin = makeBNFJoin(root, charsetIndex, defaultCmp);
+        }
+        // no relation join
+        if (relationJoin == null) {
+            return orgNode;
         }
 
-        if (relationJoin == null)
-            // no er join
-            return orgNode;
-
         // others' node is the join units which can not optimize, just merge them
-        JoinNode ret = relationJoin;
+        JoinNode ret = makeJoinWithCartesianNode(relationJoin, charsetIndex);
         ret.setOrderBys(orgNode.getOrderBys());
         ret.setGroupBys(orgNode.getGroupBys());
         ret.select(orgNode.getColumnsSelected());
         ret.setLimitFrom(orgNode.getLimitFrom());
         ret.setLimitTo(orgNode.getLimitTo());
+        ret.setOtherJoinOnFilter(orgNode.getOtherJoinOnFilter());
         ret.having(orgNode.getHavingFilter());
         ret.setWhereFilter(orgNode.getWhereFilter());
         ret.setAlias(orgNode.getAlias());
@@ -96,60 +127,83 @@ public class JoinChooser {
         return ret;
     }
 
-    private JoinNode makeBNFJoin(JoinRelationTree root, int charsetIndex) {
-        Comparator<JoinRelationTree> joinCmp = (o1, o2) -> {
-            // if o1 is ER join ,we keep order o1<o2
-            if (o1.relations.isERJoin) {
-                return -1;
-            }
-            // if o1 is not ER join, o2 is ER join, o1>o2
-            if (o2.relations.isERJoin) {
-                return 1;
-            }
+    private JoinNode makeJoinWithCartesianNode(JoinNode node, int charsetIndex) {
+        JoinNode left = node;
+        for (PlanNode right : joinUnits) {
+            left = new JoinNode(left, right, charsetIndex);
+        }
+        return left;
+    }
 
-            // both o1,o2 are not ER join, global table should be first
-            // todo: both global table
-            // if o1 is global table ,we keep order o1<o2
-            if (o1.node.getUnGlobalTableCount() == 0) {
-                return -1;
-            }
-            // if o1 is not global table, o2 is global table, o1>o2
-            if (o2.node.getUnGlobalTableCount() == 0) {
-                return 1;
-            }
-            return 0;
-        };
+    private void leftCartesianNodes() {
+        if (joinUnits.size() > dagNodes.size()) {
+            //Cartesian Product node
+            joinUnits.removeIf(dagNodes::contains);
+        } else {
+            joinUnits.clear();
+        }
+    }
+
+    @NotNull
+    private JoinRelationDag initJoinRelationDag() {
+        JoinRelationDag root = createFirstNode();
+        for (int i = 1; i < joinRelations.size(); i++) {
+            addNodeToDag(root, joinRelations.get(i));
+        }
+        return root;
+    }
+
+    @NotNull
+    private JoinRelationDag createFirstNode() {
+        JoinRelations firstRelation = joinRelations.get(0);
+        JoinRelationDag root = new JoinRelationDag(firstRelation.getLeftPlanNode());
+        JoinRelationDag right = new JoinRelationDag(firstRelation);
+        root.rightNodes.add(right);
+        right.degree++;
+        return root;
+    }
+    private JoinNode makeBNFJoin(JoinRelationDag root, int charsetIndex, Comparator<JoinRelationDag> joinCmp) {
 
         JoinNode joinNode = null;
-        Queue<JoinRelationTree> queue = new LinkedList<>();
+        Queue<JoinRelationDag> queue = new LinkedList<>();
         queue.offer(root);
         while (!queue.isEmpty()) {
-            JoinRelationTree left = queue.poll();
-            left.rightNodesOfInnerJoin.sort(joinCmp);
-            for (JoinRelationTree rightNodeOfInnerJoin : left.rightNodesOfInnerJoin) {
-                joinNode = makeJoinNode(charsetIndex, left, joinNode, rightNodeOfInnerJoin);
-                queue.offer(rightNodeOfInnerJoin);
+            JoinRelationDag left = queue.poll();
+            List<JoinRelationDag> nextZeroDegreeList = new ArrayList<>();
+            for (JoinRelationDag tree : left.rightNodes) {
+                if (--tree.degree == 0) {
+                    nextZeroDegreeList.add(tree);
+                }
             }
-            left.rightNodesOfLeftJoin.sort(joinCmp);
-            for (JoinRelationTree rightNodeOfLeftJoin : left.rightNodesOfLeftJoin) {
-                joinNode = makeJoinNode(charsetIndex, left, joinNode, rightNodeOfLeftJoin);
-                joinNode.setLeftOuterJoin();
-                queue.offer(rightNodeOfLeftJoin);
+            if (nextZeroDegreeList.size() > 0) {
+                nextZeroDegreeList.sort(joinCmp);
+                for (JoinRelationDag rightNode : nextZeroDegreeList) {
+                    joinNode = makeJoinNode(charsetIndex, left, joinNode, rightNode);
+                    queue.offer(rightNode);
+                }
             }
         }
         return joinNode;
     }
 
-    private JoinNode makeJoinNode(int charsetIndex, JoinRelationTree left, JoinNode joinNode, JoinRelationTree rightNodeOfJoin) {
-        PlanNode leftNode = joinNode == null ? left.node : joinNode;
+    private JoinNode makeJoinNode(int charsetIndex, JoinRelationDag left, JoinNode joinNode, JoinRelationDag rightNodeOfJoin) {
+        boolean leftIsJoin = joinNode != null;
+        PlanNode leftNode = leftIsJoin ? joinNode : left.node;
         PlanNode rightNode = rightNodeOfJoin.node;
         joinNode = new JoinNode(leftNode, rightNode, charsetIndex);
+        if (!rightNodeOfJoin.relations.isInner) {
+            joinNode.setLeftOuterJoin();
+        }
         List<ItemFuncEqual> filters = new ArrayList<>();
         for (JoinRelation joinRelation : rightNodeOfJoin.relations.relationLst) {
             ItemFuncEqual bf = FilterUtils.equal(joinRelation.left.key, joinRelation.right.key, charsetIndex);
             filters.add(bf);
             if (joinRelation.isERJoin) {
-                joinNode.getERkeys().add(joinRelation.left.erTable);
+                if (!leftIsJoin) {
+                    joinNode.getERkeys().add(joinRelation.left.erTable);
+                } else {
+                    joinNode.getERkeys().addAll(((JoinNode) leftNode).getERkeys());
+                }
             }
         }
         joinNode.setJoinFilter(filters);
@@ -157,37 +211,114 @@ public class JoinChooser {
         return joinNode;
     }
 
-    private void findTreeLeftAndInitRight(JoinRelationTree root, JoinRelations relations) {
-        Queue<JoinRelationTree> queue = new LinkedList<>();
+    private void addNodeToDag(JoinRelationDag root, JoinRelations relations) {
+        JoinRelationDag father = null;
+        List<JoinRelationDag> otherPres = new ArrayList<>(relations.prefixNodes.size());
+        boolean familyInner = relations.isInner;
+        Queue<JoinRelationDag> queue = new LinkedList<>();
         queue.offer(root);
         while (!queue.isEmpty()) {
-            JoinRelationTree tmp = queue.poll();
-            if (tmp.node == relations.getLeftPlanNode()) {
-                initRightOfTree(tmp, relations);
+            JoinRelationDag tmp = queue.poll();
+            List<JoinRelationDag> children = new ArrayList<>(tmp.rightNodes);
+            if (relations.prefixNodes.contains(tmp.node)) {
+                otherPres.add(tmp);
+                --relations.prefixSize;
+                if (relations.getLeftPlanNode() == tmp.node) {
+                    father = tmp;
+                }
+                if (familyInner && !tmp.isFamilyInner) {
+                    familyInner = false;
+                }
+            }
+            //all prefixNodes finished
+            if (relations.prefixSize == 0) {
                 break;
             } else {
-                queue.addAll(tmp.rightNodesOfInnerJoin);
-                queue.addAll(tmp.rightNodesOfLeftJoin);
+                queue.addAll(children);
             }
         }
-    }
+        if (!familyInner) { // left join can not be optimizer
+            JoinRelationDag right = new JoinRelationDag(relations);
+            right.isFamilyInner = false;
+            for (JoinRelationDag otherPre : otherPres) {
+                otherPre.rightNodes.add(right);
+                right.degree++;
+            }
+            return;
+        }
 
-    private void initRightOfTree(JoinRelationTree root, JoinRelations relations) {
-        JoinRelationTree right = new JoinRelationTree(relations.getRightPlanNode(), relations);
-        if (relations.isInner) {
-            root.rightNodesOfInnerJoin.add(right);
-        } else {
-            root.rightNodesOfLeftJoin.add(right);
+        assert father != null;
+        if (relations.prefixNodes.size() > 1) {
+            Map<PlanNode, Item> planFilterMap = new HashMap<>();
+            if (assignOtherFilter(planFilterMap, relations.otherFilter, father.node, relations.getRightPlanNode())) {
+                // recreate JoinRelations, cut other filter
+                JoinRelations nodeRelations = new JoinRelations(true, planFilterMap.get(father.node));
+                nodeRelations.relationLst.addAll(relations.relationLst);
+                nodeRelations.isERJoin = relations.isERJoin;
+                JoinRelationDag right = new JoinRelationDag(nodeRelations);
+                father.rightNodes.add(right);
+                right.degree++;
+                // update filter
+                for (JoinRelationDag otherPre : otherPres) {
+                    if (planFilterMap.get(otherPre.node) != null) {
+                        otherPre.relations.otherFilter = FilterUtils.and(otherPre.relations.otherFilter, planFilterMap.get(otherPre.node));
+                    }
+                }
+                return;
+            }
+        }
+        //no other filter or can not assign
+        JoinRelationDag right = new JoinRelationDag(relations);
+        for (JoinRelationDag otherPre : otherPres) {
+            otherPre.rightNodes.add(right);
+            right.degree++;
         }
     }
 
+
+    private boolean assignOtherFilter(Map<PlanNode, Item> planFilterMap, Item filter, PlanNode father, PlanNode rightNode) {
+        List<Item> splitFilters = FilterUtils.splitFilter(filter);
+        for (Item splitFilter : splitFilters) {
+            Set<PlanNode> filterNode = new HashSet<>();
+            for (PlanNode planNode : joinUnits) {
+                Item tmpSel = nodeHasSelectTable(planNode, splitFilter);
+                if (tmpSel != null) {
+                    filterNode.add(planNode);
+                    if (filterNode.size() >= 3) {
+                        return false;
+                    }
+                }
+            }
+            if (filterNode.size() == 0) {
+                updateMapByKey(planFilterMap, father, splitFilter);
+            } else if (filterNode.size() == 1) {
+                if (filterNode.contains(rightNode)) {
+                    updateMapByKey(planFilterMap, father, splitFilter);
+                } else {
+                    updateMapByKey(planFilterMap, filterNode.iterator().next(), splitFilter);
+                }
+            } else { // =2
+                if (filterNode.contains(father) && filterNode.contains(rightNode)) {
+                    updateMapByKey(planFilterMap, father, splitFilter);
+                } else {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void updateMapByKey(Map<PlanNode, Item> map, PlanNode key, Item value) {
+        Item oldValue = map.get(key);
+        map.put(key, FilterUtils.and(oldValue, value));
+    }
 
     // find the smallest join units in node
     private void initJoinUnits(JoinNode node) {
         for (int index = 0; index < node.getChildren().size(); index++) {
             PlanNode child = node.getChildren().get(index);
             if (isUnit(child)) {
-                child = JoinERProcessor.optimize(child); //todo:change class name
+                child = JoinProcessor.optimize(child);
                 node.getChildren().set(index, child);
                 this.joinUnits.add(child);
             } else {
@@ -225,6 +356,7 @@ public class JoinChooser {
                     nodeRelations.isERJoin = true;
                 }
             }
+            nodeRelations.init();
             joinRelations.add(nodeRelations);
         }
     }
@@ -243,10 +375,6 @@ public class JoinChooser {
     }
 
 
-
-
-
-    //todo:remove
     private ERTable getERKey(PlanNode tn, Item c) {
         if (!(c instanceof ItemField))
             return null;
@@ -328,7 +456,6 @@ public class JoinChooser {
                         return entry.getValue();
                     }
                 }
-                return null;
             } else {
                 if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     if (!StringUtil.equalsIgnoreCase(table, child.getAlias()))
@@ -342,8 +469,8 @@ public class JoinChooser {
                         return entry.getValue();
                     }
                 }
-                return null;
             }
+            return null;
         }
     }
 
@@ -358,22 +485,34 @@ public class JoinChooser {
         return erList.contains(er1);
     }
 
-    private static class JoinRelationTree {
+    private class JoinRelationDag {
+        private int degree = 0;
         private final PlanNode node;
         private final JoinRelations relations;
-        private final List<JoinRelationTree> rightNodesOfLeftJoin = new ArrayList<>();
-        private final List<JoinRelationTree> rightNodesOfInnerJoin = new ArrayList<>();
+        private final List<JoinRelationDag> rightNodes = new ArrayList<>();
+        private boolean isFamilyInner = true;
 
-        JoinRelationTree(PlanNode node, JoinRelations relations) {
+        JoinRelationDag(PlanNode node) {
             this.node = node;
+            this.relations = null;
+            dagNodes.add(node);
+        }
+
+        JoinRelationDag(JoinRelations relations) {
+            this.node = relations.getRightPlanNode();
             this.relations = relations;
+            this.isFamilyInner = relations.isInner;
+            dagNodes.add(node);
         }
     }
+
     private class JoinRelations {
         private final List<JoinRelation> relationLst = new ArrayList<>();
         private final boolean isInner;
-        private final Item otherFilter;
+        private Item otherFilter;
         private boolean isERJoin = false;
+        private final Set<PlanNode> prefixNodes = new HashSet<>();
+        private int prefixSize = 0;
 
         JoinRelations(boolean isInner, Item otherFilter) {
             this.isInner = isInner;
@@ -388,11 +527,27 @@ public class JoinChooser {
             return relationLst.get(0).right.planNode;
         }
 
+        void init() {
+            prefixNodes.add(getLeftPlanNode());
+            if (otherFilter != null && otherFilter.getReferTables() != null) {
+                for (PlanNode planNode : joinUnits) {
+                    if (planNode != getRightPlanNode()) {
+                        Item tmpSel = nodeHasSelectTable(planNode, otherFilter);
+                        if (tmpSel != null) {
+                            prefixNodes.add(planNode);
+                        }
+                    }
+                }
+            }
+            prefixSize = prefixNodes.size();
+        }
     }
+
     private class JoinRelation {
         private final JoinColumnInfo left;
         private final JoinColumnInfo right;
         private final boolean isERJoin;
+
         JoinRelation(JoinColumnInfo left, JoinColumnInfo right) {
             this.left = left;
             this.right = right;

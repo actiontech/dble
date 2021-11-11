@@ -18,6 +18,7 @@ import com.actiontech.dble.sqlengine.MultiTablesMetaJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +75,7 @@ public abstract class GetTableMetaHandler {
 
         TableStructureListener(String shardingNode, Set<String> expectedTables, PhysicalDbInstance ds) {
             this.shardingNode = shardingNode;
-            this.expectedTables = expectedTables;
+            this.expectedTables = new HashSet<>(expectedTables);
             this.ds = ds;
         }
 

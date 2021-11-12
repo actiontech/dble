@@ -75,8 +75,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
         this.rrs = rrs;
-        if (ServerParse.SELECT == rrs.getSqlType() && createBufferIfNeed) {
-            byteBuffer = session.getSource().allocate();
+        if (createBufferIfNeed) {
+            for (RouteResultsetNode node : rrs.getNodes()) {
+                if (ServerParse.SELECT == node.getSqlType()) {
+                    byteBuffer = session.getSource().allocate();
+                    break;
+                }
+            }
         }
         this.sessionAutocommit = session.getShardingService().isAutocommit();
         this.modifiedSQL = rrs.getNodes()[0].isModifySQL();

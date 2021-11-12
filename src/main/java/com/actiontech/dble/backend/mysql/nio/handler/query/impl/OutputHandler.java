@@ -9,10 +9,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.server.NonBlockingSession;
-import com.actiontech.dble.net.Session;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.statistic.stat.QueryResult;
@@ -223,6 +223,12 @@ public class OutputHandler extends BaseDMLHandler {
             serverSession.getShardingService().write(error);
         } finally {
             lock.unlock();
+        }
+    }
+
+    public void cleanBuffer() {
+        if (buffer != null) {
+            session.getSource().recycle(buffer);
         }
     }
 

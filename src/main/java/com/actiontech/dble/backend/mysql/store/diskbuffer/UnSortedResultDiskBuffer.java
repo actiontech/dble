@@ -69,6 +69,12 @@ public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
     }
 
     @Override
+    public void close() {
+        mainTape.clear();
+        super.close();
+    }
+
+    @Override
     public RowDataPacket next() {
         file.seek(mainTape.pos);
         return mainTape.nextRow();

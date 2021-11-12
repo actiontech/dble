@@ -72,6 +72,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private int readOnlyErrorCount;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
+        this(rrs, session, true);
+    }
+
+    protected MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session, boolean createBufferIfNeed) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -80,7 +84,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
         this.rrs = rrs;
-        if (ServerParse.SELECT == rrs.getSqlType()) {
+        if (ServerParse.SELECT == rrs.getSqlType() && createBufferIfNeed) {
             byteBuffer = session.getSource().allocate();
         }
         this.sessionAutocommit = session.getShardingService().isAutocommit();

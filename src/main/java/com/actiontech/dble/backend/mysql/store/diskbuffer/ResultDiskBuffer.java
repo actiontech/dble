@@ -215,6 +215,10 @@ public abstract class ResultDiskBuffer implements ResultExternal {
             }
         }
 
+        public void clear() {
+            pool.recycle(readBuffer);
+        }
+
         private void checkReadBuffer(int offset) {
             // if offset is 0,then expend buffer; else set offset to 0,compact
             // buffer

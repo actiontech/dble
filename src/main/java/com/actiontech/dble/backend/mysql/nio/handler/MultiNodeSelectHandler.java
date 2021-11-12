@@ -41,10 +41,28 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     private volatile boolean noNeedRows = false;
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
-        super(rrs, session);
+        super(rrs, session, false);
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+    }
+
+    @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        outputHandler.cleanBuffer();
+        super.connectionClose(conn, reason);
+    }
+
+    @Override
+    public void connectionError(Throwable e, BackendConnection conn) {
+        outputHandler.cleanBuffer();
+        super.connectionError(e, conn);
+    }
+
+    @Override
+    public void errorResponse(byte[] data, BackendConnection conn) {
+        outputHandler.cleanBuffer();
+        super.errorResponse(data, conn);
     }
 
     @Override

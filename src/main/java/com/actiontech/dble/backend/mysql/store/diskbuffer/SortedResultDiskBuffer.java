@@ -133,6 +133,14 @@ public class SortedResultDiskBuffer extends ResultDiskBuffer {
         resetHeap();
     }
 
+    @Override
+    public void close() {
+        for (ResultDiskTape tape : tapes) {
+            tape.clear();
+        }
+        super.close();
+    }
+
     protected void resetHeap() {
         if (heap == null)
             heap = new ArrayMinHeap<>(tapes.size(), this.heapCmp);

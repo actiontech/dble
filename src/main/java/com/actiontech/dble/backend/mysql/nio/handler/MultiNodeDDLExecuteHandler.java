@@ -38,7 +38,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {
-        super(rrs, session);
+        super(rrs, session, true);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
         }

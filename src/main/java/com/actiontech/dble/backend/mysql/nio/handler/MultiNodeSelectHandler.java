@@ -5,7 +5,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -40,14 +40,33 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     private final int queueSize;
     private Map<MySQLResponseService, BlockingQueue<HeapItem>> queues;
     private RowDataComparator rowComparator;
-    private DMLResponseHandler outputHandler;
+    private OutputHandler outputHandler;
     private volatile boolean noNeedRows = false;
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
-        super(rrs, session);
+        super(rrs, session, false);
         this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         outputHandler = FinalHandlerFactory.createFinalHandler(session);
+    }
+
+    @Override
+    public void connectionClose(AbstractService service, String reason) {
+        outputHandler.cleanBuffer();
+        super.connectionClose(service, reason);
+    }
+
+
+    @Override
+    public void connectionError(Throwable e, Object attachment) {
+        outputHandler.cleanBuffer();
+        super.connectionError(e, attachment);
+    }
+
+    @Override
+    public void errorResponse(byte[] data, AbstractService service) {
+        outputHandler.cleanBuffer();
+        super.errorResponse(data, service);
     }
 
     @Override

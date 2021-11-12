@@ -24,7 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,10 +41,28 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     private volatile boolean noNeedRows = false;
 
     public MultiNodeSelectHandler(RouteResultset rrs, NonBlockingSession session) {
-        super(rrs, session);
+        super(rrs, session, false);
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
+    }
+
+    @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        outputHandler.cleanBuffer();
+        super.connectionClose(conn, reason);
+    }
+
+    @Override
+    public void connectionError(Throwable e, BackendConnection conn) {
+        outputHandler.cleanBuffer();
+        super.connectionError(e, conn);
+    }
+
+    @Override
+    public void errorResponse(byte[] data, BackendConnection conn) {
+        outputHandler.cleanBuffer();
+        super.errorResponse(data, conn);
     }
 
     @Override

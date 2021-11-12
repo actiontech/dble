@@ -7,7 +7,6 @@
 package com.actiontech.dble.services.factorys;
 
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
-import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandlerForPrepare;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -21,7 +20,7 @@ public final class FinalHandlerFactory {
     private FinalHandlerFactory() {
     }
 
-    public static DMLResponseHandler createFinalHandler(NonBlockingSession session) {
+    public static OutputHandler createFinalHandler(NonBlockingSession session) {
         final OutputStateEnum outputState = session.getShardingService().getRequestScope().getOutputState();
 
         switch (outputState) {

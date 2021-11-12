@@ -78,9 +78,10 @@ public class DruidCreateTableParser extends DefaultDruidParser {
     private void sharingTableCheckHelp(SQLAssignItem sqlAssignItem, MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
         String sqlAssignItemTarget = sqlAssignItem.getTarget().toString();
         String sqlAssignItemValue = sqlAssignItem.getValue().toString();
-        //ALLOW InnoDB ONLY
-        if (StringUtil.equals("ENGINE", sqlAssignItemTarget) && !"InnoDB".equalsIgnoreCase(sqlAssignItemValue)) {
-            String msg = "create table only can use ENGINE InnoDB,others not supported:" + createStmt;
+        // Only InnoDB or RocksDB is supported
+        if (StringUtil.equals("ENGINE", sqlAssignItemTarget) &&
+                !("InnoDB".equalsIgnoreCase(sqlAssignItemValue) || "RocksDB".equalsIgnoreCase(sqlAssignItemValue))) {
+            String msg = "create table only can use ENGINE InnoDB or RocksDB, others not supported:" + createStmt;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }

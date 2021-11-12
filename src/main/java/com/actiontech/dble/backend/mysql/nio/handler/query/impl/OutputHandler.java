@@ -242,6 +242,12 @@ public class OutputHandler extends BaseDMLHandler {
         }
     }
 
+    public void cleanBuffer() {
+        if (buffer != null) {
+            session.getSource().recycle(buffer);
+        }
+    }
+
     private void recycleResources() {
         if (buffer != null) {
             if (buffer.position() > 0) {

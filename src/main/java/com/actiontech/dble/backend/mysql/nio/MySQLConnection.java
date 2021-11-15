@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
@@ -65,6 +65,7 @@ public class MySQLConnection extends AbstractConnection implements
     private volatile boolean testing = false;
     private volatile String closeReason = null;
     private volatile BackEndCleaner recycler = null;
+    private volatile boolean connectionFirstReadied = false;
 
     private static long initClientFlags() {
         int flag = 0;
@@ -130,7 +131,7 @@ public class MySQLConnection extends AbstractConnection implements
             this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
         } else {
             /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
-            *  it need to sync the status firstly for new idle connection*/
+             *  it need to sync the status firstly for new idle connection*/
             this.txIsolation = -1;
         }
         this.complexQuery = false;
@@ -276,7 +277,7 @@ public class MySQLConnection extends AbstractConnection implements
 
     private long getClientFlagSha() {
         int flag = 0;
-        flag |= initClientFlags() ;
+        flag |= initClientFlags();
         flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         return flag;
     }
@@ -577,7 +578,7 @@ public class MySQLConnection extends AbstractConnection implements
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
-                BigDecimal vl = new BigDecimal(value);
+                new BigDecimal(value);
             } catch (NumberFormatException e) {
                 value = "`" + value + "`";
             }
@@ -721,7 +722,9 @@ public class MySQLConnection extends AbstractConnection implements
      */
     public void closeInner(final String reason) {
         innerTerminate(reason == null ? closeReason : reason);
-        if (this.respHandler != null) {
+        if (!connectionFirstReadied) {
+            onConnectFailed(new IllegalStateException(reason == null ? closeReason : reason));
+        } else if (this.respHandler != null) {
             closeResponseHandler(reason == null ? closeReason : reason);
         }
     }
@@ -790,6 +793,9 @@ public class MySQLConnection extends AbstractConnection implements
         pool.releaseChannel(this);
     }
 
+    private void onResponseReady() {
+        this.connectionFirstReadied = true;
+    }
 
     public boolean isExecuting() {
         return isExecuting;
@@ -803,6 +809,7 @@ public class MySQLConnection extends AbstractConnection implements
         if (handler instanceof MySQLConnectionHandler) {
             ((MySQLConnectionHandler) handler).setResponseHandler(queryHandler);
             respHandler = queryHandler;
+            onResponseReady();
             return true;
         } else if (queryHandler != null) {
             LOGGER.info("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());

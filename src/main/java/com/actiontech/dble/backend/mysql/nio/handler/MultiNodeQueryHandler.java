@@ -67,6 +67,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private AtomicBoolean recycledBuffer = new AtomicBoolean(false);
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
+        this(rrs, session, true);
+    }
+
+    protected MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session, boolean createBufferIfNeed) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -75,8 +79,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
         this.rrs = rrs;
-        if (ServerParse.SELECT == rrs.getSqlType()) {
-            byteBuffer = session.getSource().allocate();
+        if (createBufferIfNeed) {
+            for (RouteResultsetNode node : rrs.getNodes()) {
+                if (ServerParse.SELECT == node.getSqlType()) {
+                    byteBuffer = session.getSource().allocate();
+                    break;
+                }
+            }
         }
         this.sessionAutocommit = session.getSource().isAutocommit();
         this.modifiedSQL = rrs.getNodes()[0].isModifySQL();

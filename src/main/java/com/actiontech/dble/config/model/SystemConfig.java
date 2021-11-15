@@ -8,6 +8,7 @@ package com.actiontech.dble.config.model;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.memory.unsafe.Platform;
 
 import java.io.File;
 import java.io.IOException;
@@ -107,11 +108,12 @@ public final class SystemConfig {
 
     // off Heap unit:bytes
     // a page size
-    private int bufferPoolPageSize = 512 * 1024 * 4;
+    private int bufferPoolPageSize = 1024 * 1024 * 2;
     //minimum allocation unit
     private short bufferPoolChunkSize = 4096;
     // buffer pool page number
-    private short bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
+    private short bufferPoolPageNumber = (short) (Platform.getMaxDirectMemory() * 0.8 / bufferPoolPageSize);
+    private boolean useDefaultPageNumber = true;
     private int mappedFileSize = 1024 * 1024 * 64;
 
     // sql statistics
@@ -702,10 +704,18 @@ public final class SystemConfig {
     public void setBufferPoolPageNumber(short bufferPoolPageNumber) {
         if (bufferPoolPageNumber > 0) {
             this.bufferPoolPageNumber = bufferPoolPageNumber;
+            useDefaultPageNumber = false;
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMATE, "bufferPoolPageNumber", bufferPoolPageNumber, this.bufferPoolPageNumber));
         }
     }
+
+
+
+    public boolean isUseDefaultPageNumber() {
+        return useDefaultPageNumber;
+    }
+
 
     public int getFrontSocketSoRcvbuf() {
         return frontSocketSoRcvbuf;

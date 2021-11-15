@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 
 import java.util.concurrent.TimeUnit;
@@ -32,8 +33,11 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
             lock.lock();
             try {
                 if (service.isRowDataFlowing()) {
+                    BackendConnection conn = service.getConnection();
                     if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                        service.getConnection().businessClose("recycle time out");
+                        if (!conn.isClosed()) {
+                            conn.businessClose("recycle time out");
+                        }
                     } else {
                         service.release();
                     }

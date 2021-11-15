@@ -236,7 +236,7 @@ public abstract class AbstractConnection implements Connection {
         return true;
     }
 
-    public synchronized AbstractService getService() {
+    public AbstractService getService() {
         return service;
     }
 
@@ -443,7 +443,7 @@ public abstract class AbstractConnection implements Connection {
         this.port = port;
     }
 
-    public synchronized void setService(AbstractService service) {
+    public void setService(AbstractService service) {
         this.service = service;
     }
 

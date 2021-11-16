@@ -16,6 +16,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlPrepareStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MysqlDeallocatePrepareStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,10 @@ public class RWSplitNonBlockingSession extends Session {
         execute(master, null, callback);
     }
 
+    public void execute(Boolean master, Callback callback, boolean write) {
+        execute(master, null, callback, write);
+    }
+
     public void execute(Boolean master, Callback callback, String sql) {
         try {
             SQLStatement statement = parseSQL(sql);
@@ -70,16 +75,8 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void execute(Boolean master, byte[] originPacket, Callback callback) {
         try {
-            RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
-            if (conn != null && !conn.isClosed()) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("select bind conn[id={}]", conn.getId());
-                }
-                checkDest(!conn.getInstance().isReadInstance());
-                handler.execute(conn);
-                return;
-            }
-
+            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
+            if (handler == null) return;
             PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master));
             checkDest(!instance.isReadInstance());
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
@@ -91,11 +88,47 @@ public class RWSplitNonBlockingSession extends Session {
         }
     }
 
+    public void execute(Boolean master, byte[] originPacket, Callback callback, boolean write) {
+        try {
+            RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
+            if (handler == null) return;
+            PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(master), isWrite(write));
+            checkDest(!instance.isReadInstance());
+            instance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (IOException e) {
+            LOGGER.warn("select conn error", e);
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+        } catch (SQLSyntaxErrorException se) {
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        }
+    }
+
+    @Nullable
+    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException {
+        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
+        if (conn != null && !conn.isClosed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            checkDest(!conn.getInstance().isReadInstance());
+            handler.execute(conn);
+            return null;
+        }
+        return handler;
+    }
+
     private Boolean canRunOnMaster(Boolean master) {
         if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart() || rwSplitService.isUsingTmpTable()) {
             return true;
         }
         return master;
+    }
+
+    private boolean isWrite(boolean write) {
+        if (!rwSplitService.isAutocommit() || rwSplitService.isTxStart() || rwSplitService.isUsingTmpTable()) {
+            return true;
+        }
+        return write;
     }
 
     private void checkDest(boolean isMaster) throws SQLSyntaxErrorException {

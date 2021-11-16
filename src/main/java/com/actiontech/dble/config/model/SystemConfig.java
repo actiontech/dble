@@ -106,6 +106,9 @@ public final class SystemConfig {
     private int nestLoopRowsSize = 2000;
     private int nestLoopConnSize = 4;
 
+
+    private boolean useNewJoinOptimizer = false;
+
     //query memory used for per session,unit is M
     private int otherMemSize = 4;
     private int orderMemSize = 4;
@@ -366,6 +369,17 @@ public final class SystemConfig {
     public void setUseJoinStrategy(boolean useJoinStrategy) {
         this.useJoinStrategy = useJoinStrategy;
     }
+
+
+
+    public boolean isUseNewJoinOptimizer() {
+        return useNewJoinOptimizer;
+    }
+
+    public void setUseNewJoinOptimizer(boolean useNewJoinOptimizer) {
+        this.useNewJoinOptimizer = useNewJoinOptimizer;
+    }
+
 
     public String getXaRecoveryLogBaseDir() {
         return (this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);

@@ -13,7 +13,6 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

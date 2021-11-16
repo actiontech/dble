@@ -53,7 +53,12 @@ public final class MyOptimizer {
                 //  push down the filter which may contains ER KEY
                 node = FilterJoinColumnPusher.optimize(node);
 
-                node = JoinProcessor.optimize(node);
+
+                if (SystemConfig.getInstance().isUseNewJoinOptimizer()) {
+                    node = JoinProcessor.optimize(node);
+                } else {
+                    node = JoinERProcessor.optimize(node);
+                }
 
                 if (existGlobal >= 0) {
                     GlobalTableProcessor.optimize(node);

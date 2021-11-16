@@ -32,9 +32,11 @@ public class JoinChooser {
     private final List<PlanNode> joinUnits = new ArrayList<>();
     private final Set<PlanNode> dagNodes = new HashSet<>();
     private final Map<ERTable, Set<ERTable>> erRelations;
+    private final int charsetIndex;
     private final JoinNode orgNode;
+    private final List<Item> otherJoinOns = new ArrayList<>();
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
-        if (o1.relations.isERJoin && o2.relations.isERJoin) {
+        if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
             if (o1.relations.isInner) { // both er，o1 inner
                 return -1;
             } else if (o2.relations.isInner) { //both er，o1 not inner,o2 inner
@@ -42,9 +44,9 @@ public class JoinChooser {
             } else { // both er， left join
                 return 0;
             }
-        } else if (o1.relations.isERJoin) { // if o1 is not ER join, o1 is ER join, o1<>>o2
+        } else if (o1.relations.erRelationLst.size() > 0) { // if o2 is not ER join, o1 is ER join, o1<o2
             return -1;
-        } else if (o2.relations.isERJoin) { // if o1 is not ER join, o2 is ER join, o1>o2
+        } else if (o2.relations.erRelationLst.size() > 0) { // if o1 is not ER join, o2 is ER join, o1>o2
             return 1;
         } else {
             // both o1,o2 are not ER join, global table should be first
@@ -68,6 +70,7 @@ public class JoinChooser {
     public JoinChooser(JoinNode qtn, Map<ERTable, Set<ERTable>> erRelations) {
         this.orgNode = qtn;
         this.erRelations = erRelations;
+        this.charsetIndex = orgNode.getCharsetIndex();
     }
 
     public JoinChooser(JoinNode qtn) {
@@ -78,14 +81,14 @@ public class JoinChooser {
         if (erRelations == null) {
             return orgNode;
         }
-        return innerJoinOptimizer(orgNode.getCharsetIndex());
+        return innerJoinOptimizer();
     }
 
 
     /**
      * inner join's ER, rebuild inner join's unit
      */
-    private JoinNode innerJoinOptimizer(int charsetIndex) {
+    private JoinNode innerJoinOptimizer() {
         initJoinUnits(orgNode);
         if (joinUnits.size() == 1) {
             return orgNode;
@@ -97,12 +100,10 @@ public class JoinChooser {
             JoinRelationDag root = initJoinRelationDag();
             leftCartesianNodes();
 
-
             // todo:custom plan or use auto plan
             //if custom ,check plan can Follow the rules：Topological Sorting of dag, CartesianNodes
-
             // use auto plan
-            relationJoin = makeBNFJoin(root, charsetIndex, defaultCmp);
+            relationJoin = makeBNFJoin(root, defaultCmp);
         }
         // no relation join
         if (relationJoin == null) {
@@ -110,7 +111,7 @@ public class JoinChooser {
         }
 
         // others' node is the join units which can not optimize, just merge them
-        JoinNode ret = makeJoinWithCartesianNode(relationJoin, charsetIndex);
+        JoinNode ret = makeJoinWithCartesianNode(relationJoin);
         ret.setOrderBys(orgNode.getOrderBys());
         ret.setGroupBys(orgNode.getGroupBys());
         ret.select(orgNode.getColumnsSelected());
@@ -118,7 +119,8 @@ public class JoinChooser {
         ret.setLimitTo(orgNode.getLimitTo());
         ret.setOtherJoinOnFilter(orgNode.getOtherJoinOnFilter());
         ret.having(orgNode.getHavingFilter());
-        ret.setWhereFilter(orgNode.getWhereFilter());
+        //ret.setWhereFilter(orgNode.getWhereFilter());
+        ret.setWhereFilter(FilterUtils.and(orgNode.getWhereFilter(), FilterUtils.and(otherJoinOns)));
         ret.setAlias(orgNode.getAlias());
         ret.setWithSubQuery(orgNode.isWithSubQuery());
         ret.setContainsSubQuery(orgNode.isContainsSubQuery());
@@ -127,7 +129,7 @@ public class JoinChooser {
         return ret;
     }
 
-    private JoinNode makeJoinWithCartesianNode(JoinNode node, int charsetIndex) {
+    private JoinNode makeJoinWithCartesianNode(JoinNode node) {
         JoinNode left = node;
         for (PlanNode right : joinUnits) {
             left = new JoinNode(left, right, charsetIndex);
@@ -148,7 +150,7 @@ public class JoinChooser {
     private JoinRelationDag initJoinRelationDag() {
         JoinRelationDag root = createFirstNode();
         for (int i = 1; i < joinRelations.size(); i++) {
-            addNodeToDag(root, joinRelations.get(i));
+            root = addNodeToDag(root, joinRelations.get(i));
         }
         return root;
     }
@@ -156,13 +158,15 @@ public class JoinChooser {
     @NotNull
     private JoinRelationDag createFirstNode() {
         JoinRelations firstRelation = joinRelations.get(0);
-        JoinRelationDag root = new JoinRelationDag(firstRelation.getLeftPlanNode());
-        JoinRelationDag right = new JoinRelationDag(firstRelation);
+        // firstRelation should only have one left nodes
+        JoinRelationDag root = new JoinRelationDag(firstRelation.leftNodes.iterator().next());
+        JoinRelationDag right = new JoinRelationDag(firstRelation, firstRelation.isInner);
         root.rightNodes.add(right);
         right.degree++;
+        right.leftNodes.add(root);
         return root;
     }
-    private JoinNode makeBNFJoin(JoinRelationDag root, int charsetIndex, Comparator<JoinRelationDag> joinCmp) {
+    private JoinNode makeBNFJoin(JoinRelationDag root, Comparator<JoinRelationDag> joinCmp) {
 
         JoinNode joinNode = null;
         Queue<JoinRelationDag> queue = new LinkedList<>();
@@ -178,7 +182,7 @@ public class JoinChooser {
             if (nextZeroDegreeList.size() > 0) {
                 nextZeroDegreeList.sort(joinCmp);
                 for (JoinRelationDag rightNode : nextZeroDegreeList) {
-                    joinNode = makeJoinNode(charsetIndex, left, joinNode, rightNode);
+                    joinNode = makeJoinNode(left, joinNode, rightNode);
                     queue.offer(rightNode);
                 }
             }
@@ -186,7 +190,7 @@ public class JoinChooser {
         return joinNode;
     }
 
-    private JoinNode makeJoinNode(int charsetIndex, JoinRelationDag left, JoinNode joinNode, JoinRelationDag rightNodeOfJoin) {
+    private JoinNode makeJoinNode(JoinRelationDag left, JoinNode joinNode, JoinRelationDag rightNodeOfJoin) {
         boolean leftIsJoin = joinNode != null;
         PlanNode leftNode = leftIsJoin ? joinNode : left.node;
         PlanNode rightNode = rightNodeOfJoin.node;
@@ -195,25 +199,25 @@ public class JoinChooser {
             joinNode.setLeftOuterJoin();
         }
         List<ItemFuncEqual> filters = new ArrayList<>();
-        for (JoinRelation joinRelation : rightNodeOfJoin.relations.relationLst) {
-            ItemFuncEqual bf = FilterUtils.equal(joinRelation.left.key, joinRelation.right.key, charsetIndex);
-            filters.add(bf);
-            if (joinRelation.isERJoin) {
-                if (!leftIsJoin) {
-                    joinNode.getERkeys().add(joinRelation.left.erTable);
-                } else {
-                    joinNode.getERkeys().addAll(((JoinNode) leftNode).getERkeys());
-                }
+        for (JoinRelation joinRelation : rightNodeOfJoin.relations.erRelationLst) {
+            filters.add(joinRelation.filter);
+            if (!leftIsJoin) {
+                joinNode.getERkeys().add(joinRelation.left.erTable);
+            } else {
+                joinNode.getERkeys().addAll(((JoinNode) leftNode).getERkeys());
             }
+        }
+        for (JoinRelation joinRelation : rightNodeOfJoin.relations.normalRelationLst) {
+            filters.add(joinRelation.filter);
         }
         joinNode.setJoinFilter(filters);
         joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherFilter);
         return joinNode;
     }
 
-    private void addNodeToDag(JoinRelationDag root, JoinRelations relations) {
-        JoinRelationDag father = null;
-        List<JoinRelationDag> otherPres = new ArrayList<>(relations.prefixNodes.size());
+    private JoinRelationDag addNodeToDag(JoinRelationDag root, JoinRelations relations) {
+        int prefixSize = relations.prefixNodes.size();
+        Set<JoinRelationDag> otherPres = new HashSet<>(prefixSize);
         boolean familyInner = relations.isInner;
         Queue<JoinRelationDag> queue = new LinkedList<>();
         queue.offer(root);
@@ -221,96 +225,136 @@ public class JoinChooser {
             JoinRelationDag tmp = queue.poll();
             List<JoinRelationDag> children = new ArrayList<>(tmp.rightNodes);
             if (relations.prefixNodes.contains(tmp.node)) {
-                otherPres.add(tmp);
-                --relations.prefixSize;
-                if (relations.getLeftPlanNode() == tmp.node) {
-                    father = tmp;
+                if (otherPres.add(tmp)) {
+                    --prefixSize;
                 }
                 if (familyInner && !tmp.isFamilyInner) {
                     familyInner = false;
                 }
             }
             //all prefixNodes finished
-            if (relations.prefixSize == 0) {
+            if (prefixSize == 0) {
                 break;
             } else {
                 queue.addAll(children);
             }
         }
-        if (!familyInner) { // left join can not be optimizer
-            JoinRelationDag right = new JoinRelationDag(relations);
-            right.isFamilyInner = false;
+        if (!familyInner || otherPres.size() == 1 || relations.erRelationLst.size() == 0) {
+            // 1.left join can not be optimizer
+            // 2. familyInner only one otherPres, no need optimizer
+            // 3. all join filter are not er, no need change direction
+            JoinRelationDag right = new JoinRelationDag(relations, familyInner);
             for (JoinRelationDag otherPre : otherPres) {
                 otherPre.rightNodes.add(right);
                 right.degree++;
             }
-            return;
-        }
-
-        assert father != null;
-        if (relations.prefixNodes.size() > 1) {
-            Map<PlanNode, Item> planFilterMap = new HashMap<>();
-            if (assignOtherFilter(planFilterMap, relations.otherFilter, father.node, relations.getRightPlanNode())) {
-                // recreate JoinRelations, cut other filter
-                JoinRelations nodeRelations = new JoinRelations(true, planFilterMap.get(father.node));
-                nodeRelations.relationLst.addAll(relations.relationLst);
-                nodeRelations.isERJoin = relations.isERJoin;
-                JoinRelationDag right = new JoinRelationDag(nodeRelations);
-                father.rightNodes.add(right);
-                right.degree++;
-                // update filter
-                for (JoinRelationDag otherPre : otherPres) {
-                    if (planFilterMap.get(otherPre.node) != null) {
-                        otherPre.relations.otherFilter = FilterUtils.and(otherPre.relations.otherFilter, planFilterMap.get(otherPre.node));
-                    }
-                }
-                return;
+            right.leftNodes.addAll(otherPres);
+            return root;
+        } else {
+            Set<PlanNode> toChangeParent = new HashSet<>();
+            for (JoinRelation joinRelation : relations.erRelationLst) {
+                toChangeParent.add(joinRelation.left.planNode);
             }
-        }
-        //no other filter or can not assign
-        JoinRelationDag right = new JoinRelationDag(relations);
-        for (JoinRelationDag otherPre : otherPres) {
-            otherPre.rightNodes.add(right);
-            right.degree++;
+            return optimizerInnerJoinOtherFilter(new JoinRelationDag(relations.rightNode), relations, otherPres, toChangeParent);
         }
     }
 
+    private JoinRelationDag optimizerInnerJoinOtherFilter(JoinRelationDag newLeft, JoinRelations relations, Set<JoinRelationDag> orgLefts, Set<PlanNode> toChangeParent) {
+        //if (relations.leftNodes.size() < relations.prefixNodes.size()) {
+        //    todo:a inner join b on (ab) inner join c on (bc,ab)
+        //}
 
-    private boolean assignOtherFilter(Map<PlanNode, Item> planFilterMap, Item filter, PlanNode father, PlanNode rightNode) {
-        List<Item> splitFilters = FilterUtils.splitFilter(filter);
-        for (Item splitFilter : splitFilters) {
-            Set<PlanNode> filterNode = new HashSet<>();
-            for (PlanNode planNode : joinUnits) {
-                Item tmpSel = nodeHasSelectTable(planNode, splitFilter);
-                if (tmpSel != null) {
-                    filterNode.add(planNode);
-                    if (filterNode.size() >= 3) {
-                        return false;
-                    }
-                }
-            }
-            if (filterNode.size() == 0) {
-                updateMapByKey(planFilterMap, father, splitFilter);
-            } else if (filterNode.size() == 1) {
-                if (filterNode.contains(rightNode)) {
-                    updateMapByKey(planFilterMap, father, splitFilter);
-                } else {
-                    updateMapByKey(planFilterMap, filterNode.iterator().next(), splitFilter);
-                }
-            } else { // =2
-                if (filterNode.contains(father) && filterNode.contains(rightNode)) {
-                    updateMapByKey(planFilterMap, father, splitFilter);
-                } else {
-                    return false;
-                }
+        //eg: a inner join b on (ab) inner join c on (bc,ac)
+        //change direction to:c inner join b on (bc) inner join a on (ab,ac)
+        if (orgLefts.size() == 0 && relations == null) { // root and not with new
+            return newLeft;
+        }
+        for (JoinRelationDag orgLeft : orgLefts) {
+            if (toChangeParent.contains(orgLeft.node)) {
+                // inner join prefixNodes==left nodes
+                Set<PlanNode> toChange = orgLeft.relations == null ? null : orgLeft.relations.prefixNodes;
+                optimizerInnerJoinOtherFilter(orgLeft, orgLeft.relations, orgLeft.leftNodes, toChange);
             }
         }
-        return true;
+        List<JoinRelations> splitRelationLst = splitAndExchangeRelations(relations);
+        for (JoinRelations splitRelation : splitRelationLst) {
+            JoinRelationDag oldLeft = null;
+            for (JoinRelationDag orgLeft : orgLefts) {
+                if (splitRelation.rightNode == orgLeft.node) {
+                    oldLeft = orgLeft;
+                    break;
+                }
+            }
+            //change direction
+            assert oldLeft != null;
+            oldLeft.leftNodes.add(newLeft);
+            oldLeft.rightNodes.remove(newLeft);
+            oldLeft.degree++;
+            oldLeft.relations = addRelations(oldLeft.relations, splitRelation);
+
+            if (newLeft.relations != null) {
+                subRelation(newLeft.relations, splitRelation);
+            }
+            newLeft.leftNodes.remove(oldLeft); // root remove nothing
+            newLeft.rightNodes.add(oldLeft);
+            if (newLeft.degree > 0) { //root is 0
+                newLeft.degree--;
+            }
+        }
+        return newLeft;
     }
 
-    private void updateMapByKey(Map<PlanNode, Item> map, PlanNode key, Item value) {
-        Item oldValue = map.get(key);
-        map.put(key, FilterUtils.and(oldValue, value));
+    private void subRelation(JoinRelations a, JoinRelations b) {
+        PlanNode oldNode = b.leftNodes.iterator().next();
+        a.erRelationLst.removeIf(joinRelation -> joinRelation.left.planNode == oldNode);
+        a.normalRelationLst.removeIf(joinRelation -> joinRelation.left.planNode == oldNode);
+        a.init();
+    }
+
+    private JoinRelations addRelations(JoinRelations a, JoinRelations b) {
+        if (a == null) {
+            return b;
+        }
+        a.erRelationLst.addAll(b.erRelationLst);
+        a.normalRelationLst.addAll(b.normalRelationLst);
+        a.init();
+        return a;
+    }
+
+    private List<JoinRelations> splitAndExchangeRelations(JoinRelations relations) {
+        PlanNode orgRightNode = relations.rightNode;
+        Set<PlanNode> leftNodes = new HashSet<>(1);
+        leftNodes.add(orgRightNode);
+
+        List<JoinRelations> relationLst = new ArrayList<>();
+        Map<PlanNode, List<JoinRelation>> nodeToNormalMap = new HashMap<>();
+        for (JoinRelation joinRelation : relations.normalRelationLst) {
+            joinRelation.exchange();
+            List<JoinRelation> tmpNormalList = nodeToNormalMap.get(joinRelation.right.planNode);
+            if (tmpNormalList == null) {
+                tmpNormalList = new ArrayList<>();
+            }
+            tmpNormalList.add(joinRelation);
+            nodeToNormalMap.put(joinRelation.right.planNode, tmpNormalList);
+        }
+        for (JoinRelation joinRelation : relations.erRelationLst) {
+            joinRelation.exchange();
+            List<JoinRelation> tmpErRelationLst = new ArrayList<>(1);
+            tmpErRelationLst.add(joinRelation);
+            List<JoinRelation> tmpNormalRelationLst = nodeToNormalMap.remove(joinRelation.right.planNode);
+            if (tmpNormalRelationLst == null) {
+                tmpNormalRelationLst = new ArrayList<>(0);
+            }
+            JoinRelations nodeRelations = new JoinRelations(tmpErRelationLst, tmpNormalRelationLst, joinRelation.right.planNode, leftNodes);
+            nodeRelations.init();
+            relationLst.add(nodeRelations);
+        }
+        for (Entry<PlanNode, List<JoinRelation>> entry : nodeToNormalMap.entrySet()) {
+            JoinRelations nodeRelations = new JoinRelations(new ArrayList<>(0), entry.getValue(), entry.getKey(), leftNodes);
+            nodeRelations.init();
+            relationLst.add(nodeRelations);
+        }
+        return relationLst;
     }
 
     // find the smallest join units in node
@@ -345,30 +389,72 @@ public class JoinChooser {
             }
         }
 
+        Item otherFilter = joinNode.getOtherJoinOnFilter();
+        PlanNode rightNode = joinNode.getRightNode();
         if (joinNode.getJoinFilter().size() > 0) {
-            JoinRelations nodeRelations = new JoinRelations(joinNode.isInnerJoin(), joinNode.getOtherJoinOnFilter());
+            List<JoinRelation> erRelationLst = new ArrayList<>(1);
+            List<JoinRelation> normalRelationLst = new ArrayList<>(1);
+            Set<PlanNode> leftNodes = new HashSet<>(2);
             for (ItemFuncEqual filter : joinNode.getJoinFilter()) {
                 JoinColumnInfo columnInfoLeft = initJoinColumnInfo(filter.arguments().get(0));
                 JoinColumnInfo columnInfoRight = initJoinColumnInfo(filter.arguments().get(1));
-                JoinRelation nodeRelation = new JoinRelation(columnInfoLeft, columnInfoRight);
-                nodeRelations.relationLst.add(nodeRelation);
-                if (nodeRelation.isERJoin) {
-                    nodeRelations.isERJoin = true;
+                boolean isERJoin = isErRelation(columnInfoLeft.erTable, columnInfoRight.erTable);
+                if (columnInfoLeft.planNode != rightNode && columnInfoRight.planNode != rightNode) {
+                    //  now may not happen:a join b on a,b join c on c,b and a,b; the last a,b can be other filter
+                    //  if (isERJoin) {
+                    //      //todo:  try optimizer later ?leave it even inner join?
+                    //  }
+                    otherFilter = FilterUtils.and(otherFilter, filter);
+                    continue;
                 }
+                JoinRelation nodeRelation = new JoinRelation(columnInfoLeft, columnInfoRight, filter);
+                if (isERJoin) {
+                    erRelationLst.add(nodeRelation);
+                } else {
+                    normalRelationLst.add(nodeRelation);
+                }
+                leftNodes.add(columnInfoLeft.planNode);
+            }
+
+            JoinRelations nodeRelations;
+            if (joinNode.isInnerJoin()) {
+                otherJoinOns.add(otherFilter);
+                nodeRelations = new JoinRelations(erRelationLst, normalRelationLst, rightNode, leftNodes);
+            } else {
+                nodeRelations = new JoinRelations(erRelationLst, normalRelationLst, otherFilter, rightNode, leftNodes);
             }
             nodeRelations.init();
             joinRelations.add(nodeRelations);
+        } else {
+            if (joinNode.isInnerJoin()) {
+                otherJoinOns.add(otherFilter);
+            } else {
+                Set<PlanNode> leftNodes = new HashSet<>();
+                getLeftNodes(joinNode.getLeftNode(), leftNodes);
+                JoinRelations nodeRelations = new JoinRelations(new ArrayList<>(0), new ArrayList<>(0), otherFilter, rightNode, leftNodes);
+                nodeRelations.init();
+                joinRelations.add(nodeRelations);
+            }
+        }
+    }
+
+    private void getLeftNodes(PlanNode child, Set<PlanNode> leftNodes) {
+        if ((!isUnit(child)) && (child.type().equals(PlanNode.PlanNodeType.JOIN))) {
+            getLeftNodes(((JoinNode) child).getLeftNode(), leftNodes);
+            getLeftNodes(((JoinNode) child).getRightNode(), leftNodes);
+        } else {
+            leftNodes.add(child);
         }
     }
 
     private JoinColumnInfo initJoinColumnInfo(Item key) {
-        JoinColumnInfo columnInfoLeft = new JoinColumnInfo(key);
+        JoinColumnInfo columnInfo = new JoinColumnInfo(key);
         for (PlanNode planNode : joinUnits) {
-            Item tmpSel = nodeHasSelectTable(planNode, columnInfoLeft.key);
+            Item tmpSel = nodeHasSelectTable(planNode, columnInfo.key);
             if (tmpSel != null) {
-                columnInfoLeft.planNode = planNode;
-                columnInfoLeft.erTable = getERKey(planNode, tmpSel);
-                return columnInfoLeft;
+                columnInfo.planNode = planNode;
+                columnInfo.erTable = getERKey(planNode, tmpSel);
+                return columnInfo;
             }
         }
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not find table of:" + key);
@@ -399,21 +485,6 @@ public class JoinChooser {
         }
     }
 
-    //TODO:performance
-
-    private boolean isGlobalTree(PlanNode tn) {
-        if (tn instanceof TableNode && tn.getSubQueries().size() == 0) {
-            return tn.getUnGlobalTableCount() == 0;
-        } else if (tn.type() == PlanNode.PlanNodeType.NONAME) {
-            return tn.getSubQueries().size() == 0;
-        } else {
-            for (TableNode leaf : tn.getReferedTableNodes()) {
-                if (leaf.getUnGlobalTableCount() != 0)
-                    return false;
-            }
-            return true;
-        }
-    }
 
     private Item nodeHasSelectTable(PlanNode child, Item sel) {
         if (sel instanceof ItemField) {
@@ -446,7 +517,6 @@ public class JoinChooser {
                     return entry.getValue();
                 }
             }
-            return null;
         } else {
             String table = col.getTableName();
             if (child.getAlias() == null) {
@@ -470,8 +540,8 @@ public class JoinChooser {
                     }
                 }
             }
-            return null;
         }
+        return null;
     }
 
     private boolean isErRelation(ERTable er0, ERTable er1) {
@@ -486,10 +556,11 @@ public class JoinChooser {
     }
 
     private class JoinRelationDag {
-        private int degree = 0;
         private final PlanNode node;
-        private final JoinRelations relations;
-        private final List<JoinRelationDag> rightNodes = new ArrayList<>();
+        private int degree = 0;
+        private JoinRelations relations;
+        private final Set<JoinRelationDag> rightNodes = new HashSet<>();
+        private final Set<JoinRelationDag> leftNodes = new HashSet<>();
         private boolean isFamilyInner = true;
 
         JoinRelationDag(PlanNode node) {
@@ -498,40 +569,46 @@ public class JoinChooser {
             dagNodes.add(node);
         }
 
-        JoinRelationDag(JoinRelations relations) {
-            this.node = relations.getRightPlanNode();
+        JoinRelationDag(JoinRelations relations, boolean isFamilyInner) {
+            this.node = relations.rightNode;
             this.relations = relations;
-            this.isFamilyInner = relations.isInner;
+            this.isFamilyInner = isFamilyInner;
             dagNodes.add(node);
         }
     }
 
     private class JoinRelations {
-        private final List<JoinRelation> relationLst = new ArrayList<>();
+        private final List<JoinRelation> erRelationLst;
+        private final List<JoinRelation> normalRelationLst;
         private final boolean isInner;
-        private Item otherFilter;
-        private boolean isERJoin = false;
+        private final Item otherFilter;
+        private final Set<PlanNode> leftNodes;
+        private final PlanNode rightNode;
         private final Set<PlanNode> prefixNodes = new HashSet<>();
-        private int prefixSize = 0;
 
-        JoinRelations(boolean isInner, Item otherFilter) {
-            this.isInner = isInner;
+        JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, Item otherFilter, PlanNode rightNode, Set<PlanNode> leftNodes) {
+            this.erRelationLst = erRelationLst;
+            this.normalRelationLst = normalRelationLst;
+            this.rightNode = rightNode;
+            this.leftNodes = leftNodes;
+            this.isInner = false;
             this.otherFilter = otherFilter;
         }
-
-        PlanNode getLeftPlanNode() {
-            return relationLst.get(0).left.planNode;
-        }
-
-        PlanNode getRightPlanNode() {
-            return relationLst.get(0).right.planNode;
+        JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, PlanNode rightNode, Set<PlanNode> leftNodes) {
+            this.erRelationLst = erRelationLst;
+            this.normalRelationLst = normalRelationLst;
+            this.rightNode = rightNode;
+            this.leftNodes = leftNodes;
+            this.isInner = true;
+            this.otherFilter = null;
         }
 
         void init() {
-            prefixNodes.add(getLeftPlanNode());
+            prefixNodes.clear();
+            prefixNodes.addAll(leftNodes);
             if (otherFilter != null && otherFilter.getReferTables() != null) {
                 for (PlanNode planNode : joinUnits) {
-                    if (planNode != getRightPlanNode()) {
+                    if (planNode != rightNode) {
                         Item tmpSel = nodeHasSelectTable(planNode, otherFilter);
                         if (tmpSel != null) {
                             prefixNodes.add(planNode);
@@ -539,19 +616,25 @@ public class JoinChooser {
                     }
                 }
             }
-            prefixSize = prefixNodes.size();
         }
     }
 
     private class JoinRelation {
-        private final JoinColumnInfo left;
-        private final JoinColumnInfo right;
-        private final boolean isERJoin;
+        private JoinColumnInfo left;
+        private JoinColumnInfo right;
+        private ItemFuncEqual filter;
 
-        JoinRelation(JoinColumnInfo left, JoinColumnInfo right) {
+        JoinRelation(JoinColumnInfo left, JoinColumnInfo right, ItemFuncEqual filter) {
             this.left = left;
             this.right = right;
-            this.isERJoin = isErRelation(left.erTable, right.erTable);
+            this.filter = filter;
+        }
+
+        private void exchange() {
+            JoinColumnInfo tmp = this.left;
+            this.left = this.right;
+            this.right = tmp;
+            this.filter = FilterUtils.equal(left.key, right.key, charsetIndex);
         }
     }
 

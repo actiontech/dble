@@ -13,6 +13,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.executor.BackendRunnable;
 import com.actiontech.dble.net.executor.ThreadContext;
 import com.actiontech.dble.net.executor.ThreadContextView;
+import com.actiontech.dble.net.executor.ThreadPoolStatistic;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -24,7 +25,6 @@ import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.net.executor.ThreadPoolStatistic;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -122,7 +122,6 @@ public abstract class BackendService extends AbstractService {
 
     /**
      * used when Performance Mode
-     *
      */
     @Override
     public void execute(ServiceTask task, ThreadContext threadContext) {
@@ -238,10 +237,10 @@ public abstract class BackendService extends AbstractService {
         metaDataSynced = true;
         statusSync = null;
 
-        innerRelease();
-
-        TraceManager.sessionFinish(this);
-        connection.getPoolRelated().release(connection);
+        if (innerRelease()) {
+            TraceManager.sessionFinish(this);
+            connection.getPoolRelated().release(connection);
+        }
     }
 
 
@@ -281,7 +280,8 @@ public abstract class BackendService extends AbstractService {
 
     protected abstract boolean isSupportFlowControl();
 
-    protected void innerRelease() {
+    protected boolean innerRelease() {
+        return true;
     }
 
     // RowDataFlowing
@@ -543,7 +543,6 @@ public abstract class BackendService extends AbstractService {
 
         /**
          * only for xa
-         *
          */
         StatusSync(int synCount) {
             this.schema = null;

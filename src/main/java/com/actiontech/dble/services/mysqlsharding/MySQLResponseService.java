@@ -305,22 +305,23 @@ public class MySQLResponseService extends BackendService {
     }
 
     @Override
-    protected void innerRelease() {
+    protected boolean innerRelease() {
         if (isRowDataFlowing) {
             if (logResponse.compareAndSet(false, true)) {
                 session.setBackendResponseEndTime(this);
             }
             DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
-            return;
+            return false;
         }
         complexQuery = false;
         attachment = null;
         statusSync = null;
         isDDL = false;
         testing = false;
-        setResponseHandler(null);
-        setSession(null);
+        responseHandler = null;
+        session = null;
         logResponse.set(false);
+        return true;
     }
 
     public void onConnectionClose(String reason) {

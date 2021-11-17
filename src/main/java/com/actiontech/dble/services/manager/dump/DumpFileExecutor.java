@@ -87,9 +87,10 @@ public final class DumpFileExecutor implements Runnable {
                 this.context.setSkipContext(true);
                 LOGGER.warn("current stmt[" + currentStmt + "] error.", e);
                 this.context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
-            } catch (InterruptedException ie) {
-                LOGGER.warn("dump file executor is interrupted.");
-                return;
+                break;
+            } catch (InterruptedException e) {
+                LOGGER.debug("dump file executor is interrupted.");
+                break;
             } catch (Exception e) {
                 LOGGER.warn("dump file executor exit", e);
                 this.context.addError("dump file executor exit, because:" + e.getMessage());

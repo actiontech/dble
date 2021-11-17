@@ -24,10 +24,7 @@ import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 import com.alibaba.druid.sql.ast.SQLHint;
 
 import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class TableNode extends PlanNode {
 
@@ -179,7 +176,10 @@ public class TableNode extends PlanNode {
         newTableNode.tableMeta = this.tableMeta;
         newTableNode.columns = this.columns;
         newTableNode.referedTableNodes.add(newTableNode);
-        newTableNode.setNoshardNode(this.getNoshardNode());
+        if (this.getNoshardNode() != null) {
+            Set<String> noShardNode = new HashSet<>(this.getNoshardNode());
+            newTableNode.setNoshardNode(noShardNode);
+        }
 
         this.copySelfTo(newTableNode);
         newTableNode.setHintList(this.hintList);

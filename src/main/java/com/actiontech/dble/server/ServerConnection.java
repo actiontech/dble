@@ -539,10 +539,10 @@ public class ServerConnection extends FrontendConnection {
         TsQueriesCounter.getInstance().addToHistory(session);
         super.close(reason);
         session.terminate();
-
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
         }
+        SerializableLock.getInstance().unLock(this.id);
     }
 
     @Override

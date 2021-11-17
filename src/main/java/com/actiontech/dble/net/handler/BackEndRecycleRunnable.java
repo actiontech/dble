@@ -32,9 +32,10 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
             lock.lock();
             try {
                 if (backendConnection.isRowDataFlowing()) {
-
                     if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                        backendConnection.close("recycle time out");
+                        if (!backendConnection.isClosed()) {
+                            backendConnection.close("recycle time out");
+                        }
                     } else {
                         backendConnection.release();
                     }

@@ -612,6 +612,7 @@ public class ShardingService extends BusinessService {
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
         }
+        SerializableLock.getInstance().unLock(connection.getId());
     }
 
     protected void sessionStart() {

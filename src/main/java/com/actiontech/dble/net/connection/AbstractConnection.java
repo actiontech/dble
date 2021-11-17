@@ -113,7 +113,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     @Override
-    public synchronized void closeGracefully(@Nonnull String reason) {
+    public void closeGracefully(@Nonnull String reason) {
         if (doingGracefulClose.compareAndSet(false, true)) {
             synchronized (this) {
                 if (isClosed()) {
@@ -140,7 +140,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     @Override
-    public synchronized void closeImmediately(final String reason) {
+    public void closeImmediately(final String reason) {
         closeImmediatelyInner(reason);
     }
 
@@ -375,7 +375,7 @@ public abstract class AbstractConnection implements Connection {
 
 
     @Nonnull
-    public synchronized AbstractService getService() {
+    public AbstractService getService() {
         return service;
     }
 

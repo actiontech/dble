@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -45,6 +46,7 @@ import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author mycat
@@ -235,9 +237,20 @@ public final class ExplainHandler {
                 }
             }
             if (!StringUtil.isBlank(routeNode)) {
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), builder.getNode().getSql())};
-                for (RouteResultsetNode node : nodes) {
-                    RowDataPacket row = getRow(node, service.getCharset().getResults());
+                PlanNode node = builder.getNode();
+                String sql = node.getSql();
+                if (node.isExistView()) {
+                    GlobalVisitor visitor = new GlobalVisitor(node, true);
+                    visitor.visit();
+                    sql = visitor.getSql().toString();
+                    Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+                    for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+                        sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+                    }
+                }
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), sql)};
+                for (RouteResultsetNode rrsNode : nodes) {
+                    RowDataPacket row = getRow(rrsNode, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
                 }

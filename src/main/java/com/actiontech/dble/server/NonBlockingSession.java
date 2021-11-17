@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
@@ -614,7 +615,17 @@ public class NonBlockingSession extends Session {
                         tableSet.addAll(set);
                     }
                 }
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), node.getSql(), tableSet)};
+                String sql = node.getSql();
+                if (node.isExistView()) {
+                    GlobalVisitor visitor = new GlobalVisitor(node, true);
+                    visitor.visit();
+                    sql = visitor.getSql().toString();
+                    Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+                    for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+                        sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+                    }
+                }
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), sql, tableSet)};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select

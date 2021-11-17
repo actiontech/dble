@@ -1,8 +1,9 @@
 package com.actiontech.dble.services.manager.dump.handler;
 
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
+import com.actiontech.dble.services.manager.dump.parse.InsertQueryPos;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
 import java.sql.SQLNonTransientException;
 import java.util.List;
@@ -10,19 +11,23 @@ import java.util.List;
 public class DefaultValuesHandler {
 
 
-    public void preProcess(DumpFileContext context) {
+    public void process(DumpFileContext context, InsertQueryPos insertQueryPos, List<Pair<Integer, Integer>> valuePair) throws SQLNonTransientException {
+
     }
 
-    public void postProcess(DumpFileContext context) throws InterruptedException {
-        for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, ";");
+    protected String toString(List<SQLExpr> values, boolean isFirst) {
+        StringBuilder sbValues = new StringBuilder(400);
+        if (!isFirst) {
+            sbValues.append(',');
         }
-    }
-
-    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst, MySqlInsertStatement statement) throws InterruptedException, SQLNonTransientException {
-        for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, statement);
+        sbValues.append('(');
+        for (int i = 0; i < values.size(); i++) {
+            if (i != 0) {
+                sbValues.append(',');
+            }
+            sbValues.append(values.get(i).toString());
         }
+        sbValues.append(')');
+        return sbValues.toString();
     }
-
 }

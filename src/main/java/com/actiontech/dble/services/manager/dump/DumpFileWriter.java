@@ -2,11 +2,10 @@ package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
-import com.actiontech.dble.log.general.GeneralLogDisruptor;
+import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.services.manager.dump.handler.ShardingValuesHandler;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
@@ -18,7 +17,6 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -35,9 +33,10 @@ public class DumpFileWriter {
     private volatile boolean isDeleteFile = false;
     private int maxValues;
     // translator
-    private EventTranslatorOneArg<Element, Object> TRANSLATOR = (event, sequence, arg0) -> event.set(arg0);
+    private final EventTranslatorOneArg<Element, Object> translator = (event, sequence, arg0) -> event.set(arg0);
+    private Map<String, String> writerErrorMap;
 
-    public void open(String writePath, int writeQueueSize, int maxValue) throws IOException {
+    public void open(String writePath, int writeQueueSize, int maxValue, Map<String, String> map) throws IOException {
         Set<String> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes().keySet();
         Date date = new Date();
         for (String shardingNode : shardingNodes) {
@@ -46,6 +45,7 @@ public class DumpFileWriter {
             shardingNodeWriters.put(shardingNode, writer);
         }
         this.maxValues = maxValue;
+        this.writerErrorMap = map;
     }
 
     public void start() {
@@ -59,12 +59,6 @@ public class DumpFileWriter {
         for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
             entry.getValue().disruptor.shutdown();
         }
-    }
-
-    public void shutdown() {
-        for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
-            entry.getValue().disruptor.shutdown();
-        }
         shardingNodeWriters.clear();
     }
 
@@ -75,51 +69,48 @@ public class DumpFileWriter {
         }
     }
 
-    public void write(String shardingNode, SQLStatement statement) {
+    public void writeInsertHeader(String shardingNode, String stmt) {
         ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
-            writer.write(statement);
+            writer.write(stmt);
         }
     }
 
-    public void writeInsertHeader(String shardingNode, SQLStatement statement) {
+    public void writeInsertHeader(String shardingNode, ShardingValuesHandler.InsertQuery insertQuery) {
         ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
-            writer.write(statement);
+            writer.write(insertQuery);
         }
     }
 
-    public void writeAll(Object obj) {
+    public void writeAll(String obj) {
         for (ShardingNodeWriter writer : shardingNodeWriters.values()) {
             writer.write(obj);
         }
     }
 
     public boolean isFinished() {
-        return finished.get() == 0;
+        return finished.get() <= 0;
     }
 
     public void setDeleteFile(boolean deleteFile) {
         this.isDeleteFile = deleteFile;
     }
 
-    class Element {
+
+    static class Element {
 
         private Object value;
 
-        public Element() {
-        }
-
-        public Element(Object value) {
-            this.value = value;
+        Element() {
         }
 
         public Object get() {
             return value;
         }
 
-        public void set(Object value) {
-            this.value = value;
+        public void set(Object val) {
+            this.value = val;
         }
 
     }
@@ -133,7 +124,7 @@ public class DumpFileWriter {
         private String path;
         private String currentTable;
         private int rows = 1;
-        private boolean isFirst = true;
+        private boolean error = false;
 
         ShardingNodeWriter(String shardingNode, int queueSize) {
             this.shardingNode = shardingNode;
@@ -151,11 +142,11 @@ public class DumpFileWriter {
         }
 
         void write(Object obj) {
-            if (null == this.disruptor) {
+            if (null == this.disruptor || error) {
                 return;
             }
-            if (!disruptor.getRingBuffer().tryPublishEvent(TRANSLATOR, obj)) {
-                disruptor.getRingBuffer().publishEvent(TRANSLATOR, obj);
+            if (!disruptor.getRingBuffer().tryPublishEvent(translator, obj)) {
+                disruptor.getRingBuffer().publishEvent(translator, obj);
             }
         }
 
@@ -168,71 +159,163 @@ public class DumpFileWriter {
 
         public void start() {
             String wrapStr = ";\n";
-            EventFactory<Element> factory = () -> new Element();
+            EventFactory<Element> factory = Element::new;
             EventHandler<Element> handler = (element, sequence, endOfBatch) -> {
-                SQLInsertStatement insertStatement = null;
-                Object obj = element.get();
-                String content = null;
-                if (obj instanceof SQLInsertStatement) {
-                    insertStatement = (SQLInsertStatement) obj;
-                } else {
-                    content = (String) obj;
-                }
-                if (null != content && content.equals(DumpFileReader.EOF)) {
-                    this.bufferedWriter.write(wrapStr);
-                    LOGGER.info("finish to write dump file.");
-                    close();
-                    finished.decrementAndGet();
+                if (error) {
                     return;
                 }
-                writeContent(insertStatement, wrapStr, content);
+                try {
+                    Object content = element.get();
+
+                    if (null != content && content.equals(DumpFileReader.EOF)) {
+                        this.bufferedWriter.write(wrapStr);
+                        LOGGER.info("finish to write dump file.");
+                        close();
+                        finished.decrementAndGet();
+                        return;
+                    }
+                    writeContent(content, wrapStr);
+                } catch (Exception e) {
+                    error = true;
+                    finished.decrementAndGet();
+                    writerErrorMap.putIfAbsent(this.shardingNode, "writer error,because:" + e.getMessage());
+                    close();
+                }
             };
             SleepingWaitStrategy strategy = new SleepingWaitStrategy();
-            this.disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("dis-split-" + shardingNode).build(), ProducerType.MULTI, strategy);
-            this.disruptor.handleEventsWith(handler);
-            this.disruptor.setDefaultExceptionHandler(new GeneralLogDisruptor.GeneralLogExceptionHandler());
-            this.disruptor.start();
+            disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("Split_Writer_" + shardingNode).build(), ProducerType.MULTI, strategy);
+            disruptor.handleEventsWith(handler);
+            disruptor.setDefaultExceptionHandler(new SplitWriterExceptionHandler());
+            disruptor.start();
         }
 
-        private void writeContent(SQLInsertStatement insertStatement, String wrapStr, String content) throws IOException {
+
+        private void writeContent(Object obj, String wrapStr) throws IOException {
             String table = null;
-            if (insertStatement != null) {
-                table = StringUtil.removeBackQuote(insertStatement.getTableName().getSimpleName());
+            String content = null;
+            ShardingValuesHandler.InsertQuery insertQuery = null;
+            if (obj instanceof ShardingValuesHandler.InsertQuery) {
+                insertQuery = (ShardingValuesHandler.InsertQuery) obj;
+                table = StringUtil.removeBackQuote(insertQuery.getInsertQueryPos().getTableName());
+            } else {
+                content = wrapStr + obj;
             }
 
             if (table != null && (table.equals(this.currentTable) || table.equalsIgnoreCase(this.currentTable)) && this.rows < maxValues) {
                 //splicing insert
-                if (insertStatement.getValuesList().size() == 1) {
-                    content = getSqlStr(insertStatement.getValuesList().get(0).getValues());
-                }
+                writeInsertValue(insertQuery);
                 rows++;
-            } else if (!isFirst) {
-                if (null != insertStatement) {
-                    content = wrapStr + insertStatement.toString();
-                } else {
-                    content = wrapStr + content;
-                }
+            } else if (table != null) {
+                this.currentTable = table;
+                writeInsert(table, insertQuery, wrapStr);
                 rows = 1;
+            } else {
+                if (this.bufferedWriter != null) {
+                    this.bufferedWriter.write(content);
+                }
             }
-            this.currentTable = table;
+        }
+
+        private void writeInsert(String table, ShardingValuesHandler.InsertQuery insertQuery, String wrapStr) throws IOException {
+            // add
+            StringBuilder insertHeader = new StringBuilder(200);
+            insertHeader.append("INSERT ");
+            if (insertQuery.getInsertQueryPos().isIgnore()) {
+                insertHeader.append("IGNORE ");
+            }
+            insertHeader.append("INTO ");
+            insertHeader.append('`');
+            insertHeader.append(table);
+            insertHeader.append('`');
+            if (!CollectionUtil.isEmpty(insertQuery.getInsertQueryPos().getColumns())) {
+                Integer start = insertQuery.getInsertQueryPos().getColumnRange().getKey();
+                Integer end = insertQuery.getInsertQueryPos().getColumnRange().getValue();
+                insertHeader.append(' ');
+                insertHeader.append('(');
+                insertHeader.append(insertQuery.getInsertQueryPos().getInsertChars(), start, end - start);
+                insertHeader.append(')');
+                insertHeader.append(' ');
+            }
+            insertHeader.append(" VALUES ");
+            insertHeader.append('(');
+            if (insertQuery.getIncrementColumnIndex() != -1) {
+                //has increment column
+                int index = 0;
+                for (Pair<Integer, Integer> pair : insertQuery.getValuePair()) {
+                    Integer start = pair.getKey();
+                    Integer end = pair.getValue();
+                    if (index++ == insertQuery.getIncrementColumnIndex()) {
+                        insertHeader.append(insertQuery.getIncrementColumnValue());
+                    } else {
+                        insertHeader.append(insertQuery.getInsertQueryPos().getInsertChars(), start, end - start);
+                    }
+                    if (index != insertQuery.getValuePair().size()) {
+                        insertHeader.append(',');
+                    }
+                }
+            } else {
+                Integer start = insertQuery.getValuePair().get(0).getKey();
+                Integer end = insertQuery.getValuePair().get(insertQuery.getValuePair().size() - 1).getValue();
+                insertHeader.append(insertQuery.getInsertQueryPos().getInsertChars(), start, end - start);
+            }
+            insertHeader.append(')');
+            String content = wrapStr + insertHeader.toString();
             if (this.bufferedWriter != null) {
-                isFirst = false;
                 this.bufferedWriter.write(content);
             }
         }
 
-        protected String getSqlStr(List<SQLExpr> values) {
-            StringBuilder sbValues = new StringBuilder(200);
-            sbValues.append(",(");
-            for (int i = 0; i < values.size(); i++) {
-                if (i != 0) {
-                    sbValues.append(",");
+        private void writeInsertValue(ShardingValuesHandler.InsertQuery insertQuery) throws IOException {
+            char[] insertChars = insertQuery.getInsertQueryPos().getInsertChars();
+            if (this.bufferedWriter != null) {
+                this.bufferedWriter.write(',');
+                this.bufferedWriter.write('(');
+                if (insertQuery.getIncrementColumnIndex() != -1) {
+                    //has increment column
+                    int index = 0;
+                    for (Pair<Integer, Integer> pair : insertQuery.getValuePair()) {
+                        Integer start = pair.getKey();
+                        Integer end = pair.getValue();
+                        if (index++ == insertQuery.getIncrementColumnIndex()) {
+                            this.bufferedWriter.write(insertQuery.getIncrementColumnValue() + "");
+                        } else {
+                            this.bufferedWriter.write(insertQuery.getInsertQueryPos().getInsertChars(), start, end - start);
+                        }
+                        if (index != insertQuery.getValuePair().size()) {
+                            this.bufferedWriter.write(',');
+                        }
+                    }
+                } else {
+                    Integer start = insertQuery.getValuePair().get(0).getKey();
+                    Integer end = insertQuery.getValuePair().get(insertQuery.getValuePair().size() - 1).getValue();
+                    this.bufferedWriter.write(insertChars, start, end - start);
                 }
-                sbValues.append(values.get(i).toString());
+                this.bufferedWriter.write(')');
             }
-            sbValues.append(")");
-            return sbValues.toString();
         }
     }
+
+    // exception
+    public static final class SplitWriterExceptionHandler implements ExceptionHandler {
+
+        public SplitWriterExceptionHandler() {
+        }
+
+        @Override
+        public void handleEventException(Throwable ex, long sequence, Object event) {
+            LOGGER.warn("Exception processing: {} {} ,exception：{}", sequence, event, ex);
+        }
+
+        @Override
+        public void handleOnStartException(Throwable ex) {
+            LOGGER.error("Exception during onStart for split disruptor ,exception：{}", ex);
+        }
+
+        @Override
+        public void handleOnShutdownException(Throwable ex) {
+            LOGGER.error("Exception during onShutdown for split disruptor ,exception：{}", ex);
+        }
+    }
+
 
 }

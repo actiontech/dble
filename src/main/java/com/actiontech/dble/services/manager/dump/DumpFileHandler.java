@@ -4,14 +4,13 @@ package com.actiontech.dble.services.manager.dump;
 import com.actiontech.dble.btrace.provider.SplitFileProvider;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.NameableExecutor;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.LockSupport;
 
@@ -22,21 +21,19 @@ public final class DumpFileHandler implements Runnable {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
-    private BlockingQueue<String> handleQueue;
+    private final BlockingQueue<String> handleQueue;
     private final BlockingQueue<String> ddlQueue;
     private final BlockingQueue<String> insertQueue;
 
     private StringBuilder tempStr = new StringBuilder(1000);
-    private NameableExecutor nameableExecutor;
-    ManagerService service;
+    private final NameableExecutor nameableExecutor;
 
 
-    public DumpFileHandler(ArrayBlockingQueue<String> queue, ArrayBlockingQueue<String> insertDeque, BlockingQueue<String> handleQueue, NameableExecutor nameableExecutor, ManagerService service) {
+    public DumpFileHandler(BlockingQueue<String> queue, BlockingQueue<String> insertDeque, BlockingQueue<String> handleQueue, NameableExecutor nameableExecutor) {
         this.ddlQueue = queue;
         this.insertQueue = insertDeque;
         this.handleQueue = handleQueue;
         this.nameableExecutor = nameableExecutor;
-        this.service = service;
     }
 
     @Override
@@ -46,29 +43,30 @@ public final class DumpFileHandler implements Runnable {
             try {
                 String stmts = handleQueue.take();
                 SplitFileProvider.getHandleQueueSizeOfTake(handleQueue.size());
-                if (stmts == null || stmts.isEmpty()) {
+                if (stmts.isEmpty()) {
                     continue;
                 }
-                if (stmts.equals("dump file eof")) {
+                if (stmts.equals(DumpFileReader.EOF)) {
                     if (null != tempStr && !StringUtil.isBlank(tempStr.toString())) {
                         putSql(tempStr.toString());
                         this.tempStr = null;
                     }
-                    putSql("dump file eof");
+                    putSql(DumpFileReader.EOF);
                     break;
                 }
                 readSQLByEOF(stmts);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOGGER.debug("dump file handler is interrupted.");
+                break;
             }
         }
 
     }
 
-    // read one statement by ;
+    // read one statement by ;\n
     private void readSQLByEOF(String stmts) throws InterruptedException {
         boolean endWithEOF = stmts.endsWith(";") | stmts.endsWith(";\n");
-        List<String> strings = DumpFileReader.splitContent(stmts, ";\n");
+        List<String> strings = splitContent(stmts, ";\n");
         int len = strings.size() - 1;
 
         int i = 0;
@@ -103,6 +101,26 @@ public final class DumpFileHandler implements Runnable {
                 }
             }
         }
+    }
+
+
+    public static List<String> splitContent(String content, String separate) {
+        List<String> list = Lists.newArrayList();
+        while (true) {
+            int j = content.indexOf(separate);
+            if (j < 0) {
+                if (!content.isEmpty()) {
+                    list.add(content);
+                }
+                break;
+            }
+            list.add(content.substring(0, j));
+            content = content.substring(j + separate.length());
+        }
+        if (list.isEmpty()) {
+            list.add(content);
+        }
+        return list;
     }
 
     public void putSql(String sql) throws InterruptedException {

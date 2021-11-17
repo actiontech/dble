@@ -3,21 +3,17 @@ package com.actiontech.dble.services.manager.dump.handler;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.manager.dump.DumpException;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
+import com.actiontech.dble.services.manager.dump.parse.InsertParser;
+import com.actiontech.dble.services.manager.dump.parse.InsertQueryPos;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
 import java.sql.SQLNonTransientException;
 import java.util.List;
@@ -36,9 +32,10 @@ public class InsertHandler extends DefaultHandler {
         // get table name simply
         int type = ServerParseFactory.getShardingParser().parse(stmt);
 
-        String table = null;
-        MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-        table = StringUtil.removeBackQuote(insert.getTableName().getSimpleName());
+        InsertParser insertParser = new InsertParser(stmt);
+        InsertQueryPos insertQueryPos = insertParser.parseStatement();
+        insertQueryPos.setInsertString(stmt);
+        String table = StringUtil.removeBackQuote(insertQueryPos.getTableName());
         fileContext.setTable(table);
 
         if (fileContext.isSkipContext() || !(fileContext.getTableConfig() instanceof ShardingTableConfig)) {
@@ -53,43 +50,28 @@ public class InsertHandler extends DefaultHandler {
         }
 
         // check columns from insert columns
-        checkColumns(fileContext, insert.getColumns());
+        checkColumns(fileContext, insertQueryPos.getColumns());
+        if (fileContext.getConfig().isIgnore()) {
+            insertQueryPos.setIgnore(true);
+        }
         DefaultValuesHandler valuesHandler;
         if (fileContext.getTableConfig() instanceof ShardingTableConfig) {
             valuesHandler = shardingValuesHandler;
         } else {
             valuesHandler = defaultValuesHandler;
         }
-        try {
-            handleStatement(fileContext, insert, valuesHandler, stmt);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return insert;
+        handleStatement(fileContext, insertQueryPos, valuesHandler);
+        return null;
     }
 
-    public void handleStatement(DumpFileContext context, SQLStatement sqlStatement, DefaultValuesHandler valuesHandler, String stmt) throws InterruptedException {
-        MySqlInsertStatement insert = (MySqlInsertStatement) sqlStatement;
-        SQLInsertStatement.ValuesClause valueClause;
-
-        valuesHandler.preProcess(context);
-        for (int i = 0; i < insert.getValuesList().size(); i++) {
-            valueClause = insert.getValuesList().get(i);
+    public void handleStatement(DumpFileContext context, InsertQueryPos insertQueryPos, DefaultValuesHandler valuesHandler) {
+        for (List<Pair<Integer, Integer>> valuePair : insertQueryPos.getValueItemsRange()) {
             try {
-                processIncrementColumn(context, valueClause.getValues());
-                MySqlInsertStatement mySqlInsertStatement = new MySqlInsertStatement();
-                mySqlInsertStatement.setIgnore(insert.isIgnore());
-                mySqlInsertStatement.setTableName(insert.getTableName());
-                for (SQLExpr column : insert.getColumns()) {
-                    mySqlInsertStatement.addColumn(column);
-                }
-                mySqlInsertStatement.setValues(valueClause);
-                valuesHandler.process(context, valueClause.getValues(), i == 0, mySqlInsertStatement);
+                valuesHandler.process(context, insertQueryPos, valuePair);
             } catch (SQLNonTransientException e) {
                 context.addError(e.getMessage());
             }
         }
-        valuesHandler.postProcess(context);
     }
 
     public void handleSQL(DumpFileContext context, String stmt) throws InterruptedException {
@@ -104,28 +86,12 @@ public class InsertHandler extends DefaultHandler {
 
     @Override
     public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
-
+        return;
     }
 
     @Override
     public void handle(DumpFileContext context, String stmt) throws InterruptedException {
-
-    }
-
-    private void processIncrementColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
-        int incrementIndex = context.getIncrementColumnIndex();
-        if (incrementIndex == -1) {
-            return;
-        }
-
-        String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
-        long val = SequenceManager.getHandler().nextId(tableKey);
-        SQLExpr value = values.get(incrementIndex);
-        if (!StringUtil.isEmpty(SQLUtils.toMySqlString(value)) && !context.isNeedSkipError()) {
-            context.addError("For table using global sequence, dble has set increment column values for you.");
-            context.setNeedSkipError(true);
-        }
-        values.set(incrementIndex, new SQLIntegerExpr(val));
+        return;
     }
 
     /**
@@ -135,7 +101,7 @@ public class InsertHandler extends DefaultHandler {
      * @param context context
      * @param columns columns
      */
-    private void checkColumns(DumpFileContext context, List<SQLExpr> columns) throws DumpException, SQLNonTransientException {
+    private void checkColumns(DumpFileContext context, List<String> columns) throws DumpException, SQLNonTransientException {
         int partitionColumnIndex = context.getPartitionColumnIndex();
         int incrementColumnIndex = context.getIncrementColumnIndex();
 
@@ -149,8 +115,7 @@ public class InsertHandler extends DefaultHandler {
         if (tableConfig.getIncrementColumn() != null || tableConfig.getShardingColumn() != null) {
             if (!CollectionUtil.isEmpty(columns)) {
                 for (int i = 0; i < columns.size(); i++) {
-                    SQLExpr column = columns.get(i);
-                    String columnName = StringUtil.removeBackQuote(column.toString());
+                    String columnName = columns.get(i);
                     if (tableConfig.getIncrementColumn() != null && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }
@@ -188,4 +153,5 @@ public class InsertHandler extends DefaultHandler {
         context.setIncrementColumnIndex(incrementColumnIndex);
         context.setPartitionColumnIndex(partitionColumnIndex);
     }
+
 }

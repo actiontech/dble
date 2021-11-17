@@ -220,13 +220,14 @@ public abstract class BackendService extends AbstractService {
         metaDataSynced = true;
         statusSync = null;
 
-        innerRelease();
-
-        TraceManager.sessionFinish(this);
-        connection.getPoolRelated().release(connection);
+        if (innerRelease()) {
+            TraceManager.sessionFinish(this);
+            connection.getPoolRelated().release(connection);
+        }
     }
 
-    protected void innerRelease() {
+    protected boolean innerRelease() {
+        return true;
     }
 
     // RowDataFlowing

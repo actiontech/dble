@@ -843,11 +843,11 @@ public class ServerConnection extends FrontendConnection {
         if (session != null) {
             TsQueriesCounter.getInstance().addToHistory(session);
             session.terminate();
-
         }
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
         }
+        SerializableLock.getInstance().unLock(id);
     }
 
     @Override

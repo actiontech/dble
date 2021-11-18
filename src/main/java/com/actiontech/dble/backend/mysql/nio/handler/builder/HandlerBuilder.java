@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
+import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
@@ -13,15 +14,14 @@ import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.factorys.FinalHandlerFactory;
 import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 public class HandlerBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(HandlerBuilder.class);
@@ -79,7 +79,7 @@ public class HandlerBuilder {
         }
     }
 
-    public String build() throws Exception {
+    public RouteResultsetNode build() throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build&execute-complex-sql");
         try {
             final long startTime = System.nanoTime();
@@ -98,7 +98,7 @@ public class HandlerBuilder {
             if (endHandler.getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (endHandler.getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
-                    return routes[0].getName();
+                    return getRouteResultsetNode(builder, routes[0].getName());
                 }
             }
             HandlerBuilder.startHandler(fh);
@@ -110,6 +110,27 @@ public class HandlerBuilder {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
         return null;
+    }
+
+    private RouteResultsetNode getRouteResultsetNode(BaseHandlerBuilder builder, String nodeName) {
+        Set<String> tableSet = Sets.newHashSet();
+        for (RouteResultsetNode routeResultsetNode : rrsNodes) {
+            Set<String> set = routeResultsetNode.getTableSet();
+            if (null != set) {
+                tableSet.addAll(set);
+            }
+        }
+        String sql = node.getSql();
+        if (builder.isExistView() || builder.isContainSubQuery(node)) {
+            GlobalVisitor visitor = new GlobalVisitor(node, true, true);
+            visitor.visit();
+            sql = visitor.getSql().toString();
+            Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+            for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+                sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+            }
+        }
+        return new RouteResultsetNode(nodeName, ServerParse.SELECT, sql, tableSet);
     }
 
     /**

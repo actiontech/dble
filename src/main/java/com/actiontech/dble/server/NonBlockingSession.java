@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
-import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
@@ -42,7 +41,6 @@ import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
-import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
@@ -52,10 +50,9 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -606,26 +603,9 @@ public class NonBlockingSession extends Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            String nodeName = builder.build();
-            if (!StringUtil.isBlank(nodeName)) {
-                Set<String> tableSet = Sets.newHashSet();
-                for (RouteResultsetNode routeResultsetNode : builder.getRrsNodes()) {
-                    Set<String> set = routeResultsetNode.getTableSet();
-                    if (null != set) {
-                        tableSet.addAll(set);
-                    }
-                }
-                String sql = node.getSql();
-                if (node.isExistView()) {
-                    GlobalVisitor visitor = new GlobalVisitor(node, true);
-                    visitor.visit();
-                    sql = visitor.getSql().toString();
-                    Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
-                    for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
-                        sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
-                    }
-                }
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(nodeName, rrs.getSqlType(), sql, tableSet)};
+            RouteResultsetNode rrsNode = builder.build();
+            if (rrsNode != null) {
+                RouteResultsetNode[] nodes = {rrsNode};
                 rrs.setNodes(nodes);
                 setRouteResultToTrace(nodes);
                 // dml or simple select

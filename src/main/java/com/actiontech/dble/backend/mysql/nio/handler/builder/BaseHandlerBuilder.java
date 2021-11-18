@@ -229,7 +229,7 @@ public abstract class BaseHandlerBuilder {
      */
     protected void noShardBuild() {
         this.needCommon = false;
-        GlobalVisitor visitor = new GlobalVisitor(node, true);
+        GlobalVisitor visitor = new GlobalVisitor(node, true, false);
         visitor.visit();
         String sql = visitor.getSql().toString();
         Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
@@ -555,8 +555,15 @@ public abstract class BaseHandlerBuilder {
         Set<String> routeNodes = HandlerBuilder.canRouteToNodes(merges);
         if (routeNodes != null && routeNodes.size() > 0) {
             this.needCommon = false;
-            PushDownVisitor visitor = new PushDownVisitor(node, true);
-            RouteResultset rrs = visitor.buildRouteResultset();
+            GlobalVisitor visitor = new GlobalVisitor(node, true, true);
+            visitor.visit();
+            String sql = visitor.getSql().toString();
+            Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+            for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+                sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+            }
+            RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
+            rrs.setStatement(sql);
             rrs.setComplexSQL(true);
             buildOneMergeHandler(routeNodes, rrs);
             return true;
@@ -604,5 +611,14 @@ public abstract class BaseHandlerBuilder {
 
     public PlanNode getNode() {
         return node;
+    }
+
+    public boolean isExistView() {
+        return subQueryBuilderList.stream().anyMatch(BaseHandlerBuilder::isExistView) || node.isExistView();
+    }
+
+
+    public boolean isContainSubQuery(PlanNode planNode) {
+        return planNode.getSubQueries().size() > 0 || planNode.getChildren().stream().anyMatch(this::isContainSubQuery);
     }
 }

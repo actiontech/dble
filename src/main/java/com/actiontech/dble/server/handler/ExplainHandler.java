@@ -239,8 +239,8 @@ public final class ExplainHandler {
             if (!StringUtil.isBlank(routeNode)) {
                 PlanNode node = builder.getNode();
                 String sql = node.getSql();
-                if (node.isExistView()) {
-                    GlobalVisitor visitor = new GlobalVisitor(node, true);
+                if (builder.isExistView() || builder.isContainSubQuery(node)) {
+                    GlobalVisitor visitor = new GlobalVisitor(node, true, true);
                     visitor.visit();
                     sql = visitor.getSql().toString();
                     Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();

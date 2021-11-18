@@ -29,8 +29,10 @@ import com.actiontech.dble.util.StringUtil;
  */
 public class GlobalVisitor extends MysqlVisitor {
 
-    public GlobalVisitor(PlanNode globalQuery, boolean isTopQuery) {
+    private final boolean rebuildSubQuery;
+    public GlobalVisitor(PlanNode globalQuery, boolean isTopQuery, boolean rebuildSubQuery) {
         super(globalQuery, isTopQuery);
+        this.rebuildSubQuery = rebuildSubQuery;
     }
 
     public void visit() {
@@ -118,7 +120,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
         sqlBuilder.append('(');
         PlanNode child = query.getChild();
-        MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+        MysqlVisitor childVisitor = new GlobalVisitor(child, true, rebuildSubQuery);
         childVisitor.visit();
         mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
         sqlBuilder.append(childVisitor.getSql()).append(") ").append(query.getAlias());
@@ -142,7 +144,7 @@ public class GlobalVisitor extends MysqlVisitor {
         boolean isUnion = merge.isUnion();
         boolean isFirst = true;
         for (PlanNode child : merge.getChildren()) {
-            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true, rebuildSubQuery);
             childVisitor.visit();
             if (isFirst) {
                 isFirst = false;
@@ -186,7 +188,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
 
         PlanNode left = join.getLeftNode();
-        MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
+        MysqlVisitor leftVisitor = new GlobalVisitor(left, false, rebuildSubQuery);
         leftVisitor.visit();
         mapTableToSimple.putAll(leftVisitor.getMapTableToSimple());
         sqlBuilder.append(leftVisitor.getSql());
@@ -201,7 +203,7 @@ public class GlobalVisitor extends MysqlVisitor {
         sqlBuilder.append(" join ");
 
         PlanNode right = join.getRightNode();
-        MysqlVisitor rightVisitor = new GlobalVisitor(right, false);
+        MysqlVisitor rightVisitor = new GlobalVisitor(right, false, rebuildSubQuery);
         rightVisitor.visit();
         mapTableToSimple.putAll(rightVisitor.getMapTableToSimple());
         sqlBuilder.append(rightVisitor.getSql());
@@ -328,7 +330,12 @@ public class GlobalVisitor extends MysqlVisitor {
     protected String visitPushDownNameSel(Item item) {
         String orgPushDownName;
         if (item.isWithSubQuery()) {
-            orgPushDownName = buildSubQueryItem(item, false);
+            if (rebuildSubQuery) {
+                Item tmpItem = PlanUtil.rebuildSubQueryItem(item);
+                orgPushDownName = tmpItem.getItemName();
+            } else {
+                orgPushDownName = buildSubQueryItem(item, false);
+            }
         } else {
             orgPushDownName = item.getItemName();
         }
@@ -364,7 +371,12 @@ public class GlobalVisitor extends MysqlVisitor {
     // pushDown's name of not in select list
     protected final String visitUnSelPushDownName(Item item, boolean canUseAlias) {
         if (item.isWithSubQuery()) {
-            return buildSubQueryItem(item, canUseAlias);
+            if (rebuildSubQuery) {
+                Item tmpItem = PlanUtil.rebuildSubQueryItem(item);
+                return tmpItem.getItemName();
+            } else {
+                return buildSubQueryItem(item, canUseAlias);
+            }
         }
         String selName = getItemName(item);
         String nameInMap = pushNameMap.get(selName);
@@ -394,7 +406,7 @@ public class GlobalVisitor extends MysqlVisitor {
             }
             builder.append(" in ");
             PlanNode child = inSubItem.getPlanNode();
-            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true, rebuildSubQuery);
             childVisitor.visit();
             builder.append("(");
             builder.append(childVisitor.getSql());
@@ -409,7 +421,7 @@ public class GlobalVisitor extends MysqlVisitor {
             }
             builder.append(" exists ");
             PlanNode child = existsSubQuery.getPlanNode();
-            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true, rebuildSubQuery);
             childVisitor.visit();
             builder.append("(");
             builder.append(childVisitor.getSql());
@@ -439,7 +451,7 @@ public class GlobalVisitor extends MysqlVisitor {
 
     private String buildScalarSubQuery(ItemScalarSubQuery item) {
         PlanNode child = item.getPlanNode();
-        MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+        MysqlVisitor childVisitor = new GlobalVisitor(child, true, rebuildSubQuery);
         childVisitor.visit();
         mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
         return "(" + childVisitor.getSql() + ")";
@@ -464,7 +476,7 @@ public class GlobalVisitor extends MysqlVisitor {
                     builder.append(" any ");
                 }
                 PlanNode child = allAnySubItem.getPlanNode();
-                MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+                MysqlVisitor childVisitor = new GlobalVisitor(child, true, rebuildSubQuery);
                 childVisitor.visit();
                 builder.append("(");
                 builder.append(childVisitor.getSql());

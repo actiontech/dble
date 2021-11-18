@@ -113,7 +113,7 @@ public class PushDownVisitor extends MysqlVisitor {
         }
 
         PlanNode left = join.getLeftNode();
-        MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
+        MysqlVisitor leftVisitor = new GlobalVisitor(left, false, true);
         leftVisitor.visit();
         mapTableToSimple.putAll(leftVisitor.getMapTableToSimple());
         replaceableSqlBuilder.append(leftVisitor.getSql());
@@ -129,7 +129,7 @@ public class PushDownVisitor extends MysqlVisitor {
         sqlBuilder.append(" join ");
 
         PlanNode right = join.getRightNode();
-        MysqlVisitor rightVisitor = new GlobalVisitor(right, false);
+        MysqlVisitor rightVisitor = new GlobalVisitor(right, false, true);
         rightVisitor.visit();
         mapTableToSimple.putAll(rightVisitor.getMapTableToSimple());
         replaceableSqlBuilder.append(rightVisitor.getSql());
@@ -156,7 +156,7 @@ public class PushDownVisitor extends MysqlVisitor {
         boolean isUnion = merge.isUnion();
         boolean isFirst = true;
         for (PlanNode child : merge.getChildren()) {
-            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true, true);
             childVisitor.visit();
             if (isFirst) {
                 isFirst = false;

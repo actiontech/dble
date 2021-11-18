@@ -576,6 +576,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         if (prepareHandler != null) {
             prepareHandler.clear();
         }
+        SerializableLock.getInstance().unLock(connection.getId());
     }
 
     @Override

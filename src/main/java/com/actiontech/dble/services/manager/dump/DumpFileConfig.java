@@ -11,6 +11,7 @@ public class DumpFileConfig {
     private int writeQueueSize = 500;
     private int maxValues = 4000;
     private int threadNum = 2;
+    private int bufferSize = 1048576;
 
     private boolean isIgnore = false;
 
@@ -79,5 +80,13 @@ public class DumpFileConfig {
 
     public void setThreadNum(int threadNum) {
         this.threadNum = threadNum;
+    }
+
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    public void setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
     }
 }

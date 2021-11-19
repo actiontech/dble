@@ -881,6 +881,7 @@ public class NonBlockingSession extends Session {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("found connections in session to use " + conn + " for " + node);
                 }
+                ((MySQLResponseService) conn.getService()).setAttachment(node);
                 return true;
             } else {
                 // slave db connection and can't use anymore ,release it

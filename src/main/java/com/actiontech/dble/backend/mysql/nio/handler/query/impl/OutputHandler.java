@@ -246,7 +246,6 @@ public class OutputHandler extends BaseDMLHandler {
         if (buffer != null) {
             session.getSource().recycle(buffer);
         }
-        session.resetMultiStatementStatus();
     }
 
     private void recycleResources() {

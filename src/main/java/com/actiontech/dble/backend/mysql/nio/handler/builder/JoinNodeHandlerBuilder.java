@@ -94,15 +94,16 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
 
     @Override
     protected boolean tryBuildWithCurrentNode(List<DMLResponseHandler> subQueryEndHandlers, Set<String> subQueryRouteNodes) {
+        HandlerBuilder builder = new HandlerBuilder(node, session);
         //  use node.copy(),it will replace sub-queries to 'NEED_REPLACE'
         List<DMLResponseHandler> merges = Lists.newArrayList();
         {
-            BaseHandlerBuilder builder = hBuilder.getBuilder(session, node.getLeftNode().copy(), isExplain);
-            merges.addAll(builder.getEndHandler().getMerges());
+            BaseHandlerBuilder baseBuilder = builder.getBuilder(session, node.getLeftNode().copy(), isExplain);
+            merges.addAll(baseBuilder.getEndHandler().getMerges());
         }
         {
-            BaseHandlerBuilder builder = hBuilder.getBuilder(session, node.getRightNode().copy(), isExplain);
-            merges.addAll(builder.getEndHandler().getMerges());
+            BaseHandlerBuilder baseBuilder = builder.getBuilder(session, node.getRightNode().copy(), isExplain);
+            merges.addAll(baseBuilder.getEndHandler().getMerges());
         }
         Set<String> routeNodes = HandlerBuilder.canRouteToNodes(merges);
         if (routeNodes != null && routeNodes.size() > 0) {

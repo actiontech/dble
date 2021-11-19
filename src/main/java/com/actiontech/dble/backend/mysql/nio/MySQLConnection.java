@@ -65,7 +65,6 @@ public class MySQLConnection extends AbstractConnection implements
     private volatile boolean testing = false;
     private volatile String closeReason = null;
     private volatile BackEndCleaner recycler = null;
-    private volatile boolean connectionFirstReadied = false;
 
     private static long initClientFlags() {
         int flag = 0;
@@ -578,7 +577,7 @@ public class MySQLConnection extends AbstractConnection implements
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
-                new BigDecimal(value);
+                BigDecimal vl = new BigDecimal(value);
             } catch (NumberFormatException e) {
                 value = "`" + value + "`";
             }
@@ -722,9 +721,7 @@ public class MySQLConnection extends AbstractConnection implements
      */
     public void closeInner(final String reason) {
         innerTerminate(reason == null ? closeReason : reason);
-        if (!connectionFirstReadied) {
-            onConnectFailed(new IllegalStateException(reason == null ? closeReason : reason));
-        } else if (this.respHandler != null) {
+        if (this.respHandler != null) {
             closeResponseHandler(reason == null ? closeReason : reason);
         }
     }
@@ -793,9 +790,6 @@ public class MySQLConnection extends AbstractConnection implements
         pool.releaseChannel(this);
     }
 
-    private void onResponseReady() {
-        this.connectionFirstReadied = true;
-    }
 
     public boolean isExecuting() {
         return isExecuting;
@@ -809,7 +803,6 @@ public class MySQLConnection extends AbstractConnection implements
         if (handler instanceof MySQLConnectionHandler) {
             ((MySQLConnectionHandler) handler).setResponseHandler(queryHandler);
             respHandler = queryHandler;
-            onResponseReady();
             return true;
         } else if (queryHandler != null) {
             LOGGER.info("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());

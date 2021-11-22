@@ -124,10 +124,9 @@ public abstract class AbstractTableMetaHandler {
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
             {
                 Queue<String> shardingNodeList = Queues.newConcurrentLinkedQueue();
-                Queue<String> prevValue = dataNodeTableStructureSQLMap.putIfAbsent(currentSql, shardingNodeList);
-                if (prevValue != null) {
-                    shardingNodeList = prevValue;
-                }
+                // use putIfAbsent to make sure thread safe
+                //noinspection ConstantConditions
+                shardingNodeList = Optional.ofNullable(dataNodeTableStructureSQLMap.putIfAbsent(currentSql, shardingNodeList)).orElse(shardingNodeList);
                 shardingNodeList.add(dataNode);
             }
 

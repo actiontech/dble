@@ -18,6 +18,7 @@ import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.google.common.collect.Queues;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +37,7 @@ public abstract class AbstractTableMetaHandler {
     private AtomicInteger nodesNumber;
     protected String schema;
     private Set<String> selfNode;
-    private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
+    private ConcurrentMap<String, Queue<String>> dataNodeTableStructureSQLMap;
 
 
     public AbstractTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode, boolean isReload) {
@@ -121,13 +122,13 @@ public abstract class AbstractTableMetaHandler {
             }
 
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
-            if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
-                List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
-                dataNodeList.add(dataNode);
-            } else {
-                List<String> dataNodeList = new LinkedList<>();
-                dataNodeList.add(dataNode);
-                dataNodeTableStructureSQLMap.put(currentSql, dataNodeList);
+            {
+                Queue<String> shardingNodeList = Queues.newConcurrentLinkedQueue();
+                Queue<String> prevValue = dataNodeTableStructureSQLMap.putIfAbsent(currentSql, shardingNodeList);
+                if (prevValue != null) {
+                    shardingNodeList = prevValue;
+                }
+                shardingNodeList.add(dataNode);
             }
 
             if (nodesNumber.decrementAndGet() == 0) {
@@ -173,7 +174,7 @@ public abstract class AbstractTableMetaHandler {
             AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
             logger.info("Currently detected: ");
-            for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
+            for (Map.Entry<String, Queue<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (String dn : entry.getValue()) {
                     stringBuilder.append("DataNode:[").append(dn).append("]");

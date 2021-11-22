@@ -346,6 +346,10 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     }
 
     public void sendQueryCmd(String query, CharsetNames clientCharset) {
+        if (isClosed) {
+            closeResponseHandler("connection is closed before sending cmd");
+            return;
+        }
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
@@ -371,6 +375,9 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
+        if (isClosed) {
+            closeResponseHandler("connection is closed before sending cmd");
+        }
         CommandPacket packet = new CommandPacket();
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
@@ -725,24 +732,21 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     private void closeResponseHandler(final String reason) {
         final ResponseHandler handler = respHandler;
         final MySQLConnection conn = this;
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    conn.setExecuting(false);
-                    conn.setRowDataFlowing(false);
-                    conn.signal();
-                    handler.connectionClose(conn, reason);
-                    respHandler = null;
-                } catch (Throwable e) {
-                    LOGGER.warn("get error close mysql connection ", e);
-                }
+        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+            try {
+                conn.setExecuting(false);
+                conn.setRowDataFlowing(false);
+                conn.signal();
+                handler.connectionClose(conn, reason);
+                respHandler = null;
+            } catch (Throwable e) {
+                LOGGER.warn("get error close mysql connection ", e);
             }
         });
     }
 
     /**
-     * MySQLConnetcion inner resource clear
+     * MySQLConnection inner resource clear
      * Only used in Net Error OR final resource clear
      *
      * @param reason

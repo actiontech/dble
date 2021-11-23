@@ -113,8 +113,4 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
         itemSubQuery.setValue(null);
     }
 
-    @Override
-    public void markAsNoSubQuery() {
-        itemSubQuery.setWithSubQuery(false);
-    }
 }

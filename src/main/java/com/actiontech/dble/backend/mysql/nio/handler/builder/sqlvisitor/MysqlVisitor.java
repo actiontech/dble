@@ -70,6 +70,7 @@ public abstract class MysqlVisitor {
     void buildTableName(TableNode tableNode, StringBuilder sb) {
         String tableName = "`" + tableNode.getPureName() + "`";
         String fullName = "`" + tableNode.getPureSchema() + "`." + tableName;
+        mapTableToSimple.put(tableNode.getPureSchema() + "." + tableNode.getPureName(), tableNode.getPureName());
         mapTableToSimple.put(fullName, tableName);
         sb.append(" ").append(fullName);
         String alias = tableNode.getAlias();

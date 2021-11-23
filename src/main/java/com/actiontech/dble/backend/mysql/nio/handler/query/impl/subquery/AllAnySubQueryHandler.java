@@ -194,8 +194,4 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
         itemSubQuery.getValue().clear();
     }
 
-    @Override
-    public void markAsNoSubQuery() {
-        itemSubQuery.setWithSubQuery(false);
-    }
 }

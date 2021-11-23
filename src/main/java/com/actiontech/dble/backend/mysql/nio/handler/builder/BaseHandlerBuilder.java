@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
-import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
@@ -116,22 +115,24 @@ public abstract class BaseHandlerBuilder {
             preHandlers = buildPre();
             buildOwn();
         }
-        if (needCommon) {
-            buildCommon();
-        }
+        if (!node.isSingleRoute()) {
+            if (needCommon && !node.isSingleRoute()) {
+                buildCommon();
+            }
+            if (needCommon || node.isWithSubQuery()) {
 
-        // view sub alias
-        String tbAlias = node.getAlias();
-        String schema = null;
-        String table = null;
-        if (node.type() == PlanNodeType.TABLE) {
-            TableNode tbNode = (TableNode) node;
-            schema = tbNode.getSchema();
-            table = tbNode.getTableName();
-        }
-        if (needCommon || node.isWithSubQuery()) {
-            SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
-            addHandler(sh);
+                // view sub alias
+                String tbAlias = node.getAlias();
+                String schema = null;
+                String table = null;
+                if (node.type() == PlanNodeType.TABLE) {
+                    TableNode tbNode = (TableNode) node;
+                    schema = tbNode.getSchema();
+                    table = tbNode.getTableName();
+                }
+                SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
+                addHandler(sh);
+            }
         }
 
 
@@ -521,10 +522,17 @@ public abstract class BaseHandlerBuilder {
             if (!isExplain) {
                 subQueryHandler.clearForExplain();
             }
-            subQueryHandler.markAsNoSubQuery();
         }
-        PushDownVisitor pdVisitor = new PushDownVisitor(node, true);
-        RouteResultset realRrs = pdVisitor.buildRouteResultset();
+        GlobalVisitor visitor = new GlobalVisitor(node, true, false);
+        visitor.visit();
+        String sql = visitor.getSql().toString();
+        Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+        for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+            sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+        }
+        RouteResultset realRrs = new RouteResultset(sql, ServerParse.SELECT);
+        realRrs.setStatement(sql);
+        realRrs.setComplexSQL(true);
         buildOneMergeHandler(queryRouteNodes, realRrs);
     }
 
@@ -543,6 +551,7 @@ public abstract class BaseHandlerBuilder {
         } else {
             node.setNoshardNode(null);
         }
+        node.setSingleRoute(true);
         buildMergeHandler(node, realRrs.getNodes());
     }
 

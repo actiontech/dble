@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
@@ -445,8 +446,18 @@ public class GlobalVisitor extends MysqlVisitor {
             return builder.toString();
         } else if (item instanceof ItemScalarSubQuery) {
             return buildScalarSubQuery((ItemScalarSubQuery) item);
+        } else if (item instanceof ItemFunc) {
+            return buildFuncSubQuery((ItemFunc) item, canUseAlias);
         }
         return visitUnSelPushDownName(item, canUseAlias);
+    }
+
+    private String buildFuncSubQuery(ItemFunc item, boolean canUseAlias) {
+        for (Item args : item.arguments()) {
+            // maptosimple
+            buildSubQueryItem(args, canUseAlias);
+        }
+        return item.getItemName();
     }
 
     private String buildScalarSubQuery(ItemScalarSubQuery item) {

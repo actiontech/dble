@@ -95,7 +95,7 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
-            if (endHandler.getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+            if (node.isSingleRoute() && builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (endHandler.getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
                     return getRouteResultsetNode(builder, routes[0].getName());
@@ -122,7 +122,7 @@ public class HandlerBuilder {
         }
         String sql = node.getSql();
         if (builder.isExistView() || builder.isContainSubQuery(node)) {
-            GlobalVisitor visitor = new GlobalVisitor(node, true, true);
+            GlobalVisitor visitor = new GlobalVisitor(node, true, false);
             visitor.visit();
             sql = visitor.getSql().toString();
             Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();

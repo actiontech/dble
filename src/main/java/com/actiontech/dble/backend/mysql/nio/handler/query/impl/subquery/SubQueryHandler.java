@@ -27,7 +27,6 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
 
     public abstract void setForExplain();
     public abstract void clearForExplain();
-    public abstract void markAsNoSubQuery();
 
     public SubQueryHandler(long id, Session session) {
         super(id, session);

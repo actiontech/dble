@@ -121,6 +121,7 @@ public abstract class PlanNode {
     private ReferContext referContext;
 
     protected boolean keepFieldSchema = true;
+    private boolean singleRoute = false;
 
     protected PlanNode() {
         nameContext = new NameResolutionContext();
@@ -769,6 +770,15 @@ public abstract class PlanNode {
 
     public boolean isKeepFieldSchema() {
         return keepFieldSchema;
+    }
+
+
+    public boolean isSingleRoute() {
+        return singleRoute;
+    }
+
+    public void setSingleRoute(boolean singleRoute) {
+        this.singleRoute = singleRoute;
     }
 
 }

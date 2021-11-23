@@ -230,17 +230,18 @@ public final class ExplainHandler {
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
             String routeNode = null;
-            if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+
+            PlanNode node = builder.getNode();
+            if (node.isSingleRoute() && builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
                     routeNode = routes[0].getName();
                 }
             }
             if (!StringUtil.isBlank(routeNode)) {
-                PlanNode node = builder.getNode();
                 String sql = node.getSql();
                 if (builder.isExistView() || builder.isContainSubQuery(node)) {
-                    GlobalVisitor visitor = new GlobalVisitor(node, true, true);
+                    GlobalVisitor visitor = new GlobalVisitor(node, true, false);
                     visitor.visit();
                     sql = visitor.getSql().toString();
                     Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();

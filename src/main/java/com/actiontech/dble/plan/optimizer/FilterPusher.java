@@ -367,6 +367,7 @@ public final class FilterPusher {
         if (!hasFieldInFunc) {
             return null;
         }
+        ret.setItemName(null);
         ret.setPushDownName(null);
         PlanUtil.refreshReferTables(ret);
         return ret;

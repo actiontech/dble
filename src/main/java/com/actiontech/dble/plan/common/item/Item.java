@@ -1004,7 +1004,6 @@ public abstract class Item {
         clone.withUnValAble = withUnValAble;
         clone.pushDownName = pushDownName;
 
-        clone.itemName = itemName;
         clone.aliasName = aliasName;
         clone.getReferTables().addAll(getReferTables());
         return clone;

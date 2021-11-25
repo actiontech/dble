@@ -200,6 +200,9 @@ public final class SystemConfig {
     //use groupConcatMaxLen
     private int groupConcatMaxLen = 1024;
 
+    // For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
+    private long rwStickyTime = 1000;
+
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1434,6 +1437,18 @@ public final class SystemConfig {
             this.groupConcatMaxLen = maxLen;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "groupConcatMaxLen", maxLen, this.groupConcatMaxLen));
+        }
+    }
+
+    public long getRwStickyTime() {
+        return rwStickyTime;
+    }
+
+    public void setRwStickyTime(long rwStickyTime) {
+        if (rwStickyTime >= 0) {
+            this.rwStickyTime = rwStickyTime;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "rwStickyTime", rwStickyTime, this.rwStickyTime));
         }
     }
 

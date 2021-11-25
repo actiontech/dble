@@ -3,6 +3,7 @@ package com.actiontech.dble.rwsplit;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -32,6 +33,9 @@ public class RWSplitNonBlockingSession extends Session {
     private final RWSplitService rwSplitService;
     private PhysicalDbGroup rwGroup;
     private Set<String> nameSet = new HashSet<>();
+
+    private volatile boolean preSendIsWrite = false; // Has the previous SQL been delivered to the write node?
+    private volatile long preWriteResponseTime = 0; // Response time of the previous write node
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
@@ -79,9 +83,23 @@ public class RWSplitNonBlockingSession extends Session {
                 handler.execute(conn);
                 return;
             }
-
-            PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master));
-            checkDest(!instance.isReadInstance());
+            Boolean isMaster = canRunOnMaster(master); //  first
+            boolean firstValue = isMaster == null ? false : isMaster;
+            long rwStickyTime = SystemConfig.getInstance().getRwStickyTime();
+            if ((rwStickyTime > 0) && !firstValue) {
+                if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
+                    isMaster = true;
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("because in the sticky time range，so select write instance");
+                    }
+                } else {
+                    resetLastSqlResponseTime();
+                }
+            }
+            PhysicalDbInstance instance = rwGroup.select(isMaster); // second
+            boolean isWrite = !instance.isReadInstance();
+            this.setPreSendIsWrite(isWrite && firstValue); // ensure that the first and second results are write instances
+            checkDest(isWrite);
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
             LOGGER.warn("select conn error", e);
@@ -176,6 +194,24 @@ public class RWSplitNonBlockingSession extends Session {
     public void close(String reason) {
         if (conn != null) {
             conn.close(reason);
+        }
+    }
+
+    public void setPreSendIsWrite(boolean preSendIsWrite) {
+        this.preSendIsWrite = preSendIsWrite;
+    }
+
+    public long getPreWriteResponseTime() {
+        return this.preWriteResponseTime;
+    }
+
+    public void resetLastSqlResponseTime() {
+        this.preWriteResponseTime = 0;
+    }
+
+    public void recordLastSqlResponseTime() {
+        if (SystemConfig.getInstance().getRwStickyTime() >= 0 && preSendIsWrite) {
+            this.preWriteResponseTime = System.currentTimeMillis();
         }
     }
 

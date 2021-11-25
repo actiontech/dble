@@ -18,6 +18,7 @@ import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.google.common.collect.Queues;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +37,7 @@ public abstract class AbstractTableMetaHandler {
     private AtomicInteger nodesNumber;
     protected String schema;
     private Set<String> selfNode;
-    private ConcurrentMap<String, List<String>> shardingNodeTableStructureSQLMap;
+    private ConcurrentMap<String, Queue<String>> shardingNodeTableStructureSQLMap;
 
 
     public AbstractTableMetaHandler(String schema, String tableName, List<String> shardingNodes, Set<String> selfNode, boolean isReload) {
@@ -121,13 +122,12 @@ public abstract class AbstractTableMetaHandler {
             }
 
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
-            if (shardingNodeTableStructureSQLMap.containsKey(currentSql)) {
-                List<String> shardingNodeList = shardingNodeTableStructureSQLMap.get(currentSql);
+            {
+                Queue<String> shardingNodeList = Queues.newConcurrentLinkedQueue();
+                // use putIfAbsent to make sure thread safe
+                //noinspection ConstantConditions
+                shardingNodeList = Optional.ofNullable(shardingNodeTableStructureSQLMap.putIfAbsent(currentSql, shardingNodeList)).orElse(shardingNodeList);
                 shardingNodeList.add(shardingNode);
-            } else {
-                List<String> shardingNodeList = new LinkedList<>();
-                shardingNodeList.add(shardingNode);
-                shardingNodeTableStructureSQLMap.put(currentSql, shardingNodeList);
             }
 
             if (nodesNumber.decrementAndGet() == 0) {
@@ -175,7 +175,7 @@ public abstract class AbstractTableMetaHandler {
             AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.add(schema + "." + tableName);
             logger.info("Currently detected: ");
-            for (Map.Entry<String, List<String>> entry : shardingNodeTableStructureSQLMap.entrySet()) {
+            for (Map.Entry<String, Queue<String>> entry : shardingNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (String dn : entry.getValue()) {
                     stringBuilder.append("shardingNode:[").append(dn).append("]");

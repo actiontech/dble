@@ -217,9 +217,9 @@ public class GlobalVisitor extends MysqlVisitor {
             if (first) {
                 sqlBuilder.append(" on ");
             } else {
-                joinOnFilterStr.append(" and ");
+                joinOnFilterStr.append(" and (");
             }
-            joinOnFilterStr.append(join.getOtherJoinOnFilter());
+            joinOnFilterStr.append(join.getOtherJoinOnFilter()).append(")");
         }
         sqlBuilder.append(joinOnFilterStr.toString());
         if (join.isWithSubQuery() || isTopQuery) {

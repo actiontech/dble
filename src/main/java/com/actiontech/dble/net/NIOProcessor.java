@@ -117,7 +117,7 @@ public final class NIOProcessor {
     }
 
     public void checkBackendCons() {
-        //        backendCheck();
+        backendCheck();
     }
 
     public void checkFrontCons() {

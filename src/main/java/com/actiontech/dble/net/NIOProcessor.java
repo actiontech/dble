@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
@@ -117,7 +117,7 @@ public final class NIOProcessor {
     }
 
     public void checkBackendCons() {
-        backendCheck();
+        //        backendCheck();
     }
 
     public void checkFrontCons() {

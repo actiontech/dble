@@ -12,11 +12,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class FieldNull extends FieldStr {
-    private static FieldNull instance = new FieldNull("NULL", "", "", "", 63, 0, 0, 0);
-
-    public static FieldNull getInstance() {
-        return instance;
-    }
 
     FieldNull(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
         super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);

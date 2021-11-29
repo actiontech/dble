@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.FilterUtils;
@@ -57,7 +57,7 @@ public final class FilterJoinColumnPusher {
                 }
             }
             if (nonJoinFilter.size() != splits.size()) {
-                //rollbakc nonJoinFilter
+                //rollback nonJoinFilter
                 qtn.query(FilterUtils.and(nonJoinFilter));
             }
         }

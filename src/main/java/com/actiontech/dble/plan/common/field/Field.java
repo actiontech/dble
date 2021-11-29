@@ -58,7 +58,7 @@ public abstract class Field {
             case MYSQL_TYPE_DOUBLE:
                 return new FieldDouble(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_NULL:
-                return FieldNull.getInstance();
+                return new FieldNull(name, "", table, "", 63, 0, 0, 0);
             case MYSQL_TYPE_TIMESTAMP:
                 return new FieldTimestamp(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_LONGLONG:
@@ -82,7 +82,7 @@ public abstract class Field {
                 return new FieldVarstring(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_STRING:
                 return new FieldString(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
-            /** --not support below, because select * change to string, can't get the origin type-- **/
+            /* --not support below, because select * change to string, can't get the origin type-- **/
             case MYSQL_TYPE_ENUM:
                 return new FieldEnum(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_SET:
@@ -278,14 +278,6 @@ public abstract class Field {
 
     public void setCharsetIndex(int charsetIndex) {
         this.charsetIndex = charsetIndex;
-    }
-
-    public String getJavaCharsetName() {
-        return javaCharsetName;
-    }
-
-    public void setJavaCharsetName(String javaCharsetName) {
-        this.javaCharsetName = javaCharsetName;
     }
 
     public long getFlags() {

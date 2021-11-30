@@ -116,7 +116,7 @@ public abstract class BaseHandlerBuilder {
             buildOwn();
         }
         if (!node.isSingleRoute()) {
-            if (needCommon && !node.isSingleRoute()) {
+            if (needCommon) {
                 buildCommon();
             }
             if (needCommon || node.isWithSubQuery()) {

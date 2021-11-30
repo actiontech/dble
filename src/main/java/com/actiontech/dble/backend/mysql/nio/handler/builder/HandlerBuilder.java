@@ -95,7 +95,7 @@ public class HandlerBuilder {
                 }
             }
             session.endComplexRoute();
-            if (node.isSingleRoute() && builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+            if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (endHandler.getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
                     return getRouteResultsetNode(builder, routes[0].getName());

@@ -232,7 +232,7 @@ public final class ExplainHandler {
             String routeNode = null;
 
             PlanNode node = builder.getNode();
-            if (node.isSingleRoute() && builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+            if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
                     routeNode = routes[0].getName();

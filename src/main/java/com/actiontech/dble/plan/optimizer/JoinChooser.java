@@ -34,12 +34,13 @@ public class JoinChooser {
     private static final Logger LOGGER = LogManager.getLogger(JoinChooser.class);
     private final List<JoinRelations> joinRelations = new LinkedList<>();
     private final List<PlanNode> joinUnits = new ArrayList<>();
-    private final Map<PlanNode, JoinRelationDag> dagNodes = new HashMap<PlanNode, JoinRelationDag>();
+    private final Map<PlanNode, JoinRelationDag> dagNodes = new HashMap<>();
     private final Map<ERTable, Set<ERTable>> erRelations;
     private final int charsetIndex;
     private final JoinNode orgNode;
     private final List<Item> otherJoinOns = new ArrayList<>();
     private final LinkedList<HintNode> hintNodes;
+    private boolean stopOptimize = false;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
         if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
             if (o1.relations.isInner) { // both er，o1 inner
@@ -104,14 +105,21 @@ public class JoinChooser {
         if (joinRelations.size() > 0) {
             //make DAG
             JoinRelationDag root = initJoinRelationDag();
+            if (stopOptimize) {
+                if (!hintNodes.isEmpty()) {
+                    //todo :msg:
+                    throw new IllegalStateException("Cartesian with relation");
+                } else {
+                    return orgNode;
+                }
+            }
             leftCartesianNodes();
 
-            // todo:custom plan or use auto plan
             //if custom ,check plan can Follow the rules：Topological Sorting of dag, CartesianNodes
-            // use auto plan
             if (!hintNodes.isEmpty()) {
                 relationJoin = joinWithHint(root);
             } else {
+                // use auto plan
                 relationJoin = makeBNFJoin(root, defaultCmp);
             }
         }
@@ -162,6 +170,9 @@ public class JoinChooser {
         JoinRelationDag root = createFirstNode();
         for (int i = 1; i < joinRelations.size(); i++) {
             root = addNodeToDag(root, joinRelations.get(i));
+            if (stopOptimize) {
+                return root;
+            }
         }
         return root;
     }
@@ -404,46 +415,42 @@ public class JoinChooser {
     }
 
     private JoinRelationDag addNodeToDag(JoinRelationDag root, JoinRelations relations) {
-        int prefixSize = relations.prefixNodes.size();
-        Set<JoinRelationDag> otherPres = new HashSet<>(prefixSize);
+        Set<JoinRelationDag> prefixDagNodes = new HashSet<>(relations.prefixNodes.size());
         boolean familyInner = relations.isInner;
-        Queue<JoinRelationDag> queue = new LinkedList<>();
-        queue.offer(root);
-        while (!queue.isEmpty()) {
-            JoinRelationDag tmp = queue.poll();
-            List<JoinRelationDag> children = new ArrayList<>(tmp.rightNodes);
-            if (relations.prefixNodes.contains(tmp.node)) {
-                if (otherPres.add(tmp)) {
-                    --prefixSize;
-                }
+        for (PlanNode prefixNode : relations.prefixNodes) {
+            JoinRelationDag tmp = dagNodes.get(prefixNode);
+            if (tmp == null) {
+                // eg: select b.* from  a inner join  b on a.id=b.id , sharding2 inner join   sharding2_child  on sharding2_child.id=sharding2.id ;
+                // maybe multi DAGs, or need merge DAGs, optimizer cost too much
+                //todo: log
+                stopOptimize = true;
+                return root;
+            } else {
+                prefixDagNodes.add(tmp);
                 if (familyInner && !tmp.isFamilyInner) {
                     familyInner = false;
                 }
             }
-            //all prefixNodes finished
-            if (prefixSize == 0) {
-                break;
-            } else {
-                queue.addAll(children);
-            }
         }
-        if (!familyInner || otherPres.size() == 1 || relations.erRelationLst.size() == 0) {
+
+
+        if (!familyInner || prefixDagNodes.size() == 1 || relations.erRelationLst.size() == 0) {
             // 1.left join can not be optimizer
-            // 2. familyInner only one otherPres, no need optimizer
+            // 2. familyInner only one prefixDagNode, no need optimizer
             // 3. all join filter are not er, no need change direction
             JoinRelationDag right = createDag(relations, familyInner);
-            for (JoinRelationDag otherPre : otherPres) {
-                otherPre.rightNodes.add(right);
+            for (JoinRelationDag prefixDagNode : prefixDagNodes) {
+                prefixDagNode.rightNodes.add(right);
                 right.degree++;
             }
-            right.leftNodes.addAll(otherPres);
+            right.leftNodes.addAll(prefixDagNodes);
             return root;
         } else {
             Set<PlanNode> toChangeParent = new HashSet<>();
             for (JoinRelation joinRelation : relations.erRelationLst) {
                 toChangeParent.add(joinRelation.left.planNode);
             }
-            return optimizerInnerJoinOtherFilter(createDag(relations.rightNode), relations, otherPres, toChangeParent);
+            return optimizerInnerJoinOtherFilter(createDag(relations.rightNode), relations, prefixDagNodes, toChangeParent);
         }
     }
 

@@ -21,16 +21,13 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public final class MyOptimizer {
     private MyOptimizer() {
     }
 
-    public static PlanNode optimize(PlanNode node) {
+    public static PlanNode optimize(PlanNode node, LinkedList<JoinChooser.HintNode> hintNodes) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-sql");
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
@@ -55,7 +52,7 @@ public final class MyOptimizer {
 
 
                 if (SystemConfig.getInstance().isUseNewJoinOptimizer()) {
-                    node = JoinProcessor.optimize(node);
+                    node = JoinProcessor.optimize(node, hintNodes);
                 } else {
                     node = JoinERProcessor.optimize(node);
                 }
@@ -131,7 +128,7 @@ public final class MyOptimizer {
     /**
      * existShardTable
      *
-     * @param  node PlanNode
+     * @param node PlanNode
      * @return return 1 if it's all no name table or all global table node;
      * return -1 if all the table is not global table,need not global optimizer;
      * return 0 for other ,may need to global optimizer ;

@@ -45,6 +45,7 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -90,7 +91,7 @@ public final class ExplainHandler {
         node.setSql(rrs.getStatement());
         node.setUpFields();
         PlanUtil.checkTablesPrivilege(service, node, ast);
-        node = MyOptimizer.optimize(node);
+        node = MyOptimizer.optimize(node, new LinkedList<>());
 
         if (!PlanUtil.containsSubQuery(node) && !visitor.isContainSchema()) {
             node.setAst(ast);

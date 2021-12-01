@@ -205,7 +205,6 @@ public class JoinChooser {
      * todo: change error msg & add log
      *
      * @param root
-     * @param hintNodes
      * @return
      */
     private JoinNode joinWithHint(JoinRelationDag root) {

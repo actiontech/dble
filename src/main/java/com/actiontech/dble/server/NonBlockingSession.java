@@ -643,7 +643,7 @@ public class NonBlockingSession extends Session {
             node.setSql(rrs.getStatement());
             node.setUpFields();
             PlanUtil.checkTablesPrivilege(shardingService, node, ast);
-            node = MyOptimizer.optimize(node);
+            node = MyOptimizer.optimize(node, new LinkedList<>());
 
             if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
                     !PauseShardingNodeManager.getInstance().checkTarget(target) &&

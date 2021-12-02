@@ -370,7 +370,6 @@ public class JoinChooser {
                     if (currentNode.relations != null) {
                         subRelation(currentNode.relations, splitRelation);
                     }
-                    break;
                 }
             }
 

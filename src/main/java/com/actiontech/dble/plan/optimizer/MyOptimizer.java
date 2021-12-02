@@ -21,13 +21,14 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.util.*;
 
 public final class MyOptimizer {
     private MyOptimizer() {
     }
 
-    public static PlanNode optimize(PlanNode node, LinkedList<JoinChooser.HintNode> hintNodes) {
+    public static PlanNode optimize(PlanNode node, @Nonnull LinkedList<HintNode> hintNodes) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-sql");
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {

@@ -14,11 +14,12 @@
 	under the License. -->
 <dble:user xmlns:dble="http://dble.cloud/" version="3.0">
     <managerUser name="man1" password="654321" whiteIPs="127.0.0.1,0:0:0:0:0:0:0:1" readOnly="false"/>
-    <shardingUser name="test" password="test" schemas="dbtest,mysqldb,cndb,TESTDB,dubbo,dubbo2,config,none_node_test,solo1,ignoreSchemaTest">
+    <shardingUser name="test" password="test"
+                  schemas="testdb,dbtest,mysqldb,cndb,TESTDB,dubbo,dubbo2,config,none_node_test,solo1,ignoreSchemaTest">
         <privileges check="true">
             <schema name="TESTDB" dml="0110">
-                <table name="sharding_two_node" dml="0000" />
-                <table name="qwert" dml="0001" />
+                <table name="sharding_two_node" dml="0000"/>
+                <table name="qwert" dml="0001"/>
             </schema>
         </privileges>
     </shardingUser>

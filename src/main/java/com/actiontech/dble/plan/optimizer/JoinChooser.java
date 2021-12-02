@@ -29,6 +29,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
 
 public class JoinChooser {
     private static final Logger LOGGER = LogManager.getLogger(JoinChooser.class);
@@ -39,6 +40,7 @@ public class JoinChooser {
     private final int charsetIndex;
     private final JoinNode orgNode;
     private final List<Item> otherJoinOns = new ArrayList<>();
+    @Nonnull
     private final LinkedList<HintNode> hintNodes;
     private boolean stopOptimize = false;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
@@ -80,12 +82,12 @@ public class JoinChooser {
         this.hintNodes = hintNodes;
     }
 
-    public JoinChooser(JoinNode qtn, LinkedList<HintNode> hintNodes) {
+    public JoinChooser(JoinNode qtn, @Nonnull LinkedList<HintNode> hintNodes) {
         this(qtn, DbleServer.getInstance().getConfig().getErRelations(), hintNodes);
     }
 
     public JoinNode optimize() {
-        if (erRelations == null) {
+        if (erRelations == null && hintNodes.isEmpty()) {
             return orgNode;
         }
         return innerJoinOptimizer();
@@ -106,9 +108,9 @@ public class JoinChooser {
             //make DAG
             JoinRelationDag root = initJoinRelationDag();
             if (stopOptimize) {
+                LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because this sql contains cartesian with relation. The sql is [{}]", orgNode);
                 if (!hintNodes.isEmpty()) {
-                    //todo :msg:
-                    throw new IllegalStateException("Cartesian with relation");
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because this sql contains cartesian with relation.");
                 } else {
                     return orgNode;
                 }
@@ -196,7 +198,11 @@ public class JoinChooser {
         if (hintNode.getName() == null) {
             return false;
         }
-        return Objects.equals(hintNode.getName(), getUnitName(node));
+        final String unitName = getUnitName(node);
+        if (unitName == null) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't optimize this sql, try to set alias for every tables in sql. Related nodes: " + node);
+        }
+        return Objects.equals(hintNode.getName(), unitName);
 
 
     }
@@ -213,37 +219,35 @@ public class JoinChooser {
     }
 
     /**
-     * todo: change error msg & add log
-     *
      * @param root
      * @return
      */
     private JoinNode joinWithHint(JoinRelationDag root) {
         if (dagNodes.size() != hintNodes.size()) {
-            throw new IllegalStateException("hint size not equals to plan node size.");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintNodes.size() + " not equals to plan node size " + dagNodes.size() + ".");
         }
         if (root.degree != 0) {
-            throw new IllegalStateException("any node route to root");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "exists any relations route to the root node: " + root);
         }
         HintNode nextHintNode = hintNodes.removeFirst();
         JoinNode joinNode = null;
         {
             root = findNode(root, nextHintNode);
             if (root == null) {
-                throw new IllegalStateException("no node match the root");
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "no node match the root: " + nextHintNode);
             }
             if (!root.isFamilyInner) {
-                throw new IllegalStateException("wrong root node:" + root);
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't use '" + root + "' node for root. Because exists some left join relations point to this node. ");
             }
             flipRightNodeToLeft(root, null);
         }
-        Set<DagLine> couldAccessDagNodes = new HashSet<>();
-        couldAccessDagNodes.add(new DagLine(null, root));
+        Map<JoinRelationDag, DagLine> nextAccessDagNodes = new HashMap<>();
+        nextAccessDagNodes.put(root, new DagLine(null, root));
 
 
         traversal:
-        while (!couldAccessDagNodes.isEmpty()) {
-            final Iterator<DagLine> it = couldAccessDagNodes.iterator();
+        while (!nextAccessDagNodes.isEmpty()) {
+            final Iterator<DagLine> it = nextAccessDagNodes.values().iterator();
             while (it.hasNext()) {
                 final DagLine couldAccessDagNode = it.next();
                 final JoinRelationDag currentNode = couldAccessDagNode.getTargetNode();
@@ -252,18 +256,26 @@ public class JoinChooser {
                     it.remove();
                     continue;
                 }
-                /*
-                flip may cause node degree increased.
-                 */
-                if (currentNode.degree != 0) {
-                    // LOGGER.warn("degree is changed");
-                    it.remove();
-                    continue;
-                }
+
                 if (!isSameNode(nextHintNode, currentNode)) {
                     continue;
                 }
-
+                /*
+                two reason
+                1.flip may cause node degree increased.
+                2.put rightNode ignore the degree.
+                 */
+                if (currentNode.degree != 0) {
+                    //flip only if needed. Unnecessary flip may cause degree num of other nodes increased and become inaccessible.
+                    final boolean flipSuccess = flipRightNodeToLeft(currentNode, prevNode);
+                    if (!flipSuccess) {
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't use this hints,because exists some left join relations point to node: " + currentNode);
+                    }
+                    if (currentNode.degree != 0) {
+                        //In theory it won't happen
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't parse use this hints. " + hintNodes);
+                    }
+                }
                 currentNode.markVisited();
                 //matched
                 if (prevNode != null) {
@@ -272,42 +284,43 @@ public class JoinChooser {
 
                 //prepare for next traversal.
                 it.remove();
-
-
                 if (hintNodes.isEmpty()) {
-                    for (DagLine accessDagNode : couldAccessDagNodes) {
-                        if (!accessDagNode.getTargetNode().visited) {
+                    for (JoinRelationDag targetNode : nextAccessDagNodes.keySet()) {
+                        if (!targetNode.visited) {
                             ////In theory it won't happen
-                            throw new IllegalStateException("can't traversal all node use this hint.");
+                            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint." + hintNodes);
                         }
                     }
                     break traversal;
                 }
                 nextHintNode = hintNodes.removeFirst();
                 for (JoinRelationDag rightNode : currentNode.rightNodes) {
+                    if (rightNode.visited) {
+                        continue;
+                    }
                     --rightNode.degree;
-                    //flip only if needed. Unnecessary flip may cause degree num of other nodes increased and become inaccessible.
-                    if (rightNode.degree != 0 && isSameNode(nextHintNode, rightNode)) {
-                        final boolean flipSuccess = flipRightNodeToLeft(rightNode, currentNode);
-                        if (!flipSuccess) {
-                            throw new IllegalStateException("can't use this hints,because there is an left join near " + rightNode);
-                        }
-                        if (rightNode.degree != 0) {
-                            //In theory it won't happen
-                            throw new IllegalStateException("can't parse use this hints");
-                        }
-                    }
-                    if (rightNode.degree == 0) {
-                        couldAccessDagNodes.add(new DagLine(currentNode, rightNode));
-                    }
+
+                    /*
+                    ignore the degree and delay the degree comparison .because the rightNode may need flip.
+                    e.g.
+                    select * from a inner join b on a.id=b.id inner join c on b.id=c.id inner join d on c.id=d.id where b.id=1
+                    the join order is a->b->c->d and the hint is c->d->b->a.
+                    we choose 'c' as root, then dag like this (c->d) & (c->b<-a)
+                    when visited c. b is one of rightNodes of c， and the degree of b is 2.
+                     */
+                    //                    if (rightNode.degree == 0) {
+                    nextAccessDagNodes.put(rightNode, new DagLine(currentNode, rightNode));
+                    //                    }
 
                 }
                 continue traversal;
             }
-            throw new IllegalStateException("can't create plan with wrong hint");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with wrong hint. please check near the node '" + nextHintNode.getName() + "'");
 
         }
-
+        if (!hintNodes.isEmpty()) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode.getName() + "'");
+        }
         return joinNode;
     }
 
@@ -500,8 +513,12 @@ public class JoinChooser {
     }
 
     private void subRelation(JoinRelations a, OneToOneJoinRelation b) {
-        a.erRelationLst.removeIf(joinRelation -> joinRelation.right.planNode == b.leftNode && joinRelation.left.planNode == b.rightNode);
-        a.normalRelationLst.removeIf(joinRelation -> joinRelation.right.planNode == b.leftNode && joinRelation.left.planNode == b.rightNode);
+        if (a == null) {
+            return;
+        }
+        final Predicate<JoinRelation> predicate = joinRelation -> (joinRelation.right.planNode == b.rightNode && joinRelation.left.planNode == b.leftNode) || (joinRelation.right.planNode == b.leftNode && joinRelation.left.planNode == b.rightNode);
+        a.erRelationLst.removeIf(predicate);
+        a.normalRelationLst.removeIf(predicate);
         a.init();
     }
 
@@ -792,10 +809,19 @@ public class JoinChooser {
         }
 
         @Override
+        public int hashCode() {
+            return super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return super.equals(obj);
+        }
+
+        @Override
         public String toString() {
             return "{" +
-                    "node=" + getUnitName(node) +
-                    ", degree=" + degree +
+                    "node=" + node +
                     '}';
         }
     }
@@ -952,27 +978,6 @@ public class JoinChooser {
         }
     }
 
-    static final class HintNode {
-        String name;
-
-        private HintNode(String name) {
-            this.name = name;
-        }
-
-        public static HintNode of(String name) {
-            return new HintNode(name);
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public String toString() {
-            return "name='" + name + '\'';
-        }
-    }
-
     public static final class DagLine {
 
         private final JoinRelationDag prevNode;
@@ -995,29 +1000,6 @@ public class JoinChooser {
         public String toString() {
             return "(" + prevNode + ", " + targetNode + ")";
         }
-
-        private static final int HASH_CONST = 37;
-
-        //only calculate the target node
-        @Override
-        public int hashCode() {
-            int hash = 17;
-            if (targetNode == null) {
-                hash += HASH_CONST;
-            } else {
-                hash = hash << 5 + hash << 1 + hash + targetNode.hashCode();
-            }
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof DagLine)) return false;
-            DagLine pair = (DagLine) o;
-            return Objects.equals(targetNode, pair.targetNode);
-        }
-
 
     }
 

@@ -97,10 +97,10 @@ public final class ClusterManageHandler {
         try {
             //if the session is execute query already ,wait until the response return.
             LOGGER.info("cluster attach begin waiting");
-            boolean success = waitOtherSessionBlocked(selfService, maxPauseTime, false);
+            WaitResult waitResult = waitOtherSessionBlocked(selfService, maxPauseTime, false);
             LOGGER.info("cluster attach after waiting");
-            if (!success) {
-                selfService.writeErrMessage(ErrorCode.ER_YES, "attach cluster pause timeout");
+            if (!waitResult.success) {
+                selfService.writeErrMessage(ErrorCode.ER_YES, "attach cluster pause timeout. " + waitResult.errorMessage);
                 return;
             }
             ClusterGeneralConfig.getInstance().getClusterSender().attachCluster();
@@ -137,10 +137,10 @@ public final class ClusterManageHandler {
         try {
             //if the session is execute query already ,wait until the response return.
             LOGGER.info("cluster detach begin waiting");
-            boolean success = waitOtherSessionBlocked(selfService, maxPauseTime, true);
+            WaitResult waitResult = waitOtherSessionBlocked(selfService, maxPauseTime, true);
             LOGGER.info("cluster detach after waiting");
-            if (!success) {
-                selfService.writeErrMessage(ErrorCode.ER_YES, "detach cluster pause timeout");
+            if (!waitResult.success) {
+                selfService.writeErrMessage(ErrorCode.ER_YES, "detach cluster pause timeout. " + waitResult.errorMessage);
                 return;
             }
 
@@ -176,7 +176,7 @@ public final class ClusterManageHandler {
      * @param maxPauseTime
      * @return
      */
-    private static boolean waitOtherSessionBlocked(ManagerService selfService, int maxPauseTime, boolean isDetach) {
+    private static WaitResult waitOtherSessionBlocked(ManagerService selfService, int maxPauseTime, boolean isDetach) {
         List<FrontendService> waitServices = Lists.newArrayList();
 
         final long startTime = System.currentTimeMillis();
@@ -217,10 +217,10 @@ public final class ClusterManageHandler {
                 msg.add(String.valueOf(service.getConnection().getId()));
             });
             LOGGER.warn("cluster operation timeout because of {} connections, connections id is {}", waitServices.size(), msg);
-            return false;
+            return WaitResult.ofError("some frontend connection is doing operation.");
         }
         if (!isDetach) {
-            return true;
+            return WaitResult.ofSuccess();
         }
 
         /*
@@ -234,9 +234,32 @@ public final class ClusterManageHandler {
         if (AbstractGeneralListener.getDoingCount().get() != 0) {
             LOGGER.warn("cluster operation timeout because of other server is doing cluster-related operation");
             ClusterGeneralConfig.getInstance().getClusterSender().markDetach(false);
-            return false;
+            return WaitResult.ofError("some backend operation is doing. please check the dble.log");
         }
-        return true;
+        return WaitResult.ofSuccess();
     }
 
+
+    static final class WaitResult {
+        boolean success;
+        String errorMessage;
+
+        private WaitResult(String errorMessage) {
+            this.success = false;
+            this.errorMessage = errorMessage;
+        }
+
+        private WaitResult(boolean success) {
+            this.success = success;
+        }
+
+        public static WaitResult ofSuccess() {
+            return new WaitResult(true);
+        }
+
+        public static WaitResult ofError(String reason) {
+            return new WaitResult(reason);
+        }
+
+    }
 }

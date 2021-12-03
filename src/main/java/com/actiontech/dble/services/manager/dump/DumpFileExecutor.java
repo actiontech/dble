@@ -87,7 +87,6 @@ public final class DumpFileExecutor implements Runnable {
                 this.context.setSkipContext(true);
                 LOGGER.warn("current stmt[" + currentStmt + "] error.", e);
                 this.context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
-                break;
             } catch (InterruptedException e) {
                 LOGGER.debug("dump file executor is interrupted.");
                 break;
@@ -150,8 +149,9 @@ public final class DumpFileExecutor implements Runnable {
             return true;
         }
         // skip view
-        if (ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) {
-            return skipView(stmt);
+        if ((ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) && skipView(stmt)) {
+            context.setSkipContext(true);
+            return true;
         }
         // footer
         if (stmt.contains("=@OLD_")) {

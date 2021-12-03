@@ -85,11 +85,12 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void errorResponse(byte[] data, @NotNull AbstractService service) {
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
-        boolean syncFinished = mysqlService.syncAndExecute();
+        final boolean syncFinished = mysqlService.syncAndExecute();
         loadDataClean();
         if (callback != null) {
             callback.callback(false, rwSplitService);
         }
+        rwSplitService.getSession().recordLastSqlResponseTime();
         if (!syncFinished) {
             mysqlService.getConnection().businessClose("unfinished sync");
             rwSplitService.getSession().unbind();
@@ -122,6 +123,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             packet.read(data);
             loadDataClean();
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
+            rwSplitService.getSession().recordLastSqlResponseTime();
             if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
                 if (callback != null) {
                     callback.callback(true, rwSplitService);
@@ -179,6 +181,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             selectRows = 0;
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
+                rwSplitService.getSession().recordLastSqlResponseTime();
                 if ((eof[7] & HAS_MORE_RESULTS) == 0) {
                     /*
                     last resultset will call this

@@ -175,3 +175,6 @@
 #-DenableFlowControl=false
 #-DflowControlHighLevel=4194304
 #-DflowControlLowLevel=262144
+
+#For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
+#-DrwStickyTime=1000

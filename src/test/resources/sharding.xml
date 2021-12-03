@@ -25,23 +25,31 @@
     <schema name="ignoreSchemaTest" shardingNode="cndb_dn" />
 
     <schema name="config">
-        <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id" sqlRequiredSharding="true"/>
+        <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id"
+                       sqlRequiredSharding="true"/>
     </schema>
 
     <schema name="none_node_test">
-        <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id" sqlRequiredSharding="true"/>
+        <shardingTable name="offer" shardingNode="offer_dn$0-127" function="func" shardingColumn="member_id"
+                       sqlRequiredSharding="true"/>
     </schema>
 
     <schema name="solo1" shardingNode="solo1"/>
-
+    <schema name="testdb" sqlMaxLimit="100">
+        <singleTable name="a" shardingNode="dn1"/>
+        <singleTable name="b" shardingNode="dn2"/>
+        <singleTable name="c" shardingNode="dn3"/>
+        <singleTable name="d" shardingNode="dn4"/>
+        <singleTable name="e" shardingNode="dn4"/>
+    </schema>
     <schema name="TESTDB" sqlMaxLimit="100">
         <shardingTable name="travelrecord" shardingNode="dn1,dn2,dn3" function="rang-long" shardingColumn="id"/>
         <!-- global table is auto cloned to all defined data nodes ,so can join
             with any table whose sharding node is in the same data node -->
-        <globalTable name="company"  shardingNode="dn1,dn2,dn3"/>
-        <globalTable name="goods"  shardingNode="dn1,dn2,dn3"/>
+        <globalTable name="company" shardingNode="dn1,dn2,dn3"/>
+        <globalTable name="goods" shardingNode="dn1,dn2,dn3"/>
         <singleTable name="notpartionTable" shardingNode="dn1"/>
-        <globalTable name="area"  shardingNode="dn1,dn2,dn3"/>
+        <globalTable name="area" shardingNode="dn1,dn2,dn3"/>
         <shardingTable name="employee" shardingNode="dn1,dn2" function="func1" shardingColumn="sharding_id"/>
         <shardingTable name="customer" shardingNode="dn1,dn2" function="rang-long2" shardingColumn="id">
             <childTable name="orders" joinColumn="customer_id" parentColumn="id">
@@ -49,7 +57,7 @@
             </childTable>
             <childTable name="customer_addr" joinColumn="customer_id" parentColumn="id"/>
         </shardingTable>
-        <singleTable name="globalsn"  shardingNode="dn1"/>
+        <singleTable name="globalsn" shardingNode="dn1"/>
     </schema>
 
     <schema name="mysqldb" sqlMaxLimit="100">
@@ -62,6 +70,7 @@
     <shardingNode name="dn1" dbGroup="localhost1" database="db1"/>
     <shardingNode name="dn2" dbGroup="localhost1" database="db2"/>
     <shardingNode name="dn3" dbGroup="localhost1" database="db3"/>
+    <shardingNode name="dn4" dbGroup="localhost1" database="db_4"/>
     <shardingNode name="cndb_dn" dbGroup="localhost1" database="db4"/>
     <shardingNode name="offer_dn$0-127" dbGroup="localhost1" database="db1$0-127"/>
     <shardingNode name="detail_dn$0-127" dbGroup="localhost1" database="db2$0-127"/>

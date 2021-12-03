@@ -10,13 +10,14 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 
+import javax.annotation.Nonnull;
 import java.util.LinkedList;
 
 public final class JoinProcessor {
     private JoinProcessor() {
     }
 
-    public static PlanNode optimize(PlanNode qtn, LinkedList<JoinChooser.HintNode> hintNodes) {
+    public static PlanNode optimize(PlanNode qtn, @Nonnull LinkedList<HintNode> hintNodes) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-er-relation");
         try {
             if (qtn instanceof JoinNode) {

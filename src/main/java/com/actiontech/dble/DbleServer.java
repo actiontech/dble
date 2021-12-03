@@ -675,4 +675,8 @@ public final class DbleServer {
     public long getXaIDInc() {
         return xaIDInc.get();
     }
+
+    public void setConfig(ServerConfig config) {
+        this.config = config;
+    }
 }

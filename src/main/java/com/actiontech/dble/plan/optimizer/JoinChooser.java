@@ -75,7 +75,7 @@ public class JoinChooser {
         }
     };
 
-    public JoinChooser(JoinNode qtn, Map<ERTable, Set<ERTable>> erRelations, LinkedList<HintNode> hintNodes) {
+    public JoinChooser(JoinNode qtn, Map<ERTable, Set<ERTable>> erRelations, @Nonnull LinkedList<HintNode> hintNodes) {
         this.orgNode = qtn;
         this.erRelations = erRelations;
         this.charsetIndex = orgNode.getCharsetIndex();
@@ -218,10 +218,6 @@ public class JoinChooser {
 
     }
 
-    /**
-     * @param root
-     * @return
-     */
     private JoinNode joinWithHint(JoinRelationDag root) {
         if (dagNodes.size() != hintNodes.size()) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintNodes.size() + " not equals to plan node size " + dagNodes.size() + ".");
@@ -434,7 +430,6 @@ public class JoinChooser {
             if (tmp == null) {
                 // eg: select b.* from  a inner join  b on a.id=b.id , sharding2 inner join   sharding2_child  on sharding2_child.id=sharding2.id ;
                 // maybe multi DAGs, or need merge DAGs, optimizer cost too much
-                //todo: log
                 stopOptimize = true;
                 return root;
             } else {
@@ -533,8 +528,7 @@ public class JoinChooser {
     }
 
     private List<OneToOneJoinRelation> splitAndExchangeRelations(JoinRelations relations) {
-        PlanNode orgRightNode = relations.rightNode;
-        PlanNode leftNode = orgRightNode;
+        PlanNode newLeftNode = relations.rightNode;
 
         List<OneToOneJoinRelation> relationLst = new ArrayList<>();
         Map<PlanNode, List<JoinRelation>> nodeToNormalMap = new HashMap<>();
@@ -555,11 +549,11 @@ public class JoinChooser {
             if (tmpNormalRelationLst == null) {
                 tmpNormalRelationLst = new ArrayList<>(0);
             }
-            OneToOneJoinRelation nodeRelations = new OneToOneJoinRelation(tmpErRelationLst, tmpNormalRelationLst, joinRelation.right.planNode, leftNode);
+            OneToOneJoinRelation nodeRelations = new OneToOneJoinRelation(tmpErRelationLst, tmpNormalRelationLst, joinRelation.right.planNode, newLeftNode);
             relationLst.add(nodeRelations);
         }
         for (Entry<PlanNode, List<JoinRelation>> entry : nodeToNormalMap.entrySet()) {
-            OneToOneJoinRelation nodeRelations = new OneToOneJoinRelation(new ArrayList<>(0), entry.getValue(), entry.getKey(), leftNode);
+            OneToOneJoinRelation nodeRelations = new OneToOneJoinRelation(new ArrayList<>(0), entry.getValue(), entry.getKey(), newLeftNode);
             relationLst.add(nodeRelations);
         }
         return relationLst;
@@ -609,9 +603,7 @@ public class JoinChooser {
                 boolean isERJoin = isErRelation(columnInfoLeft.erTable, columnInfoRight.erTable);
                 if (columnInfoLeft.planNode != rightNode && columnInfoRight.planNode != rightNode) {
                     //  now may not happen:a join b on a,b join c on c,b and a,b; the last a,b can be other filter
-                    //  if (isERJoin) {
-                    //      //todo:  try optimizer later ?leave it even inner join?
-                    //  }
+                    //todo: if (isERJoin) and inner join try optimizer later
                     otherFilter = FilterUtils.and(otherFilter, filter);
                     continue;
                 }
@@ -893,9 +885,9 @@ public class JoinChooser {
     }
 
     private class JoinRelation {
-        private JoinColumnInfo left;
-        private JoinColumnInfo right;
-        private ItemFuncEqual filter;
+        private final JoinColumnInfo left;
+        private final JoinColumnInfo right;
+        private final ItemFuncEqual filter;
 
         JoinRelation(JoinColumnInfo left, JoinColumnInfo right, ItemFuncEqual filter) {
             this.left = left;

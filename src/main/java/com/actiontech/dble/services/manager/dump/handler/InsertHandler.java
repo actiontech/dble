@@ -27,8 +27,7 @@ public class InsertHandler extends DefaultHandler {
     private final DefaultValuesHandler defaultValuesHandler = new DefaultValuesHandler();
 
     @Override
-    public SQLStatement preHandle(DumpFileContext context, String stmt) throws DumpException, SQLNonTransientException {
-        DumpFileContext fileContext = new DumpFileContext().copyOf(context);
+    public SQLStatement preHandle(DumpFileContext fileContext, String stmt) throws DumpException, SQLNonTransientException {
         // get table name simply
         int type = ServerParseFactory.getShardingParser().parse(stmt);
 

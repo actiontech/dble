@@ -8,7 +8,7 @@ public class DumpFileConfig {
     private String defaultSchema;
     private int readQueueSize = 500;
     private String writePath;
-    private int writeQueueSize = 500;
+    private int writeQueueSize = 512;
     private int maxValues = 4000;
     private int threadNum = 2;
     private int bufferSize = 1048576;

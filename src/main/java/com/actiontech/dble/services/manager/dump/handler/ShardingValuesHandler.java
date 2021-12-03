@@ -35,10 +35,10 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
             nodeIndex = algorithm.calculate(shardingValue);
             // null means can't find any valid index
             if (nodeIndex == null || nodeIndex >= context.getTableConfig().getShardingNodes().size()) {
-                throw new SQLNonTransientException("can't find any valid shardingnode shardingValue" + shardingValue);
+                throw new SQLNonTransientException("can't find any valid shardingnode shardingValue:" + shardingValue);
             }
         } catch (Exception e) {
-            throw new SQLNonTransientException("can't calculate valid shardingnode shardingValue" + shardingValue + ",due to " + e.getMessage());
+            throw new SQLNonTransientException("can't calculate valid shardingnode shardingValue,due to " + e.getMessage());
         }
         return nodeIndex;
     }

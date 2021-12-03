@@ -183,7 +183,11 @@ public class DumpFileWriter {
                 }
             };
             SleepingWaitStrategy strategy = new SleepingWaitStrategy();
-            disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("Split_Writer_" + shardingNode).build(), ProducerType.MULTI, strategy);
+            try {
+                disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("Split_Writer_" + shardingNode).build(), ProducerType.MULTI, strategy);
+            } catch (IllegalArgumentException e) {
+                throw new DumpException("The value of -w needs to be a power of 2");
+            }
             disruptor.handleEventsWith(handler);
             disruptor.setDefaultExceptionHandler(new SplitWriterExceptionHandler());
             disruptor.start();

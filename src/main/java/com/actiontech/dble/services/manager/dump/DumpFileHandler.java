@@ -66,7 +66,7 @@ public final class DumpFileHandler implements Runnable {
     // read one statement by ;\n
     private void readSQLByEOF(String stmts) throws InterruptedException {
         boolean endWithEOF = stmts.endsWith(";") | stmts.endsWith(";\n");
-        List<String> strings = splitContent(stmts, ";\n");
+        List<String> strings = splitContent(stmts, ";\n", ";\r\n");
         int len = strings.size() - 1;
 
         int i = 0;
@@ -104,10 +104,16 @@ public final class DumpFileHandler implements Runnable {
     }
 
 
-    public static List<String> splitContent(String content, String separate) {
+    public static List<String> splitContent(String content, String linuxSeparate, String windowsSeparate) {
         List<String> list = Lists.newArrayList();
+        boolean linuxFlag = true;
         while (true) {
-            int j = content.indexOf(separate);
+            int j = content.indexOf(linuxSeparate);
+            if (j < 0) {
+                //windows
+                j = content.indexOf(windowsSeparate);
+                linuxFlag = false;
+            }
             if (j < 0) {
                 if (!content.isEmpty()) {
                     list.add(content);
@@ -115,7 +121,7 @@ public final class DumpFileHandler implements Runnable {
                 break;
             }
             list.add(content.substring(0, j));
-            content = content.substring(j + separate.length());
+            content = content.substring(j + (linuxFlag ? linuxSeparate : windowsSeparate).length());
         }
         if (list.isEmpty()) {
             list.add(content);

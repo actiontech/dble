@@ -28,7 +28,8 @@ public final class DumpFileExecutor implements Runnable {
     private final NameableExecutor nameableExecutor;
     private final AtomicInteger threadNum = new AtomicInteger(0);
 
-    public DumpFileExecutor(BlockingQueue<String> queue, BlockingQueue<String> insertQueue, DumpFileWriter writer, DumpFileConfig config, SchemaConfig schemaConfig, NameableExecutor nameableExecutor) {
+    public DumpFileExecutor(BlockingQueue<String> queue, BlockingQueue<String> insertQueue, DumpFileWriter writer, DumpFileConfig config,
+                            SchemaConfig schemaConfig, NameableExecutor nameableExecutor) {
         this.ddlQueue = queue;
         this.insertQueue = insertQueue;
         this.context = new DumpFileContext(writer, config);
@@ -90,7 +91,7 @@ public final class DumpFileExecutor implements Runnable {
             } catch (InterruptedException e) {
                 LOGGER.debug("dump file executor is interrupted.");
                 break;
-            } catch (Exception e) {
+            } catch (Exception | Error e) {
                 LOGGER.warn("dump file executor exit", e);
                 this.context.addError("dump file executor exit, because:" + e.getMessage());
                 stopWriter(writer);

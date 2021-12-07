@@ -36,7 +36,11 @@ public class DumpFileWriter {
     private final EventTranslatorOneArg<Element, Object> translator = (event, sequence, arg0) -> event.set(arg0);
     private Map<String, String> writerErrorMap;
 
-    public void open(String writePath, int writeQueueSize, int maxValue, Map<String, String> map) throws IOException {
+    public DumpFileWriter(Map<String, String> writerErrorMap) {
+        this.writerErrorMap = writerErrorMap;
+    }
+
+    public void open(String writePath, int writeQueueSize, int maxValue) throws IOException {
         Set<String> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes().keySet();
         Date date = new Date();
         for (String shardingNode : shardingNodes) {
@@ -45,7 +49,6 @@ public class DumpFileWriter {
             shardingNodeWriters.put(shardingNode, writer);
         }
         this.maxValues = maxValue;
-        this.writerErrorMap = map;
     }
 
     public void start() {
@@ -175,7 +178,7 @@ public class DumpFileWriter {
                         return;
                     }
                     writeContent(content, wrapStr);
-                } catch (Exception e) {
+                } catch (Exception | Error e) {
                     error = true;
                     finished.decrementAndGet();
                     writerErrorMap.putIfAbsent(this.shardingNode, "writer error,because:" + e.getMessage());

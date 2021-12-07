@@ -42,7 +42,7 @@ public final class RouteResultset implements Serializable {
     private boolean complexSQL = false;
     private boolean alwaysFalse = false;
     private boolean needOptimizer;
-    private HintPlanInfo hintPlanInfo;
+    private transient HintPlanInfo hintPlanInfo;
     private int limitStart;
     private boolean sqlRouteCacheAble;
     // limit output total

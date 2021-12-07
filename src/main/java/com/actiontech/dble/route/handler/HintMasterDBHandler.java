@@ -32,6 +32,9 @@ public final class HintMasterDBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HintMasterDBHandler.class);
 
+    private HintMasterDBHandler() {
+    }
+
     public static RouteResultset route(SchemaConfig schema, String hintSQLValue, int sqlType, String realSQL, ShardingService service)
             throws SQLException {
 

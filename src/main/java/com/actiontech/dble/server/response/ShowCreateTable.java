@@ -6,9 +6,8 @@
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -24,7 +23,7 @@ public final class ShowCreateTable {
 
     public static void response(ShardingService shardingService, String stmt) {
         try {
-            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLStatement statement = DruidUtil.parseMultiSQL(stmt);
             SQLShowCreateTableStatement showCreateTableStatement = (SQLShowCreateTableStatement) statement;
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(shardingService.getUser(), shardingService.getSchema(), showCreateTableStatement.getName(), null);
             shardingService.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.getSchema()), schemaInfo, ServerParse.SHOW);

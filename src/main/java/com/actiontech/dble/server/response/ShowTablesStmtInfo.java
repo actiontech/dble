@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.server.response;
 
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -58,7 +58,7 @@ public class ShowTablesStmtInfo {
         if (cond != null)
             sb.append(cond);
         sql = sb.toString();
-        SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(sql);
+        SQLStatement statement = DruidUtil.parseMultiSQL(sql);
         whereExpr = ((SQLShowTablesStatement) statement).getWhere();
         if (whereExpr != null) {
             where = whereExpr.toString();

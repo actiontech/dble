@@ -2,9 +2,9 @@ package com.actiontech.dble.services.manager.dump.handler;
 
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.manager.dump.DumpException;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
@@ -21,7 +21,7 @@ public class TableHandler extends DefaultHandler {
 
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLSyntaxErrorException {
-        SQLStatement sqlStatement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+        SQLStatement sqlStatement = DruidUtil.parseMultiSQL(stmt);
         String tableName;
         if (sqlStatement instanceof MySqlCreateTableStatement) {
             tableName = StringUtil.removeBackQuote(((MySqlCreateTableStatement) sqlStatement).getTableSource().getName().getSimpleName());

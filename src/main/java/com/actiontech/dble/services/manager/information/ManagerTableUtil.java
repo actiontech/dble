@@ -18,8 +18,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
+import com.actiontech.dble.route.parser.DbleHintParser;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -130,20 +130,17 @@ public final class ManagerTableUtil {
         return affectPks;
     }
 
-    public static List<String> getTables(String defaultSchema, String sql) {
+    public static List getTables(String defaultSchema, String sql) {
         if (null == sql)
-            return new ArrayList<>();
-        int hintLength = RouteService.isHintSql(sql);
-        if (hintLength != -1) {
-            int endPos = sql.substring(hintLength).indexOf("*/") + hintLength;
-            if (endPos > 0) {
-                sql = sql.substring(endPos + "*/".length()).trim();
-            }
+            return Collections.EMPTY_LIST;
+
+        DbleHintParser.HintInfo hintInfo = DbleHintParser.parse(sql);
+        if (hintInfo != null) {
+            sql = hintInfo.getRealSql();
         }
         SQLStatement sqlStatement;
         try {
-            sqlStatement = new MySqlStatementParser(sql).
-                    parseStatement();
+            sqlStatement = new MySqlStatementParser(sql).parseStatement();
         } catch (ParserException e) {
             // ignore
             return new ArrayList<>();
@@ -154,7 +151,7 @@ public final class ManagerTableUtil {
         String tableName = null;
         List<String> allTableName = new ArrayList<>();
         for (SQLName t : tables2) {
-            if ((tableName = t.toString().replace("`", "")).indexOf(".") > -1) {
+            if ((tableName = t.toString().replace("`", "")).contains(".")) {
                 allTableName.add(tableName);
             } else {
                 allTableName.add(defaultSchema + "." + tableName);

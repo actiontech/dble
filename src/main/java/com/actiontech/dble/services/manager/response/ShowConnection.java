@@ -12,7 +12,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -120,7 +120,7 @@ public final class ShowConnection {
         if (!StringUtil.isEmpty(whereCondition)) {
             SQLStatement statement;
             try {
-                statement = RouteStrategyFactory.getRouteStrategy().parserSQL("select 1 " + whereCondition);
+                statement = DruidUtil.parseMultiSQL("select 1 " + whereCondition);
                 SQLExpr whereExpr = ((SQLSelectStatement) statement).getSelect().getQueryBlock().getWhere();
                 getWhereCondition(whereExpr, whereInfo);
             } catch (SQLSyntaxErrorException e) {

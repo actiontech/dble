@@ -8,7 +8,7 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
@@ -61,7 +61,7 @@ public final class Describe {
     public static void execute(String stmt, ManagerService service) {
         String tableName;
         try {
-            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLStatement statement = DruidUtil.parseMultiSQL(stmt);
             MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), describeStatement.getTableName(), null);
             // schemaName = schemaInfo.getSchema().toLowerCase();

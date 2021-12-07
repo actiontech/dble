@@ -3,7 +3,7 @@ package com.actiontech.dble.services.manager.dump.handler;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.meta.TableMeta;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.manager.dump.DumpException;
@@ -53,7 +53,7 @@ public class InsertHandler extends DefaultHandler {
             return null;
         }
 
-        MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+        MySqlInsertStatement insert = (MySqlInsertStatement) DruidUtil.parseMultiSQL(stmt);
         // check columns from insert columns
         checkColumns(fileContext, insert.getColumns());
         // add

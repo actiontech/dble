@@ -16,7 +16,7 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AuthService;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.util.*;
@@ -104,7 +104,7 @@ public final class ShowBackend {
         if (!StringUtil.isEmpty(whereCondition)) {
             SQLStatement statement;
             try {
-                statement = RouteStrategyFactory.getRouteStrategy().parserSQL("select 1 " + whereCondition);
+                statement = DruidUtil.parseMultiSQL("select 1 " + whereCondition);
                 SQLExpr whereExpr = ((SQLSelectStatement) statement).getSelect().getQueryBlock().getWhere();
                 ShowConnection.getWhereCondition(whereExpr, whereInfo);
             } catch (SQLSyntaxErrorException e) {

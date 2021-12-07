@@ -16,8 +16,8 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
@@ -44,7 +44,7 @@ public final class DeleteHandler {
     public void handle(String stmt, ManagerService service) {
         MySqlDeleteStatement delete;
         try {
-            delete = (MySqlDeleteStatement) (RouteStrategyFactory.getRouteStrategy().parserSQL(stmt));
+            delete = (MySqlDeleteStatement) (DruidUtil.parseMultiSQL(stmt));
         } catch (Exception e) {
             LOGGER.warn("manager parser delete failed", e);
             service.writeErrMessage("42000", "You have an error in your SQL syntax", ErrorCode.ER_PARSE_ERROR);

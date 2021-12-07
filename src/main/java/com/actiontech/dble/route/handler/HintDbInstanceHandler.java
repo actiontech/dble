@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,18 +25,19 @@ import java.util.stream.Collectors;
  *
  * @author AMGuo
  */
-public class HintDbInstanceHandler implements HintHandler {
+public final class HintDbInstanceHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HintDbInstanceHandler.class);
 
-    @Override
-    public PhysicalDbInstance routeRwSplit(int sqlType, String realSQL, RWSplitService service, String hintSQLValue, int hintSqlType, Map hintMap) throws SQLException {
+    private HintDbInstanceHandler() {
+    }
+
+    public static PhysicalDbInstance route(String realSQL, RWSplitService service, String hintSQLValue) throws SQLException {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route dbInstance sql hint from " + realSQL);
         }
 
         RwSplitUserConfig rwSplitUserConfig = service.getUserConfig();
-        hintSQLValue = hintSQLValue.trim();
         PhysicalDbInstance dbInstance = findDbInstance(rwSplitUserConfig, hintSQLValue);
         if (null == dbInstance) {
             String msg = "can't find hint dbInstance:" + hintSQLValue + " in db_group:" + rwSplitUserConfig.getDbGroup();
@@ -47,8 +47,7 @@ public class HintDbInstanceHandler implements HintHandler {
         return dbInstance;
     }
 
-
-    private PhysicalDbInstance findDbInstance(RwSplitUserConfig userConfig, String dbInstanceUrl) {
+    private static PhysicalDbInstance findDbInstance(RwSplitUserConfig userConfig, String dbInstanceUrl) {
         if (StringUtil.isEmpty(dbInstanceUrl)) {
             return null;
         }

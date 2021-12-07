@@ -7,6 +7,7 @@ package com.actiontech.dble.route;
 
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
 import com.actiontech.dble.cluster.values.DDLInfo;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.actiontech.dble.util.FormatUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
@@ -21,7 +22,7 @@ import java.util.Objects;
  * @author mycat
  */
 public final class RouteResultset implements Serializable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RouteResultset.class);
+
     private static final String DDL_TRACE_LOG = "DDL_TRACE";
     private static final Logger DTRACE_LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
     private static final long serialVersionUID = 3906972758236875720L;
@@ -41,6 +42,7 @@ public final class RouteResultset implements Serializable {
     private boolean complexSQL = false;
     private boolean alwaysFalse = false;
     private boolean needOptimizer;
+    private HintPlanInfo hintPlanInfo;
     private int limitStart;
     private boolean sqlRouteCacheAble;
     // limit output total
@@ -100,6 +102,14 @@ public final class RouteResultset implements Serializable {
         if (DTRACE_LOGGER.isTraceEnabled()) {
             DTRACE_LOGGER.trace("the sql is need to use complex query Optimizer:" + srcStatement);
         }
+    }
+
+    public HintPlanInfo getHintPlanInfo() {
+        return hintPlanInfo;
+    }
+
+    public void setHintPlanInfo(HintPlanInfo hintPlanInfo) {
+        this.hintPlanInfo = hintPlanInfo;
     }
 
     public Boolean getRunOnSlave() {

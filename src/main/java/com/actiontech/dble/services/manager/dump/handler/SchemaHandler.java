@@ -2,8 +2,8 @@ package com.actiontech.dble.services.manager.dump.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLCreateDatabaseStatement;
@@ -18,7 +18,7 @@ public class SchemaHandler extends DefaultHandler {
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLSyntaxErrorException {
         String schema;
         stmt = stmt.replace("/*!", "/*#");
-        SQLStatement sqlStatement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+        SQLStatement sqlStatement = DruidUtil.parseMultiSQL(stmt);
         if (sqlStatement instanceof SQLUseStatement) {
             SQLUseStatement use = (SQLUseStatement) sqlStatement;
             schema = use.getDatabase().getSimpleName();

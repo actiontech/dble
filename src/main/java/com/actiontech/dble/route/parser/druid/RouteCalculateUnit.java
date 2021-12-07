@@ -20,7 +20,7 @@ import java.util.Map;
  * RouteCalculateUnit
  */
 public class RouteCalculateUnit {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RouteCalculateUnit.class);
+
     private static final String DDL_TRACE_LOG = "DDL_TRACE";
     private static final Logger DTRACE_LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
     private boolean alwaysFalse = false;
@@ -96,8 +96,7 @@ public class RouteCalculateUnit {
             Pair<String, String> otherTable = otherTables.getKey();
             Map<String, ColumnRoute> tableColumnsMap = ret.getTablesAndConditions().get(otherTable);
             if (tableColumnsMap == null) {
-                tableColumnsMap = new LinkedHashMap<>();
-                tableColumnsMap.putAll(otherTables.getValue());
+                tableColumnsMap = new LinkedHashMap<>(otherTables.getValue());
                 ret.tablesAndConditions.put(otherTable, tableColumnsMap);
             } else {
                 for (Map.Entry<String, ColumnRoute> otherColumnPairs : otherTables.getValue().entrySet()) {

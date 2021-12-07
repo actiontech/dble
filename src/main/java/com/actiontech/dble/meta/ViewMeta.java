@@ -13,7 +13,7 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -57,7 +57,7 @@ public class ViewMeta {
     }
 
     private void parseSelectInView() throws SQLException {
-        SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
+        SQLSelectStatement selectStatement = (SQLSelectStatement) DruidUtil.parseMultiSQL(selectSql);
         MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false, null);
         msv.visit(selectStatement.getSelect().getQuery());
         PlanNode selNode = msv.getTableNode();

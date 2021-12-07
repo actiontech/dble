@@ -9,7 +9,7 @@ import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.util.Collection;
@@ -47,7 +47,7 @@ public abstract class ManagerBaseView {
     private QueryNode parseView(String selectSql) {
         QueryNode queryNode = null;
         try {
-            SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
+            SQLSelectStatement selectStatement = (SQLSelectStatement) DruidUtil.parseMultiSQL(selectSql);
             MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(ManagerSchemaInfo.SCHEMA_NAME, 45, null, false, null);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();

@@ -7,8 +7,7 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
-
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -48,7 +47,7 @@ public final class ShowIndex {
             }
             StringBuilder sql = new StringBuilder();
             boolean changeSQL = false;
-            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLStatement statement = DruidUtil.parseMultiSQL(stmt);
             if (statement instanceof SQLShowIndexesStatement) {
                 SQLShowIndexesStatement sqlShowIndexesStatement = (SQLShowIndexesStatement) statement;
                 table = StringUtil.removeBackQuote(sqlShowIndexesStatement.getTable().getName().getSimpleName());

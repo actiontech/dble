@@ -269,10 +269,24 @@ public class ServerParseTest {
         Assert.assertEquals(ServerParse.OTHER, result);
     }
 
-
     @Test
     public void testDivide() {
         String sql = "delete from tablex where name = '''sdfsd;f''';";
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
+
+        sql = "UPDATE TEST \n" +
+                "SET \n" +
+                "REPWAMT2 = '0',\n" +
+                "REPWPS2 = NULL,\n" +
+                "ISWREF = 'N',\n" +
+                "CONTWRNO = 'PO-2022-08-0126',\n" +
+                "INVWOINO = 'ABC-184/21;',\n" +
+                "REGWNO = NULL\n" +
+                "WHERE\n" +
+                "REPWCODE = '110101000248211123CG0A'";
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
+
+        sql = "UPDATE TEST SET RSEPAMT2 = '0',REWPPS2 = NULL,ISWREF = 'N',CONTRNO = 'PO-2022-08-0126',INVOINO = 'ABC-184/21;',REGWNO = NULL WHERE REWPCODE = '110101000248211123CG0A'";
         Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = '\\'sdfsd;f\\'';";

@@ -23,7 +23,7 @@ public final class FilterUtils {
     }
 
     /**
-     * split the filter until filter is 'boolean filer' or 'orfilter'
+     * split the filter until filter is 'boolean' filer or 'or' filer
      *
      * @param filter
      * @return
@@ -54,7 +54,7 @@ public final class FilterUtils {
                     saveSet.add(subSplits);
                 }
 
-                Map<String, List<Item>> itemMap = gourpByRefertTable(filter, saveSet);
+                Map<String, List<Item>> itemMap = groupByReferTable(filter, saveSet);
                 if (!CollectionUtil.isEmpty(itemMap)) {
                     for (Map.Entry<String, List<Item>> entry : itemMap.entrySet()) {
                         ItemCondOr x = new ItemCondOr(entry.getValue());
@@ -77,11 +77,11 @@ public final class FilterUtils {
      * group the or filter into Map<table,List<condition>>
      * try to optimize where with 'OR'
      * <p>
-     * eg1: tabl1.join(table2).query((table1.id>5 && table1.name = table2.name)or (table2.id<10 && table1.name = table2.name)")
+     * eg1: table1.join(table2).query((table1.id>5 && table1.name = table2.name)or (table2.id<10 && table1.name = table2.name)")
      * after optimized:
      * table1.query("table1.id>5").or(table2.query("table2.id<10").on("table1.name = table2.name")
      * <p>
-     * eg2: tabl1.join(table2).query(table1.id = table2.id && (table1.name = a or table2.name = b))
+     * eg2: table1.join(table2).query(table1.id = table2.id && (table1.name = a or table2.name = b))
      * after optimized:
      * table1.query("table1.name = a").or(table2.query("table2.name = b").on("table1.name = table2.name")
      *
@@ -89,18 +89,18 @@ public final class FilterUtils {
      * @param saveSet
      * @return
      */
-    public static Map<String, List<Item>> gourpByRefertTable(Item self, Set<List<Item>> saveSet) {
+    private static Map<String, List<Item>> groupByReferTable(Item self, Set<List<Item>> saveSet) {
         Map<String, List<Item>> itemMap = new HashMap<>();
 
-        //step2 turned to group the base filter by refertTable
+        //step2 turned to group the base filter by referTable
         //only when a table has filter in every args of condition OR ,the table can be limit
-        //if a refertTable meet the criteria ,the table and all it's filter will be
+        //if a referTable meet the criteria ,the table and all it's filter will be
         jumpOut:
-        for (PlanNode refertTable : self.getReferTables()) { // Traversing related tables
-            if (refertTable instanceof TableNode) {
-                String tableName = ((TableNode) refertTable).getTableName();
+        for (PlanNode referTable : self.getReferTables()) { // Traversing related tables
+            if (referTable instanceof TableNode) {
+                String tableName = ((TableNode) referTable).getTableName();
 
-                //this loop is to check wether the table has filter in every Subconditions (....where subcondition1 or subcondition2 )
+                //this loop is to check whether the table has filter in every Subconditions (....where subcondition1 or subcondition2 )
                 for (List<Item> singleList : saveSet) {
                     boolean hasOutTable = false;
                     //in every subcondition the default relationship is 'AND'
@@ -109,20 +109,18 @@ public final class FilterUtils {
                     for (Item x : singleList) {
                         if (x.getReferTables().size() == 1) {
                             for (PlanNode backTable : x.getReferTables()) {
-                                if (backTable instanceof TableNode) {
-                                    if (((TableNode) backTable).getTableName().equals(tableName)) {
-                                        hasOutTable = true;
-                                        if (!itemMapForSingle.containsKey(tableName)) {
-                                            itemMapForSingle.put(tableName, new ArrayList<Item>());
-                                        }
-                                        itemMapForSingle.get(tableName).add(x);
+                                if (backTable instanceof TableNode && ((TableNode) backTable).getTableName().equals(tableName)) {
+                                    hasOutTable = true;
+                                    if (!itemMapForSingle.containsKey(tableName)) {
+                                        itemMapForSingle.put(tableName, new ArrayList<Item>());
                                     }
+                                    itemMapForSingle.get(tableName).add(x);
                                 }
                             }
                         }
                     }
                     if (!hasOutTable) {
-                        //it the refertTable
+                        //it the referTable
                         itemMap.remove(tableName);
                         continue jumpOut;
                     }

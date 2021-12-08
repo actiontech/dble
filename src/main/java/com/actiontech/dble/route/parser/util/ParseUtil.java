@@ -484,6 +484,7 @@ public final class ParseUtil {
     }
 
     private static int getProcedureEndPos(String stmt, int offset) {
+        int originOffset = offset;
         if (stmt.length() > offset + "ROCEDURE ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -506,6 +507,6 @@ public final class ParseUtil {
                 return offset - 1 + findNextBreak(testSql, true);
             }
         }
-        return offset;
+        return originOffset;
     }
 }

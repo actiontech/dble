@@ -12,46 +12,17 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.sql.SQLSyntaxErrorException;
-import java.util.List;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractRouteStrategy.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRouteStrategy.class);
 
     @Override
-    public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException {
-        SQLStatementParser parser = new MySqlStatementParser(originSql);
-
-        /**
-         * thrown SQL SyntaxError if parser error
-         */
-        try {
-            List<SQLStatement> list = parser.parseStatementList();
-            if (list.size() > 1) {
-                throw new SQLSyntaxErrorException("MultiQueries is not supported,use single query instead ");
-            }
-            return list.get(0);
-        } catch (Exception t) {
-            LOGGER.warn("routeNormalSqlWithAST", t);
-            if (t.getMessage() != null) {
-                throw new SQLSyntaxErrorException(t.getMessage());
-            } else {
-                throw new SQLSyntaxErrorException(t);
-            }
-        }
-    }
-
-    @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
-                                ShardingService service, boolean isExplain) throws SQLException {
+    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ShardingService service, boolean isExplain) throws SQLException {
 
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 

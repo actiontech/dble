@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.Map;
 
 /**
  * sql hint: dble:db_type=master/slave<br/>
@@ -29,17 +28,17 @@ import java.util.Map;
  *
  * @author digdeep@126.com
  */
-public class HintMasterDBHandler implements HintHandler {
+public final class HintMasterDBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HintMasterDBHandler.class);
 
-    @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ShardingService service,
-                                String hintSQLValue, int hintSqlType, Map hintMap)
+    private HintMasterDBHandler() {
+    }
+
+    public static RouteResultset route(SchemaConfig schema, String hintSQLValue, int sqlType, String realSQL, ShardingService service)
             throws SQLException {
 
-        RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
-                schema, sqlType, realSQL, service);
+        RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, realSQL, service);
 
         LOGGER.debug("rrs(): " + rrs); // master
         Boolean isRouteToMaster;
@@ -55,8 +54,7 @@ public class HintMasterDBHandler implements HintHandler {
         return rrs;
     }
 
-    @Override
-    public PhysicalDbInstance routeRwSplit(int sqlType, String realSQL, RWSplitService service, String hintSQLValue, int hintSqlType, Map hintMap) throws SQLException {
+    public static PhysicalDbInstance route(String hintSQLValue, int sqlType, String realSQL, RWSplitService service) throws SQLException {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route dbInstance sql hint from " + realSQL);
         }
@@ -84,7 +82,7 @@ public class HintMasterDBHandler implements HintHandler {
         return dbInstance;
     }
 
-    private Boolean isMaster(String hintSQLValue, int sqlType) {
+    private static Boolean isMaster(String hintSQLValue, int sqlType) {
         if (hintSQLValue != null && !hintSQLValue.trim().equals("")) {
             if (hintSQLValue.trim().equalsIgnoreCase("master")) {
                 return true;
@@ -101,4 +99,5 @@ public class HintMasterDBHandler implements HintHandler {
         }
         return false;
     }
+
 }

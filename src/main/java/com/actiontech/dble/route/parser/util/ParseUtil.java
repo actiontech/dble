@@ -367,21 +367,6 @@ public final class ParseUtil {
         return offset;
     }
 
-    public static boolean currentCharIsSep(String stmt, int offset) {
-        if (stmt.length() > offset) {
-            switch (stmt.charAt(offset)) {
-                case ' ':
-                case '\t':
-                case '\r':
-                case '\n':
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        return true;
-    }
-
     public static int move(String stmt, int offset, int length) {
         int i = offset;
         for (; i < stmt.length(); ++i) {
@@ -602,6 +587,22 @@ public final class ParseUtil {
             break;
         } while (stmt.length() > ++offset);
         return offset;
+    }
+
+    public static int skipSpaceUtil(String stmt, int offset, char util) {
+        int len = stmt.length();
+        char tmp;
+        do {
+            tmp = stmt.charAt(offset);
+            if (!isSpace(tmp)) {
+                if (tmp == util) {
+                    return offset;
+                } else {
+                    return -1;
+                }
+            }
+        } while (len > ++offset);
+        return -1;
     }
 
 }

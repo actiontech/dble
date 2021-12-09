@@ -8,10 +8,12 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.route.handler.HintDbInstanceHandler;
+import com.actiontech.dble.route.handler.HintMasterDBHandler;
+import com.actiontech.dble.route.parser.DbleHintParser;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
-import com.actiontech.dble.singleton.RouteService;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlPrepareStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MysqlDeallocatePrepareStatement;
@@ -21,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.HashSet;
 import java.util.Set;
@@ -143,7 +146,7 @@ public class RWSplitNonBlockingSession extends Session {
         return rwGroup;
     }
 
-    public void executeHint(int sqlType, String sql, Callback callback) throws IOException {
+    public void executeHint(DbleHintParser.HintInfo hintInfo, int sqlType, String sql, Callback callback) throws SQLException, IOException {
         RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback, true);
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
@@ -152,8 +155,9 @@ public class RWSplitNonBlockingSession extends Session {
             handler.execute(conn);
             return;
         }
+
         try {
-            PhysicalDbInstance dbInstance = RouteService.getInstance().routeRwSplit(sqlType, sql, rwSplitService);
+            PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
             if (dbInstance == null) {
                 return;
             }
@@ -163,8 +167,19 @@ public class RWSplitNonBlockingSession extends Session {
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
             rwSplitService.executeException(e, sql);
-            return;
         }
+    }
+
+    private PhysicalDbInstance routeRwSplit(DbleHintParser.HintInfo hintInfo, int sqlType, RWSplitService service) throws SQLException {
+        PhysicalDbInstance dbInstance = null;
+        int type = hintInfo.getType();
+        if (type == DbleHintParser.DB_INSTANCE_URL || type == DbleHintParser.UPROXY_DEST) {
+            dbInstance = HintDbInstanceHandler.route(hintInfo.getRealSql(), service, hintInfo.getHintValue());
+        } else if (type == DbleHintParser.UPROXY_MASTER || type == DbleHintParser.DB_TYPE) {
+            dbInstance = HintMasterDBHandler.route(hintInfo.getHintValue(), sqlType, hintInfo.getRealSql(), service);
+        }
+        service.setExecuteSql(hintInfo.getRealSql());
+        return dbInstance;
     }
 
     public void setRwGroup(PhysicalDbGroup rwGroup) {

@@ -7,10 +7,8 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
-
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlFlushStatement;
 
 /**
  * Created by collapsar on 2019/07/23.
@@ -23,7 +21,7 @@ public final class FlushTableHandler {
     public static void handle(String stmt, ShardingService service) {
         try {
             stmt = stmt.replace("/*!", "/*#");
-            MySqlFlushStatement statement = (MySqlFlushStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            DruidUtil.parseMultiSQL(stmt);
             OkPacket ok = new OkPacket();
             ok.setPacketId(1);
             ok.setAffectedRows(1);

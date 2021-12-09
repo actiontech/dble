@@ -3,6 +3,7 @@ package com.actiontech.dble.services.rwsplit;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
+import com.actiontech.dble.route.parser.DbleHintParser;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.ServerQueryHandler;
 import com.actiontech.dble.server.handler.SetHandler;
@@ -12,7 +13,6 @@ import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.services.rwsplit.handle.XaHandler;
-import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.google.common.collect.ImmutableMap;
@@ -48,11 +48,11 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 session.execute(true, null);
                 return;
             }
+            DbleHintParser.HintInfo hintInfo = DbleHintParser.parseRW(sql);
             int rs = serverParse.parse(sql);
-            int hintLength = RouteService.isHintSql(sql);
             int sqlType = rs & 0xff;
-            if (hintLength >= 0) {
-                session.executeHint(sqlType, sql, null);
+            if (hintInfo != null) {
+                session.executeHint(hintInfo, sqlType, sql, null);
             } else {
                 if (sqlType != RwSplitServerParse.START && sqlType != RwSplitServerParse.BEGIN &&
                         sqlType != RwSplitServerParse.COMMIT && sqlType != RwSplitServerParse.ROLLBACK && sqlType != RwSplitServerParse.SET) {

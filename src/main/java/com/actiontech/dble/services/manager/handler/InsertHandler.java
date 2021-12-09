@@ -16,7 +16,7 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
@@ -44,7 +44,7 @@ public final class InsertHandler {
     public void handle(String stmt, ManagerService service) {
         MySqlInsertStatement insert;
         try {
-            insert = (MySqlInsertStatement) (RouteStrategyFactory.getRouteStrategy().parserSQL(stmt));
+            insert = (MySqlInsertStatement) DruidUtil.parseMultiSQL(stmt);
         } catch (Exception e) {
             LOGGER.warn("manager parser insert failed", e);
             service.writeErrMessage("42000", "You have an error in your SQL syntax", ErrorCode.ER_PARSE_ERROR);

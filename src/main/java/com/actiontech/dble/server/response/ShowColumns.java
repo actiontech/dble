@@ -7,8 +7,7 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
-
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
@@ -36,18 +35,17 @@ public final class ShowColumns {
 
     public static void response(ShardingService shardingService, String stmt) {
         try {
-            Pattern pattern = ShowColumns.PATTERN;
-            Matcher ma = pattern.matcher(stmt);
+            Matcher ma = ShowColumns.PATTERN.matcher(stmt);
             // always match
             if (ma.matches()) {
                 int start = ma.start(6);
                 int end = ma.end(6);
                 String sub = stmt.substring(0, start);
-                String sub2 = stmt.substring(end, stmt.length());
+                String sub2 = stmt.substring(end);
                 stmt = sub + " from " + sub2;
             }
 
-            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLStatement statement = DruidUtil.parseMultiSQL(stmt);
             SQLShowColumnsStatement showColumnsStatement = (SQLShowColumnsStatement) statement;
             String table = StringUtil.removeBackQuote(showColumnsStatement.getTable().getSimpleName());
             SQLName database = showColumnsStatement.getDatabase();

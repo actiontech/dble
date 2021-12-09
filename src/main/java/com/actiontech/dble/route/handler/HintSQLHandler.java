@@ -8,50 +8,45 @@ package com.actiontech.dble.route.handler;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.RouteStrategy;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
-import java.util.Map;
 
 /**
  * HintSQLHandler
  */
-public class HintSQLHandler implements HintHandler {
+public final class HintSQLHandler {
 
-    private RouteStrategy routeStrategy;
-
-    HintSQLHandler() {
-        this.routeStrategy = RouteStrategyFactory.getRouteStrategy();
+    private HintSQLHandler() {
     }
 
-    @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ShardingService service,
-                                String hintSQLValue, int hintSqlType, Map hintMap)
+    public static RouteResultset route(SchemaConfig schema, String hintSQL, int realSqlType, String realSQL, ShardingService service)
             throws SQLException {
 
-        RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
-                hintSQLValue, service);
+        ServerParse serverParse = ServerParseFactory.getShardingParser();
+        int hintSqlType = serverParse.parse(hintSQL) & 0xff;
+        RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(schema, hintSqlType, hintSQL, service);
 
         if (rrs.isNeedOptimizer()) {
             throw new SQLSyntaxErrorException("Complex SQL not supported in hint");
         }
         // replace the sql of RRS
-        if (ServerParse.CALL == sqlType) {
+        if (ServerParse.CALL == realSqlType) {
             rrs.setCallStatement(true);
         }
 
         RouteResultsetNode[] oldRsNodes = rrs.getNodes();
         RouteResultsetNode[] newRrsNodes = new RouteResultsetNode[oldRsNodes.length];
         for (int i = 0; i < newRrsNodes.length; i++) {
-            newRrsNodes[i] = new RouteResultsetNode(oldRsNodes[i].getName(), sqlType, realSQL);
+            newRrsNodes[i] = new RouteResultsetNode(oldRsNodes[i].getName(), realSqlType, realSQL);
         }
         rrs.setNodes(newRrsNodes);
-
+        // HintSQLHandler will always send to master
+        rrs.setRunOnSlave(false);
         return rrs;
     }
 

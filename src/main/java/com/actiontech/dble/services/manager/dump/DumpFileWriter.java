@@ -2,7 +2,7 @@ package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.manager.dump.handler.InsertHandler;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -192,7 +192,7 @@ public class DumpFileWriter {
 
             if (table != null && table.equalsIgnoreCase(this.currentTable) && this.rows < maxValues) {
                 //splicing insert
-                MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+                MySqlInsertStatement insert = (MySqlInsertStatement) DruidUtil.parseMultiSQL(stmt);
                 if (insert.getValuesList().size() == 1) {
                     stmt = getSqlStr(insert.getValuesList().get(0).getValues());
                 }

@@ -11,7 +11,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
@@ -57,7 +57,7 @@ public final class ShowCreateView {
 
     public static void response(ShardingService service, String stmt) {
         try {
-            SQLShowCreateViewStatement statement = (SQLShowCreateViewStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLShowCreateViewStatement statement = (SQLShowCreateViewStatement) DruidUtil.parseMultiSQL(stmt);
             String schema = null;
             String view = null;
             if (statement.getName() instanceof SQLPropertyExpr) {

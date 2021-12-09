@@ -7,7 +7,6 @@ package com.actiontech.dble.route.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -16,20 +15,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
-import java.util.Map;
 
 /**
  * HintShardingNodeHandler
  *
  * @author zhuam
  */
-public class HintShardingNodeHandler implements HintHandler {
+public final class HintShardingNodeHandler {
+
+    private HintShardingNodeHandler() {
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HintShardingNodeHandler.class);
 
-    @Override
-    public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ShardingService service,
-                                String hintSQLValue, int hintSqlType, Map hintMap)
+    public static RouteResultset route(String hintSQLValue, int sqlType, String realSQL, ShardingService service)
             throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route shardingNode sql hint from " + realSQL);
@@ -43,7 +42,7 @@ public class HintShardingNodeHandler implements HintHandler {
         if (shardingNode != null) {
             rrs = RouterUtil.routeToSingleNode(rrs, shardingNode.getName(), null);
         } else {
-            String msg = "can't find hint shardingnode:" + hintSQLValue;
+            String msg = "can't find hint sharding node:" + hintSQLValue;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }

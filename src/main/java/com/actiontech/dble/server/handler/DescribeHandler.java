@@ -6,9 +6,8 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.route.util.RouterUtil;
-
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -22,7 +21,7 @@ public final class DescribeHandler {
 
     public static void handle(String stmt, ShardingService service) {
         try {
-            SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            SQLStatement statement = DruidUtil.parseMultiSQL(stmt);
             MySqlExplainStatement describeStatement = (MySqlExplainStatement) statement;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(service.getUser(), service.getSchema(), describeStatement.getTableName(), null);
             service.routeSystemInfoAndExecuteSQL(RouterUtil.removeSchema(stmt, schemaInfo.getSchema()), schemaInfo, ServerParse.DESCRIBE);

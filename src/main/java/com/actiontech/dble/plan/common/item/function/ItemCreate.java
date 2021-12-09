@@ -14,6 +14,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.bitfunc.ItemFuncBitCount;
 import com.actiontech.dble.plan.common.item.function.castfunc.*;
 import com.actiontech.dble.plan.common.item.function.convertfunc.*;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonExtract;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncIfnull;
@@ -152,7 +153,7 @@ public class ItemCreate {
         // proFuncs.put("JSON_DEPTH", new Item_func_abs(null));
         // proFuncs.put("JSON_TYPE", new Item_func_abs(null));
         // proFuncs.put("JSON_KEYS", new Item_func_abs(null));
-        // proFuncs.put("JSON_EXTRACT", new Item_func_abs(null));
+        nativFuncs.put("JSON_EXTRACT", new ItemFuncJsonExtract(null));
         // proFuncs.put("JSON_ARRAY_APPEND", new Item_func_abs(null));
         // proFuncs.put("JSON_INSERT", new Item_func_abs(null));
         // proFuncs.put("JSON_ARRAY_INSERT", new Item_func_abs(null));

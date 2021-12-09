@@ -41,7 +41,7 @@ public class JoinChooser {
     private final JoinNode orgNode;
     private final List<Item> otherJoinOns = new ArrayList<>();
     @Nonnull
-    private final LinkedList<HintNode> hintNodes;
+    private final HintPlanInfo hintPlanInfo;
     private boolean stopOptimize = false;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
         if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
@@ -75,19 +75,19 @@ public class JoinChooser {
         }
     };
 
-    public JoinChooser(JoinNode qtn, Map<ERTable, Set<ERTable>> erRelations, @Nonnull LinkedList<HintNode> hintNodes) {
+    public JoinChooser(JoinNode qtn, Map<ERTable, Set<ERTable>> erRelations, @Nonnull HintPlanInfo hintPlanInfo) {
         this.orgNode = qtn;
         this.erRelations = erRelations;
         this.charsetIndex = orgNode.getCharsetIndex();
-        this.hintNodes = hintNodes;
+        this.hintPlanInfo = hintPlanInfo;
     }
 
-    public JoinChooser(JoinNode qtn, @Nonnull LinkedList<HintNode> hintNodes) {
-        this(qtn, DbleServer.getInstance().getConfig().getErRelations(), hintNodes);
+    public JoinChooser(JoinNode qtn, @Nonnull HintPlanInfo hintPlanInfo) {
+        this(qtn, DbleServer.getInstance().getConfig().getErRelations(), hintPlanInfo);
     }
 
     public JoinNode optimize() {
-        if (erRelations == null && hintNodes.isEmpty()) {
+        if (erRelations == null && hintPlanInfo.isEmpty()) {
             return orgNode;
         }
         return innerJoinOptimizer();
@@ -109,7 +109,7 @@ public class JoinChooser {
             JoinRelationDag root = initJoinRelationDag();
             if (stopOptimize) {
                 LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because this sql contains cartesian with relation. The sql is [{}]", orgNode);
-                if (!hintNodes.isEmpty()) {
+                if (!hintPlanInfo.isEmpty()) {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because this sql contains cartesian with relation.");
                 } else {
                     return orgNode;
@@ -118,7 +118,7 @@ public class JoinChooser {
             leftCartesianNodes();
 
             //if custom ,check plan can Follow the rules：Topological Sorting of dag, CartesianNodes
-            if (!hintNodes.isEmpty()) {
+            if (!hintPlanInfo.isEmpty()) {
                 relationJoin = joinWithHint(root);
             } else {
                 // use auto plan
@@ -193,7 +193,7 @@ public class JoinChooser {
     }
 
 
-    private boolean isSameNode(HintNode hintNode, JoinRelationDag dagNode) {
+    private boolean isSameNode(HintPlanNode hintNode, JoinRelationDag dagNode) {
         final PlanNode node = dagNode.node;
         if (hintNode.getName() == null) {
             return false;
@@ -219,13 +219,14 @@ public class JoinChooser {
     }
 
     private JoinNode joinWithHint(JoinRelationDag root) {
-        if (dagNodes.size() != hintNodes.size()) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintNodes.size() + " not equals to plan node size " + dagNodes.size() + ".");
+        if (dagNodes.size() != hintPlanInfo.size()) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintPlanInfo.size() + " not equals to plan node size " + dagNodes.size() + ".");
         }
         if (root.degree != 0) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "exists any relations route to the root node: " + root);
         }
-        HintNode nextHintNode = hintNodes.removeFirst();
+        final Iterator<HintPlanNode> hintIt = hintPlanInfo.iterator();
+        HintPlanNode nextHintNode = hintIt.next();
         JoinNode joinNode = null;
         {
             root = findNode(root, nextHintNode);
@@ -269,7 +270,7 @@ public class JoinChooser {
                     }
                     if (currentNode.degree != 0) {
                         //In theory it won't happen
-                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't parse use this hints. " + hintNodes);
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't parse use this hints. " + hintPlanInfo);
                     }
                 }
                 currentNode.markVisited();
@@ -280,16 +281,16 @@ public class JoinChooser {
 
                 //prepare for next traversal.
                 it.remove();
-                if (hintNodes.isEmpty()) {
+                if (!hintIt.hasNext()) {
                     for (JoinRelationDag targetNode : nextAccessDagNodes.keySet()) {
                         if (!targetNode.visited) {
                             ////In theory it won't happen
-                            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint." + hintNodes);
+                            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint." + hintPlanInfo);
                         }
                     }
                     break traversal;
                 }
-                nextHintNode = hintNodes.removeFirst();
+                nextHintNode = hintIt.next();
                 for (JoinRelationDag rightNode : currentNode.rightNodes) {
                     if (rightNode.visited) {
                         continue;
@@ -314,13 +315,13 @@ public class JoinChooser {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with wrong hint. please check near the node '" + nextHintNode.getName() + "'");
 
         }
-        if (!hintNodes.isEmpty()) {
+        if (hintIt.hasNext()) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode.getName() + "'");
         }
         return joinNode;
     }
 
-    private JoinRelationDag findNode(JoinRelationDag root, HintNode hintNode) {
+    private JoinRelationDag findNode(JoinRelationDag root, HintPlanNode hintNode) {
         if (isSameNode(hintNode, root)) {
             return root;
         } else {
@@ -359,13 +360,16 @@ public class JoinChooser {
             oldLeft.leftNodes.add(currentNode);
             oldLeft.rightNodes.remove(currentNode);
 
-            for (OneToOneJoinRelation splitRelation : splitRelations) {
+            final Iterator<OneToOneJoinRelation> splitIt = splitRelations.iterator();
+            while (splitIt.hasNext()) {
+                final OneToOneJoinRelation splitRelation = splitIt.next();
                 if (splitRelation.rightNode == oldLeft.node) {
                     oldLeft.relations = addRelations(oldLeft.relations, splitRelation);
 
                     if (currentNode.relations != null) {
                         subRelation(currentNode.relations, splitRelation);
                     }
+                    splitIt.remove();
                 }
             }
 
@@ -564,7 +568,7 @@ public class JoinChooser {
         for (int index = 0; index < node.getChildren().size(); index++) {
             PlanNode child = node.getChildren().get(index);
             if (isUnit(child)) {
-                child = JoinProcessor.optimize(child, hintNodes);
+                child = JoinProcessor.optimize(child, hintPlanInfo);
                 node.getChildren().set(index, child);
                 this.joinUnits.add(child);
             } else {

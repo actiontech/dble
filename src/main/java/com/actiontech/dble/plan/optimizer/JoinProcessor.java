@@ -11,21 +11,20 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.Nonnull;
-import java.util.LinkedList;
 
 public final class JoinProcessor {
     private JoinProcessor() {
     }
 
-    public static PlanNode optimize(PlanNode qtn, @Nonnull LinkedList<HintNode> hintNodes) {
+    public static PlanNode optimize(PlanNode qtn, @Nonnull HintPlanInfo hintPlanInfo) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-er-relation");
         try {
             if (qtn instanceof JoinNode) {
-                qtn = new JoinChooser((JoinNode) qtn, hintNodes).optimize();
+                qtn = new JoinChooser((JoinNode) qtn, hintPlanInfo).optimize();
             } else {
                 for (int i = 0; i < qtn.getChildren().size(); i++) {
                     PlanNode sub = qtn.getChildren().get(i);
-                    qtn.getChildren().set(i, optimize(sub, hintNodes));
+                    qtn.getChildren().set(i, optimize(sub, hintPlanInfo));
                 }
             }
             return qtn;

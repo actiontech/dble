@@ -19,6 +19,7 @@ import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
 import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -45,7 +46,6 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -91,7 +91,7 @@ public final class ExplainHandler {
         node.setSql(rrs.getStatement());
         node.setUpFields();
         PlanUtil.checkTablesPrivilege(service, node, ast);
-        node = MyOptimizer.optimize(node, new LinkedList<>());
+        node = MyOptimizer.optimize(node, new HintPlanInfo());
 
         if (!PlanUtil.containsSubQuery(node) && !visitor.isContainSchema()) {
             node.setAst(ast);

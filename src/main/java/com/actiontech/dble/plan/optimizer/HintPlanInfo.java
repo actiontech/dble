@@ -5,23 +5,33 @@
  */
 package com.actiontech.dble.plan.optimizer;
 
-import java.util.LinkedList;
+import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author collapsar
  */
-public final class HintPlanInfo {
+public final class HintPlanInfo implements Iterable<HintPlanNode> {
 
-    private final LinkedList<HintPlanNode> hintNodes;
+    private List<HintPlanNodeGroup> groups;
     private boolean left2inner = false;
     private boolean in2join = false;
 
-    public HintPlanInfo(LinkedList<HintPlanNode> hintNodes) {
-        this.hintNodes = hintNodes;
+    public HintPlanInfo(@Nonnull List<HintPlanNodeGroup> groups) {
+        this.groups = groups;
     }
 
-    public LinkedList<HintPlanNode> getHintNodes() {
-        return hintNodes;
+    public HintPlanInfo() {
+        groups = new ArrayList<>();
+    }
+
+    @Nonnull
+    public List<HintPlanNodeGroup> getGroups() {
+        return groups;
     }
 
     public boolean isLeft2inner() {
@@ -38,5 +48,56 @@ public final class HintPlanInfo {
 
     public void setIn2join(boolean in2join) {
         this.in2join = in2join;
+    }
+
+    public boolean isEmpty() {
+        return groups.size() == 0 ? true : size() == 0;
+    }
+
+
+    public long size() {
+        return groups.stream().map(HintPlanNodeGroup::getNodes).mapToLong(List::size).sum();
+    }
+
+    @Override
+    public String toString() {
+        return "HintPlanInfo{" +
+                "groups=" + groups +
+                ", left2inner=" + left2inner +
+                ", in2join=" + in2join +
+                '}';
+    }
+
+    @NotNull
+    @Override
+    public Iterator<HintPlanNode> iterator() {
+        return new GroupIterator();
+    }
+
+    private class GroupIterator implements Iterator<HintPlanNode> {
+        int groupIndex = 0;
+        int innerIndex = 0;
+
+        @Override
+        public boolean hasNext() {
+            while (groups.size() - 1 >= groupIndex) {
+                final HintPlanNodeGroup group = groups.get(groupIndex);
+                final List<HintPlanNode> nodes = group.getNodes();
+                if (nodes.size() - 1 >= innerIndex) {
+                    return true;
+                } else {
+                    groupIndex++;
+                    innerIndex = 0;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public HintPlanNode next() {
+            final HintPlanNode node = groups.get(groupIndex).getNodes().get(innerIndex);
+            innerIndex++;
+            return node;
+        }
     }
 }

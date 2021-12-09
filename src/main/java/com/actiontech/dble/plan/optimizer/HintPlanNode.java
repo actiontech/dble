@@ -5,39 +5,30 @@
  */
 package com.actiontech.dble.plan.optimizer;
 
-import java.util.Arrays;
-
 /**
  * @author collapsar
  */
 public final class HintPlanNode {
 
-    String[] name;
-    Type type;
+    String name;
 
-    private HintPlanNode(Type type, String... name) {
+    private HintPlanNode(String name) {
         this.name = name;
-        this.type = type;
     }
 
-    public static HintPlanNode of(Type type, String... name) {
-        return new HintPlanNode(type, name);
+    public static HintPlanNode of(String name) {
+        return new HintPlanNode(name);
     }
 
-    public String[] getName() {
+    public String getName() {
         return name;
     }
 
-    public Type getType() {
-        return type;
-    }
 
     @Override
     public String toString() {
-        return "nodeName='" + Arrays.toString(name) + "',type is " + type.toString();
+        return "nodeName='" + name + "'";
     }
 
-    public enum Type {
-        ER, AND, OR
-    }
+
 }

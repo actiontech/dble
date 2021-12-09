@@ -34,10 +34,10 @@ public final class HintPlanNode {
 
     @Override
     public String toString() {
-        return "nodeName='" + Arrays.toString(name) + "\',type is " + type.toString();
+        return "nodeName='" + Arrays.toString(name) + "',type is " + type.toString();
     }
 
     public enum Type {
-        ER, AND, OR;
+        ER, AND, OR
     }
 }

@@ -31,15 +31,11 @@ public final class HintPlanHandler {
         for (String table : tables) {
             if (table.contains(",")) {
                 // ER
-                table = table.replace("(", "");
-                table = table.replace(")", "");
-                table = table.replace(" ", "");
+                table = table.replaceAll("[()\\s]", "");
                 String[] ers = table.split(",");
                 nodes.add(HintPlanNode.of(HintPlanNode.Type.ER, ers));
             } else if (table.contains("|")) {
-                table = table.replace("(", "");
-                table = table.replace(")", "");
-                table = table.replace(" ", "");
+                table = table.replaceAll("[()\\s]", "");
                 String[] ers = table.split("\\|");
                 nodes.add(HintPlanNode.of(HintPlanNode.Type.OR, ers));
             } else {

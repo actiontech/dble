@@ -63,6 +63,12 @@ public class DbleHintParserTest {
 
         hintInfo = DbleHintParser.parse("/*!dble:db_instance_url=127.0.0.1:3307 *");
         Assert.assertNull(hintInfo);
+
+        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url     */");
+        Assert.assertNull(hintInfo);
+
+        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url 127.0.0.1:3307 */");
+        Assert.assertNull(hintInfo);
     }
 
     @Test

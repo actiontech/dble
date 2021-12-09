@@ -591,11 +591,18 @@ public final class ParseUtil {
 
     public static int skipSpaceUtil(String stmt, int offset, char util) {
         int len = stmt.length();
+        char tmp;
         do {
-            if (stmt.charAt(offset) == util)
-                break;
+            tmp = stmt.charAt(offset);
+            if (!isSpace(tmp)) {
+                if (tmp == util) {
+                    return offset;
+                } else {
+                    return -1;
+                }
+            }
         } while (len > ++offset);
-        return offset;
+        return -1;
     }
 
 }

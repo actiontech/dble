@@ -155,14 +155,19 @@ public class RWSplitNonBlockingSession extends Session {
             handler.execute(conn);
             return;
         }
-        PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
-        if (dbInstance == null) {
-            return;
+
+        try {
+            PhysicalDbInstance dbInstance = routeRwSplit(hintInfo, sqlType, rwSplitService);
+            if (dbInstance == null) {
+                return;
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("route sql {} to {}", sql, dbInstance);
+            }
+            dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (Exception e) {
+            rwSplitService.executeException(e, sql);
         }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("route sql {} to {}", sql, dbInstance);
-        }
-        dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
     }
 
     private PhysicalDbInstance routeRwSplit(DbleHintParser.HintInfo hintInfo, int sqlType, RWSplitService service) throws SQLException {

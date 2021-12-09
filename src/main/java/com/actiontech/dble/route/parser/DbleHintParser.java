@@ -165,7 +165,12 @@ public final class DbleHintParser {
                     (c5 == 'N' || c5 == 'n') && (c6 == 'G' || c6 == 'g') &&
                     (c7 == 'N' || c7 == 'n') && (c8 == 'O' || c8 == 'o') &&
                     (c9 == 'D' || c9 == 'd') && (c10 == 'E' || c10 == 'e')) {
-                return (ParseUtil.skipSpaceUtil(stmt, offset, '=') << 8) | SHARDING_NODE;
+                offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
+                if (offset == -1) {
+                    return OTHER;
+                } else {
+                    return (offset << 8) | SHARDING_NODE;
+                }
             }
         }
         return OTHER;
@@ -175,7 +180,12 @@ public final class DbleHintParser {
         if (stmt.length() > offset + 1) {
             char c1 = stmt.charAt(++offset);
             if (c1 == 'L' || c1 == 'l') {
-                return (ParseUtil.skipSpaceUtil(stmt, offset, '=') << 8) | SQL;
+                offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
+                if (offset == -1) {
+                    return OTHER;
+                } else {
+                    return (offset << 8) | SQL;
+                }
             }
         }
         return OTHER;
@@ -188,7 +198,12 @@ public final class DbleHintParser {
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'Y' || c1 == 'y') && (c2 == 'P' || c2 == 'p') &&
                     (c3 == 'E' || c3 == 'e')) {
-                return (ParseUtil.skipSpaceUtil(stmt, offset, '=') << 8) | DB_TYPE;
+                offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
+                if (offset == -1) {
+                    return OTHER;
+                } else {
+                    return (offset << 8) | DB_TYPE;
+                }
             }
         }
         return OTHER;
@@ -213,7 +228,12 @@ public final class DbleHintParser {
                     (c8 == 'E' || c8 == 'e') && (c9 == '_') &&
                     (c10 == 'U' || c10 == 'u') && (c11 == 'R' || c11 == 'r') &&
                     (c12 == 'L' || c12 == 'l')) {
-                return (ParseUtil.skipSpaceUtil(stmt, offset, '=') << 8) | DB_INSTANCE_URL;
+                offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
+                if (offset == -1) {
+                    return OTHER;
+                } else {
+                    return (offset << 8) | DB_INSTANCE_URL;
+                }
             }
         }
         return OTHER;
@@ -226,7 +246,12 @@ public final class DbleHintParser {
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'l' || c1 == 'L') && (c2 == 'A' || c2 == 'a') &&
                     (c3 == 'N' || c3 == 'n')) {
-                return (ParseUtil.skipSpaceUtil(stmt, offset, '=') << 8) | PLAN;
+                offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
+                if (offset == -1) {
+                    return OTHER;
+                } else {
+                    return (offset << 8) | PLAN;
+                }
             }
         }
         return OTHER;

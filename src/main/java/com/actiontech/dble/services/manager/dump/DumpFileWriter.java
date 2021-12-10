@@ -58,21 +58,15 @@ public class DumpFileWriter {
         }
     }
 
-    public void stop() {
+    public void stop(boolean errorFlag) throws IOException {
         for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
+            entry.getValue().close(errorFlag);
             entry.getValue().disruptor.shutdown();
         }
         shardingNodeWriters.clear();
     }
 
     public void write(String shardingNode, String stmt) {
-        ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
-        if (writer != null) {
-            writer.write(stmt);
-        }
-    }
-
-    public void writeInsertHeader(String shardingNode, String stmt) {
         ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
             writer.write(stmt);
@@ -153,9 +147,9 @@ public class DumpFileWriter {
             }
         }
 
-        void close() throws IOException {
+        void close(boolean errorFlag) throws IOException {
             this.bufferedWriter.close();
-            if (isDeleteFile) {
+            if (isDeleteFile || errorFlag) {
                 FileUtils.delete(path);
             }
         }
@@ -173,7 +167,7 @@ public class DumpFileWriter {
                     if (null != content && content.equals(DumpFileReader.EOF)) {
                         this.bufferedWriter.write(wrapStr);
                         LOGGER.info("finish to write dump file.");
-                        close();
+                        close(false);
                         finished.decrementAndGet();
                         return;
                     }
@@ -182,7 +176,7 @@ public class DumpFileWriter {
                     error = true;
                     finished.decrementAndGet();
                     writerErrorMap.putIfAbsent(this.shardingNode, "writer error,because:" + e.getMessage());
-                    close();
+                    close(true);
                 }
             };
             SleepingWaitStrategy strategy = new SleepingWaitStrategy();

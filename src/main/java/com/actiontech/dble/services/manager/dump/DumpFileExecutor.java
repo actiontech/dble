@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 
@@ -27,9 +28,10 @@ public final class DumpFileExecutor implements Runnable {
     private final DumpFileContext context;
     private final NameableExecutor nameableExecutor;
     private final AtomicInteger threadNum = new AtomicInteger(0);
+    private final AtomicBoolean errorFlag;
 
     public DumpFileExecutor(BlockingQueue<String> queue, BlockingQueue<String> insertQueue, DumpFileWriter writer, DumpFileConfig config,
-                            SchemaConfig schemaConfig, NameableExecutor nameableExecutor) {
+                            SchemaConfig schemaConfig, NameableExecutor nameableExecutor, AtomicBoolean flag) {
         this.ddlQueue = queue;
         this.insertQueue = insertQueue;
         this.context = new DumpFileContext(writer, config);
@@ -37,6 +39,7 @@ public final class DumpFileExecutor implements Runnable {
             this.context.setDefaultSchema(schemaConfig);
         }
         this.nameableExecutor = nameableExecutor;
+        this.errorFlag = flag;
     }
 
     @Override
@@ -94,8 +97,7 @@ public final class DumpFileExecutor implements Runnable {
             } catch (Exception | Error e) {
                 LOGGER.warn("dump file executor exit", e);
                 this.context.addError("dump file executor exit, because:" + e.getMessage());
-                stopWriter(writer);
-                this.nameableExecutor.shutdown();
+                errorFlag.compareAndSet(false, true);
                 break;
             }
         }
@@ -132,11 +134,6 @@ public final class DumpFileExecutor implements Runnable {
 
     public DumpFileContext getContext() {
         return this.context;
-    }
-
-    private void stopWriter(DumpFileWriter writer) {
-        writer.setDeleteFile(true);
-        writer.writeAll(DumpFileReader.EOF);
     }
 
     private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws

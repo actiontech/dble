@@ -65,10 +65,11 @@ public final class SplitDumpHandler {
 
         Map<String, String> errorMap = Maps.newConcurrentMap();
         AtomicBoolean errorFlag = new AtomicBoolean(false);
+        //thread
         DumpFileReader reader = new DumpFileReader(handleQueue, errorMap, errorFlag);
         DumpFileHandler fileHandler = new DumpFileHandler(deque, insertDeque, handleQueue, fileExecutor, errorMap, errorFlag);
         DumpFileWriter writer = new DumpFileWriter(errorMap);
-        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(deque, insertDeque, writer, config, defaultSchemaConfig, fileExecutor);
+        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(deque, insertDeque, writer, config, defaultSchemaConfig, fileExecutor, errorFlag);
         try {
             reader.open(config.getReadFile(), config);
             writer.open(config.getWritePath() + FileUtils.getName(config.getReadFile()), config.getWriteQueueSize(), config.getMaxValues());
@@ -89,7 +90,7 @@ public final class SplitDumpHandler {
 
         List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
         if (!CollectionUtil.isEmpty(errors)) {
-            recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer);
+            recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer, true, errorMap);
             DumpFileError.execute(service, errors);
             return;
         }
@@ -98,14 +99,14 @@ public final class SplitDumpHandler {
             LockSupport.parkNanos(1000);
         }
         //recycling thread
-        recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer);
+        recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer, errorFlag.get(), errorMap);
 
         errorMap.forEach((key, value) -> errors.add(new ErrorMsg(key, value)));
 
         if (service.getConnection().isClosed()) {
             LOGGER.info("finish to split dump file because the connection is closed.");
             //recycling thread
-            recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer);
+            recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer, errorFlag.get(), errorMap);
             service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, "finish to split dump file due to the connection is closed.");
             return;
         }
@@ -114,12 +115,18 @@ public final class SplitDumpHandler {
         LOGGER.info("finish to split dump file.");
     }
 
-    private static void recycleThread(NameableExecutor fileReadExecutor, NameableExecutor fileHandlerExecutor, NameableExecutor fileExecutor, DumpFileWriter writer) {
+    private static void recycleThread(NameableExecutor fileReadExecutor, NameableExecutor fileHandlerExecutor, NameableExecutor fileExecutor,
+                                      DumpFileWriter writer, boolean errorFlag, Map<String, String> errorMap) {
         //recycling thread
         fileReadExecutor.shutdownNow();
         fileHandlerExecutor.shutdownNow();
         fileExecutor.shutdownNow();
-        writer.stop();
+        try {
+            writer.stop(errorFlag);
+        } catch (IOException e) {
+            LOGGER.warn("error,because:", e);
+            errorMap.putIfAbsent("error", "dump file error,because:" + e.getMessage());
+        }
     }
 
 

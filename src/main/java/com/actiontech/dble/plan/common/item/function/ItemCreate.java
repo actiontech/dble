@@ -15,6 +15,7 @@ import com.actiontech.dble.plan.common.item.function.bitfunc.ItemFuncBitCount;
 import com.actiontech.dble.plan.common.item.function.castfunc.*;
 import com.actiontech.dble.plan.common.item.function.convertfunc.*;
 import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonExtract;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonUnquote;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncIfnull;
@@ -165,7 +166,7 @@ public class ItemCreate {
         // proFuncs.put("JSON_REMOVE", new Item_func_abs(null));
         // proFuncs.put("JSON_MERGE", new Item_func_abs(null));
         // proFuncs.put("JSON_QUOTE", new Item_func_abs(null));
-        // proFuncs.put("JSON_UNQUOTE", new Item_func_abs(null));
+        nativFuncs.put("JSON_UNQUOTE", new ItemFuncJsonUnquote(null));
         // proFuncs.put("IS_FREE_LOCK", new Item_func_abs(null));
         // proFuncs.put("IS_USED_LOCK", new Item_func_abs(null));
         nativFuncs.put("LAST_DAY", new ItemFuncLastDay(null));

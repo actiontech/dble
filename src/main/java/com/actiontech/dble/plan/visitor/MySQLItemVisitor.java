@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinaryCast
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncConvCharset;
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypeCast;
 import com.actiontech.dble.plan.common.item.function.convertfunc.ItemCharTypeConvert;
+import com.actiontech.dble.plan.common.item.function.jsonfunc.ItemFuncJsonExtract;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.operator.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncCase;
@@ -293,6 +294,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             case NotRegExp:
                 item = new ItemFuncRegex(itemLeft, itemRight);
                 item = new ItemFuncNot(item);
+                break;
+            case SubGt:
+                item = new ItemFuncJsonExtract(itemLeft, itemRight);
                 break;
             case Assignment:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support assignment");

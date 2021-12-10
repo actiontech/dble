@@ -6,18 +6,18 @@ import com.actiontech.dble.plan.common.item.function.primary.ItemJsonFunc;
 
 import java.util.List;
 
-public class ItemFuncJsonExtract extends ItemJsonFunc {
-    public ItemFuncJsonExtract(Item a, Item b) {
+public class ItemFuncJsonUnquote extends ItemJsonFunc {
+    public ItemFuncJsonUnquote(Item a, Item b) {
         super(a, b);
     }
 
-    public ItemFuncJsonExtract(List<Item> args) {
+    public ItemFuncJsonUnquote(List<Item> args) {
         super(args);
     }
 
     @Override
     public String funcName() {
-        return "JSON_EXTRACT";
+        return "JSON_UNQUOTE";
     }
 
     @Override
@@ -28,6 +28,6 @@ public class ItemFuncJsonExtract extends ItemJsonFunc {
 
     @Override
     public ItemFunc nativeConstruct(List<Item> realArgs) {
-        return new ItemFuncJsonExtract(realArgs);
+        return new ItemFuncJsonUnquote(realArgs);
     }
 }

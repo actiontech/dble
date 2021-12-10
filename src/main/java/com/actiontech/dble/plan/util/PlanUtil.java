@@ -165,6 +165,7 @@ public final class PlanUtil {
             return pushDownCol(node, (ItemField) sel);
         } else if (sel instanceof ItemFunc || sel instanceof ItemSum) {
             Item func = sel.cloneStruct();
+            func.setAlias(sel.getAlias());
             if (sel.getReferTables().isEmpty()) {
                 func.setPushDownName(null);
                 sel.setPushDownName(sel.getAlias() != null ? sel.getAlias() : func.getItemName());

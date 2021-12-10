@@ -24,6 +24,7 @@ public class FrontendConnection extends AbstractConnection {
     private static final long AUTH_TIMEOUT = 15 * 1000L;
 
     private final boolean isManager;
+    private volatile boolean skipIdleCheck = false;
     private final long idleTimeout;
     private final AtomicBoolean isCleanUp;
 
@@ -78,6 +79,9 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public boolean isIdleTimeout() {
+        if (skipIdleCheck) {
+            return false;
+        }
         if (!(getService() instanceof AuthService)) {
             return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
         } else {
@@ -95,6 +99,10 @@ public class FrontendConnection extends AbstractConnection {
 
     public boolean isAuthorized() {
         return !(getService() instanceof AuthService);
+    }
+
+    public void setSkipIdleCheck(boolean skipIdleCheck) {
+        this.skipIdleCheck = skipIdleCheck;
     }
 
     public String toString() {

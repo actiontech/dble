@@ -9,7 +9,6 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
-import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncCase;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.MergeNode;
@@ -96,11 +95,7 @@ public final class SelectedProcessor {
                 return qtn;
             } else {
                 for (PlanNode child : qtn.getChildren()) {
-                    List<Item> referList = qtn.getColumnsReferedByChild(child);
-                    if (referList == null) {
-                        referList = new ArrayList<>();
-                    }
-                    Collection<Item> pdRefers = getPushDownSel(qtn, referList);
+                    Collection<Item> pdRefers = getPushDownSel(qtn, child);
                     List<Item> pushList = addExprOrderByToSelect(child, pdRefers);
                     pushSelected(child, pushList);
                 }
@@ -147,13 +142,17 @@ public final class SelectedProcessor {
     }
 
 
-    private static Collection<Item> getPushDownSel(PlanNode parent, List<Item> selList) {
+    private static Collection<Item> getPushDownSel(PlanNode parent, PlanNode child) {
+        List<Item> selList = parent.getColumnsReferedByChild(child);
+        if (selList == null) {
+            selList = new ArrayList<>();
+        }
         // oldselectable->newselectbable
         LinkedHashMap<Item, Item> oldNewMap = new LinkedHashMap<>();
         LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
         for (int i = 0; i < selList.size(); i++) {
             Item sel = selList.get(i);
-            if (sel instanceof ItemFunc) {
+            if ((child.type() != PlanNode.PlanNodeType.TABLE && sel instanceof ItemFunc) || (child.type() == PlanNode.PlanNodeType.TABLE && sel.isWithSumFunc())) {
                 selList.addAll(sel.arguments());
                 continue;
             }

@@ -42,7 +42,6 @@ public class JoinChooser {
     private final List<Item> otherJoinOns = new ArrayList<>();
     @Nonnull
     private final HintPlanInfo hintPlanInfo;
-    private boolean stopOptimize = false;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
         if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
             if (o1.relations.isInner) { // both er，o1 inner
@@ -106,8 +105,10 @@ public class JoinChooser {
         JoinNode relationJoin = null;
         if (joinRelations.size() > 0) {
             //make DAG
-            JoinRelationDag root = initJoinRelationDag();
-            if (stopOptimize) {
+            JoinRelationDag root;
+            try {
+                root = initJoinRelationDag();
+            } catch (OptimizeException e) {
                 LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because this sql contains cartesian with relation. The sql is [{}]", orgNode);
                 if (!hintPlanInfo.isEmpty()) {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because this sql contains cartesian with relation.");
@@ -137,7 +138,6 @@ public class JoinChooser {
         ret.select(orgNode.getColumnsSelected());
         ret.setLimitFrom(orgNode.getLimitFrom());
         ret.setLimitTo(orgNode.getLimitTo());
-        ret.setOtherJoinOnFilter(orgNode.getOtherJoinOnFilter());
         ret.having(orgNode.getHavingFilter());
         //ret.setWhereFilter(orgNode.getWhereFilter());
         ret.setWhereFilter(FilterUtils.and(orgNode.getWhereFilter(), FilterUtils.and(otherJoinOns)));
@@ -172,9 +172,6 @@ public class JoinChooser {
         JoinRelationDag root = createFirstNode();
         for (int i = 1; i < joinRelations.size(); i++) {
             root = addNodeToDag(root, joinRelations.get(i));
-            if (stopOptimize) {
-                return root;
-            }
         }
         return root;
     }
@@ -183,7 +180,10 @@ public class JoinChooser {
     private JoinRelationDag createFirstNode() {
         JoinRelations firstRelation = joinRelations.get(0);
         // firstRelation should only have one left nodes
-        assert firstRelation.leftNodes.size() == 1;
+        if (firstRelation.prefixNodes.size() != 1) {
+            throw new OptimizeException("firstRelation have more than one prefix node");
+        }
+
         JoinRelationDag root = createDag(firstRelation.leftNodes.iterator().next());
         JoinRelationDag right = createDag(firstRelation, firstRelation.isInner);
         root.rightNodes.add(right);
@@ -434,8 +434,7 @@ public class JoinChooser {
             if (tmp == null) {
                 // eg: select b.* from  a inner join  b on a.id=b.id , sharding2 inner join   sharding2_child  on sharding2_child.id=sharding2.id ;
                 // maybe multi DAGs, or need merge DAGs, optimizer cost too much
-                stopOptimize = true;
-                return root;
+                throw new OptimizeException("this sql contains cartesian with relation");
             } else {
                 prefixDagNodes.add(tmp);
                 if (familyInner && !tmp.isFamilyInner) {
@@ -998,4 +997,9 @@ public class JoinChooser {
 
     }
 
+    private static class OptimizeException extends RuntimeException {
+        OptimizeException(String message) {
+            super(message);
+        }
+    }
 }

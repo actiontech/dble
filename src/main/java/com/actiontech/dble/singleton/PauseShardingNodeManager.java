@@ -5,6 +5,7 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.AbstractGeneralListener;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.logic.ClusterLogic;
@@ -305,8 +306,18 @@ public final class PauseShardingNodeManager {
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
                     LOGGER.info("wait for cluster timeout, try to resume the self & others");
                     PauseShardingNodeManager.getInstance().resume();
-                    service.writeErrMessage(1003, "There are some node in cluster can't recycle backend");
-                    PauseShardingNodeManager.getInstance().resumeCluster();
+                    //increase the count before write to client. so , the cluster detach won't work.
+                    AbstractGeneralListener.getDoingCount().incrementAndGet();
+                    try {
+                        service.writeErrMessage(1003, "There are some node in cluster doesn't complete the task. we will try to resume cluster in the backend, please check the dble status and dble log");
+                        //resume in the backends
+                        PauseShardingNodeManager.getInstance().resumeCluster();
+                    } catch (Exception e) {
+                        //we can't throw this exception , because client is received error message before resume. we can't send two error message to client.
+                        LOGGER.error("resume cluster operation encounter an error: ", e);
+                    } finally {
+                        AbstractGeneralListener.getDoingCount().decrementAndGet();
+                    }
                     return false;
                 }
             }

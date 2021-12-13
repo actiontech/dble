@@ -8,7 +8,8 @@ package com.actiontech.dble.optimizer;
 
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.optimizer.HintNode;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
+import com.actiontech.dble.plan.optimizer.HintPlanNodeGroup;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -23,8 +24,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.Assert.assertEquals;
 
@@ -38,6 +39,7 @@ public class JoinUseHintTest extends BaseSqlHintTest {
     private static final Logger LOGGER = LogManager.getLogger(JoinUseHintTest.class);
     Collection<List<String>> wrongCollections = new ArrayList<>();
     Collection<List<String>> successCollections = new ArrayList<>();
+    private static final ThreadLocalRandom RANDOM = ThreadLocalRandom.current();
     String sql;
 
     @Before
@@ -212,13 +214,19 @@ public class JoinUseHintTest extends BaseSqlHintTest {
 
     private void verifyHint(String sql, List<String> arr) throws Exception {
 
-        final LinkedList<HintNode> hintNodes = Lists.newLinkedList();
-        for (String ele : arr) {
-            hintNodes.add(HintNode.of(ele));
+        final HintPlanInfo info = new HintPlanInfo();
+        for (int i = 0; i < arr.size(); ) {
+            final List<String> list = arr.subList(i, RANDOM.nextInt(i, arr.size()) + 1);
+            info.getGroups().add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.AND, list));
+            i += list.size();
         }
+        if (info.size() != arr.size()) {
+            throw new RuntimeException("code error");
+        }
+        LOGGER.info("hintInfo {}", info);
         final RouteResultset rrs = RouteService.getInstance().route(schemaConfig, ServerParse.SELECT, sql, shardingService);
         PlanNode node = getPlanNode(rrs);
-        MyOptimizer.optimize(node, hintNodes);
+        MyOptimizer.optimize(node, info);
     }
 
     protected void execute(Collection<List<String>> dataSet, String sql) throws Exception {

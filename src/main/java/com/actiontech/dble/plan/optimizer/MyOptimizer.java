@@ -21,14 +21,20 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import java.util.*;
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public final class MyOptimizer {
     private MyOptimizer() {
     }
 
-    public static PlanNode optimize(PlanNode node, @Nonnull LinkedList<HintNode> hintNodes) {
+    public static PlanNode optimize(PlanNode node, @Nullable HintPlanInfo hintPlanInfo) {
+        if (hintPlanInfo == null) {
+            hintPlanInfo = new HintPlanInfo();
+        }
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-sql");
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
@@ -53,7 +59,7 @@ public final class MyOptimizer {
 
 
                 if (SystemConfig.getInstance().isUseNewJoinOptimizer()) {
-                    node = JoinProcessor.optimize(node, hintNodes);
+                    node = JoinProcessor.optimize(node, hintPlanInfo);
                 } else {
                     node = JoinERProcessor.optimize(node);
                 }

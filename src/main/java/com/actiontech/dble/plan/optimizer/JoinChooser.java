@@ -137,7 +137,6 @@ public class JoinChooser {
         ret.select(orgNode.getColumnsSelected());
         ret.setLimitFrom(orgNode.getLimitFrom());
         ret.setLimitTo(orgNode.getLimitTo());
-        ret.setOtherJoinOnFilter(orgNode.getOtherJoinOnFilter());
         ret.having(orgNode.getHavingFilter());
         //ret.setWhereFilter(orgNode.getWhereFilter());
         ret.setWhereFilter(FilterUtils.and(orgNode.getWhereFilter(), FilterUtils.and(otherJoinOns)));

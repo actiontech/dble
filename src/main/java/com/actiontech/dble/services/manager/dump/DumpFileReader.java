@@ -1,9 +1,7 @@
 package com.actiontech.dble.services.manager.dump;
 
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
-import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.NameableExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,13 +9,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
  * @author Baofengqi
  */
-public final class DumpFileReader {
+public final class DumpFileReader implements Runnable {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     public static final String EOF = "dump file eof";
@@ -28,28 +28,30 @@ public final class DumpFileReader {
     private long readLength;
     private int readPercent;
     private final BlockingQueue<String> handleQueue;
+    private DumpFileConfig fileConfig;
+    private Map<String, String> errorMap;
+    private AtomicBoolean errorFlag;
 
-    public DumpFileReader(BlockingQueue<String> handleQueue) {
+    public DumpFileReader(BlockingQueue<String> handleQueue, Map<String, String> map, AtomicBoolean flag) {
         this.handleQueue = handleQueue;
+        this.errorMap = map;
+        this.errorFlag = flag;
     }
 
-    public void open(String fileName) throws IOException {
+    public void open(String fileName, DumpFileConfig config) throws IOException {
         this.fileChannel = FileUtils.open(fileName, "r");
         this.fileLength = this.fileChannel.size();
+        this.fileConfig = config;
     }
 
-    public void start(ManagerService service, NameableExecutor executor, DumpFileConfig config) throws IOException, InterruptedException {
+    @Override
+    public void run() {
         LOGGER.info("begin to read dump file.");
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("dump-file-read");
         try {
-            ByteBuffer buffer = ByteBuffer.allocate(config.getBufferSize());
+            ByteBuffer buffer = ByteBuffer.allocate(fileConfig.getBufferSize());
             int byteRead = fileChannel.read(buffer);
             while (byteRead != -1) {
-                if (service.getConnection().isClosed()) {
-                    LOGGER.info("finish to read dump file, because the connection is closed.");
-                    executor.shutdownNow();
-                    return;
-                }
                 readLength += byteRead;
                 float percent = ((float) readLength / (float) fileLength) * 100;
                 if (((int) percent) - readPercent > 5 || (int) percent == 100) {
@@ -62,6 +64,16 @@ public final class DumpFileReader {
                 byteRead = fileChannel.read(buffer);
             }
             this.handleQueue.put(EOF);
+        } catch (IOException e) {
+            LOGGER.warn("dump file exception", e);
+            errorFlag.compareAndSet(false, true);
+            errorMap.putIfAbsent("file reader exception", "reader exception,because:" + e.getMessage());
+        } catch (InterruptedException e) {
+            LOGGER.debug("dump file reader is interrupted.");
+        } catch (Error e) {
+            LOGGER.warn("dump file error", e);
+            errorFlag.compareAndSet(false, true);
+            errorMap.putIfAbsent("file reader error", "reader error,because:" + e.getMessage());
         } finally {
             TraceManager.finishSpan(traceObject);
             try {
@@ -74,5 +86,4 @@ public final class DumpFileReader {
             }
         }
     }
-
 }

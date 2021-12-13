@@ -118,6 +118,7 @@ public class ManagerQueryHandler {
                     DbGroupHAHandler.handle(sql, service);
                     break;
                 case ManagerParse.SPLIT:
+                    service.getConnection().setSkipIdleCheck(true);
                     SplitDumpHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.FLOW_CONTROL:

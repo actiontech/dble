@@ -665,19 +665,23 @@ public class JoinChooser {
     }
 
 
-    private ERTable getERKey(PlanNode tn, Item c) {
-        if (!(c instanceof ItemField))
+    private ERTable getERKey(PlanNode tn, Item column) {
+        if (!(column instanceof ItemField))
             return null;
-        if (tn.type() != PlanNode.PlanNodeType.TABLE && !PlanUtil.isERNode(tn)) {
+        Pair<TableNode, ItemField> pair = null;
+        if (tn.type() == PlanNode.PlanNodeType.QUERY && tn.getChildren().size() == 1) {
+            pair = PlanUtil.findColumnInTableLeaf((ItemField) column, tn);
+        } else if (tn.type() != PlanNode.PlanNodeType.TABLE && !PlanUtil.isERNode(tn)) {
             return null;
+        } else {
+            pair = PlanUtil.findColumnInTableLeaf((ItemField) column, tn);
         }
-        Pair<TableNode, ItemField> pair = PlanUtil.findColumnInTableLeaf((ItemField) c, tn);
         if (pair == null)
             return null;
         TableNode tableNode = pair.getKey();
         ItemField col = pair.getValue();
         ERTable erTable = new ERTable(tableNode.getSchema(), tableNode.getPureName(), col.getItemName());
-        if (tn.type() == PlanNode.PlanNodeType.TABLE) {
+        if (tn.type() == PlanNode.PlanNodeType.TABLE || tn.type() == PlanNode.PlanNodeType.QUERY) {
             return erTable;
         } else {
             List<ERTable> erList = ((JoinNode) tn).getERkeys();

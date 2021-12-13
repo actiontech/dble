@@ -164,8 +164,7 @@ public final class ShowSysParam {
         paramValues.add(new ParamInfo("enableFlowControl", sysConfig.isEnableFlowControl() + "", "Whether use flow control feature"));
         paramValues.add(new ParamInfo("flowControlStartThreshold", sysConfig.getFlowControlStartThreshold() + "", "The start threshold of write queue to start the flow control"));
         paramValues.add(new ParamInfo("flowControlStopThreshold", sysConfig.getFlowControlStopThreshold() + "", "The recover threshold of write queue to stop the flow control"));
-        paramValues.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
-        paramValues.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
+
 
         for (ParamInfo info : paramValues) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);

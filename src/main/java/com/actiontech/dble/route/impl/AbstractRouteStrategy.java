@@ -11,7 +11,6 @@ import com.actiontech.dble.route.RouteStrategy;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.singleton.RoutePenetrationManager;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -56,9 +55,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
-        if (RoutePenetrationManager.getInstance().isEnabled() && RoutePenetrationManager.getInstance().match(origSQL)) {
-            rrs.setRoutePenetration(true);
-        }
         /*
          * debug mode and load data ,no cache
          */

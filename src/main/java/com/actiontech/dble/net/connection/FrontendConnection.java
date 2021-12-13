@@ -85,7 +85,10 @@ public class FrontendConnection extends AbstractConnection {
 
     public boolean isIdleTimeout() {
         if (!(getService() instanceof AuthService)) {
-            if (isSkipCheck() && (lastReadTime > lastWriteTime)) {
+            if (isManager && skipCheck) {
+                //split
+                return false;
+            } else if (isSkipCheck() && (lastReadTime > lastWriteTime)) {
                 return false;
             }
             return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;

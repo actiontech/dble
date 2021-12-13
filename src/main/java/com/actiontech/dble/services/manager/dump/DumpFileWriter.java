@@ -36,7 +36,11 @@ public class DumpFileWriter {
     private final EventTranslatorOneArg<Element, Object> translator = (event, sequence, arg0) -> event.set(arg0);
     private Map<String, String> writerErrorMap;
 
-    public void open(String writePath, int writeQueueSize, int maxValue, Map<String, String> map) throws IOException {
+    public DumpFileWriter(Map<String, String> writerErrorMap) {
+        this.writerErrorMap = writerErrorMap;
+    }
+
+    public void open(String writePath, int writeQueueSize, int maxValue) throws IOException {
         Set<String> shardingNodes = DbleServer.getInstance().getConfig().getShardingNodes().keySet();
         Date date = new Date();
         for (String shardingNode : shardingNodes) {
@@ -45,7 +49,6 @@ public class DumpFileWriter {
             shardingNodeWriters.put(shardingNode, writer);
         }
         this.maxValues = maxValue;
-        this.writerErrorMap = map;
     }
 
     public void start() {
@@ -55,21 +58,15 @@ public class DumpFileWriter {
         }
     }
 
-    public void stop() {
+    public void stop(boolean errorFlag) throws IOException {
         for (Map.Entry<String, ShardingNodeWriter> entry : shardingNodeWriters.entrySet()) {
+            entry.getValue().close(errorFlag);
             entry.getValue().disruptor.shutdown();
         }
         shardingNodeWriters.clear();
     }
 
     public void write(String shardingNode, String stmt) {
-        ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
-        if (writer != null) {
-            writer.write(stmt);
-        }
-    }
-
-    public void writeInsertHeader(String shardingNode, String stmt) {
         ShardingNodeWriter writer = this.shardingNodeWriters.get(shardingNode);
         if (writer != null) {
             writer.write(stmt);
@@ -150,9 +147,9 @@ public class DumpFileWriter {
             }
         }
 
-        void close() throws IOException {
+        void close(boolean errorFlag) throws IOException {
             this.bufferedWriter.close();
-            if (isDeleteFile) {
+            if (isDeleteFile || errorFlag) {
                 FileUtils.delete(path);
             }
         }
@@ -170,16 +167,16 @@ public class DumpFileWriter {
                     if (null != content && content.equals(DumpFileReader.EOF)) {
                         this.bufferedWriter.write(wrapStr);
                         LOGGER.info("finish to write dump file.");
-                        close();
+                        close(false);
                         finished.decrementAndGet();
                         return;
                     }
                     writeContent(content, wrapStr);
-                } catch (Exception e) {
+                } catch (Exception | Error e) {
                     error = true;
                     finished.decrementAndGet();
                     writerErrorMap.putIfAbsent(this.shardingNode, "writer error,because:" + e.getMessage());
-                    close();
+                    close(true);
                 }
             };
             SleepingWaitStrategy strategy = new SleepingWaitStrategy();

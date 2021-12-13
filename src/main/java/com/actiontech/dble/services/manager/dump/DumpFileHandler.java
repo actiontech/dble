@@ -11,7 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -27,13 +29,18 @@ public final class DumpFileHandler implements Runnable {
 
     private StringBuilder tempStr = new StringBuilder(1000);
     private final NameableExecutor nameableExecutor;
+    private Map<String, String> errorMap;
+    private AtomicBoolean errorFlag;
 
 
-    public DumpFileHandler(BlockingQueue<String> queue, BlockingQueue<String> insertDeque, BlockingQueue<String> handleQueue, NameableExecutor nameableExecutor) {
+    public DumpFileHandler(BlockingQueue<String> queue, BlockingQueue<String> insertDeque, BlockingQueue<String> handleQueue,
+                           NameableExecutor nameableExecutor, Map<String, String> map, AtomicBoolean flag) {
         this.ddlQueue = queue;
         this.insertQueue = insertDeque;
         this.handleQueue = handleQueue;
         this.nameableExecutor = nameableExecutor;
+        this.errorMap = map;
+        this.errorFlag = flag;
     }
 
     @Override
@@ -58,6 +65,10 @@ public final class DumpFileHandler implements Runnable {
             } catch (InterruptedException e) {
                 LOGGER.debug("dump file handler is interrupted.");
                 break;
+            } catch (Error e) {
+                LOGGER.warn("dump file error", e);
+                errorFlag.compareAndSet(false, true);
+                errorMap.putIfAbsent("file handler error", "handler error,because:" + e.getMessage());
             }
         }
 

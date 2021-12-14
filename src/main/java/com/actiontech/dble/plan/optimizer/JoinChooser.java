@@ -44,12 +44,12 @@ public class JoinChooser {
     private final HintPlanInfo hintPlanInfo;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
         if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
-            if (o1.relations.isInner) { // both er，o1 inner
-                return -1;
-            } else if (o2.relations.isInner) { //both er，o1 not inner,o2 inner
-                return 1;
-            } else { // both er， left join
+            if (o1.relations.isInner == o2.relations.isInner) { // both er，both inner or not inner
                 return 0;
+            } else if (o1.relations.isInner) { // both er，o1 inner,o2  notinner
+                return -1;
+            } else { //if (o2.relations.isInner) { both er，o1 not inner,o2 inner
+                return 1;
             }
         } else if (o1.relations.erRelationLst.size() > 0) { // if o2 is not ER join, o1 is ER join, o1<o2
             return -1;
@@ -60,17 +60,18 @@ public class JoinChooser {
             boolean o1Global = o1.node.getUnGlobalTableCount() == 0;
             boolean o2Global = o2.node.getUnGlobalTableCount() == 0;
             if (o1Global == o2Global) {
-                if (o1.relations.isInner) { //  o1 inner
-                    return -1;
-                } else if (o2.relations.isInner) { //o1 not inner,o2 inner
-                    return 1;
-                } else {
+                if (o1.relations.isInner == o2.relations.isInner) { // both er，both inner or not inner
                     return 0;
+                } else if (o1.relations.isInner) { // both er，o1 inner,o2  notinner
+                    return -1;
+                } else { //if (o2.relations.isInner) { both er，o1 not inner,o2 inner
+                    return 1;
                 }
             } else if (o1Global) {
                 return -1;
-            } else // if (o2Global) {
+            } else { // if (o2Global) {
                 return 1;
+            }
         }
     };
 
@@ -781,8 +782,8 @@ public class JoinChooser {
         private final PlanNode node;
         private int degree = 0;
         private JoinRelations relations;
-        private final Set<JoinRelationDag> rightNodes = new HashSet<>();
-        private final Set<JoinRelationDag> leftNodes = new HashSet<>();
+        private final Set<JoinRelationDag> rightNodes = new LinkedHashSet<>();
+        private final Set<JoinRelationDag> leftNodes = new LinkedHashSet<>();
         private boolean isFamilyInner = true;
         private boolean visited = false;
 

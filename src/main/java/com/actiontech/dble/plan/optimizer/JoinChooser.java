@@ -665,11 +665,22 @@ public class JoinChooser {
     }
 
 
+    private boolean onlyContainsOneTable(PlanNode queryNode) {
+        PlanNode child = queryNode.getChildren().get(0);
+        if (child.type() == PlanNode.PlanNodeType.TABLE) {
+            return true;
+        } else if (child.type() == PlanNode.PlanNodeType.QUERY) {
+            return onlyContainsOneTable(child);
+        } else {
+            return false;
+        }
+    }
+
     private ERTable getERKey(PlanNode tn, Item column) {
         if (!(column instanceof ItemField))
             return null;
         Pair<TableNode, ItemField> pair = null;
-        if (tn.type() == PlanNode.PlanNodeType.QUERY && tn.getChildren().size() == 1) {
+        if (tn.type() == PlanNode.PlanNodeType.QUERY && onlyContainsOneTable(tn)) {
             pair = PlanUtil.findColumnInTableLeaf((ItemField) column, tn);
         } else if (tn.type() != PlanNode.PlanNodeType.TABLE && !PlanUtil.isERNode(tn)) {
             return null;

@@ -12,20 +12,24 @@ import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.NameableExecutor;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class SplitDumpHandler {
 
-    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)(((\\s*(-s([^\\s]+))?)|(\\s+(-r(\\d+))?)|(\\s+(-w(\\d+))?)|(\\s+(-l(\\d+))?)|(\\s+(--ignore)?)|(\\s+(-t(\\d+))?))+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)(((\\s*(-s([^\\s]+))?)|(\\s+(-r(\\d+))?)|(\\s+(-w(\\d+))?)|(\\s+(-l(\\d+))?)|(\\s+(--ignore)?)|(\\s+(-t(\\d+))?)|(\\s+(-b(\\d+))?))+)", Pattern.CASE_INSENSITIVE);
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
+
 
     private SplitDumpHandler() {
     }
@@ -50,23 +54,35 @@ public final class SplitDumpHandler {
             }
         }
 
-        DumpFileWriter writer = new DumpFileWriter();
-        ArrayBlockingQueue<String> deque = new ArrayBlockingQueue<>(config.getReadQueueSize());
-        ArrayBlockingQueue<String> insertDeque = new ArrayBlockingQueue<>(config.getReadQueueSize());
-        DumpFileReader reader = new DumpFileReader(deque, insertDeque);
-        NameableExecutor nameableExecutor = ExecutorUtil.createFixed("dump-file-executor", config.getThreadNum());
-        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(deque, insertDeque, writer, config, defaultSchemaConfig, nameableExecutor);
+
+        BlockingQueue<String> deque = new ArrayBlockingQueue<>(config.getReadQueueSize());
+        BlockingQueue<String> insertDeque = new ArrayBlockingQueue<>(config.getReadQueueSize());
+        BlockingQueue<String> handleQueue = new ArrayBlockingQueue<>(config.getReadQueueSize());
+
+        NameableExecutor fileExecutor = ExecutorUtil.createFixed("Split_Executor", config.getThreadNum());
+        NameableExecutor fileHandlerExecutor = ExecutorUtil.createFixed("Split_Handler", 1);
+        NameableExecutor fileReadExecutor = ExecutorUtil.createFixed("Split_Reader", 1);
+
+        Map<String, String> errorMap = Maps.newConcurrentMap();
+        AtomicBoolean errorFlag = new AtomicBoolean(false);
+        //thread
+        DumpFileReader reader = new DumpFileReader(handleQueue, errorMap, errorFlag);
+        DumpFileHandler fileHandler = new DumpFileHandler(deque, insertDeque, handleQueue, fileExecutor, errorMap, errorFlag);
+        DumpFileWriter writer = new DumpFileWriter(errorMap);
+        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(deque, insertDeque, writer, config, defaultSchemaConfig, fileExecutor, errorFlag);
         try {
-            // thread for process statement
-            nameableExecutor.execute(dumpFileExecutor);
+            reader.open(config.getReadFile(), config);
             writer.open(config.getWritePath() + FileUtils.getName(config.getReadFile()), config.getWriteQueueSize(), config.getMaxValues());
+
             // start write
             writer.start();
+            // thread for process statement
+            fileExecutor.execute(dumpFileExecutor);
             // firstly check file
-            reader.open(config.getReadFile());
+            fileHandlerExecutor.execute(fileHandler);
             // start read
-            reader.start(service, nameableExecutor);
-        } catch (IOException | InterruptedException e) {
+            fileReadExecutor.execute(reader);
+        } catch (IOException e) {
             LOGGER.info("finish to split dump file because " + e.getMessage());
             service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());
             return;
@@ -74,19 +90,23 @@ public final class SplitDumpHandler {
 
         List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
         if (!CollectionUtil.isEmpty(errors)) {
+            recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer, true, errorMap);
             DumpFileError.execute(service, errors);
             return;
         }
 
-        while (!service.getConnection().isClosed() && !writer.isFinished()) {
+        while (!service.getConnection().isClosed() && !writer.isFinished() && !errorFlag.get()) {
             LockSupport.parkNanos(1000);
         }
-        nameableExecutor.shutdown();
+        //recycling thread
+        recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer, errorFlag.get(), errorMap);
+
+        errorMap.forEach((key, value) -> errors.add(new ErrorMsg(key, value)));
 
         if (service.getConnection().isClosed()) {
             LOGGER.info("finish to split dump file because the connection is closed.");
-            nameableExecutor.shutdownNow();
-            writer.stop();
+            //recycling thread
+            recycleThread(fileReadExecutor, fileHandlerExecutor, fileExecutor, writer, errorFlag.get(), errorMap);
             service.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, "finish to split dump file due to the connection is closed.");
             return;
         }
@@ -94,6 +114,21 @@ public final class SplitDumpHandler {
         printMsg(errors, service);
         LOGGER.info("finish to split dump file.");
     }
+
+    private static void recycleThread(NameableExecutor fileReadExecutor, NameableExecutor fileHandlerExecutor, NameableExecutor fileExecutor,
+                                      DumpFileWriter writer, boolean errorFlag, Map<String, String> errorMap) {
+        //recycling thread
+        fileReadExecutor.shutdownNow();
+        fileHandlerExecutor.shutdownNow();
+        fileExecutor.shutdownNow();
+        try {
+            writer.stop(errorFlag);
+        } catch (IOException e) {
+            LOGGER.warn("error,because:", e);
+            errorMap.putIfAbsent("error", "dump file error,because:" + e.getMessage());
+        }
+    }
+
 
     private static void printMsg(List<ErrorMsg> errors, ManagerService service) {
         if (CollectionUtil.isEmpty(errors)) {
@@ -132,6 +167,9 @@ public final class SplitDumpHandler {
             }
             if (m.group(21) != null) {
                 config.setThreadNum(Integer.parseInt(m.group(21)));
+            }
+            if (m.group(24) != null) {
+                config.setBufferSize(Integer.parseInt(m.group(24)));
             }
         }
         return config;

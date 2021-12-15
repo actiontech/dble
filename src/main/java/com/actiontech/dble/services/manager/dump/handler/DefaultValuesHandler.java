@@ -1,6 +1,8 @@
 package com.actiontech.dble.services.manager.dump.handler;
 
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.manager.dump.DumpFileContext;
+import com.actiontech.dble.services.manager.dump.parse.InsertQueryPos;
 import com.alibaba.druid.sql.ast.SQLExpr;
 
 import java.sql.SQLNonTransientException;
@@ -8,47 +10,24 @@ import java.util.List;
 
 public class DefaultValuesHandler {
 
-    StringBuilder insertHeader;
 
-    void setInsertHeader(StringBuilder insertHeader) {
-        this.insertHeader = insertHeader;
-    }
+    public void process(DumpFileContext context, InsertQueryPos insertQueryPos, List<Pair<Integer, Integer>> valuePair) throws SQLNonTransientException {
 
-    public void preProcess(DumpFileContext context) throws InterruptedException {
-        if (insertHeader == null) {
-            return;
-        }
-        for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, insertHeader.toString());
-        }
-    }
-
-    public void postProcess(DumpFileContext context) throws InterruptedException {
-        for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, ";");
-        }
-    }
-
-    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws InterruptedException, SQLNonTransientException {
-        for (String shardingNode : context.getTableConfig().getShardingNodes()) {
-            context.getWriter().write(shardingNode, toString(values, isFirst));
-        }
     }
 
     protected String toString(List<SQLExpr> values, boolean isFirst) {
-        StringBuilder sbValues = new StringBuilder();
+        StringBuilder sbValues = new StringBuilder(400);
         if (!isFirst) {
-            sbValues.append(",");
+            sbValues.append(',');
         }
-        sbValues.append("(");
+        sbValues.append('(');
         for (int i = 0; i < values.size(); i++) {
             if (i != 0) {
-                sbValues.append(",");
+                sbValues.append(',');
             }
             sbValues.append(values.get(i).toString());
         }
-        sbValues.append(")");
+        sbValues.append(')');
         return sbValues.toString();
     }
-
 }

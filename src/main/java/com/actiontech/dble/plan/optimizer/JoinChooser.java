@@ -589,10 +589,9 @@ public class JoinChooser {
                 return;
             }
         }
-        for (PlanNode child : joinNode.getChildren()) {
-            if ((!isUnit(child)) && (child.type().equals(PlanNode.PlanNodeType.JOIN))) {
-                initNodeRelations((JoinNode) child);
-            }
+        PlanNode left = joinNode.getChildren().get(0);
+        if ((!isUnit(left)) && (left.type().equals(PlanNode.PlanNodeType.JOIN))) {
+            initNodeRelations((JoinNode) left);
         }
 
         Item otherFilter = joinNode.getOtherJoinOnFilter();
@@ -639,6 +638,10 @@ public class JoinChooser {
                 nodeRelations.init();
                 joinRelations.add(nodeRelations);
             }
+        }
+        PlanNode right = joinNode.getChildren().get(1);
+        if ((!isUnit(right)) && (right.type().equals(PlanNode.PlanNodeType.JOIN))) {
+            initNodeRelations((JoinNode) right);
         }
     }
 

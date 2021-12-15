@@ -126,6 +126,7 @@ public class ManagerQueryHandler {
                     DbGroupHAHandler.handle(sql, service, rs >> SHIFT);
                     break;
                 case ManagerParse.SPLIT:
+                    service.getConnection().setSkipCheck(true);
                     service.getClusterDelayService().markDoingOrDelay(true);
                     SplitDumpHandler.handle(sql, service, rs >>> SHIFT);
                     break;
@@ -173,6 +174,8 @@ public class ManagerQueryHandler {
         } catch (Exception e) {
             service.writeErrMessage(ErrorCode.ER_YES, "get error call manager command: " + e.getMessage());
             LOGGER.warn("unknown error:", e);
+        } finally {
+            service.getConnection().setSkipCheck(false);
         }
     }
 

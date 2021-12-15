@@ -277,7 +277,7 @@ public class JoinChooser {
                 currentNode.markVisited();
                 //matched
                 if (prevNode != null) {
-                    joinNode = makeJoinNode(prevNode, joinNode, currentNode);
+                    joinNode = makeJoinNode(prevNode.node, joinNode, currentNode);
                 }
 
                 //prepare for next traversal.
@@ -379,44 +379,52 @@ public class JoinChooser {
     }
 
     private JoinNode makeBNFJoin(JoinRelationDag root, Comparator<JoinRelationDag> joinCmp) {
-
         JoinNode joinNode = null;
-        Queue<JoinRelationDag> queue = new LinkedList<>();
-        queue.offer(root);
-        while (!queue.isEmpty()) {
-            JoinRelationDag left = queue.poll();
-            List<JoinRelationDag> nextZeroDegreeList = new ArrayList<>();
-            for (JoinRelationDag tree : left.rightNodes) {
-                if (--tree.degree == 0) {
-                    nextZeroDegreeList.add(tree);
+        List<JoinRelationDag> zeroDegreeList = new ArrayList<>();
+        for (JoinRelationDag tree : root.rightNodes) {
+            if (--tree.degree == 0) {
+                zeroDegreeList.add(tree);
+            }
+        }
+        while (!zeroDegreeList.isEmpty()) {
+            zeroDegreeList.sort(joinCmp);
+            // zeroDegreeList contains no er relations
+            boolean cleanList = zeroDegreeList.get(0).relations.erRelationLst.size() == 0;
+            Iterator<JoinRelationDag> zeroDegreeIterator = zeroDegreeList.iterator();
+            List<JoinRelationDag> newZeroDegreeList = new ArrayList<>();
+            while (zeroDegreeIterator.hasNext()) {
+                JoinRelationDag rightNode = zeroDegreeIterator.next();
+                if (cleanList || rightNode.relations.erRelationLst.size() > 0) {
+                    zeroDegreeIterator.remove();
+                    joinNode = makeJoinNode(root.node, joinNode, rightNode);
+                    for (JoinRelationDag tree : rightNode.rightNodes) {
+                        if (--tree.degree == 0) {
+                            newZeroDegreeList.add(tree);
+                        }
+                    }
+                } else { // not have any er-node, other nodes will sort with new 0 degree nodes
+                    break;
                 }
             }
-            if (nextZeroDegreeList.size() > 0) {
-                nextZeroDegreeList.sort(joinCmp);
-                for (JoinRelationDag rightNode : nextZeroDegreeList) {
-                    joinNode = makeJoinNode(left, joinNode, rightNode);
-                    queue.offer(rightNode);
-                }
-            }
+            zeroDegreeList.addAll(newZeroDegreeList);
         }
         return joinNode;
     }
 
-    private JoinNode makeJoinNode(JoinRelationDag left, JoinNode joinNode, JoinRelationDag rightNodeOfJoin) {
-        boolean leftIsJoin = joinNode != null;
-        PlanNode leftNode = leftIsJoin ? joinNode : left.node;
-        PlanNode rightNode = rightNodeOfJoin.node;
-        joinNode = new JoinNode(leftNode, rightNode, charsetIndex);
+
+    private JoinNode makeJoinNode(PlanNode rootNode, JoinNode leftNode, JoinRelationDag rightNodeOfJoin) {
+        boolean leftIsNull = leftNode == null;
+        JoinNode joinNode = new JoinNode(leftIsNull ? rootNode : leftNode, rightNodeOfJoin.node, charsetIndex);
         if (!rightNodeOfJoin.relations.isInner) {
             joinNode.setLeftOuterJoin();
         }
         List<ItemFuncEqual> filters = new ArrayList<>();
         for (JoinRelation joinRelation : rightNodeOfJoin.relations.erRelationLst) {
             filters.add(joinRelation.filter);
-            if (!leftIsJoin) {
+            if (leftIsNull) {
                 joinNode.getERkeys().add(joinRelation.left.erTable);
             } else {
-                joinNode.getERkeys().addAll(((JoinNode) leftNode).getERkeys());
+                joinNode.getERkeys().addAll((leftNode).getERkeys());
             }
         }
         for (JoinRelation joinRelation : rightNodeOfJoin.relations.normalRelationLst) {

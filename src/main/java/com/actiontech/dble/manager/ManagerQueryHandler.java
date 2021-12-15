@@ -125,6 +125,7 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.SPLIT:
                 c.skipIdleCheck(true);
                 SplitDumpHandler.handle(sql, c, rs >>> SHIFT);
+                c.skipIdleCheck(false);
                 break;
             case ManagerParse.FLOW_CONTROL:
                 FlowControlHandler.handle(sql, c);

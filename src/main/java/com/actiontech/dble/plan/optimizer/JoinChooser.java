@@ -102,17 +102,16 @@ public class JoinChooser {
         if (joinUnits.size() == 1) {
             return orgNode;
         }
-        initNodeRelations(orgNode);
         JoinNode relationJoin = null;
-        if (joinRelations.size() > 0) {
+        if (initNodeRelations(orgNode) && joinRelations.size() > 0) {
             //make DAG
             JoinRelationDag root;
             try {
                 root = initJoinRelationDag();
             } catch (OptimizeException e) {
-                LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because this sql contains cartesian with relation. The sql is [{}]", orgNode);
+                LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because {}. The sql is [{}]", e.getMessage(), orgNode);
                 if (!hintPlanInfo.isEmpty()) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because this sql contains cartesian with relation.");
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because " + e.getMessage());
                 } else {
                     return orgNode;
                 }
@@ -182,7 +181,7 @@ public class JoinChooser {
         JoinRelations firstRelation = joinRelations.get(0);
         // firstRelation should only have one left nodes
         if (firstRelation.prefixNodes.size() != 1) {
-            throw new OptimizeException("firstRelation have more than one prefix node");
+            throw new OptimizeException("firstRelation have " + firstRelation.prefixNodes.size() + " prefix node");
         }
 
         JoinRelationDag root = createDag(firstRelation.leftNodes.iterator().next());
@@ -582,16 +581,25 @@ public class JoinChooser {
         return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery();
     }
 
-    private void initNodeRelations(JoinNode joinNode) {
+    private boolean initNodeRelations(JoinNode joinNode) {
         for (PlanNode unit : joinUnits) {
             // is unit
             if (unit == joinNode) {
-                return;
+                return true;
             }
         }
+        PlanNode right = joinNode.getChildren().get(1);
+        if ((!isUnit(right)) && (right.type().equals(PlanNode.PlanNodeType.JOIN))) {
+            right = JoinProcessor.optimize(right, hintPlanInfo);
+            joinNode.setRightNode(right);
+            return false; //will be not optimize current join node
+        }
+
         PlanNode left = joinNode.getChildren().get(0);
         if ((!isUnit(left)) && (left.type().equals(PlanNode.PlanNodeType.JOIN))) {
-            initNodeRelations((JoinNode) left);
+            if (!initNodeRelations((JoinNode) left)) {
+                return false;
+            }
         }
 
         Item otherFilter = joinNode.getOtherJoinOnFilter();
@@ -639,10 +647,7 @@ public class JoinChooser {
                 joinRelations.add(nodeRelations);
             }
         }
-        PlanNode right = joinNode.getChildren().get(1);
-        if ((!isUnit(right)) && (right.type().equals(PlanNode.PlanNodeType.JOIN))) {
-            initNodeRelations((JoinNode) right);
-        }
+        return true;
     }
 
     private void getLeftNodes(PlanNode child, Set<PlanNode> leftNodes) {

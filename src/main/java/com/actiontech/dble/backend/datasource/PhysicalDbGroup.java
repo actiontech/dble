@@ -487,7 +487,7 @@ public class PhysicalDbGroup {
         final DbInstanceConfig config = ins.getConfig();
         String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance status";
         if (dbGroupConfig.isShowSlaveSql()) {
-            heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
+            heartbeatError += " and the privileges of user ( NOTE:heartbeat[show slave status] need grant the SUPER or REPLICATION CLIENT privilege(s) to db user,and then restart the dble.)";
         }
         LOGGER.warn(heartbeatError);
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());

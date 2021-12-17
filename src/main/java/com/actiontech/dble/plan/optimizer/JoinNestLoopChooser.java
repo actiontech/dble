@@ -52,7 +52,7 @@ public class JoinNestLoopChooser {
         for (ItemFuncEqual itemFuncEqual : joinFilter) {
             List<Item> arguments = itemFuncEqual.arguments();
             if (!nodeNameSet.contains(arguments.get(0).getTableName())) {
-                throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain plan build failures!");
+                throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures!");
             }
         }
     }
@@ -62,7 +62,7 @@ public class JoinNestLoopChooser {
         PlanNode rightNode = joinNode.getRightNode();
 
         if (joinNode.isNotIn() || !((leftNode instanceof JoinNode || leftNode instanceof TableNode) && rightNode instanceof TableNode)) {
-            throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain plan build failures!");
+            throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures!");
         }
         buildNestLoop(joinNode, rightNode);
         if (leftNode instanceof JoinNode) {
@@ -117,7 +117,7 @@ public class JoinNestLoopChooser {
                 String alias = node.getName();
                 JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
                 if (!canDoAsMerge(parent)) {
-                    throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain plan build failures! check ER or AND or OR condition");
+                    throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures! check ER or AND or OR condition");
                 }
             }
         }
@@ -147,7 +147,7 @@ public class JoinNestLoopChooser {
                 String alias = node.getName();
                 JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
                 if (canDoAsMerge(parent)) {
-                    throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain plan build failures! check ER or AND or OR condition");
+                    throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures! check ER or AND or OR condition");
                 }
             }
         }

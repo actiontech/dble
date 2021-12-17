@@ -75,6 +75,7 @@ public abstract class BaseHandlerBuilder {
 
     protected boolean isExplain;
     private final List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
+    private final Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = new HashMap<>();
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -120,7 +121,6 @@ public abstract class BaseHandlerBuilder {
                 buildCommon();
             }
             if (needCommon || node.isWithSubQuery()) {
-
                 // view sub alias
                 String tbAlias = node.getAlias();
                 String schema = null;
@@ -132,9 +132,14 @@ public abstract class BaseHandlerBuilder {
                 }
                 SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
                 addHandler(sh);
+                if (delayTableHandlerMap.containsKey(node)) {
+                    List<DelayTableHandler> delayTableHandlers = delayTableHandlerMap.remove(node);
+                    for (DelayTableHandler delayTableHandler : delayTableHandlers) {
+                        sh.getTableHandlers().add(delayTableHandler);
+                    }
+                }
             }
         }
-
 
         if (preHandlers != null) {
             for (DMLResponseHandler preHandler : preHandlers) {
@@ -198,6 +203,7 @@ public abstract class BaseHandlerBuilder {
             throw new MySQLOutPutException(errorPackets.get(0).getErrNo(), "", new String(errorPackets.get(0).getMessage(), StandardCharsets.UTF_8));
         }
     }
+
     protected void nestLoopBuild() {
         throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "not implement yet, node type[" + node.type() + "]");
     }
@@ -597,6 +603,7 @@ public abstract class BaseHandlerBuilder {
         }
         return false;
     }
+
     @NotNull
     private DMLResponseHandler getSubQueryHandler(PlanNode planNode, SubQueryHandler tempHandler) {
         BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, isExplain);
@@ -630,4 +637,9 @@ public abstract class BaseHandlerBuilder {
     public boolean isContainSubQuery(PlanNode planNode) {
         return planNode.getSubQueries().size() > 0 || planNode.getChildren().stream().anyMatch(this::isContainSubQuery);
     }
+
+    public Map<PlanNode, List<DelayTableHandler>> getDelayTableHandlerMap() {
+        return delayTableHandlerMap;
+    }
+
 }

@@ -29,9 +29,8 @@ public class JoinNode extends PlanNode {
         return PlanNodeType.JOIN;
     }
 
-
     public enum Strategy {
-        SORTMERGE, NESTLOOP
+        SORTMERGE, NESTLOOP, NEW_NEST_LOOP
     }
 
     private boolean isNotIn = false;
@@ -76,6 +75,7 @@ public class JoinNode extends PlanNode {
 
     private Strategy strategy = Strategy.SORTMERGE;
     private final int charsetIndex;
+
     public JoinNode(int charsetIndex) {
         this.leftOuter = false;
         this.rightOuter = false;

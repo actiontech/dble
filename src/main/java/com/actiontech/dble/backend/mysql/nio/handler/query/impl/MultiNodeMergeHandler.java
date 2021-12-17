@@ -8,12 +8,14 @@ package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.net.Session;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -27,10 +29,12 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     final List<BaseSelectHandler> exeHandlers;
     protected RouteResultsetNode[] route;
     int reachedConCount = 0;
+    private Set<String> dependencies;
 
     public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, Session session) {
         super(id, session);
         this.exeHandlers = new ArrayList<>();
+        dependencies = new HashSet<>();
         this.lock = new ReentrantLock();
         if (route.length == 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "can not execute empty rrss!");
@@ -82,4 +86,11 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         }
     }
 
+    public Set<String> getDependencies() {
+        return dependencies;
+    }
+
+    public void setDependencies(Set<String> dependencies) {
+        this.dependencies = dependencies;
+    }
 }

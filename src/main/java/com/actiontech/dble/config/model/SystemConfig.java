@@ -106,8 +106,10 @@ public final class SystemConfig {
     private int nestLoopRowsSize = 2000;
     private int nestLoopConnSize = 4;
 
-
+    // join Optimizer
     private boolean useNewJoinOptimizer = false;
+    private boolean useHintStrategyNestLoop = false;
+    private boolean useNewNestLoop = false;
 
     //query memory used for per session,unit is M
     private int otherMemSize = 4;
@@ -383,6 +385,21 @@ public final class SystemConfig {
         this.useNewJoinOptimizer = useNewJoinOptimizer;
     }
 
+    public boolean isUseHintStrategyNestLoop() {
+        return useHintStrategyNestLoop;
+    }
+
+    public void setUseHintStrategyNestLoop(boolean useHintStrategyNestLoop) {
+        this.useHintStrategyNestLoop = useHintStrategyNestLoop;
+    }
+
+    public boolean isUseNewNestLoop() {
+        return useNewNestLoop;
+    }
+
+    public void setUseNewNestLoop(boolean useNewNestLoop) {
+        this.useNewNestLoop = useNewNestLoop;
+    }
 
     public String getXaRecoveryLogBaseDir() {
         return (this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);

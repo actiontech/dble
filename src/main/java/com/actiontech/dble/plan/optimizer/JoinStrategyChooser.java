@@ -6,17 +6,22 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.JoinNode.Strategy;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.plan.util.PlanUtil;
 
-import java.util.ArrayList;
+import java.util.*;
 
 public class JoinStrategyChooser {
+    private Map<String, PlanNode> nodeMap;
     private JoinNode jn;
 
     public JoinStrategyChooser(JoinNode jn) {
         this.jn = jn;
+        nodeMap = new HashMap<>();
     }
 
     /**
@@ -90,4 +95,73 @@ public class JoinStrategyChooser {
     private boolean isSmallTable(TableNode tn) {
         return tn.getWhereFilter() != null;
     }
+
+    public void nestLoop() {
+        buildNodeMap(jn);
+        traverseNode(jn);
+    }
+
+    private boolean checkCondition(JoinNode joinNode) {
+        if (joinNode.isNotIn() || joinNode.getJoinFilter().isEmpty()) {
+            return false;
+        }
+        PlanNode leftNode = joinNode.getLeftNode();
+        PlanNode rightNode = joinNode.getRightNode();
+        if (!((leftNode instanceof JoinNode || leftNode instanceof TableNode) && rightNode instanceof TableNode)) {
+            return false;
+        }
+        return true;
+    }
+
+    private void traverseNode(JoinNode joinNode) {
+        if (!checkCondition(joinNode)) {
+            return;
+        }
+        PlanNode leftNode = joinNode.getLeftNode();
+        PlanNode rightNode = joinNode.getRightNode();
+        buildNestLoop(joinNode, rightNode);
+        if (leftNode instanceof JoinNode) {
+            traverseNode((JoinNode) leftNode);
+        }
+    }
+
+    private void buildNestLoop(JoinNode joinNode, PlanNode node) {
+        joinNode.setStrategy(JoinNode.Strategy.NEW_NEST_LOOP);
+        node.setNestLoopFilters(new ArrayList<>());
+        node.setNestLoopDependNode(findDependNode(node));
+    }
+
+    private PlanNode findDependNode(PlanNode node) {
+        JoinNode joinNode = (JoinNode) node.getParent();
+        String firstTableName = null;
+        List<ItemFuncEqual> joinFilter = joinNode.getJoinFilter();
+        for (ItemFuncEqual itemFuncEqual : joinFilter) {
+            List<Item> arguments = itemFuncEqual.arguments();
+            String tableName = arguments.get(0).getTableName();
+            firstTableName = Optional.ofNullable(firstTableName).orElse(tableName);
+            JoinNode dependNodeParent = (JoinNode) nodeMap.get(tableName).getParent();
+            if (canDoAsMerge(dependNodeParent)) {
+                return dependNodeParent;
+            }
+        }
+        return nodeMap.get(firstTableName);
+    }
+
+    private void buildNodeMap(JoinNode joinNode) {
+        PlanNode leftNode = joinNode.getLeftNode();
+        PlanNode rightNode = joinNode.getRightNode();
+        if (leftNode instanceof JoinNode) {
+            buildNodeMap((JoinNode) leftNode);
+        } else {
+            nodeMap.put(leftNode.getAlias(), leftNode);
+            nodeMap.put(((TableNode) leftNode).getTableName(), leftNode);
+        }
+        nodeMap.put(rightNode.getAlias(), rightNode);
+        nodeMap.put(((TableNode) rightNode).getTableName(), leftNode);
+    }
+
+    public boolean canDoAsMerge(JoinNode joinNode) {
+        return PlanUtil.isGlobalOrER(joinNode);
+    }
+
 }

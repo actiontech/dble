@@ -17,6 +17,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnyS
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
 import com.actiontech.dble.route.RouteResultsetNode;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -59,7 +60,7 @@ public final class ComplexQueryPlanUtil {
 
     private static String buildResultByEndHandler(Set<String> subQueries, List<ReferenceHandlerInfo> finalResult, DMLResponseHandler endHandler, Map<String, Integer> nameMap) {
         Map<String, ReferenceHandlerInfo> refMap = new HashMap<>();
-        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, ReferenceHandlerInfo>(), nameMap, subQueries);
+        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<>(), nameMap, subQueries);
         List<ReferenceHandlerInfo> resultList = new ArrayList<>(refMap.size());
         getDFSHandlers(refMap, rootName, resultList);
         for (int i = resultList.size() - 1; i >= 0; i--) {
@@ -71,41 +72,50 @@ public final class ComplexQueryPlanUtil {
 
     private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, ReferenceHandlerInfo> refMap, Map<DMLResponseHandler, ReferenceHandlerInfo> handlerMap, Map<String, Integer> nameMap, Set<String> dependencies) {
         String rootName = null;
-        int mergeNodeSize = endHandler.getMerges().size();
-        for (int i = 0; i < mergeNodeSize; i++) {
-            DMLResponseHandler startHandler = endHandler.getMerges().get(i);
-            MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            String mergeName = getMergeType(mergeHandler);
-            List<BaseSelectHandler> mergeList = new ArrayList<>();
-            mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
-            String mergeNode = genHandlerName(mergeName, nameMap);
-            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
-            if (mergeHandler instanceof MultiNodeFakeHandler) {
-                refInfo.setBaseSQL(((MultiNodeFakeHandler) mergeHandler).toSQLString());
+        List<MultiNodeMergeHandler> delayHandlerList = new ArrayList<>();
+        List<DMLResponseHandler> mergeHandlers = endHandler.getMerges();
+        for (DMLResponseHandler startHandler : mergeHandlers) {
+            rootName = getRootName(refMap, handlerMap, nameMap, dependencies, rootName, delayHandlerList, (MultiNodeMergeHandler) startHandler);
+        }
+        for (MultiNodeMergeHandler startHandler : delayHandlerList) {
+            rootName = getRootName(refMap, handlerMap, nameMap, startHandler.getDependencies(), rootName, delayHandlerList, startHandler);
+        }
+        return rootName;
+    }
+
+    @NotNull
+    private static String getRootName(Map<String, ReferenceHandlerInfo> refMap, Map<DMLResponseHandler, ReferenceHandlerInfo> handlerMap, Map<String, Integer> nameMap, Set<String> dependencies, String rootName, List<MultiNodeMergeHandler> delayHandlerList, MultiNodeMergeHandler startHandler) {
+        MultiNodeMergeHandler mergeHandler = startHandler;
+        String mergeName = getMergeType(mergeHandler);
+        List<BaseSelectHandler> mergeList = new ArrayList<>();
+        mergeList.addAll(startHandler.getExeHandlers());
+        String mergeNode = genHandlerName(mergeName, nameMap);
+        ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
+        if (mergeHandler instanceof MultiNodeFakeHandler) {
+            refInfo.setBaseSQL(((MultiNodeFakeHandler) mergeHandler).toSQLString());
+        }
+        handlerMap.put(mergeHandler, refInfo);
+        refMap.put(mergeNode, refInfo);
+        for (BaseSelectHandler exeHandler : mergeList) {
+            RouteResultsetNode rrss = exeHandler.getRrss();
+            String dateNode = rrss.getName() + "_" + rrss.getMultiplexNum();
+            refInfo.addChild(dateNode);
+            String type = "BASE SQL";
+            if (dependencies != null && dependencies.size() > 0) {
+                type += "(May No Need)";
             }
-            handlerMap.put(mergeHandler, refInfo);
-            refMap.put(mergeNode, refInfo);
-            for (BaseSelectHandler exeHandler : mergeList) {
-                RouteResultsetNode rrss = exeHandler.getRrss();
-                String dateNode = rrss.getName() + "_" + rrss.getMultiplexNum();
-                refInfo.addChild(dateNode);
-                String type = "BASE SQL";
-                if (dependencies != null && dependencies.size() > 0) {
-                    type += "(May No Need)";
-                }
-                ReferenceHandlerInfo baseSQLInfo = new ReferenceHandlerInfo(dateNode, type, rrss.getStatement(), exeHandler);
-                refMap.put(dateNode, baseSQLInfo);
-                if (dependencies != null && dependencies.size() > 0) {
-                    baseSQLInfo.addAllStepChildren(dependencies);
-                }
+            ReferenceHandlerInfo baseSQLInfo = new ReferenceHandlerInfo(dateNode, type, rrss.getStatement(), exeHandler);
+            refMap.put(dateNode, baseSQLInfo);
+            if (dependencies != null && dependencies.size() > 0) {
+                baseSQLInfo.addAllStepChildren(dependencies);
             }
-            String mergeRootName = getAllNodesFromLeaf(mergeHandler, refMap, handlerMap, nameMap);
-            if (rootName == null) {
-                if (mergeRootName == null) {
-                    rootName = mergeNode;
-                } else {
-                    rootName = mergeRootName;
-                }
+        }
+        String mergeRootName = getAllNodesFromLeaf(mergeHandler, refMap, handlerMap, nameMap, delayHandlerList);
+        if (rootName == null) {
+            if (mergeRootName == null) {
+                rootName = mergeNode;
+            } else {
+                rootName = mergeRootName;
             }
         }
         return rootName;
@@ -141,7 +151,7 @@ public final class ComplexQueryPlanUtil {
         return handlerName;
     }
 
-    private static String getAllNodesFromLeaf(DMLResponseHandler handler, Map<String, ReferenceHandlerInfo> refMap, Map<DMLResponseHandler, ReferenceHandlerInfo> handlerMap, Map<String, Integer> nameMap) {
+    private static String getAllNodesFromLeaf(DMLResponseHandler handler, Map<String, ReferenceHandlerInfo> refMap, Map<DMLResponseHandler, ReferenceHandlerInfo> handlerMap, Map<String, Integer> nameMap, List<MultiNodeMergeHandler> delayHandlerList) {
         DMLResponseHandler nextHandler = handler.getNextHandler();
         String rootName = null;
         while (nextHandler != null) {
@@ -163,6 +173,17 @@ public final class ComplexQueryPlanUtil {
                 DMLResponseHandler endHandler = tmp.getCreatedHandler();
                 endHandler.setNextHandler(nextHandler);
                 rootName = buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
+            }
+            if (handler instanceof SendMakeHandler) {
+                Set<DelayTableHandler> tableHandlers = ((SendMakeHandler) handler).getTableHandlers();
+                for (DelayTableHandler tableHandler : tableHandlers) {
+                    StringBuilder sb = new StringBuilder(childName);
+                    sb.append(" - ").append(getTypeName(tableHandler)).append("'s RESULTS");
+                    MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) tableHandler.getCreatedHandler().getMerges().get(0);
+                    dmlResponseHandler.getDependencies().add(sb.toString());
+                    delayHandlerList.add(dmlResponseHandler);
+                }
+                tableHandlers.clear();
             }
             handler = nextHandler;
             nextHandler = nextHandler.getNextHandler();
@@ -218,6 +239,8 @@ public final class ComplexQueryPlanUtil {
             return "RENAME_DERIVED_SUB_QUERY";
         } else if (handler instanceof OutputHandler) {
             return "WRITE_TO_CLIENT";
+        } else if (handler instanceof DelayTableHandler) {
+            return "NEW_NEST_LOOP";
         }
         return "OTHER";
     }

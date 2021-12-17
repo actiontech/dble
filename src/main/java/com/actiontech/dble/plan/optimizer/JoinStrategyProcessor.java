@@ -11,6 +11,8 @@ import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.List;
+
 public final class JoinStrategyProcessor {
     public static final String NEED_REPLACE = "{NEED_TO_REPLACE}";
 
@@ -34,6 +36,29 @@ public final class JoinStrategyProcessor {
             }
             for (PlanNode child : qtn.getChildren())
                 optimize(child);
+            return qtn;
+        } finally {
+            TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
+            TraceManager.finishSpan(traceObject);
+        }
+    }
+
+
+    public static PlanNode newOptimize(PlanNode qtn) {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("new-optimize-for-nest-loop");
+        try {
+
+            if (PlanUtil.isGlobalOrER(qtn))
+                return qtn;
+            if (qtn instanceof JoinNode) {
+                JoinStrategyChooser chooser = new JoinStrategyChooser((JoinNode) qtn);
+                chooser.nestLoop();
+            } else {
+                List<PlanNode> children = qtn.getChildren();
+                for (PlanNode child : children) {
+                    newOptimize(child);
+                }
+            }
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);

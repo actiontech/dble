@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.DelayTableHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OrderByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.TempTableHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
@@ -30,10 +31,9 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.Lists;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
@@ -41,6 +41,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     private final JoinNode node;
     private final int charsetIndex;
     private boolean optimizerMerge = false;
+
 
     JoinNodeHandlerBuilder(NonBlockingSession session, JoinNode node, HandlerBuilder hBuilder, boolean isExplain) {
         super(session, node, hBuilder, isExplain);
@@ -115,6 +116,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         }
         return false;
     }
+
     @Override
     public List<DMLResponseHandler> buildPre() {
         List<DMLResponseHandler> pres = new ArrayList<>();
@@ -136,14 +138,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             List<Item> keySources = isLeftSmall ? node.getLeftKeys() : node.getRightKeys();
             List<Item> keyToPasses = isLeftSmall ? node.getRightKeys() : node.getLeftKeys();
             // just find one key as filter later, try to choose a simple column(FIELD_ITEM) from toPasses
-            int columnIndex = 0;
-            for (int index = 0; index < keyToPasses.size(); index++) {
-                Item keyToPass = keyToPasses.get(index);
-                if (keyToPass.type().equals(ItemType.FIELD_ITEM)) {
-                    columnIndex = index;
-                    break;
-                }
-            }
+            int columnIndex = getColumnIndex(keyToPasses);
             final Item keySource = keySources.get(columnIndex);
             final Item keyToPass = keyToPasses.get(columnIndex);
             DMLResponseHandler endHandler = buildJoinChild(tnSmall, isLeftSmall);
@@ -151,20 +146,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             endHandler.setNextHandler(tempHandler);
             tempHandler.setLeft(isLeftSmall);
             pres.add(tempHandler);
-            CallBackHandler tempDone = new CallBackHandler() {
-
-                @Override
-                public void call() throws Exception {
-                    Set<String> valueSet = tempHandler.getValueSet();
-                    buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
-                    DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
-                    synchronized (tempHandler) {
-                        bigLh.setNextHandlerOnly(tempHandler.getNextHandler());
-                    }
-                    tempHandler.setCreatedHandler(bigLh);
-                    HandlerBuilder.startHandler(bigLh);
-                }
-            };
+            CallBackHandler tempDone = getCallBackHandler(isLeftSmall, tnBig, keyToPass, tempHandler);
             if (isExplain) {
                 buildNestFiltersForExplain(tnBig, keyToPass);
                 DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
@@ -182,14 +164,55 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             } catch (Exception e) {
                 throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "JoinNode buildOwn exception! Error:" + e.getMessage(), e);
             }
-            DMLResponseHandler lh = buildJoinChild(left, true);
+
+            DMLResponseHandler lh = buildJoinChild(getDelayTableHandlerMap(), left, true);
             pres.add(lh);
-            DMLResponseHandler rh = buildJoinChild(right, false);
+            DMLResponseHandler rh = buildJoinChild(getDelayTableHandlerMap(), right, false);
             pres.add(rh);
 
             if (tryRouteToOneNode(pres)) {
                 pres.clear();
                 optimizerMerge = true;
+            }
+        } else if (node.getStrategy() == JoinNode.Strategy.NEW_NEST_LOOP) {
+            if (node.getSubQueries().size() != 0) {
+                List<DMLResponseHandler> subQueryEndHandlers;
+                subQueryEndHandlers = getSubQueriesEndHandlers(node.getSubQueries());
+                if (!isExplain) {
+                    // execute subquery sync
+                    executeSubQueries(subQueryEndHandlers);
+                }
+            }
+            PlanNode dependNode = right.getNestLoopDependNode();
+            boolean isLeftSmall = true;
+            if (Objects.isNull(dependNode)) {
+                isLeftSmall = false;
+            }
+            PlanNode tnSmall = left;
+            PlanNode tnBig = right;
+            List<Item> keySources = node.getLeftKeys();
+            List<Item> keyToPasses = node.getRightKeys();
+            if (!isLeftSmall) {
+                tnSmall = right;
+                tnBig = left;
+                keySources = node.getRightKeys();
+                keyToPasses = node.getLeftKeys();
+            }
+            // prepare the column for sending
+            // just find one key as filter later, try to choose a simple column(FIELD_ITEM) from toPasses
+            int columnIndex = getColumnIndex(keyToPasses);
+            final Item keySource = keySources.get(columnIndex);
+            final Item keyToPass = keyToPasses.get(columnIndex);
+            DelayTableHandler delayTableHandler = buildDelayHandler(isLeftSmall, tnBig, keySource, keyToPass);
+            Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = getDelayTableHandlerMap();
+            List<DelayTableHandler> delayTableHandlerList = Optional.ofNullable(delayTableHandlerMap.get(dependNode)).orElse(new ArrayList<>());
+            delayTableHandlerList.add(delayTableHandler);
+            delayTableHandlerMap.put(dependNode, delayTableHandlerList);
+            DMLResponseHandler endHandler = buildJoinChild(delayTableHandlerMap, tnSmall, isLeftSmall);
+            pres.add(endHandler);
+            pres.add(delayTableHandler);
+            if (isExplain) {
+                pres.add(delayTableHandler.getCreatedHandler());
             }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "strategy [" + node.getStrategy() + "] not implement yet!");
@@ -197,8 +220,39 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         return pres;
     }
 
+    @NotNull
+    private CallBackHandler getCallBackHandler(boolean isLeftSmall, PlanNode tnBig, Item keyToPass, TempTableHandler tempHandler) {
+        CallBackHandler tempDone = () -> {
+            Set<String> valueSet = tempHandler.getValueSet();
+            buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
+            DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
+            synchronized (tempHandler) {
+                bigLh.setNextHandlerOnly(tempHandler.getNextHandler());
+            }
+            tempHandler.setCreatedHandler(bigLh);
+            HandlerBuilder.startHandler(bigLh);
+        };
+        return tempDone;
+    }
+
+    private int getColumnIndex(List<Item> keyToPasses) {
+        int columnIndex = 0;
+        for (int index = 0; index < keyToPasses.size(); index++) {
+            Item keyToPass = keyToPasses.get(index);
+            if (keyToPass.type().equals(ItemType.FIELD_ITEM)) {
+                columnIndex = index;
+                break;
+            }
+        }
+        return columnIndex;
+    }
+
     private DMLResponseHandler buildJoinChild(PlanNode child, boolean isLeft) {
-        BaseHandlerBuilder builder = hBuilder.getBuilder(session, child, isExplain);
+        return buildJoinChild(null, child, isLeft);
+    }
+
+    private DMLResponseHandler buildJoinChild(Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap, PlanNode child, boolean isLeft) {
+        BaseHandlerBuilder builder = hBuilder.getBuilder(session, delayTableHandlerMap, child, isExplain);
         if (builder.getSubQueryBuilderList().size() > 0) {
             this.getSubQueryBuilderList().addAll(builder.getSubQueryBuilderList());
         }
@@ -218,6 +272,30 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             }
         }
         return endHandler;
+    }
+
+    private DelayTableHandler buildDelayHandler(boolean isLeftSmall, PlanNode tnBig, Item keySource, Item keyToPass) {
+        final DelayTableHandler delayTableHandler = new DelayTableHandler(getSequenceId(), session, keySource);
+        delayTableHandler.setLeft(!isLeftSmall);
+        CallBackHandler tempDone = () -> {
+            Set<String> valueSet = delayTableHandler.getValueSet();
+            buildNestFilters(tnBig, keyToPass, valueSet, delayTableHandler.getMaxPartSize());
+            DMLResponseHandler bigLh = buildJoinChild(getDelayTableHandlerMap(), tnBig, !isLeftSmall);
+            bigLh.setNextHandlerOnly(delayTableHandler.getNextHandler());
+            delayTableHandler.setCreatedHandler(bigLh);
+            HandlerBuilder.startHandler(bigLh);
+        };
+        if (isExplain) {
+            buildExplain(isLeftSmall, tnBig, keyToPass, delayTableHandler);
+        }
+        delayTableHandler.setTempDoneCallBack(tempDone);
+        return delayTableHandler;
+    }
+
+    private void buildExplain(boolean isLeftSmall, PlanNode tnBig, Item keyToPass, DelayTableHandler delayTableHandler) {
+        buildNestFiltersForExplain(tnBig, keyToPass);
+        DMLResponseHandler bigLh = buildJoinChild(getDelayTableHandlerMap(), tnBig, isLeftSmall);
+        delayTableHandler.setCreatedHandler(bigLh);
     }
 
     @Override
@@ -283,5 +361,4 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             strategyFilters.add(new ItemInt(0));
         }
     }
-
 }

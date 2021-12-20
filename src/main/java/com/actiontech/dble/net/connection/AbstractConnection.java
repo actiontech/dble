@@ -452,6 +452,14 @@ public abstract class AbstractConnection implements Connection {
         return readBuffer;
     }
 
+
+    public synchronized void recycleReadBuffer() {
+        if (readBuffer != null) {
+            this.recycle(readBuffer);
+            this.readBuffer = null;
+        }
+    }
+
     public void onConnectFailed(Throwable e) {
     }
 

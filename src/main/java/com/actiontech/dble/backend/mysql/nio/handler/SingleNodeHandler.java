@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
     private final RouteResultsetNode node;
     protected final RouteResultset rrs;
@@ -105,10 +105,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
+
     protected void execute(BackendConnection conn) {
-        if (session.closed()) {
-            session.clearResources(rrs);
-            recycleBuffer();
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.setResponseHandler(this);
@@ -159,34 +158,34 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
-        ServerConnection source = session.getSource();
-        String errUser = source.getUser();
-        String errHost = source.getHost();
-        int errPort = source.getLocalPort();
-
-        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
-                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
-
-        if (conn.isClosed()) {
-            if (conn.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                session.getTargetMap().remove(rNode);
-            }
-        } else if (syncFinished) {
-            session.releaseConnectionIfSafe(conn, false);
-        } else {
-            conn.closeWithoutRsp("unfinished sync");
-            if (conn.getAttachment() != null) {
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                session.getTargetMap().remove(rNode);
-            }
-        }
-        source.setTxInterrupt(errMsg);
-        session.handleSpecial(rrs, false);
+    protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         lock.lock();
         try {
+            ServerConnection source = session.getSource();
+            String errUser = source.getUser();
+            String errHost = source.getHost();
+            int errPort = source.getLocalPort();
+
+            String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+            LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
+                    " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+
+            if (conn.isClosed()) {
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
+            } else if (syncFinished) {
+                session.releaseConnectionIfSafe(conn, false);
+            } else {
+                conn.closeWithoutRsp("unfinished sync");
+                if (conn.getAttachment() != null) {
+                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                    session.getTargetMap().remove(rNode);
+                }
+            }
+            source.setTxInterrupt(errMsg);
+
             if (writeToClient.compareAndSet(false, true)) {
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
@@ -216,12 +215,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
-            //handleSpecial
-            boolean metaInited = session.handleSpecial(rrs, true);
-            if (!metaInited) {
-                executeMetaDataFailed(conn);
-                return;
-            }
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -249,27 +242,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.multiStatementNextSql(multiStatementFlag);
         }
     }
-
-    protected void executeMetaDataFailed(BackendConnection conn) {
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
-                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime(false);
-        session.multiStatementPacket(errPacket, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        doSqlStat();
-        if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
-        }
-        session.multiStatementNextSql(multiStatementFlag);
-    }
-
 
     /**
      * select
@@ -303,7 +275,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void doSqlStat() {
+    public void doSqlStat() {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs.getStatement() != null) {
@@ -466,4 +438,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         return "SingleNodeHandler [node=" + node + ", packetId=" + packetId + "]";
     }
 
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

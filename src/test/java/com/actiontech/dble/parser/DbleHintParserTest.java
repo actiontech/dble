@@ -9,13 +9,15 @@ import com.actiontech.dble.route.parser.DbleHintParser;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.sql.SQLSyntaxErrorException;
+
 /**
  * @author mycat
  */
 public class DbleHintParserTest {
 
     @Test
-    public void testDbleHint() {
+    public void testDbleHint() throws SQLSyntaxErrorException {
 
         DbleHintParser.HintInfo hintInfo;
         hintInfo = DbleHintParser.parse("/*!dble:sql  =   select * from sbtest */ call p_show_time()");
@@ -69,10 +71,13 @@ public class DbleHintParserTest {
 
         hintInfo = DbleHintParser.parse("/*!dble:db_instance_url 127.0.0.1:3307 */");
         Assert.assertNull(hintInfo);
+
+        hintInfo = DbleHintParser.parse("/ * 127.0.0.1:3307 */ sss");
+        Assert.assertNull(hintInfo);
     }
 
     @Test
-    public void testUproxyHint() {
+    public void testUproxyHint() throws SQLSyntaxErrorException {
         DbleHintParser.HintInfo hintInfo;
         hintInfo = DbleHintParser.parseRW("insert into test values/* master */ (11111)");
         Assert.assertNotNull(hintInfo);

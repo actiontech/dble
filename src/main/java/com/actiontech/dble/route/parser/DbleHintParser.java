@@ -9,12 +9,15 @@ import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.util.StringUtil;
 
+import java.sql.SQLSyntaxErrorException;
+
 /**
  * @author collapsar
  */
 public final class DbleHintParser {
 
     public static final int OTHER = -1;
+
     public static final int SQL = 1;
     public static final int SHARDING_NODE = 2;
     public static final int DB_TYPE = 3;
@@ -27,10 +30,11 @@ public final class DbleHintParser {
     private DbleHintParser() {
     }
 
-    public static HintInfo parse(String sql) {
+    public static HintInfo parse(String sql) throws SQLSyntaxErrorException {
         int j = 0;
         int len = sql.length();
         int hintStartPosition = 0;
+        boolean inDbleHint = false;
         if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
             for (; j < len; j++) {
                 switch (sql.charAt(j)) {
@@ -48,9 +52,10 @@ public final class DbleHintParser {
                         if (hintStartPosition == -1) {
                             return null;
                         }
+                        inDbleHint = true;
                         continue;
                     case '*':
-                        if (len > ++j && sql.charAt(j) == '/') {
+                        if (len > ++j && sql.charAt(j) == '/' && inDbleHint) {
                             int start = hintStartPosition >> 8;
                             int endPos = j;
                             return new HintInfo(sql.substring(start + 1, --endPos), sql.substring(++j), hintStartPosition & 0xff);
@@ -64,7 +69,7 @@ public final class DbleHintParser {
         return null;
     }
 
-    public static HintInfo parseRW(String sql) {
+    public static HintInfo parseRW(String sql) throws SQLSyntaxErrorException {
         HintInfo hintInfo = parse(sql);
         if (hintInfo != null) {
             return hintInfo;
@@ -92,7 +97,7 @@ public final class DbleHintParser {
     }
 
 
-    private static int dbleHint(String sql, int offset) {
+    private static int dbleHint(String sql, int offset) throws SQLSyntaxErrorException {
         if (sql.length() > ++offset) {
             switch (sql.charAt(offset)) {
                 case 'S':
@@ -111,7 +116,7 @@ public final class DbleHintParser {
         return OTHER;
     }
 
-    private static int sCheck(String stmt, int offset) {
+    private static int sCheck(String stmt, int offset) throws SQLSyntaxErrorException {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'H':
@@ -127,7 +132,7 @@ public final class DbleHintParser {
         return OTHER;
     }
 
-    private static int dCheck(String stmt, int offset) {
+    private static int dCheck(String stmt, int offset) throws SQLSyntaxErrorException {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -148,8 +153,8 @@ public final class DbleHintParser {
         return OTHER;
     }
 
-    private static int shardingNodeCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 6) {
+    private static int shardingNodeCheck(String stmt, int offset) throws SQLSyntaxErrorException {
+        if (stmt.length() > offset + 10) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -167,31 +172,31 @@ public final class DbleHintParser {
                     (c9 == 'D' || c9 == 'd') && (c10 == 'E' || c10 == 'e')) {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    return OTHER;
+                    throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "shardingNode=? */ sql");
                 } else {
                     return (offset << 8) | SHARDING_NODE;
                 }
             }
         }
-        return OTHER;
+        throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "shardingNode=? */ sql");
     }
 
-    private static int sqlCheck(String stmt, int offset) {
+    private static int sqlCheck(String stmt, int offset) throws SQLSyntaxErrorException {
         if (stmt.length() > offset + 1) {
             char c1 = stmt.charAt(++offset);
             if (c1 == 'L' || c1 == 'l') {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    return OTHER;
+                    throw new SQLSyntaxErrorException("please following dble hint the syntax: /*!" + Versions.ANNOTATION_NAME + "sql=? */ sql");
                 } else {
                     return (offset << 8) | SQL;
                 }
             }
         }
-        return OTHER;
+        throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "sql=? */ sql");
     }
 
-    private static int dbTypeCheck(String stmt, int offset) {
+    private static int dbTypeCheck(String stmt, int offset) throws SQLSyntaxErrorException {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -200,16 +205,16 @@ public final class DbleHintParser {
                     (c3 == 'E' || c3 == 'e')) {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    return OTHER;
+                    throw new SQLSyntaxErrorException("please following dble hint the syntax: /*!" + Versions.ANNOTATION_NAME + "db_type=master|slave */ sql");
                 } else {
                     return (offset << 8) | DB_TYPE;
                 }
             }
         }
-        return OTHER;
+        throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "db_type=master|slave */ sql");
     }
 
-    private static int dbInstanceUrlCheck(String stmt, int offset) {
+    private static int dbInstanceUrlCheck(String stmt, int offset) throws SQLSyntaxErrorException {
         if (stmt.length() > offset + 11) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -230,16 +235,16 @@ public final class DbleHintParser {
                     (c12 == 'L' || c12 == 'l')) {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    return OTHER;
+                    throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "db_instance_url=? */ sql");
                 } else {
                     return (offset << 8) | DB_INSTANCE_URL;
                 }
             }
         }
-        return OTHER;
+        throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "db_instance_url=? */ sql");
     }
 
-    private static int planCheck(String stmt, int offset) {
+    private static int planCheck(String stmt, int offset) throws SQLSyntaxErrorException {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -248,13 +253,13 @@ public final class DbleHintParser {
                     (c3 == 'N' || c3 == 'n')) {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    return OTHER;
+                    throw new SQLSyntaxErrorException("please following dble hint the syntax: /*!" + Versions.ANNOTATION_NAME + "plan=? */ sql");
                 } else {
                     return (offset << 8) | PLAN;
                 }
             }
         }
-        return OTHER;
+        throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "plan=? */ sql");
     }
 
     public static class HintInfo {

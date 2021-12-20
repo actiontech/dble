@@ -315,34 +315,6 @@ public final class JavaUtils {
     }
 
 
-    public static String bytesToString2(long size) {
-        long cTB = 1L << 40;
-        long cGB = 1L << 30;
-        long cMB = 1L << 20;
-        long cKB = 1L << 10;
-        int value = 0;
-        String unit = null;
-
-        if (size >= 2 * cTB) {
-            value = (int) (size / cTB);
-            unit = "TB";
-        } else if (size >= 2 * cGB) {
-            value = (int) (size / cGB);
-            unit = "GB";
-        } else if (size >= 2 * cMB) {
-            value = (int) (size / cMB);
-            unit = "MB";
-        } else if (size >= 2 * cKB) {
-            value = (int) (size / cKB);
-            unit = "KB";
-        } else {
-            value = (int) size;
-            unit = "B";
-        }
-
-        return value + unit;
-    }
-
 
     /* Calculates 'x' modulo 'mod', takes to consideration sign of x,
      * i.e. if 'x' is negative, than 'x' % 'mod' is negative too

@@ -7,10 +7,9 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.memory.unsafe.Platform;
-import com.actiontech.dble.memory.unsafe.utils.JavaUtils;
 import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.StringUtil;
 
@@ -65,9 +64,9 @@ public final class ShowDirectMemory {
         long totalAvailable = Platform.getMaxDirectMemory();
         long poolSize = BufferPoolManager.getBufferPool().capacity();
         long used = poolSize - BufferPoolManager.getBufferPool().size();
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable), service.getCharset().getResults()));
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(poolSize), service.getCharset().getResults()));
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(used), service.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(totalAvailable), service.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(poolSize), service.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(used), service.getCharset().getResults()));
         // write rows
         byte packetId = TOTAL_EOF.getPacketId();
         row.setPacketId(++packetId);
@@ -79,6 +78,27 @@ public final class ShowDirectMemory {
 
 
         lastEof.write(buffer, service);
+    }
+
+
+    /*
+    convert byte to string present( KB/B)
+    this method is not universal. only used for show @@directmemory.
+     */
+    private static String bytesToString(long size) {
+        long cKB = 1L << 10;
+        long value = 0;
+        String unit = null;
+
+        if (size >= cKB) {
+            value = (size / cKB);
+            unit = "KB";
+        } else {
+            value = size;
+            unit = "B";
+        }
+
+        return value + unit;
     }
 
 }

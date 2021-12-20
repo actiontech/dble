@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandler {
 
-    protected static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
     private final RouteResultsetNode node;
     protected final RouteResultset rrs;

@@ -12,6 +12,8 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,6 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by szf on 2019/12/3.
  */
 public class SingleNodeDDLHandler extends SingleNodeHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeDDLHandler.class);
 
     private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
@@ -73,33 +77,28 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, session.getSource());
 
-            lock.lock();
-            try {
-                //handleSpecial
-                boolean metaInited = handleSpecial(rrs, true);
-                if (!metaInited) {
-                    DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with meta failure");
-                    executeMetaDataFailed(conn);
-                    return;
-                } else {
-                    DDLTraceManager.getInstance().endDDL(session.getSource(), null);
-                    ServerConnection source = session.getSource();
-                    OkPacket ok = new OkPacket();
-                    ok.read(data);
-                    ok.setPacketId(++packetId); // OK_PACKET
-                    ok.setMessage(null);
-                    ok.setServerStatus(source.isAutocommit() ? 2 : 1);
-                    source.setLastInsertId(ok.getInsertId());
-                    session.setBackendResponseEndTime((MySQLConnection) conn);
-                    session.releaseConnectionIfSafe(conn, false);
-                    session.setResponseTime(true);
-                    session.multiStatementPacket(ok, packetId);
-                    if (writeToClient.compareAndSet(false, true)) {
-                        handleEndPacket(ok.toBytes(), true);
-                    }
+            //handleSpecial
+            boolean metaInited = handleSpecial(rrs, true);
+            if (!metaInited) {
+                DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with meta failure");
+                executeMetaDataFailed(conn);
+                return;
+            } else {
+                DDLTraceManager.getInstance().endDDL(session.getSource(), null);
+                ServerConnection source = session.getSource();
+                OkPacket ok = new OkPacket();
+                ok.read(data);
+                ok.setPacketId(++packetId); // OK_PACKET
+                ok.setMessage(null);
+                ok.setServerStatus(source.isAutocommit() ? 2 : 1);
+                source.setLastInsertId(ok.getInsertId());
+                session.setBackendResponseEndTime((MySQLConnection) conn);
+                session.releaseConnectionIfSafe(conn, false);
+                session.setResponseTime(true);
+                session.multiStatementPacket(ok, packetId);
+                if (writeToClient.compareAndSet(false, true)) {
+                    handleEndPacket(ok.toBytes(), true);
                 }
-            } finally {
-                lock.unlock();
             }
         }
     }

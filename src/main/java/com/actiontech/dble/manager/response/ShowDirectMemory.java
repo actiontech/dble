@@ -9,7 +9,6 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.memory.unsafe.Platform;
-import com.actiontech.dble.memory.unsafe.utils.JavaUtils;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -68,9 +67,9 @@ public final class ShowDirectMemory {
         long totalAvailable = Platform.getMaxDirectMemory();
         long poolSize = BufferPoolManager.getBufferPool().capacity();
         long used = poolSize - BufferPoolManager.getBufferPool().size();
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable), c.getCharset().getResults()));
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(poolSize), c.getCharset().getResults()));
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(used), c.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(totalAvailable), c.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(poolSize), c.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(used), c.getCharset().getResults()));
         // write rows
         byte packetId = TOTAL_EOF.getPacketId();
         row.setPacketId(++packetId);
@@ -83,6 +82,27 @@ public final class ShowDirectMemory {
 
         // write buffer
         c.write(buffer);
+    }
+
+
+    /*
+    convert byte to string present( KB/B)
+    this method is not universal. only used for show @@directmemory.
+     */
+    private static String bytesToString(long size) {
+        long cKB = 1L << 10;
+        long value = 0;
+        String unit = null;
+
+        if (size >= cKB) {
+            value = (size / cKB);
+            unit = "KB";
+        } else {
+            value = size;
+            unit = "B";
+        }
+
+        return value + unit;
     }
 
 }

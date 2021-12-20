@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.memory.unsafe.Platform;
-import com.actiontech.dble.memory.unsafe.utils.JavaUtils;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -113,7 +112,7 @@ public final class ShowDirectMemory {
             row.add(StringUtil.encode(String.valueOf(entry.getKey()), c.getCharset().getResults()));
             /* DIRECT_MEMORY belong to Buffer Pool */
             row.add(StringUtil.encode("NetWorkBufferPool", c.getCharset().getResults()));
-            row.add(StringUtil.encode(value > 0 ? JavaUtils.bytesToString2(value) : "0", c.getCharset().getResults()));
+            row.add(StringUtil.encode(value > 0 ? bytesToString(value) : "0", c.getCharset().getResults()));
 
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
@@ -151,13 +150,13 @@ public final class ShowDirectMemory {
 
         /* the value of -XX:MaxDirectMemorySize */
         long totalAvailable = Platform.getMaxDirectMemory();
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable), c.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(totalAvailable), c.getCharset().getResults()));
         /* IO packet used in DirectMemory in buffer pool */
         for (Map.Entry<Long, Long> entry : networkBufferPool.entrySet()) {
             usedForNetwork += entry.getValue();
         }
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(usedForNetwork), c.getCharset().getResults()));
-        row.add(StringUtil.encode(JavaUtils.bytesToString2(totalAvailable - usedForNetwork), c.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(usedForNetwork), c.getCharset().getResults()));
+        row.add(StringUtil.encode(bytesToString(totalAvailable - usedForNetwork), c.getCharset().getResults()));
 
         // write rows
         byte packetId = TOTAL_EOF.getPacketId();
@@ -174,5 +173,25 @@ public final class ShowDirectMemory {
 
     }
 
+
+    /*
+    convert byte to string present( KB/B)
+    this method is not universal. only used for show @@directmemory.
+     */
+    private static String bytesToString(long size) {
+        long cKB = 1L << 10;
+        long value = 0;
+        String unit = null;
+
+        if (size >= cKB) {
+            value = (size / cKB);
+            unit = "KB";
+        } else {
+            value = size;
+            unit = "B";
+        }
+
+        return value + unit;
+    }
 
 }

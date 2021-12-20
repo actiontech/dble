@@ -38,12 +38,22 @@ public class AIOSocketWR extends SocketWR {
     }
 
     @Override
-    public void asyncRead() {
-        ByteBuffer theBuffer = con.findReadBuffer();
-        if (theBuffer.hasRemaining()) {
-            channel.read(theBuffer, this, AIO_READ_HANDLER);
-        } else {
-            throw new IllegalArgumentException("full buffer to read ");
+    public void asyncRead() throws IOException {
+        if (con.isClosed()) {
+            throw new IOException("read from closed channel cause error");
+        }
+        try {
+            ByteBuffer theBuffer = con.findReadBuffer();
+            if (theBuffer.hasRemaining()) {
+                channel.read(theBuffer, this, AIO_READ_HANDLER);
+            } else {
+                throw new IllegalArgumentException("full buffer to read ");
+            }
+        } finally {
+            //prevent  asyncClose and read operation happened Concurrently.
+            if (con.isClosed() && con.getReadBuffer() != null) {
+                con.recycleReadBuffer();
+            }
         }
 
     }

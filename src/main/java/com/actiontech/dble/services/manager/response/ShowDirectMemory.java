@@ -82,30 +82,19 @@ public final class ShowDirectMemory {
 
 
     /*
-    convert byte to string present( KB/MB/GB)
+    convert byte to string present( KB/B)
     this method is not universal. only used for show @@directmemory.
      */
     private static String bytesToString(long size) {
-        long cTB = 1L << 40;
-        long cGB = 1L << 30;
-        long cMB = 1L << 20;
         long cKB = 1L << 10;
-        int value = 0;
+        long value = 0;
         String unit = null;
 
-        if (size >= cTB) {
-            value = (int) (size / cGB);
-            unit = "GB";
-        } else if (size >= cGB) {
-            value = (int) (size / cMB);
-            unit = "MB";
-
-        } else if (size >= cKB) {
-            //1KB->1GB are shown as KB
-            value = (int) (size / cKB);
+        if (size >= cKB) {
+            value = (size / cKB);
             unit = "KB";
         } else {
-            value = (int) size;
+            value = size;
             unit = "B";
         }
 

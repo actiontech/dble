@@ -24,6 +24,7 @@
             UTF-8
         </project.build.sourceEncoding>
         <grpc.version>1.5.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
+        <log4j2.version>2.17.0</log4j2.version>
     </properties>
     <repositories>
         <repository>
@@ -139,17 +140,17 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.13.1</version>
+            <version>${log4j2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.13.1</version>
+            <version>${log4j2.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-1.2-api</artifactId>
-            <version>2.13.1</version>
+            <version>${log4j2.version}</version>
         </dependency>
         <dependency>
             <groupId>com.univocity</groupId>

@@ -202,5 +202,4 @@
 #-DinSubQueryTransformToJoin=false
 #For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
 #-DrwStickyTime=1000
-#-DuseHintStrategyNestLoop=false
-#-DuseNewNestLoop=false
+#-DalwaysTryNestLoop=false

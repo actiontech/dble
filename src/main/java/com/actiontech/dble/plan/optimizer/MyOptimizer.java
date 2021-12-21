@@ -74,14 +74,13 @@ public final class MyOptimizer {
                 LimitPusher.optimize(node);
 
                 node = SelectedProcessor.optimize(node);
-
-                boolean useJoinStrategy = SystemConfig.getInstance().isUseJoinStrategy();
-                if (SystemConfig.getInstance().isUseHintStrategyNestLoop()) {
+                if (!hintPlanInfo.isEmpty()) {
                     HintStrategyProcessor.optimize(node, hintPlanInfo);
-                } else if (SystemConfig.getInstance().isUseNewNestLoop()) {
-                    JoinStrategyProcessor.newOptimize(node);
-                } else if (useJoinStrategy) {
-                    JoinStrategyProcessor.optimize(node);
+                }
+                if (SystemConfig.getInstance().isAlwaysTryNestLoop()) {
+                    JoinStrategyProcessor.optimize(node, true);
+                } else if (SystemConfig.getInstance().isUseJoinStrategy()) {
+                    JoinStrategyProcessor.optimize(node, false);
                 }
             }
             return node;

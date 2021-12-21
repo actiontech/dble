@@ -108,8 +108,7 @@ public final class SystemConfig {
 
     // join Optimizer
     private boolean useNewJoinOptimizer = false;
-    private boolean useHintStrategyNestLoop = false;
-    private boolean useNewNestLoop = false;
+    private boolean alwaysTryNestLoop = false;
 
     //query memory used for per session,unit is M
     private int otherMemSize = 4;
@@ -385,20 +384,12 @@ public final class SystemConfig {
         this.useNewJoinOptimizer = useNewJoinOptimizer;
     }
 
-    public boolean isUseHintStrategyNestLoop() {
-        return useHintStrategyNestLoop;
+    public boolean isAlwaysTryNestLoop() {
+        return alwaysTryNestLoop;
     }
 
-    public void setUseHintStrategyNestLoop(boolean useHintStrategyNestLoop) {
-        this.useHintStrategyNestLoop = useHintStrategyNestLoop;
-    }
-
-    public boolean isUseNewNestLoop() {
-        return useNewNestLoop;
-    }
-
-    public void setUseNewNestLoop(boolean useNewNestLoop) {
-        this.useNewNestLoop = useNewNestLoop;
+    public void setAlwaysTryNestLoop(boolean alwaysTryNestLoop) {
+        this.alwaysTryNestLoop = alwaysTryNestLoop;
     }
 
     public String getXaRecoveryLogBaseDir() {
@@ -1565,6 +1556,7 @@ public final class SystemConfig {
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
+                ", alwaysTryNestLoop=" + alwaysTryNestLoop +
                 "]";
     }
 }

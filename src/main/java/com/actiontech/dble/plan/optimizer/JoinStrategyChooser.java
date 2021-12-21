@@ -24,18 +24,27 @@ public class JoinStrategyChooser {
         nodeMap = new HashMap<>();
     }
 
+    public void tryNestLoop(boolean always) {
+        if (always) {
+            unConditionNestLoop();
+        } else {
+            conditionNestLoop();
+        }
+    }
+
     /**
-     * tryNestLoop
+     * conditionNestLoop
      *
      * @return boolean true:join can use the nest loop optimization,will not try to optimizer join's child
      * false:join can't use the nest loop optimization,try to optimizer join's child
      */
-    public boolean tryNestLoop() {
-        if (jn.isNotIn()) {
+    public boolean conditionNestLoop() {
+        if (jn.getLeftNode().type() != PlanNode.PlanNodeType.TABLE && jn.getRightNode().type() != PlanNode.PlanNodeType.TABLE) {
             return false;
         }
-        if (jn.getJoinFilter().isEmpty())
+        if (jn.isNotIn() || jn.getJoinFilter().isEmpty()) {
             return false;
+        }
         if (jn.isInnerJoin()) {
             return tryInnerJoinNestLoop();
         } else if (jn.getLeftOuter()) {
@@ -96,7 +105,7 @@ public class JoinStrategyChooser {
         return tn.getWhereFilter() != null;
     }
 
-    public void nestLoop() {
+    public void unConditionNestLoop() {
         buildNodeMap(jn);
         traverseNode(jn);
     }
@@ -163,5 +172,6 @@ public class JoinStrategyChooser {
     public boolean canDoAsMerge(JoinNode joinNode) {
         return PlanUtil.isGlobalOrER(joinNode);
     }
+
 
 }

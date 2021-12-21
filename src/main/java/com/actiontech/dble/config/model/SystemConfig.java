@@ -160,6 +160,7 @@ public final class SystemConfig {
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
     //errors
     private ProblemReporter problemReporter;
+    private boolean closeHeartBeatRecord = false;
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -1264,7 +1265,15 @@ public final class SystemConfig {
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
                 ", xaRetryCount=" + xaRetryCount +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
     }
 
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
+    }
 }

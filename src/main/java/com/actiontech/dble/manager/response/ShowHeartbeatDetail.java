@@ -90,12 +90,12 @@ public final class ShowHeartbeatDetail {
 
         // write rows
         byte packetId = EOF.getPacketId();
-
-        for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, c, true);
+        if (!DbleServer.getInstance().getConfig().getSystem().isCloseHeartBeatRecord()) {
+            for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
         }
-
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);

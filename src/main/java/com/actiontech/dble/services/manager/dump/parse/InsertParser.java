@@ -106,7 +106,7 @@ public class InsertParser {
     private void parseColumnNameList(InsertQueryPos insertQueryPos) {
         int i = 0;
         while (true) {
-            String colName = lexer.token().name;
+            String colName = lexer.stringVal();
             insertQueryPos.getColNameIndexMap().put(colName, i);
             insertQueryPos.getColumns().add(colName);
             lexer.nextToken();

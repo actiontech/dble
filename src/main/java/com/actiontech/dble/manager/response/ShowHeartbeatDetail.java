@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -90,12 +91,12 @@ public final class ShowHeartbeatDetail {
 
         // write rows
         byte packetId = EOF.getPacketId();
-
-        for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, c, true);
+        if (!SystemConfig.getInstance().isCloseHeartBeatRecord()) {
+            for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
         }
-
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);

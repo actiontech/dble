@@ -98,6 +98,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             reactor.postRegister(c);
 
         } catch (Exception e) {
+            //if this exception is "SocketException: Invalid argument." , maybe you are doing setOption when the frontendConnection was closed by peer. In most of those cases , you are using SLB/LVS on MACOS, just ignore it.
             LOGGER.info(getName(), e);
             closeChannel(channel);
         }

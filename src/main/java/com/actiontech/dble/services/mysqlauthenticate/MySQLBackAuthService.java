@@ -330,4 +330,9 @@ public class MySQLBackAuthService extends AuthService {
             this.handler.connectionClose(this, "abnormal connection");
         }
     }
+
+    @Override
+    public boolean haveNotReceivedMessage() {
+        throw new UnsupportedOperationException();
+    }
 }

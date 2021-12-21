@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.statistic;
 
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,10 @@ public class DbInstanceSyncRecorder {
         this.asyncRecords = new LinkedList<>();
     }
 
-    public String get() {
-        return records.toString();
-    }
     public void setBySlaveStatus(Map<String, String> resultResult) {
+        if (SystemConfig.getInstance().isCloseHeartBeatRecord()) {
+            return;
+        }
         long time = TimeUtil.currentTimeMillis();
         try {
             remove(time);

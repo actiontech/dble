@@ -34,6 +34,7 @@ import com.alibaba.druid.sql.parser.ParserException;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 
 public final class ManagerTableUtil {
@@ -134,16 +135,25 @@ public final class ManagerTableUtil {
         if (null == sql)
             return Collections.EMPTY_LIST;
 
-        DbleHintParser.HintInfo hintInfo = DbleHintParser.parse(sql);
-        if (hintInfo != null) {
-            sql = hintInfo.getRealSql();
+        String realSql = sql;
+        try {
+            DbleHintParser.HintInfo hintInfo = DbleHintParser.parse(sql);
+            if (hintInfo != null) {
+                realSql = hintInfo.getRealSql();
+            }
+        } catch (SQLSyntaxErrorException e) {
+            // ignore
+            realSql = sql;
         }
+
+
         SQLStatement sqlStatement;
         try {
-            sqlStatement = new MySqlStatementParser(sql).parseStatement();
+
+            sqlStatement = new MySqlStatementParser(realSql).parseStatement();
         } catch (ParserException e) {
             // ignore
-            return new ArrayList<>();
+            return Collections.EMPTY_LIST;
         }
         MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
         sqlStatement.accept(visitor);

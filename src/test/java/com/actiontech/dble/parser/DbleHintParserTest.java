@@ -9,13 +9,15 @@ import com.actiontech.dble.route.parser.DbleHintParser;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.sql.SQLSyntaxErrorException;
+
 /**
  * @author mycat
  */
 public class DbleHintParserTest {
 
     @Test
-    public void testDbleHint() {
+    public void testDbleHint() throws SQLSyntaxErrorException {
 
         DbleHintParser.HintInfo hintInfo;
         hintInfo = DbleHintParser.parse("/*!dble:sql  =   select * from sbtest */ call p_show_time()");
@@ -61,18 +63,32 @@ public class DbleHintParserTest {
         Assert.assertEquals("a&b&c$inner2left$in2join", hintInfo.getHintValue());
         Assert.assertEquals("sss", hintInfo.getRealSql());
 
-        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url=127.0.0.1:3307 *");
+        hintInfo = DbleHintParser.parse("/ * 127.0.0.1:3307 */ sss");
         Assert.assertNull(hintInfo);
 
-        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url     */");
-        Assert.assertNull(hintInfo);
+        try {
+            DbleHintParser.parse("/*!dble:db_instance_url=127.0.0.1:3307 *");
+        } catch (Exception ex) {
+            Assert.assertTrue(ex.getMessage().contains("please following the dble hint syntax"));
+        }
 
-        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url 127.0.0.1:3307 */");
-        Assert.assertNull(hintInfo);
+        try {
+            DbleHintParser.parse("/*!dble:db_instance_url     */");
+        } catch (Exception ex) {
+            Assert.assertTrue(ex.getMessage().contains("please following the dble hint syntax"));
+        }
+
+        try {
+            DbleHintParser.parse("/*#dble:plan a&b */");
+        } catch (Exception ex) {
+            Assert.assertTrue(ex.getMessage().contains("please following the dble hint syntax"));
+        }
+
+
     }
 
     @Test
-    public void testUproxyHint() {
+    public void testUproxyHint() throws SQLSyntaxErrorException {
         DbleHintParser.HintInfo hintInfo;
         hintInfo = DbleHintParser.parseRW("insert into test values/* master */ (11111)");
         Assert.assertNotNull(hintInfo);

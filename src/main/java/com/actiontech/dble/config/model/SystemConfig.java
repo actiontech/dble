@@ -174,6 +174,8 @@ public final class SystemConfig {
     private boolean useOuterHa = true;
     private String traceEndPoint = null;
     private String fakeMySQLVersion = "5.7.21";
+    private int enableRoutePenetration = 0;
+    private String routePenetrationRules = "";
 
     private int enableStatistic = 0;
     private int associateTablesByEntryByUserTableSize = 1024;
@@ -1370,6 +1372,27 @@ public final class SystemConfig {
         }
     }
 
+
+    public int isEnableRoutePenetration() {
+        return enableRoutePenetration;
+    }
+
+    public void setEnableRoutePenetration(int enableRoutePenetrationTmp) {
+        if (enableRoutePenetrationTmp >= 0 && enableRoutePenetrationTmp <= 1) {
+            this.enableRoutePenetration = enableRoutePenetrationTmp;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableRoutePenetration", enableRoutePenetrationTmp, this.enableRoutePenetration));
+        }
+    }
+
+    public String getRoutePenetrationRules() {
+        return routePenetrationRules;
+    }
+
+    public void setRoutePenetrationRules(String sqlPenetrationRegexesTmp) {
+        routePenetrationRules = sqlPenetrationRegexesTmp;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1466,6 +1489,8 @@ public final class SystemConfig {
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
+                ", enableRoutePenetration=" + enableRoutePenetration +
+                ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 "]";
     }
 

@@ -153,6 +153,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.isUseOuterHa() + "");
         paramValues.add(sysConfig.isEnableRoutePenetration() + "");
         paramValues.add(sysConfig.getRoutePenetrationRules() + "");
+        paramValues.add(sysConfig.isCloseHeartBeatRecord() + "");
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
@@ -255,6 +256,7 @@ public final class ShowSysParam {
             "useOuterHa",
             "enableRoutePenetration",
             "routePenetrationRules",
+            "closeHeartBeatRecord",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -340,6 +342,7 @@ public final class ShowSysParam {
             "Whether use outer ha component ",
             "Whether enable route penetration",
             "The config of route penetration",
+            "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

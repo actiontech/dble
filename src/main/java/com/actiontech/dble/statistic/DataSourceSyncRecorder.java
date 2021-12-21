@@ -1,10 +1,11 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.statistic;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,10 @@ public class DataSourceSyncRecorder {
         this.asyncRecords = new LinkedList<>();
     }
 
-    public String get() {
-        return records.toString();
-    }
     public void setBySlaveStatus(Map<String, String> resultResult) {
+        if (DbleServer.getInstance().getConfig().getSystem().isCloseHeartBeatRecord()) {
+            return;
+        }
         long time = TimeUtil.currentTimeMillis();
         try {
             remove(time);
@@ -65,7 +66,7 @@ public class DataSourceSyncRecorder {
             remove(time);
             if (resultResult != null && !resultResult.isEmpty()) {
                 this.records = resultResult;
-                double wsrepLocalRecQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
+                double wsrepLocalRecQueueAvg = Double.parseDouble(resultResult.get("wsrep_local_recv_queue_avg"));
                 this.asyncRecords.add(new Record(time, wsrepLocalRecQueueAvg));
             }
         } catch (Exception e) {
@@ -88,6 +89,7 @@ public class DataSourceSyncRecorder {
             }
         }
     }
+
     public Map<String, String> getRecords() {
         return this.records;
     }

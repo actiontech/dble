@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.statistic;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +40,17 @@ public class HeartbeatRecorder {
     }
 
     public String get() {
-        return String.valueOf(avg1) + ',' + avg2 + ',' + avg3;
+        if (DbleServer.getInstance().getConfig().getSystem().isCloseHeartBeatRecord()) {
+            return "-";
+        } else {
+            return String.valueOf(avg1) + ',' + avg2 + ',' + avg3;
+        }
     }
 
     public void set(long value) {
+        if (DbleServer.getInstance().getConfig().getSystem().isCloseHeartBeatRecord()) {
+            return;
+        }
         try {
             long time = TimeUtil.currentTimeMillis();
             if (value < 0) {

@@ -167,6 +167,8 @@ public final class SystemConfig {
 
     private int enableRoutePenetration = 0;
     private String routePenetrationRules = "";
+    private boolean closeHeartBeatRecord = false;
+
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -1312,7 +1314,15 @@ public final class SystemConfig {
                 ", xaRetryCount=" + xaRetryCount +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
     }
 
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
+    }
 }

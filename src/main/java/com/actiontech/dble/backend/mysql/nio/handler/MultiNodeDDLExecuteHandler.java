@@ -26,12 +26,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
  */
 public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements LoadDataResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
+
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session, true);
@@ -100,7 +103,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
             }
             errConnection.add(conn);
             if (decrementToZero(conn)) {
-                session.handleSpecial(rrs, false, getDDLErrorInfo());
+                handleSpecial(rrs, false, getDDLErrorInfo());
                 DDLTraceManager.getInstance().endDDL(session.getSource(), getDDLErrorInfo());
                 packetId++;
                 if (byteBuffer != null) {
@@ -174,12 +177,12 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
                     return;
                 if (isFail()) {
                     DDLTraceManager.getInstance().endDDL(source, "ddl end with execution failure");
-                    session.handleSpecial(rrs, false);
+                    handleSpecial(rrs, false, null);
                     session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), false);
                 } else {
                     DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
-                    boolean metaInited = session.handleSpecial(rrs, true);
+                    boolean metaInited = handleSpecial(rrs, true, null);
                     if (!metaInited) {
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");
                         executeMetaDataFailed();
@@ -247,7 +250,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         }
         errConnection.add(conn);
         if (canResponse()) {
-            session.handleSpecial(rrs, false);
+            handleSpecial(rrs, false, null);
             DDLTraceManager.getInstance().endDDL(session.getSource(), new String(err.getMessage()));
             packetId++;
             if (byteBuffer == null) {
@@ -272,12 +275,20 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         return s.toString();
     }
 
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess, String errInfo) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, errInfo);
+        }
+        return true;
+    }
+
 
     private void handleEndPacket(byte[] data, boolean isSuccess) {
         session.clearResources(false);
         session.setResponseTime(isSuccess);
         session.getSource().write(data);
-        session.multiStatementNextSql(session.getIsMultiStatement().get());
+        if (isSuccess)
+            session.multiStatementNextSql(session.getIsMultiStatement().get());
     }
 
 }

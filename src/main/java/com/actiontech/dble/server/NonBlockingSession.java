@@ -531,7 +531,7 @@ public class NonBlockingSession implements Session {
             discard = true;
         } catch (Exception e) {
             singleNodeHandler.recycleBuffer();
-            handleSpecial(rrs, false);
+            handleSpecial(rrs, false, null);
             LOGGER.info(String.valueOf(source) + rrs, e);
             if (this.getSessionXaID() != null) {
                 this.xaState = TxState.TX_INITIALIZE_STATE;
@@ -1033,13 +1033,6 @@ public class NonBlockingSession implements Session {
         source.getAndIncrementXid();
     }
 
-    public void clearResources(RouteResultset rrs) {
-        clearResources(true);
-        if (rrs.getSqlType() == DDL) {
-            this.handleSpecial(rrs, false);
-        }
-    }
-
     public boolean closed() {
         return source.isClosed();
     }
@@ -1107,29 +1100,23 @@ public class NonBlockingSession implements Session {
         return isAllRelease;
     }
 
-    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess) {
-        if (rrs.getSchema() != null) {
-            return handleSpecial(rrs, isSuccess, null);
-        } else {
-            if (rrs.getSqlType() == ServerParse.DDL) {
-                LOGGER.info("Hint ddl do not update the meta");
-            }
-            return true;
-        }
-    }
-
     public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
-        if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
-            String sql = rrs.getSrcStatement();
-            if (source.isTxStart()) {
-                source.setTxStart(false);
-                source.getAndIncrementXid();
+        if (rrs.getSqlType() == ServerParse.DDL) {
+            if (rrs.getSchema() == null) {
+                LOGGER.info("Hint ddl do not update the meta");
+                return true;
+            } else {
+                String sql = rrs.getSrcStatement();
+                if (source.isTxStart()) {
+                    source.setTxStart(false);
+                    source.getAndIncrementXid();
+                }
+                if (!isSuccess) {
+                    LOGGER.warn("DDL execute failed or Session closed, " +
+                            "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+                }
+                return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
             }
-            if (!isSuccess) {
-                LOGGER.warn("DDL execute failed or Session closed, " +
-                        "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
-            }
-            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
         }
         return true;
     }

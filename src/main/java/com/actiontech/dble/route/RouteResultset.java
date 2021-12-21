@@ -71,6 +71,8 @@ public final class RouteResultset implements Serializable {
 
     private Map<String, List<LoadDataRouteResultsetNode>> multiRouteResultSetNodeMap;
 
+    private boolean routePenetration = false;
+
     private boolean isForUpdate = false;
 
     private boolean enableLoadDataFlag = false;
@@ -110,6 +112,13 @@ public final class RouteResultset implements Serializable {
         this.runOnSlave = runOnSlave;
     }
 
+    public boolean isRoutePenetration() {
+        return routePenetration;
+    }
+
+    public void setRoutePenetration(boolean routePenetration) {
+        this.routePenetration = routePenetration;
+    }
 
     public boolean isLoadData() {
         return isLoadData;

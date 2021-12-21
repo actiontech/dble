@@ -185,6 +185,9 @@ public final class SystemConfig {
     private int samplingRate = 0;
     private int sqlLogTableSize = 1024;
 
+
+    private boolean closeHeartBeatRecord = false;
+
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1462,6 +1465,15 @@ public final class SystemConfig {
                 ", frontendByBackendByEntryByUserTableSize=" + frontendByBackendByEntryByUserTableSize +
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
+    }
+
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
     }
 }

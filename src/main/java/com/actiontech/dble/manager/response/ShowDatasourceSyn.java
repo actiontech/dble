@@ -103,10 +103,11 @@ public final class ShowDatasourceSyn {
 
         // write rows
         byte packetId = EOF.getPacketId();
-
-        for (RowDataPacket row : getRows(c.getCharset().getResults())) {
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, c, true);
+        if (!DbleServer.getInstance().getConfig().getSystem().isCloseHeartBeatRecord()) {
+            for (RowDataPacket row : getRows(c.getCharset().getResults())) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
         }
 
         // write last eof

@@ -162,6 +162,7 @@ public final class SystemConfig {
     //errors
     private ProblemReporter problemReporter;
     private boolean useOuterHa = false;
+    private boolean closeHeartBeatRecord = false;
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -1289,7 +1290,15 @@ public final class SystemConfig {
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
                 ", xaRetryCount=" + xaRetryCount +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
     }
 
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
+    }
 }

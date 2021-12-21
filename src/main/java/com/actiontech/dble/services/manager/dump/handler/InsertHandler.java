@@ -114,7 +114,7 @@ public class InsertHandler extends DefaultHandler {
         if (tableConfig.getIncrementColumn() != null || tableConfig.getShardingColumn() != null) {
             if (!CollectionUtil.isEmpty(columns)) {
                 for (int i = 0; i < columns.size(); i++) {
-                    String columnName = columns.get(i);
+                    String columnName = StringUtil.removeBackQuote(columns.get(i));
                     if (tableConfig.getIncrementColumn() != null && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }

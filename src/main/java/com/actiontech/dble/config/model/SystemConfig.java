@@ -203,9 +203,13 @@ public final class SystemConfig {
     // For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
     private long rwStickyTime = 1000;
 
+
+    private boolean closeHeartBeatRecord = false;
+
     public int getSamplingRate() {
         return samplingRate;
     }
+
     @SuppressWarnings("unused")
     public void setSamplingRate(int samplingRate) {
         if (samplingRate >= 0 && samplingRate <= 100) {
@@ -1548,6 +1552,15 @@ public final class SystemConfig {
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
+    }
+
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
     }
 }

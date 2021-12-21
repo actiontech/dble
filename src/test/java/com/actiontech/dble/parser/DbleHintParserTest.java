@@ -63,17 +63,28 @@ public class DbleHintParserTest {
         Assert.assertEquals("a&b&c$inner2left$in2join", hintInfo.getHintValue());
         Assert.assertEquals("sss", hintInfo.getRealSql());
 
-        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url=127.0.0.1:3307 *");
-        Assert.assertNull(hintInfo);
-
-        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url     */");
-        Assert.assertNull(hintInfo);
-
-        hintInfo = DbleHintParser.parse("/*!dble:db_instance_url 127.0.0.1:3307 */");
-        Assert.assertNull(hintInfo);
-
         hintInfo = DbleHintParser.parse("/ * 127.0.0.1:3307 */ sss");
         Assert.assertNull(hintInfo);
+
+        try {
+            DbleHintParser.parse("/*!dble:db_instance_url=127.0.0.1:3307 *");
+        } catch (Exception ex) {
+            Assert.assertTrue(ex.getMessage().contains("please following the dble hint syntax"));
+        }
+
+        try {
+            DbleHintParser.parse("/*!dble:db_instance_url     */");
+        } catch (Exception ex) {
+            Assert.assertTrue(ex.getMessage().contains("please following the dble hint syntax"));
+        }
+
+        try {
+            DbleHintParser.parse("/*#dble:plan a&b */");
+        } catch (Exception ex) {
+            Assert.assertTrue(ex.getMessage().contains("please following the dble hint syntax"));
+        }
+
+
     }
 
     @Test

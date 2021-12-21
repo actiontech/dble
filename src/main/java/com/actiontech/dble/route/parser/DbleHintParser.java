@@ -187,7 +187,7 @@ public final class DbleHintParser {
             if (c1 == 'L' || c1 == 'l') {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    throw new SQLSyntaxErrorException("please following dble hint the syntax: /*!" + Versions.ANNOTATION_NAME + "sql=? */ sql");
+                    throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "sql=? */ sql");
                 } else {
                     return (offset << 8) | SQL;
                 }
@@ -205,7 +205,7 @@ public final class DbleHintParser {
                     (c3 == 'E' || c3 == 'e')) {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    throw new SQLSyntaxErrorException("please following dble hint the syntax: /*!" + Versions.ANNOTATION_NAME + "db_type=master|slave */ sql");
+                    throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "db_type=master|slave */ sql");
                 } else {
                     return (offset << 8) | DB_TYPE;
                 }
@@ -253,7 +253,7 @@ public final class DbleHintParser {
                     (c3 == 'N' || c3 == 'n')) {
                 offset = ParseUtil.skipSpaceUtil(stmt, ++offset, '=');
                 if (offset == -1) {
-                    throw new SQLSyntaxErrorException("please following dble hint the syntax: /*!" + Versions.ANNOTATION_NAME + "plan=? */ sql");
+                    throw new SQLSyntaxErrorException("please following the dble hint syntax: /*!" + Versions.ANNOTATION_NAME + "plan=? */ sql");
                 } else {
                     return (offset << 8) | PLAN;
                 }

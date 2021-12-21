@@ -195,6 +195,9 @@ public final class SystemConfig {
     //use groupConcatMaxLen
     private int groupConcatMaxLen = 1024;
 
+
+    private boolean closeHeartBeatRecord = false;
+
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1509,6 +1512,15 @@ public final class SystemConfig {
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
+    }
+
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
     }
 }

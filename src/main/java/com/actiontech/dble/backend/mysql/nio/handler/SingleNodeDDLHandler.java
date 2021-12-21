@@ -152,7 +152,6 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
-
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
                     buffer = source.writeToBuffer(errPkg.toBytes(), buffer);

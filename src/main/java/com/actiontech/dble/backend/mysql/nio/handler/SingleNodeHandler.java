@@ -159,33 +159,32 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
+        ServerConnection source = session.getSource();
+        String errUser = source.getUser();
+        String errHost = source.getHost();
+        int errPort = source.getLocalPort();
+
+        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
+                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+
+        if (conn.isClosed()) {
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
+        } else if (syncFinished) {
+            session.releaseConnectionIfSafe(conn, false);
+        } else {
+            conn.closeWithoutRsp("unfinished sync");
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
+        }
+        source.setTxInterrupt(errMsg);
         lock.lock();
         try {
-            ServerConnection source = session.getSource();
-            String errUser = source.getUser();
-            String errHost = source.getHost();
-            int errPort = source.getLocalPort();
-
-            String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-            LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
-                    " frontend host:" + errHost + "/" + errPort + "/" + errUser);
-
-            if (conn.isClosed()) {
-                if (conn.getAttachment() != null) {
-                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                    session.getTargetMap().remove(rNode);
-                }
-            } else if (syncFinished) {
-                session.releaseConnectionIfSafe(conn, false);
-            } else {
-                conn.closeWithoutRsp("unfinished sync");
-                if (conn.getAttachment() != null) {
-                    RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                    session.getTargetMap().remove(rNode);
-                }
-            }
-            source.setTxInterrupt(errMsg);
-
             if (writeToClient.compareAndSet(false, true)) {
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */

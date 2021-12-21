@@ -165,6 +165,8 @@ public final class SystemConfig {
     private String fakeMySQLVersion = "5.7.21";
     private int enableRoutePenetration = 0;
     private String routePenetrationRules = "";
+    private boolean closeHeartBeatRecord = false;
+
 
     public int getTransactionRotateSize() {
         return transactionRotateSize;
@@ -1290,6 +1292,15 @@ public final class SystemConfig {
                 ", traceEndPoint=" + traceEndPoint +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
+    }
+
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
     }
 }

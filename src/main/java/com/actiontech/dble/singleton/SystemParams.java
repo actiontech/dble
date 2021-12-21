@@ -123,6 +123,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("maxCharsPerColumn", sysConfig.getMaxCharsPerColumn() + "", "The maximum number of characters allowed for per column when load data.The default value is 65535"));
         readOnlyParams.add(new ParamInfo("maxRowSizeToFile", sysConfig.getMaxRowSizeToFile() + "", "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000"));
         readOnlyParams.add(new ParamInfo("traceEndPoint", sysConfig.getTraceEndPoint() + "", "The trace Jaeger server endPoint"));
+        readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
+        readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
 
     }
 

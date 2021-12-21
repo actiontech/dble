@@ -102,8 +102,13 @@ public final class RW implements Runnable {
                             key.cancel();
                             continue;
                         } catch (Exception e) {
-                            LOGGER.warn("caught err:", e);
-                            con.close("program err:" + e.toString());
+                            if ((con.isOnlyFrontTcpConnected() && e instanceof IOException)) {
+                                LOGGER.debug("caught err:", e);
+                                con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
+                            } else {
+                                LOGGER.warn("caught err:", e);
+                                con.close("program err:" + e.toString());
+                            }
                             continue;
                         }
                     }
@@ -148,7 +153,11 @@ public final class RW implements Runnable {
             c.register();
         } catch (Exception e) {
             //todo 确认调用register的时候会发生什么
-            LOGGER.warn("register err", e);
+            if ((c.isOnlyFrontTcpConnected() && e instanceof IOException)) {
+                LOGGER.debug("{} register err", c, e);
+            } else {
+                LOGGER.warn("{} register err", c, e);
+            }
         }
     }
 

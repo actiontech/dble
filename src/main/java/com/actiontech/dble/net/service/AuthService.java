@@ -9,4 +9,7 @@ public interface AuthService {
     default void onConnectFailed(Throwable e) {
     }
 
+
+    boolean haveNotReceivedMessage();
+
 }

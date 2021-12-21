@@ -34,6 +34,7 @@ import static com.actiontech.dble.services.mysqlauthenticate.PluginName.mysql_na
 public class MySQLFrontAuthService extends FrontendService implements AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLFrontAuthService.class);
+    private volatile boolean receivedMessage = false;
 
     private static final PluginName[] MYSQL_DEFAULT_PLUGIN = {mysql_native_password, mysql_native_password, mysql_native_password, caching_sha2_password};
 
@@ -54,6 +55,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
 
     @Override
     public void handleInnerData(byte[] data) {
+        receivedMessage = true;
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "handle-auth-data");
         try {
             this.setPacketId(data[3]);
@@ -263,4 +265,8 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         return null;
     }
 
+    @Override
+    public boolean haveNotReceivedMessage() {
+        return !receivedMessage;
+    }
 }

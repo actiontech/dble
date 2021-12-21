@@ -146,7 +146,7 @@ public final class NIOReactor {
                             } catch (Exception e) {
                                 if ((isOnlyTcpConnected(con) && e instanceof IOException)) {
                                     LOGGER.debug("caught err:", e);
-                                    con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS ." + "detail: [" + e.toString() + "]");
+                                    con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
                                 } else {
                                     LOGGER.warn("caught err:", e);
                                     con.close("program err:" + e.toString());

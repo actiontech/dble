@@ -97,7 +97,7 @@ public class NIOSocketWR extends SocketWR {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("caught err:", e);
             }
-            con.close("connection was closed before first register.may be just a heartbeat from SLB/LVS." + "detail: [" + e.toString() + "]");
+            con.close("connection was closed before first register.may be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
             return false;
         } finally {
             writing.compareAndSet(threadId, NOT_USED);

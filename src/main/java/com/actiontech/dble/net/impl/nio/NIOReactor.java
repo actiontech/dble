@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.impl.nio;
 
 import com.actiontech.dble.DbleServer;
@@ -11,6 +11,8 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,18 @@ public final class NIOReactor {
     void postRegister(AbstractConnection c) {
         reactorR.registerQueue.offer(c);
         reactorR.selector.wakeup();
+    }
+
+
+    /**
+     * heartbeat of SLB/LVS only create an tcp connection and then close it immediately without any data write to dble .
+     *
+     * @param c
+     * @return
+     */
+    private boolean isOnlyTcpConnected(AbstractConnection c) {
+        final AbstractService service = c.getService();
+        return service != null && service instanceof MySQLFrontAuthService && ((MySQLFrontAuthService) service).haveNotReceivedMessage();
     }
 
     private final class RW implements Runnable {
@@ -130,8 +144,13 @@ public final class NIOReactor {
                                 key.cancel();
                                 continue;
                             } catch (Exception e) {
-                                LOGGER.warn("caught err:", e);
-                                con.close("program err:" + e.toString());
+                                if ((isOnlyTcpConnected(con) && e instanceof IOException)) {
+                                    LOGGER.debug("caught err:", e);
+                                    con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS ." + "detail: [" + e.toString() + "]");
+                                } else {
+                                    LOGGER.warn("caught err:", e);
+                                    con.close("program err:" + e.toString());
+                                }
                                 continue;
                             }
                         }
@@ -178,7 +197,11 @@ public final class NIOReactor {
                     } else if (c instanceof MySQLConnection) {
                         ((MySQLConnection) c).onConnectFailed(e);
                     }*/
-                    LOGGER.warn("register err", e);
+                    if ((isOnlyTcpConnected(c) && e instanceof IOException)) {
+                        LOGGER.debug("{} register err", c, e);
+                    } else {
+                        LOGGER.warn("{} register err", c, e);
+                    }
                 }
             }
         }

@@ -133,7 +133,7 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
                     break;
             }
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
+            LOGGER.warn(e.toString(), e);
             onConnectFailed(e);
         }
     }

@@ -64,7 +64,7 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                DDLTraceManager.getInstance().printDDLOutOfLimit();
+                DDLTraceHelper.printDDLOutOfLimit();
             }
         };
     }

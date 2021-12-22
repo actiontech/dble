@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandl
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -27,7 +26,6 @@ import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -55,8 +53,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private long affectedRows;
     long selectRows;
     protected List<MySQLResponseService> errConnection;
-    private long netOutBytes;
-    private long resultSize;
+    protected long netOutBytes;
+    protected long resultSize;
     protected ErrorPacket err;
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
@@ -121,10 +119,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
-    public NonBlockingSession getSession() {
-        return session;
-    }
-
     @Override
     public void execute() throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "execute-for-sql");
@@ -181,8 +175,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void clearAfterFailExecute() {
-        if ((!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart()) &&
-                !(this instanceof MultiNodeDDLExecuteHandler)) {
+        if ((!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart())) {
             session.getShardingService().setTxInterrupt("ROLLBACK");
         }
         waitAllConnConnectorError();
@@ -350,7 +343,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     shardingService.setLastInsertId(insertId);
                 }
-                doSqlStat();
+                QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
                 if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
                     return;
                 }
@@ -560,8 +553,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (service != null && !service.isFakeClosed()) {
             errConnection.add(service);
             if (service.getConnection().isClosed() &&
-                    (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart()) &&
-                    !(this instanceof MultiNodeDDLExecuteHandler)) {
+                    (!session.getShardingService().isAutocommit() || session.getShardingService().isTxStart())) {
                 session.getShardingService().setTxInterrupt(error);
             }
         }
@@ -594,24 +586,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("last packet id:" + (byte) session.getShardingService().getPacketId().get());
         }
         session.setResponseTime(true);
-        doSqlStat();
+        QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
         eofRowPacket.write(byteBuffer, source);
-    }
-
-    void doSqlStat() {
-        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
-            long netInBytes = 0;
-            if (rrs != null && rrs.getStatement() != null) {
-                netInBytes += rrs.getStatement().getBytes().length;
-            }
-            assert rrs != null;
-            QueryResult queryResult = new QueryResult(session.getShardingService().getUser(), rrs.getSqlType(),
-                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("try to record sql:" + rrs.getStatement());
-            }
-            QueryResultDispatcher.dispatchQuery(queryResult);
-        }
     }
 
     private void executeFieldEof(byte[] header, List<byte[]> fields, byte[] eof) {
@@ -728,8 +704,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
 
             // Explicit Distributed Transaction
-            if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation) &&
-                    !(this instanceof MultiNodeDDLExecuteHandler)) {
+            if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
                 service.setTxInterrupt("ROLLBACK");
             }
             session.setResponseTime(isSuccess);

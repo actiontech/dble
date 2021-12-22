@@ -2,8 +2,7 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ExecutableHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.MysqlCreateViewHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.MysqlDropViewHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.DDLHandlerBuilder;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -66,11 +65,7 @@ public class DruidCreateOrReplaceViewParser extends DruidImplicitCommitParser {
 
     public ExecutableHandler visitorParseEnd(RouteResultset rrs, ShardingService service) {
         if (null != isCreate) {
-            if (isCreate) {
-                return new MysqlCreateViewHandler(service.getSession2(), rrs, vm);
-            } else {
-                return new MysqlDropViewHandler(service.getSession2(), rrs, vm);
-            }
+            return DDLHandlerBuilder.buildView(service.getSession2(), rrs, vm);
         }
         return null;
     }

@@ -312,7 +312,7 @@ public class JoinChooser {
                 }
                 continue traversal;
             }
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with wrong hint. please check near the node '" + nextHintNode.getName() + "'");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with this hint. please check near the node '" + nextHintNode.getName() + "'");
 
         }
         if (hintIt.hasNext()) {

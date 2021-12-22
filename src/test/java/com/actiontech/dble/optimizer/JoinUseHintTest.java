@@ -44,7 +44,6 @@ public class JoinUseHintTest extends BaseSqlHintTest {
 
     @Before
     public void setUp() {
-        systemConfig.setUseNewJoinOptimizer(true);
     }
 
 

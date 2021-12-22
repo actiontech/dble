@@ -126,7 +126,7 @@ public class MySQLBackAuthService extends AuthService {
             }
 
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
+            LOGGER.warn(e.toString(), e);
             onConnectFailed(e);
         } finally {
             synchronized (this) {

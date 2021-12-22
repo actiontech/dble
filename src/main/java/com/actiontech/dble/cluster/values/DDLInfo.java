@@ -15,6 +15,7 @@ public class DDLInfo {
         INIT, SUCCESS, FAILED
     }
 
+    // The execution of ddl in the cluster is in two phases, PREPARE and COMPLETE
     public enum NodeStatus {
         PREPARE, COMPLETE
     }

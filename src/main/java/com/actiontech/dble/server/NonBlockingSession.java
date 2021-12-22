@@ -10,6 +10,8 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.BaseDDLHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.MultiNodeDdlPrepareHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
@@ -19,10 +21,10 @@ import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
-import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.meta.DDLProxyMetaManager;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -43,10 +45,7 @@ import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.singleton.DDLTraceManager;
-import com.actiontech.dble.singleton.PauseShardingNodeManager;
-import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
@@ -482,8 +481,8 @@ public class NonBlockingSession extends Session {
                 return;
             }
             setRouteResultToTrace(nodes);
-            if (rrs.getDdlHandler() != null) {
-                executeDDL(rrs);
+            if (rrs.getImplicitlyCommitHandler() != null) {
+                executeImplicitlyCommitSql(rrs);
             } else {
                 // dml or simple select
                 executeOther(rrs);
@@ -499,32 +498,26 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    private void executeDDL(RouteResultset rrs) {
+    private void executeImplicitlyCommitSql(RouteResultset rrs) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "execute-sql-for-ddl");
         ExecutableHandler executableHandler = null;
-        boolean hasDDLInProcess = true;
         try {
-            if (null != rrs.getDdlHandler()) {
-                if (!(rrs.getDdlHandler() instanceof LockTablesHandler))
-                    DDLTraceManager.getInstance().startDDL(shardingService);
-
-                // not hint and not online ddl
-                if (rrs.getSchema() != null && !rrs.isOnline()) {
-                    addMetaLock(rrs);
-                    hasDDLInProcess = false;
-                    if (!(rrs.getDdlHandler() instanceof LockTablesHandler))
-                        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, shardingService);
+            if (null != rrs.getImplicitlyCommitHandler()) {
+                if (rrs.getImplicitlyCommitHandler() instanceof BaseDDLHandler) {
+                    DDLTraceHelper.init(shardingService, rrs.getSrcStatement());
                 }
 
+                addMetaLock(rrs);
+
                 if (rrs.getNodes().length == 1) {
-                    executableHandler = rrs.getDdlHandler();
+                    executableHandler = rrs.getImplicitlyCommitHandler();
                     setPreExecuteEnd(TraceResult.SqlTraceType.SINGLE_NODE_QUERY);
                 } else {
                     /*
                      * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
                      * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
                      */
-                    executableHandler = rrs.getDdlHandler();
+                    executableHandler = rrs.getImplicitlyCommitHandler();
                     if (executableHandler instanceof MultiNodeDdlPrepareHandler) {
                         checkBackupStatus();
                     }
@@ -541,12 +534,14 @@ public class NonBlockingSession extends Session {
             }
         } catch (Exception e) {
             LOGGER.info(String.valueOf(shardingService) + rrs, e);
-            if (null != executableHandler)
+            if (null != executableHandler) {
+                if (executableHandler instanceof BaseDDLHandler) {
+                    ((BaseDDLHandler) executableHandler).specialHandling(false, e.getMessage());
+                }
                 executableHandler.clearAfterFailExecute();
-            if (!hasDDLInProcess) {
-                handleSpecial(rrs, false, null);
             }
-            DDLTraceManager.getInstance().endDDL(shardingService, e.getMessage());
+            setResponseTime(false);
+            DDLTraceHelper.finish(shardingService);
             shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
         } finally {
             TraceManager.finishSpan(shardingService, traceObject);
@@ -672,7 +667,9 @@ public class NonBlockingSession extends Session {
     }
 
     private void addMetaLock(RouteResultset rrs) throws SQLNonTransientException {
-        if (rrs.getSqlType() == ServerParse.CREATE_VIEW ||
+        // filtering: hint ddl、online ddl 、create/drop/alter/replace view、create database、create table、lock table/
+        if (rrs.getSchema() == null || rrs.isOnline() ||
+                rrs.getSqlType() == ServerParse.CREATE_VIEW ||
                 rrs.getSqlType() == ServerParse.DROP_VIEW ||
                 rrs.getSqlType() == ServerParse.ALTER_VIEW ||
                 rrs.getSqlType() == ServerParse.REPLACE_VIEW ||
@@ -684,14 +681,14 @@ public class NonBlockingSession extends Session {
         String schema = rrs.getSchema();
         String table = rrs.getTable();
         try {
-            ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
+            DDLProxyMetaManager.Originator.notifyClusterDDLPrepare(shardingService, schema, table, rrs.getStatement());
             //lock self meta
-            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
+            DDLProxyMetaManager.Originator.addLocalMetaLock(shardingService, schema, table, rrs.getStatement());
         } catch (NeedDelayedException e) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
             throw e;
         } catch (Exception e) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
         }
     }
@@ -984,32 +981,6 @@ public class NonBlockingSession extends Session {
         }
         return errConn.getBackendService();
     }
-
-    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
-        if (rrs.getDdlHandler() == null ||
-                // rrs.getDdlHandler() instanceof LockTablesHandler ||
-                rrs.getDdlHandler() instanceof MysqlCreateViewHandler ||
-                rrs.getDdlHandler() instanceof MysqlDropViewHandler) {
-            return true;
-        }
-        if (rrs.getSchema() != null) {
-            String sql = rrs.getSrcStatement();
-            if (rrs.isOnline()) {
-                LOGGER.info("Online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
-                return true;
-            }
-            if (!isSuccess) {
-                LOGGER.warn("DDL execute failed or Session closed, " +
-                        "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
-            }
-            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, shardingService);
-            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, rrs.getDdlType());
-        } else {
-            LOGGER.info("Hint ddl do not update the meta");
-            return true;
-        }
-    }
-
 
     public void multiStatementPacket(MySQLPacket packet) {
         if (this.isMultiStatement.get()) {

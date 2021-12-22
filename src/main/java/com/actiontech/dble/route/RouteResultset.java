@@ -47,7 +47,7 @@ public final class RouteResultset implements Serializable {
     private boolean sqlRouteCacheAble;
     // limit output total
     private int limitSize;
-    private transient ExecutableHandler ddlHandler;
+    private transient ExecutableHandler implicitlyCommitHandler; // such as: ddl、lock table
 
     private boolean callStatement = false; // is Call Statement
 
@@ -369,11 +369,11 @@ public final class RouteResultset implements Serializable {
         this.enableLoadDataFlag = enableLoadDataFlag;
     }
 
-    public ExecutableHandler getDdlHandler() {
-        return ddlHandler;
+    public ExecutableHandler getImplicitlyCommitHandler() {
+        return implicitlyCommitHandler;
     }
 
-    public void setDdlHandler(ExecutableHandler ddlHandler) {
-        this.ddlHandler = ddlHandler;
+    public void setImplicitlyCommitHandler(ExecutableHandler implicitlyCommitHandler) {
+        this.implicitlyCommitHandler = implicitlyCommitHandler;
     }
 }

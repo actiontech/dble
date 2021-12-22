@@ -101,11 +101,7 @@ public final class SelectedProcessor {
                 return qtn;
             } else {
                 for (PlanNode child : qtn.getChildren()) {
-                    List<Item> referList = qtn.getColumnsReferedByChild(child);
-                    if (referList == null) {
-                        referList = new ArrayList<>();
-                    }
-                    Collection<Item> pdRefers = getPushDownSel(qtn, referList);
+                    Collection<Item> pdRefers = getPushDownSel(qtn, child);
                     List<Item> pushList = addExprOrderByToSelect(child, pdRefers);
                     pushSelected(child, pushList);
                 }
@@ -116,11 +112,7 @@ public final class SelectedProcessor {
 
     // if order by item is not FIELD_ITEM, we need to add back to select list and push down
     private static List<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
-        List<Item> pushList = new LinkedList<Item>();
-        pushList.addAll(child.getColumnsSelected());
-        for (Item pdRefer : pdRefers) {
-            addToListWithoutDuplicate(pushList, pdRefer);
-        }
+        List<Item> pushList = new LinkedList<>(pdRefers);
         for (Order order : child.getOrderBys()) {
             if (order.getItem().type() != Item.ItemType.FIELD_ITEM) {
                 addToListWithoutDuplicate(pushList, order.getItem());
@@ -131,19 +123,20 @@ public final class SelectedProcessor {
                 addToListWithoutDuplicate(pushList, order.getItem());
             }
         }
+
         return pushList;
     }
 
     private static void addToListWithoutDuplicate(List<Item> pushDownList, Item i) {
         boolean hasFoudSameName = false;
-        for (Item pushi : pushDownList) {
-            if (pushi.getAlias() == null && i.getAlias() == null) {
-                if (pushi.getItemName().equals(i.getItemName())) {
+        for (Item pushItem : pushDownList) {
+            if (pushItem.getAlias() == null && i.getAlias() == null) {
+                if (pushItem.getItemName().equals(i.getItemName())) {
                     hasFoudSameName = true;
                     break;
                 }
-            } else if (pushi.getAlias() != null && i.getAlias() != null) {
-                if (pushi.getAlias().equals(i.getAlias())) {
+            } else if (pushItem.getAlias() != null && i.getAlias() != null) {
+                if (pushItem.getAlias().equals(i.getAlias())) {
                     hasFoudSameName = true;
                     break;
                 }
@@ -155,13 +148,17 @@ public final class SelectedProcessor {
     }
 
 
-    private static Collection<Item> getPushDownSel(PlanNode parent, List<Item> selList) {
+    private static Collection<Item> getPushDownSel(PlanNode parent, PlanNode child) {
+        List<Item> selList = parent.getColumnsReferedByChild(child);
+        if (selList == null) {
+            selList = new ArrayList<>();
+        }
         // oldselectable->newselectbable
         LinkedHashMap<Item, Item> oldNewMap = new LinkedHashMap<>();
         LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
         for (int i = 0; i < selList.size(); i++) {
             Item sel = selList.get(i);
-            if (sel instanceof ItemFunc) {
+            if ((child.type() != PlanNode.PlanNodeType.TABLE && sel instanceof ItemFunc) || (child.type() == PlanNode.PlanNodeType.TABLE && sel.isWithSumFunc())) {
                 selList.addAll(sel.arguments());
                 continue;
             }
@@ -184,11 +181,10 @@ public final class SelectedProcessor {
         // no order by or have same name field
         if (toPushColumns.isEmpty() && (merge.getOrderBys().isEmpty() || colIndexs.size() != merge.getColumnsSelected().size())) {
             for (PlanNode child : merge.getChildren()) {
-                pushSelected(child, new HashSet<Item>());
+                pushSelected(child, Collections.emptySet());
             }
             return merge;
         }
-        boolean canOverload = mergeNodeChildsCheck(merge) && !toPushColumns.isEmpty();
         List<Item> mergeSelects = null;
         if (toPushColumns.isEmpty()) {
             //  merge's select can't be change
@@ -197,17 +193,18 @@ public final class SelectedProcessor {
             mergeSelects.addAll(merge.getColumnsSelected());
         } else {
             mergeSelects = merge.getColumnsSelected();
-        }
-        if (canOverload) {
-            mergeSelects.clear();
-            mergeSelects.addAll(toPushColumns);
-        } else {
-            for (Item toPush : toPushColumns) {
-                if (!mergeSelects.contains(toPush)) {
-                    mergeSelects.add(toPush);
+            if (mergeNodeChildsCheck(merge)) {
+                mergeSelects.clear();
+                mergeSelects.addAll(toPushColumns);
+            } else {
+                for (Item toPush : toPushColumns) {
+                    if (!mergeSelects.contains(toPush)) {
+                        mergeSelects.add(toPush);
+                    }
                 }
             }
         }
+
         // add order by
         for (Order orderby : merge.getOrderBys()) {
             Item orderSel = orderby.getItem();
@@ -229,22 +226,18 @@ public final class SelectedProcessor {
             for (List<Item> childPushs : allChildPushs) {
                 colSels.add(childPushs.get(index));
             }
-            pushSelected(merge.getChildren().get(index), new HashSet<Item>());
+            pushSelected(merge.getChildren().get(index), Collections.emptySet());
         }
         return merge;
     }
 
     /**
-     * check merge's subchild have distinct or aggregate function
+     * check merge's subchild have distinct or aggregate function or >three table union
      *
-     * @param merge
-     * @return
      */
     private static boolean mergeNodeChildsCheck(MergeNode merge) {
         for (PlanNode child : merge.getChildren()) {
-            boolean cdis = child.isDistinct();
-            boolean bsum = child.getSumFuncs().size() > 0;
-            if (cdis || bsum)
+            if (child.type() == PlanNode.PlanNodeType.MERGE || child.isDistinct() || child.getSumFuncs().size() > 0)
                 return false;
         }
         return true;

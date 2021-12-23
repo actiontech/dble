@@ -295,13 +295,23 @@ public class NIOSocketWR extends SocketWR {
 
     @Override
     public void asyncRead() throws IOException {
-        ByteBuffer theBuffer = con.readBuffer;
-        if (theBuffer == null) {
-            theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());
-            con.readBuffer = theBuffer;
+        if (con.isClosed()) {
+            throw new IOException("read from closed channel cause error");
         }
-        int got = channel.read(theBuffer);
-        con.onReadData(got);
+        try {
+            ByteBuffer theBuffer = con.readBuffer;
+            if (theBuffer == null) {
+                theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());
+                con.readBuffer = theBuffer;
+            }
+            int got = channel.read(theBuffer);
+            con.onReadData(got);
+        } finally {
+            //prevent  asyncClose and read operation happened Concurrently.
+            if (con.isClosed() && con.getReadBuffer() != null) {
+                con.recycleReadBuffer();
+            }
+        }
     }
 
     private boolean bufferIsQuit(ByteBuffer buffer) {

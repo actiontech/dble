@@ -7,6 +7,7 @@ package com.actiontech.dble.net;
 
 import com.actiontech.dble.util.TimeUtil;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,19 +26,28 @@ public class AIOSocketWR extends SocketWR {
     }
 
     @Override
-    public void asyncRead() {
-        ByteBuffer theBuffer = con.readBuffer;
-        if (theBuffer == null) {
-            theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());
-            con.readBuffer = theBuffer;
-            channel.read(theBuffer, this, AIO_READ_HANDLER);
-
-        } else if (theBuffer.hasRemaining()) {
-            channel.read(theBuffer, this, AIO_READ_HANDLER);
-        } else {
-            throw new java.lang.IllegalArgumentException("full buffer to read ");
+    public void asyncRead() throws IOException {
+        if (con.isClosed()) {
+            throw new IOException("read from closed channel cause error");
         }
+        try {
+            ByteBuffer theBuffer = con.readBuffer;
+            if (theBuffer == null) {
+                theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());
+                con.readBuffer = theBuffer;
+                channel.read(theBuffer, this, AIO_READ_HANDLER);
 
+            } else if (theBuffer.hasRemaining()) {
+                channel.read(theBuffer, this, AIO_READ_HANDLER);
+            } else {
+                throw new java.lang.IllegalArgumentException("full buffer to read ");
+            }
+        } finally {
+            //prevent  asyncClose and read operation happened Concurrently.
+            if (con.isClosed() && con.getReadBuffer() != null) {
+                con.recycleReadBuffer();
+            }
+        }
     }
 
     private void asyncWrite(final ByteBuffer buffer) {

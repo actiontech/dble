@@ -290,7 +290,10 @@ public final class HandlerTool {
         if (index < 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "field not found:" + col);
         Field field = fields.get(index);
-        ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName());
+        // if org col contains chinese, but push down's use alias col
+        field.setCharsetIndex(col.getCharsetIndex());
+        ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName(), field.getCharsetIndex());
+        ret.setCharsetIndex(col.getCharsetIndex());
         ret.setField(fields, index);
         ret.setItemName(col.getPushDownName() == null ? col.getItemName() : col.getPushDownName());
         return ret;

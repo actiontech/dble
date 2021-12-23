@@ -174,7 +174,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 pres.clear();
                 optimizerMerge = true;
             }
-        } else if (node.getStrategy() == JoinNode.Strategy.NEW_NEST_LOOP) {
+        } else if (node.getStrategy() == JoinNode.Strategy.HINT_NEST_LOOP) {
             if (node.getSubQueries().size() != 0) {
                 List<DMLResponseHandler> subQueryEndHandlers;
                 subQueryEndHandlers = getSubQueriesEndHandlers(node.getSubQueries());
@@ -197,6 +197,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                 tnBig = left;
                 keySources = node.getRightKeys();
                 keyToPasses = node.getLeftKeys();
+                dependNode = left.getNestLoopDependNode();
             }
             // prepare the column for sending
             // just find one key as filter later, try to choose a simple column(FIELD_ITEM) from toPasses
@@ -212,6 +213,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             pres.add(endHandler);
             pres.add(delayTableHandler);
             if (isExplain) {
+                buildExplain(isLeftSmall, tnBig, keyToPass, delayTableHandler);
                 pres.add(delayTableHandler.getCreatedHandler());
             }
         } else {
@@ -285,16 +287,13 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             delayTableHandler.setCreatedHandler(bigLh);
             HandlerBuilder.startHandler(bigLh);
         };
-        if (isExplain) {
-            buildExplain(isLeftSmall, tnBig, keyToPass, delayTableHandler);
-        }
         delayTableHandler.setTempDoneCallBack(tempDone);
         return delayTableHandler;
     }
 
     private void buildExplain(boolean isLeftSmall, PlanNode tnBig, Item keyToPass, DelayTableHandler delayTableHandler) {
         buildNestFiltersForExplain(tnBig, keyToPass);
-        DMLResponseHandler bigLh = buildJoinChild(getDelayTableHandlerMap(), tnBig, isLeftSmall);
+        DMLResponseHandler bigLh = buildJoinChild(getDelayTableHandlerMap(), tnBig, !isLeftSmall);
         delayTableHandler.setCreatedHandler(bigLh);
     }
 

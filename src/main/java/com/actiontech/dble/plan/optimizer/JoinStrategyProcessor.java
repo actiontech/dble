@@ -27,12 +27,12 @@ public final class JoinStrategyProcessor {
             if (qtn instanceof JoinNode) {
                 JoinStrategyChooser chooser = new JoinStrategyChooser((JoinNode) qtn);
                 chooser.tryNestLoop(always);
-                //todo log
-                return qtn;
             }
-            List<PlanNode> children = qtn.getChildren();
-            for (PlanNode child : children) {
-                optimize(child, always);
+            if (!always) {
+                List<PlanNode> children = qtn.getChildren();
+                for (PlanNode child : children) {
+                    optimize(child, always);
+                }
             }
             return qtn;
         } finally {

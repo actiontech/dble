@@ -30,7 +30,6 @@ public class JoinNestLoopChooser {
         buildNodeMap(jn);
         buildHintDependency();
         traverseNode(jn);
-
     }
 
     private void buildNodeMap(JoinNode joinNode) {
@@ -51,9 +50,8 @@ public class JoinNestLoopChooser {
         Set<String> nodeNameSet = nodes.stream().map(HintPlanNode::getName).collect(Collectors.toSet());
         for (ItemFuncEqual itemFuncEqual : joinFilter) {
             List<Item> arguments = itemFuncEqual.arguments();
-            if (!nodeNameSet.contains(arguments.get(0).getTableName())) {
-                throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures!");
-            }
+            arguments.stream().filter(argument -> nodeNameSet.contains(argument.getTableName())).findFirst().orElseThrow(() ->
+                    new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures!"));
         }
     }
 
@@ -68,6 +66,9 @@ public class JoinNestLoopChooser {
         if (leftNode instanceof JoinNode) {
             traverseNode((JoinNode) leftNode);
         } else {
+            if (joinNode.isLeftOuterJoin()) {
+                throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures!");
+            }
             if (joinNode.isInnerJoin()) {
                 buildNestLoop(joinNode, leftNode);
             }
@@ -85,7 +86,7 @@ public class JoinNestLoopChooser {
             checkOnConditions(hintPlanNodeGroup, node);
         }
         if (hintDependMap.containsKey(alias)) {
-            joinNode.setStrategy(JoinNode.Strategy.NEW_NEST_LOOP);
+            joinNode.setStrategy(JoinNode.Strategy.HINT_NEST_LOOP);
             node.setNestLoopFilters(new ArrayList<>());
             node.setNestLoopDependNode(findDependNode(node));
         }
@@ -145,6 +146,7 @@ public class JoinNestLoopChooser {
             List<HintPlanNode> nodes = group.getNodes();
             for (HintPlanNode node : nodes) {
                 String alias = node.getName();
+                Optional.ofNullable(nodeMap.get(alias)).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures! check table alias = " + alias));
                 JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
                 if (canDoAsMerge(parent)) {
                     throw new MySQLOutPutException(ErrorCode.ER_HINT_EXPLAIN_PLAN, "", "hint explain build failures! check ER or AND or OR condition");

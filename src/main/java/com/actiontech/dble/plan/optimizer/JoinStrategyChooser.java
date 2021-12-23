@@ -12,6 +12,8 @@ import com.actiontech.dble.plan.node.JoinNode.Strategy;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 
 import java.util.*;
 
@@ -39,7 +41,7 @@ public class JoinStrategyChooser {
      * false:join can't use the nest loop optimization,try to optimizer join's child
      */
     public boolean conditionNestLoop() {
-        if (jn.getLeftNode().type() != PlanNode.PlanNodeType.TABLE && jn.getRightNode().type() != PlanNode.PlanNodeType.TABLE) {
+        if (jn.getLeftNode().type() != PlanNode.PlanNodeType.TABLE || jn.getRightNode().type() != PlanNode.PlanNodeType.TABLE) {
             return false;
         }
         if (jn.isNotIn() || jn.getJoinFilter().isEmpty()) {
@@ -128,16 +130,47 @@ public class JoinStrategyChooser {
         }
         PlanNode leftNode = joinNode.getLeftNode();
         PlanNode rightNode = joinNode.getRightNode();
-        buildNestLoop(joinNode, rightNode);
+        buildNestLoop(joinNode, rightNode, true);
         if (leftNode instanceof JoinNode) {
             traverseNode((JoinNode) leftNode);
+        } else {
+            buildNestLoop(joinNode, leftNode, joinNode.isInnerJoin());
         }
     }
 
-    private void buildNestLoop(JoinNode joinNode, PlanNode node) {
-        joinNode.setStrategy(JoinNode.Strategy.NEW_NEST_LOOP);
+    private void buildNestLoop(JoinNode joinNode, PlanNode node, boolean innerJoin) {
+        if (isSmallTable((TableNode) node) || canDoAsMerge(joinNode) || !innerJoin) {
+            return;
+        }
+        List<ItemFuncEqual> joinFilter = joinNode.getJoinFilter();
+        for (ItemFuncEqual itemFuncEqual : joinFilter) {
+            List<Item> arguments = itemFuncEqual.arguments();
+            Item item = arguments.stream().filter(argument -> !StringUtil.equals(getTableName((TableNode) node), argument.getTableName())).findFirst().get();
+            PlanNode planNode = nodeMap.get(item.getTableName());
+            if (isSmallTable((TableNode) planNode) && innerJoin) {
+                joinNode.setStrategy(JoinNode.Strategy.HINT_NEST_LOOP);
+                node.setNestLoopFilters(new ArrayList<>());
+                node.setNestLoopDependNode(planNode);
+                return;
+            }
+        }
+        joinNode.setStrategy(JoinNode.Strategy.HINT_NEST_LOOP);
         node.setNestLoopFilters(new ArrayList<>());
         node.setNestLoopDependNode(findDependNode(node));
+
+    }
+
+    private String getTableName(TableNode node) {
+        String alias = node.getAlias();
+        if (!Strings.isNullOrEmpty(alias)) {
+            return alias;
+        }
+        return node.getTableName();
+    }
+
+    private void innerNestLoop(JoinNode joinNode, PlanNode node, boolean innerJoin) {
+
+
     }
 
     private PlanNode findDependNode(PlanNode node) {
@@ -162,11 +195,9 @@ public class JoinStrategyChooser {
         if (leftNode instanceof JoinNode) {
             buildNodeMap((JoinNode) leftNode);
         } else {
-            nodeMap.put(leftNode.getAlias(), leftNode);
-            nodeMap.put(((TableNode) leftNode).getTableName(), leftNode);
+            nodeMap.put(getTableName((TableNode) leftNode), leftNode);
         }
-        nodeMap.put(rightNode.getAlias(), rightNode);
-        nodeMap.put(((TableNode) rightNode).getTableName(), leftNode);
+        nodeMap.put(getTableName((TableNode) rightNode), rightNode);
     }
 
     public boolean canDoAsMerge(JoinNode joinNode) {

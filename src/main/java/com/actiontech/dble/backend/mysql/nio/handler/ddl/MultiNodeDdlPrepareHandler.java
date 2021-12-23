@@ -46,12 +46,10 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
 
     @Override
     public void okResponse(byte[] data, @NotNull AbstractService service) {
-        if (LOGGER.isDebugEnabled()) {
-            if (!((MySQLResponseService) service).syncAndExecute()) {
-                LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute!");
-            } else {
-                LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute finished!");
-            }
+        if (!((MySQLResponseService) service).syncAndExecute()) {
+            LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute!");
+        } else {
+            LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute finished!");
         }
     }
 

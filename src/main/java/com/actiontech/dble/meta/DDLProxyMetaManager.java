@@ -56,7 +56,7 @@ public final class DDLProxyMetaManager {
                 if (ClusterConfig.getInstance().isClusterEnable()) {
                     DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_prepare, DDLTraceHelper.Status.start, "Notify and wait for all instances to enter phase PREPARE"));
                     if (DistributeLockManager.isLooked(ClusterPathUtil.getSyncMetaLockPath())) {
-                        String msg = "Found another instance initializing metadata. Please try later.";
+                        String msg = "Found another instance initializing metadata. Please try later";
                         throw new Exception(msg);
                     }
                     DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
@@ -66,7 +66,7 @@ public final class DDLProxyMetaManager {
                     DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
                     if (!lock.acquire()) {
                         DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_prepare, "Failed to acquire table[" + tableFullName + "]’s ddlLock，the ddlLock's path is " + ddlLockPathMeta));
-                        String msg = "Found another instance doing ddl, duo to table[" + tableFullName + "]’s ddlLock is exists.";
+                        String msg = "Found another instance doing ddl, duo to table[" + tableFullName + "]’s ddlLock is exists";
                         throw new Exception(msg);
                     }
                     DistributeLockManager.addLock(lock);

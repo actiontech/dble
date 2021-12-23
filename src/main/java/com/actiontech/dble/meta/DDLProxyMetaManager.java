@@ -31,11 +31,11 @@ import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.sql.SQLNonTransientException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class DDLProxyMetaManager {
 
@@ -187,8 +187,9 @@ public final class DDLProxyMetaManager {
                 String tableFullName = StringUtil.getUFullName(schema, table);
                 final PathMeta<DDLInfo> tableDDLPath = ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.COMPLETE);
                 ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
-                boolean isLock = true;
-                proxyMetaManager.getMetaLock().lock();
+                boolean isNeedWait = false;
+                ReentrantLock metaLock = proxyMetaManager.getMetaLock();
+                metaLock.lock();
                 try {
                     if (proxyMetaManager.getLockTables().containsKey(schema + "." + table)) {
                         ClusterDelayProvider.delayBeforeDdlNotice();
@@ -197,28 +198,27 @@ public final class DDLProxyMetaManager {
                         ClusterHelper.cleanPath(ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.PREPARE));
                         ClusterDelayProvider.delayAfterDdlNotice();
                         clusterHelper.createSelfTempNode(tableDDLPath.getPath(), FeedBackType.SUCCESS);
-                        proxyMetaManager.getMetaLock().unlock();
-                        isLock = false;
-                        String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(tableDDLPath.getPath());
-                        if (errorMsg != null) {
-                            String msg = "Some instances have an accident at phase COMPLETE. err: " + errorMsg;
-                            DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_complete, DDLTraceHelper.Status.fail, msg));
-                            throw new RuntimeException(msg);
-                        }
-                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_complete, DDLTraceHelper.Status.succ, "All instances have entered phase COMPLETE"));
-                    } else {
-                        proxyMetaManager.getMetaLock().unlock();
-                        isLock = false;
+                        isNeedWait = true;
                     }
                 } finally {
-                    if (isLock) {
-                        proxyMetaManager.getMetaLock().unlock();
+                    metaLock.unlock();
+                    try {
+                        if (isNeedWait) {
+                            String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(tableDDLPath.getPath());
+                            if (errorMsg != null) {
+                                String msg = "Some instances have an accident at phase COMPLETE. err: " + errorMsg;
+                                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_complete, DDLTraceHelper.Status.fail, msg));
+                                throw new RuntimeException(msg);
+                            }
+                            DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_complete, DDLTraceHelper.Status.succ, "All instances have entered phase COMPLETE"));
+                        }
+                    } finally {
+                        ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
+                        ClusterHelper.cleanPath(tableDDLPath);
+                        //release the lock
+                        ClusterDelayProvider.delayBeforeDdlLockRelease();
+                        DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(tableFullName));
                     }
-                    ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
-                    ClusterHelper.cleanPath(tableDDLPath);
-                    //release the lock
-                    ClusterDelayProvider.delayBeforeDdlLockRelease();
-                    DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(tableFullName));
                 }
             }
         }

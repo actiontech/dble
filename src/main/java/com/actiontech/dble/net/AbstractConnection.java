@@ -128,13 +128,6 @@ public abstract class AbstractConnection implements NIOConnection {
         charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
     }
 
-    public synchronized void recycleReadBuffer() {
-        if (readBuffer != null) {
-            this.recycle(readBuffer);
-            this.readBuffer = null;
-        }
-    }
-
     public void setNames(String name, String collationName) {
         charsetName.setNames(name, collationName);
     }

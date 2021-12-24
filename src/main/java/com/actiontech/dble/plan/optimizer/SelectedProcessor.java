@@ -15,6 +15,7 @@ import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.*;
@@ -112,7 +113,10 @@ public final class SelectedProcessor {
 
     // if order by item is not FIELD_ITEM, we need to add back to select list and push down
     private static List<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
-        List<Item> pushList = new LinkedList<>(pdRefers);
+        List<Item> pushList = new LinkedList<>();
+        for (Item pdRefer : pdRefers) {
+            addToListWithoutDuplicate(pushList, pdRefer);
+        }
         for (Order order : child.getOrderBys()) {
             if (order.getItem().type() != Item.ItemType.FIELD_ITEM) {
                 addToListWithoutDuplicate(pushList, order.getItem());
@@ -130,6 +134,9 @@ public final class SelectedProcessor {
     private static void addToListWithoutDuplicate(List<Item> pushDownList, Item i) {
         boolean hasFoudSameName = false;
         for (Item pushItem : pushDownList) {
+            if (!StringUtil.equalsWithEmpty(pushItem.getTableName(), i.getTableName()) || !StringUtil.equalsWithEmpty(pushItem.getDbName(), i.getDbName())) {
+                continue;
+            }
             if (pushItem.getAlias() == null && i.getAlias() == null) {
                 if (pushItem.getItemName().equals(i.getItemName())) {
                     hasFoudSameName = true;

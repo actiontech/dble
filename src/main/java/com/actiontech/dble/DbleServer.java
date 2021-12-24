@@ -420,7 +420,7 @@ public final class DbleServer {
 
         // start transaction SQL log
         if (config.getSystem().getRecordTxn() == 1) {
-            txnLogProcessor = new TxnLogProcessor(bufferPool);
+            txnLogProcessor = new TxnLogProcessor();
             txnLogProcessor.setName("TxnLogProcessor");
             txnLogProcessor.start();
         }

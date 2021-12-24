@@ -6,13 +6,11 @@
 package com.actiontech.dble.log.transaction;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.helpers.ISO8601DateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +18,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,8 +29,8 @@ public class TxnLogProcessor extends Thread {
     private BlockingQueue<TxnBinaryLog> queue;
     private DailyRotateLogStore store;
 
-    public TxnLogProcessor(BufferPool bufferPool) {
-        this.dateFormat = new ISO8601DateFormat();
+    public TxnLogProcessor() {
+        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss,SSS");
         this.queue = new LinkedBlockingQueue<>(256);
         ServerConfig config = DbleServer.getInstance().getConfig();
         SystemConfig systemConfig = config.getSystem();

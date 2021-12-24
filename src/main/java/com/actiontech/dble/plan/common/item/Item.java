@@ -922,7 +922,7 @@ public abstract class Item {
 
     public final String getAlias() {
         if (this.aliasName == null) {
-            if (itemName != null && ((itemName.charAt(0) == '\'') || itemName.charAt(0) == '"')) {
+            if (itemName != null && surroundedByQuotation(itemName)) {
                 setAlias(this.itemName);
             }
         }
@@ -930,10 +930,15 @@ public abstract class Item {
     }
 
     public final void setAlias(String alias) {
-        if (alias != null && ((alias.charAt(0) == '\'') || alias.charAt(0) == '"')) {
+        if (alias != null && surroundedByQuotation(alias)) {
             alias = alias.substring(1, alias.length() - 1);
         }
         this.aliasName = alias;
+    }
+
+    private boolean surroundedByQuotation(String value) {
+        char firstValue = value.charAt(0);
+        return (firstValue == '\'' || firstValue == '"') && (firstValue == value.charAt(value.length() - 1));
     }
 
     public String getPushDownName() {

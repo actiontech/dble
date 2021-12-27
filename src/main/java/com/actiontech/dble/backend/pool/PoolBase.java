@@ -13,7 +13,7 @@ import java.io.IOException;
 
 public class PoolBase {
 
-    protected final DbInstanceConfig config;
+    protected DbInstanceConfig config;
     protected final ReadTimeStatusInstance instance;
     protected final PooledConnectionFactory factory;
 

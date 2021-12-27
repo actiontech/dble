@@ -48,6 +48,7 @@ public final class ManagerParse {
     public static final int USE = 31;
     public static final int TRUNCATE_TABLE = 32;
     public static final int KILL_LOAD_DATA = 33;
+    public static final int SPLIT_LOAD_DATA = 39;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -678,11 +679,36 @@ public final class ManagerParse {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             if ((c1 == 'L' || c1 == 'l') && (c2 == 'I' || c2 == 'i') &&
-                    (c3 == 'T' || c3 == 't') && ParseUtil.isSpace(c4)) {
-                return (offset << 8) | SPLIT;
+                    (c3 == 'T' || c3 == 't')) {
+                if (ParseUtil.isSpace(c4)) {
+                    return (offset << 8) | SPLIT;
+                } else if (c4 != ' ' && c4 == '_') {
+                    return splitLoadData(stmt, offset);
+                }
             }
         }
         return OTHER;
+    }
+
+    private static int splitLoadData(String stmt, int offset) {
+        if (stmt.length() > offset + 10) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'O' || c2 == 'o') &&
+                    (c3 == 'A' || c3 == 'a') && (c4 == 'D' || c4 == 'd') &&
+                    (c5 == 'D' || c5 == 'd') && (c6 == 'A' || c6 == 'a') &&
+                    (c7 == 'T' || c7 == 't') && (c8 == 'A' || c8 == 'a') && ParseUtil.isSpace(c9)) {
+                return (offset << 8) | SPLIT_LOAD_DATA;
+            }
+        }
+        return 0;
     }
 
     // STOP' '

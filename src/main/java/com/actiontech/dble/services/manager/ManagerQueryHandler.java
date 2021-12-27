@@ -55,7 +55,7 @@ public class ManagerQueryHandler {
                     ok.write(service.getConnection());
                     break;
                 case ManagerParse.SHOW:
-                    ShowHandler.handle(sql, service, rs >>> SHIFT);
+                    DbleServer.getInstance().getComplexQueryExecutor().execute(() -> ShowHandler.handle(sql, service, rs >>> SHIFT));
                     break;
                 case ManagerParse.DESCRIBE:
                     Describe.execute(sql, service);
@@ -124,6 +124,10 @@ public class ManagerQueryHandler {
                 case ManagerParse.SPLIT:
                     service.getConnection().setSkipCheck(true);
                     SplitDumpHandler.handle(sql, service, rs >>> SHIFT);
+                    break;
+                case ManagerParse.SPLIT_LOAD_DATA:
+                    service.getConnection().setSkipCheck(true);
+                    SplitLoadDataHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.FLOW_CONTROL:
                     FlowControlHandler.handle(sql, service);

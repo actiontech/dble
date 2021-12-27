@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class ShardingNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShardingNode.class);
@@ -143,5 +144,20 @@ public class ShardingNode {
                 StringUtil.equalsWithEmpty(this.dbGroupName, shardingNode.getDbGroupName()) &&
                 StringUtil.equalsWithEmpty(this.database, shardingNode.getDatabase()) &&
                 this.dbGroup.equalsBaseInfo(shardingNode.getDbGroup());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShardingNode that = (ShardingNode) o;
+        return Objects.equals(name, that.name) &&
+                Objects.equals(dbGroupName, that.dbGroupName) &&
+                Objects.equals(database, that.database);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, dbGroupName, database);
     }
 }

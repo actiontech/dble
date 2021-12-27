@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -79,6 +80,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
             LOGGER.warn("test conn Interrupted:", e);
         } finally {
             lock.unlock();
+            ReloadLogHelper.debug("get key variables :{},dbInstance:{},result:{}", LOGGER, sql.toString(), ds, keyVariables);
         }
         return keyVariables;
     }

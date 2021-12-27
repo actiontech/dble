@@ -7,6 +7,7 @@ package com.actiontech.dble.net;
 
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.buffer.BufferPool;
@@ -48,6 +49,7 @@ public final class IOProcessor {
     // after reload @@config_all ,old back ends connections stored in backends_old
     public static final ConcurrentLinkedQueue<PooledConnection> BACKENDS_OLD = new ConcurrentLinkedQueue<>();
     public static final ConcurrentLinkedQueue<PhysicalDbGroup> BACKENDS_OLD_GROUP = new ConcurrentLinkedQueue<>();
+    public static final ConcurrentLinkedQueue<PhysicalDbInstance> BACKENDS_OLD_INSTANCE = new ConcurrentLinkedQueue<>();
 
     private AtomicInteger frontEndsLength = new AtomicInteger(0);
 

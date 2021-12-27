@@ -102,7 +102,7 @@ public final class ShowSQLLarge {
 
     private static RowDataPacket getRow(UserName user, UserSqlLargeStat.SqlLarge sql, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(user.toString(), charset));
+        row.add(StringUtil.encode(user.getFullName(), charset));
         row.add(LongUtil.toBytes(sql.getSqlRows()));
         row.add(StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset));
         row.add(LongUtil.toBytes(sql.getExecuteTime()));

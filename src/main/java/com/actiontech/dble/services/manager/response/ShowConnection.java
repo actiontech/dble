@@ -215,7 +215,7 @@ public final class ShowConnection {
             isMatch = fc.getHost().equals(whereInfo.get("host"));
         }
         if (whereInfo.get("user") != null) {
-            isMatch = isMatch && fc.getFrontEndService().getUser().toString().equals(whereInfo.get("user"));
+            isMatch = isMatch && fc.getFrontEndService().getUser().getFullName().equals(whereInfo.get("user"));
         }
         return isMatch;
     }
@@ -228,7 +228,7 @@ public final class ShowConnection {
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(IntegerUtil.toBytes(c.getPort()));
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
-        row.add(StringUtil.encode(service.getUser().toString(), charset));
+        row.add(StringUtil.encode(service.getUser().getFullName(), charset));
         row.add(StringUtil.encode(service.getSchema(), charset));
         row.add(StringUtil.encode(service.getCharset().getClient(), charset));
         row.add(StringUtil.encode(service.getCharset().getCollation(), charset));

@@ -62,7 +62,7 @@ public final class ShowWhiteHost {
         for (Map.Entry<UserName, UserConfig> entry : map.entrySet()) {
             if (entry.getValue().getWhiteIPs().size() > 0) {
                 for (String whiteIP : entry.getValue().getWhiteIPs()) {
-                    RowDataPacket row = getRow(whiteIP, entry.getKey().toString(), service.getCharset().getResults());
+                    RowDataPacket row = getRow(whiteIP, entry.getKey().getFullName(), service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
                 }

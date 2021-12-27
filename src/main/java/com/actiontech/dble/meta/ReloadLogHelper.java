@@ -54,6 +54,39 @@ public class ReloadLogHelper {
         LOGGER.info(getStage() + message);
     }
 
+    public static void debug(String message, Logger logger) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+        if (ReloadManager.getReloadInstance().getStatus() != null) {
+            logger.debug(ReloadManager.getReloadInstance().getStatus().getLogStage() + message);
+        } else {
+            logger.debug(message);
+        }
+    }
+
+    public static void debug(String message, Logger logger, Object val) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+        if (ReloadManager.getReloadInstance().getStatus() != null) {
+            logger.debug(ReloadManager.getReloadInstance().getStatus().getLogStage() + message, val);
+        } else {
+            logger.debug(message, val);
+        }
+    }
+
+    public static void debug(String message, Logger logger, Object... val) {
+        if (!logger.isDebugEnabled()) {
+            return;
+        }
+        if (ReloadManager.getReloadInstance().getStatus() != null) {
+            logger.debug(ReloadManager.getReloadInstance().getStatus().getLogStage() + message, val);
+        } else {
+            logger.debug(message, val);
+        }
+    }
+
     public static void warn(String message, Logger logger) {
         if (ReloadManager.getReloadInstance().getStatus() != null) {
             logger.info(ReloadManager.getReloadInstance().getStatus().getLogStage() + message);
@@ -77,7 +110,6 @@ public class ReloadLogHelper {
     public void warn(String message, Throwable var2) {
         LOGGER.warn(getStage() + message, var2);
     }
-
 
 
     private String getStage() {

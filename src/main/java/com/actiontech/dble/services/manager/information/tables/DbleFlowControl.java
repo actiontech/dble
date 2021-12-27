@@ -72,7 +72,7 @@ public class DbleFlowControl extends ManagerBaseTable {
                         LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                         row.put(COLUMN_CONNECTION_TYPE, "ServerConnection");
                         row.put(COLUMN_CONNECTION_ID, Long.toString(fc.getId()));
-                        row.put(COLUMN_CONNECTION_INFO, fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) service).getSchema() + " user = " + ((FrontendService) service).getUser());
+                        row.put(COLUMN_CONNECTION_INFO, fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) service).getSchema() + " user = " + ((FrontendService) service).getUser().getFullName());
                         row.put(COLUMN_WRITING_QUEUE_BYTES, Integer.toString(size));
                         row.put(COLUMN_READING_QUEUE_BYTES, null);
                         row.put(COLUMN_FLOW_CONTROLLED, fc.isFrontWriteFlowControlled() ? "true" : "false");

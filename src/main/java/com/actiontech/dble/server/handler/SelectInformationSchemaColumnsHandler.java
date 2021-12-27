@@ -108,7 +108,7 @@ public class SelectInformationSchemaColumnsHandler {
 
         ShardingUserConfig userConfig = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(shardingService.getUser()));
         if (userConfig == null || !userConfig.getSchemas().contains(cSchema)) {
-            shardingService.writeErrMessage("42000", "Access denied for user '" + shardingService.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            shardingService.writeErrMessage("42000", "Access denied for user '" + shardingService.getUser().getFullName() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
 

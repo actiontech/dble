@@ -7,7 +7,7 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
@@ -27,8 +27,10 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
@@ -45,6 +47,9 @@ import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
+import com.google.common.collect.Lists;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +180,6 @@ public final class ReloadConfig {
                         } else {
                             packetResult.setErrorCode(ErrorCode.ER_CLUSTER_RELOAD);
                         }
-                        return;
                     }
                 } finally {
                     lock.writeLock().unlock();
@@ -231,7 +235,6 @@ public final class ReloadConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    @Deprecated
     public static boolean reloadByLocalXml(final int loadAllMode) throws Exception {
         return reload(loadAllMode, null, null, null, null);
     }
@@ -255,140 +258,348 @@ public final class ReloadConfig {
     private static boolean reload(final int loadAllMode, RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-reload");
         try {
-            /*
-             *  1 load new conf
-             *  1.1 ConfigInitializer init adn check itself
-             *  1.2 ShardingNode/dbGroup test connection
-             */
-            ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
-            ConfigInitializer loader;
-            try {
-                if (null == userConfig && null == dbConfig && null == shardingConfig && null == sequenceConfig) {
-                    loader = new ConfigInitializer();
-                } else {
-                    loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
-                }
-            } catch (Exception e) {
-                throw new Exception(e.getMessage() == null ? e.toString() : e.getMessage(), e);
-            }
-            ReloadLogHelper.info("reload config: load all xml info end", LOGGER);
+            // load configuration
+            ConfigInitializer loader = loadConfig(userConfig, dbConfig, shardingConfig, sequenceConfig);
 
-            ReloadLogHelper.info("reload config: get variables from random alive dbGroup start", LOGGER);
+            // compare changes
+            List<ChangeItem> changeItemList = compareChange(loader);
 
-            try {
-                loader.testConnection();
-            } catch (Exception e) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("just test ,not stop reload, catch exception", e);
-                }
-            }
+            // user in use cannot be deleted
+            checkUser(changeItemList);
 
             boolean forceAllReload = false;
-
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
+                //-r
                 forceAllReload = true;
             }
 
-            if (forceAllReload) {
-                return forceReloadAll(loadAllMode, loader);
-            } else {
-                return intelligentReloadAll(loadAllMode, loader);
-            }
-        } finally {
-            TraceManager.finishSpan(traceObject);
-        }
-    }
+            // test connection
+            testConnection(loader, changeItemList, forceAllReload, loadAllMode);
 
-    private static boolean intelligentReloadAll(int loadAllMode, ConfigInitializer loader) throws Exception {
-        TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-intelligent-reload");
-        try {
-            /* 2.1.1 get diff of dbGroups */
-            ServerConfig config = DbleServer.getInstance().getConfig();
-            Map<String, PhysicalDbGroup> addOrChangeHosts = new LinkedHashMap<>();
-            Map<String, PhysicalDbGroup> noChangeHosts = new LinkedHashMap<>();
-            Map<String, PhysicalDbGroup> recycleHosts = new HashMap<>();
-            distinguishDbGroup(loader.getDbGroups(), config.getDbGroups(), addOrChangeHosts, noChangeHosts, recycleHosts);
+            ServerConfig newConfig = new ServerConfig(loader);
+            Map<String, PhysicalDbGroup> newDbGroups = newConfig.getDbGroups();
 
-            Map<String, PhysicalDbGroup> mergedDbGroups = new LinkedHashMap<>();
-            mergedDbGroups.putAll(noChangeHosts);
-            mergedDbGroups.putAll(addOrChangeHosts);
+            // check version/packetSize/lowerCase && get system variables
+            SystemVariables newSystemVariables = checkVersionAGetSystemVariables(loader, newDbGroups, changeItemList, forceAllReload);
 
-            ConfigUtil.getAndSyncKeyVariables(mergedDbGroups, true);
+            // recycle old active conn
+            recycleOldBackendConnections(forceAllReload, (loadAllMode & ManagerParseConfig.OPTF_MODE) != 0);
 
-            SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, mergedDbGroups);
-            ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
-            ServerConfig serverConfig = new ServerConfig(loader);
 
+            // lowerCase && load sequence
             if (loader.isFullyConfigured()) {
                 if (newSystemVariables.isLowerCaseTableNames()) {
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
+                    newConfig.reviseLowerCase(loader.getSequenceConfig());
                     ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
                 } else {
-                    serverConfig.loadSequence(loader.getSequenceConfig());
-                    serverConfig.selfChecking0();
+                    newConfig.loadSequence(loader.getSequenceConfig());
+                    newConfig.selfChecking0();
                 }
             }
-            checkTestConnIfNeed(loadAllMode, loader);
 
-            Map<UserName, UserConfig> newUsers = serverConfig.getUsers();
-            Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
-            Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
-            Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
-            Map<String, Set<ERTable>> newFuncNodeERMap = serverConfig.getFuncNodeERMap();
-            Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
-            Map<String, Properties> newBlacklistConfig = serverConfig.getBlacklistConfig();
-            Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
-
-            /*
-             *  2 transform
-             *  2.1 old lDbInstance continue to work
-             *  2.1.1 define the diff of new & old dbGroup config
-             *  2.1.2 create new init plan for the reload
-             *  2.2 init the new lDbInstance
-             *  2.3 transform
-             *  2.4 put the old connection into a queue
-             */
+            Map<UserName, UserConfig> newUsers = newConfig.getUsers();
+            Map<String, SchemaConfig> newSchemas = newConfig.getSchemas();
+            Map<String, ShardingNode> newShardingNodes = newConfig.getShardingNodes();
+            Map<ERTable, Set<ERTable>> newErRelations = newConfig.getErRelations();
+            Map<String, Set<ERTable>> newFuncNodeERMap = newConfig.getFuncNodeERMap();
+            Map<String, Properties> newBlacklistConfig = newConfig.getBlacklistConfig();
+            Map<String, AbstractPartitionAlgorithm> newFunctions = newConfig.getFunctions();
 
 
-            /* 2.2 init the lDbInstance with diff*/
-            ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
-            String reasonMsg = initDbGroupByMap(mergedDbGroups, newShardingNodes, loader.isFullyConfigured());
-            ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
-            if (reasonMsg == null) {
-                /* 2.3 apply new conf */
-                ReloadLogHelper.info("reload config: apply new config start", LOGGER);
-                boolean result;
-                try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, recycleHosts, newErRelations, newFuncNodeERMap,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
-                            loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
-                    CronScheduler.getInstance().init(config.getSchemas());
-                    if (!result) {
-                        initFailed(newDbGroups);
-                    }
-                    FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
-                    ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-                    recycleOldBackendConnections((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0);
-                    if (!loader.isFullyConfigured()) {
-                        recycleServerConnections();
-                    }
-                    return result;
-                } catch (Exception e) {
+            // start/stop connection pool && heartbeat
+            // replace config
+            ReloadLogHelper.info("reload config: apply new config start", LOGGER);
+            ServerConfig oldConfig = DbleServer.getInstance().getConfig();
+            boolean result;
+            try {
+                result = oldConfig.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, oldConfig.getDbGroups(), newErRelations, newFuncNodeERMap,
+                        newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
+                        loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig(), changeItemList);
+                CronScheduler.getInstance().init(oldConfig.getSchemas());
+                if (!result) {
                     initFailed(newDbGroups);
-                    throw e;
                 }
-            } else {
+                FrontendUserManager.getInstance().changeUser(changeItemList, SystemConfig.getInstance().getMaxCon());
+                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
+                // recycle old active conn
+                recycleOldBackendConnections(!forceAllReload, (loadAllMode & ManagerParseConfig.OPTF_MODE) != 0);
+                if (!loader.isFullyConfigured()) {
+                    recycleServerConnections();
+                }
+                return result;
+            } catch (Exception e) {
                 initFailed(newDbGroups);
-                throw new Exception(reasonMsg);
+                throw e;
             }
         } finally {
             TraceManager.finishSpan(traceObject);
         }
     }
 
-    private static void recycleOldBackendConnections(boolean closeFrontCon) {
-        if (closeFrontCon) {
+    /**
+     * check version/packetSize/lowerCase
+     * get system variables
+     */
+    private static SystemVariables checkVersionAGetSystemVariables(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDbGroups, List<ChangeItem> changeItemList, boolean forceAllReload) throws Exception {
+        ReloadLogHelper.info("reload config: check and get system variables from random node start", LOGGER);
+        SystemVariables newSystemVariables;
+        if (forceAllReload) {
+            //check version/packetSize/lowerCase
+            ConfigUtil.getAndSyncKeyVariables(newDbGroups, true);
+            //system variables
+            newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
+        } else {
+            //check version/packetSize/lowerCase
+            ConfigUtil.getAndSyncKeyVariables(changeItemList, true);
+            //random one node
+            //system variables
+            PhysicalDbInstance physicalDbInstance = getPhysicalDbInstance(loader);
+            newSystemVariables = getSystemVariablesFromDbInstance(loader.isFullyConfigured(), physicalDbInstance);
+        }
+        ReloadLogHelper.info("reload config: check and get system variables from random node end", LOGGER);
+        return newSystemVariables;
+    }
+
+    /**
+     * test connection
+     */
+    private static void testConnection(ConfigInitializer loader, List<ChangeItem> changeItemList, boolean forceAllReload, int loadAllMode) throws Exception {
+        ReloadLogHelper.info("reload config: test connection start", LOGGER);
+        try {
+            //test connection
+            if (forceAllReload && loader.isFullyConfigured()) {
+                loader.testConnection();
+            } else {
+                syncShardingNode(loader);
+                loader.testConnection(changeItemList);
+            }
+        } catch (Exception e) {
+            if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && loader.isFullyConfigured()) {
+                //default/-f/-r
+                throw new Exception(e);
+            } else {
+                //-s
+                ReloadLogHelper.debug("just test ,not stop reload, catch exception", LOGGER, e);
+            }
+        }
+        ReloadLogHelper.info("reload config: test connection end", LOGGER);
+    }
+
+    /**
+     * compare change
+     */
+    private static List<ChangeItem> compareChange(ConfigInitializer loader) {
+        ReloadLogHelper.info("reload config: compare changes start", LOGGER);
+        //todo 测试效率
+        List<ChangeItem> changeItemList = differentiateChanges(loader);
+        ReloadLogHelper.debug("change items :{}", LOGGER, changeItemList);
+        ReloadLogHelper.info("reload config: compare changes end", LOGGER);
+        return changeItemList;
+    }
+
+    /**
+     * load configuration
+     * xml:db.xml/user.xml/sharding.xml/sequence
+     * memory:dble_information/cluster synchronization
+     */
+    private static ConfigInitializer loadConfig(RawJson userConfig, RawJson dbConfig, RawJson shardingConfig, RawJson sequenceConfig) throws Exception {
+        ConfigInitializer loader;
+        try {
+            if (null == userConfig && null == dbConfig && null == shardingConfig && null == sequenceConfig) {
+                ReloadLogHelper.info("reload config: load config start [local xml]", LOGGER);
+                loader = new ConfigInitializer();
+            } else {
+                ReloadLogHelper.info("reload config: load info start [memory]", LOGGER);
+                ReloadLogHelper.debug("memory to Users is :{}\r\n" +
+                        "memory to DbGroups is :{}\r\n" +
+                        "memory to Shardings is :{}\r\n" +
+                        "memory to sequence is :{}", LOGGER, userConfig, dbConfig, shardingConfig, sequenceConfig);
+                loader = new ConfigInitializer(userConfig, dbConfig, shardingConfig, sequenceConfig);
+            }
+            ReloadLogHelper.info("reload config: load config end", LOGGER);
+            return loader;
+        } catch (Exception e) {
+            throw new Exception(e.getMessage() == null ? e.toString() : e.getMessage(), e);
+        }
+    }
+
+    private static void syncShardingNode(ConfigInitializer loader) {
+        Map<String, ShardingNode> oldShardingNodeMap = DbleServer.getInstance().getConfig().getShardingNodes();
+        Map<String, ShardingNode> newShardingNodeMap = loader.getShardingNodes();
+        for (Map.Entry<String, ShardingNode> shardingNodeEntry : newShardingNodeMap.entrySet()) {
+            //sync schema_exists,only testConn can update schema_exists
+            if (oldShardingNodeMap.containsKey(shardingNodeEntry.getKey())) {
+                shardingNodeEntry.getValue().setSchemaExists(oldShardingNodeMap.get(shardingNodeEntry.getKey()).isSchemaExists());
+            }
+        }
+
+    }
+
+    /**
+     * user in use cannot be deleted
+     */
+    private static void checkUser(List<ChangeItem> changeItemList) {
+        for (ChangeItem changeItem : changeItemList) {
+            int type = changeItem.getType();
+            Object item = changeItem.getItem();
+            if (type == 3 && item instanceof UserName) {
+                //check is it in use
+                Integer count = FrontendUserManager.getInstance().getUserConnectionMap().get(item);
+                if (null != count && count > 0) {
+                    throw new ConfigException("user['" + item.toString() + "'] is being used.");
+                }
+            } else if (type == 2 && changeItem.isAffectEntryDbGroup() && item instanceof UserName) {
+                //check is it in use
+                Integer count = FrontendUserManager.getInstance().getUserConnectionMap().get(item);
+                if (null != count && count > 0) {
+                    throw new ConfigException("user['" + item.toString() + "'] is being used.");
+                }
+            }
+        }
+    }
+
+    private static List<ChangeItem> differentiateChanges(ConfigInitializer newLoader) {
+        List<ChangeItem> changeItemList = Lists.newArrayList();
+        //user
+        //old
+        ServerConfig oldServerConfig = DbleServer.getInstance().getConfig();
+        Map<UserName, UserConfig> oldUserMap = oldServerConfig.getUsers();
+        //new
+        Map<UserName, UserConfig> newUserMap = newLoader.getUsers();
+        MapDifference<UserName, UserConfig> userMapDifference = Maps.difference(newUserMap, oldUserMap);
+        //delete
+        userMapDifference.entriesOnlyOnRight().keySet().stream().map(userConfig -> new ChangeItem(3, userConfig)).forEach(changeItemList::add);
+        //add
+        userMapDifference.entriesOnlyOnLeft().keySet().stream().map(userConfig -> new ChangeItem(1, userConfig)).forEach(changeItemList::add);
+        //update
+        userMapDifference.entriesDiffering().entrySet().stream().map(differenceEntry -> {
+            UserConfig newUserConfig = differenceEntry.getValue().leftValue();
+            UserConfig oldUserConfig = differenceEntry.getValue().rightValue();
+            ChangeItem changeItem = new ChangeItem(2, differenceEntry.getKey());
+            if (newUserConfig instanceof RwSplitUserConfig && oldUserConfig instanceof RwSplitUserConfig) {
+                if (!((RwSplitUserConfig) newUserConfig).getDbGroup().equals(((RwSplitUserConfig) oldUserConfig).getDbGroup())) {
+                    changeItem.setAffectEntryDbGroup(true);
+                }
+            }
+            return changeItem;
+        }).forEach(changeItemList::add);
+
+        //shardingNode
+        Map<String, ShardingNode> oldShardingNodeMap = oldServerConfig.getShardingNodes();
+        Map<String, ShardingNode> newShardingNodeMap = newLoader.getShardingNodes();
+        MapDifference<String, ShardingNode> shardingNodeMapDiff = Maps.difference(newShardingNodeMap, oldShardingNodeMap);
+        //delete
+        shardingNodeMapDiff.entriesOnlyOnRight().values().stream().map(sharingNode -> new ChangeItem(3, sharingNode)).forEach(changeItemList::add);
+        //add
+        shardingNodeMapDiff.entriesOnlyOnLeft().values().stream().map(sharingNode -> new ChangeItem(1, sharingNode)).forEach(changeItemList::add);
+        //update
+        shardingNodeMapDiff.entriesDiffering().entrySet().stream().map(differenceEntry -> {
+            ShardingNode newShardingNode = differenceEntry.getValue().leftValue();
+            ChangeItem changeItem = new ChangeItem(2, newShardingNode);
+            return changeItem;
+        }).forEach(changeItemList::add);
+
+        //dbGroup
+        Map<String, PhysicalDbGroup> oldDbGroupMap = oldServerConfig.getDbGroups();
+        Map<String, PhysicalDbGroup> newDbGroupMap = newLoader.getDbGroups();
+        Map<String, PhysicalDbGroup> removeDbGroup = new LinkedHashMap<>(oldDbGroupMap);
+        for (Map.Entry<String, PhysicalDbGroup> newDbGroupEntry : newDbGroupMap.entrySet()) {
+            PhysicalDbGroup oldDbGroup = oldDbGroupMap.get(newDbGroupEntry.getKey());
+            PhysicalDbGroup newDbGroup = newDbGroupEntry.getValue();
+
+            if (null == oldDbGroup) {
+                //add dbGroup
+                changeItemList.add(new ChangeItem(1, newDbGroup));
+            } else {
+                removeDbGroup.remove(newDbGroupEntry.getKey());
+                //change dbGroup
+                if (!newDbGroup.equalsBaseInfo(oldDbGroup)) {
+                    ChangeItem changeItem = new ChangeItem(2, newDbGroup);
+                    if (!newDbGroup.equalsForConnectionPool(oldDbGroup)) {
+                        changeItem.setAffectConnectionPool(true);
+                    }
+                    if (!newDbGroup.equalsForHeartbeat(oldDbGroup)) {
+                        changeItem.setAffectHeartbeat(true);
+                    }
+                    changeItemList.add(changeItem);
+                }
+
+                //dbInstance
+                Map<String, PhysicalDbInstance> newDbInstanceMap = newDbGroup.getAllDbInstanceMap();
+                Map<String, PhysicalDbInstance> oldDbInstanceMap = oldDbGroup.getAllDbInstanceMap();
+
+                MapDifference<String, PhysicalDbInstance> dbInstanceMapDifference = Maps.difference(newDbInstanceMap, oldDbInstanceMap);
+                //delete
+                dbInstanceMapDifference.entriesOnlyOnRight().values().stream().map(dbInstance -> new ChangeItem(3, dbInstance)).forEach(changeItemList::add);
+                //add
+                dbInstanceMapDifference.entriesOnlyOnLeft().values().stream().map(dbInstance -> new ChangeItem(1, dbInstance)).forEach(changeItemList::add);
+                //update
+                dbInstanceMapDifference.entriesDiffering().values().stream().map(physicalDbInstanceValueDifference -> {
+                    PhysicalDbInstance newDbInstance = physicalDbInstanceValueDifference.leftValue();
+                    PhysicalDbInstance oldDbInstance = physicalDbInstanceValueDifference.rightValue();
+                    ChangeItem changeItem = new ChangeItem(2, newDbInstance);
+                    if (!newDbInstance.equalsForConnectionPool(oldDbInstance)) {
+                        changeItem.setAffectConnectionPool(true);
+                    }
+                    if (!newDbInstance.equalsForPoolCapacity(oldDbInstance)) {
+                        changeItem.setAffectPoolCapacity(true);
+                    }
+                    if (!newDbInstance.equalsForHeartbeat(oldDbInstance)) {
+                        changeItem.setAffectHeartbeat(true);
+                    }
+                    if (!newDbInstance.equalsForTestConn(oldDbInstance)) {
+                        changeItem.setAffectTestConn(true);
+                    } else {
+                        newDbInstance.setTestConnSuccess(oldDbInstance.isTestConnSuccess());
+                    }
+                    return changeItem;
+                }).forEach(changeItemList::add);
+                //testConnSuccess with both
+                for (Map.Entry<String, PhysicalDbInstance> dbInstanceEntry : dbInstanceMapDifference.entriesInCommon().entrySet()) {
+                    dbInstanceEntry.getValue().setTestConnSuccess(oldDbInstanceMap.get(dbInstanceEntry.getKey()).isTestConnSuccess());
+                }
+
+            }
+        }
+        for (Map.Entry<String, PhysicalDbGroup> entry : removeDbGroup.entrySet()) {
+            PhysicalDbGroup value = entry.getValue();
+            changeItemList.add(new ChangeItem(3, value));
+        }
+
+        return changeItemList;
+    }
+
+    private static PhysicalDbInstance getPhysicalDbInstance(ConfigInitializer loader) {
+        PhysicalDbInstance ds = null;
+        for (PhysicalDbGroup dbGroup : loader.getDbGroups().values()) {
+            PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
+            if (dsTest.isTestConnSuccess()) {
+                ds = dsTest;
+            }
+            if (ds != null) {
+                break;
+            }
+        }
+        if (ds == null) {
+            for (PhysicalDbGroup dbGroup : loader.getDbGroups().values()) {
+                for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
+                    if (dsTest.isTestConnSuccess()) {
+                        ds = dsTest;
+                        break;
+                    }
+                }
+                if (ds != null) {
+                    break;
+                }
+            }
+        }
+        return ds;
+    }
+
+    private static void recycleOldBackendConnections(boolean forceAllReload, boolean closeFrontCon) {
+        ReloadLogHelper.info("reload config: recycle old active backend [frontend] connections start", LOGGER);
+        if (forceAllReload && closeFrontCon) {
             for (IOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                 for (BackendConnection con : processor.getBackends().values()) {
                     if (con.getPoolDestroyedTime() != 0) {
@@ -397,6 +608,7 @@ public final class ReloadConfig {
                 }
             }
         }
+        ReloadLogHelper.info("reload config: recycle old active backend [frontend] connections end", LOGGER);
     }
 
 
@@ -408,93 +620,19 @@ public final class ReloadConfig {
         }
     }
 
-    private static boolean forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
-        TraceManager.TraceObject traceObject = TraceManager.threadTrace("self-force-reload");
-        try {
-            ServerConfig config = DbleServer.getInstance().getConfig();
-            ServerConfig serverConfig = new ServerConfig(loader);
-            Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
-
-            ConfigUtil.getAndSyncKeyVariables(newDbGroups, true);
-
-            SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
-            ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
-            // recycle old active conn
-            if ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0) {
-                for (IOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
-                    for (BackendConnection con : processor.getBackends().values()) {
-                        if (con.getPoolDestroyedTime() != 0) {
-                            con.close("old active backend conn will be forced closed by closing front conn");
-                        }
-                    }
-                }
-            }
-
-            if (loader.isFullyConfigured()) {
-                if (newSystemVariables.isLowerCaseTableNames()) {
-                    ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
-                    serverConfig.reviseLowerCase(loader.getSequenceConfig());
-                    ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
-                } else {
-                    serverConfig.loadSequence(loader.getSequenceConfig());
-                    serverConfig.selfChecking0();
-                }
-            }
-            checkTestConnIfNeed(loadAllMode, loader);
-
-            Map<UserName, UserConfig> newUsers = serverConfig.getUsers();
-            Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
-            Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
-            Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
-            Map<String, Set<ERTable>> newFuncNodeERMap = serverConfig.getFuncNodeERMap();
-            Map<String, Properties> newBlacklistConfig = serverConfig.getBlacklistConfig();
-            Map<String, AbstractPartitionAlgorithm> newFunctions = serverConfig.getFunctions();
-
-
-            ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
-            String reasonMsg = initDbGroupByMap(newDbGroups, newShardingNodes, loader.isFullyConfigured());
-            ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
-            if (reasonMsg == null) {
-                /* 2.3 apply new conf */
-                ReloadLogHelper.info("reload config: apply new config start", LOGGER);
-                boolean result;
-                try {
-                    result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, config.getDbGroups(), newErRelations, newFuncNodeERMap,
-                            newSystemVariables, loader.isFullyConfigured(), loadAllMode, newBlacklistConfig, newFunctions,
-                            loader.getUserConfig(), loader.getSequenceConfig(), loader.getShardingConfig(), loader.getDbConfig());
-                    CronScheduler.getInstance().init(config.getSchemas());
-                    if (!result) {
-                        initFailed(newDbGroups);
-                    }
-                    FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
-                    ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-                    if (!loader.isFullyConfigured()) {
-                        recycleServerConnections();
-                    }
-                    return result;
-                } catch (Exception e) {
-                    initFailed(newDbGroups);
-                    throw e;
-                }
+    private static SystemVariables getSystemVariablesFromDbInstance(boolean fullyConfigured, PhysicalDbInstance physicalDbInstance) throws Exception {
+        VarsExtractorHandler handler = new VarsExtractorHandler(physicalDbInstance);
+        SystemVariables newSystemVariables;
+        newSystemVariables = handler.execute();
+        if (newSystemVariables == null) {
+            if (fullyConfigured) {
+                throw new Exception("Can't get variables from any dbInstance, because all of dbGroup can't connect to MySQL correctly");
             } else {
-                initFailed(newDbGroups);
-                throw new Exception(reasonMsg);
-            }
-        } finally {
-            TraceManager.finishSpan(traceObject);
-        }
-    }
-
-    private static void checkTestConnIfNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
-        if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && loader.isFullyConfigured()) {
-            try {
-                ReloadLogHelper.info("reload config: test all shardingNodes start", LOGGER);
-                loader.testConnection();
-                ReloadLogHelper.info("reload config: test all shardingNodes end", LOGGER);
-            } catch (Exception e) {
-                throw new Exception(e);
+                ReloadLogHelper.info("reload config: no valid dbGroup ,keep variables as old", LOGGER);
+                newSystemVariables = DbleServer.getInstance().getSystemVariables();
             }
         }
+        return newSystemVariables;
     }
 
     private static SystemVariables getSystemVariablesFromdbGroup(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDbGroups) throws Exception {
@@ -513,89 +651,21 @@ public final class ReloadConfig {
     }
 
     private static void recycleServerConnections() {
+        ReloadLogHelper.info("reload config: recycle front connection start", LOGGER);
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("recycle-sharding-connections");
         try {
             for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (FrontendConnection fcon : processor.getFrontends().values()) {
                     if (!fcon.isManager()) {
+                        ReloadLogHelper.debug("recycle front connection:{}", LOGGER, fcon);
                         fcon.close("Reload causes the service to stop");
                     }
                 }
             }
+            ReloadLogHelper.info("reload config: recycle front connection end", LOGGER);
         } finally {
             TraceManager.finishSpan(traceObject);
         }
-    }
-
-    private static void distinguishDbGroup(Map<String, PhysicalDbGroup> newDbGroups, Map<String, PhysicalDbGroup> oldDbGroups,
-                                           Map<String, PhysicalDbGroup> addOrChangeDbGroups, Map<String, PhysicalDbGroup> noChangeDbGroups,
-                                           Map<String, PhysicalDbGroup> recycleHosts) {
-
-        for (Map.Entry<String, PhysicalDbGroup> entry : newDbGroups.entrySet()) {
-            PhysicalDbGroup oldPool = oldDbGroups.get(entry.getKey());
-            PhysicalDbGroup newPool = entry.getValue();
-            if (oldPool == null) {
-                addOrChangeDbGroups.put(newPool.getGroupName(), newPool);
-            } else {
-                calcChangedDbGroups(addOrChangeDbGroups, noChangeDbGroups, recycleHosts, entry, oldPool);
-            }
-        }
-
-        for (Map.Entry<String, PhysicalDbGroup> entry : oldDbGroups.entrySet()) {
-            PhysicalDbGroup newPool = newDbGroups.get(entry.getKey());
-
-            if (newPool == null) {
-                PhysicalDbGroup oldPool = entry.getValue();
-                recycleHosts.put(oldPool.getGroupName(), oldPool);
-            }
-        }
-    }
-
-    private static void calcChangedDbGroups(Map<String, PhysicalDbGroup> addOrChangeHosts, Map<String, PhysicalDbGroup> noChangeHosts, Map<String, PhysicalDbGroup> recycleHosts, Map.Entry<String, PhysicalDbGroup> entry, PhysicalDbGroup oldPool) {
-        PhysicalDbGroupDiff toCheck = new PhysicalDbGroupDiff(entry.getValue(), oldPool);
-        switch (toCheck.getChangeType()) {
-            case PhysicalDbGroupDiff.CHANGE_TYPE_CHANGE:
-                recycleHosts.put(toCheck.getNewPool().getGroupName(), toCheck.getOrgPool());
-                addOrChangeHosts.put(toCheck.getNewPool().getGroupName(), toCheck.getNewPool());
-                break;
-            case PhysicalDbGroupDiff.CHANGE_TYPE_ADD:
-                //when the type is change,just delete the old one and use the new one
-                addOrChangeHosts.put(toCheck.getNewPool().getGroupName(), toCheck.getNewPool());
-                break;
-            case PhysicalDbGroupDiff.CHANGE_TYPE_NO:
-                //add old dbGroup into the new mergeddbGroups
-                noChangeHosts.put(toCheck.getNewPool().getGroupName(), toCheck.getOrgPool());
-                break;
-            case PhysicalDbGroupDiff.CHANGE_TYPE_DELETE:
-                recycleHosts.put(toCheck.getOrgPool().getGroupName(), toCheck.getOrgPool());
-                break;
-            //do not add into old one
-            default:
-                break;
-        }
-    }
-
-
-    private static String initDbGroupByMap(Map<String, PhysicalDbGroup> newDbGroups, Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured) {
-        for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
-            ReloadLogHelper.info("try to init dbGroup : " + dbGroup.getGroupName(), LOGGER);
-            String hostName = dbGroup.getGroupName();
-            // set schemas
-            ArrayList<String> dnSchemas = new ArrayList<>(30);
-            for (ShardingNode dn : newShardingNodes.values()) {
-                if (dn.getDbGroup().getGroupName().equals(hostName)) {
-                    dn.setDbGroup(dbGroup);
-                    dnSchemas.add(dn.getDatabase());
-                }
-            }
-            dbGroup.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
-            if (fullyConfigured) {
-                dbGroup.init("reload config");
-            } else {
-                LOGGER.info("dbGroup[" + hostName + "] is not fullyConfigured, so doing nothing");
-            }
-        }
-        return null;
     }
 
     private static void writePacket(boolean isSuccess, ManagerService service, String errorMsg, int errorCode) {
@@ -612,6 +682,92 @@ public final class ReloadConfig {
         } else {
             LOGGER.warn(errorMsg);
             service.writeErrMessage(errorCode, errorMsg);
+        }
+    }
+
+    public static class ChangeItem {
+        //1:add  2:update  3:delete
+        private int type;
+        private Object item;
+        private boolean affectHeartbeat;
+        private boolean affectConnectionPool;
+        private boolean affectTestConn;
+        private boolean affectEntryDbGroup;
+        //connection pool capacity
+        private boolean affectPoolCapacity;
+
+        public ChangeItem(int type, Object item) {
+            this.type = type;
+            this.item = item;
+        }
+
+        public boolean isAffectHeartbeat() {
+            return affectHeartbeat;
+        }
+
+        public void setAffectHeartbeat(boolean affectHeartbeat) {
+            this.affectHeartbeat = affectHeartbeat;
+        }
+
+        public boolean isAffectConnectionPool() {
+            return affectConnectionPool;
+        }
+
+        public void setAffectConnectionPool(boolean affectConnectionPool) {
+            this.affectConnectionPool = affectConnectionPool;
+        }
+
+        public boolean isAffectPoolCapacity() {
+            return affectPoolCapacity;
+        }
+
+        public void setAffectPoolCapacity(boolean affectPoolCapacity) {
+            this.affectPoolCapacity = affectPoolCapacity;
+        }
+
+        public boolean isAffectTestConn() {
+            return affectTestConn;
+        }
+
+        public void setAffectTestConn(boolean affectTestConn) {
+            this.affectTestConn = affectTestConn;
+        }
+
+        public boolean isAffectEntryDbGroup() {
+            return affectEntryDbGroup;
+        }
+
+        public void setAffectEntryDbGroup(boolean affectEntryDbGroup) {
+            this.affectEntryDbGroup = affectEntryDbGroup;
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public void setType(int type) {
+            this.type = type;
+        }
+
+        public Object getItem() {
+            return item;
+        }
+
+        public void setItem(Object item) {
+            this.item = item;
+        }
+
+        @Override
+        public String toString() {
+            return "ChangeItem{" +
+                    "type=" + type +
+                    ", item=" + item +
+                    ", affectHeartbeat=" + affectHeartbeat +
+                    ", affectConnectionPool=" + affectConnectionPool +
+                    ", affectTestConn=" + affectTestConn +
+                    ", affectEntryDbGroup=" + affectEntryDbGroup +
+                    ", affectPoolCapacity=" + affectPoolCapacity +
+                    '}';
         }
     }
 }

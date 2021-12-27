@@ -124,7 +124,7 @@ public class UserConverter {
         }
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Xml to Shardings is :" + usersBean);
+            LOGGER.debug("Xml to Users is :" + usersBean);
         }
         if (null == usersBean.getUser() || !usersBean.getUser().stream().anyMatch(userObj -> userObj instanceof ManagerUser)) {
             throw new ConfigException("user.xml contains at least one managerUser");
@@ -172,10 +172,10 @@ public class UserConverter {
 
         UserName userName = new UserName(userConfig.getName(), tenant);
         if (this.userConfigMap.containsKey(userName)) {
-            throw new ConfigException("User [" + userName + "] has already existed");
+            throw new ConfigException("User [" + userName.getFullName() + "] has already existed");
         }
         if (StringUtil.isEmpty(dbGroup)) {
-            throw new ConfigException("User [" + userName + "]'s dbGroup is empty");
+            throw new ConfigException("User [" + userName.getFullName() + "]'s dbGroup is empty");
         }
 
         WallProvider wallProvider = getWallProvider(blackListMap, problemReporter, blacklistStr, userName);
@@ -191,10 +191,10 @@ public class UserConverter {
 
         UserName userName = new UserName(userConfig.getName(), tenant);
         if (this.userConfigMap.containsKey(userName)) {
-            throw new ConfigException("User [" + userName + "] has already existed");
+            throw new ConfigException("User [" + userName.getFullName() + "] has already existed");
         }
         if (StringUtil.isEmpty(dbGroup)) {
-            throw new ConfigException("User [" + userName + "]'s dbGroup is empty");
+            throw new ConfigException("User [" + userName.getFullName() + "]'s dbGroup is empty");
         }
 
         WallProvider wallProvider = getWallProvider(blackListMap, problemReporter, blacklistStr, userName);
@@ -211,10 +211,10 @@ public class UserConverter {
 
         UserName userName = new UserName(userConfig.getName(), tenant);
         if (this.userConfigMap.containsKey(userName)) {
-            throw new ConfigException("User [" + userName + "] has already existed");
+            throw new ConfigException("User [" + userName.getFullName() + "] has already existed");
         }
         if (StringUtil.isEmpty(schemas)) {
-            throw new ConfigException("User [" + userName + "]'s schemas is empty");
+            throw new ConfigException("User [" + userName.getFullName() + "]'s schemas is empty");
         }
         String[] strArray = SplitUtil.split(schemas, ',', true);
 

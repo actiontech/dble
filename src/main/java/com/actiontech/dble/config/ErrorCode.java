@@ -45,7 +45,6 @@ public final class ErrorCode {
     public static final int ER_META_DATA = 5316;
     public static final int ER_BACKEND_CONNECTION = 5317;
     public static final int CREATE_VIEW_ERROR = 5318;
-    public static final int ER_HINT_EXPLAIN_PLAN = 5319;
     public static final int ER_RELOAD_INTERRUPUTED = 5999;
     // mysql error code
     public static final int ER_HASHCHK = 1000;

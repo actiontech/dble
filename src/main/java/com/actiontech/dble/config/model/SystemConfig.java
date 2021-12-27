@@ -108,7 +108,7 @@ public final class SystemConfig {
 
     // join Optimizer
     private boolean useNewJoinOptimizer = false;
-    private boolean alwaysTryNestLoop = false;
+    private int joinStrategyType = -1;
 
     //query memory used for per session,unit is M
     private int otherMemSize = 4;
@@ -207,6 +207,7 @@ public final class SystemConfig {
     public int getSamplingRate() {
         return samplingRate;
     }
+
     @SuppressWarnings("unused")
     public void setSamplingRate(int samplingRate) {
         if (samplingRate >= 0 && samplingRate <= 100) {
@@ -219,6 +220,7 @@ public final class SystemConfig {
     public int getSqlLogTableSize() {
         return sqlLogTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setSqlLogTableSize(int sqlLogTableSize) {
         if (sqlLogTableSize > 0) {
@@ -232,6 +234,7 @@ public final class SystemConfig {
     public int getEnableStatistic() {
         return enableStatistic;
     }
+
     @SuppressWarnings("unused")
     public void setEnableStatistic(int enableStatistic) {
         if (enableStatistic >= 0 && enableStatistic <= 1) {
@@ -244,6 +247,7 @@ public final class SystemConfig {
     public int getAssociateTablesByEntryByUserTableSize() {
         return associateTablesByEntryByUserTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
         if (associateTablesByEntryByUserTableSize < 1) {
@@ -256,6 +260,7 @@ public final class SystemConfig {
     public int getFrontendByBackendByEntryByUserTableSize() {
         return frontendByBackendByEntryByUserTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
         if (frontendByBackendByEntryByUserTableSize < 1) {
@@ -268,6 +273,7 @@ public final class SystemConfig {
     public int getTableByUserByEntryTableSize() {
         return tableByUserByEntryTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
         if (tableByUserByEntryTableSize < 1) {
@@ -280,6 +286,7 @@ public final class SystemConfig {
     public int getStatisticQueueSize() {
         return statisticQueueSize;
     }
+
     @SuppressWarnings("unused")
     public void setStatisticQueueSize(int statisticQueueSize) {
         if (statisticQueueSize < 1 || Integer.bitCount(statisticQueueSize) != 1) {
@@ -292,6 +299,7 @@ public final class SystemConfig {
     public int getEnableGeneralLog() {
         return enableGeneralLog;
     }
+
     @SuppressWarnings("unused")
     public void setEnableGeneralLog(int enableGeneralLog) {
         if (enableGeneralLog >= 0 && enableGeneralLog <= 1) {
@@ -304,6 +312,7 @@ public final class SystemConfig {
     public String getGeneralLogFile() {
         return generalLogFile;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogFile(String generalLogFile) {
         this.generalLogFile = generalLogFile;
@@ -312,6 +321,7 @@ public final class SystemConfig {
     public int getGeneralLogFileSize() {
         return generalLogFileSize;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogFileSize(int generalLogFileSize) {
         if (generalLogFileSize > 0) {
@@ -324,6 +334,7 @@ public final class SystemConfig {
     public int getGeneralLogQueueSize() {
         return generalLogQueueSize;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogQueueSize(int generalLogQueueSize) {
         if (generalLogQueueSize < 1 || Integer.bitCount(generalLogQueueSize) != 1) {
@@ -375,7 +386,6 @@ public final class SystemConfig {
     }
 
 
-
     public boolean isUseNewJoinOptimizer() {
         return useNewJoinOptimizer;
     }
@@ -384,12 +394,16 @@ public final class SystemConfig {
         this.useNewJoinOptimizer = useNewJoinOptimizer;
     }
 
-    public boolean isAlwaysTryNestLoop() {
-        return alwaysTryNestLoop;
+    public int getJoinStrategyType() {
+        return joinStrategyType;
     }
 
-    public void setAlwaysTryNestLoop(boolean alwaysTryNestLoop) {
-        this.alwaysTryNestLoop = alwaysTryNestLoop;
+    public void setJoinStrategyType(int joinStrategyType) {
+        if (joinStrategyType < -1 || joinStrategyType > 2) {
+            problemReporter.warn("Property [ joinStrategyType ] '" + joinStrategyType + "' in bootstrap.cnf is illegal, size must not be less than -1 and not be greater than 2, you may need use the default value " + this.joinStrategyType + " replaced");
+        } else {
+            this.joinStrategyType = joinStrategyType;
+        }
     }
 
     public String getXaRecoveryLogBaseDir() {
@@ -493,6 +507,7 @@ public final class SystemConfig {
     public boolean isCapClientFoundRows() {
         return capClientFoundRows;
     }
+
     @SuppressWarnings("unused")
     public void setCapClientFoundRows(boolean capClientFoundRows) {
         this.capClientFoundRows = capClientFoundRows;
@@ -1391,6 +1406,7 @@ public final class SystemConfig {
     public int getMaxHeapTableSize() {
         return maxHeapTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setMaxHeapTableSize(int maxHeapTableSize) {
         if (maxHeapTableSize >= 0) {
@@ -1403,6 +1419,7 @@ public final class SystemConfig {
     public boolean isEnableCursor() {
         return enableCursor;
     }
+
     @SuppressWarnings("unused")
     public void setEnableCursor(boolean enableCursor) {
         this.enableCursor = enableCursor;
@@ -1419,6 +1436,7 @@ public final class SystemConfig {
     public int getEnableBatchLoadData() {
         return enableBatchLoadData;
     }
+
     @SuppressWarnings("unused")
     public void setEnableBatchLoadData(int enableBatchLoadData) {
         if (enableBatchLoadData >= 0 && enableBatchLoadData <= 1) {
@@ -1431,6 +1449,7 @@ public final class SystemConfig {
     public boolean isInSubQueryTransformToJoin() {
         return inSubQueryTransformToJoin;
     }
+
     @SuppressWarnings("unused")
     public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
         this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
@@ -1439,6 +1458,7 @@ public final class SystemConfig {
     public int getGroupConcatMaxLen() {
         return groupConcatMaxLen;
     }
+
     @SuppressWarnings("unused")
     public void setGroupConcatMaxLen(int maxLen) {
         if (maxLen >= 0) {
@@ -1556,7 +1576,7 @@ public final class SystemConfig {
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
-                ", alwaysTryNestLoop=" + alwaysTryNestLoop +
+                ", joinStrategyType=" + joinStrategyType +
                 "]";
     }
 }

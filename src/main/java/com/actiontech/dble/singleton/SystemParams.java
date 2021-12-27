@@ -135,7 +135,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("statisticQueueSize", StatisticManager.getInstance().getStatisticQueueSize() + "", "Sets the queue size for statistic, value must not be less than 1 and must be a power of 2,the default value is 4096"));
         readOnlyParams.add(new ParamInfo("inSubQueryTransformToJoin", sysConfig.isInSubQueryTransformToJoin() + "", "The inSubQuery is transformed into the join ,the default value is false"));
         readOnlyParams.add(new ParamInfo("rwStickyTime", sysConfig.getRwStickyTime() + "ms", "For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms"));
-        readOnlyParams.add(new ParamInfo("alwaysTryNestLoop", sysConfig.isAlwaysTryNestLoop() + "", "Whether always try nest loop join is enabled. The default value is false"));
+        readOnlyParams.add(new ParamInfo("joinStrategyType", sysConfig.getJoinStrategyType() + "", "Nest loop strategy type. The default value is -1"));
     }
 
     public List<ParamInfo> getVolatileParams() {

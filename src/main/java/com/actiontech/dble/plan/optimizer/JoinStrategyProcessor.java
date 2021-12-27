@@ -5,6 +5,9 @@
 
 package com.actiontech.dble.plan.optimizer;
 
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -24,6 +27,7 @@ public final class JoinStrategyProcessor {
         try {
             if (PlanUtil.isGlobalOrER(qtn))
                 return qtn;
+
             if (qtn instanceof JoinNode) {
                 JoinStrategyChooser chooser = new JoinStrategyChooser((JoinNode) qtn);
                 chooser.tryNestLoop(always);
@@ -38,6 +42,28 @@ public final class JoinStrategyProcessor {
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
             TraceManager.finishSpan(traceObject);
+        }
+    }
+
+    public static void chooser(PlanNode node) {
+        int joinStrategyType = SystemConfig.getInstance().getJoinStrategyType();
+        switch (joinStrategyType) {
+            case -1:
+                if (SystemConfig.getInstance().isUseJoinStrategy()) {
+                    optimize(node, false);
+                }
+                break;
+            case 0:
+                break;
+            case 1:
+                optimize(node, false);
+                break;
+            case 2:
+                optimize(node, true);
+                break;
+            default:
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", " joinStrategyType = " + joinStrategyType + " is illegal, size must not be less than -1 and not be greater than 2");
+
         }
     }
 }

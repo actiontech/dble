@@ -133,7 +133,7 @@ public class JoinStrategyChooser {
         buildNestLoop(joinNode, rightNode, true);
         if (leftNode instanceof JoinNode) {
             traverseNode((JoinNode) leftNode);
-        } else {
+        } else if (isSmallTable((TableNode) rightNode)) {
             buildNestLoop(joinNode, leftNode, joinNode.isInnerJoin());
         }
     }

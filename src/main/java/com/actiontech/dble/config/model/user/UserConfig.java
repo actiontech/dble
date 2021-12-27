@@ -12,6 +12,7 @@ import com.actiontech.dble.util.StringUtil;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class UserConfig {
@@ -88,6 +89,24 @@ public class UserConfig {
 
     public int checkSchema(String schema) {
         return 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserConfig that = (UserConfig) o;
+        return id == that.id &&
+                isEncrypt == that.isEncrypt &&
+                maxCon == that.maxCon &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(password, that.password) &&
+                Objects.equals(whiteIPs, that.whiteIPs);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, password, isEncrypt, whiteIPs, maxCon);
     }
 
     public boolean equalsBaseInfo(UserConfig userConfig) {

@@ -11,6 +11,7 @@ import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -48,4 +49,17 @@ public class RwSplitUserConfig extends ServerUserConfig {
         return exist ? 0 : ErrorCode.ER_BAD_DB_ERROR;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        RwSplitUserConfig that = (RwSplitUserConfig) o;
+        return Objects.equals(dbGroup, that.dbGroup);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), dbGroup);
+    }
 }

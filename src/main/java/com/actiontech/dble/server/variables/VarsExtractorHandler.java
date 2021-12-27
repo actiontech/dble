@@ -28,6 +28,7 @@ public class VarsExtractorHandler {
     private Lock lock;
     private Condition done;
     private Map<String, PhysicalDbGroup> dbGroups;
+    private PhysicalDbInstance physicalDbInstance;
     private volatile SystemVariables systemVariables = null;
 
     public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
@@ -37,13 +38,23 @@ public class VarsExtractorHandler {
         this.done = lock.newCondition();
     }
 
+    public VarsExtractorHandler(PhysicalDbInstance physicalDbInstance) {
+        this.physicalDbInstance = physicalDbInstance;
+        this.extracting = false;
+        this.lock = new ReentrantLock();
+        this.done = lock.newCondition();
+    }
+
+
     public SystemVariables execute() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-system-variables-from-backend");
         try {
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-            PhysicalDbInstance ds = getPhysicalDbInstance();
-            if (ds != null) {
-                OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
+            if (null == this.physicalDbInstance) {
+                this.physicalDbInstance = getPhysicalDbInstance();
+            }
+            if (physicalDbInstance != null) {
+                OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, physicalDbInstance);
                 sqlJob.run();
                 waitDone();
             } else {
@@ -51,6 +62,7 @@ public class VarsExtractorHandler {
             }
             return systemVariables;
         } finally {
+            this.physicalDbInstance = null;
             TraceManager.finishSpan(traceObject);
         }
     }

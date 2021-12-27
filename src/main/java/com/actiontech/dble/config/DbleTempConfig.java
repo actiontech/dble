@@ -4,6 +4,7 @@
  */
 package com.actiontech.dble.config;
 
+
 public final class DbleTempConfig {
 
     private static final DbleTempConfig INSTANCE = new DbleTempConfig();
@@ -15,6 +16,7 @@ public final class DbleTempConfig {
     private String shardingConfig;
     private String userConfig;
     private String sequenceConfig;
+    private boolean lowerCase;
 
     public String getDbConfig() {
         return dbConfig;
@@ -46,6 +48,14 @@ public final class DbleTempConfig {
 
     public void setSequenceConfig(String sequenceConfig) {
         this.sequenceConfig = sequenceConfig;
+    }
+
+    public boolean isLowerCase() {
+        return lowerCase;
+    }
+
+    public void setLowerCase(boolean lowerCase) {
+        this.lowerCase = lowerCase;
     }
 
     public static DbleTempConfig getInstance() {

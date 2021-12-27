@@ -5,6 +5,8 @@
  */
 package com.actiontech.dble.config.model.db;
 
+import java.util.Objects;
+
 public class DbInstanceConfig {
 
     private final String instanceName;
@@ -138,4 +140,29 @@ public class DbInstanceConfig {
         return "DbInstanceConfig [hostName=" + instanceName + ", url=" + url + "]";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DbInstanceConfig that = (DbInstanceConfig) o;
+        return port == that.port &&
+                readWeight == that.readWeight &&
+                disabled == that.disabled &&
+                primary == that.primary &&
+                maxCon == that.maxCon &&
+                minCon == that.minCon &&
+                usingDecrypt == that.usingDecrypt &&
+                Objects.equals(instanceName, that.instanceName) &&
+                Objects.equals(ip, that.ip) &&
+                Objects.equals(url, that.url) &&
+                Objects.equals(user, that.user) &&
+                Objects.equals(password, that.password) &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(poolConfig, that.poolConfig);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(instanceName, ip, port, url, user, password, readWeight, id, disabled, primary, maxCon, minCon, poolConfig, usingDecrypt);
+    }
 }

@@ -220,7 +220,7 @@ public class DbleDbGroup extends ManagerWritableTable {
             DbleRwSplitEntry dbleRwSplitEntry = (DbleRwSplitEntry) ManagerSchemaInfo.getInstance().getTables().get(DbleRwSplitEntry.TABLE_NAME);
             boolean existUser = dbleRwSplitEntry.getRows().stream().anyMatch(entry -> entry.get(DbleRwSplitEntry.COLUMN_DB_GROUP).equals(affectPk.get(COLUMN_NAME)));
             if (existUser) {
-                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_db_user`(`db_group`) REFERENCES `dble_db_group`(`name`)");
+                throw new ConfigException("Cannot delete or update a parent row: a foreign key constraint fails `dble_rw_split_entry`(`db_group`) REFERENCES `dble_db_group`(`name`)");
             }
             //check instance-group
             DbleDbInstance dbleDbInstance = (DbleDbInstance) ManagerSchemaInfo.getInstance().getTables().get(DbleDbInstance.TABLE_NAME);

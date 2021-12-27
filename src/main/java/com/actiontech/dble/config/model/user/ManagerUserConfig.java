@@ -11,6 +11,7 @@ import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.util.StringUtil;
 
 import java.sql.SQLException;
+import java.util.Objects;
 
 public class ManagerUserConfig extends UserConfig {
     private final boolean readOnly;
@@ -49,6 +50,20 @@ public class ManagerUserConfig extends UserConfig {
             return ErrorCode.ER_BAD_DB_ERROR;
         }
         return 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        ManagerUserConfig that = (ManagerUserConfig) o;
+        return readOnly == that.readOnly;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), readOnly);
     }
 
     public boolean equalsBaseInfo(ManagerUserConfig managerUserConfig) {

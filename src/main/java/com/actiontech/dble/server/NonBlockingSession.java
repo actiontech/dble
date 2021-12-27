@@ -1169,6 +1169,7 @@ public class NonBlockingSession extends Session {
         this.discard = discard;
     }
 
+    @Override
     public void stopFlowControl() {
         LOGGER.info("Session stop flow control " + this.getSource());
         synchronized (flowControlledBackendConnections) {
@@ -1180,6 +1181,7 @@ public class NonBlockingSession extends Session {
         }
     }
 
+    @Override
     public void startFlowControl() {
         synchronized (flowControlledBackendConnections) {
             if (!shardingService.isFlowControlled()) {
@@ -1193,6 +1195,7 @@ public class NonBlockingSession extends Session {
         }
     }
 
+    @Override
     public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
         synchronized (flowControlledBackendConnections) {
             if (flowControlledBackendConnections.remove(con)) {

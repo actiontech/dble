@@ -6,6 +6,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
@@ -91,6 +92,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 break;
         }
     }
+
 
     @Override
     protected void beforeHandlingTask() {
@@ -253,7 +255,12 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         session.execute(true, data, null);
     }
 
-    public RWSplitNonBlockingSession getSession() {
+    public RWSplitNonBlockingSession getSession2() {
+        return session;
+    }
+
+    @Override
+    public Session getSession() {
         return session;
     }
 

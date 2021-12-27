@@ -93,7 +93,7 @@ public class ProcessList extends ManagerBaseTable {
                                 rows.add(getDefaultRow(fc));
                             }
                         } else {
-                            BackendConnection conn = ((RWSplitService) fc.getService()).getSession().getConn();
+                            BackendConnection conn = ((RWSplitService) fc.getService()).getSession2().getConn();
                             if (conn != null) {
                                 addRow(fc, conn, rows, indexs, dbInstanceMap);
                             } else {

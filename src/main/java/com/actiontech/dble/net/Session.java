@@ -6,6 +6,7 @@ package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 
@@ -46,4 +47,8 @@ public abstract class Session {
 
     public void allBackendConnReceive() {
     }
+
+    public abstract void startFlowControl();
+    public abstract void stopFlowControl();
+    public abstract void releaseConnectionFromFlowCntrolled(BackendConnection con);
 }

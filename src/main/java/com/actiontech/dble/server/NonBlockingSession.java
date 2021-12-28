@@ -810,7 +810,7 @@ public class NonBlockingSession extends Session {
             BackendConnection c = target.remove(rrn);
             if (c != null && !c.isClosed()) {
                 if (shardingService.isFlowControlled()) {
-                    releaseConnectionFromFlowCntrolled(c);
+                    releaseConnectionFromFlowControlled(c);
                 }
                 final AbstractService service = c.getService();
                 if (service != null && service.isAutocommit()) {
@@ -1196,7 +1196,7 @@ public class NonBlockingSession extends Session {
     }
 
     @Override
-    public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
         synchronized (flowControlledBackendConnections) {
             if (flowControlledBackendConnections.remove(con)) {
                 con.getSocketWR().enableRead();

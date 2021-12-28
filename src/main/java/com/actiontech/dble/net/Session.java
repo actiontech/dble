@@ -50,5 +50,5 @@ public abstract class Session {
 
     public abstract void startFlowControl();
     public abstract void stopFlowControl();
-    public abstract void releaseConnectionFromFlowCntrolled(BackendConnection con);
+    public abstract void releaseConnectionFromFlowControlled(BackendConnection con);
 }

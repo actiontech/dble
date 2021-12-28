@@ -66,7 +66,7 @@ public class RWSplitNonBlockingSession extends Session {
         }
     }
     @Override
-    public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
         synchronized (this) {
             con.getSocketWR().enableRead();
             rwSplitService.getConnection().setFlowControlled(false);
@@ -249,7 +249,7 @@ public class RWSplitNonBlockingSession extends Session {
                 !rwSplitService.isInLoadData() &&
                 !rwSplitService.isInPrepare() && this.conn != null && !rwSplitService.isUsingTmpTable()) {
             if (rwSplitService.isFlowControlled()) {
-                releaseConnectionFromFlowCntrolled(conn);
+                releaseConnectionFromFlowControlled(conn);
             }
             this.conn.release();
             this.conn = null;

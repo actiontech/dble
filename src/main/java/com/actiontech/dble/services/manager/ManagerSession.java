@@ -48,7 +48,7 @@ public class ManagerSession extends Session {
     }
 
     @Override
-    public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
         //DO NOTHING
     }
 

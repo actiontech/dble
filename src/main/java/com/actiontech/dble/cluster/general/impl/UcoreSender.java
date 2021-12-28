@@ -267,10 +267,10 @@ public final class UcoreSender extends AbstractConsulSender {
 
     @Override
     public void cleanPath(String path) {
-        if (!(path.charAt(path.length() - 1) == '/')) {
-            path = path + "/";
-        }
         try {
+            if (!(path.charAt(path.length() - 1) == '/')) {
+                path = path + "/";
+            }
             UcoreInterface.DeleteKvTreeInput input = UcoreInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
             try {
                 stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);

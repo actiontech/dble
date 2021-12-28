@@ -151,10 +151,10 @@ public final class ReloadConfig {
                     }
                 } finally {
                     lock.writeLock().unlock();
+                    ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
                 }
             } finally {
                 if (distributeLock != null) {
-                    ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
                     distributeLock.release();
                 }
             }

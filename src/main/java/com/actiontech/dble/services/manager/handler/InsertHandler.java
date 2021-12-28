@@ -33,10 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 public final class InsertHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(InsertHandler.class);
@@ -50,7 +47,6 @@ public final class InsertHandler {
             service.writeErrMessage("42000", "You have an error in your SQL syntax", ErrorCode.ER_PARSE_ERROR);
             return;
         }
-
         ManagerWritableTable managerTable = getWritableTable(insert, service);
         if (null == managerTable) {
             return;
@@ -59,26 +55,35 @@ public final class InsertHandler {
         if (null == columns) {
             return;
         }
-        //cluster-lock
-        DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
-                return;
-            }
-            LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+            insertWithCluster(service, insert, managerTable, columns);
+        } else {
+            generalInsert(service, insert, managerTable, columns);
         }
-        //stand-alone lock
-        List<LinkedHashMap<String, String>> rows;
+    }
+
+    private void generalInsert(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns) {
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
-        int rowSize;
         try {
-            rows = managerTable.makeInsertRows(columns, insert.getValuesList());
+            int rowSize = getRowSize(service, insert, managerTable, columns);
+            if (rowSize >= 0) {
+                writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+            }
+        } finally {
+            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
+            managerTable.getLock().unlock();
+        }
+    }
+
+    private int getRowSize(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns) {
+        int rowSize = -1;
+        try {
+            List<LinkedHashMap<String, String>> rows = managerTable.makeInsertRows(columns, insert.getValuesList());
             managerTable.checkPrimaryKeyDuplicate(rows);
             rowSize = managerTable.insertRows(rows);
             if (rowSize != 0) {
@@ -87,10 +92,8 @@ public final class InsertHandler {
             managerTable.afterExecute();
         } catch (SQLException e) {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
         } catch (ConfigException e) {
             service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
-            return;
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
@@ -99,16 +102,22 @@ public final class InsertHandler {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
-            return;
-        } finally {
-            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
-            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
-            managerTable.getLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
         }
-        writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+        return rowSize;
+    }
+
+    private void insertWithCluster(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns) {
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+        if (!distributeLock.acquire()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+            return;
+        }
+        LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+        try {
+            generalInsert(service, insert, managerTable, columns);
+        } finally {
+            distributeLock.release();
+        }
     }
 
     private List<String> getColumn(MySqlInsertStatement insert, ManagerWritableTable managerTable, ManagerService service) {

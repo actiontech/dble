@@ -93,25 +93,50 @@ public final class DeleteHandler {
             service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return;
         }
-
-        //cluster-lock
-        DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
-                return;
-            }
-            LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+            deleteWithCluster(service, delete, managerBaseTable);
+        } else {
+            generalDelete(service, delete, managerBaseTable);
         }
+    }
+
+    private void generalDelete(ManagerService service, MySqlDeleteStatement delete, ManagerBaseTable managerBaseTable) {
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         //stand-alone lock
-        int rowSize;
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
+        try {
+            int rowSize = getRowSize(service, managerTable, delete);
+            if (rowSize >= 0) {
+                writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+            }
+        } finally {
+            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
+            managerTable.getLock().unlock();
+        }
+    }
+
+    private void deleteWithCluster(ManagerService service, MySqlDeleteStatement delete, ManagerBaseTable managerBaseTable) {
+        //cluster-lock
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+        if (!distributeLock.acquire()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+            return;
+        }
+        LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+        try {
+            generalDelete(service, delete, managerBaseTable);
+        } finally {
+            distributeLock.release();
+        }
+    }
+
+    private int getRowSize(ManagerService service, ManagerWritableTable managerTable, MySqlDeleteStatement delete) {
+        int rowSize = -1;
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
@@ -119,12 +144,11 @@ public final class DeleteHandler {
             if (rowSize != 0) {
                 ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
             }
+            return rowSize;
         } catch (SQLException e) {
             service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
         } catch (ConfigException e) {
             service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
-            return;
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
@@ -134,18 +158,15 @@ public final class DeleteHandler {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
-            return;
-        } finally {
-            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
-            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
-            managerTable.getLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
         }
+        return rowSize;
+    }
+
+    private void writeOkPacket(int i, int rowSize, String msg, ManagerService service) {
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(rowSize);
         ok.write(service.getConnection());
     }
+
 }

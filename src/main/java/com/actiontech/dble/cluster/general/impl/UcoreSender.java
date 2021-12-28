@@ -78,6 +78,7 @@ public final class UcoreSender extends AbstractConsulSender {
         }
         ClusterToXml.loadKVtoFile(this);
     }
+
     @Override
     public String lock(String path, String value) throws Exception {
         UcoreInterface.LockOnSessionInput input = UcoreInterface.LockOnSessionInput.newBuilder().setKey(path).setValue(value).setTTLSeconds(30).build();
@@ -269,31 +270,35 @@ public final class UcoreSender extends AbstractConsulSender {
         if (!(path.charAt(path.length() - 1) == '/')) {
             path = path + "/";
         }
-        UcoreInterface.DeleteKvTreeInput input = UcoreInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
-        } catch (Exception e1) {
-            boolean flag = false;
-            for (String ip : getIpList()) {
-                ManagedChannel channel = null;
-                try {
-                    channel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
-                    flag = true;
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (channel != null) {
-                        channel.shutdownNow();
+            UcoreInterface.DeleteKvTreeInput input = UcoreInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
+            try {
+                stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
+            } catch (Exception e1) {
+                boolean flag = false;
+                for (String ip : getIpList()) {
+                    ManagedChannel channel = null;
+                    try {
+                        channel = ManagedChannelBuilder.forAddress(ip,
+                                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                        stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
+                        flag = true;
+                    } catch (Exception e2) {
+                        LOGGER.info("connect to ucore error ", e2);
+                        if (channel != null) {
+                            channel.shutdownNow();
+                        }
                     }
                 }
+                if (!flag) {
+                    throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
+                }
             }
-            if (!flag) {
-                throw new RuntimeException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
-            }
+            cleanKV(path.substring(0, path.length() - 1));
+        } catch (Exception e) {
+            LOGGER.warn(" clean ucore Path failed ", e);
         }
-        cleanKV(path.substring(0, path.length() - 1));
     }
 
     public void cleanKV(String path) {

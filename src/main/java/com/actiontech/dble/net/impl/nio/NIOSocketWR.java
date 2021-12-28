@@ -58,7 +58,6 @@ public class NIOSocketWR extends SocketWR {
 
         try {
             boolean noMoreData = write0();
-            writing.compareAndSet(threadId, NOT_USED);
             if (noMoreData && writeQueue.isEmpty()) {
                 if ((processKey.isValid() && (processKey.interestOps() & SelectionKey.OP_WRITE) != 0)) {
                     disableWrite();

@@ -51,7 +51,10 @@ public class RWSplitNonBlockingSession extends Session {
         LOGGER.info("Session stop flow control " + this.getSource());
         synchronized (this) {
             rwSplitService.getConnection().setFlowControlled(false);
-            this.conn.getSocketWR().enableRead();
+            final BackendConnection con = this.conn;
+            if (con != null) {
+                con.getSocketWR().enableRead();
+            }
         }
     }
 
@@ -65,6 +68,7 @@ public class RWSplitNonBlockingSession extends Session {
             this.conn.getSocketWR().disableRead();
         }
     }
+
     @Override
     public void releaseConnectionFromFlowControlled(BackendConnection con) {
         synchronized (this) {

@@ -5,8 +5,8 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.FrontendService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.io.IOException;
@@ -55,12 +55,12 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public void startFlowControl() {
-        ((ShardingService) this.getService()).getSession2().startFlowControl();
+        ((BusinessService) this.getService()).getSession().startFlowControl();
     }
 
     @Override
     public void stopFlowControl() {
-        ((ShardingService) this.getService()).getSession2().stopFlowControl();
+        ((BusinessService) this.getService()).getSession().stopFlowControl();
     }
 
     @Override

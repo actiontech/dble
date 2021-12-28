@@ -75,6 +75,11 @@ public class NIOSocketWR extends SocketWR {
             }
             con.close(e);
         } finally {
+            /*
+            there are exists two invocation used to mark writing flag to unused.(writing.compareAndSet(threadId, NOT_USED);)
+            this first one is preserved to make ensure forward compatibility.
+            if the first one called, the second one will doesn't take any effect, even if the writing flag is marked used by other thread.
+             */
             writing.compareAndSet(threadId, NOT_USED);
         }
 

@@ -249,6 +249,7 @@ public class ItemCreate {
         nativFuncs.put("UNHEX", new ItemFuncUnhex(null, defaultCharsetIndex));
         nativFuncs.put("UNIX_TIMESTAMP", new ItemFuncUnixTimestamp(null, defaultCharsetIndex));
         nativFuncs.put("UPPER", new ItemFuncUpper(null, defaultCharsetIndex));
+        nativFuncs.put("UUID", new ItemFuncUuid(defaultCharsetIndex));
         nativFuncs.put("UTC_TIME", new ItemFuncCurtimeUtc(null, defaultCharsetIndex));
         nativFuncs.put("UTC_TIMESTAMP", new ItemFuncNowUtc(null, defaultCharsetIndex));
         nativFuncs.put("UTC_DATE", new ItemFuncCurdateUtc(null, defaultCharsetIndex));

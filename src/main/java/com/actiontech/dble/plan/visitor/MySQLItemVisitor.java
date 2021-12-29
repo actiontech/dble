@@ -33,6 +33,7 @@ import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncChar;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncOrd;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncTrim;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncTrim.TrimTypeEnum;
+import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncUuid;
 import com.actiontech.dble.plan.common.item.function.sumfunc.*;
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemDateAddInterval;
 import com.actiontech.dble.plan.common.item.function.timefunc.ItemExtract;
@@ -711,6 +712,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + expr.toString() + "'");
                 }
                 item = ItemCreate.getInstance().createNativeFunc(funcName, args, charsetIndex);
+                break;
+            case "UUID":
+                item = new ItemFuncUuid(this.charsetIndex);
                 break;
             default:
                 if (ItemCreate.getInstance().isNativeFunc(funcName)) {

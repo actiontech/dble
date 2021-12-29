@@ -311,9 +311,9 @@ public abstract class AbstractConnection implements Connection {
             } else {
                 buffer.put(src, offset, remaining);
                 writePart(buffer);
-                buffer = allocate();
                 offset += remaining;
                 length -= remaining;
+                buffer = allocate(length);
                 remaining = buffer.remaining();
             }
         }

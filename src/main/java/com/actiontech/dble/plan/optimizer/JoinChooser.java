@@ -145,6 +145,7 @@ public class JoinChooser {
         ret.setAlias(orgNode.getAlias());
         ret.setWithSubQuery(orgNode.isWithSubQuery());
         ret.setContainsSubQuery(orgNode.isContainsSubQuery());
+        ret.getSubQueries().addAll(orgNode.getSubQueries());
         ret.setSql(orgNode.getSql());
         ret.setUpFields();
         return ret;

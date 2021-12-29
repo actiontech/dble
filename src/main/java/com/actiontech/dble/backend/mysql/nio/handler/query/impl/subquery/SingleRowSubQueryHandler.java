@@ -47,7 +47,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
                 this.fieldPackets = fieldPackets;
                 sourceField = HandlerTool.createField(this.fieldPackets.get(0));
                 if (itemSubQuery.isField()) {
-                    setSubQueryFiled();
+                    setSubQueryField();
                 }
             }
         } finally {
@@ -74,7 +74,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
                 row.read(rowNull);
             }
             if (!itemSubQuery.isField()) {
-                setSubQueryFiled();
+                setSubQueryField();
             }
             sourceField.setPtr(row.getValue(0));
         } finally {
@@ -89,7 +89,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
         return HandlerType.SCALAR_SUB_QUERY;
     }
 
-    private void setSubQueryFiled() {
+    private void setSubQueryField() {
         Item select = itemSubQuery.getSelect();
         PlanNode planNode = itemSubQuery.getPlanNode();
         if (!(planNode instanceof ManagerTableNode) || ((ManagerTableNode) planNode).isNeedSendMaker()) {

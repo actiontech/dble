@@ -176,6 +176,7 @@ public class ERJoinChooser {
         }
         // others' node is the join units which can not optimize, just merge them
         JoinNode ret = (JoinNode) makeJoinNode(others, charsetIndex);
+        ret.setDistinct(orgNode.isDistinct());
         ret.setOrderBys(orgNode.getOrderBys());
         ret.setGroupBys(orgNode.getGroupBys());
         ret.select(orgNode.getColumnsSelected());

@@ -63,33 +63,58 @@ public final class UpdateHandler {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
-        //cluster-lock
-        DistributeLock distributeLock = null;
+
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
-                return;
-            }
-            LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+            updateWithCluster(service, update, managerTable, values);
+        } else {
+            generalUpdate(service, update, managerTable, values);
         }
-        //stand-alone lock
-        int rowSize;
+    }
+
+    private void updateWithCluster(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values) {
+        //cluster-lock
+        DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
+        if (!distributeLock.acquire()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+            return;
+        }
+        LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
+        try {
+            generalUpdate(service, update, managerTable, values);
+        } finally {
+            distributeLock.release();
+        }
+    }
+
+    private void generalUpdate(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values) {
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
         try {
+            int rowSize = getRowSize(service, managerTable, update, values);
+            if (rowSize >= 0) {
+                writeOkPacket(1, rowSize, service);
+            }
+        } finally {
+            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
+            managerTable.getLock().unlock();
+        }
+    }
+
+    private int getRowSize(ManagerService service, ManagerWritableTable managerTable, MySqlUpdateStatement update, LinkedHashMap<String, String> values) {
+        int rowSize = -1;
+        try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
             rowSize = updateRows(service, managerTable, affectPks, values);
+            return rowSize;
         } catch (SQLException e) {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
-            return;
         } catch (ConfigException e) {
             service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
-            return;
         } catch (Exception e) {
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
@@ -99,21 +124,9 @@ public final class UpdateHandler {
                 service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
-            return;
-        } finally {
-            DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
-            DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
-            managerTable.getLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
         }
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(rowSize);
-        ok.write(service.getConnection());
+        return rowSize;
     }
-
 
     public ManagerWritableTable getWritableTable(MySqlUpdateStatement update, ManagerService service) {
         if (update.getLimit() != null || update.isIgnore() || update.isLowPriority() || update.getOrderBy() != null) {
@@ -219,5 +232,12 @@ public final class UpdateHandler {
         }
         columnName = StringUtil.removeBackQuote(columnName);
         return columnName;
+    }
+
+    private void writeOkPacket(int i, int rowSize, ManagerService service) {
+        OkPacket ok = new OkPacket();
+        ok.setPacketId(1);
+        ok.setAffectedRows(rowSize);
+        ok.write(service.getConnection());
     }
 }

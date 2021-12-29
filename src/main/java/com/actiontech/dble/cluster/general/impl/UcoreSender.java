@@ -22,15 +22,13 @@ import com.actiontech.dble.util.DebugUtil;
 import com.actiontech.dble.util.PropertiesUtil;
 import com.actiontech.dble.util.exception.DetachedException;
 import io.grpc.Channel;
+import io.grpc.ClientInterceptors;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -59,9 +57,7 @@ public final class UcoreSender extends AbstractConsulSender {
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }
-        Channel channel = ManagedChannelBuilder.forAddress(getAvailableIpList().get(0),
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-        setStubIfPossible(UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+        rebuildStub();
     }
 
     @Override
@@ -71,11 +67,9 @@ public final class UcoreSender extends AbstractConsulSender {
         try {
             ipList.addAll(Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(",")));
         } catch (Exception e) {
-            LOGGER.error("error:", e);
+            LOGGER.error("initCluster error:", e);
         }
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(getAvailableIpList().get(0),
-                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-        setStubIfPossible(UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+        rebuildStub();
         if (!skipSyncUcores()) {
             startUpdateNodes();
         }
@@ -132,20 +126,9 @@ public final class UcoreSender extends AbstractConsulSender {
             }
             return output.getSessionId();
         } catch (Exception e1) {
-            for (String ip : getAvailableIpList()) {
-                ManagedChannel channel = null;
-                try {
-                    channel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-                    setStubIfPossible(UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
-                    output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
-                    return output.getSessionId();
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (channel != null) {
-                        channel.shutdownNow();
-                    }
-                }
+            if (rebuildStub()) {
+                output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
+                return output.getSessionId();
             }
         }
         throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
@@ -171,20 +154,9 @@ public final class UcoreSender extends AbstractConsulSender {
         try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
         } catch (Exception e1) {
-            for (String ip : getAvailableIpList()) {
-                ManagedChannel channel = null;
-                try {
-                    channel = ManagedChannelBuilder.forAddress(ip,
-                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-                    setStubIfPossible(UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
-                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
-                    return;
-                } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
-                    if (channel != null) {
-                        channel.shutdownNow();
-                    }
-                }
+            if (rebuildStub()) {
+                stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
+                return;
             }
             throw new IOException(ERROR_MSG + "ips:" + ipList.toString() + ",port:" + ClusterConfig.getInstance().getClusterPort());
         }
@@ -558,7 +530,7 @@ public final class UcoreSender extends AbstractConsulSender {
 
     private List<String> getAvailableIpList() {
         if (connectionDetached) {
-            return new ArrayList<String>();
+            return Collections.emptyList();
         }
         return ipList;
     }
@@ -596,26 +568,10 @@ public final class UcoreSender extends AbstractConsulSender {
     @Override
     public void attachCluster() throws Exception {
         LOGGER.info("cluster attach begin connect");
-        boolean connected = false;
-        for (String ip : ipList) {
-            ManagedChannel channel = null;
-            try {
-                channel = ManagedChannelBuilder.forAddress(ip,
-                        ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
-                stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                //check connection is ready
-                ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
-                connected = true;
-                break;
-            } catch (Exception e) {
-                LOGGER.info("connect to ucore {} error ", ip, e);
-                if (channel != null) {
-                    channel.shutdownNow();
-                }
-                continue;
-            }
-        }
-        if (!connected) {
+        if (rebuildStub()) {
+            //check connection is ready
+            ClusterHelper.isExist(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
+        } else {
             throw new IllegalStateException("all cluster connect error");
         }
 
@@ -627,8 +583,30 @@ public final class UcoreSender extends AbstractConsulSender {
         }
     }
 
-    public void setStubIfPossible(UcoreGrpc.UcoreBlockingStub stubTemp) {
+    private boolean rebuildStub() {
+        boolean isSuccess = false;
+        for (String ip : getAvailableIpList()) {
+            Channel channel = null;
+            try {
+                channel = ManagedChannelBuilder.forAddress(ip,
+                        ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
+                channel = ClientInterceptors.intercept(channel, new MetaDataClientInterceptor());
+                setStubIfPossible(UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS));
+                isSuccess = true;
+                break;
+            } catch (Exception e2) {
+                LOGGER.info("connect to ucore[{}] error ", ip, e2);
+                if (channel != null) {
+                    ((ManagedChannel) channel).shutdownNow();
+                }
+            }
+        }
+        return isSuccess;
+    }
+
+    private void setStubIfPossible(UcoreGrpc.UcoreBlockingStub stubTemp) {
         if (connectionDetached) {
+            LOGGER.info("the dble had detach cluster");
             return;
         }
         this.stub = stubTemp;

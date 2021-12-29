@@ -133,6 +133,7 @@ public class JoinChooser {
 
         // others' node is the join units which can not optimize, just merge them
         JoinNode ret = makeJoinWithCartesianNode(relationJoin);
+        ret.setDistinct(orgNode.isDistinct());
         ret.setOrderBys(orgNode.getOrderBys());
         ret.setGroupBys(orgNode.getGroupBys());
         ret.select(orgNode.getColumnsSelected());

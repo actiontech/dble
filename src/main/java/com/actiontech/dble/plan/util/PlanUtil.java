@@ -109,6 +109,8 @@ public final class PlanUtil {
     public static boolean canPush(Item sel, PlanNode child, PlanNode parent) {
         if (sel == null)
             return false;
+        if (sel.isWithSubQuery())
+            return false;
         if (sel.isWithSumFunc())
             return false;
         HashSet<PlanNode> referTables = sel.getReferTables();

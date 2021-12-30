@@ -105,17 +105,19 @@ public final class UpdateHandler {
     }
 
     private int getRowSize(ManagerService service, ManagerWritableTable managerTable, MySqlUpdateStatement update, LinkedHashMap<String, String> values) {
-        int rowSize = -1;
+        int rowSize;
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
             rowSize = updateRows(service, managerTable, affectPks, values);
-            return rowSize;
         } catch (SQLException e) {
+            rowSize = -1;
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
         } catch (ConfigException e) {
+            rowSize = -1;
             service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
         } catch (Exception e) {
+            rowSize = -1;
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
                 service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());

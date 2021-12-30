@@ -81,7 +81,7 @@ public final class InsertHandler {
     }
 
     private int getRowSize(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns) {
-        int rowSize = -1;
+        int rowSize;
         try {
             List<LinkedHashMap<String, String>> rows = managerTable.makeInsertRows(columns, insert.getValuesList());
             managerTable.checkPrimaryKeyDuplicate(rows);
@@ -91,10 +91,13 @@ public final class InsertHandler {
             }
             managerTable.afterExecute();
         } catch (SQLException e) {
+            rowSize = -1;
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
         } catch (ConfigException e) {
+            rowSize = -1;
             service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
         } catch (Exception e) {
+            rowSize = -1;
             if (e.getCause() instanceof ConfigException) {
                 service.writeErrMessage(ErrorCode.ER_YES, "Insert failure.The reason is " + e.getMessage());
                 LOGGER.warn("Insert failure.The reason is ", e);

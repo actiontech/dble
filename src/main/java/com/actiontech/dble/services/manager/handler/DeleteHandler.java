@@ -136,7 +136,7 @@ public final class DeleteHandler {
     }
 
     private int getRowSize(ManagerService service, ManagerWritableTable managerTable, MySqlDeleteStatement delete) {
-        int rowSize = -1;
+        int rowSize;
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
@@ -144,12 +144,14 @@ public final class DeleteHandler {
             if (rowSize != 0) {
                 ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
             }
-            return rowSize;
         } catch (SQLException e) {
+            rowSize = -1;
             service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
         } catch (ConfigException e) {
+            rowSize = -1;
             service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
         } catch (Exception e) {
+            rowSize = -1;
             if (e.getCause() instanceof ConfigException) {
                 //reload fail
                 service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());

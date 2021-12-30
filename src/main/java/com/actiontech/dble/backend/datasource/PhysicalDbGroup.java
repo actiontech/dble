@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PhysicalDbGroup {
@@ -59,6 +60,7 @@ public class PhysicalDbGroup {
 
     private boolean shardingUseless = true;
     private boolean rwSplitUseless = true;
+    private AtomicBoolean stop = new AtomicBoolean(false);
 
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
@@ -170,9 +172,11 @@ public class PhysicalDbGroup {
     }
 
     public void init(List<String> sourceNames, String reason) {
-        for (String sourceName : sourceNames) {
-            if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).init(reason, false);
+        if (stop.compareAndSet(true, false)) {
+            for (String sourceName : sourceNames) {
+                if (allSourceMap.containsKey(sourceName)) {
+                    allSourceMap.get(sourceName).init(reason, false);
+                }
             }
         }
     }
@@ -182,12 +186,17 @@ public class PhysicalDbGroup {
     }
 
     public void stop(String reason, boolean closeFront) {
-        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stop(reason, closeFront);
+        if (stop.compareAndSet(false, true)) {
+            for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+                dbInstance.stop(reason, closeFront);
+            }
         }
     }
 
     public void stop(List<String> sourceNames, String reason, boolean closeFront) {
+        if (!stop.compareAndSet(false, true)) {
+            return;
+        }
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
                 allSourceMap.get(sourceName).stop(reason, closeFront, false);
@@ -481,6 +490,10 @@ public class PhysicalDbGroup {
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, fakeNodeError, "mysql", config.getId(), labels);
         throw new IOException(fakeNodeError);
+    }
+
+    public boolean isStop() {
+        return stop.get();
     }
 
     private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {

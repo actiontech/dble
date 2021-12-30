@@ -1,5 +1,6 @@
 package com.actiontech.dble.rwsplit;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
@@ -99,7 +100,7 @@ public class RWSplitNonBlockingSession extends Session {
                     resetLastSqlResponseTime();
                 }
             }
-            PhysicalDbInstance instance = rwGroup.select(isMaster); // second
+            PhysicalDbInstance instance = getRwGroup().select(isMaster); // second
             boolean isWrite = !instance.isReadInstance();
             this.setPreSendIsWrite(isWrite && firstValue); // ensure that the first and second results are write instances
             checkDest(isWrite);
@@ -143,6 +144,13 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public PhysicalDbGroup getRwGroup() {
+        if (rwGroup.isStop()) {
+            rwGroup = DbleServer.getInstance().getConfig().getDbGroups().get(rwSplitService.getUserConfig().getDbGroup());
+            if (rwGroup == null) {
+                LOGGER.warn("dbGroup is invalid");
+                rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
+            }
+        }
         return rwGroup;
     }
 

@@ -37,7 +37,7 @@ public class ManagerSession extends Session {
     }
 
     public void execute(String schema, SQLSelectStatement statement) {
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(schema, 45, null, false, null);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(schema, 45, null, false, null, null);
         visitor.visit(statement);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {

@@ -70,7 +70,7 @@ public final class ManagerTableUtil {
         }
         List<FieldPacket> fieldPackets = makeField(realSelects, managerTable.getTableName());
 
-        MySQLItemVisitor mev = new MySQLItemVisitor(service.getSchema(), service.getCharset().getResultsIndex(), null, null);
+        MySQLItemVisitor mev = new MySQLItemVisitor(service.getSchema(), service.getCharset().getResultsIndex(), null, null, null);
         whereExpr.accept(mev);
         List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
 

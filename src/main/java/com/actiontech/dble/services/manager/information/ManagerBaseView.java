@@ -48,7 +48,7 @@ public abstract class ManagerBaseView {
         QueryNode queryNode = null;
         try {
             SQLSelectStatement selectStatement = (SQLSelectStatement) DruidUtil.parseMultiSQL(selectSql);
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(ManagerSchemaInfo.SCHEMA_NAME, 45, null, false, null);
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(ManagerSchemaInfo.SCHEMA_NAME, 45, null, false, null, null);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();

@@ -98,7 +98,7 @@ public class HandlerBuilder {
             if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (endHandler.getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
-                    return getRouteResultsetNode(builder, routes[0].getName());
+                    return getRouteResultsetNode(builder, routes[0].getName(), routes[0].getStatement());
                 }
             }
             HandlerBuilder.startHandler(fh);
@@ -112,7 +112,7 @@ public class HandlerBuilder {
         return null;
     }
 
-    private RouteResultsetNode getRouteResultsetNode(BaseHandlerBuilder builder, String nodeName) {
+    private RouteResultsetNode getRouteResultsetNode(BaseHandlerBuilder builder, String nodeName, String sql) {
         Set<String> tableSet = Sets.newHashSet();
         for (RouteResultsetNode routeResultsetNode : rrsNodes) {
             Set<String> set = routeResultsetNode.getTableSet();
@@ -120,7 +120,6 @@ public class HandlerBuilder {
                 tableSet.addAll(set);
             }
         }
-        String sql = node.getSql();
         if (builder.isExistView() || builder.isContainSubQuery(node)) {
             GlobalVisitor visitor = new GlobalVisitor(node, true, false);
             visitor.visit();
@@ -136,7 +135,6 @@ public class HandlerBuilder {
     /**
      * DBLE0REQ-504
      * According to the execution plan, judge whether it can be routed to the same node to simplify the query
-     *
      */
     public static String canRouteToOneNode(List<DMLResponseHandler> merges) {
         Set<String> globalBackNodes = canRouteToNodes(merges);

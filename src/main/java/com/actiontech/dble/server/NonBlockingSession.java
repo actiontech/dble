@@ -634,7 +634,7 @@ public class NonBlockingSession extends Session {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(shardingService, "try-complex-query");
         try {
             SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-            MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, shardingService.getUsrVariables());
+            MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, shardingService.getUsrVariables(), rrs.getHintPlanInfo());
             visitor.visit(ast);
             PlanNode node = visitor.getTableNode();
             if (node.isCorrelatedSubQuery()) {

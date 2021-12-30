@@ -44,6 +44,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -54,6 +55,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLExprParser;
 
+import javax.annotation.Nullable;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -66,13 +68,15 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private final int charsetIndex;
     private final ProxyMetaManager metaManager;
     private Map<String, String> usrVariables;
+    private HintPlanInfo hintPlanInfo;
     private static ThreadLocal<HashMap<SQLExprWrapper, Item>> visitCache = new InheritableThreadLocal<>();
 
-    public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+    public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, Map<String, String> usrVariables, @Nullable HintPlanInfo hintPlanInfo) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
         this.metaManager = metaManager;
         this.usrVariables = usrVariables;
+        this.hintPlanInfo = hintPlanInfo;
     }
 
     protected Item item;
@@ -90,7 +94,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             visitCache.set(new HashMap<>());
         }
         if (result == null) {
-            MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables);
+            MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables, this.hintPlanInfo);
             expr.accept(fv);
             result = fv.getItem();
             visitCache.get().put(key, result);
@@ -119,7 +123,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLQueryExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -139,7 +143,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables, this.charsetIndex);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -780,7 +784,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLExistsExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager, usrVariables, this.charsetIndex);
+        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -817,7 +821,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
     }
 
 
@@ -826,26 +830,26 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         switch (operator) {
             case Equality:
                 if (isAll) {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager, usrVariables, this.charsetIndex);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables, this.charsetIndex);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables, this.charsetIndex);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
                 } else {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager, usrVariables, this.charsetIndex);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
             case GreaterThan:
             case GreaterThanOrEqual:
-                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager, usrVariables, this.charsetIndex);
+                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",

@@ -74,7 +74,7 @@ public final class MyOptimizer {
                     GlobalTableProcessor.optimize(node);
                 }
                 //  push down filter
-                node = FilterPusher.optimize(node);
+                node = FilterPusher.optimize(node); // 外面的子查询 推送到里面 需要将subquery变量改下
 
                 OrderByPusher.optimize(node);
 

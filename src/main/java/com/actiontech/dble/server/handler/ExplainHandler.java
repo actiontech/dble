@@ -84,7 +84,7 @@ public final class ExplainHandler {
 
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ShardingService service) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables());
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables(), rrs.getHintPlanInfo());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
@@ -230,16 +230,17 @@ public final class ExplainHandler {
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
             String routeNode = null;
+            String sql = null;
 
             PlanNode node = builder.getNode();
             if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
                     routeNode = routes[0].getName();
+                    sql = routes[0].getStatement();
                 }
             }
             if (!StringUtil.isBlank(routeNode)) {
-                String sql = node.getSql();
                 if (builder.isExistView() || builder.isContainSubQuery(node)) {
                     GlobalVisitor visitor = new GlobalVisitor(node, true, false);
                     visitor.visit();

@@ -11,9 +11,11 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemResultField;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
 public abstract class ItemSubQuery extends ItemResultField {
@@ -22,6 +24,7 @@ public abstract class ItemSubQuery extends ItemResultField {
     protected PlanNode planNode;
     protected ProxyMetaManager metaManager;
     protected Map<String, String> usrVariables;
+    protected HintPlanInfo hintPlanInfo;
 
     public enum SubSelectType {
         UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
@@ -31,12 +34,13 @@ public abstract class ItemSubQuery extends ItemResultField {
         return SubSelectType.UNKNOWN_SUBS;
     }
 
-    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
+    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex, @Nullable HintPlanInfo hintPlanInfo) {
         this.charsetIndex = charsetIndex;
         this.query = query;
         this.currentDb = currentDb;
         this.metaManager = metaManager;
         this.usrVariables = usrVariables;
+        this.hintPlanInfo = hintPlanInfo;
         init();
     }
 
@@ -46,7 +50,7 @@ public abstract class ItemSubQuery extends ItemResultField {
     }
 
     private void init() {
-        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true, usrVariables);
+        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true, usrVariables, hintPlanInfo);
         pv.visit(this.query);
         this.planNode = pv.getTableNode();
         this.withSubQuery = true;

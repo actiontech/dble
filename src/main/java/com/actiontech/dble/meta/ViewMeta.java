@@ -58,7 +58,7 @@ public class ViewMeta {
 
     private void parseSelectInView() throws SQLException {
         SQLSelectStatement selectStatement = (SQLSelectStatement) DruidUtil.parseMultiSQL(selectSql);
-        MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false, null);
+        MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false, null, null);
         msv.visit(selectStatement.getSelect().getQuery());
         PlanNode selNode = msv.getTableNode();
 

@@ -8,8 +8,10 @@ package com.actiontech.dble.plan.common.item.subquery;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
@@ -19,8 +21,8 @@ public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
     protected Item select;
     protected boolean isField;
 
-    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
-        super(currentDb, query, metaManager, usrVariables, charsetIndex);
+    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex, @Nullable HintPlanInfo hintPlanInfo) {
+        super(currentDb, query, metaManager, usrVariables, charsetIndex, hintPlanInfo);
         this.select = this.planNode.getColumnsSelected().get(0);
         this.isField = isField;
     }

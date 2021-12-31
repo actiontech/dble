@@ -48,7 +48,6 @@ import javax.annotation.Nonnull;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -69,7 +68,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
-    private AtomicLong txID = new AtomicLong(1);
     private volatile boolean isLocked = false;
     private long lastInsertId;
     @Nonnull
@@ -609,14 +607,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public void setLocked(boolean locked) {
         isLocked = locked;
-    }
-
-    public long getAndIncrementXid() {
-        return txID.getAndIncrement();
-    }
-
-    public long getXid() {
-        return txID.get();
     }
 
     public long getLastInsertId() {

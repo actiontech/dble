@@ -14,7 +14,7 @@ public final class XaHandler {
         service.getSession().execute(true, (isSuccess, rwSplitService) -> {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStart(xaId));
-                rwSplitService.getAndIncrementTxId();
+                rwSplitService.getAndIncrementXid();
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onTxStart(service));
             }
         });

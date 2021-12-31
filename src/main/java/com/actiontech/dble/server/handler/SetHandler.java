@@ -7,6 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.route.parser.util.DruidUtil;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.util.SetItemUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
@@ -22,8 +23,6 @@ import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
 import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
@@ -56,7 +55,7 @@ public final class SetHandler {
             StringBuilder selectSQL = new StringBuilder("select ");
             int userVariableSize = 0;
             // parse set sql
-            SQLStatement statement = parseSQL(stmt);
+            SQLStatement statement = DruidUtil.parseMultiSQL(stmt);
             if (statement instanceof SQLSetStatement) {
                 List<MysqlVariable> userItems = new ArrayList<>();
                 List<MysqlVariable> otherItems = new ArrayList<>();
@@ -208,15 +207,6 @@ public final class SetHandler {
                     return new MysqlVariable(key.toUpperCase(), null, VariableType.USER_VARIABLES);
                 }
                 return new MysqlVariable(key, SetItemUtil.parseVariablesValue(valueExpr), VariableType.SYSTEM_VARIABLES);
-        }
-    }
-
-    private static SQLStatement parseSQL(String stmt) throws SQLSyntaxErrorException {
-        SQLStatementParser parser = new MySqlStatementParser(stmt);
-        try {
-            return parser.parseStatement();
-        } catch (Exception t) {
-            throw new SQLSyntaxErrorException(t);
         }
     }
 

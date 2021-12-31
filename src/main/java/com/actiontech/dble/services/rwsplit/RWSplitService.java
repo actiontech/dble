@@ -21,6 +21,7 @@ import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
+import com.actiontech.dble.server.variables.VariableType;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.TraceManager;
@@ -34,10 +35,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,6 +52,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     private volatile boolean firstInLoadData = true;
     private volatile boolean inPrepare;
     private volatile Set<String/* schemaName.tableName */> tmpTableSet;
+    private final Set<String> nameSet = new HashSet<>();
 
     private volatile byte[] executeSqlBytes;
     // only for test
@@ -58,7 +60,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     private final RWSplitQueryHandler queryHandler;
     private final RWSplitNonBlockingSession session;
-    private AtomicLong txId = new AtomicLong(0);
+
 
     public RWSplitService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -70,36 +72,32 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     @Override
     public void handleVariable(MysqlVariable var) {
-        switch (var.getType()) {
-            case AUTOCOMMIT:
-                if (Boolean.parseBoolean(var.getValue())) {
-                    if (!autocommit) {
-                        StatisticListener.getInstance().record(this, r -> r.onTxEnd());
-                        session.execute(true, (isSuccess, rwSplitService) -> {
-                            session.getConn().getBackendService().setAutocommit(true);
-                            rwSplitService.setAutocommit(true);
-                            rwSplitService.setTxStart(false);
-                            this.transactionsCount();
-                        });
-                        return;
-                    } else if (!txStarted) {
+        if (var.getType() == VariableType.AUTOCOMMIT) {
+            if (Boolean.parseBoolean(var.getValue())) {
+                if (!autocommit) {
+                    StatisticListener.getInstance().record(this, r -> r.onTxEnd());
+                    session.execute(true, (isSuccess, rwSplitService) -> {
+                        session.getConn().getBackendService().setAutocommit(true);
+                        rwSplitService.setAutocommit(true);
+                        rwSplitService.setTxStart(false);
                         this.transactionsCount();
-                    }
-                } else {
-                    if (autocommit) {
-                        StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
-                        autocommit = false;
-                        txStarted = true;
-                        StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
-                        writeOkPacket();
-                        return;
-                    }
+                    });
+                    return;
+                } else if (!txStarted) {
+                    this.transactionsCount();
                 }
-                StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
-                writeOkPacket();
-                break;
-            default:
-                break;
+            } else {
+                if (autocommit) {
+                    StatisticListener.getInstance().record(this, r -> r.onTxStartBySet(this));
+                    autocommit = false;
+                    txStarted = true;
+                    StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
+                    writeOkPacket();
+                    return;
+                }
+            }
+            StatisticListener.getInstance().record(this, r -> r.onFrontendSqlEnd());
+            writeOkPacket();
         }
     }
 
@@ -184,10 +182,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             case MySQLPacket.COM_PING:
                 commands.doPing();
                 Ping.response(connection);
-                break;
-            case MySQLPacket.COM_FIELD_LIST:
-                commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport statement");
                 break;
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
@@ -312,7 +306,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     public void implicitlyDeal() {
         if (!this.isAutocommit()) {
             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
-            this.getAndIncrementTxId();
+            getAndIncrementXid();
             StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(this));
         }
         if (this.isTxStart()) {
@@ -351,18 +345,8 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return false;
     }
 
-
     public boolean isInPrepare() {
         return inPrepare;
-    }
-
-    public long getAndIncrementTxId() {
-        return txId.getAndIncrement();
-    }
-
-
-    public long getTxId() {
-        return txId.get();
     }
 
     public boolean isUsingTmpTable() {
@@ -384,8 +368,8 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return tmpTableSet;
     }
 
-    public void setInPrepare(boolean inPrepare) {
-        this.inPrepare = inPrepare;
+    public Set<String> getNameSet() {
+        return nameSet;
     }
 
     public String getExpectedDest() {

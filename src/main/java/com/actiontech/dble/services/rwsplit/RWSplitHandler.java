@@ -3,6 +3,7 @@ package com.actiontech.dble.services.rwsplit;
 import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ShowFieldsHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -24,7 +25,7 @@ import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler {
+public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler, ShowFieldsHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitHandler.class);
     private final RWSplitService rwSplitService;
@@ -304,5 +305,26 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             connection.setSkipCheck(false);
         }
     }
+
+    @Override
+    public void fieldsEof(byte[] header, List<byte[]> fields, byte[] eof, @Nonnull AbstractService service) {
+        synchronized (this) {
+            if (!write2Client) {
+                buffer = frontedConnection.allocate();
+                header[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.getService().writeToBuffer(header, buffer);
+                for (byte[] field : fields) {
+                    field[3] = (byte) rwSplitService.nextPacketId();
+                    buffer = frontedConnection.getService().writeToBuffer(field, buffer);
+                }
+                eof[3] = (byte) rwSplitService.nextPacketId();
+                buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
+                frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+                write2Client = true;
+                buffer = null;
+            }
+        }
+    }
+
 
 }

@@ -27,7 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -113,6 +116,8 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = new ExecuteResponseHandler(this, originPacket[9] == (byte) 0x01);
             } else if (type == MySQLPacket.COM_STMT_FETCH) {
                 protocolResponseHandler = new FetchResponseHandler(this);
+            } else if (type == MySQLPacket.COM_FIELD_LIST) {
+                protocolResponseHandler = new FieldListResponseHandler(this);
             } else if (service.isInLoadData()) {
                 if (service.isFirstInLoadData()) {
                     protocolResponseHandler = new LoadDataResponseHandler(this);

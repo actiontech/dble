@@ -185,10 +185,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 commands.doPing();
                 Ping.response(connection);
                 break;
-            case MySQLPacket.COM_FIELD_LIST:
-                commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport statement");
-                break;
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
                 setOption(data);

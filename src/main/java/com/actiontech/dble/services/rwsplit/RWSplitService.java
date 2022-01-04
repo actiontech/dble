@@ -159,10 +159,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 commands.doPing();
                 Ping.response(connection);
                 break;
-            case MySQLPacket.COM_FIELD_LIST:
-                commands.doOther();
-                writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "unsupport statement");
-                break;
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
                 setOption(data);
@@ -313,13 +309,8 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return inPrepare;
     }
 
-    public long getAndIncrementTxId() {
-        return txId.getAndIncrement();
-    }
-
-
-    public long getTxId() {
-        return txId.get();
+    public void getAndIncrementTxId() {
+        txId.getAndIncrement();
     }
 
     public boolean isUsingTmpTable() {

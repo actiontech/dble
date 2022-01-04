@@ -169,7 +169,7 @@ public class PhysicalDbGroup {
         }
     }
 
-    public void init(List<String> sourceNames, String reason) {
+    public void startOfFresh(List<String> sourceNames, String reason) {
         if (stop.compareAndSet(true, false)) {
             for (String sourceName : sourceNames) {
                 if (allSourceMap.containsKey(sourceName)) {

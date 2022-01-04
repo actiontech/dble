@@ -4,6 +4,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -194,7 +195,7 @@ public class RWSplitNonBlockingSession extends Session {
             rwGroup = DbleServer.getInstance().getConfig().getDbGroups().get(rwSplitService.getUserConfig().getDbGroup());
             if (rwGroup == null) {
                 LOGGER.warn("dbGroup is invalid");
-                rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
+                throw new ConfigException("dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
             }
         }
         return rwGroup;

@@ -1,5 +1,6 @@
 package com.actiontech.dble.rwsplit;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
@@ -111,7 +112,7 @@ public class RWSplitNonBlockingSession extends Session {
         try {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
-            PhysicalDbInstance instance = rwGroup.select(canRunOnMaster(master));
+            PhysicalDbInstance instance = getRwGroup().select(canRunOnMaster(master));
             checkDest(!instance.isReadInstance());
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
@@ -126,7 +127,7 @@ public class RWSplitNonBlockingSession extends Session {
         try {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
-            PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(master), isWrite(write));
+            PhysicalDbInstance instance = getRwGroup().rwSelect(canRunOnMaster(master), isWrite(write));
             checkDest(!instance.isReadInstance());
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (IOException e) {
@@ -189,6 +190,13 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public PhysicalDbGroup getRwGroup() {
+        if (rwGroup.isStop()) {
+            rwGroup = DbleServer.getInstance().getConfig().getDbGroups().get(rwSplitService.getUserConfig().getDbGroup());
+            if (rwGroup == null) {
+                LOGGER.warn("dbGroup is invalid");
+                rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
+            }
+        }
         return rwGroup;
     }
 

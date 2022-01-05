@@ -330,12 +330,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
             this.err = new ErrorPacket();
         }
         err.setErrNo(errorCode0 == 0 ? ErrorCode.ER_UNKNOWN_ERROR : errorCode0);
-        if (errMsg != null) {
-            this.errMsg += "; ";
-            this.errMsg += errMsg0;
-        } else {
-            errMsg = errMsg0;
-        }
+        errMsg = errMsg0;
         err.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
     }
 
@@ -396,5 +391,9 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     @Override
     public void requestDataResponse(byte[] data, @NotNull MySQLResponseService service) {
         LoadDataUtil.requestFileDataResponse(data, service);
+    }
+
+    public Object getAttachment() {
+        return attachment;
     }
 }

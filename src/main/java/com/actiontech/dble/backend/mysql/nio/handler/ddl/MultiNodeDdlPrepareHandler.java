@@ -19,7 +19,6 @@ import org.jetbrains.annotations.Nullable;
 public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
 
     private static final String STMT = "select 1";
-    private final RouteResultset oriRrs;
     private volatile boolean finishedTest = false;
     private final MultiNodeDDLExecuteHandler nextHandler;
 
@@ -27,7 +26,6 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
         super(session, rrs, attachment);
         this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.DDL, STMT);
         TxnLogHelper.putTxnLog(session.getShardingService(), this.rrs);
-        this.oriRrs = rrs;
         this.nextHandler = new MultiNodeDDLExecuteHandler(session, this.oriRrs, attachment);
         this.stage = DDLTraceHelper.Stage.test_ddl_conn;
         this.traceMessage = "execute-for-ddl-prepare";

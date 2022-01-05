@@ -48,6 +48,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
 
     protected final NonBlockingSession session;
     protected RouteResultset rrs;
+    protected RouteResultset oriRrs;
     protected final boolean sessionAutocommit;
 
     private long netOutBytes = 0;
@@ -73,6 +74,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
 
         this.session = session;
         this.rrs = rrs;
+        this.oriRrs = rrs;
         this.sessionAutocommit = session.getShardingService().isAutocommit();
         this.attachment = attachment;
     }
@@ -369,11 +371,11 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
             else
                 DDLTraceHelper.log(session.getShardingService(), d -> d.info(stage, DDLTraceHelper.Status.fail, errInfo));
 
-            if (rrs.getSchema() == null) {
+            if (oriRrs.getSchema() == null) {
                 LOGGER.info("Hint ddl do not update the meta and cluster notify");
                 return true;
             }
-            if (rrs.isOnline()) {
+            if (oriRrs.isOnline()) {
                 LOGGER.info("Online ddl skip updating meta and cluster notify");
                 return true;
             }
@@ -385,7 +387,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
 
     // special handling: updating meta and cluster notify
     protected boolean specialHandling0(boolean isExecSucc) {
-        return DDLProxyMetaManager.Originator.updateMetaData(session.getShardingService(), rrs, isExecSucc);
+        return DDLProxyMetaManager.Originator.updateMetaData(session.getShardingService(), oriRrs, isExecSucc);
     }
 
     @Override

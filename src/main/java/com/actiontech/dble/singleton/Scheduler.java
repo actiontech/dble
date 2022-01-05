@@ -117,6 +117,7 @@ public final class Scheduler {
             while (iterator.hasNext()) {
                 PhysicalDbGroup dbGroup = iterator.next();
                 boolean isStop = dbGroup.stopOfBackground("[background task]reload config, recycle old group");
+                LOGGER.info("[background task]recycle old group`{}` result{}", dbGroup.getGroupName(), isStop);
                 if (isStop) {
                     iterator.remove();
                 }

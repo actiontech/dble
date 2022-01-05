@@ -62,10 +62,9 @@ public class PhysicalDbGroup {
     private boolean shardingUseless = true;
     private boolean rwSplitUseless = true;
     private Set<Session> rwSplitSessionSet = Sets.newConcurrentHashSet();
-    private AtomicInteger state = new AtomicInteger(INITIAL);
+    private volatile Integer state = new Integer(INITIAL);
 
 
-    public static final int STATE_DELETED = 3;
     public static final int STATE_DELETING = 2;
     public static final int STATE_ABANDONED = 1;
     public static final int INITIAL = 0;
@@ -189,18 +188,19 @@ public class PhysicalDbGroup {
 
     private boolean checkState() {
         if (getBindingCount() != 0) {
-            state.compareAndSet(INITIAL, STATE_DELETING);
+            state = STATE_DELETING;
             IOProcessor.BACKENDS_OLD_GROUP.add(this);
             return false;
         }
-        if (!state.compareAndSet(INITIAL, STATE_ABANDONED)) {
+        if (state.intValue() != INITIAL) {
             return false;
         }
         if (getBindingCount() != 0) {
-            state.compareAndSet(STATE_ABANDONED, STATE_DELETING);
+            state = STATE_DELETING;
             IOProcessor.BACKENDS_OLD_GROUP.add(this);
             return false;
         }
+        state = STATE_ABANDONED;
         return true;
     }
 
@@ -242,22 +242,18 @@ public class PhysicalDbGroup {
 
 
     public boolean stopOfBackground(String reason) {
-        if (!state.compareAndSet(STATE_DELETING, STATE_DELETED)) {
-            return false;
+        if (state.intValue() == STATE_DELETING && getBindingCount() == 0) {
+            for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+                dbInstance.stop(reason, false);
+            }
+            return true;
         }
-        if (getBindingCount() != 0) {
-            state.compareAndSet(STATE_DELETED, STATE_DELETING);
-            return false;
-        }
-        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stop(reason, false);
-        }
-        return true;
+        return false;
     }
 
 
     public boolean isStop() {
-        return state.get() != INITIAL;
+        return state.intValue() != INITIAL;
     }
 
     public Collection<PhysicalDbInstance> getDbInstances(boolean isAll) {

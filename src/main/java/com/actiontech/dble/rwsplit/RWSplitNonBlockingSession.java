@@ -207,11 +207,12 @@ public class RWSplitNonBlockingSession extends Session {
             dbGroup.unBindRwSplitSession(this);
             if (reSelectNum == 10) {
                 reSelectNum = 0;
+                LOGGER.warn("dbGroup`{}` is always invalid", rwSplitService.getUserConfig().getDbGroup());
                 throw new ConfigException("the dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is always invalid, pls check reason");
             }
             PhysicalDbGroup newDbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(rwSplitService.getUserConfig().getDbGroup());
             if (newDbGroup == null) {
-                LOGGER.warn("dbGroup is invalid");
+                LOGGER.warn("dbGroup`{}` is invalid", rwSplitService.getUserConfig().getDbGroup());
                 throw new ConfigException("the dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
             } else {
                 reSelectNum++;

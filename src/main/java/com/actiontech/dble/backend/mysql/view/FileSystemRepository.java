@@ -261,7 +261,7 @@ public class FileSystemRepository implements Repository {
      * @return
      */
     public String mapToJsonString(Map<String, Map<String, String>> map) {
-        StringBuilder sb = new StringBuilder("[");
+        StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, Map<String, String>> schema : map.entrySet()) {
             Map<String, String> schemaSet = schema.getValue();
             sb.append("{\"schema\":\"").append(schema.getKey()).append("\",\"list\":[");
@@ -276,8 +276,11 @@ public class FileSystemRepository implements Repository {
             }
             sb.append("},");
         }
-        if (',' == sb.charAt(sb.length() - 1)) {
-            sb.setCharAt(sb.length() - 1, ']');
+        if (sb.length() != 0) {
+            if (',' == sb.charAt(sb.length() - 1)) {
+                sb.setCharAt(sb.length() - 1, ']');
+                sb.insert(0, "[");
+            }
         }
         return sb.toString();
     }

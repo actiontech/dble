@@ -1,6 +1,7 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -46,6 +47,7 @@ public final class Scheduler {
         scheduledExecutor.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(DbleServer.getInstance().processorCheck(), 0L, SystemConfig.getInstance().getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleAtFixedRate(dbInstanceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
+        scheduledExecutor.scheduleAtFixedRate(oldDbGroupClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(xaSessionCheck(), 0L, SystemConfig.getInstance().getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(xaLogClean(), 0L, SystemConfig.getInstance().getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
         scheduledExecutor.scheduleWithFixedDelay(resultSetMapClear(), 0L, SystemConfig.getInstance().getClearBigSQLResultSetMapMs(), TimeUnit.MILLISECONDS);
@@ -103,6 +105,23 @@ public final class Scheduler {
             }
 
         };
+    }
+
+    /**
+     * after reload @@config_all ,clean old connection
+     */
+    private Runnable oldDbGroupClear() {
+        return () -> timerExecutor.execute(() -> {
+
+            Iterator<PhysicalDbGroup> iterator = IOProcessor.BACKENDS_OLD_GROUP.iterator();
+            while (iterator.hasNext()) {
+                PhysicalDbGroup dbGroup = iterator.next();
+                boolean isStop = dbGroup.stopOfBackground("[background task]reload config, recycle old group");
+                if (isStop) {
+                    iterator.remove();
+                }
+            }
+        });
     }
 
 

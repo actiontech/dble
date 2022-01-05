@@ -17,9 +17,12 @@ import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.IOProcessor;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
+import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.singleton.HaConfigManager;
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -30,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class PhysicalDbGroup {
@@ -57,6 +61,14 @@ public class PhysicalDbGroup {
 
     private boolean shardingUseless = true;
     private boolean rwSplitUseless = true;
+    private Set<Session> rwSplitSessionSet = Sets.newConcurrentHashSet();
+    private AtomicInteger state = new AtomicInteger(INITIAL);
+
+
+    public static final int STATE_DELETED = 3;
+    public static final int STATE_DELETING = 2;
+    public static final int STATE_ABANDONED = 1;
+    public static final int INITIAL = 0;
 
     public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
@@ -167,7 +179,7 @@ public class PhysicalDbGroup {
         }
     }
 
-    public void init(List<String> sourceNames, String reason) {
+    public void startOfFresh(List<String> sourceNames, String reason) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
                 allSourceMap.get(sourceName).init(reason, false);
@@ -175,17 +187,38 @@ public class PhysicalDbGroup {
         }
     }
 
+    private boolean checkState() {
+        if (getBindingCount() != 0) {
+            state.compareAndSet(INITIAL, STATE_DELETING);
+            IOProcessor.BACKENDS_OLD_GROUP.add(this);
+            return false;
+        }
+        if (!state.compareAndSet(INITIAL, STATE_ABANDONED)) {
+            return false;
+        }
+        if (getBindingCount() != 0) {
+            state.compareAndSet(STATE_ABANDONED, STATE_DELETING);
+            IOProcessor.BACKENDS_OLD_GROUP.add(this);
+            return false;
+        }
+        return true;
+    }
+
     public void stop(String reason) {
         stop(reason, false);
     }
 
     public void stop(String reason, boolean closeFront) {
+        boolean flag = checkState();
+        if (!flag) {
+            return;
+        }
         for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
             dbInstance.stop(reason, closeFront);
         }
     }
 
-    public void stop(List<String> sourceNames, String reason, boolean closeFront) {
+    public void stopOfFresh(List<String> sourceNames, String reason, boolean closeFront) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
                 allSourceMap.get(sourceName).stop(reason, closeFront, false);
@@ -205,6 +238,26 @@ public class PhysicalDbGroup {
                 }
             }
         }
+    }
+
+
+    public boolean stopOfBackground(String reason) {
+        if (!state.compareAndSet(STATE_DELETING, STATE_DELETED)) {
+            return false;
+        }
+        if (getBindingCount() != 0) {
+            state.compareAndSet(STATE_DELETED, STATE_DELETING);
+            return false;
+        }
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.stop(reason, false);
+        }
+        return true;
+    }
+
+
+    public boolean isStop() {
+        return state.get() != INITIAL;
     }
 
     public Collection<PhysicalDbInstance> getDbInstances(boolean isAll) {
@@ -230,22 +283,19 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    public PhysicalDbInstance rwSelect(Boolean master, boolean write) throws IOException {
-        return select(master, false, write);
-    }
-
     /**
      * rwsplit user
      *
      * @param master
+     * @param write
      * @return
      * @throws IOException
      */
-    public PhysicalDbInstance select(Boolean master) throws IOException {
-        if (Objects.nonNull(master)) {
-            return select(master, false, master);
+    public PhysicalDbInstance rwSelect(Boolean master, Boolean write) throws IOException {
+        if (Objects.nonNull(write)) {
+            return select(master, false, write);
         }
-        return select(master, false, false);
+        return select(master, false, Objects.nonNull(master) ? master : false);
     }
 
     /**
@@ -508,6 +558,18 @@ public class PhysicalDbGroup {
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
         AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", config.getId(), labels);
         throw new IOException(heartbeatError);
+    }
+
+    public int getBindingCount() {
+        return rwSplitSessionSet.size();
+    }
+
+    public boolean bindRwSplitSession(RWSplitNonBlockingSession session) {
+        return this.rwSplitSessionSet.add(session);
+    }
+
+    public boolean unBindRwSplitSession(RWSplitNonBlockingSession session) {
+        return this.rwSplitSessionSet.remove(session);
     }
 
     public boolean equalsBaseInfo(PhysicalDbGroup pool) {

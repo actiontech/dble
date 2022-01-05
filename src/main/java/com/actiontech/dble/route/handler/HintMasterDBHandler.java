@@ -72,7 +72,7 @@ public class HintMasterDBHandler implements HintHandler {
         String dbGroup = rwSplitUserConfig.getDbGroup();
         PhysicalDbInstance dbInstance;
         try {
-            dbInstance = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroup).select(isRouteToMaster);
+            dbInstance = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroup).rwSelect(isRouteToMaster, null);
         } catch (IOException e) {
             throw new SQLNonTransientException(e);
         }

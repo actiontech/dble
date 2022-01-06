@@ -61,7 +61,7 @@ public class PhysicalDbGroup {
     private boolean shardingUseless = true;
     private boolean rwSplitUseless = true;
     private Set<Session> rwSplitSessionSet = Sets.newConcurrentHashSet();
-    private volatile Integer state = new Integer(INITIAL);
+    private volatile Integer state = Integer.valueOf(INITIAL);
 
 
     public static final int STATE_DELETING = 2;

@@ -59,17 +59,31 @@ public final class InsertHandler {
         if (null == columns) {
             return;
         }
-        //cluster-lock
-        DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
-            distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
-                return;
-            }
-            LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+            insertWithCluster(service, insert, managerTable, columns);
+        } else {
+            generalInsert(service, insert, managerTable, columns);
         }
+    }
+
+    private void insertWithCluster(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns) {
+        //cluster-lock
+        DistributeLock distributeLock;
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
+        distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
+        if (!distributeLock.acquire()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
+            return;
+        }
+        LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+        try {
+            generalInsert(service, insert, managerTable, columns);
+        } finally {
+            distributeLock.release();
+        }
+    }
+
+    private void generalInsert(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns) {
         //stand-alone lock
         List<LinkedHashMap<String, String>> rows;
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -107,15 +121,13 @@ public final class InsertHandler {
         } finally {
             managerTable.updateTempConfig();
             lock.writeLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
         }
         if (isSuccess) {
             writeOkPacket(1, rowSize, managerTable.getMsg(), service);
         } else {
             service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
         }
+
     }
 
     private List<String> getColumn(MySqlInsertStatement insert, ManagerWritableTable managerTable, ManagerService service) {

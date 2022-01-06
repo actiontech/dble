@@ -65,17 +65,31 @@ public final class UpdateHandler {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
-        //cluster-lock
-        DistributeLock distributeLock = null;
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
-            distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
-                return;
-            }
-            LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+            updateWithCluster(service, update, managerTable, values);
+        } else {
+            generalUpdate(service, update, managerTable, values);
         }
+    }
+
+    private void updateWithCluster(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values) {
+        //cluster-lock
+        DistributeLock distributeLock;
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
+        distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
+        if (!distributeLock.acquire()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
+            return;
+        }
+        LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+        try {
+            generalUpdate(service, update, managerTable, values);
+        } finally {
+            distributeLock.release();
+        }
+    }
+
+    private void generalUpdate(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values) {
         //stand-alone lock
         int rowSize = 0;
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -109,12 +123,10 @@ public final class UpdateHandler {
         } finally {
             managerTable.updateTempConfig();
             lock.writeLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
         }
         writePacket(isSuccess, rowSize, service, errorMsg);
     }
+
 
     private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg) {
         if (isSuccess) {

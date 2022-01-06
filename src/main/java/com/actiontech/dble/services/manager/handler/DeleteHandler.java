@@ -93,19 +93,32 @@ public final class DeleteHandler {
             service.writeErrMessage("42000", "Access denied for table '" + schemaInfo.getTable() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return;
         }
-
-        //cluster-lock
-        DistributeLock distributeLock = null;
-        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
-                return;
-            }
-            LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
-        }
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            deleteWithCluster(service, delete, managerTable);
+        } else {
+            generalDelete(service, delete, managerTable);
+        }
+    }
+
+    private void deleteWithCluster(ManagerService service, MySqlDeleteStatement delete, ManagerWritableTable managerTable) {
+        //cluster-lock
+        DistributeLock distributeLock;
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
+        distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
+        if (!distributeLock.acquire()) {
+            service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
+            return;
+        }
+        LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+        try {
+            generalDelete(service, delete, managerTable);
+        } finally {
+            distributeLock.release();
+        }
+    }
+
+    private void generalDelete(ManagerService service, MySqlDeleteStatement delete, ManagerWritableTable managerTable) {
         //stand-alone lock
         int rowSize = 0;
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -142,9 +155,6 @@ public final class DeleteHandler {
         } finally {
             managerTable.updateTempConfig();
             lock.writeLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
         }
         writePacket(isSuccess, rowSize, service, errorMsg);
     }

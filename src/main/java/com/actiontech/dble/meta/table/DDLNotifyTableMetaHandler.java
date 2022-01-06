@@ -53,7 +53,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
 
     @Override
     public void handlerTableByNode(boolean isSucc, String tableName0, String shardingNode) {
-        DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, "In shardingNode[" + shardingNode + "], fetching " + (isSucc ? "success." : "fail"));
+        DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, "In shardingNode[" + shardingNode + "], fetching " + (isSucc ? "success" : "fail"));
     }
 
     @Override
@@ -61,9 +61,9 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
         if (tableMeta != null) {
             ProxyMeta.getInstance().getTmManager().addTable(schema, tableMeta, isCreateSql);
             metaInited = true;
-            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ, "Successful to update table[" + schema + "." + tableMeta.getTableName() + "]metadata");
+            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ, "Successful to update table[" + schema + "." + tableMeta.getTableName() + "]’s metadata");
         } else {
-            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.fail, "Failed to update table[" + schema + "." + tableName + "]metadata");
+            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.fail, "Failed to update table[" + schema + "." + tableName + "]’s metadata");
         }
         signalDone();
     }

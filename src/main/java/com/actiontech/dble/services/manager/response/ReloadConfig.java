@@ -41,6 +41,7 @@ import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.TraceManager;
@@ -80,18 +81,31 @@ public final class ReloadConfig {
 
     public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
         try {
+            PacketResult packetResult = new PacketResult();
             if (ClusterConfig.getInstance().isClusterEnable()) {
-                reloadWithCluster(service, loadAllMode, returnFlag, confStatus);
+                reloadWithCluster(service, loadAllMode, confStatus, packetResult);
             } else {
-                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus);
+                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus, packetResult);
+            }
+            writePacket(packetResult.isSuccess(), service, packetResult.getErrorMsg(), packetResult.getErrorCode());
+        } finally {
+            ReloadManager.reloadFinish();
+        }
+    }
+
+    public static void execute(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult) throws Exception {
+        try {
+            if (ClusterConfig.getInstance().isClusterEnable()) {
+                reloadWithCluster(service, loadAllMode, confStatus, packetResult);
+            } else {
+                reloadWithoutCluster(service, loadAllMode, returnFlag, confStatus, packetResult);
             }
         } finally {
             ReloadManager.reloadFinish();
         }
     }
 
-
-    private static void reloadWithCluster(ManagerService service, int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
+    private static void reloadWithCluster(ManagerService service, int loadAllMode, ConfStatus confStatus, PacketResult packetResult) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-with-cluster");
         try {
 
@@ -101,61 +115,73 @@ public final class ReloadConfig {
                     !confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
                 distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
                 if (!distributeLock.acquire()) {
-                    service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg("Other instance is reloading, please try again later.");
+                    packetResult.setErrorCode(ErrorCode.ER_YES);
                     return;
                 }
                 LOGGER.info("reload config: added distributeLock " + ClusterMetaUtil.getConfChangeLockPath() + "");
             }
-            ClusterDelayProvider.delayAfterReloadLock();
-            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
-                writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
-                return;
-            }
-            //step 1 lock the local meta ,than all the query depends on meta will be hanging
-            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-            lock.writeLock().lock();
             try {
-                //step 2 reload the local config file
-                boolean reloadResult;
-                if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
-                        confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                    reloadResult = reloadByConfig(loadAllMode, true);
-                } else {
-                    reloadResult = reloadByLocalXml(loadAllMode);
-                }
-                if (!reloadResult) {
-                    writeSpecialError(service, "Reload interruputed by others,config should be reload");
+                ClusterDelayProvider.delayAfterReloadLock();
+                if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg("Reload status error ,other client or cluster may in reload");
+                    packetResult.setErrorCode(ErrorCode.ER_YES);
                     return;
                 }
-                ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
-                ClusterDelayProvider.delayAfterMasterLoad();
+                //step 1 lock the local meta ,than all the query depends on meta will be hanging
+                final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+                lock.writeLock().lock();
+                try {
+                    //step 2 reload the local config file
+                    boolean reloadResult;
+                    if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
+                            confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
+                        reloadResult = reloadByConfig(loadAllMode, true);
+                    } else {
+                        reloadResult = reloadByLocalXml(loadAllMode);
+                    }
+                    if (!reloadResult) {
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg("Reload config failure.The reason is reload interruputed by others,config should be reload");
+                        packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
+                        return;
+                    }
+                    ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
+                    ClusterDelayProvider.delayAfterMasterLoad();
 
-                //step 3 if the reload with no error ,than write the config file into cluster center remote
-                ClusterHelper.writeConfToCluster();
-                ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
+                    //step 3 if the reload with no error ,than write the config file into cluster center remote
+                    ClusterHelper.writeConfToCluster();
+                    ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
 
-                //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
-                ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
-                        ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
-                clusterHelper.setKV(ClusterMetaUtil.getConfStatusOperatorPath(), status);
-                ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
-                //step 5 start a loop to check if all the dble in cluster is reload finished
-                ReloadManager.waitingOthers();
-                clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.SUCCESS);
-                final String errorMsg = ClusterLogic.forConfig().waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath());
-                ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
-                ClusterDelayProvider.delayBeforeDeleteReloadLock();
+                    //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
+                    ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
+                            ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
+                    clusterHelper.setKV(ClusterMetaUtil.getConfStatusOperatorPath(), status);
+                    ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
+                    //step 5 start a loop to check if all the dble in cluster is reload finished
+                    ReloadManager.waitingOthers();
+                    clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.SUCCESS);
+                    final String errorMsg = ClusterLogic.forConfig().waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath());
+                    ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
+                    ClusterDelayProvider.delayBeforeDeleteReloadLock();
 
-                if (errorMsg != null) {
-                    writeErrorResultForCluster(service, errorMsg);
-                    return;
-                }
-                if (returnFlag) {
-                    writeOKResult(service);
+                    if (errorMsg != null) {
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg("Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]");
+                        if (errorMsg.contains("interrupt by command")) {
+                            packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
+                        } else {
+                            packetResult.setErrorCode(ErrorCode.ER_CLUSTER_RELOAD);
+                        }
+                        return;
+                    }
+                } finally {
+                    lock.writeLock().unlock();
+                    ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
                 }
             } finally {
-                lock.writeLock().unlock();
-                ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
                 if (distributeLock != null) {
                     distributeLock.release();
                 }
@@ -166,13 +192,15 @@ public final class ReloadConfig {
     }
 
 
-    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus) throws Exception {
+    private static void reloadWithoutCluster(ManagerService service, final int loadAllMode, boolean returnFlag, ConfStatus confStatus, PacketResult packetResult) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "reload-in-local");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.writeLock().lock();
         try {
             if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
-                writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Reload config failure.The reason is reload status error ,other client or cluster may in reload");
+                packetResult.setErrorCode(ErrorCode.ER_YES);
                 return;
             }
             boolean reloadResult;
@@ -183,9 +211,12 @@ public final class ReloadConfig {
                 reloadResult = reloadByLocalXml(loadAllMode);
             }
             if (reloadResult && returnFlag) {
-                writeOKResult(service);
+                // ok package
+                return;
             } else if (!reloadResult) {
-                writeSpecialError(service, "Reload interruputed by others,metadata should be reload");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Reload config failure.The reason is reload interruputed by others,metadata should be reload");
+                packetResult.setErrorCode(ErrorCode.ER_RELOAD_INTERRUPUTED);
             }
         } finally {
             lock.writeLock().unlock();
@@ -193,35 +224,6 @@ public final class ReloadConfig {
         }
     }
 
-
-    private static void writeOKResult(ManagerService service) {
-        if (LOGGER.isInfoEnabled()) {
-            ReloadLogHelper.info("send ok package to client " + service, LOGGER);
-        }
-
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(1);
-        ok.setServerStatus(2);
-        ok.setMessage("Reload config success".getBytes());
-        ok.write(service.getConnection());
-    }
-
-    private static void writeErrorResultForCluster(ManagerService service, String errorMsg) {
-        String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
-        LOGGER.warn(sb);
-        if (errorMsg.contains("interrupt by command")) {
-            service.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
-        } else {
-            service.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
-        }
-    }
-
-    private static void writeSpecialError(ManagerService service, String errorMsg) {
-        String sb = "Reload config failure.The reason is " + errorMsg;
-        LOGGER.warn(sb);
-        service.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
-    }
 
     private static void writeErrorResult(ManagerService c, String errorMsg) {
         String sb = "Reload config failure.The reason is " + errorMsg;
@@ -594,5 +596,22 @@ public final class ReloadConfig {
             }
         }
         return null;
+    }
+
+    private static void writePacket(boolean isSuccess, ManagerService service, String errorMsg, int errorCode) {
+        if (isSuccess) {
+            if (LOGGER.isInfoEnabled()) {
+                ReloadLogHelper.info("send ok package to client " + service, LOGGER);
+            }
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(1);
+            ok.setServerStatus(2);
+            ok.setMessage("Reload config success".getBytes());
+            ok.write(service.getConnection());
+        } else {
+            LOGGER.warn(errorMsg);
+            service.writeErrMessage(errorCode, errorMsg);
+        }
     }
 }

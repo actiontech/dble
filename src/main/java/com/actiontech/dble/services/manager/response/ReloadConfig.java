@@ -106,56 +106,59 @@ public final class ReloadConfig {
                 }
                 LOGGER.info("reload config: added distributeLock " + ClusterMetaUtil.getConfChangeLockPath() + "");
             }
-            ClusterDelayProvider.delayAfterReloadLock();
-            if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
-                writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
-                return;
-            }
-            //step 1 lock the local meta ,than all the query depends on meta will be hanging
-            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-            lock.writeLock().lock();
             try {
-                //step 2 reload the local config file
-                boolean reloadResult;
-                if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
-                        confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
-                    reloadResult = reloadByConfig(loadAllMode, true);
-                } else {
-                    reloadResult = reloadByLocalXml(loadAllMode);
-                }
-                if (!reloadResult) {
-                    writeSpecialError(service, "Reload interruputed by others,config should be reload");
+                ClusterDelayProvider.delayAfterReloadLock();
+                if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, confStatus)) {
+                    writeErrorResult(service, "Reload status error ,other client or cluster may in reload");
                     return;
                 }
-                ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
-                ClusterDelayProvider.delayAfterMasterLoad();
+                //step 1 lock the local meta ,than all the query depends on meta will be hanging
+                final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+                lock.writeLock().lock();
+                try {
+                    //step 2 reload the local config file
+                    boolean reloadResult;
+                    if (confStatus.getStatus().equals(ConfStatus.Status.MANAGER_INSERT) || confStatus.getStatus().equals(ConfStatus.Status.MANAGER_UPDATE) ||
+                            confStatus.getStatus().equals(ConfStatus.Status.MANAGER_DELETE)) {
+                        reloadResult = reloadByConfig(loadAllMode, true);
+                    } else {
+                        reloadResult = reloadByLocalXml(loadAllMode);
+                    }
+                    if (!reloadResult) {
+                        writeSpecialError(service, "Reload interruputed by others,config should be reload");
+                        return;
+                    }
+                    ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
+                    ClusterDelayProvider.delayAfterMasterLoad();
 
-                //step 3 if the reload with no error ,than write the config file into cluster center remote
-                ClusterHelper.writeConfToCluster();
-                ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
+                    //step 3 if the reload with no error ,than write the config file into cluster center remote
+                    ClusterHelper.writeConfToCluster();
+                    ReloadLogHelper.info("reload config: sent config file to cluster center", LOGGER);
 
-                //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
-                ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
-                        ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
-                clusterHelper.setKV(ClusterMetaUtil.getConfStatusOperatorPath(), status);
-                ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
-                //step 5 start a loop to check if all the dble in cluster is reload finished
-                ReloadManager.waitingOthers();
-                clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.SUCCESS);
-                final String errorMsg = ClusterLogic.forConfig().waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath());
-                ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
-                ClusterDelayProvider.delayBeforeDeleteReloadLock();
+                    //step 4 write the reload flag and self reload result into cluster center,notify the other dble to reload
+                    ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
+                            ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
+                    clusterHelper.setKV(ClusterMetaUtil.getConfStatusOperatorPath(), status);
+                    ReloadLogHelper.info("reload config: sent config status to cluster center", LOGGER);
+                    //step 5 start a loop to check if all the dble in cluster is reload finished
+                    ReloadManager.waitingOthers();
+                    clusterHelper.createSelfTempNode(ClusterPathUtil.getConfStatusOperatorPath(), FeedBackType.SUCCESS);
+                    final String errorMsg = ClusterLogic.forConfig().waitingForAllTheNode(ClusterPathUtil.getConfStatusOperatorPath());
+                    ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
+                    ClusterDelayProvider.delayBeforeDeleteReloadLock();
 
-                if (errorMsg != null) {
-                    writeErrorResultForCluster(service, errorMsg);
-                    return;
-                }
-                if (returnFlag) {
-                    writeOKResult(service);
+                    if (errorMsg != null) {
+                        writeErrorResultForCluster(service, errorMsg);
+                        return;
+                    }
+                    if (returnFlag) {
+                        writeOKResult(service);
+                    }
+                } finally {
+                    lock.writeLock().unlock();
+                    ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
                 }
             } finally {
-                lock.writeLock().unlock();
-                ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusOperatorPath() + SEPARATOR);
                 if (distributeLock != null) {
                     distributeLock.release();
                 }

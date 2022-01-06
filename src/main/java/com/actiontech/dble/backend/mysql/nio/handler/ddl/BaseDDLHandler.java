@@ -238,7 +238,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
                             err0.setPacketId(shardingService.nextPacketId());
                             err0.setErrNo(ErrorCode.ER_META_DATA);
                             String msg = "DDL executed successfully, maybe there's something wrong with update_ddl_metadata or notice_cluster_ddl. You are advised to analyze dble log first, then decide whether to execute 'reload @@metadata'.";
-                            err.setMessage(StringUtil.encode(msg, shardingService.getCharset().getResults()));
+                            err0.setMessage(StringUtil.encode(msg, shardingService.getCharset().getResults()));
                             packet = err0;
                         }
                         QueryResultDispatcher.doSqlStat(rrs, session, 0, netOutBytes, resultSize);

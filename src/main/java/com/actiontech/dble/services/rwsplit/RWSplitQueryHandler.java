@@ -10,6 +10,7 @@ import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
+import com.actiontech.dble.services.rwsplit.handle.ScriptPrepareHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.services.rwsplit.handle.XaHandler;
 import com.actiontech.dble.singleton.RouteService;
@@ -61,7 +62,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                 switch (sqlType) {
                     case RwSplitServerParse.USE:
                         String schema = UseHandler.getSchemaName(sql, rs >>> 8);
-                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setSchema(schema));
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> rwSplitService.setSchema(schema));
                         break;
                     case RwSplitServerParse.SHOW:
                         session.execute(true, null, false);
@@ -73,18 +74,18 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         SetHandler.handle(sql, session.getService(), rs >>> 8);
                         break;
                     case RwSplitServerParse.LOCK:
-                        session.execute(true, (isSuccess, rwSplitService) -> {
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
                             rwSplitService.implicitlyDeal();
                             rwSplitService.setLocked(true);
                         });
                         break;
                     case RwSplitServerParse.UNLOCK:
-                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setLocked(false));
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> rwSplitService.setLocked(false));
                         break;
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:
                         StatisticListener.getInstance().record(session, r -> r.onTxPreStart());
-                        session.execute(true, (isSuccess, rwSplitService) -> {
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
                             boolean isImplicitly = false;
                             if (rwSplitService.isTxStart() || !rwSplitService.isAutocommit()) {
                                 isImplicitly = true;
@@ -101,7 +102,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         break;
                     case RwSplitServerParse.COMMIT:
                     case RwSplitServerParse.ROLLBACK:
-                        session.execute(true, (isSuccess, rwSplitService) -> {
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
                             rwSplitService.setTxStart(false);
                             rwSplitService.singleTransactionsCount();
                             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
@@ -115,19 +116,19 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         FrontendConnection connection = (FrontendConnection) session.getService().getConnection();
                         connection.setSkipCheck(true);
                         session.getService().setInLoadData(true);
-                        session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setInLoadData(false));
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> rwSplitService.setInLoadData(false));
                         break;
                     case RwSplitServerParse.HELP:
                         session.execute(null, null);
                         break;
                     case RwSplitServerParse.SCRIPT_PREPARE:
-                        session.execute(true, null, sql);
+                        ScriptPrepareHandler.handle(session.getService(), sql);
                         break;
                     case RwSplitServerParse.CREATE_TEMPORARY_TABLE:
-                        TempTableHandler.handleCreate(sql, session.getService(), rs >>> 8);
+                        TempTableHandler.handleCreate(sql, session.getService());
                         break;
                     case RwSplitServerParse.DROP_TABLE:
-                        TempTableHandler.handleDrop(sql, session.getService(), rs >>> 8);
+                        TempTableHandler.handleDrop(sql, session.getService());
                         break;
                     case RwSplitServerParse.XA_START:
                         XaHandler.xaStart(sql, session.getService(), rs >>> 8);
@@ -165,7 +166,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
             case RwSplitServerParse.UNINSTALL:
             case RwSplitServerParse.GRANT:
             case RwSplitServerParse.REVOKE:
-                return (isSuccess, rwSplitService) -> {
+                return (isSuccess, resp, rwSplitService) -> {
                     rwSplitService.implicitlyDeal();
                 };
             default:

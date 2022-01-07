@@ -27,7 +27,6 @@ import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.StatusFlags;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -936,7 +935,7 @@ public class NonBlockingSession extends Session {
             StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
         }
         shardingService.setTxStart(false);
-        shardingService.getAndIncrementXid();
+        shardingService.getAndIncrementTxId();
         if (shardingService.isSetNoAutoCommit()) {
             shardingService.setSetNoAutoCommit(false);
         } else {
@@ -993,7 +992,7 @@ public class NonBlockingSession extends Session {
             if (shardingService.isTxStart()) {
                 shardingService.setTxStart(false);
                 StatisticListener.getInstance().record(shardingService, r -> r.onTxEnd());
-                shardingService.getAndIncrementXid();
+                shardingService.getAndIncrementTxId();
                 if (!shardingService.isAutocommit()) {
                     StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
                 }
@@ -1017,37 +1016,11 @@ public class NonBlockingSession extends Session {
     /**
      * backend packet server_status change and next round start
      */
-    public boolean multiStatementPacket(MySQLPacket packet, byte packetNum) {
+    public void multiStatementPacket(MySQLPacket packet, byte packetNum) {
         if (this.isMultiStatement.get()) {
             packet.markMoreResultsExists();
             this.getPacketId().set(packetNum);
-            return true;
         }
-        return false;
-    }
-
-    /**
-     * backend row eof packet server_status change and next round start
-     */
-    public boolean multiStatementPacket(byte[] eof, byte packetNum) {
-        if (this.getIsMultiStatement().get()) {
-            //if there is another statement is need to be executed ,start another round
-            eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-
-            this.getPacketId().set(packetNum);
-            return true;
-        }
-        return false;
-    }
-
-
-    public boolean multiStatementPacket(byte[] eof) {
-        if (this.getIsMultiStatement().get()) {
-            //if there is another statement is need to be executed ,start another round
-            eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-            return true;
-        }
-        return false;
     }
 
     public boolean multiStatementPacket(MySQLPacket packet) {
@@ -1057,7 +1030,6 @@ public class NonBlockingSession extends Session {
         }
         return false;
     }
-
 
     public void rowCountRolling() {
         rowCountLastSQL = rowCountCurrentSQL;
@@ -1151,7 +1123,6 @@ public class NonBlockingSession extends Session {
     public boolean isRetryXa() {
         return transactionManager.isRetryXa();
     }
-
 
     public boolean isKilled() {
         return killed;

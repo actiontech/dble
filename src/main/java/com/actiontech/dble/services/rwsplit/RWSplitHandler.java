@@ -9,10 +9,7 @@ import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
@@ -40,10 +37,6 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
      */
     private boolean write2Client = false;
     private final Callback callback;
-    /**
-     * If there are more packets next.This flag in would be set.
-     */
-    private static final int HAS_MORE_RESULTS = 0x08;
     private boolean isHint;
 
     public RWSplitHandler(RWSplitService service, byte[] originPacket, Callback callback, boolean isHint) {
@@ -95,7 +88,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         boolean syncFinished = mysqlService.syncAndExecute();
         loadDataClean();
         if (callback != null) {
-            callback.callback(false, rwSplitService);
+            callback.callback(false, null, rwSplitService);
         }
         if (!syncFinished) {
             mysqlService.getConnection().businessClose("unfinished sync");
@@ -119,19 +112,16 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void okResponse(byte[] data, AbstractService service) {
-        // TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
-        //        TraceManager.finishSpan(service, traceObject);
         MySQLResponseService mysqlService = (MySQLResponseService) service;
         boolean executeResponse = mysqlService.syncAndExecute();
         if (executeResponse) {
-
             final OkPacket packet = new OkPacket();
             packet.read(data);
             loadDataClean();
             StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(packet.getAffectedRows()));
-            if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
+            if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
                 if (callback != null) {
-                    callback.callback(true, rwSplitService);
+                    callback.callback(true, null, rwSplitService);
                 }
                 rwSplitService.getSession2().unbindIfSafe();
             }
@@ -140,7 +130,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 if (!write2Client) {
                     data[3] = (byte) rwSplitService.nextPacketId();
                     frontedConnection.write(data);
-                    if ((packet.getServerStatus() & HAS_MORE_RESULTS) == 0) {
+                    if ((packet.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
                         write2Client = true;
                     }
                 }
@@ -189,7 +179,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             selectRows = 0;
             if (!write2Client) {
                 eof[3] = (byte) rwSplitService.nextPacketId();
-                if ((eof[7] & HAS_MORE_RESULTS) == 0) {
+                if ((eof[7] & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
                     /*
                     last resultset will call this
                      */
@@ -209,7 +199,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                  */
                 frontedConnection.write(buffer);
                 buffer = null;
-                if ((eof[7] & HAS_MORE_RESULTS) == 0) {
+                if ((eof[7] & StatusFlags.SERVER_MORE_RESULTS_EXISTS) == 0) {
                     write2Client = true;
                 }
             }
@@ -265,6 +255,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                         buffer = frontedConnection.writeToBuffer(field, buffer);
                     }
                 }
+                callback.callback(true, ok, rwSplitService);
                 frontedConnection.write(buffer);
                 write2Client = true;
                 buffer = null;

@@ -52,7 +52,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -72,15 +71,12 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
-
-    private AtomicLong txID = new AtomicLong(1);
-    private volatile boolean isLocked = false;
     private long lastInsertId;
     private final NonBlockingSession session;
     private boolean sessionReadOnly = false;
     private ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
-    protected volatile boolean setNoAutoCommit = false;
+    private volatile boolean setNoAutoCommit = false;
 
     public ShardingService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -388,7 +384,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             connIterator.remove();
         }
 
-        isLocked = false;
+        setLocked(false);
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
@@ -482,7 +478,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
-            isLocked = false;
+            setLocked(false);
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
@@ -613,8 +609,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         SerializableLock.getInstance().unLock(this.connection.getId());
     }
 
-
-    public void multiStatementNextSql(boolean flag) {
+    private void multiStatementNextSql(boolean flag) {
         if (flag) {
             session.setRequestTime();
             session.setQueryStartTime(System.currentTimeMillis());
@@ -657,32 +652,12 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         return session;
     }
 
-    public boolean isLocked() {
-        return isLocked;
-    }
-
-    public void setLocked(boolean locked) {
-        isLocked = locked;
-    }
-
-    public long getAndIncrementXid() {
-        return txID.getAndIncrement();
-    }
-
-    public long getXid() {
-        return txID.get();
-    }
-
     public long getLastInsertId() {
         return lastInsertId;
     }
 
     public void setLastInsertId(long lastInsertId) {
         this.lastInsertId = lastInsertId;
-    }
-
-    public void setSessionReadOnly(boolean sessionReadOnly) {
-        this.sessionReadOnly = sessionReadOnly;
     }
 
     public boolean isReadOnly() {
@@ -695,10 +670,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public ServerSptPrepare getSptPrepare() {
         return sptprepare;
-    }
-
-    private boolean isEndOfDataFile(byte[] data) {
-        return (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0);
     }
 
     public boolean isSetNoAutoCommit() {

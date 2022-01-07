@@ -25,7 +25,7 @@ public final class TempTableHandler {
     private TempTableHandler() {
     }
 
-    public static void handleCreate(String stmt, RWSplitService service, int offset) {
+    public static void handleCreate(String stmt, RWSplitService service) {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         final SQLStatement sqlStatement = parser.parseCreate();
         if (!(sqlStatement instanceof SQLCreateTableStatement)) {
@@ -33,7 +33,7 @@ public final class TempTableHandler {
         }
         final RWSplitNonBlockingSession session = service.getSession2();
         final String sessionSchema = service.getSchema();
-        session.execute(true, (isSuccess, rwSplitService) -> {
+        session.execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 final Set<String> tempTableSet = rwSplitService.getTmpTableSet();
 
@@ -57,7 +57,7 @@ public final class TempTableHandler {
         return schemaName + "." + tableName;
     }
 
-    public static void handleDrop(String stmt, RWSplitService service, int offset) {
+    public static void handleDrop(String stmt, RWSplitService service) {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         final SQLStatement sqlStatement = parser.parseDrop();
         if (!(sqlStatement instanceof SQLDropTableStatement)) {
@@ -66,7 +66,7 @@ public final class TempTableHandler {
 
         final RWSplitNonBlockingSession session = service.getSession2();
         final String sessionSchema = service.getSchema();
-        session.execute(true, (isSuccess, rwSplitService) -> {
+        session.execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 final Set<String> tempTableSet = rwSplitService.getTmpTableSet();
                 for (SQLExprTableSource tableSource : ((SQLDropTableStatement) sqlStatement).getTableSources()) {

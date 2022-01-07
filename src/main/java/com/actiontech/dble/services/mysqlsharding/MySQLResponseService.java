@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -100,6 +101,23 @@ public class MySQLResponseService extends BackendService {
             protocolResponseHandler = defaultResponseHandler;
         }
         synAndDoExecute(synSQL, sql, service.getCharset());
+    }
+
+    // only for com_stmt_execute
+    public void execute(ByteBuffer buffer) {
+        if (protocolResponseHandler != defaultResponseHandler) {
+            protocolResponseHandler = defaultResponseHandler;
+        }
+        writeDirectly(buffer);
+    }
+
+    // only for com_stmt_execute
+    public void execute(byte[] originPacket) {
+        if (protocolResponseHandler != defaultResponseHandler) {
+            protocolResponseHandler = defaultResponseHandler;
+        }
+
+        writeDirectly(originPacket);
     }
 
     public void execute(RWSplitService service, byte[] originPacket) {

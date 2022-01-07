@@ -190,7 +190,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.5.0</version>
+            <version>3.16.1</version>
         </dependency>
         <!--DOM4J FOR XML -->
         <dependency>

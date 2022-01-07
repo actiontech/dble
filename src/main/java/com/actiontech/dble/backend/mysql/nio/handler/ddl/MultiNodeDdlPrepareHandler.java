@@ -32,6 +32,11 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
     }
 
     @Override
+    protected boolean isMustWrite() {
+        return true;
+    }
+
+    @Override
     protected void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed()) return;
         DDLTraceHelper.log(session.getShardingService(), d -> d.infoByNode(node.getName(), stage, DDLTraceHelper.Status.get_conn, "Get " + conn.toString()));

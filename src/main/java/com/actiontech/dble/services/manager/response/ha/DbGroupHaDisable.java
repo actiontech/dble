@@ -16,11 +16,10 @@ import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.cluster.values.RawJson;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,31 +38,31 @@ public final class DbGroupHaDisable {
 
     }
 
-    public static void execute(Matcher disable, ManagerService service) {
+    public static void execute(Matcher disable, ManagerService service, PacketResult packetResult) {
         ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         String dhName = disable.group(1);
         String subHostName = disable.group(3);
-
         //check the dbGroup is exists
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
             PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
             if (dh == null) {
-                service.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + dhName + " do not exists");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("dbGroup " + dhName + " do not exists");
                 return;
             }
 
-
             if (!dh.checkInstanceExist(subHostName)) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
                 return;
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
             if (ClusterConfig.getInstance().isClusterEnable()) {
                 if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                    if (!disableWithCluster(id, dh, subHostName, service)) {
+                    if (!disableWithCluster(id, dh, subHostName, service, packetResult)) {
                         return;
                     }
                 } else {
@@ -75,7 +74,8 @@ public final class DbGroupHaDisable {
                         HaConfigManager.getInstance().haFinish(id, null, result);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        service.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg("disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
                         return;
                     }
                 }
@@ -86,22 +86,17 @@ public final class DbGroupHaDisable {
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                    service.writeErrMessage(ErrorCode.ER_YES, "disable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg("disable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     return;
                 }
             }
-
-            OkPacket packet = new OkPacket();
-            packet.setPacketId(1);
-            packet.setAffectedRows(0);
-            packet.setServerStatus(2);
-            packet.write(service.getConnection());
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    private static boolean disableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc) {
+    private static boolean disableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc, PacketResult packetResult) {
         ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         //get the lock from ucore
         DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getHaLockPath(dh.getGroupName()),
@@ -112,7 +107,8 @@ public final class DbGroupHaDisable {
                 )
         );
         if (!distributeLock.acquire()) {
-            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is changing the dbGroup, please try again later.");
             HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dbGroup, please try again later.", null);
             return false;
         }
@@ -137,11 +133,13 @@ public final class DbGroupHaDisable {
             //set  log stage to finish
             HaConfigManager.getInstance().haFinish(id, errorMsg, result);
             if (errorMsg != null) {
-                mc.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg(errorMsg);
                 return false;
             }
         } catch (Exception e) {
-            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
             HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         } finally {

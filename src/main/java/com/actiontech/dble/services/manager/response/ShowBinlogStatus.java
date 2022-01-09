@@ -96,6 +96,7 @@ public final class ShowBinlogStatus {
                 }
             }
         }
+
     }
 
 
@@ -105,21 +106,19 @@ public final class ShowBinlogStatus {
         DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getBinlogPauseLockPath());
         try {
             if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
+                errMsg = "There is another command is showing BinlogStatus";
                 return;
             }
             try {
                 //step 2 try to lock all the commit flag in server
                 if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
-                    service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
+                    errMsg = "There is another command is showing BinlogStatus";
                 } else {
-
                     //step 3 wait til other dbles to feedback the ucore flag
                     errMsg = null;
                     long beginTime = TimeUtil.currentTimeMillis();
                     boolean isPaused = waitAllSession(service, timeout, beginTime);
                     if (!isPaused) {
-                        writeResponse(service);
                         return;
                     }
                     //step 4 notify other dble to stop the commit & set self status
@@ -144,22 +143,21 @@ public final class ShowBinlogStatus {
                     if (errMsg == null) {
                         getQueryResult(service.getCharset().getResults());
                     }
-                    writeResponse(service);
-
                     //step 7 delete the KVtree and notify the cluster
                     ClusterHelper.cleanPath(binlogStatusPath);
-
                 }
             } catch (Exception e) {
+                errMsg = e.getMessage();
                 logger.warn("catch Exception", e);
             } finally {
                 DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
                 distributeLock.release();
             }
         } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+            errMsg = e.getMessage();
+        } finally {
+            writeResponse(service);
         }
-
     }
 
 
@@ -283,5 +281,17 @@ public final class ShowBinlogStatus {
             row.add(StringUtil.encode(result.get(field), charset));
         }
         return row;
+    }
+
+    private static void writePacket(boolean isSuccess, ManagerService service, String errorMsg) {
+        if (isSuccess) {
+            OkPacket packet = new OkPacket();
+            packet.setPacketId(1);
+            packet.setAffectedRows(0);
+            packet.setServerStatus(2);
+            packet.write(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
     }
 }

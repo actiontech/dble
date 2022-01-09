@@ -13,6 +13,7 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
@@ -53,82 +54,110 @@ public final class PauseStart {
 
     }
 
-
     public static void pause(ManagerService service, String sql) {
         LOGGER.info("pause start from command");
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
-        if (!ma.matches()) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match pause @@shardingNode ='dn......' and timeout = ([0-9]+)");
-            return;
-        }
-        String shardingNode = ma.group(1);
-        int connectionTimeOut = ma.group(6) == null ? DEFAULT_CONNECTION_TIME_OUT : Integer.parseInt(ma.group(6)) * 1000;
-        int queueLimit = ma.group(4) == null ? DEFAULT_QUEUE_LIMIT : Integer.parseInt(ma.group(4));
-        Set<String> shardingNodes = new HashSet<>(Arrays.asList(shardingNode.split(",")));
-        //check shardingNode
-        for (String singleDn : shardingNodes) {
-            if (DbleServer.getInstance().getConfig().getShardingNodes().get(singleDn) == null) {
-                service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "ShardingNode " + singleDn + " did not exists");
-                return;
-            }
-        }
-
-        if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
-            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node is doing pause operation concurrently");
-            return;
-        }
-
-
+        PacketResult packetResult = new PacketResult();
         try {
-            try {
-                //clusterPauseNotice
-                PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit);
-            } catch (Exception e) {
-                LOGGER.warn("pause failed", e);
-                service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            if (!ma.matches()) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("The sql did not match pause @@shardingNode ='dn......' and timeout = ([0-9]+)");
+                packetResult.setErrorCode(ErrorCode.ER_UNKNOWN_ERROR);
+                return;
+            }
+            String shardingNode = ma.group(1);
+            int connectionTimeOut = ma.group(6) == null ? DEFAULT_CONNECTION_TIME_OUT : Integer.parseInt(ma.group(6)) * 1000;
+            int queueLimit = ma.group(4) == null ? DEFAULT_QUEUE_LIMIT : Integer.parseInt(ma.group(4));
+            Set<String> shardingNodes = new HashSet<>(Arrays.asList(shardingNode.split(",")));
+            //check shardingNode
+            for (String singleDn : shardingNodes) {
+                if (DbleServer.getInstance().getConfig().getShardingNodes().get(singleDn) == null) {
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg("ShardingNode " + singleDn + " did not exists");
+                    packetResult.setErrorCode(ErrorCode.ER_UNKNOWN_ERROR);
+                    return;
+                }
+            }
+
+            if (!PauseShardingNodeManager.getInstance().getDistributeLock()) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Other node is doing pause operation concurrently");
+                packetResult.setErrorCode(ErrorCode.ER_UNKNOWN_ERROR);
                 return;
             }
 
 
-            PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, shardingNode, queueLimit);
-
-            //self pause the shardingNode
-            long timeOut = Long.parseLong(ma.group(2)) * 1000;
-            long beginTime = System.currentTimeMillis();
-            boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
-
-            LOGGER.info("wait finished " + recycleFinish);
-            if (!recycleFinish) {
-                if (PauseShardingNodeManager.getInstance().tryResume()) {
-                    try {
-                        PauseShardingNodeManager.getInstance().resumeCluster();
-                    } catch (Exception e) {
-                        LOGGER.warn("resume cause error", e);
-                    }
-                    service.writeErrMessage(ErrorCode.ER_YES, "The backend connection recycle failure, try it later");
-                } else {
-                    service.writeErrMessage(ErrorCode.ER_YES, "Pause resume when recycle connection, pause revert");
-                }
-            } else {
+            try {
                 try {
-                    if (PauseShardingNodeManager.getInstance().waitForCluster(service, beginTime, timeOut)) {
-                        LOGGER.info("call pause success");
-                        OK.write(service.getConnection());
-                    }
+                    //clusterPauseNotice
+                    PauseShardingNodeManager.getInstance().clusterPauseNotice(shardingNode, connectionTimeOut, queueLimit);
                 } catch (Exception e) {
-                    LOGGER.warn("wait for other node failed.", e);
-                    service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+                    LOGGER.warn("pause failed", e);
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg(e.getMessage());
+                    packetResult.setErrorCode(ErrorCode.ER_YES);
+                    return;
                 }
+
+
+                PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, shardingNode, queueLimit);
+
+                //self pause the shardingNode
+                long timeOut = Long.parseLong(ma.group(2)) * 1000;
+                long beginTime = System.currentTimeMillis();
+                boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
+
+                LOGGER.info("wait finished " + recycleFinish);
+                if (!recycleFinish) {
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorCode(ErrorCode.ER_YES);
+                    if (PauseShardingNodeManager.getInstance().tryResume()) {
+                        try {
+                            PauseShardingNodeManager.getInstance().resumeCluster();
+                        } catch (Exception e) {
+                            LOGGER.warn("resume cause error", e);
+                        }
+
+                        packetResult.setErrorMsg("The backend connection recycle failure, try it later");
+                    } else {
+                        packetResult.setErrorMsg("Pause resume when recycle connection, pause revert");
+                    }
+                } else {
+                    try {
+                        if (PauseShardingNodeManager.getInstance().waitForCluster(beginTime, timeOut, packetResult)) {
+                            LOGGER.info("call pause success");
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("wait for other node failed.", e);
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg(e.getMessage());
+                        packetResult.setErrorCode(ErrorCode.ER_YES);
+                    }
+                }
+            } catch (MySQLOutPutException e) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg(e.getMessage());
+                packetResult.setErrorCode(ErrorCode.ER_YES);
+            } catch (Exception e) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Pause operation cause error: " + e.getMessage());
+                packetResult.setErrorCode(ErrorCode.ER_YES);
+            } finally {
+                PauseShardingNodeManager.getInstance().releaseDistributeLock();
             }
-        } catch (MySQLOutPutException e) {
-            service.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
-        } catch (Exception e) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Pause operation cause error: " + e.getMessage());
         } finally {
-            PauseShardingNodeManager.getInstance().releaseDistributeLock();
+            writePacket(packetResult.isSuccess(), service, packetResult.getErrorMsg(), packetResult.getErrorCode());
         }
     }
 
+
+    private static void writePacket(boolean isSuccess, ManagerService service, String errorMsg, int errorCode) {
+        if (isSuccess) {
+            OK.write(service.getConnection());
+        } else {
+            service.writeErrMessage(errorCode, errorMsg);
+        }
+    }
 
     public static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> shardingNodes) {
         boolean recycleFinish = false;

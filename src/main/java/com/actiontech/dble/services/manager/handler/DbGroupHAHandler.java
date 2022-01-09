@@ -1,11 +1,9 @@
 package com.actiontech.dble.services.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.manager.response.ha.DbGroupHaDisable;
-import com.actiontech.dble.services.manager.response.ha.DbGroupHaEnable;
-import com.actiontech.dble.services.manager.response.ha.DbGroupHaEvents;
-import com.actiontech.dble.services.manager.response.ha.DbGroupHaSwitch;
+import com.actiontech.dble.services.manager.response.ha.*;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,19 +30,32 @@ public final class DbGroupHAHandler {
         Matcher enable = PATTERN_DH_ENABLE.matcher(stmt);
         Matcher switcher = PATTERN_DH_SWITCH.matcher(stmt);
         Matcher event = PATTERN_DH_EVENTS.matcher(stmt);
+        PacketResult packetResult = new PacketResult();
         if (disable.matches()) {
-            DbGroupHaDisable.execute(disable, service);
+            DbGroupHaDisable.execute(disable, service, packetResult);
+            writePacket(packetResult.isSuccess(), service, packetResult.getErrorMsg());
         } else if (enable.matches()) {
-            DbGroupHaEnable.execute(enable, service);
+            DbGroupHaEnable.execute(enable, service, packetResult);
+            writePacket(packetResult.isSuccess(), service, packetResult.getErrorMsg());
         } else if (switcher.matches()) {
-            DbGroupHaSwitch.execute(switcher, service);
+            DbGroupHaSwitch.execute(switcher, service, packetResult);
+            writePacket(packetResult.isSuccess(), service, packetResult.getErrorMsg());
         } else if (event.matches()) {
             DbGroupHaEvents.execute(service);
         } else {
             service.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the dbGroup command");
         }
-
     }
 
-
+    private static void writePacket(boolean isSuccess, ManagerService service, String errorMsg) {
+        if (isSuccess) {
+            OkPacket packet = new OkPacket();
+            packet.setPacketId(1);
+            packet.setAffectedRows(0);
+            packet.setServerStatus(2);
+            packet.write(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
+    }
 }

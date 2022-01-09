@@ -33,6 +33,7 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,71 +64,69 @@ public final class UpdateHandler {
             service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
             return;
         }
-
+        PacketResult packetResult = new PacketResult();
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            updateWithCluster(service, update, managerTable, values);
+            updateWithCluster(service, update, managerTable, values, packetResult);
         } else {
-            generalUpdate(service, update, managerTable, values);
+            generalUpdate(service, update, managerTable, values, packetResult);
         }
+        writePacket(packetResult.isSuccess(), packetResult.getRowSize(), service, packetResult.getErrorMsg(), packetResult.getSqlState(), packetResult.getErrorCode());
     }
 
-    private void updateWithCluster(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values) {
+    private void updateWithCluster(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values, PacketResult packetResult) {
         //cluster-lock
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
         if (!distributeLock.acquire()) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is reloading, please try again later.");
             return;
         }
         LOGGER.info("update dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
         try {
-            generalUpdate(service, update, managerTable, values);
+            generalUpdate(service, update, managerTable, values, packetResult);
         } finally {
             distributeLock.release();
         }
     }
 
-    private void generalUpdate(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values) {
+    private void generalUpdate(ManagerService service, MySqlUpdateStatement update, ManagerWritableTable managerTable, LinkedHashMap<String, String> values, PacketResult packetResult) {
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
         try {
-            int rowSize = getRowSize(service, managerTable, update, values);
-            if (rowSize >= 0) {
-                writeOkPacket(1, rowSize, service);
+            int rowSize;
+            try {
+                List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
+                Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
+                rowSize = updateRows(service, managerTable, affectPks, values, packetResult);
+                packetResult.setRowSize(rowSize);
+            } catch (SQLException e) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg(e.getMessage());
+                packetResult.setSqlState(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState());
+                packetResult.setErrorCode(e.getErrorCode());
+            } catch (ConfigException e) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Update failure.The reason is " + e.getMessage());
+            } catch (Exception e) {
+                packetResult.setSuccess(false);
+                if (e.getCause() instanceof ConfigException) {
+                    //reload fail
+                    packetResult.setErrorMsg("Update failure.The reason is " + e.getMessage());
+                    LOGGER.warn("Update failure.The reason is ", e);
+                } else {
+                    packetResult.setErrorMsg("unknown error:" + e.getMessage());
+                    LOGGER.warn("unknown error:", e);
+                }
             }
         } finally {
             DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
             DbleTempConfig.getInstance().setUserConfig(DbleServer.getInstance().getConfig().getUserConfig());
             managerTable.getLock().unlock();
         }
-    }
-
-    private int getRowSize(ManagerService service, ManagerWritableTable managerTable, MySqlUpdateStatement update, LinkedHashMap<String, String> values) {
-        int rowSize;
-        try {
-            List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, update.getWhere());
-            Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, values);
-            rowSize = updateRows(service, managerTable, affectPks, values);
-        } catch (SQLException e) {
-            rowSize = -1;
-            service.writeErrMessage(StringUtil.isEmpty(e.getSQLState()) ? "HY000" : e.getSQLState(), e.getMessage(), e.getErrorCode());
-        } catch (ConfigException e) {
-            rowSize = -1;
-            service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
-        } catch (Exception e) {
-            rowSize = -1;
-            if (e.getCause() instanceof ConfigException) {
-                //reload fail
-                service.writeErrMessage(ErrorCode.ER_YES, "Update failure.The reason is " + e.getMessage());
-                LOGGER.warn("Update failure.The reason is ", e);
-            } else {
-                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-                LOGGER.warn("unknown error:", e);
-            }
-        }
-        return rowSize;
     }
 
     public ManagerWritableTable getWritableTable(MySqlUpdateStatement update, ManagerService service) {
@@ -177,12 +176,12 @@ public final class UpdateHandler {
         return (ManagerWritableTable) managerBaseTable;
     }
 
-    private int updateRows(ManagerService service, ManagerWritableTable managerTable, Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws Exception {
+    private int updateRows(ManagerService service, ManagerWritableTable managerTable, Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values, PacketResult packetResult) throws Exception {
         int rowSize = 0;
         if (!affectPks.isEmpty()) {
             rowSize = managerTable.updateRows(affectPks, values);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()));
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_UPDATE, managerTable.getTableName()), packetResult);
             }
         }
         return rowSize;
@@ -236,10 +235,16 @@ public final class UpdateHandler {
         return columnName;
     }
 
-    private void writeOkPacket(int i, int rowSize, ManagerService service) {
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(rowSize);
-        ok.write(service.getConnection());
+    private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg, String sqlState, int errorCode) {
+        if (isSuccess) {
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(rowSize);
+            ok.write(service.getConnection());
+        } else if (!Strings.isNullOrEmpty(sqlState)) {
+            service.writeErrMessage(sqlState, errorMsg, errorCode);
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
     }
 }

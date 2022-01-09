@@ -30,6 +30,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,25 +94,52 @@ public final class DeleteHandler {
             service.writeErrMessage("42000", "Access denied for table '" + managerBaseTable.getTableName() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return;
         }
+        PacketResult packetResult = new PacketResult();
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            deleteWithCluster(service, delete, managerBaseTable);
+            deleteWithCluster(service, delete, managerBaseTable, packetResult);
         } else {
-            generalDelete(service, delete, managerBaseTable);
+            generalDelete(service, delete, managerBaseTable, packetResult);
         }
+        writePacket(packetResult.isSuccess(), packetResult.getRowSize(), service, packetResult.getErrorMsg(), packetResult.getSqlState(), packetResult.getErrorCode());
     }
 
-    private void generalDelete(ManagerService service, MySqlDeleteStatement delete, ManagerBaseTable managerBaseTable) {
+    private void generalDelete(ManagerService service, MySqlDeleteStatement delete, ManagerBaseTable managerBaseTable, PacketResult packetResult) {
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         //stand-alone lock
         boolean lockFlag = managerTable.getLock().tryLock();
         if (!lockFlag) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing management commands(insert/update/delete), please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
         try {
-            int rowSize = getRowSize(service, managerTable, delete);
-            if (rowSize >= 0) {
-                writeOkPacket(1, rowSize, managerTable.getMsg(), service);
+            int rowSize;
+            try {
+                List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
+                Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
+                rowSize = managerTable.deleteRows(affectPks);
+                if (rowSize != 0) {
+                    ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()), packetResult);
+                }
+                packetResult.setRowSize(rowSize);
+            } catch (SQLException e) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg(e.getMessage());
+                packetResult.setSqlState(e.getSQLState());
+                packetResult.setErrorCode(e.getErrorCode());
+            } catch (ConfigException e) {
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
+            } catch (Exception e) {
+                packetResult.setSuccess(false);
+                if (e.getCause() instanceof ConfigException) {
+                    //reload fail
+                    packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
+                    LOGGER.warn("Delete failure.The reason is " + e);
+                } else {
+                    packetResult.setErrorMsg("unknown error:" + e.getMessage());
+                    LOGGER.warn("unknown error:", e);
+                }
             }
         } finally {
             DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
@@ -120,55 +148,33 @@ public final class DeleteHandler {
         }
     }
 
-    private void deleteWithCluster(ManagerService service, MySqlDeleteStatement delete, ManagerBaseTable managerBaseTable) {
+    private void deleteWithCluster(ManagerService service, MySqlDeleteStatement delete, ManagerBaseTable managerBaseTable, PacketResult packetResult) {
         //cluster-lock
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
         if (!distributeLock.acquire()) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading, please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is reloading, please try again later.");
             return;
         }
         LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerBaseTable.getTableName(), ClusterPathUtil.getConfChangeLockPath());
         try {
-            generalDelete(service, delete, managerBaseTable);
+            generalDelete(service, delete, managerBaseTable, packetResult);
         } finally {
             distributeLock.release();
         }
     }
 
-    private int getRowSize(ManagerService service, ManagerWritableTable managerTable, MySqlDeleteStatement delete) {
-        int rowSize;
-        try {
-            List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
-            Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
-            rowSize = managerTable.deleteRows(affectPks);
-            if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
-            }
-        } catch (SQLException e) {
-            rowSize = -1;
-            service.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
-        } catch (ConfigException e) {
-            rowSize = -1;
-            service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
-        } catch (Exception e) {
-            rowSize = -1;
-            if (e.getCause() instanceof ConfigException) {
-                //reload fail
-                service.writeErrMessage(ErrorCode.ER_YES, "Delete failure.The reason is " + e.getMessage());
-                LOGGER.warn("Delete failure.The reason is " + e);
-            } else {
-                service.writeErrMessage(ErrorCode.ER_YES, "unknown error:" + e.getMessage());
-                LOGGER.warn("unknown error:", e);
-            }
+    private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg, String sqlState, int errorCode) {
+        if (isSuccess) {
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(rowSize);
+            ok.write(service.getConnection());
+        } else if (!Strings.isNullOrEmpty(sqlState)) {
+            service.writeErrMessage(sqlState, errorMsg, errorCode);
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
         }
-        return rowSize;
-    }
-
-    private void writeOkPacket(int i, int rowSize, String msg, ManagerService service) {
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(rowSize);
-        ok.write(service.getConnection());
     }
 
 }

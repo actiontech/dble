@@ -11,11 +11,10 @@ import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.values.HaInfo;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ public final class DbGroupHaSwitch {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaSwitch.class);
 
-    public static void execute(Matcher switcher, ManagerService service) {
+    public static void execute(Matcher switcher, ManagerService service, PacketResult packetResult) {
         String dbGroupName = switcher.group(1);
         String masterName = switcher.group(2);
         //check the dbGroup is exists
@@ -44,17 +43,19 @@ public final class DbGroupHaSwitch {
         try {
             PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
             if (dh == null) {
-                service.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + dbGroupName + " do not exists");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("dbGroup " + dbGroupName + " do not exists");
                 return;
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, switcher.group(0));
             if (!dh.checkInstanceExist(masterName)) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
                 return;
             }
             if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (!switchWithCluster(id, dh, masterName, service)) {
+                if (!switchWithCluster(id, dh, masterName, service, packetResult)) {
                     return;
                 }
             } else {
@@ -63,23 +64,19 @@ public final class DbGroupHaSwitch {
                     String result = dh.switchMaster(masterName, true);
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg("swtich dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                    service.writeErrMessage(ErrorCode.ER_YES, "swtich dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     return;
                 }
             }
 
-            OkPacket packet = new OkPacket();
-            packet.setPacketId(1);
-            packet.setAffectedRows(0);
-            packet.setServerStatus(2);
-            packet.write(service.getConnection());
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    private static boolean switchWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc) {
+    private static boolean switchWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc, PacketResult packetResult) {
         //get the lock from ucore
         DistributeLock distributeLock = ClusterHelper.createDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
@@ -89,7 +86,8 @@ public final class DbGroupHaSwitch {
                 ).toString()
         );
         if (!distributeLock.acquire()) {
-            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is changing the dbGroup, please try again later.");
             return false;
         }
         try {
@@ -97,7 +95,8 @@ public final class DbGroupHaSwitch {
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
         } catch (Exception e) {
-            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
             HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         } finally {

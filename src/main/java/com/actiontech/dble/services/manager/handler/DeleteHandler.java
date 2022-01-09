@@ -93,70 +93,70 @@ public final class DeleteHandler {
             service.writeErrMessage("42000", "Access denied for table '" + schemaInfo.getTable() + "'", ErrorCode.ER_ACCESS_DENIED_ERROR);
             return;
         }
+        PacketResult packetResult = new PacketResult();
         ManagerWritableTable managerTable = (ManagerWritableTable) managerBaseTable;
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            deleteWithCluster(service, delete, managerTable);
+            deleteWithCluster(service, delete, managerTable, packetResult);
         } else {
-            generalDelete(service, delete, managerTable);
+            generalDelete(service, delete, managerTable, packetResult);
         }
+        writePacket(packetResult.isSuccess(), packetResult.getRowSize(), service, packetResult.getErrorMsg());
     }
 
-    private void deleteWithCluster(ManagerService service, MySqlDeleteStatement delete, ManagerWritableTable managerTable) {
+    private void deleteWithCluster(ManagerService service, MySqlDeleteStatement delete, ManagerWritableTable managerTable, PacketResult packetResult) {
         //cluster-lock
         DistributeLock distributeLock;
         ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
         distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
         if (!distributeLock.acquire()) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is reloading, please try again later.");
             return;
         }
         LOGGER.info("delete dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
         try {
-            generalDelete(service, delete, managerTable);
+            generalDelete(service, delete, managerTable, packetResult);
         } finally {
             distributeLock.release();
         }
     }
 
-    private void generalDelete(ManagerService service, MySqlDeleteStatement delete, ManagerWritableTable managerTable) {
+    private void generalDelete(ManagerService service, MySqlDeleteStatement delete, ManagerWritableTable managerTable, PacketResult packetResult) {
         //stand-alone lock
-        int rowSize = 0;
+        int rowSize;
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         boolean lockFlag = lock.writeLock().tryLock();
         if (!lockFlag) {
             service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing reload config or management commands(insert/update/delete), please try again later.");
             return;
         }
-        boolean isSuccess = true;
-        String errorMsg = null;
         try {
             List<RowDataPacket> foundRows = ManagerTableUtil.getFoundRows(service, managerTable, delete.getWhere());
             Set<LinkedHashMap<String, String>> affectPks = ManagerTableUtil.getAffectPks(service, managerTable, foundRows, null);
             rowSize = managerTable.deleteRows(affectPks);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()));
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_DELETE, managerTable.getTableName()), packetResult);
             }
         } catch (SQLException e) {
-            isSuccess = false;
-            errorMsg = e.getMessage();
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
         } catch (ConfigException e) {
-            isSuccess = false;
-            errorMsg = "Delete failure.The reason is " + e.getMessage();
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
         } catch (Exception e) {
-            isSuccess = false;
+            packetResult.setSuccess(false);
             if (e.getCause() instanceof ConfigException) {
-                errorMsg = "Delete failure.The reason is " + e.getMessage();
+                packetResult.setErrorMsg("Delete failure.The reason is " + e.getMessage());
                 //reload fail
                 LOGGER.warn("Delete failure.The reason is " + e);
             } else {
-                errorMsg = "unknown error:" + e.getMessage();
+                packetResult.setErrorMsg("unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
         } finally {
             managerTable.updateTempConfig();
             lock.writeLock().unlock();
         }
-        writePacket(isSuccess, rowSize, service, errorMsg);
     }
 
     private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg) {

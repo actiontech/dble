@@ -101,12 +101,16 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
                 } else {
                     node.setRunOnSlave(rrs.getRunOnSlave());
                     ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
-                    dn.getConnection(dn.getDatabase(), session.getShardingService().isTxStart(), sessionAutocommit, node, this, node);
+                    dn.getConnection(dn.getDatabase(), isMustWrite(), sessionAutocommit, node, this, node);
                 }
             }
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
+    }
+
+    protected boolean isMustWrite() {
+        return session.getShardingService().isTxStart();
     }
 
     protected void executeInExistsConnection(BackendConnection conn, RouteResultsetNode node) {

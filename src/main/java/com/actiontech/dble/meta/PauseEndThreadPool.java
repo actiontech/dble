@@ -37,7 +37,7 @@ public class PauseEndThreadPool {
 
     private final BlockingQueue<PauseTask> handlerQueue;
 
-    private final ExecutorService executor = ExecutorUtil.createFixed("pauseBusinessExecutor", pauseThreadNum);
+    private final ExecutorService executor = ExecutorUtil.createFixed("pauseWorker", pauseThreadNum);
 
     private ReentrantLock queueLock = new ReentrantLock();
 

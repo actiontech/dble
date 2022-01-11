@@ -73,8 +73,8 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
         DbleServer server = DbleServer.getInstance();
         List<LinkedHashMap<String, String>> lst = new ArrayList<>(5);
         lst.add(getRow((NameableExecutor) server.getTimerExecutor()));
-        lst.add(getRow((NameableExecutor) server.getBusinessExecutor()));
-        lst.add(getRow((NameableExecutor) server.getBackendBusinessExecutor()));
+        lst.add(getRow((NameableExecutor) server.getFrontExecutor()));
+        lst.add(getRow((NameableExecutor) server.getBackendExecutor()));
         lst.add(getRow((NameableExecutor) server.getComplexQueryExecutor()));
         lst.add(getRow((NameableExecutor) server.getWriteToBackendExecutor()));
         return lst;
@@ -95,8 +95,8 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
     public static synchronized Row calculateRow(NameableExecutor exec) {
         long activeCount, completedTaskCount, queueSize, totalCount;
         switch (exec.getName()) {
-            case DbleServer.BUSINESS_EXECUTOR_NAME: {
-                activeCount = DbleServer.getInstance().getRunnableMap().get(DbleServer.BUSINESS_EXECUTOR_NAME).values().stream().filter(ele -> (ele instanceof FrontendRunnable) && ((FrontendRunnable) ele).getThreadContext().isDoingTask()).count();
+            case DbleServer.FRONT_WORKER_NAME: {
+                activeCount = DbleServer.getInstance().getRunnableMap().get(DbleServer.FRONT_WORKER_NAME).values().stream().filter(ele -> (ele instanceof FrontendRunnable) && ((FrontendRunnable) ele).getThreadContext().isDoingTask()).count();
                 queueSize = DbleServer.getInstance().getFrontHandlerQueue().size();
                 for (IOProcessor frontProcessor : DbleServer.getInstance().getFrontProcessors()) {
                     for (FrontendConnection con : frontProcessor.getFrontends().values()) {
@@ -114,8 +114,8 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
                 totalCount = activeCount + queueSize + completedTaskCount;
             }
             break;
-            case DbleServer.BACKEND_BUSINESS_EXECUTOR_NAME: {
-                activeCount = DbleServer.getInstance().getRunnableMap().get(DbleServer.BACKEND_BUSINESS_EXECUTOR_NAME).values().stream().filter(ele -> (ele instanceof BackendRunnable) && ((BackendRunnable) ele).getThreadContext().isDoingTask()).count();
+            case DbleServer.BACKEND_WORKER_NAME: {
+                activeCount = DbleServer.getInstance().getRunnableMap().get(DbleServer.BACKEND_WORKER_NAME).values().stream().filter(ele -> (ele instanceof BackendRunnable) && ((BackendRunnable) ele).getThreadContext().isDoingTask()).count();
                 if (SystemConfig.getInstance().getUsePerformanceMode() != 1) {
                     queueSize = 0;
                     for (IOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
@@ -140,8 +140,8 @@ public final class DbleThreadPoolTask extends ManagerBaseTable {
 
             }
             break;
-            case DbleServer.WRITE_TO_BACKEND_EXECUTOR_NAME: {
-                activeCount = DbleServer.getInstance().getRunnableMap().get(DbleServer.WRITE_TO_BACKEND_EXECUTOR_NAME).values().stream().filter(ele -> (ele instanceof WriteToBackendRunnable) && ((WriteToBackendRunnable) ele).getThreadContext().isDoingTask()).count();
+            case DbleServer.WRITE_TO_BACKEND_WORKER_NAME: {
+                activeCount = DbleServer.getInstance().getRunnableMap().get(DbleServer.WRITE_TO_BACKEND_WORKER_NAME).values().stream().filter(ele -> (ele instanceof WriteToBackendRunnable) && ((WriteToBackendRunnable) ele).getThreadContext().isDoingTask()).count();
                 queueSize = DbleServer.getInstance().getWriteToBackendQueue().size();
                 final ThreadPoolStatistic statistic = ThreadPoolStatistic.getWriteToBackend();
                 completedTaskCount = statistic.getCompletedTaskCount().longValue();

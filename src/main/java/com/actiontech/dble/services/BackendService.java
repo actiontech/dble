@@ -138,7 +138,7 @@ public abstract class BackendService extends AbstractService {
     }
 
     protected Executor getExecutor() {
-        return DbleServer.getInstance().getBackendBusinessExecutor();
+        return DbleServer.getInstance().getBackendExecutor();
     }
 
     private void handleTaskQueue(ThreadContext threadContext) {

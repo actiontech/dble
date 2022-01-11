@@ -59,9 +59,9 @@ public final class SplitDumpHandler {
         BlockingQueue<String> insertDeque = new ArrayBlockingQueue<>(config.getReadQueueSize());
         BlockingQueue<String> handleQueue = new ArrayBlockingQueue<>(config.getReadQueueSize());
 
-        NameableExecutor fileExecutor = ExecutorUtil.createFixed("Split_Executor", config.getThreadNum());
-        NameableExecutor fileHandlerExecutor = ExecutorUtil.createFixed("Split_Handler", 1);
-        NameableExecutor fileReadExecutor = ExecutorUtil.createFixed("Split_Reader", 1);
+        NameableExecutor fileExecutor = ExecutorUtil.createFixed("splitWorker", config.getThreadNum());
+        NameableExecutor fileHandlerExecutor = ExecutorUtil.createFixed("splitHandler", 1);
+        NameableExecutor fileReadExecutor = ExecutorUtil.createFixed("splitReader", 1);
 
         Map<String, String> errorMap = Maps.newConcurrentMap();
         AtomicBoolean errorFlag = new AtomicBoolean(false);

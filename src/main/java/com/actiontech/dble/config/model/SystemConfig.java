@@ -48,12 +48,14 @@ public final class SystemConfig {
     private String bindIp = "0.0.0.0";
     private int serverPort = 8066;
     private int managerPort = 9066;
-    private int processors = Runtime.getRuntime().availableProcessors();
-    private int backendProcessors = processors;
-    private int processorExecutor = (processors != 1) ? processors : 2;
-    private int backendProcessorExecutor = (processors != 1) ? processors : 2;
-    private int complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
-    private int writeToBackendExecutor = (processors != 1) ? processors : 2;
+    // CHECKSTYLE:OFF
+    private int NIOFrontWorker = Runtime.getRuntime().availableProcessors();
+    private int NIOBackendWorker = NIOFrontWorker;
+    // CHECKSTYLE:ON
+    private int frontWorker = (NIOFrontWorker != 1) ? NIOFrontWorker : 2;
+    private int backendWorker = (NIOFrontWorker != 1) ? NIOFrontWorker : 2;
+    private int complexWorker = frontWorker > 8 ? 8 : frontWorker;
+    private int writeToBackendWorker = (NIOFrontWorker != 1) ? NIOFrontWorker : 2;
     private int serverBacklog = 2048;
     private int maxCon = 0;
     //option
@@ -530,68 +532,70 @@ public final class SystemConfig {
         this.managerPort = managerPort;
     }
 
-    public int getProcessors() {
-        return processors;
+    public int getNIOFrontWorker() {
+        return NIOFrontWorker;
     }
 
+    // CHECKSTYLE:OFF
     @SuppressWarnings("unused")
-    public void setProcessors(int processors) {
-        if (processors > 0) {
-            this.processors = processors;
+    public void setNIOFrontWorker(int NIOFrontWorker) {
+        if (NIOFrontWorker > 0) {
+            this.NIOFrontWorker = NIOFrontWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "processors", processors, this.processors));
+            problemReporter.warn(String.format(WARNING_FORMAT, "NIOFrontWorker", NIOFrontWorker, this.NIOFrontWorker));
         }
     }
 
-    public int getBackendProcessors() {
-        return backendProcessors;
+    public int getNIOBackendWorker() {
+        return NIOBackendWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setBackendProcessors(int backendProcessors) {
-        if (backendProcessors > 0) {
-            this.backendProcessors = backendProcessors;
+    public void setNIOBackendWorker(int NIOBackendWorker) {
+        if (NIOBackendWorker > 0) {
+            this.NIOBackendWorker = NIOBackendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "backendProcessors", backendProcessors, this.backendProcessors));
+            problemReporter.warn(String.format(WARNING_FORMAT, "NIOBackendWorker", NIOBackendWorker, this.NIOBackendWorker));
+        }
+    }
+    // CHECKSTYLE:ON
+
+    public int getFrontWorker() {
+        return frontWorker;
+    }
+
+    @SuppressWarnings("unused")
+    public void setFrontWorker(int frontWorker) {
+        if (frontWorker > 0) {
+            this.frontWorker = frontWorker;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontWorker", frontWorker, this.frontWorker));
         }
     }
 
-    public int getProcessorExecutor() {
-        return processorExecutor;
+    public int getBackendWorker() {
+        return backendWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setProcessorExecutor(int processorExecutor) {
-        if (processorExecutor > 0) {
-            this.processorExecutor = processorExecutor;
+    public void setBackendWorker(int backendWorker) {
+        if (backendWorker > 0) {
+            this.backendWorker = backendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "processorExecutor", processorExecutor, this.processorExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backendWorker", backendWorker, this.backendWorker));
         }
     }
 
-    public int getBackendProcessorExecutor() {
-        return backendProcessorExecutor;
+    public int getComplexWorker() {
+        return complexWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setBackendProcessorExecutor(int backendProcessorExecutor) {
-        if (backendProcessorExecutor > 0) {
-            this.backendProcessorExecutor = backendProcessorExecutor;
+    public void setComplexWorker(int complexWorker) {
+        if (complexWorker > 0) {
+            this.complexWorker = complexWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "backendProcessorExecutor", backendProcessorExecutor, this.backendProcessorExecutor));
-        }
-    }
-
-    public int getComplexExecutor() {
-        return complexExecutor;
-    }
-
-    @SuppressWarnings("unused")
-    public void setComplexExecutor(int complexExecutor) {
-        if (complexExecutor > 0) {
-            this.complexExecutor = complexExecutor;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "complexExecutor", complexExecutor, this.complexExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "complexWorker", complexWorker, this.complexWorker));
         }
     }
 
@@ -1169,16 +1173,16 @@ public final class SystemConfig {
     }
 
 
-    public int getWriteToBackendExecutor() {
-        return writeToBackendExecutor;
+    public int getWriteToBackendWorker() {
+        return writeToBackendWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setWriteToBackendExecutor(int writeToBackendExecutor) {
-        if (writeToBackendExecutor > 0) {
-            this.writeToBackendExecutor = writeToBackendExecutor;
+    public void setWriteToBackendWorker(int writeToBackendWorker) {
+        if (writeToBackendWorker > 0) {
+            this.writeToBackendWorker = writeToBackendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendExecutor, this.writeToBackendExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendWorker, this.writeToBackendWorker));
         }
     }
 
@@ -1461,12 +1465,12 @@ public final class SystemConfig {
                 ", bindIp=" + bindIp +
                 ", serverPort=" + serverPort +
                 ", managerPort=" + managerPort +
-                ", processors=" + processors +
-                ", backendProcessors=" + backendProcessors +
-                ", processorExecutor=" + processorExecutor +
-                ", backendProcessorExecutor=" + backendProcessorExecutor +
-                ", complexExecutor=" + complexExecutor +
-                ", writeToBackendExecutor=" + writeToBackendExecutor +
+                ", NIOFrontWorker=" + NIOFrontWorker +
+                ", NIOBackendWorker=" + NIOBackendWorker +
+                ", frontWorker=" + frontWorker +
+                ", backendWorker=" + backendWorker +
+                ", complexWorker=" + complexWorker +
+                ", writeToBackendWorker=" + writeToBackendWorker +
                 ", serverBacklog=" + serverBacklog +
                 ", maxCon=" + maxCon +
                 ", useCompression=" + useCompression +

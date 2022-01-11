@@ -484,7 +484,7 @@ public class MySQLResponseService extends BackendService {
         if (complexQuery) {
             executor = DbleServer.getInstance().getComplexQueryExecutor();
         } else {
-            executor = DbleServer.getInstance().getBackendBusinessExecutor();
+            executor = DbleServer.getInstance().getBackendExecutor();
         }
         return executor;
     }

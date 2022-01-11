@@ -288,13 +288,11 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         lock.lock();
         try {
             responseService.setResponseHandler(null);
-            if (writeToClientFlag.compareAndSet(false, true)) {
-                setErrPkg(errMsg0, ErrorCode.ER_ABORTING_CONNECTION);
-                if (decrementToZero(node, STATUS_CONN_CLOSE)) {
-                    specialHandling(false, this.getErrMsg());
-                    this.err.setPacketId(session.getShardingService().nextPacketId());
-                    handleEndPacket(this.err);
-                }
+            setErrPkg(errMsg0, ErrorCode.ER_ABORTING_CONNECTION);
+            if (decrementToZero(node, STATUS_CONN_CLOSE) && writeToClientFlag.compareAndSet(false, true)) {
+                specialHandling(false, this.getErrMsg());
+                this.err.setPacketId(session.getShardingService().nextPacketId());
+                handleEndPacket(this.err);
             }
         } finally {
             lock.unlock();

@@ -738,8 +738,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             settings.getFormat().setComment('\0');
             if (loadData.getEnclose() != null) {
                 settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
-            } else {
-                settings.getFormat().setQuote('\0');
             }
             if (loadData.getEscape() != null) {
                 settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
@@ -807,8 +805,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         settings.getFormat().setComment('\0');
         if (loadData.getEnclose() != null) {
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
-        } else {
-            settings.getFormat().setQuote('\0');
         }
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
 

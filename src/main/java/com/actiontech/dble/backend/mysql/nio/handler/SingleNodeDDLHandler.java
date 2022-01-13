@@ -14,13 +14,20 @@ import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by szf on 2019/12/3.
  */
 public class SingleNodeDDLHandler extends SingleNodeHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeDDLHandler.class);
+
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public SingleNodeDDLHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
@@ -66,7 +73,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             // handleSpecial
-            boolean metaInitial = session.handleSpecial(rrs, true, null);
+            boolean metaInitial = handleSpecial(rrs, true);
             if (!metaInitial) {
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with meta failure");
                 executeMetaDataFailed((MySQLResponseService) service, null);
@@ -110,6 +117,13 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
     @Override
     protected void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
+        ShardingService shardingService = session.getShardingService();
+        String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, service,
+                shardingService.getConnection().getHost(),
+                shardingService.getConnection().getLocalPort(),
+                shardingService.getUser());
+
         if (service != null && !service.isFakeClosed()) {
             if (service.getConnection().isClosed()) {
                 if (service.getAttachment() != null) {
@@ -127,17 +141,31 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
             }
         }
 
-        ShardingService shardingService = session.getShardingService();
-        String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, service,
-                shardingService.getConnection().getHost(),
-                shardingService.getConnection().getLocalPort(),
-                shardingService.getUser());
-
         if (writeToClient.compareAndSet(false, true)) {
-            session.handleSpecial(rrs, false, null);
+            handleSpecial(rrs, false);
             handleEndPacket(errPkg, false);
         }
+    }
+
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            handleSpecial(rrs, false);
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, null);
+        }
+        return true;
     }
 
     protected void handleEndPacket(MySQLPacket packet, boolean isSuccess) {

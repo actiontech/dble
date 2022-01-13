@@ -111,7 +111,7 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
         lock.lock();
         try {
             if (finishedTest) return true;
-            if (nodeResponseStatus.get(node) == STATUS_CONN_CLOSE) return true;
+            if (nodeResponseStatus.get(node) == null || nodeResponseStatus.get(node) == STATUS_CONN_CLOSE) return true;
             nodeResponseStatus.put(node, STATUS_CONN_CLOSE);
             session.getTargetMap().remove(node);
             return false;

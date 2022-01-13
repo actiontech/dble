@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import static com.actiontech.dble.singleton.DDLTraceHelper.Stage.exec_ddl_sql;
 
 /**
  * this handler that can receive and process multiple nodes
@@ -62,7 +63,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected volatile ErrorPacket err;
 
     protected String traceMessage = "execute-for-ddl";
-    protected DDLTraceHelper.Stage stage = DDLTraceHelper.Stage.exec_ddl_sql;
+    protected DDLTraceHelper.Stage stage = exec_ddl_sql;
 
     protected Object attachment;
 
@@ -90,7 +91,13 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
                             map(n -> n.getName()).
                             collect(Collectors.toSet()),
                     ',');
-            DDLTraceHelper.log(session.getShardingService(), d -> d.info(stage, DDLTraceHelper.Status.start, "This ddl will be executed separately in the shardingNodes[" + nodesStr + "]"));
+            String log0;
+            if (stage == exec_ddl_sql)
+                log0 = "This ddl will be executed separately in the shardingNodes[" + nodesStr + "]";
+            else
+                log0 = "Start execute 'select 1' to detect a valid connection for shardingNodes[" + nodesStr + "]";
+
+            DDLTraceHelper.log(session.getShardingService(), d -> d.info(stage, DDLTraceHelper.Status.start, log0));
 
             for (final RouteResultsetNode node : rrs.getNodes()) {
                 BackendConnection conn = session.getTarget(node);
@@ -302,7 +309,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected boolean checkIsAlreadyClosed(final RouteResultsetNode node) {
         lock.lock();
         try {
-            if (nodeResponseStatus.get(node) == STATUS_CONN_CLOSE) return true;
+            if (nodeResponseStatus.get(node) == null || nodeResponseStatus.get(node) == STATUS_CONN_CLOSE) return true;
             nodeResponseStatus.put(node, STATUS_CONN_CLOSE);
             session.getTargetMap().remove(node);
             return false;

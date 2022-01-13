@@ -57,7 +57,7 @@ public final class RoutePenetrationManager {
         } catch (Exception e) {
             final String msg = "can't parse the route-penetration rule, please check the 'routePenetrationRules', detail exception is :" + e;
             LOGGER.error(msg);
-            throw new IllegalStateException("The system property routePenetrationRules in server.xml is illegal or unset, for more detail, please check dble.log .");
+            throw new IllegalStateException("The system property routePenetrationRules in bootstrap.cnf is illegal or unset, for more detail, please check dble.log .");
         }
     }
 

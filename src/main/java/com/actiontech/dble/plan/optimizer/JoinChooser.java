@@ -413,7 +413,6 @@ public class JoinChooser {
     }
 
 
-
     private JoinRelationDag addNodeToDag(JoinRelationDag root, JoinRelations relations) {
         Set<JoinRelationDag> prefixDagNodes = new HashSet<>(relations.prefixNodes.size());
         boolean familyInner = relations.isInner;
@@ -863,7 +862,7 @@ public class JoinChooser {
         @Override
         public String toString() {
             return "{" +
-                    "node=" + node +
+                    "node=" + getUnitName(node) +
                     '}';
         }
     }

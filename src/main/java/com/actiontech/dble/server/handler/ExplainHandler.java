@@ -230,16 +230,16 @@ public final class ExplainHandler {
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
             String routeNode = null;
-            String sql = null;
 
             PlanNode node = builder.getNode();
             if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
                     routeNode = routes[0].getName();
-                    sql = routes[0].getStatement();
                 }
             }
+
+            String sql = rrs.isHaveHintPlan2Inner() ? node.getAst().toString() : node.getSql();
             if (!StringUtil.isBlank(routeNode)) {
                 if (builder.isExistView() || builder.isContainSubQuery(node)) {
                     GlobalVisitor visitor = new GlobalVisitor(node, true, false);

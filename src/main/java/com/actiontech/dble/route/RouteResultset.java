@@ -305,6 +305,9 @@ public final class RouteResultset implements Serializable {
         this.sqlStatement = sqlStatement;
     }
 
+    public boolean isHaveHintPlan2Inner() {
+        return hintPlanInfo == null ? false : (hintPlanInfo.isLeft2inner() || hintPlanInfo.isRight2inner());
+    }
 
     @Override
     public String toString() {

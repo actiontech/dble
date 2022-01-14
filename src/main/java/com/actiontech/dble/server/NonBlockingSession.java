@@ -598,7 +598,7 @@ public class NonBlockingSession extends Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            RouteResultsetNode rrsNode = builder.build();
+            RouteResultsetNode rrsNode = builder.build(rrs.isHaveHintPlan2Inner());
             if (rrsNode != null) {
                 RouteResultsetNode[] nodes = {rrsNode};
                 rrs.setNodes(nodes);

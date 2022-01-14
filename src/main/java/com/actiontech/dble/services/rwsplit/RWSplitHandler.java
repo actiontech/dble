@@ -169,6 +169,11 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
+            FlowControllerConfig config = FlowController.getFlowCotrollerConfig();
+            if (config.isEnableFlowControl() &&
+                    frontedConnection.getWriteQueue().size() > config.getStart()) {
+                frontedConnection.startFlowControl();
+            }
             row[3] = (byte) rwSplitService.nextPacketId();
             buffer = frontedConnection.getService().writeToBuffer(row, buffer);
         }

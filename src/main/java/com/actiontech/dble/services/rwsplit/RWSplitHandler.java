@@ -57,6 +57,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void execute(final BackendConnection conn) {
         MySQLResponseService mysqlService = conn.getBackendService();
         mysqlService.setResponseHandler(this);
+        mysqlService.setSession(rwSplitService.getSession2());
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlStart(conn));
         if (originPacket != null) {
             mysqlService.execute(rwSplitService, originPacket);

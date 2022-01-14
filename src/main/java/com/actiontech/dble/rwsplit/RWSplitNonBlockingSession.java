@@ -7,6 +7,7 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -41,6 +42,51 @@ public class RWSplitNonBlockingSession extends Session {
     @Override
     public FrontendConnection getSource() {
         return (FrontendConnection) rwSplitService.getConnection();
+    }
+
+    @Override
+    public void stopFlowControl(int currentWritingSize) {
+
+        synchronized (this) {
+            if (rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session stop flow control " + this.getSource());
+                rwSplitService.getConnection().setFrontWriteFlowControlled(false);
+            }
+            final BackendConnection con = this.conn;
+            if (con == null) {
+                return;
+            }
+
+            if (con.getService() instanceof MySQLResponseService) {
+                int size = ((MySQLResponseService) (con.getService())).getReadSize();
+                if (size <= con.getFlowLowLevel()) {
+                    con.enableRead();
+                } else {
+                    LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                }
+            } else {
+                con.enableRead();
+            }
+        }
+    }
+
+    @Override
+    public void startFlowControl(int currentWritingSize) {
+        synchronized (this) {
+            if (!rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session start flow control " + this.getSource());
+            }
+            rwSplitService.getConnection().setFrontWriteFlowControlled(true);
+            this.conn.disableRead();
+        }
+    }
+
+    @Override
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
+        synchronized (this) {
+            con.getSocketWR().enableRead();
+            rwSplitService.getConnection().setFrontWriteFlowControlled(false);
+        }
     }
 
     public void execute(Boolean master, Callback callback) {
@@ -197,6 +243,9 @@ public class RWSplitNonBlockingSession extends Session {
         if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
                 !rwSplitService.isInLoadData() &&
                 !rwSplitService.isInPrepare() && this.conn != null && !rwSplitService.isUsingTmpTable()) {
+            if (rwSplitService.isFlowControlled()) {
+                releaseConnectionFromFlowControlled(conn);
+            }
             this.conn.release();
             this.conn = null;
         }

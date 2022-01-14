@@ -5,9 +5,9 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.TimeUtil;
 
@@ -57,17 +57,17 @@ public class FrontendConnection extends AbstractConnection {
 
     @Override
     public void startFlowControl(int currentWritingSize) {
-        if (!frontWriteFlowControlled && this.getService() instanceof ShardingService &&
+        if (!frontWriteFlowControlled && this.getService() instanceof BusinessService &&
                 currentWritingSize > FlowController.getFlowHighLevel()) {
-            ((ShardingService) this.getService()).getSession().startFlowControl(currentWritingSize);
+            ((BusinessService) this.getService()).getSession().startFlowControl(currentWritingSize);
         }
     }
 
     @Override
     public void stopFlowControl(int currentWritingSize) {
-        if (this.getService() instanceof ShardingService &&
+        if (this.getService() instanceof BusinessService &&
                 currentWritingSize <= FlowController.getFlowLowLevel()) {
-            ((ShardingService) this.getService()).getSession().stopFlowControl(currentWritingSize);
+            ((BusinessService) this.getService()).getSession().stopFlowControl(currentWritingSize);
         }
     }
 

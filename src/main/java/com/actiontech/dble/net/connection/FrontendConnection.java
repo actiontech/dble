@@ -57,13 +57,13 @@ public class FrontendConnection extends AbstractConnection {
     @Override
     public void startFlowControl() {
         if (this.getService() instanceof ShardingService)
-            ((ShardingService) this.getService()).getSession2().startFlowControl();
+            ((ShardingService) this.getService()).getSession().startFlowControl();
     }
 
     @Override
     public void stopFlowControl() {
         if (this.getService() instanceof ShardingService)
-            ((ShardingService) this.getService()).getSession2().stopFlowControl();
+            ((ShardingService) this.getService()).getSession().stopFlowControl();
     }
 
     @Override

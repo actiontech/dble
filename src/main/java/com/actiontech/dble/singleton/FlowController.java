@@ -119,7 +119,7 @@ public final class FlowController {
                     (session = ((MySQLResponseService) service).getSession()) != null &&
                     (shardingService = session.getShardingService()) != null &&
                     shardingService.isFlowControlled()) {
-                session.releaseFlowCntroll(((MySQLResponseService) service).getConnection());
+                session.releaseConnectionFromFlowControlled(((MySQLResponseService) service).getConnection());
             }
         } catch (Exception ex) {
             LOGGER.warn("FlowControl exception：{}", ex);

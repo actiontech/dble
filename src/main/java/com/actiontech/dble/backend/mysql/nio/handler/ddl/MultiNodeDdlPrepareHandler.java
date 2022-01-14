@@ -44,7 +44,7 @@ public class MultiNodeDdlPrepareHandler extends BaseDDLHandler {
         conn.getBackendService().setSession(session);
         conn.getBackendService().setTesting(true);
         conn.getBackendService().setComplexQuery(true);
-        conn.getBackendService().execute(node, session.getShardingService(), session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart());
+        conn.getBackendService().execute(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart());
     }
 
     @Override

@@ -135,7 +135,7 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
         DDLTraceHelper.log(session.getShardingService(), d -> d.infoByNode(node.getName(), stage, DDLTraceHelper.Status.get_conn, "Get " + conn.toString()));
         conn.getBackendService().setResponseHandler(this);
         conn.getBackendService().setSession(session);
-        conn.getBackendService().execute(node, session.getShardingService(), session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart());
+        conn.getBackendService().execute(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart());
     }
 
     @Override

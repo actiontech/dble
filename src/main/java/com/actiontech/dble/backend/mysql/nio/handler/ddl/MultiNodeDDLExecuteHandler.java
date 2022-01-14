@@ -25,6 +25,6 @@ public class MultiNodeDDLExecuteHandler extends BaseDDLHandler {
         }
         DDLTraceHelper.log(session.getShardingService(), d -> d.infoByNode(node.getName(), stage, DDLTraceHelper.Status.get_conn, "Get " + conn.toString()));
         conn.getBackendService().setSession(session);
-        conn.getBackendService().executeMultiNode(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart() && !node.isModifySQL());
+        conn.getBackendService().executeMultiNode(node, session.getShardingService(), sessionAutocommit && !session.getShardingService().isTxStart());
     }
 }

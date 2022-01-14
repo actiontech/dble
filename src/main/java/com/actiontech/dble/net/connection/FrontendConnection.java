@@ -59,7 +59,7 @@ public class FrontendConnection extends AbstractConnection {
     public void startFlowControl(int currentWritingSize) {
         if (!frontWriteFlowControlled && this.getService() instanceof ShardingService &&
                 currentWritingSize > FlowController.getFlowHighLevel()) {
-            ((ShardingService) this.getService()).getSession2().startFlowControl(currentWritingSize);
+            ((ShardingService) this.getService()).getSession().startFlowControl(currentWritingSize);
         }
     }
 
@@ -67,7 +67,7 @@ public class FrontendConnection extends AbstractConnection {
     public void stopFlowControl(int currentWritingSize) {
         if (this.getService() instanceof ShardingService &&
                 currentWritingSize <= FlowController.getFlowLowLevel()) {
-            ((ShardingService) this.getService()).getSession2().stopFlowControl(currentWritingSize);
+            ((ShardingService) this.getService()).getSession().stopFlowControl(currentWritingSize);
         }
     }
 

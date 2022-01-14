@@ -71,7 +71,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        rwSplitService.getSession().bind(conn);
+        rwSplitService.getSession2().bind(conn);
         execute(conn);
     }
 
@@ -93,9 +93,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
         if (!syncFinished) {
             mysqlService.getConnection().businessClose("unfinished sync");
-            rwSplitService.getSession().unbind();
+            rwSplitService.getSession2().unbind();
         } else {
-            rwSplitService.getSession().unbindIfSafe();
+            rwSplitService.getSession2().unbindIfSafe();
         }
         synchronized (this) {
             if (!write2Client) {
@@ -127,7 +127,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 if (callback != null) {
                     callback.callback(true, rwSplitService);
                 }
-                rwSplitService.getSession().unbindIfSafe();
+                rwSplitService.getSession2().unbindIfSafe();
             }
 
             synchronized (this) {
@@ -184,7 +184,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     /*
                     last resultset will call this
                      */
-                    rwSplitService.getSession().unbindIfSafe();
+                    rwSplitService.getSession2().unbindIfSafe();
                 } else {
                     LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
                 }
@@ -228,7 +228,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 loadDataClean();
-                rwSplitService.getSession().bind(null);
+                rwSplitService.getSession2().bind(null);
                 writeErrorMsg(rwSplitService.nextPacketId(), "connection close");
                 write2Client = true;
                 if (buffer != null) {

@@ -760,7 +760,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
-                        if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                        if ((row.length == 1 && row[0] == null) || (row.length == 1 && row[0].isEmpty()) || row.length == 0) {
                             continue;
                         }
                         try {
@@ -831,7 +831,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
-                    if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                    if ((row.length == 1 && row[0] == null) || (row.length == 1 && row[0].isEmpty()) || row.length == 0) {
                         continue;
                     }
                     try {

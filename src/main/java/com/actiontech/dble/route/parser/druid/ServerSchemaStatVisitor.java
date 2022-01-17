@@ -52,7 +52,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     private List<SQLSelect> firstClassSubQueryList = new ArrayList();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
-    private Set<Pair<String, Pair<String, String>>> selectSchemaTables = new HashSet<>();
+    private Map<Pair<String/* schemaName */, String/* tableName */>, String/*referenceName*/> selectSchemaTables = new HashMap<>();
     private List<String> selectTableList = new ArrayList<>();
     private List<SQLExprTableSource> motifyTableSourceList = new ArrayList<>();
     private String currentTable;
@@ -120,14 +120,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLUnionQuery x) {
-        Set<Pair<String, Pair<String, String>>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
-        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        Map<Pair<String/* schemaName */, String/* tableName */>, String/*referenceName*/> tmpSelectSchemaTables = new HashMap<>(selectSchemaTables.size());
+        tmpSelectSchemaTables.putAll(selectSchemaTables);
         selectSchemaTables.clear();
         x.getLeft().accept(this);
-        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        tmpSelectSchemaTables.putAll(selectSchemaTables);
         selectSchemaTables.clear();
         x.getRight().accept(this);
-        selectSchemaTables.addAll(tmpSelectSchemaTables);
+        selectSchemaTables.putAll(tmpSelectSchemaTables);
         tmpSelectSchemaTables.clear();
         if (x.getOrderBy() != null) {
             x.getOrderBy().accept(this);
@@ -267,12 +267,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSubqueryTableSource x) {
-        Set<Pair<String, Pair<String, String>>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
-        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        Map<Pair<String/* schemaName */, String/* tableName */>, String/*referenceName*/> tmpSelectSchemaTables = new HashMap<>(selectSchemaTables.size());
+        tmpSelectSchemaTables.putAll(selectSchemaTables);
         selectSchemaTables.clear();
         putAliasToMap(x.getAlias(), "subquery");
         boolean visitResult = super.visit(x);
-        selectSchemaTables.addAll(tmpSelectSchemaTables);
+        selectSchemaTables.putAll(tmpSelectSchemaTables);
         tmpSelectSchemaTables.clear();
         return visitResult;
     }
@@ -534,11 +534,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             x.getOrderBy().setParent(x);
         }
         this.accept(x.getWithSubQuery());
-        Set<Pair<String, Pair<String, String>>> tmpSelectSchemaTables = new HashSet<>(selectSchemaTables.size());
-        tmpSelectSchemaTables.addAll(selectSchemaTables);
+        Map<Pair<String/* schemaName */, String/* tableName */>, String/*referenceName*/> tmpSelectSchemaTables = new HashMap<>(selectSchemaTables.size());
+        tmpSelectSchemaTables.putAll(selectSchemaTables);
         selectSchemaTables.clear();
         this.accept(x.getQuery());
-        selectSchemaTables.addAll(tmpSelectSchemaTables);
+        selectSchemaTables.putAll(tmpSelectSchemaTables);
         tmpSelectSchemaTables.clear();
         this.accept(x.getOrderBy());
         return false;
@@ -665,22 +665,23 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         } else {
             int i = 0;
             String table = null;
-            for (Pair<String, Pair<String, String>> k : selectSchemaTables) {
-                String tableName = k.getValue().getKey();
-                if (k.getKey() == null || tableName.equals("subquery")) {
+            for (Map.Entry<Pair<String/* schemaName */, String/* tableName */>, String/*referenceName*/> k : selectSchemaTables.entrySet()) {
+                String tableName = k.getKey().getValue();
+                final String schemaName = k.getKey().getKey();
+                if (schemaName == null || tableName.equals("subquery")) {
                     continue;
                 }
                 SchemaConfig schemaConfig;
-                if ((schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(k.getKey())) != null) {
+                if ((schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName)) != null) {
                     BaseTableConfig tableConfig;
                     if ((tableConfig = schemaConfig.getTable(tableName)) != null && ((tableConfig instanceof ShardingTableConfig && StringUtil.equalsIgnoreCase(((ShardingTableConfig) tableConfig).getShardingColumn(), column)) ||
                             (tableConfig instanceof ChildTableConfig && StringUtil.equalsIgnoreCase(((ChildTableConfig) tableConfig).getJoinColumn(), column)))) {
-                        table = k.getValue().getValue();
+                        table = k.getValue();
                         if (++i > 1) {
                             break;
                         }
                     } else if (tableConfig instanceof GlobalTableConfig) {
-                        table = k.getValue().getValue();
+                        table = k.getValue();
                         if (++i > 1) {
                             break;
                         }
@@ -744,7 +745,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
         if (selectSchemaTables.size() == 1) { //only has 1 table
-            return selectSchemaTables.iterator().next().getValue().getKey();
+            return selectSchemaTables.keySet().iterator().next().getValue();
         } else if (selectSchemaTables.size() == 0) { //no table
             return "";
         } else { // multi tables
@@ -994,8 +995,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             String[] tmpArray = value.split("\\.");
             String tmpSchema = tmpArray.length == 2 ? tmpArray[0] : currentSchema;
             String tmpTable = tmpArray.length == 2 ? tmpArray[1] : tmpArray[0];
-            Pair<String, String> tableAlias = new Pair<>(tmpTable, name);
-            selectSchemaTables.add(new Pair<>(tmpSchema, tableAlias));
+            selectSchemaTables.put(new Pair<>(tmpSchema, tmpTable), name);
         }
     }
 

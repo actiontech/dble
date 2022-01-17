@@ -79,7 +79,7 @@ public class HandlerBuilder {
         }
     }
 
-    public RouteResultsetNode build() throws Exception {
+    public RouteResultsetNode build(boolean isHaveHintPlan2Inner) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build&execute-complex-sql");
         try {
             final long startTime = System.nanoTime();
@@ -98,7 +98,7 @@ public class HandlerBuilder {
             if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (endHandler.getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
-                    return getRouteResultsetNode(builder, routes[0].getName(), routes[0].getStatement());
+                    return getRouteResultsetNode(builder, routes[0], isHaveHintPlan2Inner);
                 }
             }
             HandlerBuilder.startHandler(fh);
@@ -112,7 +112,7 @@ public class HandlerBuilder {
         return null;
     }
 
-    private RouteResultsetNode getRouteResultsetNode(BaseHandlerBuilder builder, String nodeName, String sql) {
+    private RouteResultsetNode getRouteResultsetNode(BaseHandlerBuilder builder, RouteResultsetNode node1, boolean isHaveHintPlan2Inner) {
         Set<String> tableSet = Sets.newHashSet();
         for (RouteResultsetNode routeResultsetNode : rrsNodes) {
             Set<String> set = routeResultsetNode.getTableSet();
@@ -120,6 +120,7 @@ public class HandlerBuilder {
                 tableSet.addAll(set);
             }
         }
+        String sql = isHaveHintPlan2Inner ? node1.getStatement() : node.getSql();
         if (builder.isExistView() || builder.isContainSubQuery(node)) {
             GlobalVisitor visitor = new GlobalVisitor(node, true, false);
             visitor.visit();
@@ -129,7 +130,7 @@ public class HandlerBuilder {
                 sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
             }
         }
-        return new RouteResultsetNode(nodeName, ServerParse.SELECT, sql, tableSet);
+        return new RouteResultsetNode(node1.getName(), ServerParse.SELECT, sql, tableSet);
     }
 
     /**

@@ -229,18 +229,18 @@ public final class ExplainHandler {
             }
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
-            String routeNode = null;
-            String sql = null;
+            RouteResultsetNode node1 = null;
 
             PlanNode node = builder.getNode();
             if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
                 RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
                 if (routes.length == 1) {
-                    routeNode = routes[0].getName();
-                    sql = routes[0].getStatement();
+                    node1 = routes[0];
                 }
             }
-            if (!StringUtil.isBlank(routeNode)) {
+
+            if (node1 != null) {
+                String sql = rrs.isHaveHintPlan2Inner() ? node1.getStatement() : node.getSql();
                 if (builder.isExistView() || builder.isContainSubQuery(node)) {
                     GlobalVisitor visitor = new GlobalVisitor(node, true, false);
                     visitor.visit();
@@ -250,7 +250,7 @@ public final class ExplainHandler {
                         sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
                     }
                 }
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), sql)};
+                RouteResultsetNode[] nodes = {new RouteResultsetNode(node1.getName(), rrs.getSqlType(), sql)};
                 for (RouteResultsetNode rrsNode : nodes) {
                     RowDataPacket row = getRow(rrsNode, service.getCharset().getResults());
                     row.setPacketId(++packetId);

@@ -94,7 +94,7 @@ public abstract class MysqlVisitor {
     }
 
     /* change where to replaceable */
-    void buildWhere(PlanNode planNode) {
+    public void buildWhere(PlanNode planNode) {
         if (!visited)
             replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
         StringBuilder whereBuilder = new StringBuilder();
@@ -212,4 +212,7 @@ public abstract class MysqlVisitor {
         return whereFilter;
     }
 
+    public boolean isExistUnPushDownGroup() {
+        return existUnPushDownGroup;
+    }
 }

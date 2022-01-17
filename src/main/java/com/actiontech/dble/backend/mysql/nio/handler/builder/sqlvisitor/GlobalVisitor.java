@@ -20,6 +20,7 @@ import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.util.StringUtil;
+import java.util.HashSet;
 
 
 /**
@@ -31,9 +32,17 @@ import com.actiontech.dble.util.StringUtil;
 public class GlobalVisitor extends MysqlVisitor {
 
     private final boolean rebuildSubQuery;
+    private HashSet<Item> upWardeWhereFilter = new HashSet<>();
+
     public GlobalVisitor(PlanNode globalQuery, boolean isTopQuery, boolean rebuildSubQuery) {
         super(globalQuery, isTopQuery);
         this.rebuildSubQuery = rebuildSubQuery;
+    }
+
+    public GlobalVisitor(PlanNode globalQuery, boolean isTopQuery, boolean rebuildSubQuery, HashSet<Item> upWardeWhereFilter) {
+        super(globalQuery, isTopQuery);
+        this.rebuildSubQuery = rebuildSubQuery;
+        this.upWardeWhereFilter = upWardeWhereFilter;
     }
 
     public void visit() {
@@ -87,6 +96,10 @@ public class GlobalVisitor extends MysqlVisitor {
             buildLimit(query);
         } else {
             whereFilter = query.getWhereFilter();
+        }
+
+        if (query.getWhereFilter() != null) {
+            upWardeWhereFilter.add(query.getWhereFilter());
         }
 
         if (query.isWithSubQuery() && !parentIsQuery && !isTopQuery) {
@@ -189,7 +202,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
 
         PlanNode left = join.getLeftNode();
-        MysqlVisitor leftVisitor = new GlobalVisitor(left, false, rebuildSubQuery);
+        MysqlVisitor leftVisitor = new GlobalVisitor(left, false, rebuildSubQuery, upWardeWhereFilter);
         leftVisitor.visit();
         mapTableToSimple.putAll(leftVisitor.getMapTableToSimple());
         sqlBuilder.append(leftVisitor.getSql());
@@ -204,7 +217,7 @@ public class GlobalVisitor extends MysqlVisitor {
         sqlBuilder.append(" join ");
 
         PlanNode right = join.getRightNode();
-        MysqlVisitor rightVisitor = new GlobalVisitor(right, false, rebuildSubQuery);
+        MysqlVisitor rightVisitor = new GlobalVisitor(right, false, rebuildSubQuery, upWardeWhereFilter);
         rightVisitor.visit();
         mapTableToSimple.putAll(rightVisitor.getMapTableToSimple());
         sqlBuilder.append(rightVisitor.getSql());
@@ -263,6 +276,31 @@ public class GlobalVisitor extends MysqlVisitor {
         if (hasDistinct)
             sqlBuilder.append(" distinct ");
         sqlBuilder.append(sb);
+    }
+
+    public void buildWhere(PlanNode planNode) {
+        if (!visited)
+            replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
+        StringBuilder whereBuilder = new StringBuilder();
+        if (planNode.getWhereFilter() != null) {
+            upWardeWhereFilter.add(planNode.getWhereFilter());
+        }
+
+        boolean first = true;
+        for (Item f : upWardeWhereFilter) {
+            if (first) {
+                whereBuilder.append(" where ");
+                first = false;
+            } else {
+                whereBuilder.append(" and ");
+            }
+            whereBuilder.append(visitUnSelPushDownName(f, false));
+        }
+        upWardeWhereFilter.clear();
+
+        replaceableWhere.set(whereBuilder.toString());
+        // refresh sqlbuilder
+        sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
     }
 
     private void buildGroupBy(PlanNode query) {

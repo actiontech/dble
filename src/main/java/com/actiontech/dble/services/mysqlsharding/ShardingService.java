@@ -68,13 +68,12 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
 
-    private volatile boolean isLocked = false;
     private long lastInsertId;
     @Nonnull
     private final NonBlockingSession session;
     private final ServerSptPrepare sptprepare;
     private volatile RequestScope requestScope;
-    protected volatile boolean setNoAutoCommit = false;
+    private volatile boolean setNoAutoCommit = false;
 
     public ShardingService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -409,7 +408,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             connIterator.remove();
         }
 
-        isLocked = false;
+        setLocked(false);
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
@@ -496,7 +495,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
-            isLocked = false;
+            setLocked(false);
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
@@ -599,14 +598,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public NonBlockingSession getSession2() {
         return session;
-    }
-
-    public boolean isLocked() {
-        return isLocked;
-    }
-
-    public void setLocked(boolean locked) {
-        isLocked = locked;
     }
 
     public long getLastInsertId() {

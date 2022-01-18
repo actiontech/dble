@@ -951,7 +951,7 @@ public class NonBlockingSession extends Session {
             StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
         }
         shardingService.setTxStart(false);
-        shardingService.getAndIncrementXid();
+        shardingService.getAndIncrementTxId();
         if (shardingService.isSetNoAutoCommit()) {
             shardingService.setSetNoAutoCommit(false);
         } else {

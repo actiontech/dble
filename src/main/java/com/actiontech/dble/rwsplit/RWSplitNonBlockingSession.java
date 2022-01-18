@@ -2,28 +2,24 @@ package com.actiontech.dble.rwsplit;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.services.rwsplit.handle.PSHandler;
+import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.RouteService;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlPrepareStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MysqlDeallocatePrepareStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLSyntaxErrorException;
-import java.util.HashSet;
-import java.util.Set;
 
 public class RWSplitNonBlockingSession extends Session {
 
@@ -32,7 +28,6 @@ public class RWSplitNonBlockingSession extends Session {
     private volatile BackendConnection conn;
     private final RWSplitService rwSplitService;
     private PhysicalDbGroup rwGroup;
-    private Set<String> nameSet = new HashSet<>();
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
@@ -49,28 +44,6 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void execute(Boolean master, Callback callback, boolean write) {
         execute(master, null, callback, write);
-    }
-
-    public void execute(Boolean master, Callback callback, String sql) {
-        try {
-            SQLStatement statement = parseSQL(sql);
-            if (statement instanceof MySqlPrepareStatement) {
-                String simpleName = ((MySqlPrepareStatement) statement).getName().getSimpleName();
-                nameSet.add(simpleName);
-                rwSplitService.setInPrepare(true);
-            }
-            if (statement instanceof MysqlDeallocatePrepareStatement) {
-                String simpleName = ((MysqlDeallocatePrepareStatement) statement).getStatementName().getSimpleName();
-                nameSet.remove(simpleName);
-                if (nameSet.isEmpty()) {
-                    rwSplitService.setInPrepare(false);
-                }
-            }
-        } catch (SQLSyntaxErrorException throwables) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
-                    "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
-        }
-        execute(master, null, callback);
     }
 
     public void execute(Boolean master, byte[] originPacket, Callback callback) {
@@ -104,17 +77,28 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     @Nullable
-    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException {
-        RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
+    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
             }
+            // for ps needs to send master
+            if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
+                long statementId = ByteUtil.readUB4(originPacket, 5);
+                PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
+                    holder.setExecuteOrigin(originPacket);
+                    PSHandler handler = new PSHandler(rwSplitService, holder);
+                    handler.execute(rwGroup);
+                    return null;
+                }
+            }
+            RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
             checkDest(!conn.getInstance().isReadInstance());
             handler.execute(conn);
             return null;
         }
-        return handler;
+        return new RWSplitHandler(rwSplitService, originPacket, callback, false);
     }
 
     private Boolean canRunOnMaster(Boolean master) {
@@ -145,15 +129,6 @@ public class RWSplitNonBlockingSession extends Session {
         throw new SQLSyntaxErrorException("unexpected dble_dest_expect,real[" + (isMaster ? "M" : "S") + "],expect[" + dest + "]");
     }
 
-    private SQLStatement parseSQL(String stmt) throws SQLSyntaxErrorException {
-        SQLStatementParser parser = new MySqlStatementParser(stmt);
-        try {
-            return parser.parseStatement();
-        } catch (Exception t) {
-            throw new SQLSyntaxErrorException(t);
-        }
-    }
-
     public PhysicalDbGroup getRwGroup() {
         return rwGroup;
     }
@@ -178,7 +153,6 @@ public class RWSplitNonBlockingSession extends Session {
             dbInstance.getConnection(rwSplitService.getSchema(), handler, null, false);
         } catch (Exception e) {
             rwSplitService.executeException(e, sql);
-            return;
         }
     }
 
@@ -194,9 +168,7 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public void unbindIfSafe() {
-        if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
-                !rwSplitService.isInLoadData() &&
-                !rwSplitService.isInPrepare() && this.conn != null && !rwSplitService.isUsingTmpTable()) {
+        if (this.conn != null && rwSplitService.isKeepBackendConn()) {
             this.conn.release();
             this.conn = null;
         }

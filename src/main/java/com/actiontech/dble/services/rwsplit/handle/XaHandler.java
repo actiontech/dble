@@ -11,7 +11,7 @@ public final class XaHandler {
 
     public static void xaStart(String stmt, RWSplitService service, int offset) {
         String xaId = StringUtil.removeAllApostrophe(stmt.substring(offset).trim());
-        service.getSession().execute(true, (isSuccess, rwSplitService) -> {
+        service.getSession().execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStart(xaId));
                 rwSplitService.getAndIncrementTxId();
@@ -21,7 +21,7 @@ public final class XaHandler {
     }
 
     public static void xaFinish(RWSplitService service) {
-        service.getSession().execute(true, (isSuccess, rwSplitService) -> {
+        service.getSession().execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStop());
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onTxEnd());

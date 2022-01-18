@@ -11,8 +11,6 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
-import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,17 +59,6 @@ public final class NIOReactor {
         reactorR.selector.wakeup();
     }
 
-
-    /**
-     * heartbeat of SLB/LVS only create an tcp connection and then close it immediately without any data write to dble .
-     *
-     * @param c
-     * @return
-     */
-    private boolean isOnlyTcpConnected(AbstractConnection c) {
-        final AbstractService service = c.getService();
-        return service != null && service instanceof MySQLFrontAuthService && ((MySQLFrontAuthService) service).haveNotReceivedMessage();
-    }
 
     private final class RW implements Runnable {
         private final Selector selector;
@@ -144,7 +131,7 @@ public final class NIOReactor {
                                 key.cancel();
                                 continue;
                             } catch (Exception e) {
-                                if ((isOnlyTcpConnected(con) && e instanceof IOException)) {
+                                if ((con.isOnlyFrontTcpConnected() && e instanceof IOException)) {
                                     LOGGER.debug("caught err:", e);
                                     con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
                                 } else {
@@ -197,7 +184,7 @@ public final class NIOReactor {
                     } else if (c instanceof MySQLConnection) {
                         ((MySQLConnection) c).onConnectFailed(e);
                     }*/
-                    if ((isOnlyTcpConnected(c) && e instanceof IOException)) {
+                    if ((c.isOnlyFrontTcpConnected() && e instanceof IOException)) {
                         LOGGER.debug("{} register err", c, e);
                     } else {
                         LOGGER.warn("{} register err", c, e);

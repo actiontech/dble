@@ -24,7 +24,7 @@
             UTF-8
         </project.build.sourceEncoding>
         <grpc.version>1.5.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
-        <log4j2.version>2.17.0</log4j2.version>
+        <log4j2.version>2.17.1</log4j2.version>
     </properties>
     <repositories>
         <repository>

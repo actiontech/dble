@@ -51,8 +51,8 @@ public final class FreshBackendConn {
                         if (dh.getRwSplitMode() == PhysicalDbGroup.RW_SPLIT_OFF && sourceNames.size() > 1 && sourceNames.contains(dh.getWriteDbInstance().getName())) {
                             warnMsg = "the rwSplitMode of this dbGroup is 0, so connection pool for slave dbInstance don't refresh";
                         }
-                        dh.stop(sourceNames, "fresh backend conn", isForced);
-                        dh.init(sourceNames, "fresh backend conn");
+                        dh.stopOfFresh(sourceNames, "fresh backend conn", isForced);
+                        dh.startOfFresh(sourceNames, "fresh backend conn");
                     }
                 } catch (Exception e) {
                     service.writeErrMessage(ErrorCode.ER_YES, "fresh conn with error, use show @@backend to check latest status. Error:" + e.getMessage());

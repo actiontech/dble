@@ -237,7 +237,9 @@ public class RWSplitNonBlockingSession extends Session {
 
     public void unbindIfSafe() {
         if (this.conn != null && rwSplitService.isKeepBackendConn()) {
-            releaseConnectionFromFlowControlled(conn);
+            if (rwSplitService.isFlowControlled()) {
+                releaseConnectionFromFlowControlled(conn);
+            }
             this.conn.release();
             this.conn = null;
         }

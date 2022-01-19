@@ -23,7 +23,7 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
     protected final CommandCount commands;
 
     // common implement
-    private volatile boolean isLocked = false;
+    private volatile boolean isLockTable = false;
 
     private final AtomicLong queriesCounter = new AtomicLong(0);
     private final AtomicLong transactionsCounter = new AtomicLong(0);
@@ -91,12 +91,12 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         return txId.get();
     }
 
-    public boolean isLocked() {
-        return isLocked;
+    public boolean isLockTable() {
+        return isLockTable;
     }
 
-    public void setLocked(boolean locked) {
-        isLocked = locked;
+    public void setLockTable(boolean locked) {
+        isLockTable = locked;
     }
 
     public void executeContextSetTask(MysqlVariable[] contextTask) {

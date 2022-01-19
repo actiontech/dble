@@ -35,7 +35,7 @@ public class PSHandler implements ResponseHandler, PreparedResponseHandler {
     }
 
     public void execute(PhysicalDbGroup rwGroup) throws IOException {
-        PhysicalDbInstance instance = rwGroup.rwSelect(true, false);
+        PhysicalDbInstance instance = rwGroup.rwSelect(true, true);
         instance.getConnection(rwSplitService.getSchema(), this, null, true);
     }
 

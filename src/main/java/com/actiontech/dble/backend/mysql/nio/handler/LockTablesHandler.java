@@ -47,7 +47,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     public void execute() throws Exception {
-        session.getShardingService().setLocked(true);
+        session.getShardingService().setLockTable(true);
         session.getTransactionManager().setXaTxEnabled(false, session.getShardingService());
         super.reset();
         for (final RouteResultsetNode node : rrs.getNodes()) {
@@ -64,7 +64,7 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
 
     @Override
     public void clearAfterFailExecute() {
-        session.getShardingService().setLocked(false);
+        session.getShardingService().setLockTable(false);
     }
 
     @Override

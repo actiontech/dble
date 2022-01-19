@@ -112,6 +112,10 @@ public final class RouteResultset implements Serializable {
         this.hintPlanInfo = hintPlanInfo;
     }
 
+    public boolean isHaveHintPlan2Inner() {
+        return hintPlanInfo == null ? false : (hintPlanInfo.isLeft2inner() || hintPlanInfo.isRight2inner());
+    }
+
     public Boolean getRunOnSlave() {
         return runOnSlave;
     }

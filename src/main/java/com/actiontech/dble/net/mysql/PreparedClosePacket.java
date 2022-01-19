@@ -31,6 +31,8 @@ import java.nio.ByteBuffer;
  */
 public class PreparedClosePacket extends MySQLPacket {
 
+    public static final byte FIELD_COUNT = 0x19;
+
     private long statementId;
 
     public PreparedClosePacket(long statementId) {
@@ -43,7 +45,7 @@ public class PreparedClosePacket extends MySQLPacket {
         buffer = service.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + size, writeSocketIfFull);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
-        buffer.put((byte) 0x19);
+        buffer.put(FIELD_COUNT);
         BufferUtil.writeUB4(buffer, statementId);
         return buffer;
     }
@@ -51,10 +53,10 @@ public class PreparedClosePacket extends MySQLPacket {
     @Override
     public void bufferWrite(AbstractConnection connection) {
         int size = calcPacketSize();
-        ByteBuffer buffer = connection.allocate(size);
+        ByteBuffer buffer = connection.allocate(PACKET_HEADER_SIZE + size);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
-        buffer.put((byte) 0x19);
+        buffer.put(FIELD_COUNT);
         BufferUtil.writeUB4(buffer, statementId);
         connection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
     }

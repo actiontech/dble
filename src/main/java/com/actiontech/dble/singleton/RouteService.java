@@ -89,10 +89,20 @@ public final class RouteService {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "rw-split-hint-simple-route");
         PhysicalDbInstance dbInstance = null;
         try {
+            int hintLength = RouteService.isHintSql(stmt);
+            HintInfo hintInfo = null;
+            if (hintLength != -1) {
+                int endPos = stmt.substring(hintLength).indexOf("*/") + hintLength;
+                if (endPos > 0) {
+                    hintInfo = parseHintSql(stmt, hintLength, endPos);
+                    service.setExecuteSql(hintInfo.getRealSQL());
+                }
+            }
+
             String cacheKey = null;
 
             if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
-                RwSplitUserConfig rwSplitUserConfig = (RwSplitUserConfig) service.getUserConfig();
+                RwSplitUserConfig rwSplitUserConfig = service.getUserConfig();
                 String dbGroup = rwSplitUserConfig.getDbGroup();
                 cacheKey = dbGroup + "_" + service.getUser() + "_" + stmt;
                 dbInstance = (PhysicalDbInstance) CacheService.getSqlRouteCache().get(cacheKey);
@@ -101,12 +111,8 @@ public final class RouteService {
                 }
             }
 
-            int hintLength = RouteService.isHintSql(stmt);
-            if (hintLength != -1) {
-                int endPos = stmt.substring(hintLength).indexOf("*/") + hintLength;
-                if (endPos > 0) {
-                    dbInstance = routeRwSplitHint(stmt, hintLength, endPos, sqlType, service);
-                }
+            if (null != hintInfo) {
+                dbInstance = routeRwSplitHint(hintInfo, sqlType, service);
             }
 
             if (dbInstance != null && sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
@@ -142,15 +148,13 @@ public final class RouteService {
         return rrs;
     }
 
-    private PhysicalDbInstance routeRwSplitHint(String stmt, int hintLength, int endPos, int sqlType, RWSplitService service) throws SQLException {
-        HintInfo hintInfo = parseHintSql(stmt, hintLength, endPos);
+    private PhysicalDbInstance routeRwSplitHint(HintInfo hintInfo, int sqlType, RWSplitService service) throws SQLException {
         HintHandler hintHandler = HintHandlerFactory.getRwSplitHintHandler(hintInfo.getHintType());
         if (hintHandler == null) {
             String msg = "Not supported hint sql type : " + hintInfo.getHintType();
             LOGGER.info(msg);
             throw new SQLSyntaxErrorException(msg);
         }
-        service.setExecuteSql(hintInfo.getRealSQL());
         return hintHandler.routeRwSplit(sqlType, hintInfo.getRealSQL(), service, hintInfo.getHintSQL(), sqlType, hintInfo.getHintMap());
     }
 

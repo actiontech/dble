@@ -5,6 +5,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.PreparedResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ShowFieldsHandler;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -15,6 +16,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
@@ -71,17 +73,17 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        if (null != rwSplitService.getSession().getRwGroup()) {
-            rwSplitService.getSession().getRwGroup().unBindRwSplitSession(rwSplitService.getSession());
+        if (null != rwSplitService.getSession2().getRwGroup()) {
+            rwSplitService.getSession2().getRwGroup().unBindRwSplitSession(rwSplitService.getSession2());
         }
-        rwSplitService.getSession().bind(conn);
+        rwSplitService.getSession2().bind(conn);
         execute(conn);
     }
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        if (null != rwSplitService.getSession().getRwGroup()) {
-            rwSplitService.getSession().getRwGroup().unBindRwSplitSession(rwSplitService.getSession());
+        if (null != rwSplitService.getSession2().getRwGroup()) {
+            rwSplitService.getSession2().getRwGroup().unBindRwSplitSession(rwSplitService.getSession2());
         }
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(0));
         loadDataClean();
@@ -99,9 +101,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
         if (!syncFinished) {
             mysqlService.getConnection().businessClose("unfinished sync");
-            rwSplitService.getSession().unbind();
+            rwSplitService.getSession2().unbind();
         } else {
-            rwSplitService.getSession().unbindIfSafe();
+            rwSplitService.getSession2().unbindIfSafe();
         }
         synchronized (this) {
             if (!write2Client) {
@@ -133,7 +135,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 if (callback != null) {
                     callback.callback(true, rwSplitService);
                 }
-                rwSplitService.getSession().unbindIfSafe();
+                rwSplitService.getSession2().unbindIfSafe();
             }
 
             synchronized (this) {
@@ -173,6 +175,11 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
+            FlowControllerConfig config = FlowController.getFlowCotrollerConfig();
+            if (config.isEnableFlowControl() &&
+                    frontedConnection.getWriteQueue().size() > config.getStart()) {
+                frontedConnection.startFlowControl();
+            }
             row[3] = (byte) rwSplitService.nextPacketId();
             buffer = frontedConnection.getService().writeToBuffer(row, buffer);
         }
@@ -190,7 +197,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     /*
                     last resultset will call this
                      */
-                    rwSplitService.getSession().unbindIfSafe();
+                    rwSplitService.getSession2().unbindIfSafe();
                 } else {
                     LOGGER.debug("Because of multi query had send.It would receive more than one ResultSet. recycle resource should be delayed. client:{}", service);
                 }
@@ -234,7 +241,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 loadDataClean();
-                rwSplitService.getSession().bind(null);
+                rwSplitService.getSession2().bind(null);
                 writeErrorMsg(rwSplitService.nextPacketId(), "connection close");
                 write2Client = true;
                 if (buffer != null) {

@@ -47,6 +47,38 @@ public class RWSplitNonBlockingSession extends Session {
         return (FrontendConnection) rwSplitService.getConnection();
     }
 
+
+    @Override
+    public void stopFlowControl() {
+        LOGGER.info("Session stop flow control " + this.getSource());
+        synchronized (this) {
+            rwSplitService.getConnection().setFlowControlled(false);
+            final BackendConnection con = this.conn;
+            if (con != null) {
+                con.getSocketWR().enableRead();
+            }
+        }
+    }
+
+    @Override
+    public void startFlowControl() {
+        synchronized (this) {
+            if (!rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session start flow control " + this.getSource());
+            }
+            rwSplitService.getConnection().setFlowControlled(true);
+            this.conn.getSocketWR().disableRead();
+        }
+    }
+
+    @Override
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
+        synchronized (this) {
+            con.getSocketWR().enableRead();
+            rwSplitService.getConnection().setFlowControlled(false);
+        }
+    }
+
     public void execute(Boolean master, Callback callback) {
         execute(master, null, callback);
     }
@@ -234,6 +266,9 @@ public class RWSplitNonBlockingSession extends Session {
         if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
                 !rwSplitService.isInLoadData() &&
                 !rwSplitService.isInPrepare() && this.conn != null && !rwSplitService.isUsingTmpTable()) {
+            if (rwSplitService.isFlowControlled()) {
+                releaseConnectionFromFlowControlled(conn);
+            }
             this.conn.release();
             this.conn = null;
         }

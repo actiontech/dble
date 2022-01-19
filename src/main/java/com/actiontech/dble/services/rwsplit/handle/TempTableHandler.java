@@ -33,7 +33,7 @@ public final class TempTableHandler {
         }
         final RWSplitNonBlockingSession session = service.getSession2();
         final String sessionSchema = service.getSchema();
-        session.execute(true, (isSuccess, rwSplitService) -> {
+        session.execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 final Set<String> tempTableSet = rwSplitService.getTmpTableSet();
 
@@ -66,7 +66,7 @@ public final class TempTableHandler {
 
         final RWSplitNonBlockingSession session = service.getSession2();
         final String sessionSchema = service.getSchema();
-        session.execute(true, (isSuccess, rwSplitService) -> {
+        session.execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
                 final Set<String> tempTableSet = rwSplitService.getTmpTableSet();
                 for (SQLExprTableSource tableSource : ((SQLDropTableStatement) sqlStatement).getTableSources()) {

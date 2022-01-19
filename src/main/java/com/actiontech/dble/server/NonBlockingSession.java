@@ -815,7 +815,7 @@ public class NonBlockingSession extends Session {
     public void releaseConnectionIfSafe(MySQLResponseService service, boolean needClosed) {
         RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
         if (node != null) {
-            if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLocked()) {
+            if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLockTable()) {
                 releaseConnection((RouteResultsetNode) service.getAttachment(), LOGGER.isDebugEnabled(), needClosed);
             }
         }
@@ -940,7 +940,7 @@ public class NonBlockingSession extends Session {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("clear session resources " + this);
         }
-        if (!shardingService.isLocked()) {
+        if (!shardingService.isLockTable()) {
             this.releaseConnections(needClosed);
         }
         if (!transactionManager.isRetryXa()) {
@@ -951,7 +951,7 @@ public class NonBlockingSession extends Session {
             StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
         }
         shardingService.setTxStart(false);
-        shardingService.getAndIncrementXid();
+        shardingService.getAndIncrementTxId();
         if (shardingService.isSetNoAutoCommit()) {
             shardingService.setSetNoAutoCommit(false);
         } else {

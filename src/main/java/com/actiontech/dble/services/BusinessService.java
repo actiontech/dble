@@ -21,8 +21,13 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
     protected volatile boolean txChainBegin;
     protected volatile boolean txStarted;
     protected final CommandCount commands;
-    protected final AtomicLong queriesCounter = new AtomicLong(0);
-    protected final AtomicLong transactionsCounter = new AtomicLong(0);
+
+    // common implement
+    private volatile boolean isLockTable = false;
+
+    private final AtomicLong queriesCounter = new AtomicLong(0);
+    private final AtomicLong transactionsCounter = new AtomicLong(0);
+    private final AtomicLong txId = new AtomicLong(0);
 
     public BusinessService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -78,6 +83,21 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         transactionsCounter.set(Long.MIN_VALUE);
     }
 
+    public void getAndIncrementTxId() {
+        txId.getAndIncrement();
+    }
+
+    public long getXid() {
+        return txId.get();
+    }
+
+    public boolean isLockTable() {
+        return isLockTable;
+    }
+
+    public void setLockTable(boolean locked) {
+        isLockTable = locked;
+    }
 
     public void executeContextSetTask(MysqlVariable[] contextTask) {
         MysqlVariable autocommitItem = null;

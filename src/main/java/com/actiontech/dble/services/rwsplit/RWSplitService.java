@@ -1,6 +1,7 @@
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -23,6 +24,7 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.variables.MysqlVariable;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
+import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.statistic.sql.StatisticListener;
@@ -32,9 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,19 +45,18 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
     private static final Pattern HINT_DEST = Pattern.compile(".*/\\*\\s*dble_dest_expect\\s*:\\s*([M|S])\\s*\\*/", Pattern.CASE_INSENSITIVE);
 
-    private volatile boolean isLocked;
     private volatile boolean inLoadData;
     private volatile boolean firstInLoadData = true;
-    private volatile boolean inPrepare;
     private volatile Set<String/* schemaName.tableName */> tmpTableSet;
-
+    private final Set<String> nameSet = new HashSet<>();
     private volatile byte[] executeSqlBytes;
     // only for test
     private volatile String expectedDest;
 
     private final RWSplitQueryHandler queryHandler;
     private final RWSplitNonBlockingSession session;
-    private AtomicLong txId = new AtomicLong(0);
+
+    private ConcurrentHashMap<Long, PreparedStatementHolder> psHolder = new ConcurrentHashMap<>();
 
     public RWSplitService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -72,7 +73,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 if (Boolean.parseBoolean(var.getValue())) {
                     if (!autocommit) {
                         StatisticListener.getInstance().record(this, r -> r.onTxEnd());
-                        session.execute(true, (isSuccess, rwSplitService) -> {
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> {
                             session.getConn().getBackendService().setAutocommit(true);
                             rwSplitService.setAutocommit(true);
                             rwSplitService.setTxStart(false);
@@ -119,7 +120,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         GeneralLogHelper.putGLog(this, data);
         // if the statement is load data, directly push down
         if (inLoadData) {
-            session.execute(true, data, (isSuccess, rwSplitService) -> {
+            session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 rwSplitService.setInLoadData(false);
             });
             return;
@@ -166,7 +167,8 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 commands.doStmtClose();
                 session.execute(true, data, null);
                 // COM_STMT_CLOSE No response is sent back to the client.
-                inPrepare = false;
+                long statementId = ByteUtil.readUB4(data, 5);
+                psHolder.remove(statementId);
                 session.unbindIfSafe();
                 break;
             // connection
@@ -212,7 +214,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         String switchSchema;
         try {
             switchSchema = mm.readString(getCharset().getClient());
-            session.execute(true, data, (isSuccess, rwSplitService) -> {
+            session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });
         } catch (UnsupportedEncodingException e) {
@@ -246,25 +248,36 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         mm.position(5);
         try {
             RwSplitServerParse serverParse = ServerParseFactory.getRwSplitParser();
-            inPrepare = true;
             String sql = mm.readString(getCharset().getClient());
             int rs = serverParse.parse(sql);
             int sqlType = rs & 0xff;
-            switch (sqlType) {
-                case ServerParse.SELECT:
-                    int rs2 = RwSplitServerParseSelect.parseSpecial(sql);
-                    switch (rs2) {
-                        case RwSplitServerParseSelect.LOCK_READ:
-                            session.execute(true, data, null, false);
-                            break;
-                        default:
-                            session.execute(null, data, null, false);
-                            break;
+            if (sqlType == ServerParse.SELECT) {
+                int rs2 = RwSplitServerParseSelect.parseSpecial(sql);
+                if (rs2 == RwSplitServerParseSelect.LOCK_READ) {
+                    session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+                        if (isSuccess) {
+                            long statementId = ByteUtil.readUB4(resp, 5);
+                            int paramCount = ByteUtil.readUB2(resp, 11);
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
+                        }
+                    }, false);
+                } else {
+                    session.execute(null, data, (isSuccess, resp, rwSplitService) -> {
+                        if (isSuccess) {
+                            long statementId = ByteUtil.readUB4(resp, 5);
+                            int paramCount = ByteUtil.readUB2(resp, 11);
+                            psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false));
+                        }
+                    }, false);
+                }
+            } else {
+                session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
+                    if (isSuccess) {
+                        long statementId = ByteUtil.readUB4(resp, 5);
+                        int paramCount = ByteUtil.readUB2(resp, 11);
+                        psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
                     }
-                    break;
-                default:
-                    session.execute(true, data, null);
-                    break;
+                });
             }
         } catch (IOException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());
@@ -303,14 +316,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         }
     }
 
-    public boolean isLocked() {
-        return isLocked;
-    }
-
-    public void setLocked(boolean locked) {
-        isLocked = locked;
-    }
-
     public boolean isInLoadData() {
         return inLoadData;
     }
@@ -328,20 +333,6 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             return true;
         }
         return false;
-    }
-
-
-    public boolean isInPrepare() {
-        return inPrepare;
-    }
-
-    public long getAndIncrementTxId() {
-        return txId.getAndIncrement();
-    }
-
-
-    public long getTxId() {
-        return txId.get();
     }
 
     public boolean isUsingTmpTable() {
@@ -363,17 +354,25 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         return tmpTableSet;
     }
 
-    public void setInPrepare(boolean inPrepare) {
-        this.inPrepare = inPrepare;
-    }
-
     public String getExpectedDest() {
         return expectedDest;
+    }
+
+    public Set<String> getNameSet() {
+        return nameSet;
     }
 
     @Override
     public void setTxStart(boolean txStart) {
         this.txStarted = txStart;
+    }
+
+    public PreparedStatementHolder getPrepareStatement(long id) {
+        return psHolder.get(id);
+    }
+
+    public boolean isKeepBackendConn() {
+        return isAutocommit() && !isTxStart() && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
     }
 
     @Override
@@ -387,13 +386,13 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     public void resetConnection() {
         session.close("reset connection");
 
-        isLocked = false;
-        inPrepare = false;
+        setLockTable(false);
         inLoadData = false;
         txStarted = false;
         this.tmpTableSet.clear();
         this.sysVariables.clear();
         this.usrVariables.clear();
+        this.psHolder.clear();
         autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         txIsolation = SystemConfig.getInstance().getTxIsolation();
         setCharacterSet(SystemConfig.getInstance().getCharset());

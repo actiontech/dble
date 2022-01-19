@@ -104,7 +104,7 @@ public class ViewMeta {
     public void addMeta(boolean isNeedPersistence) throws SQLNonTransientException {
         try {
             tmManager.addMetaLock(schema, viewName, createSql);
-            if (isNeedPersistence) {
+            if (isNeedPersistence && viewQuery instanceof QueryNode) {
                 ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
             }
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);

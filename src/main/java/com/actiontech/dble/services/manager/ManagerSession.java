@@ -8,6 +8,7 @@ package com.actiontech.dble.services.manager;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.Session;
+import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -34,6 +35,21 @@ public class ManagerSession extends Session {
     @Override
     public FrontendConnection getSource() {
         return managerService.getConnection();
+    }
+
+    @Override
+    public void startFlowControl() {
+        //DO NOTHING
+    }
+
+    @Override
+    public void stopFlowControl() {
+        //DO NOTHING
+    }
+
+    @Override
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
+        //DO NOTHING
     }
 
     public void execute(String schema, SQLSelectStatement statement) {

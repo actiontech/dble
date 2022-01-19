@@ -134,7 +134,7 @@ public class ConfigTest {
         Map<String, PhysicalDbGroup> dbGroups = dbConverter.getDbGroupMap();
         PhysicalDbGroup pool = dbGroups.get("localhost2");
 
-        PhysicalDbInstance source = pool.select(true);
+        PhysicalDbInstance source = pool.rwSelect(true, null);
         Assert.assertNotNull(source);
     }
 

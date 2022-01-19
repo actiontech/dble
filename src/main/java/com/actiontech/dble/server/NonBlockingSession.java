@@ -826,7 +826,7 @@ public class NonBlockingSession extends Session {
             BackendConnection c = target.remove(rrn);
             if (c != null && !c.isClosed()) {
                 if (shardingService.isFlowControlled()) {
-                    releaseFlowCntroll(c);
+                    releaseConnectionFromFlowControlled(c);
                 }
                 if (c.getService().isAutocommit()) {
                     c.release();
@@ -1177,6 +1177,7 @@ public class NonBlockingSession extends Session {
         this.discard = discard;
     }
 
+    @Override
     public void stopFlowControl() {
         synchronized (flowControlledTarget) {
             LOGGER.info("This connection {} remove flow control", this.getSource());
@@ -1188,6 +1189,7 @@ public class NonBlockingSession extends Session {
         }
     }
 
+    @Override
     public void startFlowControl() {
         synchronized (flowControlledTarget) {
             LOGGER.info("This connection {} begins flow control", this.getSource());
@@ -1199,7 +1201,8 @@ public class NonBlockingSession extends Session {
         }
     }
 
-    public void releaseFlowCntroll(BackendConnection con) {
+    @Override
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
         synchronized (flowControlledTarget) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("This connection {} remove flow control because of release", con);

@@ -80,27 +80,27 @@ public class ProcessList extends ManagerBaseTable {
             p.getFrontends().
                     values().
                     forEach(fc -> {
-                            if (!fc.isAuthorized() || fc.isManager()) {
-                                return;
-                            }
-                            if (fc.getService() instanceof ShardingService) {
-                                Map<RouteResultsetNode, BackendConnection> backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
-                                if (!CollectionUtil.isEmpty(backendConns)) {
-                                    for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
-                                        addRow(fc, entry.getValue(), rows, indexs, dbInstanceMap);
-                                    }
-                                } else {
-                                    rows.add(getDefaultRow(fc));
+                        if (!fc.isAuthorized() || fc.isManager()) {
+                            return;
+                        }
+                        if (fc.getService() instanceof ShardingService) {
+                            Map<RouteResultsetNode, BackendConnection> backendConns = ((ShardingService) fc.getService()).getSession2().getTargetMap();
+                            if (!CollectionUtil.isEmpty(backendConns)) {
+                                for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
+                                    addRow(fc, entry.getValue(), rows, indexs, dbInstanceMap);
                                 }
                             } else {
-                                BackendConnection conn = ((RWSplitService) fc.getService()).getSession2().getConn();
-                                if (conn != null) {
-                                    addRow(fc, conn, rows, indexs, dbInstanceMap);
-                                } else {
-                                    rows.add(getDefaultRow(fc));
-                                }
+                                rows.add(getDefaultRow(fc));
                             }
-                        });
+                        } else {
+                            BackendConnection conn = ((RWSplitService) fc.getService()).getSession2().getConn();
+                            if (conn != null) {
+                                addRow(fc, conn, rows, indexs, dbInstanceMap);
+                            } else {
+                                rows.add(getDefaultRow(fc));
+                            }
+                        }
+                    });
         }
 
         // set 'show processlist' content

@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
@@ -65,7 +70,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setSchema(schema));
                         break;
                     case RwSplitServerParse.SHOW:
-                        session.execute(true, null);
+                        session.execute(true, null, false);
                         break;
                     case RwSplitServerParse.SELECT:
                         RwSplitSelectHandler.handle(sql, session.getService(), rs >>> 8);

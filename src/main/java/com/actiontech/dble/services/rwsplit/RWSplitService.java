@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.DbleServer;
@@ -275,10 +280,10 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                     int rs2 = RwSplitServerParseSelect.parseSpecial(sql);
                     switch (rs2) {
                         case RwSplitServerParseSelect.LOCK_READ:
-                            session.execute(true, data, null);
+                            session.execute(true, data, null, false);
                             break;
                         default:
-                            session.execute(null, data, null);
+                            session.execute(null, data, null, false);
                             break;
                     }
                     break;

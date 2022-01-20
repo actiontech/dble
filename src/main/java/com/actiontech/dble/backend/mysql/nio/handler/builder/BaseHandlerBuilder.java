@@ -132,12 +132,8 @@ public abstract class BaseHandlerBuilder {
                 }
                 SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
                 addHandler(sh);
-                if (delayTableHandlerMap.containsKey(node)) {
-                    List<DelayTableHandler> delayTableHandlers = delayTableHandlerMap.remove(node);
-                    for (DelayTableHandler delayTableHandler : delayTableHandlers) {
-                        sh.getTableHandlers().add(delayTableHandler);
-                    }
-                }
+                nestLoopAddHandler(sh);
+
             }
         }
 
@@ -147,6 +143,7 @@ public abstract class BaseHandlerBuilder {
             }
         }
     }
+
 
     void executeSubQueries(List<DMLResponseHandler> subQueryEndHandlers) {
         final ReentrantLock lock = new ReentrantLock();
@@ -370,6 +367,13 @@ public abstract class BaseHandlerBuilder {
     /*----------------------------- helper method -------------------*/
     private boolean isNestLoopStrategy(PlanNode planNode) {
         return planNode.type() == PlanNodeType.TABLE && planNode.getNestLoopFilters() != null;
+    }
+
+    private void nestLoopAddHandler(SendMakeHandler sh) {
+        if (node instanceof TableNode && Objects.nonNull(((TableNode) node).getHintNestLoopHelper())) {
+            HintNestLoopHelper hintNestLoopHelper = ((TableNode) node).getHintNestLoopHelper();
+            hintNestLoopHelper.getSendMakeHandlerHashMap().put(node, sh);
+        }
     }
 
     /**

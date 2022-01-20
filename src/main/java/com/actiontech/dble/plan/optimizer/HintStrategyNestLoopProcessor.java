@@ -12,9 +12,9 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 
-public final class HintStrategyProcessor {
+public final class HintStrategyNestLoopProcessor {
 
-    private HintStrategyProcessor() {
+    private HintStrategyNestLoopProcessor() {
     }
 
     public static PlanNode optimize(PlanNode qtn, HintPlanInfo hintPlanInfo) {

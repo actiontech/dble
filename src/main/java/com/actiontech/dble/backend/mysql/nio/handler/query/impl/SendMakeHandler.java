@@ -35,7 +35,7 @@ public class SendMakeHandler extends BaseDMLHandler {
     private String tableAlias;
     private String table;
     private String schema;
-    private Set<DelayTableHandler> tableHandlers;
+    private Set<BaseDMLHandler> tableHandlers;
 
     public SendMakeHandler(long id, Session session, List<Item> selects, String schema, String table, String tableAlias) {
         super(id, session);
@@ -52,6 +52,7 @@ public class SendMakeHandler extends BaseDMLHandler {
     public HandlerType type() {
         return HandlerType.SENDMAKER;
     }
+
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
@@ -85,10 +86,8 @@ public class SendMakeHandler extends BaseDMLHandler {
                     tmpFp.setType(FieldTypes.MYSQL_TYPE_VAR_STRING.numberValue());
                 newFieldPackets.add(tmpFp);
             }
-            if (!tableHandlers.isEmpty()) {
-                for (DelayTableHandler tableHandler : tableHandlers) {
-                    tableHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, service);
-                }
+            for (BaseDMLHandler tableHandler : tableHandlers) {
+                tableHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, service);
             }
             nextHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, service);
         } finally {
@@ -108,10 +107,8 @@ public class SendMakeHandler extends BaseDMLHandler {
                 byte[] b = selItem.getRowPacketByte();
                 newRp.add(b);
             }
-            if (!tableHandlers.isEmpty()) {
-                for (DelayTableHandler tableHandler : tableHandlers) {
-                    tableHandler.rowResponse(null, newRp, this.isLeft, service);
-                }
+            for (BaseDMLHandler tableHandler : tableHandlers) {
+                tableHandler.rowResponse(null, newRp, this.isLeft, service);
             }
             nextHandler.rowResponse(null, newRp, this.isLeft, service);
             return false;
@@ -127,7 +124,7 @@ public class SendMakeHandler extends BaseDMLHandler {
             if (terminate.get() && tableHandlers.isEmpty())
                 return;
             session.setHandlerEnd(this);
-            for (DelayTableHandler tableHandler : tableHandlers) {
+            for (BaseDMLHandler tableHandler : tableHandlers) {
                 tableHandler.rowEofResponse(eof, this.isLeft, service);
             }
             tableHandlers.clear();
@@ -142,12 +139,8 @@ public class SendMakeHandler extends BaseDMLHandler {
     public void onTerminate() {
     }
 
-
-    public Set<DelayTableHandler> getTableHandlers() {
+    public Set<BaseDMLHandler> getTableHandlers() {
         return tableHandlers;
     }
 
-    public void setTableHandlers(Set<DelayTableHandler> tableHandlers) {
-        this.tableHandlers = tableHandlers;
-    }
 }

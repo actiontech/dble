@@ -30,7 +30,7 @@ public class JoinNode extends PlanNode {
     }
 
     public enum Strategy {
-        SORTMERGE, NESTLOOP, HINT_NEST_LOOP
+        SORTMERGE, NESTLOOP, HINT_NEST_LOOP, ALWAYS_NEST_LOOP
     }
 
     private boolean isNotIn = false;

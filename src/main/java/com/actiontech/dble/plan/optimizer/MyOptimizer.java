@@ -75,7 +75,7 @@ public final class MyOptimizer {
 
                 node = SelectedProcessor.optimize(node);
                 if (!hintPlanInfo.isEmpty()) {
-                    HintStrategyProcessor.optimize(node, hintPlanInfo);
+                    HintStrategyNestLoopProcessor.optimize(node, hintPlanInfo);
                 } else {
                     JoinStrategyProcessor.chooser(node);
                 }

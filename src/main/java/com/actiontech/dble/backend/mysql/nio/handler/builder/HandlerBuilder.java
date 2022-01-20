@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.DelayTableHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.plan.node.*;
@@ -70,16 +69,9 @@ public class HandlerBuilder {
     }
 
     public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
-        return getBuilder(nonBlockingSession, null, planNode, isExplain);
-    }
-
-    public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap, PlanNode planNode, boolean isExplain) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "build-complex-sql");
         try {
             BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
-            if (Objects.nonNull(delayTableHandlerMap)) {
-                builder.getDelayTableHandlerMap().putAll(delayTableHandlerMap);
-            }
             builder.build();
             return builder;
         } finally {

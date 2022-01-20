@@ -1,5 +1,6 @@
 package com.actiontech.dble.plan.optimizer;
 
+import com.actiontech.dble.backend.mysql.nio.handler.builder.HintNestLoopHelper;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
@@ -8,107 +9,70 @@ import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
-import com.google.common.base.Strings;
+import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class JoinNestLoopChooser {
     private Map<String, PlanNode> nodeMap;
+    private Map<String, List<String>> nodeDependMap;
     private Map<String, HintPlanNodeGroup> hintDependMap;
     private JoinNode jn;
     private HintPlanInfo hintPlanInfo;
+    private HintNestLoopHelper hintNestLoopHelper;
 
     public JoinNestLoopChooser(JoinNode joinNode, HintPlanInfo hintPlanInfo) {
         this.jn = joinNode;
         this.hintPlanInfo = hintPlanInfo;
         hintDependMap = new HashMap<>();
         nodeMap = new HashMap<>();
+        nodeDependMap = new HashMap<>();
+        hintNestLoopHelper = new HintNestLoopHelper();
     }
 
     public void tryNestLoop() throws MySQLOutPutException {
-        buildNodeMap(jn);
+        buildNode(jn);
         buildHintDependency();
-        traverseNode(jn);
+        buildNestLoop();
     }
 
-    private void buildNodeMap(JoinNode joinNode) {
+    private void buildNodeMap(PlanNode planNode) throws MySQLOutPutException {
+        if (planNode instanceof JoinNode) {
+            ((JoinNode) planNode).setStrategy(JoinNode.Strategy.HINT_NEST_LOOP);
+            buildNode((JoinNode) planNode);
+        } else if (planNode instanceof TableNode) {
+            String alias = planNode.getAlias();
+            Optional.ofNullable(alias).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "table " + ((TableNode) planNode).getTableName() + " alias can not be null!"));
+            ((TableNode) planNode).setHintNestLoopHelper(hintNestLoopHelper);
+            nodeDependMap.put(alias, Lists.newArrayList());
+            nodeMap.put(alias, planNode);
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hintPlan not support");
+        }
+    }
+
+    private void buildNode(JoinNode joinNode) throws MySQLOutPutException {
+        if (joinNode.isNotIn()) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "sql not support nestLoop");
+        }
+        joinNode.setStrategy(JoinNode.Strategy.HINT_NEST_LOOP);
         PlanNode leftNode = joinNode.getLeftNode();
         PlanNode rightNode = joinNode.getRightNode();
-        if (leftNode instanceof JoinNode) {
-            buildNodeMap((JoinNode) leftNode);
-        } else {
-            nodeMap.put(leftNode.getAlias(), leftNode);
-        }
-        nodeMap.put(rightNode.getAlias(), rightNode);
+        buildNodeMap(leftNode);
+        buildNodeMap(rightNode);
     }
 
-    private void checkOnConditions(HintPlanNodeGroup hintPlanNodeGroup, PlanNode node) {
-        JoinNode joinNode = (JoinNode) node.getParent();
-        List<ItemFuncEqual> joinFilter = joinNode.getJoinFilter();
-        List<HintPlanNode> nodes = hintPlanNodeGroup.getNodes();
-        Set<String> nodeNameSet = nodes.stream().map(HintPlanNode::getName).collect(Collectors.toSet());
-        for (ItemFuncEqual itemFuncEqual : joinFilter) {
-            List<Item> arguments = itemFuncEqual.arguments();
-            arguments.stream().filter(argument -> nodeNameSet.contains(argument.getTableName())).findFirst().orElseThrow(() ->
-                    new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + node.getPureName() + " on condition"));
-        }
-    }
-
-    private void traverseNode(JoinNode joinNode) {
-        PlanNode leftNode = joinNode.getLeftNode();
-        PlanNode rightNode = joinNode.getRightNode();
-
-        if (joinNode.isNotIn() || !((leftNode instanceof JoinNode || leftNode instanceof TableNode) && rightNode instanceof TableNode)) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures!");
-        }
-        buildNestLoop(joinNode, rightNode);
-        if (leftNode instanceof JoinNode) {
-            traverseNode((JoinNode) leftNode);
-        } else {
-            if (joinNode.isLeftOuterJoin()) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures!");
+    private void buildNestLoop() {
+        nodeDependMap.forEach((alias, v) -> {
+            if (!v.isEmpty()) {
+                String dependName = v.get(0);
+                PlanNode currentNode = nodeMap.get(alias);
+                currentNode.setNestLoopFilters(new ArrayList<>());
+                currentNode.setNestLoopDependNode(nodeMap.get(dependName));
             }
-            if (joinNode.isInnerJoin()) {
-                buildNestLoop(joinNode, leftNode);
-            }
-
-        }
-    }
-
-    private void buildNestLoop(JoinNode joinNode, PlanNode node) {
-        String alias = node.getAlias();
-        if (Strings.isNullOrEmpty(alias)) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "table alias can not be null!");
-        }
-        HintPlanNodeGroup hintPlanNodeGroup = hintDependMap.get(alias);
-        if (Objects.nonNull(hintPlanNodeGroup)) {
-            checkOnConditions(hintPlanNodeGroup, node);
-        }
-        if (hintDependMap.containsKey(alias)) {
-            joinNode.setStrategy(JoinNode.Strategy.HINT_NEST_LOOP);
-            node.setNestLoopFilters(new ArrayList<>());
-            node.setNestLoopDependNode(findDependNode(node));
-        }
-    }
-
-    private PlanNode findDependNode(PlanNode node) {
-        JoinNode joinNode = (JoinNode) node.getParent();
-        String firstTableName = null;
-        List<ItemFuncEqual> joinFilter = joinNode.getJoinFilter();
-        for (ItemFuncEqual itemFuncEqual : joinFilter) {
-            List<Item> arguments = itemFuncEqual.arguments();
-            String tableName = arguments.get(0).getTableName();
-            firstTableName = Optional.ofNullable(firstTableName).orElse(tableName);
-            HintPlanNodeGroup group = hintDependMap.get(node.getAlias());
-            if (group.getType() == HintPlanNodeGroup.Type.ER) {
-                return nodeMap.get(tableName).getParent();
-            }
-            if (!nodeMap.containsKey(tableName)) {
-                return nodeMap.get(tableName);
-            }
-        }
-        return nodeMap.get(firstTableName);
+        });
     }
 
     private void checkErCondition(HintPlanNodeGroup group) {
@@ -122,14 +86,15 @@ public class JoinNestLoopChooser {
                 }
             }
         }
-
     }
 
     private void buildHintDependency() {
         List<HintPlanNodeGroup> groups = hintPlanInfo.getGroups();
+        int nodeSize = 0;
         HintPlanNodeGroup lastGroup = null;
         for (HintPlanNodeGroup group : groups) {
             List<HintPlanNode> nodes = group.getNodes();
+            nodeSize += nodes.size();
             checkErCondition(group);
             checkAndOrCondition(group);
             if (lastGroup != null) {
@@ -138,6 +103,84 @@ public class JoinNestLoopChooser {
                 }
             }
             lastGroup = group;
+        }
+        if (nodeSize != nodeMap.size()) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "the number of tables in the hint plan and the actual SQL varies");
+        }
+        hintAndCheck();
+    }
+
+    private void hintAndCheck() {
+        hintDependMap.forEach((k, v) -> {
+            PlanNode currentNode = nodeMap.get(k);
+            if (v.getType() == HintPlanNodeGroup.Type.AND) {
+                List<HintPlanNode> nodes = v.getNodes();
+                for (HintPlanNode node : nodes) {
+                    PlanNode dependNode = nodeMap.get(node.getName());
+                    boolean result = checkHelper(dependNode, currentNode, currentNode);
+                    if (result) {
+                        nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
+                        return;
+                    }
+                }
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + currentNode.getAlias() + " & condition");
+            }
+        });
+    }
+
+    private boolean checkOnCondition(PlanNode dependNode, PlanNode currentNode, PlanNode srcNode) {
+        JoinNode dependNodeParent = (JoinNode) dependNode.getParent();
+        return joinFilterCheck(dependNodeParent.getJoinFilter(), (TableNode) currentNode, srcNode);
+    }
+
+    private boolean checkHelper(PlanNode dependNode, PlanNode currentNode, PlanNode srcNode) {
+        //must have the on condition
+        if (checkOnCondition(dependNode, currentNode, srcNode) || checkOnCondition(currentNode, dependNode, srcNode)) {
+            //reasonable join relationship check
+            return traverseNode((JoinNode) dependNode.getParent(), currentNode, true) || traverseNode((JoinNode) currentNode.getParent(), dependNode, false);
+        }
+        return false;
+    }
+
+    private boolean traverseNode(JoinNode joinNode, PlanNode currentNode, boolean flip) {
+        if (Objects.isNull(joinNode)) {
+            return false;
+        }
+        PlanNode leftNode = joinNode.getLeftNode();
+        PlanNode rightNode = joinNode.getRightNode();
+        if (!flip) {
+            leftNode = joinNode.getRightNode();
+            rightNode = joinNode.getLeftNode();
+        }
+        //the right node can confirm that it can execute,the left node must be identified as inner
+        if (Objects.equals(rightNode, currentNode) || (Objects.equals(leftNode, currentNode) && joinNode.isInnerJoin())) {
+            return true;
+        }
+        return traverseNode((JoinNode) joinNode.getParent(), currentNode, flip);
+
+    }
+
+    private boolean joinFilterCheck(List<ItemFuncEqual> joinFilter, TableNode node, PlanNode srcNode) {
+        String alias = node.getAlias();
+        for (ItemFuncEqual itemFuncEqual : joinFilter) {
+            List<Item> arguments = itemFuncEqual.arguments();
+            Optional<Item> first = arguments.stream().filter(argument -> StringUtil.equals(alias, argument.getTableName())).findFirst();
+            if (first.isPresent()) {
+                node.getHintNestLoopHelper().getItemMap().put(srcNode, createPair(arguments, srcNode));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Pair createPair(List<Item> arguments, PlanNode node) {
+        String alias = node.getAlias();
+        Item keySource = arguments.get(0);
+        Item keyToPass = arguments.get(1);
+        if (StringUtil.equals(arguments.get(0).getTableName(), alias)) {
+            return new Pair(keyToPass, keySource);
+        } else {
+            return new Pair(keySource, keyToPass);
         }
     }
 
@@ -149,7 +192,7 @@ public class JoinNestLoopChooser {
                 Optional.ofNullable(nodeMap.get(alias)).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table alias = " + alias));
                 JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
                 if (canDoAsMerge(parent)) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check AND or OR condition");
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check & or | condition");
                 }
             }
         }

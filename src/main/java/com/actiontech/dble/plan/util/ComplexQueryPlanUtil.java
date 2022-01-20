@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.util;
 
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
@@ -168,12 +169,14 @@ public final class ComplexQueryPlanUtil {
                 rootName = buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
             }
             if (handler instanceof SendMakeHandler) {
-                Set<DelayTableHandler> tableHandlers = ((SendMakeHandler) handler).getTableHandlers();
-                for (DelayTableHandler tableHandler : tableHandlers) {
-                    StringBuilder sb = new StringBuilder(getTypeName(tableHandler));
-                    sb.append(" - ").append(childName).append("'s RESULTS");
-                    MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) tableHandler.getCreatedHandler().getMerges().get(0);
-                    dmlResponseHandler.getDependencies().add(sb.toString());
+                Set<BaseDMLHandler> tableHandlers = ((SendMakeHandler) handler).getTableHandlers();
+                for (BaseDMLHandler tableHandler : tableHandlers) {
+                    if (tableHandler instanceof DelayTableHandler) {
+                        StringBuilder sb = new StringBuilder(getTypeName(tableHandler));
+                        sb.append(" - ").append(childName).append("'s RESULTS");
+                        MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) ((DelayTableHandler) tableHandler).getCreatedHandler().getMerges().get(0);
+                        dmlResponseHandler.getDependencies().add(sb.toString());
+                    }
                 }
                 tableHandlers.clear();
             }

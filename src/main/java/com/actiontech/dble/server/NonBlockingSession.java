@@ -683,12 +683,12 @@ public class NonBlockingSession extends Session {
         try {
             DDLProxyMetaManager.Originator.notifyClusterDDLPrepare(shardingService, schema, table, rrs.getStatement());
             //lock self meta
-            DDLProxyMetaManager.Originator.addLocalMetaLock(shardingService, schema, table, rrs.getStatement());
+            DDLProxyMetaManager.Originator.addTableMetaLock(shardingService, schema, table, rrs.getStatement());
         } catch (NeedDelayedException e) {
-            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
+            DDLProxyMetaManager.Originator.removeTableMetaLock(shardingService, schema, table);
             throw e;
         } catch (Exception e) {
-            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
+            DDLProxyMetaManager.Originator.removeTableMetaLock(shardingService, schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
         }
     }

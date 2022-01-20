@@ -47,14 +47,14 @@ public final class DDLHandlerBuilder {
             }
             if (attachment != null && attachment instanceof ViewMeta) {
                 ViewMeta vm = (ViewMeta) attachment;
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start));
                 try {
                     vm.addMeta(true);
                 } catch (Exception e) {
-                    DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.fail, e.getMessage()));
+                    DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.fail, e.getMessage()));
                     return false;
                 }
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.succ));
             }
             return true;
         }
@@ -74,14 +74,14 @@ public final class DDLHandlerBuilder {
             }
             if (attachment != null && attachment instanceof ViewMeta) {
                 ViewMeta vm = (ViewMeta) attachment;
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start));
                 try {
                     vm.addMeta(true);
                 } catch (Exception e) {
-                    DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.fail, e.getMessage()));
+                    DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.fail, e.getMessage()));
                     return false;
                 }
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.succ));
             }
             return true;
         }

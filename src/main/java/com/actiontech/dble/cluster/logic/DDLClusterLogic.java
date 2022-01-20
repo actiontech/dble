@@ -69,11 +69,11 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         DDLTraceHelper.log2(null, DDLTraceHelper.Stage.receive_ddl_prepare, "Received: initialize ddl{" + ddlInfo.getSql() + "} of table[" + fullName + "]");
         boolean metaLocked = false;
         try {
-            DDLProxyMetaManager.Subscriber.addLocalMetaLock(schema, table, ddlInfo.getSql());
+            DDLProxyMetaManager.Subscriber.addTableMetaLock(schema, table, ddlInfo.getSql());
             metaLocked = true;
             clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
         } catch (Exception t) {
-            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
+            DDLProxyMetaManager.Subscriber.removeTableMetaLock(schema, table);
             if (!metaLocked) {
                 clusterHelper.createSelfTempNode(path, FeedBackType.ofError(t.getMessage()));
             }
@@ -121,7 +121,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
                 String[] tableInfo = fullName.split("\\.");
                 final String schema = StringUtil.removeBackQuote(tableInfo[0]);
                 final String table = StringUtil.removeBackQuote(tableInfo[1]);
-                DDLProxyMetaManager.removeLocalMetaLock(schema, table);
+                DDLProxyMetaManager.Subscriber.removeTableMetaLock(schema, table);
                 tableToDel.add(fullName);
                 ddlLockMap.remove(fullName);
             }

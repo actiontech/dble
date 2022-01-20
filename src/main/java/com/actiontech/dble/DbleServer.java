@@ -549,12 +549,15 @@ public final class DbleServer {
             reviseSchemas();
             initDataHost();
             LOGGER.info("get variables Data end");
+        } else {
+            LOGGER.info("skip to get variables Data");
+            reviseSchemas();
+        }
+        try {
             //init tmManager
-            try {
-                tmManager.init(this.getConfig());
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
+            tmManager.init(this.getConfig());
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 

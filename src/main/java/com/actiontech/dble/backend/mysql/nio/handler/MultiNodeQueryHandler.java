@@ -440,7 +440,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 this.resultSize += eof.length;
                 if (!rrs.isCallStatement()) {
-                    if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLocked()) { // clear all connections
+                    if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLockTable()) { // clear all connections
                         session.releaseConnections(false);
                     }
 
@@ -471,7 +471,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     private void recycle() {
         if (!rrs.isCallStatement()) {
-            if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLocked()) { // clear all connections
+            if (this.sessionAutocommit && !session.getShardingService().isTxStart() && !session.getShardingService().isLockTable()) { // clear all connections
                 session.releaseConnections(false);
             }
         }

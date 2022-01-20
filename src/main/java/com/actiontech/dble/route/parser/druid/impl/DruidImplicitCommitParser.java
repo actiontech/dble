@@ -92,7 +92,7 @@ public class DruidImplicitCommitParser extends DefaultDruidParser {
         if (service.isTxStart() || !service.isAutocommit()) {
             service.setTxStart(false);
             StatisticListener.getInstance().record(service, r -> r.onTxEnd());
-            service.getAndIncrementXid();
+            service.getAndIncrementTxId();
         }
         if (!service.isAutocommit()) {
             StatisticListener.getInstance().record(service, r -> r.onTxStartByImplicitly(service));

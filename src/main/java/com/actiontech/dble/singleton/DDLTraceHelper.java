@@ -169,24 +169,20 @@ public final class DDLTraceHelper {
     }
 
     public enum Stage {
-        unknow,
         // self
         init_ddl_trace,
         notice_cluster_ddl_prepare,
-        add_local_lock,
+        add_table_lock,
         test_ddl_conn,
         exec_ddl_sql,
-        update_ddl_metadata,
+        update_table_metadata,
         notice_cluster_ddl_complete,
-        release_local_lock,
+        release_table_lock,
         finish_ddl_trace,
 
         // cluster
         receive_ddl_prepare,
-        // add_local_lock,
-        // update_ddl_metadata,
         receive_ddl_complete,
-        // release_local_lock
     }
 
     public enum Status {

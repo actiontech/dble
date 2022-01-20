@@ -14,6 +14,7 @@ import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -67,13 +68,13 @@ public class MysqlDatabaseHandler {
 
     private PhysicalDbInstance getPhysicalDbInstance(String dbGroupName) {
         PhysicalDbInstance ds = null;
-        PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
-        PhysicalDbInstance dsTest;
-        if (dbGroup != null) {
-            dsTest = dbGroup.getWriteDbInstance();
-            if (dsTest.isTestConnSuccess()) {
-                ds = dsTest;
+        try {
+            PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
+            if (dbGroup != null) {
+                ds = dbGroup.rwSelect(true, false);
             }
+        } catch (IOException e) {
+            LOGGER.warn("select dbInstance error", e);
         }
         return ds;
     }

@@ -81,6 +81,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (result.isSuccess()) {
+                ds.setTestConnSuccess(true);
                 keyVariables = new KeyVariables();
                 keyVariables.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
 

@@ -116,13 +116,6 @@ public class RWSplitNonBlockingSession {
 
     public void executeHint(int sqlType, String sql, Callback callback) throws IOException {
         RWSplitHandler handler = new RWSplitHandler(rwSplitService, null, callback);
-        if (conn != null && !conn.isClosed()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("select bind conn[id={}]", conn.getId());
-            }
-            handler.execute(conn);
-            return;
-        }
         try {
             PhysicalDbInstance dbInstance = RouteService.getInstance().routeRwSplit(sqlType, sql, rwSplitService);
             if (dbInstance == null) {

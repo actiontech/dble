@@ -66,7 +66,7 @@ public class PSHandler implements ResponseHandler, PreparedResponseHandler {
             byte[] fileType = holder.getFieldType();
             buffer.put(fileType, 0, fileType.length);
             buffer.position(15 + nullBitMapSize + paramsCount * 2);
-            buffer.put(originExecuteByte, 15 + nullBitMapSize, buffer.remaining());
+            buffer.put(originExecuteByte, 15 + nullBitMapSize, originExecuteByte.length - (15 + nullBitMapSize));
             service.setResponseHandler(this);
             service.execute(buffer);
         } else {

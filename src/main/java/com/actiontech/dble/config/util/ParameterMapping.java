@@ -9,6 +9,7 @@ import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.util.BooleanUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.SystemProperty;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,14 +31,36 @@ public final class ParameterMapping {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
     private static List<String> errorParameters = new ArrayList<>();
+    private static final Map<String, String> COMPATIBLE_MAP = new HashMap<>();
+
+    static {
+        COMPATIBLE_MAP.put("complexWorker", "complexExecutor");
+        COMPATIBLE_MAP.put("NIOFrontRW", "processors");
+        COMPATIBLE_MAP.put("NIOBackendRW", "backendProcessors");
+        COMPATIBLE_MAP.put("frontWorker", "processorExecutor");
+        COMPATIBLE_MAP.put("backendWorker", "backendProcessorExecutor");
+        COMPATIBLE_MAP.put("writeToBackendWorker", "writeToBackendExecutor");
+    }
 
     public static void mapping(Object target, Properties src, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
         PropertyDescriptor[] pds = getDescriptors(target.getClass());
         for (PropertyDescriptor pd : pds) {
-            String valStr = src.getProperty(pd.getName());
+            String name = pd.getName();
+            String valStr = src.getProperty(name);
             Object value = valStr;
             Class<?> cls = pd.getPropertyType();
+            if (COMPATIBLE_MAP.containsKey(name)) {
+                String values = COMPATIBLE_MAP.get(name);
+                String compatibleVal = src.getProperty(values);
+                src.remove(values);
+                if (!Strings.isNullOrEmpty(compatibleVal) && Strings.isNullOrEmpty(valStr)) {
+                    valStr = compatibleVal;
+                    value = valStr;
+                    LOGGER.warn(values + " parameter has been replaced by the " + name + " parameter");
+                }
+            }
+
             if (cls == null) {
                 if (problemReporter != null) {
                     problemReporter.warn("unknown property [ " + pd.getName() + " ]");

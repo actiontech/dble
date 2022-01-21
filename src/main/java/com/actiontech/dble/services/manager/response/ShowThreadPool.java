@@ -112,8 +112,8 @@ public final class ShowThreadPool {
         List<ExecutorService> list = new LinkedList<>();
         DbleServer server = DbleServer.getInstance();
         list.add(server.getTimerExecutor());
-        list.add(server.getBusinessExecutor());
-        list.add(server.getBackendBusinessExecutor());
+        list.add(server.getFrontExecutor());
+        list.add(server.getBackendExecutor());
         list.add(server.getComplexQueryExecutor());
         list.add(server.getWriteToBackendExecutor());
         // for (NIOProcessor pros : server.getProcessors()) {

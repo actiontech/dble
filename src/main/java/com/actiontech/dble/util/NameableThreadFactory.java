@@ -37,7 +37,7 @@ public class NameableThreadFactory implements ThreadFactory {
     }
 
     public Thread newThread(Runnable r) {
-        Thread t = new Thread(group, r, namePrefix + threadId.getAndIncrement() + (StringUtil.isBlank(nameSuffix) ? "" : nameSuffix));
+        Thread t = new Thread(group, r, threadId.getAndIncrement() + "-" + namePrefix + (StringUtil.isBlank(nameSuffix) ? "" : nameSuffix));
         t.setDaemon(isDaemon);
         //If more processing needs to be overridden class processing
         t.setUncaughtExceptionHandler((Thread threads, Throwable e) -> LOGGER.warn("unknown exception ", e));

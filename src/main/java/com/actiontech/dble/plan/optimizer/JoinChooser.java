@@ -128,6 +128,9 @@ public class JoinChooser {
         }
         // no relation join
         if (relationJoin == null) {
+            if (!hintPlanInfo.isEmpty()) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints yet. Maybe this sql contains 'multi right join' or 'cartesian with relation' or 'subquery'.");
+            }
             return orgNode;
         }
 
@@ -554,7 +557,7 @@ public class JoinChooser {
         for (int index = 0; index < node.getChildren().size(); index++) {
             PlanNode child = node.getChildren().get(index);
             if (isUnit(child)) {
-                child = JoinProcessor.optimize(child, hintPlanInfo);
+                child = JoinProcessor.optimize(child, new HintPlanInfo());
                 node.getChildren().set(index, child);
                 this.joinUnits.add(child);
             } else {

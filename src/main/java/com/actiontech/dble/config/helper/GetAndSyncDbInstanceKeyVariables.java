@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -81,6 +81,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (result.isSuccess()) {
+                ds.setTestConnSuccess(true);
                 keyVariables = new KeyVariables();
                 keyVariables.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -26,10 +26,10 @@ public final class RwSplitSelectHandler {
                 int rs2 = RwSplitServerParseSelect.parseSpecial(stmt);
                 switch (rs2) {
                     case RwSplitServerParseSelect.LOCK_READ:
-                        service.getSession().execute(true, null);
+                        service.getSession().execute(true, null, false);
                         break;
                     default:
-                        service.getSession().execute(null, null);
+                        service.getSession().execute(null, null, false);
                         break;
                 }
                 break;

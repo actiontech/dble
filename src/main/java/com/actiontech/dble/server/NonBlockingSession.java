@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -601,7 +601,7 @@ public class NonBlockingSession extends Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            RouteResultsetNode rrsNode = builder.build();
+            RouteResultsetNode rrsNode = builder.build(rrs.isHaveHintPlan2Inner());
             if (rrsNode != null) {
                 RouteResultsetNode[] nodes = {rrsNode};
                 rrs.setNodes(nodes);
@@ -686,12 +686,12 @@ public class NonBlockingSession extends Session {
         try {
             DDLProxyMetaManager.Originator.notifyClusterDDLPrepare(shardingService, schema, table, rrs.getStatement());
             //lock self meta
-            DDLProxyMetaManager.Originator.addLocalMetaLock(shardingService, schema, table, rrs.getStatement());
+            DDLProxyMetaManager.Originator.addTableMetaLock(shardingService, schema, table, rrs.getStatement());
         } catch (NeedDelayedException e) {
-            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
+            DDLProxyMetaManager.Originator.removeTableMetaLock(shardingService, schema, table);
             throw e;
         } catch (Exception e) {
-            DDLProxyMetaManager.removeLocalMetaLock(schema, table);
+            DDLProxyMetaManager.Originator.removeTableMetaLock(shardingService, schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
         }
     }

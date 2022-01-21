@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -46,14 +46,14 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
 
     @Override
     public void execute() {
-        DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, "Start execute sql{show create table} in the shardingNodes[" + Strings.join(shardingNodes, ',') + "] to get table[" + tableName + "]’s information");
+        DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_table_metadata, "Start execute sql{show create table} in the shardingNodes[" + Strings.join(shardingNodes, ',') + "] to get table[" + tableName + "]’s information");
         super.execute();
         this.waitDone();
     }
 
     @Override
     public void handlerTableByNode(boolean isSucc, String tableName0, String shardingNode) {
-        DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, "In shardingNode[" + shardingNode + "], fetching " + (isSucc ? "success" : "fail"));
+        DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_table_metadata, "In shardingNode[" + shardingNode + "], fetching " + (isSucc ? "success" : "fail"));
     }
 
     @Override
@@ -61,9 +61,9 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
         if (tableMeta != null) {
             ProxyMeta.getInstance().getTmManager().addTable(schema, tableMeta, isCreateSql);
             metaInited = true;
-            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ, "Successful to update table[" + schema + "." + tableMeta.getTableName() + "]’s metadata");
+            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.succ, "Successful to update table[" + schema + "." + tableMeta.getTableName() + "]’s metadata");
         } else {
-            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.fail, "Failed to update table[" + schema + "." + tableName + "]’s metadata");
+            DDLTraceHelper.log2(currShardingService, DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.fail, "Failed to update table[" + schema + "." + tableName + "]’s metadata");
         }
         signalDone();
     }

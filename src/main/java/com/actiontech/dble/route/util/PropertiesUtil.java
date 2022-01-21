@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -89,7 +89,7 @@ public final class PropertiesUtil {
         OutputStream os = null;
         try {
             os = new FileOutputStream(new File(ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH)).getPath() + File.separator + propsFile);
-            props.store(os, "\n Copyright (C) 2016-2020 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
+            props.store(os, "\n Copyright (C) 2016-2022 ActionTech.\n License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.\n");
         } catch (IOException e) {
             throw e;
         } finally {

@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.meta;
 
 
@@ -44,10 +49,6 @@ public final class DDLProxyMetaManager {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(DDLProxyMetaManager.class);
 
-    public static void removeLocalMetaLock(String schema, String table) {
-        ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-    }
-
     // instance of ddl is triggered
     public static class Originator {
 
@@ -86,14 +87,21 @@ public final class DDLProxyMetaManager {
             }
         }
 
-        public static void addLocalMetaLock(ShardingService shardingService, String schema, String table, String sql) throws SQLNonTransientException {
+        public static void addTableMetaLock(ShardingService shardingService, String schema, String table, String sql) throws SQLNonTransientException {
             try {
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.add_local_lock, DDLTraceHelper.Status.start));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.add_table_lock, DDLTraceHelper.Status.start));
                 ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, sql);
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.add_local_lock, DDLTraceHelper.Status.succ));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.add_table_lock, DDLTraceHelper.Status.succ));
             } catch (Exception e) {
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.add_local_lock, DDLTraceHelper.Status.fail, e.getMessage()));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.add_table_lock, DDLTraceHelper.Status.fail, e.getMessage()));
                 throw e;
+            }
+        }
+
+        public static void removeTableMetaLock(ShardingService shardingService, String schema, String table) {
+            boolean isRemove = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            if (isRemove) {
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.release_table_lock, DDLTraceHelper.Status.succ));
             }
         }
 
@@ -107,17 +115,17 @@ public final class DDLProxyMetaManager {
             boolean isUpdateSucc = true;
             // 1.local metadata update
             if (!isExecSucc) {
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, "The table[" + schema + "." + table + "]’s metadata is not updated because ddl execution failed"));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, "The table[" + schema + "." + table + "]’s metadata is not updated because ddl execution failed"));
             } else {
                 switch (rrs.getDdlType()) {
                     case DROP_TABLE:
-                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start));
+                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start));
                         proxyMetaManager.dropTable(schema, table);
-                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ));
+                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.succ));
                         break;
                     case TRUNCATE_TABLE:
                         // no processing
-                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, "DDLType is TRUNCATE_TABLE, no need to update metadata"));
+                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, "DDLType is TRUNCATE_TABLE, no need to update metadata"));
                         break;
                     case CREATE_TABLE:
                         isUpdateSucc = createTable(shardingService, schema, table);
@@ -134,7 +142,7 @@ public final class DDLProxyMetaManager {
             } catch (Exception e) {
                 LOGGER.warn("notifyClusterDDLComplete error: {}", e);
             }
-            proxyMetaManager.removeMetaLock(schema, table);
+            removeTableMetaLock(shardingService, schema, table);
             return isUpdateSucc;
         }
 
@@ -155,7 +163,7 @@ public final class DDLProxyMetaManager {
                     AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableLackKey), ToResolveContainer.TABLE_LACK, tableLackKey);
                 }
             }
-            DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start)); // end to DDLNotifyTableMetaHandler.handlerTable
+            DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start)); // end to DDLNotifyTableMetaHandler.handlerTable
             DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showShardingNode), null, true, shardingService);
             handler.execute();
             return handler.isMetaInited();
@@ -173,7 +181,7 @@ public final class DDLProxyMetaManager {
             } else {
                 showShardingNode = schemaInfo.getSchemaConfig().getDefaultShardingNodes().get(0); // randomly take a shardingNode
             }
-            DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start)); // end to DDLNotifyTableMetaHandler.handlerTable
+            DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start)); // end to DDLNotifyTableMetaHandler.handlerTable
             DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), schemaInfo.getTable(), Collections.singletonList(showShardingNode), null, false, shardingService);
             handler.execute();
             return handler.isMetaInited();
@@ -227,13 +235,13 @@ public final class DDLProxyMetaManager {
     // instances of being awakened by ddl
     public static class Subscriber {
 
-        public static void addLocalMetaLock(String schema, String table, String sql) throws SQLNonTransientException {
+        public static void addTableMetaLock(String schema, String table, String sql) throws SQLNonTransientException {
             try {
-                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.add_local_lock, DDLTraceHelper.Status.start);
+                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.add_table_lock, DDLTraceHelper.Status.start);
                 ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, sql);
-                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.add_local_lock, DDLTraceHelper.Status.succ);
+                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.add_table_lock, DDLTraceHelper.Status.succ);
             } catch (Exception e) {
-                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.add_local_lock, DDLTraceHelper.Status.fail, e.getMessage());
+                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.add_table_lock, DDLTraceHelper.Status.fail, e.getMessage());
                 throw e;
             }
         }
@@ -242,15 +250,15 @@ public final class DDLProxyMetaManager {
         public static boolean updateMetaData(String schema, String table, @Nullable DDLInfo ddlInfo, boolean isExecSucc) {
             ProxyMetaManager proxyMetaManager = ProxyMeta.getInstance().getTmManager();
             if (!isExecSucc) {
-                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_ddl_metadata, "The table[" + schema + "." + table + "]’s metadata is not updated because ddl execution failed");
+                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_table_metadata, "The table[" + schema + "." + table + "]’s metadata is not updated because ddl execution failed");
             } else {
                 if (ddlInfo != null) {
                     switch (ddlInfo.getType()) {
                         case DROP_TABLE:
                             if (DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus())) {
-                                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start);
+                                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start);
                                 proxyMetaManager.dropTable(schema, table);
-                                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.succ);
+                                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.succ);
                             }
                             break;
                         default:
@@ -259,8 +267,15 @@ public final class DDLProxyMetaManager {
                     }
                 }
             }
-            proxyMetaManager.removeMetaLock(schema, table);
+            removeTableMetaLock(schema, table);
             return true;
+        }
+
+        public static void removeTableMetaLock(String schema, String table) {
+            boolean isRemove = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            if (isRemove) {
+                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.release_table_lock, DDLTraceHelper.Status.succ);
+            }
         }
 
         private static void updateTableWithBackData(String schema, String table, boolean isCreateSql) {
@@ -272,7 +287,7 @@ public final class DDLProxyMetaManager {
             } else {
                 shardingNodes = currConfig.getSchemas().get(schema).getTables().get(table).getShardingNodes();
             }
-            DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_ddl_metadata, DDLTraceHelper.Status.start); // end to DDLNotifyTableMetaHandler.handlerTable
+            DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_table_metadata, DDLTraceHelper.Status.start); // end to DDLNotifyTableMetaHandler.handlerTable
             DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, shardingNodes, selfNode, isCreateSql, null);
             handler.execute();
         }

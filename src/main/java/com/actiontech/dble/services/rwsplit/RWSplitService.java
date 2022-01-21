@@ -280,7 +280,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                             int paramCount = ByteUtil.readUB2(resp, 11);
                             psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, true));
                         }
-                    });
+                    }, false);
                 } else {
                     session.execute(null, data, (isSuccess, resp, rwSplitService) -> {
                         if (isSuccess) {
@@ -288,7 +288,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                             int paramCount = ByteUtil.readUB2(resp, 11);
                             psHolder.put(statementId, new PreparedStatementHolder(data, paramCount, false));
                         }
-                    });
+                    }, false);
                 }
             } else {
                 session.execute(true, data, (isSuccess, resp, rwSplitService) -> {

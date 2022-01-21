@@ -50,7 +50,7 @@ public class PreparedClosePacket extends MySQLPacket {
     @Override
     public void bufferWrite(AbstractConnection connection) {
         int size = calcPacketSize();
-        ByteBuffer buffer = connection.allocate(size);
+        ByteBuffer buffer = connection.allocate(PACKET_HEADER_SIZE + size);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         buffer.put((byte) 0x19);

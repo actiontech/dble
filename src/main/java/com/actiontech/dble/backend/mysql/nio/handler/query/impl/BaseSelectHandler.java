@@ -189,7 +189,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     protected void onTerminate() {
-        if (autocommit && !serverSession.getShardingService().isLocked()) {
+        if (autocommit && !serverSession.getShardingService().isLockTable()) {
             this.serverSession.releaseConnection(rrss, false);
         } else {
             //the connection should wait until the connection running finish

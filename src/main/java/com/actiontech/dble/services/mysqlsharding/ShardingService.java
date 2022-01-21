@@ -408,7 +408,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             connIterator.remove();
         }
 
-        setLocked(false);
+        setLockTable(false);
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
@@ -495,7 +495,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
-            setLocked(false);
+            setLockTable(false);
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");

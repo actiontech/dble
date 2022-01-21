@@ -76,11 +76,11 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                     case RwSplitServerParse.LOCK:
                         session.execute(true, (isSuccess, resp, rwSplitService) -> {
                             rwSplitService.implicitlyDeal();
-                            rwSplitService.setLocked(true);
+                            rwSplitService.setLockTable(true);
                         });
                         break;
                     case RwSplitServerParse.UNLOCK:
-                        session.execute(true, (isSuccess, resp, rwSplitService) -> rwSplitService.setLocked(false));
+                        session.execute(true, (isSuccess, resp, rwSplitService) -> rwSplitService.setLockTable(false));
                         break;
                     case RwSplitServerParse.START_TRANSACTION:
                     case RwSplitServerParse.BEGIN:

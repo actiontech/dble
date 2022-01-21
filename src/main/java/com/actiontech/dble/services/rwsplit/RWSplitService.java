@@ -382,7 +382,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     }
 
     public boolean isKeepBackendConn() {
-        return isAutocommit() && !isTxStart() && !isInLoadData() && psHolder.isEmpty() && !isLocked() && !isUsingTmpTable() && nameSet.isEmpty();
+        return isAutocommit() && !isTxStart() && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
     }
 
     @Override
@@ -401,7 +401,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
     public void resetConnection() {
         session.close("reset connection");
 
-        setLocked(false);
+        setLockTable(false);
         inLoadData = false;
         txStarted = false;
         this.tmpTableSet.clear();

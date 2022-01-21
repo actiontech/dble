@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.util;
 
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
@@ -59,7 +60,7 @@ public final class ComplexQueryPlanUtil {
 
     private static String buildResultByEndHandler(Set<String> subQueries, List<ReferenceHandlerInfo> finalResult, DMLResponseHandler endHandler, Map<String, Integer> nameMap) {
         Map<String, ReferenceHandlerInfo> refMap = new HashMap<>();
-        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, ReferenceHandlerInfo>(), nameMap, subQueries);
+        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<>(), nameMap, subQueries);
         List<ReferenceHandlerInfo> resultList = new ArrayList<>(refMap.size());
         getDFSHandlers(refMap, rootName, resultList);
         for (int i = resultList.size() - 1; i >= 0; i--) {
@@ -71,13 +72,16 @@ public final class ComplexQueryPlanUtil {
 
     private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, ReferenceHandlerInfo> refMap, Map<DMLResponseHandler, ReferenceHandlerInfo> handlerMap, Map<String, Integer> nameMap, Set<String> dependencies) {
         String rootName = null;
-        int mergeNodeSize = endHandler.getMerges().size();
-        for (int i = 0; i < mergeNodeSize; i++) {
-            DMLResponseHandler startHandler = endHandler.getMerges().get(i);
+        List<DMLResponseHandler> mergeHandlers = endHandler.getMerges();
+        for (DMLResponseHandler startHandler : mergeHandlers) {
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+            Set<String> dependenciesSet = mergeHandler.getDependencies();
+            if (!dependenciesSet.isEmpty()) {
+                dependencies = dependenciesSet;
+            }
             String mergeName = getMergeType(mergeHandler);
             List<BaseSelectHandler> mergeList = new ArrayList<>();
-            mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
+            mergeList.addAll(mergeHandler.getExeHandlers());
             String mergeNode = genHandlerName(mergeName, nameMap);
             ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
             if (mergeHandler instanceof MultiNodeFakeHandler) {
@@ -161,8 +165,20 @@ public final class ComplexQueryPlanUtil {
             if (handler instanceof TempTableHandler) {
                 TempTableHandler tmp = (TempTableHandler) handler;
                 DMLResponseHandler endHandler = tmp.getCreatedHandler();
-                endHandler.setNextHandler(nextHandler);
+                endHandler.setNextHandlerOnly(nextHandler);
                 rootName = buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
+            }
+            if (handler instanceof SendMakeHandler) {
+                Set<BaseDMLHandler> tableHandlers = ((SendMakeHandler) handler).getTableHandlers();
+                for (BaseDMLHandler tableHandler : tableHandlers) {
+                    if (tableHandler instanceof DelayTableHandler) {
+                        StringBuilder sb = new StringBuilder(getTypeName(tableHandler));
+                        sb.append(" - ").append(childName).append("'s RESULTS");
+                        MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) ((DelayTableHandler) tableHandler).getCreatedHandler().getMerges().get(0);
+                        dmlResponseHandler.getDependencies().add(sb.toString());
+                    }
+                }
+                tableHandlers.clear();
             }
             handler = nextHandler;
             nextHandler = nextHandler.getNextHandler();
@@ -218,6 +234,8 @@ public final class ComplexQueryPlanUtil {
             return "RENAME_DERIVED_SUB_QUERY";
         } else if (handler instanceof OutputHandler) {
             return "WRITE_TO_CLIENT";
+        } else if (handler instanceof DelayTableHandler) {
+            return "HINT_NEST_LOOP";
         }
         return "OTHER";
     }

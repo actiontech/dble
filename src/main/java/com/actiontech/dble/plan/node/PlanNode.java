@@ -154,6 +154,16 @@ public abstract class PlanNode {
 
     private List<Item> nestLoopFilters = null;
 
+    private PlanNode nestLoopDependNode;
+
+    public PlanNode getNestLoopDependNode() {
+        return nestLoopDependNode;
+    }
+
+    public void setNestLoopDependNode(PlanNode nestLoopDependNode) {
+        this.nestLoopDependNode = nestLoopDependNode;
+    }
+
     public abstract String getPureName();
 
     public abstract String getPureSchema();

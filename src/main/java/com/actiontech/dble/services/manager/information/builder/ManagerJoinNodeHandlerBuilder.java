@@ -72,19 +72,15 @@ class ManagerJoinNodeHandlerBuilder extends ManagerBaseHandlerBuilder {
             endHandler.setNextHandler(tempHandler);
             tempHandler.setLeft(isLeftSmall);
             pres.add(tempHandler);
-            CallBackHandler tempDone = new CallBackHandler() {
-
-                @Override
-                public void call() throws Exception {
-                    Set<String> valueSet = tempHandler.getValueSet();
-                    buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
-                    DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
-                    synchronized (tempHandler) {
-                        bigLh.setNextHandlerOnly(tempHandler.getNextHandler());
-                    }
-                    tempHandler.setCreatedHandler(bigLh);
-                    HandlerBuilder.startHandler(bigLh);
+            CallBackHandler tempDone = () -> {
+                Set<String> valueSet = tempHandler.getValueSet();
+                buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
+                DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
+                synchronized (tempHandler) {
+                    bigLh.setNextHandlerOnly(tempHandler.getNextHandler());
                 }
+                tempHandler.setCreatedHandler(bigLh);
+                HandlerBuilder.startHandler(bigLh);
             };
             tempHandler.setTempDoneCallBack(tempDone);
 

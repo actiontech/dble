@@ -69,7 +69,6 @@ public final class MyOptimizer {
                 } else {
                     node = JoinERProcessor.optimize(node);
                 }
-
                 if (existGlobal >= 0) {
                     GlobalTableProcessor.optimize(node);
                 }
@@ -81,10 +80,10 @@ public final class MyOptimizer {
                 LimitPusher.optimize(node);
 
                 node = SelectedProcessor.optimize(node);
-
-                boolean useJoinStrategy = SystemConfig.getInstance().isUseJoinStrategy();
-                if (useJoinStrategy) {
-                    JoinStrategyProcessor.optimize(node);
+                if (!hintPlanInfo.isEmpty()) {
+                    HintStrategyNestLoopProcessor.optimize(node, hintPlanInfo);
+                } else {
+                    JoinStrategyProcessor.chooser(node);
                 }
             }
             return node;

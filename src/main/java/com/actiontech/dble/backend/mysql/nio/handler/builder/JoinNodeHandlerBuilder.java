@@ -229,17 +229,16 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
     }
 
     private void buildHandler(List<DMLResponseHandler> pres, PlanNode currentNode, TableNode dependNode, boolean isLeft) {
-        DelayTableHandler delayTableHandler;
         if (Objects.nonNull(dependNode)) {
             Pair<Item, Item> itemPair = ((TableNode) currentNode).getHintNestLoopHelper().getItemMap().get(currentNode);
-            delayTableHandler = buildDelayHandler(isLeft, currentNode, itemPair.getKey(), itemPair.getValue());
+            DelayTableHandler delayTableHandler = buildDelayHandler(isLeft, currentNode, itemPair.getKey(), itemPair.getValue());
             Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = dependNode.getHintNestLoopHelper().getDelayTableHandlerMap();
             List<DelayTableHandler> delayTableHandlerList = Optional.ofNullable(delayTableHandlerMap.get(dependNode)).orElse(new ArrayList<>());
             delayTableHandlerList.add(delayTableHandler);
             delayTableHandlerMap.put(dependNode, delayTableHandlerList);
             pres.add(delayTableHandler);
             SendMakeHandler sendMakeHandler = dependNode.getHintNestLoopHelper().getSendMakeHandlerHashMap().get(dependNode);
-            if (Objects.nonNull(sendMakeHandler) && Objects.nonNull(delayTableHandler)) {
+            if (Objects.nonNull(sendMakeHandler)) {
                 sendMakeHandler.getTableHandlers().add(delayTableHandler);
             }
             if (isExplain) {

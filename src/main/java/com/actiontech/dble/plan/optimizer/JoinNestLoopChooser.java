@@ -117,7 +117,7 @@ public class JoinNestLoopChooser {
                 List<HintPlanNode> nodes = v.getNodes();
                 for (HintPlanNode node : nodes) {
                     PlanNode dependNode = nodeMap.get(node.getName());
-                    boolean result = checkHelper(dependNode, currentNode, currentNode);
+                    boolean result = dependencyHelper(dependNode, currentNode, currentNode);
                     if (result) {
                         nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
                         return;
@@ -128,15 +128,15 @@ public class JoinNestLoopChooser {
         });
     }
 
-    private boolean checkOnCondition(PlanNode dependNode, PlanNode currentNode, PlanNode srcNode) {
+    private boolean addSrcNodeItem(PlanNode dependNode, PlanNode currentNode, PlanNode srcNode) {
         JoinNode dependNodeParent = (JoinNode) dependNode.getParent();
-        return joinFilterCheck(dependNodeParent.getJoinFilter(), (TableNode) currentNode, srcNode);
+        return addItem(dependNodeParent.getJoinFilter(), (TableNode) currentNode, srcNode);
     }
 
-    private boolean checkHelper(PlanNode dependNode, PlanNode currentNode, PlanNode srcNode) {
+    private boolean dependencyHelper(PlanNode dependNode, PlanNode currentNode, PlanNode srcNode) {
         //must have the on condition
-        if (checkOnCondition(dependNode, currentNode, srcNode) || checkOnCondition(currentNode, dependNode, srcNode)) {
-            //reasonable join relationship check
+        if (addSrcNodeItem(dependNode, currentNode, srcNode) || addSrcNodeItem(currentNode, dependNode, srcNode)) {
+            //reasonable join relationship
             return traverseNode((JoinNode) dependNode.getParent(), currentNode, true) || traverseNode((JoinNode) currentNode.getParent(), dependNode, false);
         }
         return false;
@@ -160,7 +160,7 @@ public class JoinNestLoopChooser {
 
     }
 
-    private boolean joinFilterCheck(List<ItemFuncEqual> joinFilter, TableNode node, PlanNode srcNode) {
+    private boolean addItem(List<ItemFuncEqual> joinFilter, TableNode node, PlanNode srcNode) {
         String alias = node.getAlias();
         for (ItemFuncEqual itemFuncEqual : joinFilter) {
             List<Item> arguments = itemFuncEqual.arguments();

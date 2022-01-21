@@ -75,7 +75,6 @@ public abstract class BaseHandlerBuilder {
 
     protected boolean isExplain;
     private final List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
-    private final Map<PlanNode, List<DelayTableHandler>> delayTableHandlerMap = new HashMap<>();
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -641,9 +640,4 @@ public abstract class BaseHandlerBuilder {
     public boolean isContainSubQuery(PlanNode planNode) {
         return planNode.getSubQueries().size() > 0 || planNode.getChildren().stream().anyMatch(this::isContainSubQuery);
     }
-
-    public Map<PlanNode, List<DelayTableHandler>> getDelayTableHandlerMap() {
-        return delayTableHandlerMap;
-    }
-
 }

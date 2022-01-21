@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
@@ -64,7 +69,7 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                DDLTraceManager.getInstance().printDDLOutOfLimit();
+                DDLTraceHelper.printDDLOutOfLimit();
             }
         };
     }

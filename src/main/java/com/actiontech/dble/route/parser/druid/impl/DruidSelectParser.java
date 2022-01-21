@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -343,7 +343,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
-        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8mb4"), ProxyMeta.getInstance().getTmManager(), null);
+        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8mb4"), ProxyMeta.getInstance().getTmManager(), null, null);
         itemExpr.accept(ev);
         Item selItem = ev.getItem();
         return contaisSumFuncOrSubquery(selItem);

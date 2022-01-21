@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.util;
 
 import org.slf4j.Logger;
@@ -26,7 +31,7 @@ public final class SelectorUtil {
             for (SelectionKey key : finalSelector.keys()) {
                 SelectableChannel ch = key.channel();
                 try {
-                    if (!ch.isOpen() || ch instanceof SocketChannel && !((SocketChannel) ch).isConnected()) {
+                    if (!ch.isOpen() || ch instanceof SocketChannel && !((SocketChannel) ch).isConnected() && !((SocketChannel) ch).isConnectionPending()) {
                         notConnected = true;
                         // cancel the key just to be on the safe side
                         key.cancel();

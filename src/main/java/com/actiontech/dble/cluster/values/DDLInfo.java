@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -15,6 +15,7 @@ public class DDLInfo {
         INIT, SUCCESS, FAILED
     }
 
+    // The execution of ddl in the cluster is in two phases, PREPARE and COMPLETE
     public enum NodeStatus {
         PREPARE, COMPLETE
     }

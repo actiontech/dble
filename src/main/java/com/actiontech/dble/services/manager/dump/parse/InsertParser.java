@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.manager.dump.parse;
 
 import com.actiontech.dble.route.parser.util.Pair;
@@ -106,7 +111,7 @@ public class InsertParser {
     private void parseColumnNameList(InsertQueryPos insertQueryPos) {
         int i = 0;
         while (true) {
-            String colName = lexer.token().name;
+            String colName = lexer.stringVal();
             insertQueryPos.getColNameIndexMap().put(colName, i);
             insertQueryPos.getColumns().add(colName);
             lexer.nextToken();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -93,10 +94,12 @@ public final class ShowDbInstanceSynDetail {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        String name = ManagerParseShow.getWhereParameter(stmt);
-        for (RowDataPacket row : getRows(name, service.getCharset().getResults())) {
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, service, true);
+        if (!SystemConfig.getInstance().isCloseHeartBeatRecord()) {
+            String name = ManagerParseShow.getWhereParameter(stmt);
+            for (RowDataPacket row : getRows(name, service.getCharset().getResults())) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
+            }
         }
 
         // write last eof

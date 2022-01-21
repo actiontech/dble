@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -17,11 +17,14 @@ import com.actiontech.dble.statistic.CommandCount;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class BusinessService<T extends UserConfig> extends FrontendService<T> {
+
+    private final AtomicLong queriesCounter = new AtomicLong(0);
+    private final AtomicLong transactionsCounter = new AtomicLong(0);
+    private final AtomicLong txId = new AtomicLong(0);
+
     protected volatile boolean txChainBegin;
     protected volatile boolean txStarted;
     protected final CommandCount commands;
-    protected final AtomicLong queriesCounter = new AtomicLong(0);
-    protected final AtomicLong transactionsCounter = new AtomicLong(0);
 
     public BusinessService(AbstractConnection connection, AuthResultInfo info) {
         super(connection, info);
@@ -44,14 +47,16 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         return txChainBegin;
     }
 
-    public void queryCount() {
-        queriesCounter.incrementAndGet();
+    // xid
+    public void getAndIncrementXid() {
+        txId.getAndIncrement();
     }
 
-    public void transactionsCount() {
-        transactionsCounter.incrementAndGet();
+    public long getXid() {
+        return txId.get();
     }
 
+    // query and transaction count
     public void transactionsCountInTx() {
         if (txStarted || !autocommit) {
             transactionsCounter.incrementAndGet();
@@ -62,6 +67,14 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
         if (!txStarted && autocommit) {
             transactionsCounter.incrementAndGet();
         }
+    }
+
+    public void queryCount() {
+        queriesCounter.incrementAndGet();
+    }
+
+    public void transactionsCount() {
+        transactionsCounter.incrementAndGet();
     }
 
     public long getQueriesCounter() {

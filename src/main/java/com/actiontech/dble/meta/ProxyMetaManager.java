@@ -1,33 +1,24 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
-import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.DistributeLockManager;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
-import com.actiontech.dble.cluster.logic.ClusterLogic;
 import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
-import com.actiontech.dble.cluster.path.PathMeta;
 import com.actiontech.dble.cluster.values.ClusterTime;
-import com.actiontech.dble.cluster.values.DDLInfo;
-import com.actiontech.dble.cluster.values.FeedBackType;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DDLChildListener;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupResponseListener;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupStatusListener;
@@ -39,14 +30,12 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.meta.table.AbstractSchemaMetaHandler;
-import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
 import com.actiontech.dble.meta.table.SchemaCheckMetaHandler;
 import com.actiontech.dble.meta.table.ServerMetaHandler;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -154,16 +143,6 @@ public class ProxyMetaManager {
         }
     }
 
-    private boolean isOnMetaLock(String schema, String tbName) {
-        metaLock.lock();
-        try {
-            String lockKey = genLockKey(schema, tbName);
-            return lockTables.containsKey(lockKey);
-        } finally {
-            metaLock.unlock();
-        }
-    }
-
     public boolean removeMetaLock(String schema, String tbName) {
 
         boolean isRemoved = false;
@@ -231,24 +210,6 @@ public class ProxyMetaManager {
         if (schemaMeta != null)
             schemaMeta.dropTable(tbName);
         SchemaUtil.tryDropDefaultShardingTableConfig(schema, tbName);
-    }
-
-    /**
-     * In fact, it only have single table
-     */
-    public boolean dropTable(String schema, String table, String sql, boolean isSuccess, boolean needNotifyOther) {
-        if (isSuccess) {
-            dropTable(schema, table);
-        }
-        if (needNotifyOther) {
-            try {
-                notifyResponseClusterDDL(schema, table, sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_TABLE);
-            } catch (Exception e) {
-                LOGGER.warn("notifyResponseClusterDDL error", e);
-            }
-        }
-        removeMetaLock(schema, table);
-        return true;
     }
 
     public TableMeta getSyncTableMeta(String schema, String tbName) throws SQLNonTransientException {
@@ -320,7 +281,7 @@ public class ProxyMetaManager {
         return catalogs.get(schema).getTableMeta(tbName);
     }
 
-    private Set<String> getSelfNodes(ServerConfig config) {
+    protected static Set<String> getSelfNodes(ServerConfig config) {
         Set<String> selfNode = null;
         for (Map.Entry<String, PhysicalDbGroup> entry : config.getDbGroups().entrySet()) {
             PhysicalDbGroup host = entry.getValue();
@@ -336,19 +297,6 @@ public class ProxyMetaManager {
             }
         }
         return selfNode;
-    }
-
-    public void updateOnetableWithBackData(ServerConfig config, String schema, String tableName, boolean isCreateSql) {
-        Set<String> selfNode = getSelfNodes(config);
-        List<String> shardingNodes;
-        if (config.getSchemas().get(schema).getTables().get(tableName) == null) {
-            shardingNodes = config.getSchemas().get(schema).getDefaultShardingNodes();
-        } else {
-            shardingNodes = config.getSchemas().get(schema).getTables().get(tableName).getShardingNodes();
-        }
-        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, shardingNodes, selfNode, isCreateSql);
-        handler.execute();
-        removeMetaLock(schema, tableName);
     }
 
     public void init(ServerConfig config) throws Exception {
@@ -569,163 +517,6 @@ public class ProxyMetaManager {
             AbstractSchemaMetaHandler multiTablesMetaHandler = new SchemaCheckMetaHandler(this, schema, selfNode);
             multiTablesMetaHandler.execute();
         }
-    }
-
-    public boolean updateMetaData(String schema, String tableName, String sql, boolean isSuccess, DDLInfo.DDLType ddlType) {
-        if (ddlType == DDLInfo.DDLType.DROP_TABLE) {
-            return dropTable(schema, tableName, sql, isSuccess, true);
-        } else if (ddlType == DDLInfo.DDLType.TRUNCATE_TABLE) {
-            return truncateTable(schema, tableName, sql, isSuccess);
-        } else if (ddlType == DDLInfo.DDLType.CREATE_TABLE) {
-            return createTable(schema, tableName, sql, isSuccess);
-        } else {
-            return generalDDL(schema, tableName, sql, isSuccess);
-        }
-    }
-
-    public void notifyClusterDDL(String schema, String table, String sql) throws Exception {
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (DistributeLockManager.isLooked(ClusterPathUtil.getSyncMetaLockPath())) {
-                String msg = "There is another instance init meta data, try it later";
-                throw new Exception(msg);
-            }
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
-            String tableFullName = StringUtil.getUFullName(schema, table);
-            final PathMeta<DDLInfo> ddlPathMeta = ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.PREPARE);
-            final PathMeta<DDLInfo> ddlLockPathMeta = ClusterMetaUtil.getDDLLockPath(tableFullName);
-            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
-            DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
-            if (!lock.acquire()) {
-                String msg = "The metaLock about `" + tableFullName + "` is exists. It means other instance is doing DDL";
-                LOGGER.info(msg + " The path of DDL is " + ddlPathMeta);
-                throw new Exception(msg);
-            }
-            DistributeLockManager.addLock(lock);
-            ClusterDelayProvider.delayAfterDdlLockMeta();
-            clusterHelper.setKV(ddlPathMeta, ddlInfo);
-            clusterHelper.createSelfTempNode(ddlPathMeta.getPath(), FeedBackType.SUCCESS);
-
-            String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(ddlPathMeta.getPath());
-            if (errorMsg != null) {
-                throw new RuntimeException("init ddl error:" + errorMsg);
-            }
-        }
-    }
-
-    public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType) throws Exception {
-        ClusterDelayProvider.delayAfterDdlExecuted();
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            String tableFullName = StringUtil.getUFullName(schema, table);
-            final PathMeta<DDLInfo> tableDDLPath = ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.COMPLETE);
-            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
-            boolean isLock = true;
-            metaLock.lock();
-            try {
-                if (isOnMetaLock(schema, table)) {
-                    ClusterDelayProvider.delayBeforeDdlNotice();
-                    DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
-                    clusterHelper.setKV(tableDDLPath, ddlInfo);
-                    ClusterHelper.cleanPath(ClusterMetaUtil.getDDLPath(tableFullName, DDLInfo.NodeStatus.PREPARE));
-                    ClusterDelayProvider.delayAfterDdlNotice();
-                    clusterHelper.createSelfTempNode(tableDDLPath.getPath(), FeedBackType.SUCCESS);
-                    metaLock.unlock();
-                    isLock = false;
-                    String errorMsg = ClusterLogic.forDDL().waitingForAllTheNode(tableDDLPath.getPath());
-                    if (errorMsg != null) {
-                        throw new RuntimeException(errorMsg);
-                    }
-                } else {
-                    metaLock.unlock();
-                    isLock = false;
-                }
-            } finally {
-                if (isLock) {
-                    metaLock.unlock();
-                }
-                ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
-                ClusterHelper.cleanPath(tableDDLPath);
-                //release the lock
-                ClusterDelayProvider.delayBeforeDdlLockRelease();
-                DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(tableFullName));
-            }
-        }
-    }
-
-
-    private boolean createTable(String schema, String table, String sql, boolean isSuccess) {
-        SchemaInfo schemaInfo = getSchemaInfo(schema, table);
-        boolean result = isSuccess;
-        if (isSuccess) {
-            BaseTableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(table);
-            String showShardingNode = null;
-            List<String> shardingNodes;
-            if (tbConfig != null) {
-                shardingNodes = tbConfig.getShardingNodes();
-            } else {
-                shardingNodes = schemaInfo.getSchemaConfig().getDefaultShardingNodes();
-            }
-            for (String shardingNode : shardingNodes) {
-                showShardingNode = shardingNode;
-                String tableLackKey = AlertUtil.getTableLackKey(shardingNode, table);
-                if (ToResolveContainer.TABLE_LACK.contains(tableLackKey)) {
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableLackKey), ToResolveContainer.TABLE_LACK, tableLackKey);
-                }
-            }
-            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showShardingNode), null, true);
-            handler.execute();
-            result = handler.isMetaInited();
-        }
-        try {
-            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_TABLE);
-        } catch (Exception e) {
-            LOGGER.warn("notifyResponseClusterDDL error", e);
-        }
-        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-        return result;
-    }
-
-
-    private boolean truncateTable(String schema, String table, String sql, boolean isSuccess) {
-        try {
-            notifyResponseClusterDDL(schema, table, sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.TRUNCATE_TABLE);
-        } catch (Exception e) {
-            LOGGER.warn("notifyResponseClusterDDL error", e);
-        }
-        removeMetaLock(schema, table);
-        return true;
-    }
-
-
-    private boolean generalDDL(String schema, String table, String sql, boolean isSuccess) {
-        SchemaInfo schemaInfo = getSchemaInfo(schema, table);
-        boolean result = isSuccess;
-        if (isSuccess) {
-            result = genTableMetaByShow(schemaInfo);
-        }
-        try {
-            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_INDEX);
-        } catch (Exception e) {
-            LOGGER.warn("notifyResponseClusterDDL error", e);
-        }
-        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-        return result;
-    }
-
-    private boolean genTableMetaByShow(SchemaInfo schemaInfo) {
-        String tableName = schemaInfo.getTable();
-        BaseTableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
-        String showShardingNode = null;
-        if (tbConfig != null) {
-            for (String shardingNode : tbConfig.getShardingNodes()) {
-                showShardingNode = shardingNode;
-                break;
-            }
-        } else {
-            showShardingNode = schemaInfo.getSchemaConfig().getDefaultShardingNodes().get(0); // randomly take a shardingNode
-        }
-        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showShardingNode), null, false);
-        handler.execute();
-        return handler.isMetaInited();
     }
 
     public Repository getRepository() {

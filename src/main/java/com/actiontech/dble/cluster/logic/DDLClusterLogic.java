@@ -1,21 +1,18 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.cluster.logic;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.path.ChildPathMeta;
 import com.actiontech.dble.cluster.path.ClusterPathUtil;
-import com.actiontech.dble.cluster.values.AnyType;
-import com.actiontech.dble.cluster.values.ClusterEntry;
-import com.actiontech.dble.cluster.values.DDLInfo;
-import com.actiontech.dble.cluster.values.FeedBackType;
-import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.cluster.values.*;
+import com.actiontech.dble.meta.DDLProxyMetaManager;
+import com.actiontech.dble.singleton.DDLTraceHelper;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,7 +39,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         try {
             switch (status) {
                 case INIT:
-                    this.initDDLEvent(keyName, ddlInfo, path);
+                    this.ddlInitEvent(keyName, ddlInfo, path);
                     break;
                 case SUCCESS:
                     // just release local lock
@@ -63,20 +60,20 @@ public class DDLClusterLogic extends AbstractClusterLogic {
 
     }
 
-    private void initDDLEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
+    private void ddlInitEvent(String keyName, DDLInfo ddlInfo, String path) throws Exception {
         String[] tableInfo = keyName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         String fullName = schema + "." + table;
         ddlLockMap.put(fullName, ddlInfo.getFrom());
-        LOGGER.info("initialize ddl of {}, sql is {}", fullName, ddlInfo.getSql());
+        DDLTraceHelper.log2(null, DDLTraceHelper.Stage.receive_ddl_prepare, "Received: initialize ddl{" + ddlInfo.getSql() + "} of table[" + fullName + "]");
         boolean metaLocked = false;
         try {
-            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
+            DDLProxyMetaManager.Subscriber.addTableMetaLock(schema, table, ddlInfo.getSql());
             metaLocked = true;
             clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
         } catch (Exception t) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            DDLProxyMetaManager.Subscriber.removeTableMetaLock(schema, table);
             if (!metaLocked) {
                 clusterHelper.createSelfTempNode(path, FeedBackType.ofError(t.getMessage()));
             }
@@ -89,18 +86,11 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         String fullName = schema + "." + table;
-        LOGGER.info("ddl of {} execute success notice", fullName);
+        DDLTraceHelper.log2(null, DDLTraceHelper.Stage.receive_ddl_complete, "Received: ddl execute success notice for table[" + fullName + "]");
         // if the start node is done the ddl execute
         ddlLockMap.remove(fullName);
         ClusterDelayProvider.delayBeforeUpdateMeta();
-        //to judge the table is be drop
-        if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
-            ProxyMeta.getInstance().getTmManager().dropTable(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
-        } else {
-            //else get the latest table meta from db
-            ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table, ddlInfo.getType() == DDLInfo.DDLType.CREATE_TABLE);
-        }
-
+        DDLProxyMetaManager.Subscriber.updateMetaData(schema, table, ddlInfo, true);
         ClusterDelayProvider.delayBeforeDdlResponse();
         clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
     }
@@ -110,10 +100,10 @@ public class DDLClusterLogic extends AbstractClusterLogic {
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         String fullName = schema + "." + table;
-        LOGGER.info("ddl of {} execute failed notice", fullName);
+        DDLTraceHelper.log2(null, DDLTraceHelper.Stage.receive_ddl_complete, "Received: ddl execute failed notice for table[" + fullName + "]");
         //if the start node executing ddl with error,just release the lock
         ddlLockMap.remove(fullName);
-        ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+        DDLProxyMetaManager.Subscriber.updateMetaData(schema, table, null, false);
         clusterHelper.createSelfTempNode(path, FeedBackType.SUCCESS);
     }
 
@@ -131,7 +121,7 @@ public class DDLClusterLogic extends AbstractClusterLogic {
                 String[] tableInfo = fullName.split("\\.");
                 final String schema = StringUtil.removeBackQuote(tableInfo[0]);
                 final String table = StringUtil.removeBackQuote(tableInfo[1]);
-                ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+                DDLProxyMetaManager.Subscriber.removeTableMetaLock(schema, table);
                 tableToDel.add(fullName);
                 ddlLockMap.remove(fullName);
             }

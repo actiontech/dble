@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -290,6 +290,7 @@ public final class HandlerTool {
         if (index < 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "field not found:" + col);
         Field field = fields.get(index);
+        // todo：fixme if org col contains chinese, but push down's use alias col。inner 1560
         ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName());
         ret.setField(fields, index);
         ret.setItemName(col.getPushDownName() == null ? col.getItemName() : col.getPushDownName());

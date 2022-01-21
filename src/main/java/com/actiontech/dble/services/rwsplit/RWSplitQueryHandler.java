@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.rwsplit;
 
 import com.actiontech.dble.config.ErrorCode;
@@ -11,6 +16,7 @@ import com.actiontech.dble.server.handler.UseHandler;
 import com.actiontech.dble.server.parser.RwSplitServerParse;
 import com.actiontech.dble.server.parser.ServerParseFactory;
 import com.actiontech.dble.services.rwsplit.handle.RwSplitSelectHandler;
+import com.actiontech.dble.services.rwsplit.handle.ScriptPrepareHandler;
 import com.actiontech.dble.services.rwsplit.handle.TempTableHandler;
 import com.actiontech.dble.services.rwsplit.handle.XaHandler;
 import com.actiontech.dble.singleton.TraceManager;
@@ -64,7 +70,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(true, (isSuccess, rwSplitService) -> rwSplitService.setSchema(schema));
                         break;
                     case RwSplitServerParse.SHOW:
-                        session.execute(true, null);
+                        session.execute(true, null, false);
                         break;
                     case RwSplitServerParse.SELECT:
                         RwSplitSelectHandler.handle(sql, session.getService(), rs >>> 8);
@@ -91,7 +97,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                                 isImplicitly = true;
                                 StatisticListener.getInstance().record(session, r -> r.onTxEnd());
                             }
-                            rwSplitService.getAndIncrementTxId();
+                            rwSplitService.getAndIncrementXid();
                             rwSplitService.setTxStart(true);
                             if (isImplicitly) {
                                 StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(rwSplitService));
@@ -107,7 +113,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                             rwSplitService.transactionsCount();
                             StatisticListener.getInstance().record(session, r -> r.onTxEnd());
                             if (!rwSplitService.isAutocommit()) {
-                                rwSplitService.getAndIncrementTxId();
+                                rwSplitService.getAndIncrementXid();
                                 StatisticListener.getInstance().record(session, r -> r.onTxStartByImplicitly(rwSplitService));
                             }
                         });
@@ -122,7 +128,7 @@ public class RWSplitQueryHandler implements FrontendQueryHandler {
                         session.execute(null, null);
                         break;
                     case RwSplitServerParse.SCRIPT_PREPARE:
-                        session.execute(true, null, sql);
+                        ScriptPrepareHandler.handle(session.getService(), sql);
                         break;
                     case RwSplitServerParse.CREATE_TEMPORARY_TABLE:
                         TempTableHandler.handleCreate(sql, session.getService(), rs >>> 8);

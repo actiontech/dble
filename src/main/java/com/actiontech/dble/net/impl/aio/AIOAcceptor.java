@@ -1,6 +1,6 @@
 /*
 <<<<<<< HEAD:src/main/java/com/actiontech/dble/net/AIOAcceptor.java
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */

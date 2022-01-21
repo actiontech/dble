@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
@@ -241,7 +246,7 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         String tableName = schemaInfo.getTable();
         String schemaName = schema == null ? null : schema.getName();
 
-        MySQLPlanNodeVisitor pvisitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables());
+        MySQLPlanNodeVisitor pvisitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables(), rrs.getHintPlanInfo());
         pvisitor.visit(select);
         PlanNode node = pvisitor.getTableNode();
         node.setSql(rrs.getStatement());

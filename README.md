@@ -15,6 +15,9 @@
 
 dble (pronouced "double", less bug and no "ou") is maintained by [ActionTech](https://opensource.actionsky.com).
 
+DBLE由上海爱可生信息技术股份有限公司（以下简称爱可生公司）出品和维护。  
+DBLE是爱可生公司“云树分布式数据库软件（简称‘云树®Shard’或‘CTREE Shard’）”软件产品的开源版本。
+
 ## What is dble?
 
 dble is a high scalability middle-ware for MySQL sharding. 

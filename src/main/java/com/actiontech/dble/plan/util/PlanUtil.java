@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -109,6 +109,8 @@ public final class PlanUtil {
      */
     public static boolean canPush(Item sel, PlanNode child, PlanNode parent) {
         if (sel == null)
+            return false;
+        if (sel.isWithSubQuery())
             return false;
         if (sel.isWithSumFunc())
             return false;

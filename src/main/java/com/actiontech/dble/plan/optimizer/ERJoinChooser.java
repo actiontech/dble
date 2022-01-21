@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -176,6 +176,7 @@ public class ERJoinChooser {
         }
         // others' node is the join units which can not optimize, just merge them
         JoinNode ret = (JoinNode) makeJoinNode(others, charsetIndex);
+        ret.setDistinct(orgNode.isDistinct());
         ret.setOrderBys(orgNode.getOrderBys());
         ret.setGroupBys(orgNode.getGroupBys());
         ret.select(orgNode.getColumnsSelected());
@@ -191,6 +192,7 @@ public class ERJoinChooser {
         ret.setAlias(orgNode.getAlias());
         ret.setWithSubQuery(orgNode.isWithSubQuery());
         ret.setContainsSubQuery(orgNode.isContainsSubQuery());
+        ret.getSubQueries().addAll(orgNode.getSubQueries());
         ret.setSql(orgNode.getSql());
         ret.setUpFields();
         return ret;

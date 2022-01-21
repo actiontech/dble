@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -19,6 +19,7 @@ public final class HintPlanInfo implements Iterable<HintPlanNode> {
 
     private List<HintPlanNodeGroup> groups;
     private boolean left2inner = false;
+    private boolean right2inner = false;
     private boolean in2join = false;
 
     public HintPlanInfo(@Nonnull List<HintPlanNodeGroup> groups) {
@@ -42,12 +43,20 @@ public final class HintPlanInfo implements Iterable<HintPlanNode> {
         return in2join;
     }
 
-    public void setLft2inner(boolean isLeft2inner) {
+    public void setLeft2inner(boolean isLeft2inner) {
         this.left2inner = isLeft2inner;
     }
 
     public void setIn2join(boolean in2join) {
         this.in2join = in2join;
+    }
+
+    public boolean isRight2inner() {
+        return right2inner;
+    }
+
+    public void setRight2inner(boolean right2inner) {
+        this.right2inner = right2inner;
     }
 
     public boolean isEmpty() {

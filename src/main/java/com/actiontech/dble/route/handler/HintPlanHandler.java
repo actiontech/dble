@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,6 +10,7 @@ import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.actiontech.dble.plan.optimizer.HintPlanNodeGroup;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.DruidUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.google.common.collect.Lists;
 
@@ -41,7 +42,7 @@ public final class HintPlanHandler {
                 table = table.replaceAll("[()\\s]", "");
                 String[] ers = table.split("\\|");
                 nodes.add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.OR, ers));
-            } else {
+            } else if (!StringUtil.isBlank(table.trim())) {
                 table = table.trim();
                 nodes.add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.AND, table));
             }
@@ -50,10 +51,18 @@ public final class HintPlanHandler {
         HintPlanInfo planInfo = new HintPlanInfo(nodes);
         if (attr.length > 1) {
             for (int i = 1; i < attr.length; i++) {
-                if (attr[i].equalsIgnoreCase("left2Inner")) {
-                    planInfo.setLft2inner(true);
-                } else if (attr[i].equalsIgnoreCase("in2join")) {
-                    planInfo.setIn2join(true);
+                switch (attr[i].toLowerCase()) {
+                    case "left2inner":
+                        planInfo.setLeft2inner(true);
+                        break;
+                    case "right2inner":
+                        planInfo.setRight2inner(true);
+                        break;
+                    case "in2join":
+                        planInfo.setIn2join(true);
+                        break;
+                    default:
+                        break;
                 }
             }
         }

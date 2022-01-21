@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
@@ -137,6 +142,8 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = new ExecuteResponseHandler(this, originPacket[9] == (byte) 0x01);
             } else if (type == MySQLPacket.COM_STMT_FETCH) {
                 protocolResponseHandler = new FetchResponseHandler(this);
+            } else if (type == MySQLPacket.COM_FIELD_LIST) {
+                protocolResponseHandler = new FieldListResponseHandler(this);
             } else if (service.isInLoadData()) {
                 if (service.isFirstInLoadData()) {
                     protocolResponseHandler = new LoadDataResponseHandler(this);

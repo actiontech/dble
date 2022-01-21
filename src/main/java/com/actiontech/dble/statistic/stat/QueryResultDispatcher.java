@@ -1,11 +1,14 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.statistic.stat;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,21 @@ public final class QueryResultDispatcher {
 
     public static void removeAllListener() {
         listeners.clear();
+    }
+
+    public static void doSqlStat(final RouteResultset rrs, final NonBlockingSession session, long sqlRows, long netOutBytes, long resultSize) {
+        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
+            long netInBytes = 0;
+            if (rrs.getStatement() != null) {
+                netInBytes = rrs.getStatement().getBytes().length;
+            }
+            QueryResult queryResult = new QueryResult(session.getShardingService().getUser(), rrs.getSqlType(), rrs.getStatement(), sqlRows,
+                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("try to record sql:" + rrs.getStatement());
+            }
+            QueryResultDispatcher.dispatchQuery(queryResult);
+        }
     }
 
     public static void dispatchQuery(final QueryResult queryResult) {

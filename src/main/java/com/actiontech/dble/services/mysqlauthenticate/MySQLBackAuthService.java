@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.DbleServer;
@@ -130,7 +135,7 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
                     break;
             }
         } catch (Exception e) {
-            LOGGER.warn(e.getMessage(), e);
+            LOGGER.warn(e.toString(), e);
             onConnectFailed(e);
         }
     }

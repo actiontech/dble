@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -48,7 +48,7 @@ public abstract class ManagerBaseView {
         QueryNode queryNode = null;
         try {
             SQLSelectStatement selectStatement = (SQLSelectStatement) DruidUtil.parseMultiSQL(selectSql);
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(ManagerSchemaInfo.SCHEMA_NAME, 45, null, false, null);
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(ManagerSchemaInfo.SCHEMA_NAME, 45, null, false, null, null);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();

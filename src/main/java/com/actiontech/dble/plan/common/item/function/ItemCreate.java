@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -249,6 +249,7 @@ public class ItemCreate {
         nativFuncs.put("UNHEX", new ItemFuncUnhex(null, defaultCharsetIndex));
         nativFuncs.put("UNIX_TIMESTAMP", new ItemFuncUnixTimestamp(null, defaultCharsetIndex));
         nativFuncs.put("UPPER", new ItemFuncUpper(null, defaultCharsetIndex));
+        nativFuncs.put("UUID", new ItemFuncUuid(defaultCharsetIndex));
         nativFuncs.put("UTC_TIME", new ItemFuncCurtimeUtc(null, defaultCharsetIndex));
         nativFuncs.put("UTC_TIMESTAMP", new ItemFuncNowUtc(null, defaultCharsetIndex));
         nativFuncs.put("UTC_DATE", new ItemFuncCurdateUtc(null, defaultCharsetIndex));

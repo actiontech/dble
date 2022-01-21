@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -38,11 +38,17 @@ public final class MyOptimizer {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-sql");
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
-            // PreProcessor SubQuery ,transform in sub query to join
-            if (SystemConfig.getInstance().isInSubQueryTransformToJoin()) {
-                node = SubQueryPreProcessor.optimize(node);
+
+            if (hintPlanInfo == null || !hintPlanInfo.isIn2join()) {
+                if (SystemConfig.getInstance().isInSubQueryTransformToJoin()) {
+                    // PreProcessor SubQuery ,transform in sub query to join
+                    node = SubQueryPreProcessor.optimize(node);
+                } else {
+                    SubQueryPreNoTransformProcessor.optimize(node);
+                }
             } else {
-                SubQueryPreNoTransformProcessor.optimize(node);
+                // PreProcessor SubQuery ,transform in sub query to join; '/*!dble:plan=In2join*/ select...';
+                node = SubQueryPreProcessor.optimize(node);
             }
             updateReferredTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<>());
@@ -58,7 +64,7 @@ public final class MyOptimizer {
                 node = FilterJoinColumnPusher.optimize(node);
 
 
-                if (SystemConfig.getInstance().isUseNewJoinOptimizer()) {
+                if (SystemConfig.getInstance().isUseNewJoinOptimizer() || !hintPlanInfo.isEmpty()) {
                     node = JoinProcessor.optimize(node, hintPlanInfo);
                 } else {
                     node = JoinERProcessor.optimize(node);

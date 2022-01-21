@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -51,7 +51,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
                 this.fieldPackets = fieldPackets;
                 sourceField = HandlerTool.createField(this.fieldPackets.get(0));
                 if (itemSubQuery.isField()) {
-                    setSubQueryFiled();
+                    setSubQueryField();
                 }
             }
         } finally {
@@ -78,7 +78,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
                 row.read(rowNull);
             }
             if (!itemSubQuery.isField()) {
-                setSubQueryFiled();
+                setSubQueryField();
             }
             sourceField.setPtr(row.getValue(0));
         } finally {
@@ -93,7 +93,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
         return HandlerType.SCALAR_SUB_QUERY;
     }
 
-    private void setSubQueryFiled() {
+    private void setSubQueryField() {
         Item select = itemSubQuery.getSelect();
         PlanNode planNode = itemSubQuery.getPlanNode();
         if (!(planNode instanceof ManagerTableNode) || ((ManagerTableNode) planNode).isNeedSendMaker()) {

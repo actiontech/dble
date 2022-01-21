@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -232,11 +232,40 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    public PhysicalDbInstance select(Boolean master) throws IOException {
-        return select(master, false);
+    public PhysicalDbInstance rwSelect(Boolean master, boolean write) throws IOException {
+        return select(master, false, write);
     }
 
+    /**
+     * rwsplit user
+     *
+     * @param master
+     * @return
+     * @throws IOException
+     */
+    public PhysicalDbInstance select(Boolean master) throws IOException {
+        if (Objects.nonNull(master)) {
+            return select(master, false, master);
+        }
+        return select(master, false, false);
+    }
+
+    /**
+     * Sharding user
+     *
+     * @param master
+     * @param isForUpdate
+     * @return
+     * @throws IOException
+     */
     public PhysicalDbInstance select(Boolean master, boolean isForUpdate) throws IOException {
+        if (Objects.nonNull(master)) {
+            return select(master, isForUpdate, master);
+        }
+        return select(master, isForUpdate, false);
+    }
+
+    public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean write) throws IOException {
         if (rwSplitMode == RW_SPLIT_OFF && (master != null && !master)) {
             LOGGER.warn("force slave,but the dbGroup[{}] doesn't contains active slave dbInstance", groupName);
             throw new IOException("force slave,but the dbGroup[" + groupName + "] doesn't contain active slave dbInstance");
@@ -246,6 +275,11 @@ public class PhysicalDbGroup {
             if (writeDbInstance.isAlive()) {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("select write {}", writeDbInstance);
+                }
+                if (write) {
+                    writeDbInstance.incrementWriteCount();
+                } else {
+                    writeDbInstance.incrementReadCount();
                 }
                 return writeDbInstance;
             } else {
@@ -258,6 +292,7 @@ public class PhysicalDbGroup {
             throw new IOException("the dbGroup[" + groupName + "] doesn't contain active dbInstance.");
         }
         PhysicalDbInstance selectInstance = loadBalancer.select(instances);
+        selectInstance.incrementReadCount();
         if (selectInstance.isAlive()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select {}", selectInstance);
@@ -485,9 +520,9 @@ public class PhysicalDbGroup {
 
     private void reportHeartbeatError(PhysicalDbInstance ins) throws IOException {
         final DbInstanceConfig config = ins.getConfig();
-        String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance status";
+        String heartbeatError = "the dbInstance[" + config.getUrl() + "] can't reach. Please check the dbInstance is accessible";
         if (dbGroupConfig.isShowSlaveSql()) {
-            heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
+            heartbeatError += " and the privileges of user is sufficient (NOTE:heartbeat[show slave status] need grant the SUPER or REPLICATION CLIENT privilege(s) to db user,and then restart the dble or fresh conn).";
         }
         LOGGER.warn(heartbeatError);
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());

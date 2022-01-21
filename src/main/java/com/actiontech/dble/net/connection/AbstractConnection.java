@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.net.connection;
 
 import com.actiontech.dble.backend.mysql.proto.handler.Impl.MySQLProtoHandlerImpl;
@@ -470,6 +475,14 @@ public abstract class AbstractConnection implements Connection {
             readBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
         }
         return readBuffer;
+    }
+
+
+    public synchronized void recycleReadBuffer() {
+        if (readBuffer != null) {
+            this.recycle(readBuffer);
+            this.readBuffer = null;
+        }
     }
 
     public void onConnectFailed(Throwable e) {

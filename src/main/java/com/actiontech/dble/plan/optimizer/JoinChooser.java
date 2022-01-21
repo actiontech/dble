@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -133,6 +133,7 @@ public class JoinChooser {
 
         // others' node is the join units which can not optimize, just merge them
         JoinNode ret = makeJoinWithCartesianNode(relationJoin);
+        ret.setDistinct(orgNode.isDistinct());
         ret.setOrderBys(orgNode.getOrderBys());
         ret.setGroupBys(orgNode.getGroupBys());
         ret.select(orgNode.getColumnsSelected());
@@ -144,6 +145,7 @@ public class JoinChooser {
         ret.setAlias(orgNode.getAlias());
         ret.setWithSubQuery(orgNode.isWithSubQuery());
         ret.setContainsSubQuery(orgNode.isContainsSubQuery());
+        ret.getSubQueries().addAll(orgNode.getSubQueries());
         ret.setSql(orgNode.getSql());
         ret.setUpFields();
         return ret;
@@ -227,7 +229,7 @@ public class JoinChooser {
         }
         final Iterator<HintPlanNode> hintIt = hintPlanInfo.iterator();
         HintPlanNode nextHintNode = hintIt.next();
-        JoinNode joinNode = null;
+
         {
             root = findNode(root, nextHintNode);
             if (root == null) {
@@ -238,9 +240,9 @@ public class JoinChooser {
             }
             flipRightNodeToLeft(root, null);
         }
+        final JoinNodeBuilder joinNodeBuilder = new JoinNodeBuilder(root.node);
         Map<JoinRelationDag, DagLine> nextAccessDagNodes = new HashMap<>();
         nextAccessDagNodes.put(root, new DagLine(null, root));
-
 
         traversal:
         while (!nextAccessDagNodes.isEmpty()) {
@@ -276,7 +278,7 @@ public class JoinChooser {
                 currentNode.markVisited();
                 //matched
                 if (prevNode != null) {
-                    joinNode = makeJoinNode(prevNode.node, joinNode, currentNode);
+                    joinNodeBuilder.appendNodeToRight(currentNode);
                 }
 
                 //prepare for next traversal.
@@ -312,13 +314,13 @@ public class JoinChooser {
                 }
                 continue traversal;
             }
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with wrong hint. please check near the node '" + nextHintNode.getName() + "'");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with this hint. please check near the node '" + nextHintNode.getName() + "'");
 
         }
         if (hintIt.hasNext()) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode.getName() + "'");
         }
-        return joinNode;
+        return joinNodeBuilder.build();
     }
 
     private JoinRelationDag findNode(JoinRelationDag root, HintPlanNode hintNode) {
@@ -378,13 +380,13 @@ public class JoinChooser {
     }
 
     private JoinNode makeBNFJoin(JoinRelationDag root, Comparator<JoinRelationDag> joinCmp) {
-        JoinNode joinNode = null;
         List<JoinRelationDag> zeroDegreeList = new ArrayList<>();
         for (JoinRelationDag tree : root.rightNodes) {
             if (--tree.degree == 0) {
                 zeroDegreeList.add(tree);
             }
         }
+        final JoinNodeBuilder joinNodeBuilder = new JoinNodeBuilder(root.node);
         while (!zeroDegreeList.isEmpty()) {
             zeroDegreeList.sort(joinCmp);
             // zeroDegreeList contains no er relations
@@ -395,7 +397,7 @@ public class JoinChooser {
                 JoinRelationDag rightNode = zeroDegreeIterator.next();
                 if (cleanList || rightNode.relations.erRelationLst.size() > 0) {
                     zeroDegreeIterator.remove();
-                    joinNode = makeJoinNode(root.node, joinNode, rightNode);
+                    joinNodeBuilder.appendNodeToRight(rightNode);
                     for (JoinRelationDag tree : rightNode.rightNodes) {
                         if (--tree.degree == 0) {
                             newZeroDegreeList.add(tree);
@@ -407,32 +409,9 @@ public class JoinChooser {
             }
             zeroDegreeList.addAll(newZeroDegreeList);
         }
-        return joinNode;
+        return joinNodeBuilder.build();
     }
 
-
-    private JoinNode makeJoinNode(PlanNode rootNode, JoinNode leftNode, JoinRelationDag rightNodeOfJoin) {
-        boolean leftIsNull = leftNode == null;
-        JoinNode joinNode = new JoinNode(leftIsNull ? rootNode : leftNode, rightNodeOfJoin.node, charsetIndex);
-        if (!rightNodeOfJoin.relations.isInner) {
-            joinNode.setLeftOuterJoin();
-        }
-        List<ItemFuncEqual> filters = new ArrayList<>();
-        for (JoinRelation joinRelation : rightNodeOfJoin.relations.erRelationLst) {
-            filters.add(joinRelation.filter);
-            if (leftIsNull) {
-                joinNode.getERkeys().add(joinRelation.left.erTable);
-            } else {
-                joinNode.getERkeys().addAll((leftNode).getERkeys());
-            }
-        }
-        for (JoinRelation joinRelation : rightNodeOfJoin.relations.normalRelationLst) {
-            filters.add(joinRelation.filter);
-        }
-        joinNode.setJoinFilter(filters);
-        joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherFilter);
-        return joinNode;
-    }
 
     private JoinRelationDag addNodeToDag(JoinRelationDag root, JoinRelations relations) {
         Set<JoinRelationDag> prefixDagNodes = new HashSet<>(relations.prefixNodes.size());
@@ -809,6 +788,42 @@ public class JoinChooser {
         return dagNode;
     }
 
+    private final class JoinNodeBuilder {
+        private final PlanNode rootNode;
+        private JoinNode result;
+
+        private JoinNodeBuilder(PlanNode rootNode) {
+            this.rootNode = rootNode;
+        }
+
+        private void appendNodeToRight(JoinRelationDag rightNodeOfJoin) {
+            boolean leftIsNull = result == null;
+            JoinNode joinNode = new JoinNode(leftIsNull ? rootNode : result, rightNodeOfJoin.node, charsetIndex);
+            if (!rightNodeOfJoin.relations.isInner) {
+                joinNode.setLeftOuterJoin();
+            }
+            List<ItemFuncEqual> filters = new ArrayList<>();
+            for (JoinRelation joinRelation : rightNodeOfJoin.relations.erRelationLst) {
+                filters.add(joinRelation.filter);
+                if (leftIsNull) {
+                    joinNode.getERkeys().add(joinRelation.left.erTable);
+                } else {
+                    joinNode.getERkeys().addAll((result).getERkeys());
+                }
+            }
+            for (JoinRelation joinRelation : rightNodeOfJoin.relations.normalRelationLst) {
+                filters.add(joinRelation.filter);
+            }
+            joinNode.setJoinFilter(filters);
+            joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherFilter);
+            this.result = joinNode;
+        }
+
+        public JoinNode build() {
+            return result;
+        }
+    }
+
     private static final class JoinRelationDag {
         private final PlanNode node;
         private int degree = 0;
@@ -847,7 +862,7 @@ public class JoinChooser {
         @Override
         public String toString() {
             return "{" +
-                    "node=" + node +
+                    "node=" + getUnitName(node) +
                     '}';
         }
     }

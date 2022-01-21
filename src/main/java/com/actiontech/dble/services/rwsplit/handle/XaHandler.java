@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.rwsplit.handle;
 
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -14,7 +19,7 @@ public final class XaHandler {
         service.getSession().execute(true, (isSuccess, rwSplitService) -> {
             if (isSuccess) {
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onXaStart(xaId));
-                rwSplitService.getAndIncrementTxId();
+                rwSplitService.getAndIncrementXid();
                 StatisticListener.getInstance().record(service.getSession(), r -> r.onTxStart(service));
             }
         });

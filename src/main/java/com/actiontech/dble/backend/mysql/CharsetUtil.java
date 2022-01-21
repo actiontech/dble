@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -342,7 +342,7 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("cp1256", "Cp1256");
         CHARSET_TO_JAVA.put("cp1257", "Cp1257");
         CHARSET_TO_JAVA.put("utf32", "UTF-32");
-        CHARSET_TO_JAVA.put("binary", "US-ASCII");
+        CHARSET_TO_JAVA.put("binary", "UTF-8");
         CHARSET_TO_JAVA.put("geostd8", "Cp1252"); //superset ISO8859_1
         CHARSET_TO_JAVA.put("cp932", "MS932");
         CHARSET_TO_JAVA.put("eucjpms", "EUC_JP_Solaris");

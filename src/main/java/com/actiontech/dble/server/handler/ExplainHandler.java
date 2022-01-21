@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -84,7 +84,7 @@ public final class ExplainHandler {
 
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ShardingService service) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables());
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(service.getSchema(), service.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, service.getUsrVariables(), rrs.getHintPlanInfo());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
@@ -202,6 +202,31 @@ public final class ExplainHandler {
         return false;
     }
 
+    // check whether the SQL can be directly sent to a single node
+    private static RouteResultsetNode getTryRouteSingleNode(BaseHandlerBuilder builder, RouteResultset rrs) {
+        RouteResultsetNode routeNode = null;
+        if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+            RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
+            if (routes.length == 1) {
+                routeNode = routes[0];
+            }
+        }
+        if (routeNode == null) return null;
+
+        PlanNode node = builder.getNode();
+        String sql = rrs.isHaveHintPlan2Inner() ? routeNode.getStatement() : node.getSql();
+        if (builder.isExistView() || builder.isContainSubQuery(node)) {
+            GlobalVisitor visitor = new GlobalVisitor(node, true, false);
+            visitor.visit();
+            sql = visitor.getSql().toString();
+            Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+            for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+                sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+            }
+        }
+        return new RouteResultsetNode(routeNode.getName(), rrs.getSqlType(), sql);
+    }
+
     public static void writeOutHeadAndEof(ShardingService service, RouteResultset rrs) {
         ByteBuffer buffer = service.allocate();
         // writeDirectly header
@@ -229,32 +254,11 @@ public final class ExplainHandler {
             }
         } else {
             BaseHandlerBuilder builder = buildNodes(rrs, service);
-            String routeNode = null;
-
-            PlanNode node = builder.getNode();
-            if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
-                RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
-                if (routes.length == 1) {
-                    routeNode = routes[0].getName();
-                }
-            }
-            if (!StringUtil.isBlank(routeNode)) {
-                String sql = node.getSql();
-                if (builder.isExistView() || builder.isContainSubQuery(node)) {
-                    GlobalVisitor visitor = new GlobalVisitor(node, true, false);
-                    visitor.visit();
-                    sql = visitor.getSql().toString();
-                    Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
-                    for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
-                        sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
-                    }
-                }
-                RouteResultsetNode[] nodes = {new RouteResultsetNode(routeNode, rrs.getSqlType(), sql)};
-                for (RouteResultsetNode rrsNode : nodes) {
-                    RowDataPacket row = getRow(rrsNode, service.getCharset().getResults());
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, service, true);
-                }
+            RouteResultsetNode routeSingleNode = getTryRouteSingleNode(builder, rrs);
+            if (routeSingleNode != null) {
+                RowDataPacket row = getRow(routeSingleNode, service.getCharset().getResults());
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, service, true);
             } else {
                 List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
                 for (ReferenceHandlerInfo result : results) {

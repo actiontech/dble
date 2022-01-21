@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -747,6 +747,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
             settings.setSkipEmptyLines(false);
             settings.trimValues(false);
+            settings.setEmptyValue("");
 
             CsvParser parser = new CsvParser(settings);
             try {
@@ -759,7 +760,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
-                        if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                        if ((row.length == 1 && row[0] == null) || (row.length == 1 && row[0].isEmpty()) || row.length == 0) {
                             continue;
                         }
                         try {
@@ -812,6 +813,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
 
         settings.trimValues(false);
+        settings.setEmptyValue("");
 
         CsvParser parser = new CsvParser(settings);
         InputStreamReader reader = null;
@@ -829,7 +831,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
-                    if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                    if ((row.length == 1 && row[0] == null) || (row.length == 1 && row[0].isEmpty()) || row.length == 0) {
                         continue;
                     }
                     try {

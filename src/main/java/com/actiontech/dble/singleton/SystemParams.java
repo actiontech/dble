@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -136,6 +136,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("inSubQueryTransformToJoin", sysConfig.isInSubQueryTransformToJoin() + "", "The inSubQuery is transformed into the join ,the default value is false"));
         readOnlyParams.add(new ParamInfo("rwStickyTime", sysConfig.getRwStickyTime() + "ms", "For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms"));
         readOnlyParams.add(new ParamInfo("joinStrategyType", sysConfig.getJoinStrategyType() + "", "Nest loop strategy type. The default value is -1"));
+        readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
     }
 
     public List<ParamInfo> getVolatileParams() {

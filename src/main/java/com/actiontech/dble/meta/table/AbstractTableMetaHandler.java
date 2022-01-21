@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -33,7 +33,7 @@ public abstract class AbstractTableMetaHandler {
     private static final String SQL_PREFIX = "show create table ";
 
     protected String tableName;
-    private List<String> shardingNodes;
+    protected List<String> shardingNodes;
     private AtomicInteger nodesNumber;
     protected String schema;
     private Set<String> selfNode;
@@ -74,6 +74,9 @@ public abstract class AbstractTableMetaHandler {
 
     protected abstract void countdown();
 
+    public void handlerTableByNode(boolean isSucc, String tableName0, String shardingNode) {
+    }
+
     protected abstract void handlerTable(TableMeta tableMeta);
 
     private class MySQLTableStructureListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
@@ -95,6 +98,7 @@ public abstract class AbstractTableMetaHandler {
             if (ds != null) {
                 key = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
             }
+            handlerTableByNode(result.isSuccess(), tableName, shardingNode);
             if (!result.isSuccess()) {
                 //not thread safe
                 String warnMsg = "Can't get table " + tableName + "'s config from shardingNode:" + shardingNode + "! Maybe the table is not initialized!";

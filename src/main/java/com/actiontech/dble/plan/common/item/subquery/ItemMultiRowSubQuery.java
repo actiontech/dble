@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -13,8 +13,10 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -27,12 +29,13 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
     protected List<Item> value = new ArrayList<>();
     protected Item filed;
     protected Item select;
+
     /**
      * @param currentDb
      * @param query
      */
-    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
-        super(currentDb, query, metaManager, usrVariables, charsetIndex);
+    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex, @Nullable HintPlanInfo hintPlanInfo) {
+        super(currentDb, query, metaManager, usrVariables, charsetIndex, hintPlanInfo);
     }
 
     @Override
@@ -68,7 +71,6 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
     public boolean getTime(MySQLTime ltime) {
         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support yet!");
     }
-
 
 
     public Item getSelect() {

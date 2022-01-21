@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -24,7 +23,6 @@ import com.actiontech.dble.server.variables.OutputStateEnum;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.TraceManager;
-import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
@@ -114,10 +112,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    protected void execute(BackendConnection conn) {
-        if (session.closed()) {
-            session.clearResources(true);
-            recycleBuffer();
+    protected void innerExecute(BackendConnection conn) {
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.getBackendService().setResponseHandler(this);
@@ -129,7 +125,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(session.getShardingService(), "execute-in-exists-connection");
         try {
             TraceManager.crossThread(conn.getBackendService(), "backend-response-service", session.getShardingService());
-            execute(conn);
+            innerExecute(conn);
         } finally {
             TraceManager.finishSpan(session.getShardingService(), traceObject);
         }
@@ -148,7 +144,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void connectionAcquired(final BackendConnection conn) {
         session.bindConnection(node, conn);
-        execute(conn);
+        innerExecute(conn);
     }
 
     @Override
@@ -265,7 +261,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe((MySQLResponseService) service, false);
             session.setResponseTime(true);
             session.multiStatementPacket(ok);
-            doSqlStat();
+            QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
             if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
                 return;
             }
@@ -303,7 +299,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         ShardingService shardingService = session.getShardingService();
         session.setResponseTime(true);
-        doSqlStat();
+        QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
         if (requestScope.isUsingCursor()) {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
             session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END);
@@ -317,21 +313,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         } finally {
             lock.unlock();
-        }
-    }
-
-    protected void doSqlStat() {
-        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
-            long netInBytes = 0;
-            if (rrs.getStatement() != null) {
-                netInBytes = rrs.getStatement().getBytes().length;
-            }
-            QueryResult queryResult = new QueryResult(session.getShardingService().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
-                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("try to record sql:" + rrs.getStatement());
-            }
-            QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }
 
@@ -456,6 +437,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void requestDataResponse(byte[] data, @Nonnull MySQLResponseService service) {
         LoadDataUtil.requestFileDataResponse(data, service);
+    }
+
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            recycleBuffer();
+            session.clearResources(true);
+            return true;
+        }
+        return false;
     }
 
     @Override

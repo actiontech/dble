@@ -1,10 +1,11 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
+* Copyright (C) 2016-2022 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.statistic;
 
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,10 @@ public class DbInstanceSyncRecorder {
         this.asyncRecords = new LinkedList<>();
     }
 
-    public String get() {
-        return records.toString();
-    }
     public void setBySlaveStatus(Map<String, String> resultResult) {
+        if (SystemConfig.getInstance().isCloseHeartBeatRecord()) {
+            return;
+        }
         long time = TimeUtil.currentTimeMillis();
         try {
             remove(time);

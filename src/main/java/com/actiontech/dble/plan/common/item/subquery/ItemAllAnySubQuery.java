@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -13,6 +13,7 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.optimizer.HintPlanInfo;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAllExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAnyExpr;
@@ -20,14 +21,16 @@ import com.alibaba.druid.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
 public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
     private boolean isAll;
     private SQLBinaryOperator operator;
-    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex) {
-        super(currentDb, query, metaManager, usrVariables, charsetIndex);
+
+    public ItemAllAnySubQuery(String currentDb, SQLSelectQuery query, SQLBinaryOperator operator, boolean isAll, ProxyMetaManager metaManager, Map<String, String> usrVariables, int charsetIndex, @Nullable HintPlanInfo hintPlanInfo) {
+        super(currentDb, query, metaManager, usrVariables, charsetIndex, hintPlanInfo);
         this.isAll = isAll;
         this.operator = operator;
         if (this.planNode.getColumnsSelected().size() > 1) {
@@ -54,7 +57,7 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        ItemAllAnySubQuery cloneItem = new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager, this.usrVariables, this.charsetIndex);
+        ItemAllAnySubQuery cloneItem = new ItemAllAnySubQuery(this.currentDb, this.query, this.operator, this.isAll, this.metaManager, this.usrVariables, this.charsetIndex, this.hintPlanInfo);
         cloneItem.value = this.value;
         return cloneItem;
     }

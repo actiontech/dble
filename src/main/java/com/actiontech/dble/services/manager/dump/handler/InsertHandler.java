@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.services.manager.dump.handler;
 
 import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
@@ -114,7 +119,7 @@ public class InsertHandler extends DefaultHandler {
         if (tableConfig.getIncrementColumn() != null || tableConfig.getShardingColumn() != null) {
             if (!CollectionUtil.isEmpty(columns)) {
                 for (int i = 0; i < columns.size(); i++) {
-                    String columnName = columns.get(i);
+                    String columnName = StringUtil.removeBackQuote(columns.get(i));
                     if (tableConfig.getIncrementColumn() != null && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }

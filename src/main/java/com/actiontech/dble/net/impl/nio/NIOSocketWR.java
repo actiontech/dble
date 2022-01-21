@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -340,9 +340,19 @@ public class NIOSocketWR extends SocketWR {
 
     @Override
     public void asyncRead() throws IOException {
-        ByteBuffer theBuffer = con.findReadBuffer();
-        int got = channel.read(theBuffer);
-        con.onReadData(got);
+        if (con.isClosed()) {
+            throw new IOException("read from closed channel cause error");
+        }
+        try {
+            ByteBuffer theBuffer = con.findReadBuffer();
+            int got = channel.read(theBuffer);
+            con.onReadData(got);
+        } finally {
+            //prevent  asyncClose and read operation happened Concurrently.
+            if (con.isClosed() && con.getReadBuffer() != null) {
+                con.recycleReadBuffer();
+            }
+        }
     }
 
     @Override

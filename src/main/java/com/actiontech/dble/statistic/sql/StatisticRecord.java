@@ -1,6 +1,11 @@
+/*
+ * Copyright (C) 2016-2022 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.statistic.sql;
 
-import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeDdlPrepareHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.ddl.MultiNodeDdlPrepareHandler;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.BusinessService;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -12,11 +12,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class FieldNull extends FieldStr {
-    private static FieldNull instance = new FieldNull("NULL", "", "", "", 63, 0, 0, 0);
-
-    public static FieldNull getInstance() {
-        return instance;
-    }
 
     FieldNull(String name, String dbName, String table, String orgTable, int charsetIndex, int fieldLength, int decimals, long flags) {
         super(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);

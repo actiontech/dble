@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -203,6 +203,9 @@ public final class SystemConfig {
 
     // For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
     private long rwStickyTime = 1000;
+
+
+    private boolean closeHeartBeatRecord = false;
 
     public int getSamplingRate() {
         return samplingRate;
@@ -1577,6 +1580,15 @@ public final class SystemConfig {
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
                 ", joinStrategyType=" + joinStrategyType +
+                ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
+    }
+
+    public boolean isCloseHeartBeatRecord() {
+        return closeHeartBeatRecord;
+    }
+
+    public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
+        this.closeHeartBeatRecord = closeHeartBeatRecord;
     }
 }

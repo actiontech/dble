@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -58,7 +58,7 @@ public class ViewMeta {
 
     private void parseSelectInView() throws SQLException {
         SQLSelectStatement selectStatement = (SQLSelectStatement) DruidUtil.parseMultiSQL(selectSql);
-        MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false, null);
+        MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false, null, null);
         msv.visit(selectStatement.getSelect().getQuery());
         PlanNode selNode = msv.getTableNode();
 
@@ -104,7 +104,7 @@ public class ViewMeta {
     public void addMeta(boolean isNeedPersistence) throws SQLNonTransientException {
         try {
             tmManager.addMetaLock(schema, viewName, createSql);
-            if (isNeedPersistence) {
+            if (isNeedPersistence && viewQuery instanceof QueryNode) {
                 ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
             }
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);

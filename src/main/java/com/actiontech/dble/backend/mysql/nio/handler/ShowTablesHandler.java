@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -75,7 +75,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
                 bufInf = ShowTables.writeFullTablesHeader(buffer, shardingService, schemaColumn, fieldPackets);
                 buffer = bufInf.getBuffer();
                 if (info.getWhere() != null) {
-                    MySQLItemVisitor mev = new MySQLItemVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), shardingService.getUsrVariables());
+                    MySQLItemVisitor mev = new MySQLItemVisitor(shardingService.getSchema(), shardingService.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), shardingService.getUsrVariables(), null);
                     info.getWhereExpr().accept(mev);
                     sourceFields = HandlerTool.createFields(fieldPackets);
                     whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);

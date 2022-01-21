@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -37,7 +37,7 @@ public class ManagerSession extends Session {
     }
 
     public void execute(String schema, SQLSelectStatement statement) {
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(schema, 45, null, false, null);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(schema, 45, null, false, null, null);
         visitor.visit(statement);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {

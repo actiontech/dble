@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -34,6 +34,7 @@ import com.alibaba.druid.sql.parser.ParserException;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 
 public final class ManagerTableUtil {
@@ -69,7 +70,7 @@ public final class ManagerTableUtil {
         }
         List<FieldPacket> fieldPackets = makeField(realSelects, managerTable.getTableName());
 
-        MySQLItemVisitor mev = new MySQLItemVisitor(service.getSchema(), service.getCharset().getResultsIndex(), null, null);
+        MySQLItemVisitor mev = new MySQLItemVisitor(service.getSchema(), service.getCharset().getResultsIndex(), null, null, null);
         whereExpr.accept(mev);
         List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
 
@@ -134,16 +135,25 @@ public final class ManagerTableUtil {
         if (null == sql)
             return Collections.EMPTY_LIST;
 
-        DbleHintParser.HintInfo hintInfo = DbleHintParser.parse(sql);
-        if (hintInfo != null) {
-            sql = hintInfo.getRealSql();
+        String realSql = sql;
+        try {
+            DbleHintParser.HintInfo hintInfo = DbleHintParser.parse(sql);
+            if (hintInfo != null) {
+                realSql = hintInfo.getRealSql();
+            }
+        } catch (SQLSyntaxErrorException e) {
+            // ignore
+            realSql = sql;
         }
+
+
         SQLStatement sqlStatement;
         try {
-            sqlStatement = new MySqlStatementParser(sql).parseStatement();
+
+            sqlStatement = new MySqlStatementParser(realSql).parseStatement();
         } catch (ParserException e) {
             // ignore
-            return new ArrayList<>();
+            return Collections.EMPTY_LIST;
         }
         MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
         sqlStatement.accept(visitor);

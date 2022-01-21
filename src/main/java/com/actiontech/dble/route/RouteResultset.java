@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2021 ActionTech.
+ * Copyright (C) 2016-2022 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -47,7 +47,7 @@ public final class RouteResultset implements Serializable {
     private boolean sqlRouteCacheAble;
     // limit output total
     private int limitSize;
-    private transient ExecutableHandler ddlHandler;
+    private transient ExecutableHandler implicitlyCommitHandler; // such as: ddl、lock table
 
     private boolean callStatement = false; // is Call Statement
 
@@ -110,6 +110,10 @@ public final class RouteResultset implements Serializable {
 
     public void setHintPlanInfo(HintPlanInfo hintPlanInfo) {
         this.hintPlanInfo = hintPlanInfo;
+    }
+
+    public boolean isHaveHintPlan2Inner() {
+        return hintPlanInfo == null ? false : (hintPlanInfo.isLeft2inner() || hintPlanInfo.isRight2inner());
     }
 
     public Boolean getRunOnSlave() {
@@ -369,11 +373,11 @@ public final class RouteResultset implements Serializable {
         this.enableLoadDataFlag = enableLoadDataFlag;
     }
 
-    public ExecutableHandler getDdlHandler() {
-        return ddlHandler;
+    public ExecutableHandler getImplicitlyCommitHandler() {
+        return implicitlyCommitHandler;
     }
 
-    public void setDdlHandler(ExecutableHandler ddlHandler) {
-        this.ddlHandler = ddlHandler;
+    public void setImplicitlyCommitHandler(ExecutableHandler implicitlyCommitHandler) {
+        this.implicitlyCommitHandler = implicitlyCommitHandler;
     }
 }

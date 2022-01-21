@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2016-2022 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
 <xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:element name="schema">

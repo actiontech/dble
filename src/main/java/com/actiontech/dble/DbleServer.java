@@ -155,8 +155,8 @@ public final class DbleServer {
         LOGGER.info("===========================================Init bufferPool finish=================================");
 
         // startup processors
-        int frontProcessorCount = SystemConfig.getInstance().getNIOFrontWorker();
-        int backendProcessorCount = SystemConfig.getInstance().getNIOBackendWorker();
+        int frontProcessorCount = SystemConfig.getInstance().getNIOFrontRW();
+        int backendProcessorCount = SystemConfig.getInstance().getNIOBackendRW();
         frontProcessors = new IOProcessor[frontProcessorCount];
         backendProcessors = new IOProcessor[backendProcessorCount];
 

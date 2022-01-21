@@ -41,8 +41,8 @@
 #-DserverPort=8066
 #-DmanagerPort=9066
 #-DmaxCon=1024
-#-DNIOFrontWorker=4
-#-DNIOBackendWorker=12
+#-DNIOFrontRW=4
+#-DNIOBackendRW=12
 #-DfrontWorker=4
 #-DbackendWorker=12
 #-DcomplexWorker=8

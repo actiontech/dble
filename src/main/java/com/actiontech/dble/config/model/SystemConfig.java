@@ -49,13 +49,13 @@ public final class SystemConfig {
     private int serverPort = 8066;
     private int managerPort = 9066;
     // CHECKSTYLE:OFF
-    private int NIOFrontWorker = Runtime.getRuntime().availableProcessors();
-    private int NIOBackendWorker = NIOFrontWorker;
+    private int NIOFrontRW = Runtime.getRuntime().availableProcessors();
+    private int NIOBackendRW = NIOFrontRW;
     // CHECKSTYLE:ON
-    private int frontWorker = (NIOFrontWorker != 1) ? NIOFrontWorker : 2;
-    private int backendWorker = (NIOFrontWorker != 1) ? NIOFrontWorker : 2;
+    private int frontWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
+    private int backendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
     private int complexWorker = frontWorker > 8 ? 8 : frontWorker;
-    private int writeToBackendWorker = (NIOFrontWorker != 1) ? NIOFrontWorker : 2;
+    private int writeToBackendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
     private int serverBacklog = 2048;
     private int maxCon = 0;
     //option
@@ -532,30 +532,30 @@ public final class SystemConfig {
         this.managerPort = managerPort;
     }
 
-    public int getNIOFrontWorker() {
-        return NIOFrontWorker;
+    public int getNIOFrontRW() {
+        return NIOFrontRW;
     }
 
     // CHECKSTYLE:OFF
     @SuppressWarnings("unused")
-    public void setNIOFrontWorker(int NIOFrontWorker) {
-        if (NIOFrontWorker > 0) {
-            this.NIOFrontWorker = NIOFrontWorker;
+    public void setNIOFrontRW(int NIOFrontRW) {
+        if (NIOFrontRW > 0) {
+            this.NIOFrontRW = NIOFrontRW;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "NIOFrontWorker", NIOFrontWorker, this.NIOFrontWorker));
+            problemReporter.warn(String.format(WARNING_FORMAT, "NIOFrontRW", NIOFrontRW, this.NIOFrontRW));
         }
     }
 
-    public int getNIOBackendWorker() {
-        return NIOBackendWorker;
+    public int getNIOBackendRW() {
+        return NIOBackendRW;
     }
 
     @SuppressWarnings("unused")
-    public void setNIOBackendWorker(int NIOBackendWorker) {
-        if (NIOBackendWorker > 0) {
-            this.NIOBackendWorker = NIOBackendWorker;
+    public void setNIOBackendRW(int NIOBackendRW) {
+        if (NIOBackendRW > 0) {
+            this.NIOBackendRW = NIOBackendRW;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "NIOBackendWorker", NIOBackendWorker, this.NIOBackendWorker));
+            problemReporter.warn(String.format(WARNING_FORMAT, "NIOBackendRW", NIOBackendRW, this.NIOBackendRW));
         }
     }
     // CHECKSTYLE:ON
@@ -1465,8 +1465,8 @@ public final class SystemConfig {
                 ", bindIp=" + bindIp +
                 ", serverPort=" + serverPort +
                 ", managerPort=" + managerPort +
-                ", NIOFrontWorker=" + NIOFrontWorker +
-                ", NIOBackendWorker=" + NIOBackendWorker +
+                ", NIOFrontRW=" + NIOFrontRW +
+                ", NIOBackendRW=" + NIOBackendRW +
                 ", frontWorker=" + frontWorker +
                 ", backendWorker=" + backendWorker +
                 ", complexWorker=" + complexWorker +

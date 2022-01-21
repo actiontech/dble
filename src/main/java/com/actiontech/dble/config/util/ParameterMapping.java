@@ -35,8 +35,8 @@ public final class ParameterMapping {
 
     static {
         COMPATIBLE_MAP.put("complexWorker", "complexExecutor");
-        COMPATIBLE_MAP.put("NIOFrontWorker", "processors");
-        COMPATIBLE_MAP.put("NIOBackendWorker", "backendProcessors");
+        COMPATIBLE_MAP.put("NIOFrontRW", "processors");
+        COMPATIBLE_MAP.put("NIOBackendRW", "backendProcessors");
         COMPATIBLE_MAP.put("frontWorker", "processorExecutor");
         COMPATIBLE_MAP.put("backendWorker", "backendProcessorExecutor");
         COMPATIBLE_MAP.put("writeToBackendWorker", "writeToBackendExecutor");

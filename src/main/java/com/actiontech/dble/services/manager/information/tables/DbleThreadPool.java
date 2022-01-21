@@ -80,7 +80,7 @@ public final class DbleThreadPool extends ManagerWritableTable {
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getComplexQueryExecutor())));
         lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getWriteToBackendExecutor())));
         if (SystemConfig.getInstance().getUsingAIO() == 1) {
-            int size = SystemConfig.getInstance().getNIOFrontWorker() + SystemConfig.getInstance().getNIOBackendWorker();
+            int size = SystemConfig.getInstance().getNIOFrontRW() + SystemConfig.getInstance().getNIOBackendRW();
             lst.add(getRow(new ThreadPoolInfo(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO", size, size, size, 0)));
         } else {
             lst.add(getRow(new ThreadPoolInfo((NameableExecutor) server.getNioFrontExecutor())));

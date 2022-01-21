@@ -63,8 +63,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("bindIp", sysConfig.getBindIp() + "", "The host where the server is running. The default is 0.0.0.0"));
         readOnlyParams.add(new ParamInfo("serverPort", sysConfig.getServerPort() + "", "User connection port. The default number is 8066"));
         readOnlyParams.add(new ParamInfo("managerPort", sysConfig.getManagerPort() + "", "Manager connection port. The default number is 9066"));
-        readOnlyParams.add(new ParamInfo("NIOFrontWorker", sysConfig.getNIOFrontWorker() + "", "The size of frontend NIOProcessor, the default value is the number of processors available to the Java virtual machine"));
-        readOnlyParams.add(new ParamInfo("NIOBackendWorker", sysConfig.getNIOBackendWorker() + "", "The size of backend NIOProcessor, the default value is the number of processors available to the Java virtual machine"));
+        readOnlyParams.add(new ParamInfo("NIOFrontRW", sysConfig.getNIOFrontRW() + "", "The size of frontend NIOProcessor, the default value is the number of processors available to the Java virtual machine"));
+        readOnlyParams.add(new ParamInfo("NIOBackendRW", sysConfig.getNIOBackendRW() + "", "The size of backend NIOProcessor, the default value is the number of processors available to the Java virtual machine"));
         readOnlyParams.add(new ParamInfo("frontWorker", sysConfig.getFrontWorker() + "", "The size of fixed thread pool named of frontend businessExecutor, the default value is the number of processors available to the Java virtual machine * 2"));
         readOnlyParams.add(new ParamInfo("backendWorker", sysConfig.getBackendWorker() + "", "The size of fixed thread pool named of backend businessExecutor,the default value is the number of processors available to the Java virtual machine * 2"));
         readOnlyParams.add(new ParamInfo("complexWorker", sysConfig.getComplexWorker() + "", "The size of fixed thread pool named of writeToBackendExecutor,the default is the number of processors available to the Java virtual machine * 2"));

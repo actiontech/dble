@@ -43,6 +43,7 @@ public class PSHandler implements ResponseHandler, PreparedResponseHandler {
     public void connectionAcquired(BackendConnection conn) {
         MySQLResponseService mysqlService = conn.getBackendService();
         mysqlService.setResponseHandler(this);
+        mysqlService.setSession(rwSplitService.getSession2());
         mysqlService.execute(rwSplitService, holder.getPrepareOrigin());
     }
 

@@ -26,7 +26,7 @@ public final class SelectorUtil {
             for (SelectionKey key : finalSelector.keys()) {
                 SelectableChannel ch = key.channel();
                 try {
-                    if (!ch.isOpen() || ch instanceof SocketChannel && !((SocketChannel) ch).isConnected()) {
+                    if (!ch.isOpen() || ch instanceof SocketChannel && !((SocketChannel) ch).isConnected() && !((SocketChannel) ch).isConnectionPending()) {
                         notConnected = true;
                         // cancel the key just to be on the safe side
                         key.cancel();

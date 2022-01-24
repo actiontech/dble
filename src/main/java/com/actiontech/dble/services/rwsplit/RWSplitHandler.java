@@ -72,12 +72,19 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
+        if (null != rwSplitService.getSession2().getRwGroup()) {
+            rwSplitService.getSession2().getRwGroup().unBindRwSplitSession(rwSplitService.getSession2());
+        }
         rwSplitService.getSession2().bind(conn);
         execute(conn);
     }
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
+        if (null != rwSplitService.
+           ).getRwGroup()) {
+            rwSplitService.getSession2().getRwGroup().unBindRwSplitSession(rwSplitService.getSession2());
+        }
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(0));
         loadDataClean();
         writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + rwSplitService.getUserConfig().getDbGroup());

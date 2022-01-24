@@ -108,7 +108,7 @@ public final class ShowDbleProcessList {
                         rows.add(getRow(fc, null, null, charset));
                     }
                 } else {
-                    BackendConnection conn = ((RWSplitService) fc.getService()).getSession().getConn();
+                    BackendConnection conn = ((RWSplitService) fc.getService()).getSession2().getConn();
                     if (conn != null) {
                         addRow(fc, conn, charset, rows, indexs, dbInstanceMap);
                     } else {

@@ -15,6 +15,7 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
@@ -602,6 +603,11 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     public NonBlockingSession getSession2() {
+        return session;
+    }
+
+    @Override
+    public Session getSession() {
         return session;
     }
 

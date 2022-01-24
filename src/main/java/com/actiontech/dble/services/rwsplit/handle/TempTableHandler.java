@@ -31,7 +31,7 @@ public final class TempTableHandler {
         if (!(sqlStatement instanceof SQLCreateTableStatement)) {
             throw new IllegalStateException("can't parse sql");
         }
-        final RWSplitNonBlockingSession session = service.getSession();
+        final RWSplitNonBlockingSession session = service.getSession2();
         final String sessionSchema = service.getSchema();
         session.execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {
@@ -64,7 +64,7 @@ public final class TempTableHandler {
             throw new IllegalStateException("can't parse sql");
         }
 
-        final RWSplitNonBlockingSession session = service.getSession();
+        final RWSplitNonBlockingSession session = service.getSession2();
         final String sessionSchema = service.getSchema();
         session.execute(true, (isSuccess, resp, rwSplitService) -> {
             if (isSuccess) {

@@ -31,7 +31,7 @@ public final class ScriptPrepareHandler {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                     "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near all");
         }
-        service.getSession().execute(true, null);
+        service.getSession2().execute(true, null);
     }
 
     private static SQLStatement parseSQL(String stmt) throws SQLSyntaxErrorException {

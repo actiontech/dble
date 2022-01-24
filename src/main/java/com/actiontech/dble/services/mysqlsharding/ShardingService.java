@@ -142,6 +142,11 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
     }
 
     @Override
+    public Session getSession() {
+        return session;
+    }
+
+    @Override
     public List<MysqlVariable> getAllVars() {
         List<MysqlVariable> variables = super.getAllVars();
         variables.add(new MysqlVariable("xa", session.getTransactionManager().getSessionXaID() == null ? "false" : "true", VariableType.SYSTEM_VARIABLES));
@@ -408,7 +413,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             connIterator.remove();
         }
 
-        isLocked = false;
+        setLockTable(false);
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
@@ -495,7 +500,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
-            isLocked = false;
+            setLockTable(false);
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");

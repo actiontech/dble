@@ -4,6 +4,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
@@ -12,11 +13,20 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by szf on 2019/12/3.
  */
 public class SingleNodeDDLHandler extends SingleNodeHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeDDLHandler.class);
+
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public SingleNodeDDLHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
@@ -62,14 +72,13 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         super.connectionClose(conn, reason);
     }
 
-
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             // handleSpecial
-            boolean metaInitial = session.handleSpecial(rrs, true, null);
+            boolean metaInitial = handleSpecial(rrs, true);
             if (!metaInitial) {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with meta failure");
                 executeMetaDataFailed(conn);
@@ -89,7 +98,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 session.multiStatementPacket(ok, packetId);
                 boolean multiStatementFlag = session.getIsMultiStatement().get();
                 if (writeToClient.compareAndSet(false, true)) {
-                    ok.write(source);
+                    handleEndPacket(ok, true);
                 }
                 session.multiStatementNextSql(multiStatementFlag);
             }
@@ -111,7 +120,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
         if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
+            handleEndPacket(errPacket.toBytes(), false);
         }
         session.multiStatementNextSql(multiStatementFlag);
     }
@@ -119,6 +128,14 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     @Override
     protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
+        UserName errUser = source.getUser();
+        String errHost = source.getHost();
+        int errPort = source.getLocalPort();
+
+        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
+                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+
         if (conn.isClosed()) {
             if (conn.getAttachment() != null) {
                 RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
@@ -133,12 +150,44 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 session.getTargetMap().remove(rNode);
             }
         }
-        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
         source.setTxInterrupt(errMsg);
         if (writeToClient.compareAndSet(false, true)) {
-            session.handleSpecial(rrs, false, null);
-            errPkg.write(source);
+            handleSpecial(rrs, false);
+            handleEndPacket(errPkg.toBytes(), false);
         }
+    }
+
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            handleSpecial(rrs, false);
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, null);
+        }
+        return true;
+    }
+
+    private void handleEndPacket(Object obj, boolean isSuccess) {
+        session.clearResources(false);
+        session.setResponseTime(isSuccess);
+        if (obj instanceof byte[]) {
+            session.getSource().write((byte[]) obj);
+        } else if (obj instanceof ByteBuffer) {
+            session.getSource().write((ByteBuffer) obj);
+        }
+        if (isSuccess)
+            session.multiStatementNextSql(session.getIsMultiStatement().get());
     }
 
 }

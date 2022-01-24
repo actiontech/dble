@@ -106,9 +106,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     protected void execute(BackendConnection conn) {
-        if (session.closed()) {
-            session.clearResources(true);
-            recycleBuffer();
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.setResponseHandler(this);
@@ -416,6 +414,19 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public String toString() {
         return "SingleNodeHandler [node=" + node + ", packetId=" + packetId + "]";
+    }
+
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

@@ -178,16 +178,21 @@ public class UshardSender extends AbstractConsulSender {
 
     @Override
     public void cleanPath(String path) {
-        if (!(path.charAt(path.length() - 1) == '/')) {
-            path = path + "/";
-        }
-        UshardInterface.DeleteKvTreeInput input = UshardInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
-        } catch (Exception e1) {
-            throw new RuntimeException(ERROR_MSG);
+            if (!(path.charAt(path.length() - 1) == '/')) {
+                path = path + "/";
+            }
+            UshardInterface.DeleteKvTreeInput input = UshardInterface.DeleteKvTreeInput.newBuilder().setKey(path).build();
+            try {
+                stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
+            } catch (Exception e1) {
+                throw new RuntimeException(ERROR_MSG);
+            }
+            cleanKV(path.substring(0, path.length() - 1));
+        } catch (Exception e) {
+            LOGGER.warn(" clean ushard Path failed ", e);
         }
-        cleanKV(path.substring(0, path.length() - 1));
+
     }
 
     @Override

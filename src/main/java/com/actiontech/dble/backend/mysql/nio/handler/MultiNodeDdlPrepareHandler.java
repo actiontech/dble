@@ -45,7 +45,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
     private ErrorPacket err;
     private Set<BackendConnection> closedConnSet;
     private volatile boolean finishedTest = false;
-    private AtomicBoolean releaseDDLLock = new AtomicBoolean(false);
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public MultiNodeDdlPrepareHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -170,9 +170,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
             setFail(new String(err.getMessage()));
         }
         if (canResponse() && errorResponse.compareAndSet(false, true)) {
-            if (releaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false);
-            }
+            handleSpecial(oriRrs, false);
             handleRollbackPacket(err.toBytes(), "DDL prepared failed");
         }
     }
@@ -222,7 +220,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                 setFail(new String(errPacket.getMessage()));
             }
             if (decrementToZero(conn) && errorResponse.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false);
+                handleSpecial(oriRrs, false);
                 handleRollbackPacket(err.toBytes(), "DDL prepared failed");
             }
         } finally {
@@ -256,7 +254,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
 
             if (this.isFail()) {
                 if (errorResponse.compareAndSet(false, true)) {
-                    session.handleSpecial(oriRrs, false);
+                    handleSpecial(oriRrs, false);
                     handleRollbackPacket(err.toBytes(), "DDL prepared failed");
                 }
             } else {
@@ -272,7 +270,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                         handler.execute();
                     } else {
                         DDLTraceManager.getInstance().endDDL(source, "Query was interrupted");
-                        session.handleSpecial(oriRrs, false);
+                        handleSpecial(oriRrs, false);
                         ErrorPacket errPacket = new ErrorPacket();
                         errPacket.setPacketId(++packetId);
                         errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
@@ -282,7 +280,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                 } catch (Exception e) {
                     DDLTraceManager.getInstance().endDDL(source, "take Connection error:" + e.getMessage());
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
-                    session.handleSpecial(oriRrs, false);
+                    handleSpecial(oriRrs, false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (session.isPrepared()) {
@@ -330,16 +328,21 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
         session.getSource().write(data);
     }
 
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, null);
+        }
+        return true;
+    }
+
 
     public boolean clearIfSessionClosed() {
         if (session.closed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("session closed without execution,clear resources " + session);
             }
+            handleSpecial(oriRrs, false);
             session.clearResources(true);
-            if (releaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false);
-            }
             this.clearResources();
             return true;
         } else {

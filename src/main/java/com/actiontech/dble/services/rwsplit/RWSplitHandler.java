@@ -81,8 +81,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        if (null != rwSplitService.
-           ).getRwGroup()) {
+        if (null != rwSplitService.getSession2().getRwGroup()) {
             rwSplitService.getSession2().getRwGroup().unBindRwSplitSession(rwSplitService.getSession2());
         }
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(0));

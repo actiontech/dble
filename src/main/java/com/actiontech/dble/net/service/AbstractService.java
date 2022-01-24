@@ -118,7 +118,7 @@ public abstract class AbstractService extends VariablesService implements Servic
                 this.writeDirectly(buffer, WriteFlags.PART);
                 offset += remaining;
                 length -= remaining;
-                buffer = allocate();
+                buffer = allocate(length);
                 remaining = buffer.remaining();
             }
         }

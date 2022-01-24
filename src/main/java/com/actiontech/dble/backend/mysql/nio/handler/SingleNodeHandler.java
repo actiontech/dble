@@ -12,7 +12,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -29,9 +28,12 @@ import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,9 +117,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     protected void execute(BackendConnection conn) {
-        if (session.closed()) {
-            session.clearResources(true);
-            recycleBuffer();
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.getBackendService().setResponseHandler(this);
@@ -169,7 +169,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         err.setPacketId(session.getShardingService().nextPacketId());
@@ -189,15 +189,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    protected void backConnectionErr(ErrorPacket errPkg, MySQLResponseService service, boolean syncFinished) {
+    protected void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
         ShardingService shardingService = session.getShardingService();
-        UserName errUser = shardingService.getUser();
-        String errHost = shardingService.getConnection().getHost();
-        int errPort = shardingService.getConnection().getLocalPort();
-
-        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        LOGGER.info("execute sql err :" + errMsg + " con:" + service +
-                " frontend host:" + errHost + "/" + errPort + "/" + errUser);
+        String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, service,
+                shardingService.getConnection().getHost(),
+                shardingService.getConnection().getLocalPort(),
+                shardingService.getUser());
 
         if (service != null) {
             if (service.getConnection().isClosed()) {
@@ -247,7 +245,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
      * read data, make an OKPacket, writeDirectly to writeQueue in FrontendConnection by ok.writeDirectly(source)
      */
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-ok-packet");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += data.length;
@@ -289,7 +287,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
      * writeDirectly EOF to Queue
      */
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-rowEof-packet");
         TraceManager.finishSpan(service, traceObject);
         this.netOutBytes += eof.length;
@@ -345,7 +343,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         this.netOutBytes += header.length;
         this.resultSize += header.length;
         for (byte[] field : fields) {
@@ -408,7 +406,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         this.netOutBytes += row.length;
         this.resultSize += row.length;
         this.selectRows++;
@@ -449,7 +447,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(service, "get-connection-closed");
         TraceManager.finishSpan(service, traceObject);
         if (connClosed) {
@@ -468,13 +466,26 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void requestDataResponse(byte[] data, MySQLResponseService service) {
+    public void requestDataResponse(byte[] data, @Nonnull MySQLResponseService service) {
         LoadDataUtil.requestFileDataResponse(data, service);
     }
 
     @Override
     public String toString() {
         return "SingleNodeHandler [node=" + node + ", packetId=" + (byte) session.getShardingService().getPacketId().get() + "]";
+    }
+
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

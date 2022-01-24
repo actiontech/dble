@@ -2,8 +2,8 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.cluster.values.DDLTraceInfo;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultset;
@@ -13,11 +13,21 @@ import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by szf on 2019/12/3.
  */
 public class SingleNodeDDLHandler extends SingleNodeHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeDDLHandler.class);
+
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public SingleNodeDDLHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
@@ -46,9 +56,8 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         super.connectionError(e, attachment);
     }
 
-
     @Override
-    public void errorResponse(byte[] data, AbstractService service) {
+    public void errorResponse(byte[] data, @NotNull AbstractService service) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
         DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with execution failure");
@@ -56,24 +65,23 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     }
 
     @Override
-    public void connectionClose(AbstractService service, String reason) {
+    public void connectionClose(@NotNull AbstractService service, String reason) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(),
                 (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.EXECUTE_CONN_CLOSE);
         DDLTraceManager.getInstance().endDDL(session.getShardingService(), reason);
         super.connectionClose(service, reason);
     }
 
-
     @Override
-    public void okResponse(byte[] data, AbstractService service) {
+    public void okResponse(byte[] data, @NotNull AbstractService service) {
         boolean executeResponse = ((MySQLResponseService) service).syncAndExecute();
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getShardingService(), (MySQLResponseService) service, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             // handleSpecial
-            boolean metaInitial = session.handleSpecial(rrs, true, null);
+            boolean metaInitial = handleSpecial(rrs, true);
             if (!metaInitial) {
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), "ddl end with meta failure");
-                executeMetaDataFailed((MySQLResponseService) service);
+                executeMetaDataFailed((MySQLResponseService) service, null);
             } else {
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), null);
                 session.setRowCount(0);
@@ -86,35 +94,42 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 sessionShardingService.setLastInsertId(ok.getInsertId());
                 session.setBackendResponseEndTime((MySQLResponseService) service);
                 session.releaseConnectionIfSafe((MySQLResponseService) service, false);
-                session.setResponseTime(true);
                 session.multiStatementPacket(ok);
                 if (writeToClient.compareAndSet(false, true)) {
-                    ok.write(sessionShardingService.getConnection());
+                    handleEndPacket(ok, true);
                 }
             }
         }
     }
 
-    private void executeMetaDataFailed(MySQLResponseService service) {
+    public void executeMetaDataFailed(MySQLResponseService service, String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(session.getShardingService().nextPacketId());
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
-                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
+        if (errMsg == null) {
+            errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
+                    " or the user for backend mysql does not have permission to execute the heartbeat sql.";
+        }
         errPacket.setMessage(StringUtil.encode(errMsg, session.getShardingService().getCharset().getResults()));
 
         session.setBackendResponseEndTime(service);
         session.releaseConnectionIfSafe(service, false);
-        session.setResponseTime(false);
         session.multiStatementPacket(errPacket);
         doSqlStat();
         if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
+            handleEndPacket(errPacket, false);
         }
     }
 
     @Override
-    protected void backConnectionErr(ErrorPacket errPkg, MySQLResponseService service, boolean syncFinished) {
+    protected void backConnectionErr(ErrorPacket errPkg, @Nullable MySQLResponseService service, boolean syncFinished) {
+        ShardingService shardingService = session.getShardingService();
+        String errMsg = "errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        LOGGER.info("execute sql err:{}, con:{}, frontend host:{}/{}/{}", errMsg, service,
+                shardingService.getConnection().getHost(),
+                shardingService.getConnection().getLocalPort(),
+                shardingService.getUser());
+
         if (service != null) {
             if (service.getConnection().isClosed()) {
                 if (service.getAttachment() != null) {
@@ -132,18 +147,37 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
             }
         }
 
-        ShardingService shardingService = session.getShardingService();
-        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
-        UserName errUser = shardingService.getUser();
-        String errHost = shardingService.getConnection().getHost();
-        LOGGER.info("execute sql err :" + errMsg + " con:" + service +
-                " frontend host:" + errHost + "/" + errUser);
-
         shardingService.setTxInterrupt(errMsg);
         if (writeToClient.compareAndSet(false, true)) {
-            session.handleSpecial(rrs, false, null);
-            errPkg.write(shardingService.getConnection());
+            handleSpecial(rrs, false);
+            handleEndPacket(errPkg, false);
         }
     }
 
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            handleSpecial(rrs, false);
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, null);
+        }
+        return true;
+    }
+
+    protected void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
+        session.clearResources(false);
+        session.setResponseTime(isSuccess);
+        packet.write(session.getSource());
+    }
 }

@@ -7,6 +7,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
@@ -14,6 +15,7 @@ import com.actiontech.dble.net.response.*;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
@@ -51,6 +53,7 @@ public class MySQLResponseService extends BackendService {
     private volatile ResponseHandler responseHandler;
     private volatile Object attachment;
     private volatile NonBlockingSession session;
+    private volatile RWSplitNonBlockingSession session2;
     private volatile boolean complexQuery = false;
     private volatile boolean isDDL = false;
     private volatile boolean testing = false;
@@ -571,8 +574,30 @@ public class MySQLResponseService extends BackendService {
         return session;
     }
 
-    public void setSession(NonBlockingSession session) {
-        this.session = session;
+    public RWSplitNonBlockingSession getSession2() {
+        return session2;
+    }
+
+
+    public Session getOriginSession() {
+        return session == null ? session2 : session;
+    }
+
+    public void setSession(Session session) {
+        if (session == null) {
+            this.session = null;
+            this.session2 = null;
+            return;
+        }
+        if (session instanceof NonBlockingSession) {
+            this.session = (NonBlockingSession) session;
+            this.session2 = null;
+        } else if (session instanceof RWSplitNonBlockingSession) {
+            this.session2 = (RWSplitNonBlockingSession) session;
+            this.session = null;
+        } else {
+            throw new UnsupportedOperationException("unsupport cast");
+        }
     }
 
     public AtomicBoolean getLogResponse() {

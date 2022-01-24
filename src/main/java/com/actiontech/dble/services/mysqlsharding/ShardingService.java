@@ -10,6 +10,7 @@ import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
@@ -407,7 +408,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             connIterator.remove();
         }
 
-        setLockTable(false);
+        isLocked = false;
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
@@ -494,7 +495,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
-            setLockTable(false);
+            isLocked = false;
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");

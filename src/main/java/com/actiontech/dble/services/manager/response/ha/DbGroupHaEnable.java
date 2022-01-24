@@ -13,11 +13,9 @@ import com.actiontech.dble.cluster.logic.ClusterOperation;
 import com.actiontech.dble.cluster.path.ClusterMetaUtil;
 import com.actiontech.dble.cluster.values.HaInfo;
 import com.actiontech.dble.cluster.values.RawJson;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.HaConfigManager;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,8 +30,7 @@ public final class DbGroupHaEnable {
     private DbGroupHaEnable() {
     }
 
-    public static void execute(Matcher enable, ManagerService service) {
-
+    public static void execute(Matcher enable, PacketResult packetResult) {
         ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         String dbGroupName = enable.group(1);
         String dbInstanceName = enable.group(3);
@@ -44,20 +41,22 @@ public final class DbGroupHaEnable {
         try {
             PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
             if (dbGroup == null) {
-                service.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + dbGroupName + " do not exists");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("dbGroup " + dbGroupName + " do not exists");
                 return;
             }
 
 
             if (!dbGroup.checkInstanceExist(dbInstanceName)) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstanceName in command in " + dbGroup.getGroupName() + " do not exists");
+                packetResult.setSuccess(false);
+                packetResult.setErrorMsg("Some of the dbInstanceName in command in " + dbGroup.getGroupName() + " do not exists");
                 return;
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
             if (ClusterConfig.getInstance().isClusterEnable()) {
                 if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                    if (!enableWithCluster(id, dbGroup, dbInstanceName, service)) {
+                    if (!enableWithCluster(id, dbGroup, dbInstanceName, packetResult)) {
                         return;
                     }
                 } else {
@@ -69,7 +68,8 @@ public final class DbGroupHaEnable {
                         DbleServer.getInstance().pullVarAndMeta(dbGroup);
                     } catch (Exception e) {
                         HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        service.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg("enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
                         return;
                     }
                 }
@@ -81,23 +81,17 @@ public final class DbGroupHaEnable {
                     DbleServer.getInstance().pullVarAndMeta(dbGroup);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                    service.writeErrMessage(ErrorCode.ER_YES, "enable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
+                    packetResult.setSuccess(false);
+                    packetResult.setErrorMsg("enable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     return;
                 }
             }
-
-
-            OkPacket packet = new OkPacket();
-            packet.setPacketId(1);
-            packet.setAffectedRows(0);
-            packet.setServerStatus(2);
-            packet.write(service.getConnection());
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    private static boolean enableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerService mc) {
+    private static boolean enableWithCluster(int id, PhysicalDbGroup dh, String subHostName, PacketResult packetResult) {
         ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.HA);
         //get the lock from ucore
         DistributeLock distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getHaLockPath(dh.getGroupName()),
@@ -109,7 +103,8 @@ public final class DbGroupHaEnable {
         );
 
         if (!distributeLock.acquire()) {
-            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is changing the dbGroup, please try again later.");
             return false;
         }
         try {
@@ -120,7 +115,8 @@ public final class DbGroupHaEnable {
             // eg: all mysql instance is disabled when dble starts up, then enable a mysql instance
             DbleServer.getInstance().pullVarAndMeta(dh);
         } catch (Exception e) {
-            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
             return false;
         } finally {
             distributeLock.release();

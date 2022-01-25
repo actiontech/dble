@@ -230,6 +230,9 @@ public class DefaultDruidParser implements DruidParser {
             //no_name node
             dataNodeTarget = schema.getRandomDataNode();
         }
+        if (schemas.size() == 1) {
+            rrs.setSchema(schemas.iterator().next());
+        }
         RouterUtil.routeToSingleNode(rrs, dataNodeTarget);
         rrs.setFinishedRoute(true);
         return schema;

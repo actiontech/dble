@@ -34,7 +34,7 @@ public final class ParameterMapping {
     private static final Map<String, String> COMPATIBLE_MAP = new HashMap<>();
 
     static {
-        COMPATIBLE_MAP.put("complexWorker", "complexExecutor");
+        COMPATIBLE_MAP.put("complexQueryWorker", "complexExecutor");
         COMPATIBLE_MAP.put("NIOFrontRW", "processors");
         COMPATIBLE_MAP.put("NIOBackendRW", "backendProcessors");
         COMPATIBLE_MAP.put("frontWorker", "processorExecutor");
@@ -48,19 +48,9 @@ public final class ParameterMapping {
         for (PropertyDescriptor pd : pds) {
             String name = pd.getName();
             String valStr = src.getProperty(name);
+            valStr = compatibleProcess(name, valStr, src);
             Object value = valStr;
             Class<?> cls = pd.getPropertyType();
-            if (COMPATIBLE_MAP.containsKey(name)) {
-                String values = COMPATIBLE_MAP.get(name);
-                String compatibleVal = src.getProperty(values);
-                src.remove(values);
-                if (!Strings.isNullOrEmpty(compatibleVal) && Strings.isNullOrEmpty(valStr)) {
-                    valStr = compatibleVal;
-                    value = valStr;
-                    LOGGER.warn(values + " parameter has been replaced by the " + name + " parameter");
-                }
-            }
-
             if (cls == null) {
                 if (problemReporter != null) {
                     problemReporter.warn("unknown property [ " + pd.getName() + " ]");
@@ -110,6 +100,7 @@ public final class ParameterMapping {
         for (PropertyDescriptor pd : pds) {
             String propertyName = pd.getName();
             String valStr = systemProperties.getProperty(propertyName);
+            valStr = compatibleProcess(propertyName, valStr, systemProperties);
             if (valStr == null) {
                 continue;
             }
@@ -248,6 +239,20 @@ public final class ParameterMapping {
                 cls.equals(Float.TYPE) || cls.equals(Boolean.class) || cls.equals(Byte.class) ||
                 cls.equals(Short.class) || cls.equals(Integer.class) || cls.equals(Long.class) ||
                 cls.equals(Float.class) || cls.equals(Double.class) || cls.equals(Class.class);
+    }
+
+
+    public static String compatibleProcess(String name, String valStr, Properties src) {
+        if (COMPATIBLE_MAP.containsKey(name)) {
+            String values = COMPATIBLE_MAP.get(name);
+            String compatibleVal = src.getProperty(values);
+            src.remove(values);
+            if (!Strings.isNullOrEmpty(compatibleVal) && Strings.isNullOrEmpty(valStr)) {
+                valStr = compatibleVal;
+                LOGGER.warn(values + " parameter has been replaced by the " + name + " parameter");
+            }
+        }
+        return valStr;
     }
 
 }

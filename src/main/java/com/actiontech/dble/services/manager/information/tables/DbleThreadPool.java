@@ -146,17 +146,17 @@ public final class DbleThreadPool extends ManagerWritableTable {
     private String getConfigParam(String executorName) {
         switch (executorName) {
             case DbleServer.FRONT_WORKER_NAME:
-                return "processorExecutor";
+                return "frontWorker";
             case DbleServer.BACKEND_WORKER_NAME:
-                return "backendProcessorExecutor";
+                return "backendWorker";
             case DbleServer.WRITE_TO_BACKEND_WORKER_NAME:
-                return "writeToBackendExecutor";
+                return "writeToBackendWorker";
             case DbleServer.COMPLEX_QUERY_EXECUTOR_NAME:
-                return "complexExecutor";
-            case DbleServer.NIO_FRONT:
-                return "processors";
-            case DbleServer.NIO_BACKEND:
-                return "backendProcessors";
+                return "complexQueryWorker";
+            case DbleServer.NIO_FRONT_RW:
+                return "NIOFrontRW";
+            case DbleServer.NIO_BACKEND_RW:
+                return "NIOBackendRW";
             default:
                 break;
         }
@@ -165,7 +165,7 @@ public final class DbleThreadPool extends ManagerWritableTable {
 
     private void decreasePoolSize(NameableExecutor nameableExecutor, int decreaseVal) {
         Map<Thread, Runnable> runnableMap = DbleServer.getInstance().getRunnableMap().get(nameableExecutor.getName());
-        if (nameableExecutor.getName().equals(DbleServer.NIO_FRONT) || nameableExecutor.getName().equals(DbleServer.NIO_BACKEND)) {
+        if (nameableExecutor.getName().equals(DbleServer.NIO_FRONT_RW) || nameableExecutor.getName().equals(DbleServer.NIO_BACKEND_RW)) {
             runnableMap = reorderRunnableMap(runnableMap);
         }
         int registerCount = 0;
@@ -298,7 +298,7 @@ public final class DbleThreadPool extends ManagerWritableTable {
                     nameableExecutor.execute(new WriteToBackendRunnable(server.getWriteToBackendQueue()));
                 }
                 break;
-            case DbleServer.NIO_FRONT:
+            case DbleServer.NIO_FRONT_RW:
                 if (SystemConfig.getInstance().getUsingAIO() != 1) {
                     for (int i = 0; i < increaseVal; i++) {
                         LOGGER.debug("will execute thread:{}", nameableExecutor.toString());
@@ -306,7 +306,7 @@ public final class DbleThreadPool extends ManagerWritableTable {
                     }
                 }
                 break;
-            case DbleServer.NIO_BACKEND:
+            case DbleServer.NIO_BACKEND_RW:
                 if (SystemConfig.getInstance().getUsingAIO() != 1) {
                     for (int i = 0; i < increaseVal; i++) {
                         LOGGER.debug("will execute thread:{}", nameableExecutor.toString());
@@ -330,9 +330,9 @@ public final class DbleThreadPool extends ManagerWritableTable {
                 return (NameableExecutor) server.getWriteToBackendExecutor();
             case DbleServer.COMPLEX_QUERY_EXECUTOR_NAME:
                 return (NameableExecutor) server.getComplexQueryExecutor();
-            case DbleServer.NIO_FRONT:
+            case DbleServer.NIO_FRONT_RW:
                 return (NameableExecutor) server.getNioFrontExecutor();
-            case DbleServer.NIO_BACKEND:
+            case DbleServer.NIO_BACKEND_RW:
                 return (NameableExecutor) server.getNioBackendExecutor();
             default:
                 break;

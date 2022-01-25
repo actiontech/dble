@@ -49,7 +49,6 @@ import javax.annotation.Nonnull;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -69,9 +68,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     private volatile boolean txInterrupted;
     private volatile String txInterruptMsg = "";
-
-    private AtomicLong txID = new AtomicLong(1);
-    private volatile boolean isLocked = false;
     private long lastInsertId;
     @Nonnull
     private final NonBlockingSession session;
@@ -143,6 +139,11 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             default:
                 // IGNORE
         }
+    }
+
+    @Override
+    public Session getSession() {
+        return session;
     }
 
     @Override
@@ -412,7 +413,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
             connIterator.remove();
         }
 
-        isLocked = false;
+        setLockTable(false);
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
@@ -499,7 +500,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
-            isLocked = false;
+            setLockTable(false);
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
@@ -602,27 +603,6 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
     public NonBlockingSession getSession2() {
         return session;
-    }
-
-    @Override
-    public Session getSession() {
-        return session;
-    }
-
-    public boolean isLocked() {
-        return isLocked;
-    }
-
-    public void setLocked(boolean locked) {
-        isLocked = locked;
-    }
-
-    public long getAndIncrementXid() {
-        return txID.getAndIncrement();
-    }
-
-    public long getXid() {
-        return txID.get();
     }
 
     public long getLastInsertId() {

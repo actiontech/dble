@@ -41,7 +41,6 @@ import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
-import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.DDLTraceManager;
@@ -52,6 +51,7 @@ import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.exception.NeedDelayedException;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -811,7 +811,7 @@ public class NonBlockingSession extends Session {
     public void releaseConnectionIfSafe(MySQLResponseService service, boolean needClosed) {
         RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
         if (node != null) {
-            if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLocked()) {
+            if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLockTable()) {
                 releaseConnection((RouteResultsetNode) service.getAttachment(), needClosed);
             }
         }
@@ -932,7 +932,7 @@ public class NonBlockingSession extends Session {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("clear session resources " + this);
         }
-        if (!shardingService.isLocked()) {
+        if (!shardingService.isLockTable()) {
             this.releaseConnections(needClosed);
         }
         if (!transactionManager.isRetryXa()) {
@@ -943,7 +943,7 @@ public class NonBlockingSession extends Session {
             StatisticListener.getInstance().record(this, r -> r.onTxStartByImplicitly(shardingService));
         }
         shardingService.setTxStart(false);
-        shardingService.getAndIncrementXid();
+        shardingService.getAndIncrementTxId();
         if (shardingService.isSetNoAutoCommit()) {
             shardingService.setSetNoAutoCommit(false);
         } else {

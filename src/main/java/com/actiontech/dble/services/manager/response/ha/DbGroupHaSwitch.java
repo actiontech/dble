@@ -17,8 +17,6 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.HaConfigManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;

@@ -180,6 +180,9 @@ public class DefaultDruidParser implements DruidParser {
             }
             shardingNodeTarget = schema.getRandomShardingNode();
         }
+        if (schemas.size() == 1) {
+            rrs.setSchema(schemas.iterator().next());
+        }
         RouterUtil.routeToSingleNode(rrs, shardingNodeTarget);
         rrs.setFinishedRoute(true);
         return schema;

@@ -30,12 +30,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
  */
 public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
+
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session, true);
@@ -99,7 +102,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             }
             errConnection.add((MySQLResponseService) service);
             if (decrementToZero((MySQLResponseService) service)) {
-                session.handleSpecial(rrs, false, getDDLErrorInfo());
+                handleSpecial(rrs, false, getDDLErrorInfo());
                 DDLTraceManager.getInstance().endDDL(session.getShardingService(), getDDLErrorInfo());
                 LOGGER.warn("DDL execution failed");
                 if (byteBuffer != null) {
@@ -173,13 +176,13 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
                 if (!decrementToZero((MySQLResponseService) service))
                     return;
                 if (isFail()) {
-                    session.handleSpecial(rrs, false, null);
+                    handleSpecial(rrs, false, null);
                     DDLTraceManager.getInstance().endDDL(source, "ddl end with execution failure");
                     LOGGER.warn("DDL execution failed");
                     session.resetMultiStatementStatus();
                     handleEndPacket(err, false);
                 } else {
-                    boolean metaInitial = session.handleSpecial(rrs, true, null);
+                    boolean metaInitial = handleSpecial(rrs, true, null);
                     if (!metaInitial) {
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");
                         executeMetaDataFailed(null);
@@ -247,7 +250,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         }
         errConnection.add(service);
         if (canResponse()) {
-            session.handleSpecial(rrs, false, null);
+            handleSpecial(rrs, false, null);
             DDLTraceManager.getInstance().endDDL(session.getShardingService(), new String(err.getMessage()));
             LOGGER.warn("DDL execution failed");
             if (byteBuffer == null) {
@@ -270,6 +273,13 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         s.append("\n}");
 
         return s.toString();
+    }
+
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess, String errInfo) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, errInfo);
+        }
+        return true;
     }
 
     protected void handleEndPacket(MySQLPacket packet, boolean isSuccess) {

@@ -50,7 +50,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
     private ErrorPacket err;
     private Set<MySQLResponseService> closedConnSet;
     private volatile boolean finishedTest = false;
-    private AtomicBoolean releaseDDLLock = new AtomicBoolean(false);
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public MultiNodeDdlPrepareHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -178,9 +178,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
             setFail(new String(err.getMessage()));
         }
         if (canResponse() && errorResponse.compareAndSet(false, true)) {
-            if (releaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false, null);
-            }
+            handleSpecial(oriRrs, false);
             handleRollbackPacket(err.toBytes(), "DDL prepared failed");
         }
     }
@@ -230,7 +228,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
                 setFail(new String(errPacket.getMessage()));
             }
             if (decrementToZero((MySQLResponseService) service) && errorResponse.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false, null);
+                handleSpecial(oriRrs, false);
                 handleRollbackPacket(err.toBytes(), "DDL prepared failed");
             }
         } finally {
@@ -265,7 +263,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
 
             if (this.isFail()) {
                 if (errorResponse.compareAndSet(false, true)) {
-                    session.handleSpecial(oriRrs, false, null);
+                    handleSpecial(oriRrs, false);
                     handleRollbackPacket(err.toBytes(), "DDL prepared failed");
                 }
             } else {
@@ -277,7 +275,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
                     if (!session.isKilled()) {
                         handler.execute();
                     } else {
-                        session.handleSpecial(oriRrs, false, null);
+                        handleSpecial(oriRrs, false);
                         DDLTraceManager.getInstance().endDDL(shardingService, "Query was interrupted");
                         ErrorPacket errPacket = new ErrorPacket();
                         errPacket.setPacketId(session.getShardingService().nextPacketId());
@@ -287,7 +285,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
                     }
                 } catch (Exception e) {
                     LOGGER.warn(String.valueOf(shardingService) + oriRrs, e);
-                    session.handleSpecial(oriRrs, false, null);
+                    handleSpecial(oriRrs, false);
                     DDLTraceManager.getInstance().endDDL(shardingService, "take Connection error:" + e.getMessage());
                     shardingService.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
@@ -335,16 +333,20 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements Exec
         source.write(data, WriteFlags.SESSION_END);
     }
 
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, null);
+        }
+        return true;
+    }
 
     public boolean clearIfSessionClosed() {
         if (session.closed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("session closed without execution,clear resources " + session);
             }
+            handleSpecial(oriRrs, false);
             session.clearResources(true);
-            if (releaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false, null);
-            }
             this.clearResources();
             return true;
         } else {

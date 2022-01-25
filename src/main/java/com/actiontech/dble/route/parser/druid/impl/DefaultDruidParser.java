@@ -190,6 +190,9 @@ public class DefaultDruidParser implements DruidParser {
         } else {
             tableSet = Sets.newHashSet(null == schema ? "" : schema.getName() + "." + table);
         }
+        if (schemas.size() == 1) {
+            rrs.setSchema(schemas.iterator().next());
+        }
         RouterUtil.routeToSingleNode(rrs, shardingNodeTarget, tableSet);
         rrs.setFinishedRoute(true);
         return schema;

@@ -41,12 +41,12 @@
 #-DserverPort=8066
 #-DmanagerPort=9066
 #-DmaxCon=1024
-#-Dprocessors=4
-#-DbackendProcessors=12
-#-DprocessorExecutor=4
-#-DbackendProcessorExecutor=12
-#-DcomplexExecutor=8
-#-DwriteToBackendExecutor=4
+#-DNIOFrontRW=4
+#-DNIOBackendRW=12
+#-DfrontWorker=4
+#-DbackendWorker=12
+#-DcomplexWorker=8
+#-DwriteToBackendWorker=4
 
 
 -DfakeMySQLVersion=5.7.11
@@ -202,3 +202,4 @@
 #-DinSubQueryTransformToJoin=false
 #For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
 #-DrwStickyTime=1000
+#-DjoinStrategyType=-1

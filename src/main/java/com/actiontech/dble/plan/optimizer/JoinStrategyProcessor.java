@@ -5,11 +5,16 @@
 
 package com.actiontech.dble.plan.optimizer;
 
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
+
+import java.util.List;
 
 public final class JoinStrategyProcessor {
     public static final String NEED_REPLACE = "{NEED_TO_REPLACE}";
@@ -17,27 +22,48 @@ public final class JoinStrategyProcessor {
     private JoinStrategyProcessor() {
     }
 
-    public static PlanNode optimize(PlanNode qtn) {
+    public static PlanNode optimize(PlanNode qtn, boolean always) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-nest-loop");
         try {
-
             if (PlanUtil.isGlobalOrER(qtn))
                 return qtn;
-            if (qtn.type() == PlanNode.PlanNodeType.JOIN) {
-                JoinNode jn = (JoinNode) qtn;
-                if (jn.getLeftNode().type() == PlanNode.PlanNodeType.TABLE && jn.getRightNode().type() == PlanNode.PlanNodeType.TABLE) {
-                    JoinStrategyChooser chooser = new JoinStrategyChooser((JoinNode) qtn);
-                    chooser.tryNestLoop();
-                    //todo log
-                    return qtn;
+
+            if (qtn instanceof JoinNode) {
+                JoinStrategyChooser chooser = new JoinStrategyChooser((JoinNode) qtn);
+                chooser.tryNestLoop(always);
+            }
+            if (!always) {
+                List<PlanNode> children = qtn.getChildren();
+                for (PlanNode child : children) {
+                    optimize(child, always);
                 }
             }
-            for (PlanNode child : qtn.getChildren())
-                optimize(child);
             return qtn;
         } finally {
             TraceManager.log(ImmutableMap.of("plan-node", qtn), traceObject);
             TraceManager.finishSpan(traceObject);
+        }
+    }
+
+    public static void chooser(PlanNode node) {
+        int joinStrategyType = SystemConfig.getInstance().getJoinStrategyType();
+        switch (joinStrategyType) {
+            case -1:
+                if (SystemConfig.getInstance().isUseJoinStrategy()) {
+                    optimize(node, false);
+                }
+                break;
+            case 0:
+                break;
+            case 1:
+                optimize(node, false);
+                break;
+            case 2:
+                optimize(node, true);
+                break;
+            default:
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", " joinStrategyType = " + joinStrategyType + " is illegal, size must not be less than -1 and not be greater than 2");
+
         }
     }
 }

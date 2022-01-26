@@ -219,7 +219,7 @@ public class JoinUseHintTest extends BaseSqlHintTest {
             info.getGroups().add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.AND, list));
             i += list.size();
         }
-        if (info.size() != arr.size()) {
+        if (info.nodeSize() != arr.size()) {
             throw new RuntimeException("code error");
         }
         LOGGER.info("hintInfo {}", info);

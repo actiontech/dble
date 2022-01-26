@@ -19,8 +19,7 @@ import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -36,6 +35,7 @@ public class SendMakeHandler extends BaseDMLHandler {
     private String tableAlias;
     private String table;
     private String schema;
+    private Set<BaseDMLHandler> tableHandlers;
 
     public SendMakeHandler(long id, Session session, List<Item> selects, String schema, String table, String tableAlias) {
         super(id, session);
@@ -45,12 +45,14 @@ public class SendMakeHandler extends BaseDMLHandler {
         this.schema = schema;
         this.table = table;
         this.tableAlias = tableAlias;
+        this.tableHandlers = new HashSet<>();
     }
 
     @Override
     public HandlerType type() {
         return HandlerType.SENDMAKER;
     }
+
 
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
@@ -84,6 +86,9 @@ public class SendMakeHandler extends BaseDMLHandler {
                     tmpFp.setType(FieldTypes.MYSQL_TYPE_VAR_STRING.numberValue());
                 newFieldPackets.add(tmpFp);
             }
+            for (BaseDMLHandler tableHandler : tableHandlers) {
+                tableHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, service);
+            }
             nextHandler.fieldEofResponse(null, null, newFieldPackets, null, this.isLeft, service);
         } finally {
             lock.unlock();
@@ -102,6 +107,9 @@ public class SendMakeHandler extends BaseDMLHandler {
                 byte[] b = selItem.getRowPacketByte();
                 newRp.add(b);
             }
+            for (BaseDMLHandler tableHandler : tableHandlers) {
+                tableHandler.rowResponse(null, newRp, this.isLeft, service);
+            }
             nextHandler.rowResponse(null, newRp, this.isLeft, service);
             return false;
         } finally {
@@ -113,10 +121,15 @@ public class SendMakeHandler extends BaseDMLHandler {
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
-            if (terminate.get())
+            if (terminate.get() && tableHandlers.isEmpty())
                 return;
             session.setHandlerEnd(this);
+            for (BaseDMLHandler tableHandler : tableHandlers) {
+                tableHandler.rowEofResponse(eof, this.isLeft, service);
+            }
+            tableHandlers.clear();
             nextHandler.rowEofResponse(eof, this.isLeft, service);
+
         } finally {
             lock.unlock();
         }
@@ -126,5 +139,8 @@ public class SendMakeHandler extends BaseDMLHandler {
     public void onTerminate() {
     }
 
+    public Set<BaseDMLHandler> getTableHandlers() {
+        return tableHandlers;
+    }
 
 }

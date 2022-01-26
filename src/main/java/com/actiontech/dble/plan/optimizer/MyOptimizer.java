@@ -21,7 +21,7 @@ import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -31,15 +31,13 @@ public final class MyOptimizer {
     private MyOptimizer() {
     }
 
-    public static PlanNode optimize(PlanNode node, @Nullable HintPlanInfo hintPlanInfo) {
-        if (hintPlanInfo == null) {
-            hintPlanInfo = new HintPlanInfo();
-        }
+    public static PlanNode optimize(PlanNode node, @Nonnull HintPlanInfo hintPlanInfo) {
+
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("optimize-for-sql");
         TraceManager.log(ImmutableMap.of("plan-node", node), traceObject);
         try {
 
-            if (hintPlanInfo == null || !hintPlanInfo.isIn2join()) {
+            if (!hintPlanInfo.isIn2join()) {
                 if (SystemConfig.getInstance().isInSubQueryTransformToJoin()) {
                     // PreProcessor SubQuery ,transform in sub query to join
                     node = SubQueryPreProcessor.optimize(node);
@@ -64,12 +62,11 @@ public final class MyOptimizer {
                 node = FilterJoinColumnPusher.optimize(node);
 
 
-                if (SystemConfig.getInstance().isUseNewJoinOptimizer() || !hintPlanInfo.isEmpty()) {
+                if (SystemConfig.getInstance().isUseNewJoinOptimizer() || !hintPlanInfo.isZeroNode()) {
                     node = JoinProcessor.optimize(node, hintPlanInfo);
                 } else {
                     node = JoinERProcessor.optimize(node);
                 }
-
                 if (existGlobal >= 0) {
                     GlobalTableProcessor.optimize(node);
                 }
@@ -81,10 +78,10 @@ public final class MyOptimizer {
                 LimitPusher.optimize(node);
 
                 node = SelectedProcessor.optimize(node);
-
-                boolean useJoinStrategy = SystemConfig.getInstance().isUseJoinStrategy();
-                if (useJoinStrategy) {
-                    JoinStrategyProcessor.optimize(node);
+                if (!hintPlanInfo.isZeroNode()) {
+                    HintStrategyNestLoopProcessor.optimize(node, hintPlanInfo);
+                } else {
+                    JoinStrategyProcessor.chooser(node);
                 }
             }
             return node;

@@ -87,7 +87,7 @@ public class JoinChooser {
     }
 
     public JoinNode optimize() {
-        if (erRelations == null && hintPlanInfo.isEmpty()) {
+        if (erRelations == null && hintPlanInfo.isZeroNode()) {
             return orgNode;
         }
         return innerJoinOptimizer();
@@ -110,7 +110,7 @@ public class JoinChooser {
                 root = initJoinRelationDag();
             } catch (OptimizeException e) {
                 LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because {}. The sql is [{}]", e.getMessage(), orgNode);
-                if (!hintPlanInfo.isEmpty()) {
+                if (!hintPlanInfo.isZeroNode()) {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because " + e.getMessage());
                 } else {
                     return orgNode;
@@ -119,7 +119,7 @@ public class JoinChooser {
             leftCartesianNodes();
 
             //if custom ,check plan can Follow the rules：Topological Sorting of dag, CartesianNodes
-            if (!hintPlanInfo.isEmpty()) {
+            if (!hintPlanInfo.isZeroNode()) {
                 relationJoin = joinWithHint(root);
             } else {
                 // use auto plan
@@ -128,6 +128,9 @@ public class JoinChooser {
         }
         // no relation join
         if (relationJoin == null) {
+            if (!hintPlanInfo.isZeroNode()) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints yet. Maybe this sql contains 'multi right join' or 'cartesian with relation' or 'subquery'.");
+            }
             return orgNode;
         }
 
@@ -221,8 +224,8 @@ public class JoinChooser {
     }
 
     private JoinNode joinWithHint(JoinRelationDag root) {
-        if (dagNodes.size() != hintPlanInfo.size()) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintPlanInfo.size() + " not equals to plan node size " + dagNodes.size() + ".");
+        if (dagNodes.size() != hintPlanInfo.nodeSize()) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintPlanInfo.nodeSize() + " not equals to plan node size " + dagNodes.size() + ".");
         }
         if (root.degree != 0) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "exists any relations route to the root node: " + root);
@@ -554,7 +557,7 @@ public class JoinChooser {
         for (int index = 0; index < node.getChildren().size(); index++) {
             PlanNode child = node.getChildren().get(index);
             if (isUnit(child)) {
-                child = JoinProcessor.optimize(child, hintPlanInfo);
+                child = JoinProcessor.optimize(child, new HintPlanInfo());
                 node.getChildren().set(index, child);
                 this.joinUnits.add(child);
             } else {

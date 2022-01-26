@@ -59,12 +59,16 @@ public final class HintPlanInfo implements Iterable<HintPlanNode> {
         this.right2inner = right2inner;
     }
 
-    public boolean isEmpty() {
-        return groups.size() == 0 ? true : size() == 0;
+    /**
+     * return true if no node exists or hint is not set.
+     * @return
+     */
+    public boolean isZeroNode() {
+        return groups.size() == 0 ? true : nodeSize() == 0;
     }
 
 
-    public long size() {
+    public long nodeSize() {
         return groups.stream().map(HintPlanNodeGroup::getNodes).mapToLong(List::size).sum();
     }
 

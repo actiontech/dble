@@ -48,12 +48,14 @@ public final class SystemConfig {
     private String bindIp = "0.0.0.0";
     private int serverPort = 8066;
     private int managerPort = 9066;
-    private int processors = Runtime.getRuntime().availableProcessors();
-    private int backendProcessors = processors;
-    private int processorExecutor = (processors != 1) ? processors : 2;
-    private int backendProcessorExecutor = (processors != 1) ? processors : 2;
-    private int complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
-    private int writeToBackendExecutor = (processors != 1) ? processors : 2;
+    // CHECKSTYLE:OFF
+    private int NIOFrontRW = Runtime.getRuntime().availableProcessors();
+    private int NIOBackendRW = NIOFrontRW;
+    // CHECKSTYLE:ON
+    private int frontWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
+    private int backendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
+    private int complexWorker = frontWorker > 8 ? 8 : frontWorker;
+    private int writeToBackendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
     private int serverBacklog = 2048;
     private int maxCon = 0;
     //option
@@ -106,8 +108,9 @@ public final class SystemConfig {
     private int nestLoopRowsSize = 2000;
     private int nestLoopConnSize = 4;
 
-
+    // join Optimizer
     private boolean useNewJoinOptimizer = false;
+    private int joinStrategyType = -1;
 
     //query memory used for per session,unit is M
     private int otherMemSize = 4;
@@ -222,6 +225,7 @@ public final class SystemConfig {
     public int getSqlLogTableSize() {
         return sqlLogTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setSqlLogTableSize(int sqlLogTableSize) {
         if (sqlLogTableSize > 0) {
@@ -235,6 +239,7 @@ public final class SystemConfig {
     public int getEnableStatistic() {
         return enableStatistic;
     }
+
     @SuppressWarnings("unused")
     public void setEnableStatistic(int enableStatistic) {
         if (enableStatistic >= 0 && enableStatistic <= 1) {
@@ -247,6 +252,7 @@ public final class SystemConfig {
     public int getAssociateTablesByEntryByUserTableSize() {
         return associateTablesByEntryByUserTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
         if (associateTablesByEntryByUserTableSize < 1) {
@@ -259,6 +265,7 @@ public final class SystemConfig {
     public int getFrontendByBackendByEntryByUserTableSize() {
         return frontendByBackendByEntryByUserTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
         if (frontendByBackendByEntryByUserTableSize < 1) {
@@ -271,6 +278,7 @@ public final class SystemConfig {
     public int getTableByUserByEntryTableSize() {
         return tableByUserByEntryTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
         if (tableByUserByEntryTableSize < 1) {
@@ -283,6 +291,7 @@ public final class SystemConfig {
     public int getStatisticQueueSize() {
         return statisticQueueSize;
     }
+
     @SuppressWarnings("unused")
     public void setStatisticQueueSize(int statisticQueueSize) {
         if (statisticQueueSize < 1 || Integer.bitCount(statisticQueueSize) != 1) {
@@ -295,6 +304,7 @@ public final class SystemConfig {
     public int getEnableGeneralLog() {
         return enableGeneralLog;
     }
+
     @SuppressWarnings("unused")
     public void setEnableGeneralLog(int enableGeneralLog) {
         if (enableGeneralLog >= 0 && enableGeneralLog <= 1) {
@@ -307,6 +317,7 @@ public final class SystemConfig {
     public String getGeneralLogFile() {
         return generalLogFile;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogFile(String generalLogFile) {
         this.generalLogFile = generalLogFile;
@@ -315,6 +326,7 @@ public final class SystemConfig {
     public int getGeneralLogFileSize() {
         return generalLogFileSize;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogFileSize(int generalLogFileSize) {
         if (generalLogFileSize > 0) {
@@ -327,6 +339,7 @@ public final class SystemConfig {
     public int getGeneralLogQueueSize() {
         return generalLogQueueSize;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogQueueSize(int generalLogQueueSize) {
         if (generalLogQueueSize < 1 || Integer.bitCount(generalLogQueueSize) != 1) {
@@ -378,7 +391,6 @@ public final class SystemConfig {
     }
 
 
-
     public boolean isUseNewJoinOptimizer() {
         return useNewJoinOptimizer;
     }
@@ -387,6 +399,17 @@ public final class SystemConfig {
         this.useNewJoinOptimizer = useNewJoinOptimizer;
     }
 
+    public int getJoinStrategyType() {
+        return joinStrategyType;
+    }
+
+    public void setJoinStrategyType(int joinStrategyType) {
+        if (joinStrategyType < -1 || joinStrategyType > 2) {
+            problemReporter.warn("Property [ joinStrategyType ] '" + joinStrategyType + "' in bootstrap.cnf is illegal, size must not be less than -1 and not be greater than 2, you may need use the default value " + this.joinStrategyType + " replaced");
+        } else {
+            this.joinStrategyType = joinStrategyType;
+        }
+    }
 
     public String getXaRecoveryLogBaseDir() {
         return (this.getHomePath() + File.separatorChar + xaRecoveryLogBaseDir + File.separatorChar).replaceAll(File.separator + "+", File.separator);
@@ -489,6 +512,7 @@ public final class SystemConfig {
     public boolean isCapClientFoundRows() {
         return capClientFoundRows;
     }
+
     @SuppressWarnings("unused")
     public void setCapClientFoundRows(boolean capClientFoundRows) {
         this.capClientFoundRows = capClientFoundRows;
@@ -534,68 +558,70 @@ public final class SystemConfig {
         this.managerPort = managerPort;
     }
 
-    public int getProcessors() {
-        return processors;
+    public int getNIOFrontRW() {
+        return NIOFrontRW;
     }
 
+    // CHECKSTYLE:OFF
     @SuppressWarnings("unused")
-    public void setProcessors(int processors) {
-        if (processors > 0) {
-            this.processors = processors;
+    public void setNIOFrontRW(int NIOFrontRW) {
+        if (NIOFrontRW > 0) {
+            this.NIOFrontRW = NIOFrontRW;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "processors", processors, this.processors));
+            problemReporter.warn(String.format(WARNING_FORMAT, "NIOFrontRW", NIOFrontRW, this.NIOFrontRW));
         }
     }
 
-    public int getBackendProcessors() {
-        return backendProcessors;
+    public int getNIOBackendRW() {
+        return NIOBackendRW;
     }
 
     @SuppressWarnings("unused")
-    public void setBackendProcessors(int backendProcessors) {
-        if (backendProcessors > 0) {
-            this.backendProcessors = backendProcessors;
+    public void setNIOBackendRW(int NIOBackendRW) {
+        if (NIOBackendRW > 0) {
+            this.NIOBackendRW = NIOBackendRW;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "backendProcessors", backendProcessors, this.backendProcessors));
+            problemReporter.warn(String.format(WARNING_FORMAT, "NIOBackendRW", NIOBackendRW, this.NIOBackendRW));
+        }
+    }
+    // CHECKSTYLE:ON
+
+    public int getFrontWorker() {
+        return frontWorker;
+    }
+
+    @SuppressWarnings("unused")
+    public void setFrontWorker(int frontWorker) {
+        if (frontWorker > 0) {
+            this.frontWorker = frontWorker;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontWorker", frontWorker, this.frontWorker));
         }
     }
 
-    public int getProcessorExecutor() {
-        return processorExecutor;
+    public int getBackendWorker() {
+        return backendWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setProcessorExecutor(int processorExecutor) {
-        if (processorExecutor > 0) {
-            this.processorExecutor = processorExecutor;
+    public void setBackendWorker(int backendWorker) {
+        if (backendWorker > 0) {
+            this.backendWorker = backendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "processorExecutor", processorExecutor, this.processorExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backendWorker", backendWorker, this.backendWorker));
         }
     }
 
-    public int getBackendProcessorExecutor() {
-        return backendProcessorExecutor;
+    public int getComplexWorker() {
+        return complexWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setBackendProcessorExecutor(int backendProcessorExecutor) {
-        if (backendProcessorExecutor > 0) {
-            this.backendProcessorExecutor = backendProcessorExecutor;
+    public void setComplexWorker(int complexWorker) {
+        if (complexWorker > 0) {
+            this.complexWorker = complexWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "backendProcessorExecutor", backendProcessorExecutor, this.backendProcessorExecutor));
-        }
-    }
-
-    public int getComplexExecutor() {
-        return complexExecutor;
-    }
-
-    @SuppressWarnings("unused")
-    public void setComplexExecutor(int complexExecutor) {
-        if (complexExecutor > 0) {
-            this.complexExecutor = complexExecutor;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "complexExecutor", complexExecutor, this.complexExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "complexWorker", complexWorker, this.complexWorker));
         }
     }
 
@@ -1173,16 +1199,16 @@ public final class SystemConfig {
     }
 
 
-    public int getWriteToBackendExecutor() {
-        return writeToBackendExecutor;
+    public int getWriteToBackendWorker() {
+        return writeToBackendWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setWriteToBackendExecutor(int writeToBackendExecutor) {
-        if (writeToBackendExecutor > 0) {
-            this.writeToBackendExecutor = writeToBackendExecutor;
+    public void setWriteToBackendWorker(int writeToBackendWorker) {
+        if (writeToBackendWorker > 0) {
+            this.writeToBackendWorker = writeToBackendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendExecutor, this.writeToBackendExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendWorker, this.writeToBackendWorker));
         }
     }
 
@@ -1387,6 +1413,7 @@ public final class SystemConfig {
     public int getMaxHeapTableSize() {
         return maxHeapTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setMaxHeapTableSize(int maxHeapTableSize) {
         if (maxHeapTableSize >= 0) {
@@ -1399,6 +1426,7 @@ public final class SystemConfig {
     public boolean isEnableCursor() {
         return enableCursor;
     }
+
     @SuppressWarnings("unused")
     public void setEnableCursor(boolean enableCursor) {
         this.enableCursor = enableCursor;
@@ -1415,6 +1443,7 @@ public final class SystemConfig {
     public int getEnableBatchLoadData() {
         return enableBatchLoadData;
     }
+
     @SuppressWarnings("unused")
     public void setEnableBatchLoadData(int enableBatchLoadData) {
         if (enableBatchLoadData >= 0 && enableBatchLoadData <= 1) {
@@ -1427,6 +1456,7 @@ public final class SystemConfig {
     public boolean isInSubQueryTransformToJoin() {
         return inSubQueryTransformToJoin;
     }
+
     @SuppressWarnings("unused")
     public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
         this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
@@ -1435,6 +1465,7 @@ public final class SystemConfig {
     public int getGroupConcatMaxLen() {
         return groupConcatMaxLen;
     }
+
     @SuppressWarnings("unused")
     public void setGroupConcatMaxLen(int maxLen) {
         if (maxLen >= 0) {
@@ -1465,12 +1496,12 @@ public final class SystemConfig {
                 ", bindIp=" + bindIp +
                 ", serverPort=" + serverPort +
                 ", managerPort=" + managerPort +
-                ", processors=" + processors +
-                ", backendProcessors=" + backendProcessors +
-                ", processorExecutor=" + processorExecutor +
-                ", backendProcessorExecutor=" + backendProcessorExecutor +
-                ", complexExecutor=" + complexExecutor +
-                ", writeToBackendExecutor=" + writeToBackendExecutor +
+                ", NIOFrontRW=" + NIOFrontRW +
+                ", NIOBackendRW=" + NIOBackendRW +
+                ", frontWorker=" + frontWorker +
+                ", backendWorker=" + backendWorker +
+                ", complexWorker=" + complexWorker +
+                ", writeToBackendWorker=" + writeToBackendWorker +
                 ", serverBacklog=" + serverBacklog +
                 ", maxCon=" + maxCon +
                 ", useCompression=" + useCompression +
@@ -1552,6 +1583,7 @@ public final class SystemConfig {
                 ", tableByUserByEntryTableSize=" + tableByUserByEntryTableSize +
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
+                ", joinStrategyType=" + joinStrategyType +
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 "]";
     }

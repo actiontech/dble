@@ -66,8 +66,8 @@ public final class DDLProxyMetaManager {
                     ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.DDL);
                     DistributeLock lock = clusterHelper.createDistributeLock(ddlLockPathMeta, ddlInfo);
                     if (!lock.acquire()) {
-                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_prepare, "Failed to acquire table[" + tableFullName + "]’s ddlLock，the ddlLock's path is " + ddlLockPathMeta));
-                        String msg = "Found another instance doing ddl, duo to table[" + tableFullName + "]’s ddlLock is exists";
+                        DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.notice_cluster_ddl_prepare, "Failed to acquire table[" + tableFullName + "]'s ddlLock，the ddlLock's path is " + ddlLockPathMeta));
+                        String msg = "Found another instance doing ddl, duo to table[" + tableFullName + "]'s ddlLock is exists";
                         throw new Exception(msg);
                     }
                     DistributeLockManager.addLock(lock);
@@ -115,7 +115,7 @@ public final class DDLProxyMetaManager {
             boolean isUpdateSucc = true;
             // 1.local metadata update
             if (!isExecSucc) {
-                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, "The table[" + schema + "." + table + "]’s metadata is not updated because ddl execution failed"));
+                DDLTraceHelper.log(shardingService, d -> d.info(DDLTraceHelper.Stage.update_table_metadata, "The table[" + schema + "." + table + "]'s metadata is not updated because ddl execution failed"));
             } else {
                 switch (rrs.getDdlType()) {
                     case DROP_TABLE:
@@ -250,7 +250,7 @@ public final class DDLProxyMetaManager {
         public static boolean updateMetaData(String schema, String table, @Nullable DDLInfo ddlInfo, boolean isExecSucc) {
             ProxyMetaManager proxyMetaManager = ProxyMeta.getInstance().getTmManager();
             if (!isExecSucc) {
-                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_table_metadata, "The table[" + schema + "." + table + "]’s metadata is not updated because ddl execution failed");
+                DDLTraceHelper.log2(null, DDLTraceHelper.Stage.update_table_metadata, "The table[" + schema + "." + table + "]'s metadata is not updated because ddl execution failed");
             } else {
                 if (ddlInfo != null) {
                     switch (ddlInfo.getType()) {

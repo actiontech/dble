@@ -105,6 +105,9 @@ public final class RouteResultset implements Serializable {
     }
 
     public HintPlanInfo getHintPlanInfo() {
+        if (hintPlanInfo == null) {
+            hintPlanInfo = new HintPlanInfo();
+        }
         return hintPlanInfo;
     }
 

@@ -64,15 +64,15 @@ public final class DbleServer {
     //used by manager command show @@binlog_status to get a stable GTID
     private final AtomicBoolean backupLocked = new AtomicBoolean(false);
 
-    public static final String BUSINESS_EXECUTOR_NAME = "BusinessExecutor";
-    public static final String BACKEND_BUSINESS_EXECUTOR_NAME = "backendBusinessExecutor";
-    public static final String WRITE_TO_BACKEND_EXECUTOR_NAME = "writeToBackendExecutor";
-    public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryExecutor";
-    public static final String TIMER_EXECUTOR_NAME = "Timer";
-    public static final String FRONT_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT-";
-    public static final String BACKEND_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND-";
-    public static final String FRONT_BACKEND_SUFFIX = "-RW";
-    public static final String AIO_EXECUTOR_NAME = DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO";
+    public static final String FRONT_WORKER_NAME = "frontWorker";
+    public static final String BACKEND_WORKER_NAME = "backendWorker";
+    public static final String WRITE_TO_BACKEND_WORKER_NAME = "writeToBackendWorker";
+    public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryWorker";
+    public static final String TIMER_WORKER_NAME = "Timer";
+    public static final String NIO_FRONT = "NIOFront";
+    public static final String NIO_BACKEND = "NIOBackend";
+    public static final String NIO_SUFFIX = "-RW";
+    public static final String AIO_EXECUTOR_NAME = "AIO";
 
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
@@ -99,10 +99,10 @@ public final class DbleServer {
     private IOProcessor[] frontProcessors;
     private IOProcessor[] backendProcessors;
     private SocketConnector connector;
+    private ExecutorService nioFrontExecutor;
+    private ExecutorService nioBackendExecutor;
     private ExecutorService frontExecutor;
     private ExecutorService backendExecutor;
-    private ExecutorService businessExecutor;
-    private ExecutorService backendBusinessExecutor;
     private ExecutorService writeToBackendExecutor;
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
@@ -155,8 +155,8 @@ public final class DbleServer {
         LOGGER.info("===========================================Init bufferPool finish=================================");
 
         // startup processors
-        int frontProcessorCount = SystemConfig.getInstance().getProcessors();
-        int backendProcessorCount = SystemConfig.getInstance().getBackendProcessors();
+        int frontProcessorCount = SystemConfig.getInstance().getNIOFrontRW();
+        int backendProcessorCount = SystemConfig.getInstance().getNIOBackendRW();
         frontProcessors = new IOProcessor[frontProcessorCount];
         backendProcessors = new IOProcessor[backendProcessorCount];
 
@@ -202,10 +202,10 @@ public final class DbleServer {
                     SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), this.asyncChannelGroups[0]);
         } else {
             for (int i = 0; i < frontProcessorCount; i++) {
-                frontExecutor.execute(new RW(frontRegisterQueue));
+                nioFrontExecutor.execute(new RW(frontRegisterQueue));
             }
             for (int i = 0; i < backendProcessorCount; i++) {
-                backendExecutor.execute(new RW(backendRegisterQueue));
+                nioBackendExecutor.execute(new RW(backendRegisterQueue));
             }
 
             connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendRegisterQueue);
@@ -295,13 +295,13 @@ public final class DbleServer {
     }
 
     private void initExecutor(int frontProcessorCount, int backendProcessorCount) {
-        businessExecutor = ExecutorUtil.createFixed(BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getProcessorExecutor(), runnableMap);
-        backendBusinessExecutor = ExecutorUtil.createFixed(BACKEND_BUSINESS_EXECUTOR_NAME, SystemConfig.getInstance().getBackendProcessorExecutor(), runnableMap);
-        writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_EXECUTOR_NAME, SystemConfig.getInstance().getWriteToBackendExecutor(), runnableMap);
-        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexExecutor(), runnableMap);
-        timerExecutor = ExecutorUtil.createFixed(TIMER_EXECUTOR_NAME, 1);
-        frontExecutor = ExecutorUtil.createFixed(FRONT_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, frontProcessorCount, runnableMap);
-        backendExecutor = ExecutorUtil.createFixed(BACKEND_EXECUTOR_NAME, FRONT_BACKEND_SUFFIX, backendProcessorCount, runnableMap);
+        frontExecutor = ExecutorUtil.createFixed(FRONT_WORKER_NAME, SystemConfig.getInstance().getFrontWorker(), runnableMap);
+        backendExecutor = ExecutorUtil.createFixed(BACKEND_WORKER_NAME, SystemConfig.getInstance().getBackendWorker(), runnableMap);
+        writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_WORKER_NAME, SystemConfig.getInstance().getWriteToBackendWorker(), runnableMap);
+        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexWorker(), runnableMap);
+        timerExecutor = ExecutorUtil.createFixed(TIMER_WORKER_NAME, 1);
+        nioFrontExecutor = ExecutorUtil.createFixed(NIO_FRONT, NIO_SUFFIX, frontProcessorCount, runnableMap);
+        nioBackendExecutor = ExecutorUtil.createFixed(NIO_BACKEND, NIO_SUFFIX, backendProcessorCount, runnableMap);
     }
 
     private void initServerConfig() throws Exception {
@@ -338,26 +338,26 @@ public final class DbleServer {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
 
             frontHandlerQueue = new ConcurrentLinkedDeque<>();
-            for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue));
+            for (int i = 0; i < SystemConfig.getInstance().getFrontWorker(); i++) {
+                frontExecutor.execute(new FrontendCurrentRunnable(frontHandlerQueue));
             }
 
             concurrentBackHandlerQueue = new ConcurrentLinkedQueue<>();
-            for (int i = 0; i < SystemConfig.getInstance().getBackendProcessorExecutor(); i++) {
-                backendBusinessExecutor.execute(new BackendCurrentRunnable(concurrentBackHandlerQueue));
+            for (int i = 0; i < SystemConfig.getInstance().getBackendWorker(); i++) {
+                backendExecutor.execute(new BackendCurrentRunnable(concurrentBackHandlerQueue));
             }
 
         } else {
 
-            frontHandlerQueue = new LinkedBlockingDeque<>(SystemConfig.getInstance().getProcessorExecutor() * 3000);
-            for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
-                businessExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) frontHandlerQueue));
+            frontHandlerQueue = new LinkedBlockingDeque<>(SystemConfig.getInstance().getFrontWorker() * 3000);
+            for (int i = 0; i < SystemConfig.getInstance().getFrontWorker(); i++) {
+                frontExecutor.execute(new FrontendBlockRunnable((BlockingDeque<ServiceTask>) frontHandlerQueue));
             }
 
         }
 
         writeToBackendQueue = new LinkedBlockingQueue<>();
-        for (int i = 0; i < SystemConfig.getInstance().getWriteToBackendExecutor(); i++) {
+        for (int i = 0; i < SystemConfig.getInstance().getWriteToBackendWorker(); i++) {
             writeToBackendExecutor.execute(new WriteToBackendRunnable(writeToBackendQueue));
         }
 
@@ -627,24 +627,24 @@ public final class DbleServer {
         return generalLogProcessor;
     }
 
-    public ExecutorService getBusinessExecutor() {
-        return businessExecutor;
+    public ExecutorService getFrontExecutor() {
+        return frontExecutor;
     }
 
     public ExecutorService getWriteToBackendExecutor() {
         return writeToBackendExecutor;
     }
 
-    public ExecutorService getBackendBusinessExecutor() {
-        return backendBusinessExecutor;
-    }
-
-    public ExecutorService getFrontExecutor() {
-        return frontExecutor;
-    }
-
     public ExecutorService getBackendExecutor() {
         return backendExecutor;
+    }
+
+    public ExecutorService getNioFrontExecutor() {
+        return nioFrontExecutor;
+    }
+
+    public ExecutorService getNioBackendExecutor() {
+        return nioBackendExecutor;
     }
 
     public ConcurrentLinkedQueue<AbstractConnection> getFrontRegisterQueue() {

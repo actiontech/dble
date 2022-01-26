@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.builder.HintNestLoopHelper;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
@@ -34,8 +35,17 @@ public class TableNode extends PlanNode {
     private List<String> columns;
     private List<SQLHint> hintList;
     private int charsetIndex = 63;
+    private HintNestLoopHelper hintNestLoopHelper;
 
     private TableNode() {
+    }
+
+    public void setHintNestLoopHelper(HintNestLoopHelper hintNestLoopHelper) {
+        this.hintNestLoopHelper = hintNestLoopHelper;
+    }
+
+    public HintNestLoopHelper getHintNestLoopHelper() {
+        return hintNestLoopHelper;
     }
 
     public TableNode(String schema, String viewName, List<String> columns) {

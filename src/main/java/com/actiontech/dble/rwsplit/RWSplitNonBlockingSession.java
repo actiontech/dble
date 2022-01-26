@@ -5,10 +5,12 @@
 
 package com.actiontech.dble.rwsplit;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
@@ -36,6 +38,7 @@ public class RWSplitNonBlockingSession extends Session {
 
     private volatile boolean preSendIsWrite = false; // Has the previous SQL been delivered to the write node?
     private volatile long preWriteResponseTime = 0; // Response time of the previous write node
+    private int reSelectNum;
 
     public RWSplitNonBlockingSession(RWSplitService service) {
         this.rwSplitService = service;
@@ -58,27 +61,7 @@ public class RWSplitNonBlockingSession extends Session {
         try {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
-            Boolean isMaster = canRunOnMaster(master); //  first
-            boolean firstValue = isMaster == null ? false : isMaster;
-            long rwStickyTime = SystemConfig.getInstance().getRwStickyTime();
-            if ((rwStickyTime > 0) && !firstValue) {
-                if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
-                    isMaster = true;
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("because in the sticky time range，so select write instance");
-                    }
-                } else {
-                    resetLastSqlResponseTime();
-                }
-            }
-            PhysicalDbInstance instance = rwGroup.select(isMaster); // second
-            boolean isWrite = !instance.isReadInstance();
-            this.setPreSendIsWrite(isWrite && firstValue); // ensure that the first and second results are write instances
-            checkDest(isWrite);
-            instance.getConnection(rwSplitService.getSchema(), handler, null, false);
-        } catch (IOException e) {
-            LOGGER.warn("select conn error", e);
-            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+            getConnection(handler, master, null);
         } catch (SQLSyntaxErrorException se) {
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         }
@@ -88,6 +71,14 @@ public class RWSplitNonBlockingSession extends Session {
         try {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
+            getConnection(handler, master, isWrite(write));
+        } catch (SQLSyntaxErrorException se) {
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        }
+    }
+
+    public void getConnection(RWSplitHandler handler, Boolean master, Boolean write) {
+        try {
             Boolean isMaster = canRunOnMaster(master); //  first
             boolean firstValue = isMaster == null ? false : isMaster;
             long rwStickyTime = SystemConfig.getInstance().getRwStickyTime();
@@ -101,14 +92,21 @@ public class RWSplitNonBlockingSession extends Session {
                     resetLastSqlResponseTime();
                 }
             }
-            PhysicalDbInstance instance = rwGroup.rwSelect(canRunOnMaster(isMaster), isWrite(write));
-            checkDest(!instance.isReadInstance());
+            PhysicalDbInstance instance = reSelectRWDbGroup(rwGroup).rwSelect(isMaster, write); // second
+            boolean isWrite = !instance.isReadInstance();
+            this.setPreSendIsWrite(isWrite && firstValue); // ensure that the first and second results are write instances
+            checkDest(isWrite);
             instance.getConnection(rwSplitService.getSchema(), handler, null, false);
+        } catch (SQLSyntaxErrorException se) {
+            rwGroup.unBindRwSplitSession(this);
+            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         } catch (IOException e) {
             LOGGER.warn("select conn error", e);
+            rwGroup.unBindRwSplitSession(this);
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
-        } catch (SQLSyntaxErrorException se) {
-            rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
+        } catch (Exception | Error e) {
+            rwGroup.unBindRwSplitSession(this);
+            throw e;
         }
     }
 
@@ -152,6 +150,30 @@ public class RWSplitNonBlockingSession extends Session {
             return;
         }
         throw new SQLSyntaxErrorException("unexpected dble_dest_expect,real[" + (isMaster ? "M" : "S") + "],expect[" + dest + "]");
+    }
+
+    public PhysicalDbGroup reSelectRWDbGroup(PhysicalDbGroup dbGroup) {
+        dbGroup.bindRwSplitSession(this);
+        if (dbGroup.isStop()) {
+            dbGroup.unBindRwSplitSession(this);
+            if (reSelectNum == 10) {
+                reSelectNum = 0;
+                LOGGER.warn("dbGroup`{}` is always invalid", rwSplitService.getUserConfig().getDbGroup());
+                throw new ConfigException("the dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is always invalid, pls check reason");
+            }
+            PhysicalDbGroup newDbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(rwSplitService.getUserConfig().getDbGroup());
+            if (newDbGroup == null) {
+                LOGGER.warn("dbGroup`{}` is invalid", rwSplitService.getUserConfig().getDbGroup());
+                throw new ConfigException("the dbGroup`" + rwSplitService.getUserConfig().getDbGroup() + "` is invalid");
+            } else {
+                reSelectNum++;
+                return reSelectRWDbGroup(newDbGroup);
+            }
+        } else {
+            reSelectNum = 0;
+            this.rwGroup = dbGroup;
+        }
+        return dbGroup;
     }
 
     public PhysicalDbGroup getRwGroup() {
@@ -211,6 +233,9 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public void close(String reason) {
+        if (null != rwGroup) {
+            rwGroup.unBindRwSplitSession(this);
+        }
         if (conn != null) {
             conn.close(reason);
         }

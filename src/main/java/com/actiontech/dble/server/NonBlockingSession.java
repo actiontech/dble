@@ -45,7 +45,10 @@ import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
-import com.actiontech.dble.singleton.*;
+import com.actiontech.dble.singleton.DDLTraceHelper;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
+import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
@@ -799,7 +802,7 @@ public class NonBlockingSession extends Session {
     public void releaseConnectionIfSafe(MySQLResponseService service, boolean needClosed) {
         RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
         if (node != null) {
-            if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLocked()) {
+            if ((this.shardingService.isAutocommit() || service.getConnection().isFromSlaveDB()) && !this.shardingService.isTxStart() && !this.shardingService.isLockTable()) {
                 releaseConnection((RouteResultsetNode) service.getAttachment(), needClosed);
             }
         }
@@ -920,7 +923,7 @@ public class NonBlockingSession extends Session {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("clear session resources " + this);
         }
-        if (!shardingService.isLocked()) {
+        if (!shardingService.isLockTable()) {
             this.releaseConnections(needClosed);
         }
         if (!transactionManager.isRetryXa()) {

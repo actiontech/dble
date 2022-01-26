@@ -8,18 +8,22 @@ package com.actiontech.dble.rwsplit;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.handler.HintDbInstanceHandler;
 import com.actiontech.dble.route.handler.HintMasterDBHandler;
 import com.actiontech.dble.route.parser.DbleHintParser;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.services.rwsplit.handle.PSHandler;
+import com.actiontech.dble.services.rwsplit.handle.PreparedStatementHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,11 +115,22 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     @Nullable
-    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException {
+    private RWSplitHandler getRwSplitHandler(byte[] originPacket, Callback callback) throws SQLSyntaxErrorException, IOException {
         RWSplitHandler handler = new RWSplitHandler(rwSplitService, originPacket, callback, false);
         if (conn != null && !conn.isClosed()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("select bind conn[id={}]", conn.getId());
+            }
+            // for ps needs to send master
+            if ((originPacket != null && originPacket.length > 4 && originPacket[4] == MySQLPacket.COM_STMT_EXECUTE)) {
+                long statementId = ByteUtil.readUB4(originPacket, 5);
+                PreparedStatementHolder holder = rwSplitService.getPrepareStatement(statementId);
+                if (holder.isMustMaster() && conn.getInstance().isReadInstance()) {
+                    holder.setExecuteOrigin(originPacket);
+                    PSHandler psHandler = new PSHandler(rwSplitService, holder);
+                    psHandler.execute(rwGroup);
+                    return null;
+                }
             }
             checkDest(!conn.getInstance().isReadInstance());
             handler.execute(conn);
@@ -220,9 +235,7 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public void unbindIfSafe() {
-        if (rwSplitService.isAutocommit() && !rwSplitService.isTxStart() && !rwSplitService.isLocked() &&
-                !rwSplitService.isInLoadData() && rwSplitService.getNameSet().isEmpty() &&
-                !rwSplitService.isInPrepare() && this.conn != null && !rwSplitService.isUsingTmpTable()) {
+        if (this.conn != null && rwSplitService.isKeepBackendConn()) {
             this.conn.release();
             this.conn = null;
         }

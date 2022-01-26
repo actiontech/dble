@@ -22,6 +22,7 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
     private final AtomicLong transactionsCounter = new AtomicLong(0);
     private final AtomicLong txId = new AtomicLong(0);
 
+    private volatile boolean isLockTable;
     protected volatile boolean txChainBegin;
     protected volatile boolean txStarted;
     protected final CommandCount commands;
@@ -54,6 +55,14 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
 
     public long getXid() {
         return txId.get();
+    }
+
+    public boolean isLockTable() {
+        return isLockTable;
+    }
+
+    public void setLockTable(boolean locked) {
+        isLockTable = locked;
     }
 
     // query and transaction count

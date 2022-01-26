@@ -64,7 +64,7 @@ public class DruidLockTableParser extends DruidImplicitCommitParser {
         }
 
         Set<RouteResultsetNode> lockedNodes = new HashSet<>();
-        if (service.isLocked()) {
+        if (service.isLockTable()) {
             lockedNodes.addAll(service.getSession2().getTargetMap().keySet());
         }
         List<RouteResultsetNode> nodes = new ArrayList<>();

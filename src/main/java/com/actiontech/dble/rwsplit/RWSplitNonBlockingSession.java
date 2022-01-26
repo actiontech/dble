@@ -92,7 +92,7 @@ public class RWSplitNonBlockingSession extends Session {
                     resetLastSqlResponseTime();
                 }
             }
-            PhysicalDbInstance instance = reSelectRWDbGroup(rwGroup).rwSelect(isMaster, write);
+            PhysicalDbInstance instance = reSelectRWDbGroup(rwGroup).rwSelect(isMaster, write); // second
             boolean isWrite = !instance.isReadInstance();
             this.setPreSendIsWrite(isWrite && firstValue); // ensure that the first and second results are write instances
             checkDest(isWrite);

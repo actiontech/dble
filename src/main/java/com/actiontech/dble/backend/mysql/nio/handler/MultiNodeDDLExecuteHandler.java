@@ -26,12 +26,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
  */
 public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
+
+    private AtomicBoolean specialHandleFlag = new AtomicBoolean(false); // execute special handling only once
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session, true);
@@ -99,8 +102,9 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             }
             errConnection.add(conn);
             if (decrementToZero(conn)) {
-                session.handleSpecial(rrs, false, getDDLErrorInfo());
+                handleSpecial(rrs, false, getDDLErrorInfo());
                 DDLTraceManager.getInstance().endDDL(session.getSource(), getDDLErrorInfo());
+                LOGGER.warn("DDL execution failed");
                 packetId++;
                 if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
@@ -168,26 +172,28 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn,
                     DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             session.setBackendResponseEndTime((MySQLConnection) conn);
-            ServerConnection source = session.getSource();
-            OkPacket ok = new OkPacket();
-            ok.read(data);
+
             lock.lock();
             try {
+                ServerConnection source = session.getSource();
                 if (!decrementToZero(conn))
                     return;
                 if (isFail()) {
+                    handleSpecial(rrs, false, null);
                     DDLTraceManager.getInstance().endDDL(source, "ddl end with execution failure");
-                    session.handleSpecial(rrs, false, null);
+                    LOGGER.warn("DDL execution failed");
                     session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), false);
                 } else {
-                    boolean metaInitial = session.handleSpecial(rrs, true, null);
+                    boolean metaInitial = handleSpecial(rrs, true, null);
                     if (!metaInitial) {
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");
                         executeMetaDataFailed();
                     } else {
                         session.setRowCount(0);
                         DDLTraceManager.getInstance().endDDL(source, null);
+                        OkPacket ok = new OkPacket();
+                        ok.read(data);
                         ok.setPacketId(++packetId); // OK_PACKET
                         ok.setMessage(null);
                         ok.setAffectedRows(0);
@@ -251,8 +257,9 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         }
         errConnection.add(conn);
         if (canResponse()) {
-            session.handleSpecial(rrs, false, null);
+            handleSpecial(rrs, false, null);
             DDLTraceManager.getInstance().endDDL(session.getSource(), new String(err.getMessage()));
+            LOGGER.warn("DDL execution failed");
             packetId++;
             if (byteBuffer == null) {
                 handleEndPacket(err.toBytes(), false);
@@ -276,11 +283,19 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
         return s.toString();
     }
 
+    private boolean handleSpecial(RouteResultset rrs0, boolean isSuccess, String errInfo) {
+        if (specialHandleFlag.compareAndSet(false, true)) {
+            return session.handleSpecial(rrs0, isSuccess, errInfo);
+        }
+        return true;
+    }
 
     private void handleEndPacket(byte[] data, boolean isSuccess) {
         session.clearResources(false);
         session.setResponseTime(isSuccess);
         session.getSource().write(data);
+        if (isSuccess)
+            session.multiStatementNextSql(session.getIsMultiStatement().get());
     }
 
 }

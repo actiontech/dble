@@ -61,7 +61,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private volatile boolean connClosed = false;
     protected AtomicBoolean writeToClient = new AtomicBoolean(false);
 
-
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
         this.node = rrs.getNodes()[0];
@@ -110,9 +109,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     protected void execute(BackendConnection conn) {
-        if (session.closed()) {
-            session.clearResources(rrs);
-            recycleBuffer();
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.setResponseHandler(this);
@@ -163,7 +160,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
+    protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
         String errUser = source.getUser();
         String errHost = source.getHost();
@@ -188,7 +185,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         }
         source.setTxInterrupt(errMsg);
-        session.handleSpecial(rrs, false);
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
@@ -220,12 +216,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
-            //handleSpecial
-            boolean metaInited = session.handleSpecial(rrs, true);
-            if (!metaInited) {
-                executeMetaDataFailed(conn);
-                return;
-            }
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -254,27 +244,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.multiStatementNextSql(multiStatementFlag);
         }
     }
-
-    protected void executeMetaDataFailed(BackendConnection conn) {
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
-                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime(false);
-        session.multiStatementPacket(errPacket, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        doSqlStat();
-        if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
-        }
-        session.multiStatementNextSql(multiStatementFlag);
-    }
-
 
     /**
      * select
@@ -308,7 +277,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void doSqlStat() {
+    public void doSqlStat() {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs.getStatement() != null) {
@@ -485,4 +454,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         return "SingleNodeHandler [node=" + node + ", packetId=" + packetId + "]";
     }
 
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            session.clearResources(true);
+            recycleBuffer();
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

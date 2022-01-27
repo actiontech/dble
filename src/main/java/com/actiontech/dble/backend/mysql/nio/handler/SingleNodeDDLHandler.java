@@ -98,7 +98,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 session.multiStatementPacket(ok, packetId);
                 boolean multiStatementFlag = session.getIsMultiStatement().get();
                 if (writeToClient.compareAndSet(false, true)) {
-                    handleEndPacket(ok, true);
+                    handleEndPacket(ok.toBytes(), true);
                 }
                 session.multiStatementNextSql(multiStatementFlag);
             }

@@ -54,7 +54,7 @@ public final class SystemConfig {
     // CHECKSTYLE:ON
     private int frontWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
     private int backendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
-    private int complexWorker = frontWorker > 8 ? 8 : frontWorker;
+    private int complexQueryWorker = frontWorker > 8 ? 8 : frontWorker;
     private int writeToBackendWorker = (NIOFrontRW != 1) ? NIOFrontRW : 2;
     private int serverBacklog = 2048;
     private int maxCon = 0;
@@ -612,16 +612,16 @@ public final class SystemConfig {
         }
     }
 
-    public int getComplexWorker() {
-        return complexWorker;
+    public int getComplexQueryWorker() {
+        return complexQueryWorker;
     }
 
     @SuppressWarnings("unused")
-    public void setComplexWorker(int complexWorker) {
-        if (complexWorker > 0) {
-            this.complexWorker = complexWorker;
+    public void setComplexQueryWorker(int complexQueryWorker) {
+        if (complexQueryWorker > 0) {
+            this.complexQueryWorker = complexQueryWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "complexWorker", complexWorker, this.complexWorker));
+            problemReporter.warn(String.format(WARNING_FORMAT, "complexQueryWorker", complexQueryWorker, this.complexQueryWorker));
         }
     }
 
@@ -1500,7 +1500,7 @@ public final class SystemConfig {
                 ", NIOBackendRW=" + NIOBackendRW +
                 ", frontWorker=" + frontWorker +
                 ", backendWorker=" + backendWorker +
-                ", complexWorker=" + complexWorker +
+                ", complexQueryWorker=" + complexQueryWorker +
                 ", writeToBackendWorker=" + writeToBackendWorker +
                 ", serverBacklog=" + serverBacklog +
                 ", maxCon=" + maxCon +

@@ -69,9 +69,8 @@ public final class DbleServer {
     public static final String WRITE_TO_BACKEND_WORKER_NAME = "writeToBackendWorker";
     public static final String COMPLEX_QUERY_EXECUTOR_NAME = "complexQueryWorker";
     public static final String TIMER_WORKER_NAME = "Timer";
-    public static final String NIO_FRONT = "NIOFront";
-    public static final String NIO_BACKEND = "NIOBackend";
-    public static final String NIO_SUFFIX = "-RW";
+    public static final String NIO_FRONT_RW = "NIOFrontRW";
+    public static final String NIO_BACKEND_RW = "NIOBackendRW";
     public static final String AIO_EXECUTOR_NAME = "AIO";
 
     private volatile SystemVariables systemVariables = new SystemVariables();
@@ -298,10 +297,10 @@ public final class DbleServer {
         frontExecutor = ExecutorUtil.createFixed(FRONT_WORKER_NAME, SystemConfig.getInstance().getFrontWorker(), runnableMap);
         backendExecutor = ExecutorUtil.createFixed(BACKEND_WORKER_NAME, SystemConfig.getInstance().getBackendWorker(), runnableMap);
         writeToBackendExecutor = ExecutorUtil.createFixed(WRITE_TO_BACKEND_WORKER_NAME, SystemConfig.getInstance().getWriteToBackendWorker(), runnableMap);
-        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexWorker(), runnableMap);
+        complexQueryExecutor = ExecutorUtil.createCached(COMPLEX_QUERY_EXECUTOR_NAME, SystemConfig.getInstance().getComplexQueryWorker(), runnableMap);
         timerExecutor = ExecutorUtil.createFixed(TIMER_WORKER_NAME, 1);
-        nioFrontExecutor = ExecutorUtil.createFixed(NIO_FRONT, NIO_SUFFIX, frontProcessorCount, runnableMap);
-        nioBackendExecutor = ExecutorUtil.createFixed(NIO_BACKEND, NIO_SUFFIX, backendProcessorCount, runnableMap);
+        nioFrontExecutor = ExecutorUtil.createFixed(NIO_FRONT_RW, frontProcessorCount, runnableMap);
+        nioBackendExecutor = ExecutorUtil.createFixed(NIO_BACKEND_RW, backendProcessorCount, runnableMap);
     }
 
     private void initServerConfig() throws Exception {

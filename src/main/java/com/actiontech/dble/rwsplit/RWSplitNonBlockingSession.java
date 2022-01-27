@@ -66,7 +66,7 @@ public class RWSplitNonBlockingSession extends Session {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
             getConnection(handler, master, null);
-        } catch (SQLSyntaxErrorException se) {
+        } catch (SQLSyntaxErrorException | IOException se) {
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         }
     }
@@ -76,7 +76,7 @@ public class RWSplitNonBlockingSession extends Session {
             RWSplitHandler handler = getRwSplitHandler(originPacket, callback);
             if (handler == null) return;
             getConnection(handler, master, isWrite(write));
-        } catch (SQLSyntaxErrorException se) {
+        } catch (SQLSyntaxErrorException | IOException se) {
             rwSplitService.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, se.getMessage());
         }
     }

@@ -71,10 +71,10 @@ public final class KillHandler {
 
         killConn = findFrontConn(id);
         if (killConn == null) {
-            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id: " + id);
             return;
-        } else if (!killConn.isManager() && !((ShardingService) killConn.getService()).getUser().equals(service.getUser())) {
-            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
+        } else if (!(killConn.getService() instanceof ShardingService) || !((ShardingService) killConn.getService()).getUser().equals(service.getUser())) {
+            service.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection: " + id);
             return;
         }
 

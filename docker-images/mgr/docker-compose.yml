@@ -126,7 +126,7 @@ services:
             MYSQL_REPLICATION_USER: repl
             MYSQL_REPLICATION_PASSWORD: 123456
     dble-server:
-        image: actiontech-dble:latest
+        image: actiontech/dble:latest
         container_name: dble-server
         hostname: dble-server
         privileged: true

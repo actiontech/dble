@@ -249,7 +249,7 @@ public final class ParameterMapping {
             src.remove(values);
             if (!Strings.isNullOrEmpty(compatibleVal) && Strings.isNullOrEmpty(valStr)) {
                 valStr = compatibleVal;
-                LOGGER.warn(values + " parameter has been replaced by the " + name + " parameter");
+                LOGGER.warn("property [ " + values + " ] has been replaced by the property [ " + name + " ]");
             }
         }
         return valStr;

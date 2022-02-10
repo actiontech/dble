@@ -299,6 +299,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case Assignment:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support assignment");
+            case SubGt:
+                item = new ItemFuncJsonExtract(itemLeft, itemRight, this.charsetIndex);
+                break;
+
+            case SubGtGt:
+                item = new ItemFuncJsonUnQuote(new ItemFuncJsonExtract(itemLeft, itemRight, this.charsetIndex), this.charsetIndex);
+                break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported kind expression:" + x.getOperator());
         }

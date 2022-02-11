@@ -122,6 +122,7 @@ public final class ShowSession {
         if (Objects.isNull(backendConnection)) {
             return null;
         }
+        sb.append(backendConnection);
         return createRowDataPacket(FIELD_COUNT, sc.getConnection().getId(), 1, sb.toString(), charset);
     }
 

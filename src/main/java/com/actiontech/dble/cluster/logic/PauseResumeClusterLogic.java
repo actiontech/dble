@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.PauseShardingNodeManager;
@@ -59,8 +60,9 @@ public class PauseResumeClusterLogic extends AbstractClusterLogic {
                             boolean nextTurn = false;
                             for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
-                                    if (!entry.getValue().isManager()) {
-                                        ShardingService shardingService = (ShardingService) entry.getValue().getService();
+                                    AbstractService service = entry.getValue().getService();
+                                    if (service instanceof ShardingService) {
+                                        ShardingService shardingService = (ShardingService) service;
                                         for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : shardingService.getSession2().getTargetMap().entrySet()) {
                                             if (shardingNodeSet.contains(conEntry.getKey().getName())) {
                                                 nextTurn = true;

@@ -34,6 +34,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         }
 
     }
+
     @Override
     public void clearResources() {
         sendData = null;
@@ -113,8 +114,12 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (session.closed()) {
             return;
         }
-        if (this.isFail()) {
+        final boolean isFail = isFailed.get();
+        if (isFail) {
+            isFailed.set(false);
+            LOGGER.warn("front connection[{}] commit error, because that [{}]", session.getSource(), error);
             createErrPkg(error).write(session.getSource());
+            error = null;
             setResponseTime(false);
         } else {
             boolean multiStatementFlag = session.getIsMultiStatement().get();

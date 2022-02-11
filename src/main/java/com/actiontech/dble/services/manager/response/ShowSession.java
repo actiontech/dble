@@ -12,13 +12,17 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * show front session detail info
@@ -71,7 +75,7 @@ public final class ShowSession {
                 if (front.isManager()) {
                     continue;
                 }
-                RowDataPacket row = getRow((ShardingService) front.getService(), service.getCharset().getResults());
+                RowDataPacket row = getRow(front.getService(), service.getCharset().getResults());
                 if (row != null) {
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
@@ -87,6 +91,16 @@ public final class ShowSession {
         lastEof.write(buffer, service);
     }
 
+    private static RowDataPacket getRow(AbstractService sc, String charset) {
+        if (sc instanceof ShardingService) {
+            return getRow((ShardingService) sc, charset);
+        } else if (sc instanceof RWSplitService) {
+            return getRow((RWSplitService) sc, charset);
+        } else {
+            return null;
+        }
+    }
+
     private static RowDataPacket getRow(ShardingService sc, String charset) {
         StringBuilder sb = new StringBuilder();
         NonBlockingSession session = sc.getSession2();
@@ -98,10 +112,25 @@ public final class ShowSession {
         for (BackendConnection backCon : backConnections) {
             sb.append(backCon).append("\r\n");
         }
-        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(sc.getConnection().getId() + "", charset));
-        row.add(StringUtil.encode(cnCount + "", charset));
-        row.add(StringUtil.encode(sb.toString(), charset));
+        return createRowDataPacket(FIELD_COUNT, sc.getConnection().getId(), cnCount, sb.toString(), charset);
+    }
+
+    private static RowDataPacket getRow(RWSplitService sc, String charset) {
+        StringBuilder sb = new StringBuilder();
+        RWSplitNonBlockingSession session = sc.getSession();
+        BackendConnection backendConnection = session.getConn();
+        if (Objects.isNull(backendConnection)) {
+            return null;
+        }
+        sb.append(backendConnection);
+        return createRowDataPacket(FIELD_COUNT, sc.getConnection().getId(), 1, sb.toString(), charset);
+    }
+
+    private static RowDataPacket createRowDataPacket(int fieldCount, long id, int cnCount, String sb, String charset) {
+        RowDataPacket row = new RowDataPacket(fieldCount);
+        row.add(StringUtil.encode(String.valueOf(id), charset));
+        row.add(StringUtil.encode(String.valueOf(cnCount), charset));
+        row.add(StringUtil.encode(sb, charset));
         return row;
     }
 }

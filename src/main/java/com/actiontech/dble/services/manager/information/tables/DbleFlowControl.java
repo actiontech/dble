@@ -6,9 +6,12 @@ import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.google.common.collect.Maps;
 
 import java.util.ArrayList;
@@ -21,7 +24,7 @@ public class DbleFlowControl extends ManagerBaseTable {
     private static final String COLUMN_CONNECTION_TYPE = "connection_type";
     private static final String COLUMN_CONNECTION_ID = "connection_id";
     private static final String COLUMN_CONNECTION_INFO = "connection_info";
-    private static final String COLUMN_WRITING_QUEUE_BYTES = "writing_queue_bytes" ;
+    private static final String COLUMN_WRITING_QUEUE_BYTES = "writing_queue_bytes";
     private static final String COLUMN_READING_QUEUE_BYTES = "reading_queue_bytes";
     private static final String COLUMN_FLOW_CONTROLLED = "flow_controlled";
 
@@ -58,12 +61,13 @@ public class DbleFlowControl extends ManagerBaseTable {
             for (IOProcessor p : processors) {
                 //find all front connection
                 for (FrontendConnection fc : p.getFrontends().values()) {
-                    if (!fc.isManager()) {
+                    AbstractService service = fc.getService();
+                    if (service instanceof ShardingService || service instanceof RWSplitService) {
                         int size = fc.getWritingSize().get();
                         LinkedHashMap<String, String> row = Maps.newLinkedHashMap();
                         row.put(COLUMN_CONNECTION_TYPE, "ServerConnection");
                         row.put(COLUMN_CONNECTION_ID, Long.toString(fc.getId()));
-                        row.put(COLUMN_CONNECTION_INFO, fc.getHost() + ":" + fc.getLocalPort() + "/" + ((ShardingService) fc.getService()).getSchema() + " user = " + ((ShardingService) fc.getService()).getUser());
+                        row.put(COLUMN_CONNECTION_INFO, fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) service).getSchema() + " user = " + ((FrontendService) service).getUser());
                         row.put(COLUMN_WRITING_QUEUE_BYTES, Integer.toString(size));
                         row.put(COLUMN_READING_QUEUE_BYTES, null);
                         row.put(COLUMN_FLOW_CONTROLLED, fc.isFrontWriteFlowControlled() ? "true" : "false");

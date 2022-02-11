@@ -7,9 +7,12 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -123,12 +126,13 @@ public final class FlowControlList {
         IOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
         for (IOProcessor p : processors) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (!fc.isManager()) {
+                AbstractService fcService = fc.getService();
+                if (fcService instanceof ShardingService || fcService instanceof RWSplitService) {
                     int size = fc.getWritingSize().get();
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode("ServerConnection", service.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getId()));
-                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) fc.getService()).getSchema() + " user = " + ((FrontendService) fc.getService()).getUser(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) fcService).getSchema() + " user = " + ((FrontendService) fcService).getUser(), service.getCharset().getResults()));
                     row.add(LongUtil.toBytes(size));
                     row.add(null); // not support
                     row.add(fc.isFrontWriteFlowControlled() ? "true".getBytes() : "false".getBytes());

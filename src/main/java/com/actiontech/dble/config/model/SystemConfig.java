@@ -1208,7 +1208,7 @@ public final class SystemConfig {
         if (writeToBackendWorker > 0) {
             this.writeToBackendWorker = writeToBackendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendWorker, this.writeToBackendWorker));
+            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendWorker", writeToBackendWorker, this.writeToBackendWorker));
         }
     }
 

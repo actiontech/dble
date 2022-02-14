@@ -151,7 +151,7 @@ public abstract class BackendService extends AbstractService {
             if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
                 threadName = Thread.currentThread().getName();
                 workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
-                if (threadName.startsWith("backend")) {
+                if (threadName.contains(DbleServer.BACKEND_WORKER_NAME)) {
                     if (workUsage == null) {
                         workUsage = new ThreadWorkUsage();
                         DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
@@ -174,7 +174,7 @@ public abstract class BackendService extends AbstractService {
             }
 
             // threadUsageStat end
-            if (workUsage != null && threadName.startsWith("backend")) {
+            if (workUsage != null && threadName.contains(DbleServer.BACKEND_WORKER_NAME)) {
                 workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
             }
         } finally {

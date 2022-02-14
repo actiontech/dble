@@ -53,10 +53,9 @@ public final class SelectedProcessor {
         if (PlanUtil.isGlobalOrER(qtn)) {
             // TODO:buildColumnRefers for every child
             List<Item> selList = qtn.getColumnsSelected();
-            for (Item pdSel : toPushColumns) {
-                if (!selList.contains(pdSel)) {
-                    selList.add(pdSel);
-                }
+            if (!toPushColumns.isEmpty()) {
+                selList.clear();
+                selList.addAll(toPushColumns);
             }
             qtn.setUpRefers(true);
             return qtn;
@@ -240,7 +239,6 @@ public final class SelectedProcessor {
 
     /**
      * check merge's subchild have distinct or aggregate function or >three table union
-     *
      */
     private static boolean mergeNodeChildsCheck(MergeNode merge) {
         for (PlanNode child : merge.getChildren()) {

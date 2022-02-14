@@ -146,7 +146,11 @@ public final class ByteUtil {
     }
 
     public static short getShort(byte[] bytes) {
-        return (short) ((0xff & bytes[0]) | (0xff00 & (bytes[1] << 8)));
+        if (bytes.length == 1) {
+            return (short) (0xff & bytes[0]);
+        } else {
+            return (short) ((0xff & bytes[0]) | (0xff00 & (bytes[1] << 8)));
+        }
     }
 
     public static char getChar(byte[] bytes) {

@@ -697,10 +697,9 @@ public class NonBlockingSession extends Session {
             //lock self meta
             ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
         } catch (NeedDelayedException e) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            // not happen
             throw e;
         } catch (Exception e) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
         }
     }

@@ -66,7 +66,7 @@ public class ManagerTableNode extends PlanNode {
                 newSelects.add(sel);
             else {
                 for (NamedField innerField : innerFields.keySet()) {
-                    ItemField col = new ItemField(null, sel.getTableName(), innerField.getName(), innerField.getCharsetIndex());
+                    ItemField col = new ItemField(null, sel.getTableName(), innerField.getName());
                     newSelects.add(col);
                 }
             }

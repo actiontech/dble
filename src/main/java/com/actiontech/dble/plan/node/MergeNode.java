@@ -105,7 +105,7 @@ public class MergeNode extends PlanNode {
                 throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "", "Duplicate column name " + coutField.getName());
             }
             checkDup.add(testDupField);
-            ItemField column = new ItemField(null, coutField.getTable(), coutField.getName(), coutField.getCharsetIndex());
+            ItemField column = new ItemField(null, coutField.getTable(), coutField.getName());
             column.getReferTables().clear();
             column.getReferTables().add(coutField.planNode);
             NamedField tmpField = new NamedField(null, coutField.getTable(), coutField.getName(), this);

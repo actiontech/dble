@@ -252,7 +252,7 @@ public class JoinNode extends PlanNode {
                     String name = field.getName();
                     for (String fieldName : usingFields) {
                         if (name.equals(fieldName)) {
-                            ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName, field.getCharsetIndex());
+                            ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);
                             newSels.add(col);
                         }
                     }
@@ -262,13 +262,13 @@ public class JoinNode extends PlanNode {
                     if (usingFields.contains(field.getName())) {
                         continue;
                     }
-                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                     newSels.add(col);
                 }
 
                 // add Remaining innerFields
                 for (NamedField field : innerFields.keySet()) {
-                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                     boolean contians = false;
                     for (Item f : newSels) {
                         if (f instanceof ItemField) {
@@ -285,7 +285,7 @@ public class JoinNode extends PlanNode {
 
             } else {
                 for (String fieldName : usingFields) {
-                    ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName); // fixme?: charsetIndex
+                    ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);
                     newSels.add(col);
                 }
 
@@ -293,7 +293,7 @@ public class JoinNode extends PlanNode {
                     if (usingFields.contains(field.getName())) {
                         continue;
                     }
-                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName(), field.getCharsetIndex());
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                     newSels.add(col);
                 }
             }

@@ -688,10 +688,9 @@ public class NonBlockingSession extends Session {
             //lock self meta
             DDLProxyMetaManager.Originator.addTableMetaLock(shardingService, schema, table, rrs.getStatement());
         } catch (NeedDelayedException e) {
-            DDLProxyMetaManager.Originator.removeTableMetaLock(shardingService, schema, table);
+            // not happen
             throw e;
         } catch (Exception e) {
-            DDLProxyMetaManager.Originator.removeTableMetaLock(shardingService, schema, table);
             throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
         }
     }

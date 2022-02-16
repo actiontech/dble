@@ -109,7 +109,6 @@ public class MergeNode extends PlanNode {
             column.getReferTables().clear();
             column.getReferTables().add(coutField.planNode);
             NamedField tmpField = new NamedField(null, coutField.getTable(), coutField.getName(), this);
-            tmpField.setCharsetIndex(coutField.getCharsetIndex());
             outerFields.put(tmpField, column);
             getColumnsSelected().add(column);
         }

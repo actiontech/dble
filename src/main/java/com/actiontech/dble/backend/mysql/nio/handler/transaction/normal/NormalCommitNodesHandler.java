@@ -117,9 +117,10 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         final boolean isFail = isFailed.get();
         if (isFail) {
             isFailed.set(false);
-            LOGGER.warn("front connection[{}] commit error, because that [{}]", session.getSource(), error);
-            createErrPkg(error).write(session.getSource());
-            error = null;
+            final String errorMsg = this.error;
+            this.error = null;
+            LOGGER.warn("front connection[{}] commit error, because that [{}]", session.getSource(), errorMsg);
+            createErrPkg(errorMsg).write(session.getSource());
             setResponseTime(false);
         } else {
             boolean multiStatementFlag = session.getIsMultiStatement().get();

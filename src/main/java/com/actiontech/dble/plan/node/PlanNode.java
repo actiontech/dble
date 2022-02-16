@@ -358,7 +358,6 @@ public abstract class PlanNode {
                 ((ItemFuncGroupConcat) sel).fixOrders(nameContext);
             }
             NamedField field = makeOutNamedField(sel);
-            field.setCharsetIndex(sel.getCharsetIndex());
             if (outerFields.containsKey(field) && isDuplicateField(this))
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");
             outerFields.put(field, sel);

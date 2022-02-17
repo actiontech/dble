@@ -288,6 +288,12 @@ public class MySQLBackAuthService extends BackendService implements AuthService 
         }
     }
 
+    @Override
+    public boolean haveNotReceivedMessage() {
+        throw new UnsupportedOperationException();
+    }
+
+
 
     protected boolean isSupportFlowControl() {
         return false;

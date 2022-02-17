@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2021 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2021 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net.impl.nio;
 
 import com.actiontech.dble.DbleServer;
@@ -103,6 +103,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
             wakeupFrontedSelector();
 
         } catch (Exception e) {
+            //if this exception is "SocketException: Invalid argument." , maybe you are doing setOption when the frontendConnection was closed by peer. In most of those cases , you are using SLB/LVS on MACOS, just ignore it.
             LOGGER.info(getName(), e);
             closeChannel(channel);
         }

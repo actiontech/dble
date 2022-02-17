@@ -11,6 +11,7 @@ import com.actiontech.dble.net.WriteOutTask;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.singleton.FlowController;
+import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -147,7 +148,12 @@ public abstract class AbstractConnection implements Connection {
             StatisticListener.getInstance().record(service, r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
             closeSocket();
-            LOGGER.info("connection id close for reason [{}] with connection {}", reason, this);
+            if (isOnlyFrontTcpConnected() && (reason.contains("Connection reset by peer") || reason.contains("stream closed") || reason.contains("Broken pipe"))) {
+                LOGGER.debug("connection id close for reason [{}] with connection {}", reason, this);
+            } else {
+                LOGGER.info("connection id close for reason [{}] with connection {}", reason, this);
+            }
+
             if (processor != null) {
                 processor.removeConnection(this);
             }
@@ -563,6 +569,17 @@ public abstract class AbstractConnection implements Connection {
 
     public void doNextWriteCheck() {
         this.socketWR.doNextWriteCheck();
+    }
+
+
+    /**
+     * heartbeat of SLB/LVS only create an tcp connection and then close it immediately without any data write to dble .(send reset)
+     *
+     * @return
+     */
+    public boolean isOnlyFrontTcpConnected() {
+        final AbstractService tmpService = getService();
+        return tmpService != null && tmpService instanceof MySQLFrontAuthService && ((MySQLFrontAuthService) tmpService).haveNotReceivedMessage();
     }
 
     public abstract void setProcessor(IOProcessor processor);

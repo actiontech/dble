@@ -32,6 +32,8 @@ public final class ParameterMapping {
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
     private static List<String> errorParameters = new ArrayList<>();
     private static final Map<String, String> COMPATIBLE_MAP = new HashMap<>();
+    private static Set<String> errorCompatibleSet = new HashSet<>();
+
 
     static {
         COMPATIBLE_MAP.put("complexQueryWorker", "complexExecutor");
@@ -69,14 +71,15 @@ public final class ParameterMapping {
                 try {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
+                    String propertyName = pd.getName();
+                    String message = getTypeErrorMessage(propertyName, valStr, cls);
                     if (problemReporter != null) {
-                        String message = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "";
                         problemReporter.warn(message);
                         errorParameters.add(message);
                     } else {
-                        LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + "");
+                        LOGGER.warn(message);
                     }
-                    src.remove(pd.getName());
+                    src.remove(propertyName);
                     continue;
                 }
             }
@@ -123,7 +126,7 @@ public final class ParameterMapping {
                 try {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
-                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString();
+                    String msg = getTypeErrorMessage(propertyName, valStr, cls);
                     if (problemReporter != null) {
                         problemReporter.warn(msg);
                     } else {
@@ -249,10 +252,28 @@ public final class ParameterMapping {
             src.remove(values);
             if (!Strings.isNullOrEmpty(compatibleVal) && Strings.isNullOrEmpty(valStr)) {
                 valStr = compatibleVal;
-                LOGGER.warn("property [ " + values + " ] has been replaced by the property [ " + name + " ]");
+                errorCompatibleSet.add(name);
+                LOGGER.warn("property [ " + values + " ] has been replaced by the property [ " + name + " ], you are recommended to use property [ " + name +
+                        " ] to replace the property [  " + values + " ] ");
             }
         }
         return valStr;
+    }
+
+    public static String getErrorCompatibleMessage(String name) {
+        String message = "";
+        if (errorCompatibleSet.contains(name)) {
+            String oldName = COMPATIBLE_MAP.get(name);
+            message = "property [ " + oldName + " ] has been replaced by the property [ " + name + " ].  ";
+        }
+        return message;
+    }
+
+    private static String getTypeErrorMessage(String name, String values, Class<?> cls) {
+        String message = getErrorCompatibleMessage(name);
+        StringBuilder sb = new StringBuilder(message);
+        sb.append("property [ ").append(name).append(" ] '").append(values).append("' data type should be ").append(cls.toString());
+        return sb.toString();
     }
 
 }

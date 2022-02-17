@@ -40,8 +40,11 @@ public final class OrderByPusher {
             // subQuery need push down order by
             if (qtn.isContainsSubQuery()) {
                 for (ItemSubQuery subQuery : qtn.getSubQueries()) {
-                    PlanNode planNode = optimize(subQuery.getPlanNode());
-                    subQuery.setPlanNode(planNode);
+                    PlanNode subQtn = subQuery.getPlanNode();
+                    // transform right join to left join
+                    subQtn = JoinPreProcessor.optimize(subQtn);
+                    subQtn = optimize(subQtn);
+                    subQuery.setPlanNode(subQtn);
                 }
             }
             return qtn;

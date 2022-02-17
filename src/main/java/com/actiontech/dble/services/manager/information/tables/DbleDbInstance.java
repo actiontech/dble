@@ -26,7 +26,6 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
 import com.actiontech.dble.services.manager.information.ManagerWritableTable;
-import com.actiontech.dble.services.manager.response.ShowHeartbeat;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.ResourceUtil;
@@ -251,7 +250,7 @@ public class DbleDbInstance extends ManagerWritableTable {
                 map.put(COLUMN_WRITE_CONN_REQUEST, String.valueOf(dbInstance.getCount(false)));
                 map.put(COLUMN_DISABLED, String.valueOf(dbInstance.isDisabled()));
                 map.put(COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, heartbeat.getLastActiveTime());
-                map.put(COLUMN_LAST_HEARTBEAT_ACK, ShowHeartbeat.getRdCode(heartbeat.getStatus()));
+                map.put(COLUMN_LAST_HEARTBEAT_ACK, heartbeat.getStatusStr());
                 map.put(COLUMN_HEARTBEAT_STATUS, heartbeat.isChecking() ? MySQLHeartbeat.CHECK_STATUS_CHECKING : MySQLHeartbeat.CHECK_STATUS_IDLE);
                 map.put(COLUMN_HEARTBEAT_FAILURE_IN_LAST_5MIN, String.valueOf(heartbeat.getErrorTimeInLast5MinCount()));
                 map.put(COLUMN_MIN_CONN_COUNT, String.valueOf(dbInstanceConfig.getMinCon()));

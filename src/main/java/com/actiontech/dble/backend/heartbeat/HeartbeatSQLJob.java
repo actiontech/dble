@@ -92,12 +92,13 @@ public class HeartbeatSQLJob implements ResponseHandler {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
         heartbeat.setErrorResult(new String(errPg.getMessage()));
-        String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + service;
 
-        LOGGER.info(errMsg);
-        if (!((MySQLResponseService) service).syncAndExecute()) {
-            service.getConnection().businessClose("unfinished sync");
+        MySQLResponseService responseService = (MySQLResponseService) service;
+        LOGGER.info("error response errNo: {}, {} from of sql: {} at con: {} db user = {}",
+                errPg.getErrNo(), new String(errPg.getMessage()), sql, service,
+                responseService.getConnection().getInstance().getConfig().getUser());
+        if (!responseService.syncAndExecute()) {
+            responseService.getConnection().businessClose("unfinished sync");
             doFinished(true);
             return;
         }

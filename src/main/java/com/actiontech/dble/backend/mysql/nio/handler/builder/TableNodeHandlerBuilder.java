@@ -15,6 +15,7 @@ import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -23,10 +24,7 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 class TableNodeHandlerBuilder extends BaseHandlerBuilder {
     private final TableNode node;
@@ -83,8 +81,9 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             List<RouteResultsetNode> rrssList = new ArrayList<>();
             MergeBuilder mergeBuilder = new MergeBuilder(session, node);
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(node.getSchema());
+            Item whereFilter = node.getWhereFilter();
             for (Item filter : filters) {
-                node.setWhereFilter(filter);
+                node.setWhereFilter(FilterUtils.and(whereFilter, filter));
                 RouteResultset rrs = pdVisitor.buildRouteResultset();
                 SQLStatementParser parser = new MySqlStatementParser(rrs.getSrcStatement());
                 SQLSelectStatement select = (SQLSelectStatement) parser.parseStatement();

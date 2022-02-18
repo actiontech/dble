@@ -230,8 +230,9 @@ public class JoinChooser {
         if (root.degree != 0) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "exists any relations route to the root node: " + root);
         }
-        final Iterator<HintPlanNode> hintIt = hintPlanInfo.iterator();
-        HintPlanNode nextHintNode = hintIt.next();
+        final Iterator<HintPlanInfo.Location> hintIt = hintPlanInfo.specialIterator();
+        HintPlanInfo.Location location = hintIt.next();
+        HintPlanNode nextHintNode = (HintPlanNode) location.hintPlanNode;
 
         {
             root = findNode(root, nextHintNode);
@@ -281,7 +282,12 @@ public class JoinChooser {
                 currentNode.markVisited();
                 //matched
                 if (prevNode != null) {
-                    joinNodeBuilder.appendNodeToRight(currentNode);
+                    if (location.left){
+                        joinNodeBuilder.appendNodeToLeft(currentNode);
+                    }else{
+                        joinNodeBuilder.appendNodeToRight(currentNode);
+                    }
+
                 }
 
                 //prepare for next traversal.
@@ -295,7 +301,8 @@ public class JoinChooser {
                     }
                     break traversal;
                 }
-                nextHintNode = hintIt.next();
+                location = hintIt.next();
+                nextHintNode = location.hintPlanNode;
                 for (JoinRelationDag rightNode : currentNode.rightNodes) {
                     if (rightNode.visited) {
                         continue;
@@ -819,6 +826,29 @@ public class JoinChooser {
             }
             joinNode.setJoinFilter(filters);
             joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherFilter);
+            this.result = joinNode;
+        }
+
+        private void appendNodeToLeft(JoinRelationDag leftNOdeOfJOin) {
+            boolean leftIsNull = result == null;
+            JoinNode joinNode = new JoinNode(leftNOdeOfJOin.node, leftIsNull ? rootNode : result, charsetIndex);
+            if (!leftNOdeOfJOin.relations.isInner) {
+                joinNode.setLeftOuterJoin();
+            }
+            List<ItemFuncEqual> filters = new ArrayList<>();
+            for (JoinRelation joinRelation : leftNOdeOfJOin.relations.erRelationLst) {
+                filters.add(joinRelation.filter);
+                if (leftIsNull) {
+                    joinNode.getERkeys().add(joinRelation.left.erTable);
+                } else {
+                    joinNode.getERkeys().addAll((result).getERkeys());
+                }
+            }
+            for (JoinRelation joinRelation : leftNOdeOfJOin.relations.normalRelationLst) {
+                filters.add(joinRelation.filter);
+            }
+            joinNode.setJoinFilter(filters);
+            joinNode.setOtherJoinOnFilter(leftNOdeOfJOin.relations.otherFilter);
             this.result = joinNode;
         }
 

@@ -61,6 +61,7 @@ public final class HintPlanInfo implements Iterable<HintPlanNode> {
 
     /**
      * return true if no node exists or hint is not set.
+     *
      * @return
      */
     public boolean isZeroNode() {
@@ -85,6 +86,96 @@ public final class HintPlanInfo implements Iterable<HintPlanNode> {
     @Override
     public Iterator<HintPlanNode> iterator() {
         return new GroupIterator();
+    }
+
+    public Iterator<Location> specialIterator() {
+        return new GroupIterator2();
+    }
+
+    public static class Location {
+        public HintPlanNode hintPlanNode;
+        public boolean left = true;
+
+        public Location(HintPlanNode hintPlanNode, boolean left) {
+            this.hintPlanNode = hintPlanNode;
+            this.left = left;
+        }
+    }
+
+    private class GroupIterator2 implements Iterator<Location> {
+        int groupIndex = 0;
+        int initGroupIndex = -1;
+        Iterator<HintPlanNode> nodeIterator;
+        private boolean left = false;
+
+
+        public GroupIterator2() {
+            for (int i = 0; i < groups.size(); i++) {
+                final HintPlanNodeGroup group = groups.get(i);
+                if (group.getType().equals(HintPlanNodeGroup.Type.ER)) {
+                    initGroupIndex = groupIndex = i;
+                    nodeIterator = groups.get(groupIndex).getNodes().iterator();
+                    left = true;
+
+                }
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (!left) {
+                do {
+                    if (nodeIterator != null && nodeIterator.hasNext()) {
+                        return true;
+                    } else {
+                        groupIndex++;
+                        if (groups.size() - 1 < groupIndex || groupIndex < 0) {
+                            break;
+                        }
+                        nodeIterator = groups.get(groupIndex).getNodes().iterator();
+                    }
+                } while (true);
+            } else {
+                do {
+                    if (nodeIterator != null && nodeIterator.hasNext()) {
+                        return true;
+                    } else {
+                        groupIndex--;
+                        if (groups.size() - 1 < groupIndex || groupIndex < 0) {
+                            break;
+                        }
+                        nodeIterator = groups.get(groupIndex).getNodes().iterator();
+                    }
+                } while (true);
+                groupIndex = initGroupIndex + 1;
+                left=false;
+                if (groups.size() - 1 < groupIndex || groupIndex < 0) {
+                    return false;
+                }
+                nodeIterator = groups.get(groupIndex).getNodes().iterator();
+
+                do {
+                    if (nodeIterator != null && nodeIterator.hasNext()) {
+                        return true;
+                    } else {
+                        groupIndex++;
+
+                        if (groups.size() - 1 < groupIndex || groupIndex < 0) {
+                            break;
+                        }
+                        nodeIterator = groups.get(groupIndex).getNodes().iterator();
+                    }
+                } while (true);
+
+            }
+
+            return false;
+        }
+
+        @Override
+        public Location next() {
+            return new Location(nodeIterator.next(), left);
+        }
     }
 
     private class GroupIterator implements Iterator<HintPlanNode> {

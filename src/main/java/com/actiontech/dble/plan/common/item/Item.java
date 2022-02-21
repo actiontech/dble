@@ -129,8 +129,17 @@ public abstract class Item {
         return charsetIndex;
     }
 
+
     public void setCharsetIndex(int charsetIndex) {
         this.charsetIndex = charsetIndex;
+    }
+
+    public int getCharsetPriority() {
+        return charsetPriority;
+    }
+
+    public void setCharsetPriority(int charsetPriority) {
+        this.charsetPriority = charsetPriority;
     }
 
     public enum ItemResult {
@@ -157,6 +166,7 @@ public abstract class Item {
     protected ItemResult cmpContext;
     /* the default charsetindex is my_charset_bin */
     protected int charsetIndex = 63;
+    protected int charsetPriority = 0;
     private HashSet<PlanNode> referTables;
 
     public boolean fixFields() {
@@ -918,11 +928,24 @@ public abstract class Item {
     }
 
     public final String getAlias() {
+        if (this.aliasName == null) {
+            if (itemName != null && surroundedByQuotation(itemName)) {
+                setAlias(this.itemName);
+            }
+        }
         return this.aliasName;
     }
 
     public final void setAlias(String alias) {
+        if (alias != null && surroundedByQuotation(alias)) {
+            alias = alias.substring(1, alias.length() - 1);
+        }
         this.aliasName = alias;
+    }
+
+    private boolean surroundedByQuotation(String value) {
+        char firstValue = value.charAt(0);
+        return (firstValue == '\'' || firstValue == '"') && (firstValue == value.charAt(value.length() - 1));
     }
 
     public String getPushDownName() {
@@ -985,6 +1008,7 @@ public abstract class Item {
     public String getDbName() {
         return null;
     }
+
     /**
      * added to construct all refers in an item
      *
@@ -1002,6 +1026,7 @@ public abstract class Item {
         clone.correlatedSubQuery = correlatedSubQuery;
         clone.withUnValAble = withUnValAble;
         clone.pushDownName = pushDownName;
+        clone.aliasName = aliasName;
         clone.getReferTables().addAll(getReferTables());
         return clone;
     }

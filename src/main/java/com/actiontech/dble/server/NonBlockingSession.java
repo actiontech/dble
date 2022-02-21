@@ -623,12 +623,11 @@ public class NonBlockingSession implements Session {
         String schema = rrs.getSchema();
         String table = rrs.getTable();
         try {
+            ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             //lock self meta
             ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
-            ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
         } catch (Exception e) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-            throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
+            throw new SQLNonTransientException(e.getMessage() + ",sql:" + rrs.getStatement());
         }
     }
 

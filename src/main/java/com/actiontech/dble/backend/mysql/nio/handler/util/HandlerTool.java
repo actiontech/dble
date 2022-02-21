@@ -62,8 +62,10 @@ public final class HandlerTool {
     }
 
     public static Field createField(FieldPacket fp) {
-        return Field.getFieldItem(fp.getName(), fp.getDb(), fp.getTable(), fp.getOrgTable(), fp.getType(),
+        final Field fieldItem = Field.getFieldItem(fp.getName(), fp.getDb(), fp.getTable(), fp.getOrgTable(), fp.getType(),
                 fp.getCharsetIndex(), (int) fp.getLength(), fp.getDecimals(), fp.getFlags());
+        fieldItem.setCharsetPriority(fp.getCharsetPriority());
+        return fieldItem;
     }
 
     public static List<Field> createFields(List<FieldPacket> fps) {
@@ -290,7 +292,13 @@ public final class HandlerTool {
         if (index < 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "field not found:" + col);
         Field field = fields.get(index);
-        ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName());
+        // if org col contains chinese, but push down's use alias col
+        int charsetIndex = field.getCharsetIndex();
+        if (col.getCharsetPriority() < field.getCharsetPriority()) {
+            charsetIndex = col.getCharsetIndex();
+        }
+        field.setCharsetIndex(charsetIndex);
+        ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName(), charsetIndex);
         ret.setField(fields, index);
         ret.setItemName(col.getPushDownName() == null ? col.getItemName() : col.getPushDownName());
         return ret;

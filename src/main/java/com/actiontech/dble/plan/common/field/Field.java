@@ -104,6 +104,7 @@ public abstract class Field {
     protected String orgTable;
     protected String dbName;
     protected int charsetIndex;
+    protected int charsetPriority = 0;
     protected String javaCharsetName;
     protected long flags;
     protected byte[] ptr;
@@ -306,5 +307,14 @@ public abstract class Field {
 
     public void setDecimals(int decimals) {
         this.decimals = decimals;
+    }
+
+
+    public int getCharsetPriority() {
+        return charsetPriority;
+    }
+
+    public void setCharsetPriority(int charsetPriority) {
+        this.charsetPriority = charsetPriority;
     }
 }

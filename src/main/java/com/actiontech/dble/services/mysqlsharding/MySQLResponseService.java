@@ -124,8 +124,6 @@ public class MySQLResponseService extends BackendService {
         boolean changeUser = isChangeUser(service);
         if (changeUser) return;
 
-        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit(),
-                service.getUsrVariables(), service.getSysVariables());
         if (originPacket.length > 4) {
             byte type = originPacket[4];
             if (type == MySQLPacket.COM_STMT_PREPARE) {
@@ -136,6 +134,10 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = new FetchResponseHandler(this);
             } else if (type == MySQLPacket.COM_FIELD_LIST) {
                 protocolResponseHandler = new FieldListResponseHandler(this);
+            } else if (type == MySQLPacket.COM_STMT_CLOSE) {
+                // no response
+                writeDirectly(originPacket);
+                return;
             } else if (service.isInLoadData()) {
                 if (service.isFirstInLoadData()) {
                     protocolResponseHandler = new LoadDataResponseHandler(this);
@@ -145,6 +147,8 @@ public class MySQLResponseService extends BackendService {
             }
         }
 
+        StringBuilder synSQL = getSynSql(service.getCharset(), service.getTxIsolation(), service.isAutocommit(),
+                service.getUsrVariables(), service.getSysVariables());
         if (synSQL != null) {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }

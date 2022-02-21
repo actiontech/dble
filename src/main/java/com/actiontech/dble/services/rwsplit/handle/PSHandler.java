@@ -55,7 +55,7 @@ public class PSHandler implements ResponseHandler, PreparedResponseHandler {
         byte[] originExecuteByte = holder.getExecuteOrigin();
         if (holder.isNeedAddFieldType()) {
             length += paramsCount * 2;
-            ByteBuffer buffer = ByteBuffer.allocate(originExecuteByte.length + paramsCount * 2);
+            ByteBuffer buffer = service.allocate(originExecuteByte.length + paramsCount * 2);
             buffer.put(originExecuteByte, 0, 14 + nullBitMapSize);
             ByteUtil.writeUB3(buffer, length, 0);
             //flag type
@@ -65,7 +65,7 @@ public class PSHandler implements ResponseHandler, PreparedResponseHandler {
             byte[] fileType = holder.getFieldType();
             buffer.put(fileType, 0, fileType.length);
             buffer.position(15 + nullBitMapSize + paramsCount * 2);
-            buffer.put(originExecuteByte, 15 + nullBitMapSize, buffer.remaining());
+            buffer.put(originExecuteByte, 15 + nullBitMapSize, originExecuteByte.length - (15 + nullBitMapSize));
             service.setResponseHandler(this);
             service.execute(buffer);
         } else {

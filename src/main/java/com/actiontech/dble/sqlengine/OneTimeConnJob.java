@@ -68,7 +68,7 @@ public class OneTimeConnJob extends SQLJob {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
-        service.getConnection().businessClose("conn used for once");
+        service.getConnection().businessClose("conn used for once,sql is " + sql);
         doFinished(false);
     }
 

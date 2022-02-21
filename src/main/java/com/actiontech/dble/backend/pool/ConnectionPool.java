@@ -293,8 +293,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         return removed;
     }
 
-
-    public void softCloseAllConnections(final String closureReason) {
+    private void softCloseAllConnections(final String closureReason) {
         while (totalConnections.get() > 0) {
             for (PooledConnection conn : allConnections) {
                 if (conn.getState() == STATE_IN_USE) {

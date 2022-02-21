@@ -10,6 +10,9 @@ import com.actiontech.dble.plan.common.item.FieldTypes;
 
 import java.util.List;
 
+import static com.actiontech.dble.plan.common.field.FieldUtil.ItemResult.*;
+
+
 public class FieldUtil {
     public static final int NOT_NULL_FLAG = 1; /* Field can't be NULL */
     public static final int PRI_KEY_FLAG = 2; /* Field is part of a primary key */
@@ -179,6 +182,50 @@ public class FieldUtil {
     public static FieldTypes fieldTypeMerge(FieldTypes a, FieldTypes b) {
         return FIELD_TYPES_MERGE_RULES[fieldType2Index(a)][fieldType2Index(b)];
     }
+
+    public static ItemResult resultMergeType(FieldTypes fieldType) {
+        return FIELD_TYPES_RESULT_TYPE[fieldType2Index(fieldType)];
+    }
+
+    public enum ItemResult {
+        STRING_RESULT, REAL_RESULT, INT_RESULT, ROW_RESULT,
+        DECIMAL_RESULT
+    }
+
+    ;
+
+    private static final ItemResult[] FIELD_TYPES_RESULT_TYPE = new ItemResult[]{
+            //MYSQL_TYPE_DECIMAL      MYSQL_TYPE_TINY
+            DECIMAL_RESULT, INT_RESULT,
+            //MYSQL_TYPE_SHORT        MYSQL_TYPE_LONG
+            INT_RESULT, INT_RESULT,
+            //MYSQL_TYPE_FLOAT        MYSQL_TYPE_DOUBLE
+            REAL_RESULT, REAL_RESULT,
+            //MYSQL_TYPE_NULL         MYSQL_TYPE_TIMESTAMP
+            STRING_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_LONGLONG     MYSQL_TYPE_INT24
+            INT_RESULT, INT_RESULT,
+            //MYSQL_TYPE_DATE         MYSQL_TYPE_TIME
+            STRING_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_DATETIME     MYSQL_TYPE_YEAR
+            STRING_RESULT, INT_RESULT,
+            //MYSQL_TYPE_NEWDATE      MYSQL_TYPE_VARCHAR
+            STRING_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_BIT          <16>-<244>
+            STRING_RESULT,
+            //MYSQL_TYPE_JSON
+            STRING_RESULT,
+            //MYSQL_TYPE_NEWDECIMAL   MYSQL_TYPE_ENUM
+            DECIMAL_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_SET          MYSQL_TYPE_TINY_BLOB
+            STRING_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_MEDIUM_BLOB  MYSQL_TYPE_LONG_BLOB
+            STRING_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_BLOB         MYSQL_TYPE_VAR_STRING
+            STRING_RESULT, STRING_RESULT,
+            //MYSQL_TYPE_STRING       MYSQL_TYPE_GEOMETRY
+            STRING_RESULT, STRING_RESULT,
+    };
 
     private static final FieldTypes[][] FIELD_TYPES_MERGE_RULES = new FieldTypes[][]{
             /* enum_field_types.MYSQL_TYPE_DECIMAL -> */

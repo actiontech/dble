@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -126,6 +127,13 @@ public class UnionHandler extends BaseDMLHandler {
         FieldTypes fieldType1 = FieldTypes.valueOf(fp1.getType());
         FieldTypes fieldType2 = FieldTypes.valueOf(fp2.getType());
         FieldTypes mergeFieldType = FieldUtil.fieldTypeMerge(fieldType1, fieldType2);
+        if (FieldUtil.resultMergeType(mergeFieldType) == FieldUtil.ItemResult.STRING_RESULT) {
+            final int binary = CharsetUtil.getCollationIndex("binary");
+            if (fp1.getCharsetIndex() == binary || fp2.getCharsetIndex() == binary) {
+                union.setCharsetIndex(binary);
+                union.setCharsetPriority(-1);
+            }
+        }
         union.setType(mergeFieldType.numberValue());
         return union;
     }

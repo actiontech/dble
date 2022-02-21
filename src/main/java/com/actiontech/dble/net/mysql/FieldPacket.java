@@ -50,6 +50,7 @@ public class FieldPacket extends MySQLPacket {
     private byte[] name;
     private byte[] orgName;
     private int charsetIndex;
+    protected int charsetPriority = 0;
     private long length;
     private int type;
     private int flags;
@@ -242,5 +243,13 @@ public class FieldPacket extends MySQLPacket {
 
     public void setDefinition(byte[] definition) {
         this.definition = definition;
+    }
+
+    public int getCharsetPriority() {
+        return charsetPriority;
+    }
+
+    public void setCharsetPriority(int charsetPriority) {
+        this.charsetPriority = charsetPriority;
     }
 }

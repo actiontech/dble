@@ -59,7 +59,7 @@ public class ManagerQueryHandler {
                     ok.write(service.getConnection());
                     break;
                 case ManagerParse.SHOW:
-                    DbleServer.getInstance().getComplexQueryExecutor().execute(() -> ShowHandler.handle(sql, service, rs >>> SHIFT));
+                    ShowHandler.handle(sql, service, rs >>> SHIFT);
                     break;
                 case ManagerParse.DESCRIBE:
                     Describe.execute(sql, service);

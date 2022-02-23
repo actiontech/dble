@@ -321,7 +321,7 @@ public class JoinChooser {
             HintPlanNode finalNextHintNode = nextHintNode;
             final boolean nodeExist = isHintNodeExist(finalNextHintNode);
             if (!nodeExist) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint.The node '" + nextHintNode.getName() + "' isn't exist.");
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint.The node '" + nextHintNode.getName() + "' doesn't exist.");
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint. please check the node '" + nextHintNode.getName() + "',there are no previous nodes connect to it.");
             }

@@ -45,7 +45,7 @@ public class ItemField extends ItemIdent {
     }
 
     public ItemField(Field field) {
-        this(null, field.getTable(), field.getName(), field.getCharsetIndex());
+        super(null, field.getTable(), field.getName());
         setField(field);
     }
 

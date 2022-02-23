@@ -8,6 +8,7 @@ package com.actiontech.dble.config.model;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.util.NetUtil;
@@ -568,7 +569,8 @@ public final class SystemConfig {
         if (NIOFrontRW > 0) {
             this.NIOFrontRW = NIOFrontRW;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "NIOFrontRW", NIOFrontRW, this.NIOFrontRW));
+            String message = ParameterMapping.getErrorCompatibleMessage("NIOFrontRW");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "NIOFrontRW", NIOFrontRW, this.NIOFrontRW));
         }
     }
 
@@ -581,7 +583,8 @@ public final class SystemConfig {
         if (NIOBackendRW > 0) {
             this.NIOBackendRW = NIOBackendRW;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "NIOBackendRW", NIOBackendRW, this.NIOBackendRW));
+            String message = ParameterMapping.getErrorCompatibleMessage("NIOBackendRW");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "NIOBackendRW", NIOBackendRW, this.NIOBackendRW));
         }
     }
     // CHECKSTYLE:ON
@@ -595,7 +598,8 @@ public final class SystemConfig {
         if (frontWorker > 0) {
             this.frontWorker = frontWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "frontWorker", frontWorker, this.frontWorker));
+            String message = ParameterMapping.getErrorCompatibleMessage("frontWorker");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "frontWorker", frontWorker, this.frontWorker));
         }
     }
 
@@ -608,7 +612,8 @@ public final class SystemConfig {
         if (backendWorker > 0) {
             this.backendWorker = backendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "backendWorker", backendWorker, this.backendWorker));
+            String message = ParameterMapping.getErrorCompatibleMessage("backendWorker");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "backendWorker", backendWorker, this.backendWorker));
         }
     }
 
@@ -621,7 +626,8 @@ public final class SystemConfig {
         if (complexQueryWorker > 0) {
             this.complexQueryWorker = complexQueryWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "complexQueryWorker", complexQueryWorker, this.complexQueryWorker));
+            String message = ParameterMapping.getErrorCompatibleMessage("complexQueryWorker");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "complexQueryWorker", complexQueryWorker, this.complexQueryWorker));
         }
     }
 
@@ -1208,7 +1214,8 @@ public final class SystemConfig {
         if (writeToBackendWorker > 0) {
             this.writeToBackendWorker = writeToBackendWorker;
         } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendWorker", writeToBackendWorker, this.writeToBackendWorker));
+            String message = ParameterMapping.getErrorCompatibleMessage("writeToBackendWorker");
+            problemReporter.warn(message + String.format(WARNING_FORMAT, "writeToBackendWorker", writeToBackendWorker, this.writeToBackendWorker));
         }
     }
 

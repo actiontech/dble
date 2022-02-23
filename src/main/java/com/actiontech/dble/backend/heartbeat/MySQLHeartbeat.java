@@ -166,7 +166,7 @@ public class MySQLHeartbeat {
         this.status = ERROR_STATUS;
         startErrorTime.compareAndSet(-1, System.currentTimeMillis());
         Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
-        AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
+        AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.getStatusStr() + ", message: " + this.message, "mysql", this.source.getConfig().getId(), labels);
         if (errorRetryCount > 0 && errorCount.get() < errorRetryCount) {
             LOGGER.warn("retry to do heartbeat for the " + errorCount.incrementAndGet() + " times");
             heartbeat(); // error count not enough, heart beat again
@@ -189,7 +189,7 @@ public class MySQLHeartbeat {
         }
         if (this.status != OK_STATUS) {
             Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
-            AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
+            AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.getStatusStr(), "mysql", this.source.getConfig().getId(), labels);
         }
     }
 
@@ -272,6 +272,21 @@ public class MySQLHeartbeat {
 
     public int getStatus() {
         return status;
+    }
+
+    public String getStatusStr() {
+        switch (status) {
+            case 0:
+                return "init";
+            case 1:
+                return "ok";
+            case -1:
+                return "error";
+            case -2:
+                return "time_out";
+            default:
+                return null;
+        }
     }
 
     public boolean isChecking() {

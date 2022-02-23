@@ -135,6 +135,13 @@ public abstract class Item {
         this.charsetIndex = charsetIndex;
     }
 
+    public int getCharsetPriority() {
+        return charsetPriority;
+    }
+
+    public void setCharsetPriority(int charsetPriority) {
+        this.charsetPriority = charsetPriority;
+    }
 
     public enum ItemResult {
         STRING_RESULT, REAL_RESULT, INT_RESULT, ROW_RESULT, DECIMAL_RESULT
@@ -160,6 +167,7 @@ public abstract class Item {
     protected ItemResult cmpContext;
     /* the default charset index is my_charset_bin */
     protected int charsetIndex = 63;
+    protected int charsetPriority = 0;
     private HashSet<PlanNode> referTables;
 
     public boolean fixFields() {

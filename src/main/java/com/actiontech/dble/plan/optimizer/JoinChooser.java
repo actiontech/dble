@@ -341,7 +341,7 @@ public class JoinChooser {
                 isSameNode(finalNextHintNode, node)
         );
     }
-  
+
     private void validateHint() {
         for (int i = 0; i < hintPlanInfo.getGroups().size(); i++) {
             final HintPlanNodeGroup group = hintPlanInfo.getGroups().get(i);

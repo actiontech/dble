@@ -224,6 +224,7 @@ public class JoinChooser {
     }
 
     private JoinNode joinWithHint(JoinRelationDag root) {
+        validateHint();
         if (dagNodes.size() != hintPlanInfo.nodeSize()) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint size " + hintPlanInfo.nodeSize() + " not equals to plan node size " + dagNodes.size() + ".");
         }
@@ -334,10 +335,20 @@ public class JoinChooser {
         return joinNodeBuilder.build();
     }
 
+
     private boolean isHintNodeExist(HintPlanNode finalNextHintNode) {
         return dagNodes.values().stream().anyMatch(node ->
                 isSameNode(finalNextHintNode, node)
         );
+    }
+  
+    private void validateHint() {
+        for (int i = 0; i < hintPlanInfo.getGroups().size(); i++) {
+            final HintPlanNodeGroup group = hintPlanInfo.getGroups().get(i);
+            if (Objects.equals(group.getType(), HintPlanNodeGroup.Type.ER) && i != 0) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "The ER relation in hint only support exists in the headmost of hint yet.");
+            }
+        }
     }
 
     private JoinRelationDag findNode(JoinRelationDag root, HintPlanNode hintNode) {

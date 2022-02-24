@@ -318,13 +318,28 @@ public class JoinChooser {
                 }
                 continue traversal;
             }
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't create plan with this hint. please check near the node '" + nextHintNode.getName() + "'");
+            //when no nextAccessDagNodes match the nextHintNode
+            HintPlanNode finalNextHintNode = nextHintNode;
+            final boolean nodeExist = isHintNodeExist(finalNextHintNode);
+            if (!nodeExist) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint.The node '" + nextHintNode.getName() + "' doesn't exist.");
+            } else {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint. please check the node '" + nextHintNode.getName() + "',there are no previous nodes connect to it.");
+            }
+
 
         }
         if (hintIt.hasNext()) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode.getName() + "'");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode.getName() + "',may be contain orphaned node.");
         }
         return joinNodeBuilder.build();
+    }
+
+
+    private boolean isHintNodeExist(HintPlanNode finalNextHintNode) {
+        return dagNodes.values().stream().anyMatch(node ->
+                isSameNode(finalNextHintNode, node)
+        );
     }
 
     private void validateHint() {

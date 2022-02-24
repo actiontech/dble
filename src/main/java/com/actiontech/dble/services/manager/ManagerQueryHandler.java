@@ -130,6 +130,10 @@ public class ManagerQueryHandler {
                     service.getClusterDelayService().markDoingOrDelay(true);
                     SplitDumpHandler.handle(sql, service, rs >>> SHIFT);
                     break;
+                case ManagerParse.SPLIT_LOAD_DATA:
+                    service.getConnection().setSkipCheck(true);
+                    SplitLoadDataHandler.handle(sql, service, rs >>> SHIFT);
+                    break;
                 case ManagerParse.FLOW_CONTROL:
                     FlowControlHandler.handle(sql, service, rs >>> SHIFT);
                     break;

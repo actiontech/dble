@@ -59,9 +59,11 @@ public class ItemField extends ItemIdent {
         this.index = index;
     }
 
-    public void setField(List<Field> fields) {
+
+
+    public void setField(List<Field> fields, int num) {
         assert (fields != null);
-        setField(fields.get(index));
+        this.field = fields.get(num);
     }
 
     protected void setField(Field field) {

@@ -80,7 +80,7 @@ public final class SplitLoadDataHandler {
 
         //handle error
         if (errorFlag.get()) {
-            //todo 已生成文件是否删除
+            //todo whether the generated files are deleted
             DumpFileError.execute(service, errorMsgList);
             return;
         }

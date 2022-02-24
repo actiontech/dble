@@ -166,7 +166,7 @@ public abstract class AbstractService extends VariablesService implements Servic
                         //prevent most of nio repeat create close task.
                         connection.getSocketWR().disableReadForever();
                     }
-                    if (closeTask.isFirst()) {
+                    if (closeTask.isFirst() && !connection.isOnlyFrontTcpConnected()) {
                         LOGGER.info("prepare close for conn.conn id {},reason [{}]", connection.getId(), closeTask.getReasonsStr());
                     }
 

@@ -346,7 +346,7 @@ public class JoinChooser {
         for (int i = 0; i < hintPlanInfo.getGroups().size(); i++) {
             final HintPlanNodeGroup group = hintPlanInfo.getGroups().get(i);
             if (Objects.equals(group.getType(), HintPlanNodeGroup.Type.ER) && i != 0) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "The ER relation in hint only support exists in the headmost of hint yet.");
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "The ER relation in the hint currently only supports when it exists in the headmost of hint.");
             }
         }
     }

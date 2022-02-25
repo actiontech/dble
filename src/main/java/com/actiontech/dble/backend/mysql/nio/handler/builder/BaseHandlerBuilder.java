@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
+import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
@@ -371,7 +372,16 @@ public abstract class BaseHandlerBuilder {
     private void nestLoopAddHandler(SendMakeHandler sh) {
         if (node instanceof TableNode && Objects.nonNull(((TableNode) node).getHintNestLoopHelper())) {
             HintNestLoopHelper hintNestLoopHelper = ((TableNode) node).getHintNestLoopHelper();
-            hintNestLoopHelper.getSendMakeHandlerHashMap().put(node, sh);
+            List<DelayTableHandler> delayTableHandlers = hintNestLoopHelper.getDelayTableHandlers(node);
+            Map<PlanNode, SendMakeHandler> sendMakeHandlerHashMap = hintNestLoopHelper.getSendMakeHandlerHashMap();
+            Set<BaseDMLHandler> tableHandlers = sh.getTableHandlers();
+            for (DelayTableHandler delayTableHandler : delayTableHandlers) {
+                if (!tableHandlers.contains(delayTableHandler)) {
+                    tableHandlers.add(delayTableHandler);
+                }
+            }
+            sendMakeHandlerHashMap.put(node, sh);
+
         }
     }
 

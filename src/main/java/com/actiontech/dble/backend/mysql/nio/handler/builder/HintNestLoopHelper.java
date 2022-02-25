@@ -6,9 +6,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.route.parser.util.Pair;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class HintNestLoopHelper {
 
@@ -22,6 +20,14 @@ public class HintNestLoopHelper {
 
     public Map<PlanNode, List<DelayTableHandler>> getDelayTableHandlerMap() {
         return delayTableHandlerMap;
+    }
+
+    public List<DelayTableHandler> getDelayTableHandlers(PlanNode node) {
+        List<DelayTableHandler> delayTableHandlerList = Optional.ofNullable(delayTableHandlerMap.get(node)).orElse(new ArrayList<>());
+        if (delayTableHandlerList.isEmpty()) {
+            delayTableHandlerMap.put(node, delayTableHandlerList);
+        }
+        return delayTableHandlerList;
     }
 
     public Map<PlanNode, Pair<Item, Item>> getItemMap() {

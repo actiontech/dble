@@ -113,7 +113,9 @@ public class JoinNestLoopChooser {
     private void hintAndCheck() {
         hintDependMap.forEach((k, v) -> {
             PlanNode currentNode = nodeMap.get(k);
-            if (v.getType() == HintPlanNodeGroup.Type.AND) {
+            if (v.getType() == HintPlanNodeGroup.Type.ER) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", " not support hint explain .The ER relation is only allowed in the first place");
+            } else {
                 List<HintPlanNode> nodes = v.getNodes();
                 for (HintPlanNode node : nodes) {
                     PlanNode dependNode = nodeMap.get(node.getName());

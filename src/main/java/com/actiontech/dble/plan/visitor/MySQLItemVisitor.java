@@ -725,15 +725,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = new ItemFuncConv(args, this.charsetIndex);
                 break;
             case "SUBSTRING":
-                //from/for:('Sakila' FROM -4 FOR 2)、('foobarbar' FROM 4)
-                if (null != x.getFrom()) {
-                    args.add(getItem(x.getFrom()));
-                }
-                if (null != x.getFor()) {
-                    args.add(getItem(x.getFor()));
-                }
-                //args:('Quadratically',5)、('Quadratically',5,6)
-                item = new ItemFuncSubstr(args, this.charsetIndex);
+                item = initSubstringItem(args, x);
                 break;
             default:
                 if (ItemCreate.getInstance().isNativeFunc(funcName)) {
@@ -837,6 +829,19 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
         item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables, this.charsetIndex, this.hintPlanInfo);
+    }
+
+
+    private Item initSubstringItem(List<Item> args, SQLMethodInvokeExpr x) {
+        //from/for:('Sakila' FROM -4 FOR 2)、('foobarbar' FROM 4)
+        if (null != x.getFrom()) {
+            args.add(getItem(x.getFrom()));
+        }
+        if (null != x.getFor()) {
+            args.add(getItem(x.getFor()));
+        }
+        //args:('Quadratically',5)、('Quadratically',5,6)
+        return new ItemFuncSubstr(args, this.charsetIndex);
     }
 
 

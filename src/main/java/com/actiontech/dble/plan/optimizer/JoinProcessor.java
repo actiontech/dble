@@ -33,4 +33,8 @@ public final class JoinProcessor {
             TraceManager.finishSpan(traceObject);
         }
     }
+
+    public static boolean needOptimize(PlanNode qtn, @Nonnull HintPlanInfo hintPlanInfo) {
+        return new JoinChooser((JoinNode) qtn, hintPlanInfo).needOptimize();
+    }
 }

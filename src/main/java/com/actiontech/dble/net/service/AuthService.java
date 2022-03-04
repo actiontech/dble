@@ -51,4 +51,7 @@ public abstract class AuthService extends AbstractService {
 
     public void onConnectFailed(Throwable e) {
     }
+
+
+    public abstract boolean haveNotReceivedMessage();
 }

@@ -123,8 +123,13 @@ public final class NIOReactor {
                             try {
                                 con.asyncRead();
                             } catch (Exception e) {
-                                LOGGER.warn("caught err:", e);
-                                con.close("program err:" + e.toString());
+                                if ((con.isOnlyFrontTcpConnected() && e instanceof IOException)) {
+                                    LOGGER.debug("caught err:", e);
+                                    con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
+                                } else {
+                                    LOGGER.warn("caught err:", e);
+                                    con.close("program err:" + e.toString());
+                                }
                                 continue;
                             }
                         }
@@ -171,7 +176,11 @@ public final class NIOReactor {
                     } else if (c instanceof MySQLConnection) {
                         ((MySQLConnection) c).onConnectFailed(e);
                     }*/
-                    LOGGER.warn("register err", e);
+                    if ((c.isOnlyFrontTcpConnected() && e instanceof IOException)) {
+                        LOGGER.debug("{} register err", c, e);
+                    } else {
+                        LOGGER.warn("{} register err", c, e);
+                    }
                 }
             }
         }

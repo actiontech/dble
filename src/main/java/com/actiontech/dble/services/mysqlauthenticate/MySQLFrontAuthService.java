@@ -31,6 +31,7 @@ import java.io.IOException;
 public class MySQLFrontAuthService extends AuthService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLFrontAuthService.class);
+    private volatile boolean receivedMessage = false;
 
     private volatile AuthPacket authPacket;
 
@@ -47,6 +48,7 @@ public class MySQLFrontAuthService extends AuthService {
 
     @Override
     public void handleInnerData(byte[] data) {
+        receivedMessage = true;
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "handle-auth-data");
         try {
             this.setPacketId(data[3]);
@@ -229,5 +231,8 @@ public class MySQLFrontAuthService extends AuthService {
         flag |= Capabilities.CLIENT_CONNECT_ATTRS;
         return flag;
     }
-
+    @Override
+    public boolean haveNotReceivedMessage() {
+        return !receivedMessage;
+    }
 }

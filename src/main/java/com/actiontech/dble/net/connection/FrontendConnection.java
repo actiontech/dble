@@ -106,6 +106,6 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " onlyTcpConnect = " + isOnlyFrontTcpConnected() + "]";
     }
 }

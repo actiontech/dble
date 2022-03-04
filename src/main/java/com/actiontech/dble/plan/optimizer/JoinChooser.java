@@ -155,39 +155,6 @@ public class JoinChooser {
     }
 
 
-    public boolean needOptimize() {
-        if (!hintPlanInfo.isZeroNode() && isOrderSameAsHint(orgNode)) {
-            LOGGER.debug("the order of hint is same as the order of execution plan,so no need to optimize the order. this hint order is {}", hintPlanInfo.getGroups());
-            return false;
-        }
-        return true;
-    }
-
-    private boolean isOrderSameAsHint(PlanNode planNode) {
-        final Iterator<HintPlanNode> hintIt = hintPlanInfo.iterator();
-        return isOrderSameAsHintNest(planNode, hintIt);
-    }
-
-    private boolean isOrderSameAsHintNest(PlanNode planNode, Iterator<HintPlanNode> hintIt) {
-        if (planNode instanceof JoinNode) {
-            for (PlanNode child : planNode.getChildren()) {
-                boolean result = isOrderSameAsHintNest(child, hintIt);
-                if (!result) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            if (hintIt.hasNext()) {
-                final HintPlanNode hintPlanNode = hintIt.next();
-                return isSameNode(hintPlanNode, planNode);
-            }
-            return false;
-
-
-        }
-    }
-
     private JoinNode makeJoinWithCartesianNode(JoinNode node) {
         JoinNode left = node;
         for (PlanNode right : joinUnits) {
@@ -244,20 +211,6 @@ public class JoinChooser {
 
 
     }
-
-    private boolean isSameNode(HintPlanNode hintNode, PlanNode node) {
-        if (hintNode.getName() == null) {
-            return false;
-        }
-        final String unitName = getUnitName(node);
-        if (unitName == null) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't optimize this sql, try to set alias for every tables in sql. Related nodes: " + node);
-        }
-        return Objects.equals(hintNode.getName(), unitName);
-
-
-    }
-
 
     @Nullable
     private static String getUnitName(PlanNode node) {

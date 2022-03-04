@@ -107,7 +107,12 @@ public class BackendConnection extends PooledConnection {
 
     @Override
     public void release() {
-        getBackendService().release();
+        final MySQLResponseService service = getBackendService();
+        if (service == null) {
+            LOGGER.warn("the backend connection[{}] has been closed.", this);
+        } else {
+            service.release();
+        }
     }
 
     @Override
@@ -192,7 +197,7 @@ public class BackendConnection extends PooledConnection {
         writeClose(getService().writeToBuffer(QuitPacket.QUIT, allocate()));
     }
 
-    public void writeClose(ByteBuffer buffer) {
+    private void writeClose(ByteBuffer buffer) {
         writeQueue.offer(new WriteOutTask(buffer, true));
         if (FlowController.isEnableFlowControl()) {
             writingSize.addAndGet(5);

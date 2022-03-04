@@ -169,6 +169,9 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
+                if (connection.isClosed()) {
+                    return;
+                }
                 session.execute(true, data, null);
                 // COM_STMT_CLOSE No response is sent back to the client.
                 long statementId = ByteUtil.readUB4(data, 5);

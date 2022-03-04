@@ -236,19 +236,24 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public void bind(BackendConnection bindConn) {
-        if (conn != null && conn != bindConn) {
-            LOGGER.warn("last conn is remaining");
+        final BackendConnection tmp = conn;
+        if (tmp != null && tmp != bindConn) {
+            LOGGER.warn("last conn is remaining, the session is {}, the backend conn is {}", rwSplitService.getConnection(), tmp);
+            tmp.release();
         }
+        LOGGER.debug("bind conn is {}", bindConn);
         this.conn = bindConn;
     }
 
     public void unbindIfSafe() {
-        if (this.conn != null && rwSplitService.isKeepBackendConn()) {
-            if (rwSplitService.isFlowControlled()) {
-                releaseConnectionFromFlowControlled(conn);
-            }
-            this.conn.release();
+        final BackendConnection tmp = conn;
+        if (tmp != null && rwSplitService.isKeepBackendConn()) {
             this.conn = null;
+            if (rwSplitService.isFlowControlled()) {
+                releaseConnectionFromFlowControlled(tmp);
+            }
+            LOGGER.debug("safe unbind conn is {}", tmp);
+            tmp.release();
         }
     }
 
@@ -260,8 +265,10 @@ public class RWSplitNonBlockingSession extends Session {
         if (null != rwGroup) {
             rwGroup.unBindRwSplitSession(this);
         }
-        if (conn != null) {
-            conn.close(reason);
+        final BackendConnection tmp = this.conn;
+        this.conn = null;
+        if (tmp != null) {
+            tmp.close(reason);
         }
     }
 

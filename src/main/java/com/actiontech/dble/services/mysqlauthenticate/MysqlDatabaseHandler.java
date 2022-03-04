@@ -8,7 +8,7 @@ package com.actiontech.dble.services.mysqlauthenticate;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.OneTimeConnJob;
+import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class MysqlDatabaseHandler {
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         PhysicalDbInstance ds = getPhysicalDbInstance(dbGroupName);
         if (ds != null) {
-            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -57,7 +57,7 @@ public class MysqlDatabaseHandler {
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         if (ds != null) {
-            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -71,7 +71,7 @@ public class MysqlDatabaseHandler {
         try {
             PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
             if (dbGroup != null) {
-                ds = dbGroup.rwSelect(true, false);
+                ds = dbGroup.rwSelect(false, false);
             }
         } catch (IOException e) {
             LOGGER.warn("select dbInstance error", e);

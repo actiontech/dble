@@ -226,7 +226,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 loadDataClean();
-                rwSplitService.getSession2().bind(null);
+                rwSplitService.getSession2().unbind();
                 writeErrorMsg(rwSplitService.nextPacketId(), "connection close");
                 write2Client = true;
                 if (buffer != null) {

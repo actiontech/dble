@@ -246,11 +246,14 @@ public abstract class AbstractConnection implements Connection {
 
     private void processPacketData(ProtoHandlerResult result) {
         byte[] packetData = result.getPacketData();
-        if (packetData != null) {
+        final AbstractService frontService = service;
+        if (frontService == null) {
+            LOGGER.warn("front connection{} has been closed,ignore packet.", this);
+        } else if (packetData != null) {
             int tmpCount = extraPartOfBigPacketCount;
             if (!isSupportCompress) {
                 extraPartOfBigPacketCount = 0;
-                pushServiceTask(new NormalServiceTask(packetData, service, tmpCount));
+                pushServiceTask(new NormalServiceTask(packetData, frontService, tmpCount));
             } else {
                 List<byte[]> packs = CompressUtil.decompressMysqlPacket(packetData, decompressUnfinishedDataQueue);
                 if (decompressUnfinishedDataQueue.isEmpty()) {
@@ -258,7 +261,7 @@ public abstract class AbstractConnection implements Connection {
                 }
                 for (byte[] pack : packs) {
                     if (pack.length != 0) {
-                        pushServiceTask(new NormalServiceTask(pack, service, tmpCount));
+                        pushServiceTask(new NormalServiceTask(pack, frontService, tmpCount));
                     }
                 }
             }

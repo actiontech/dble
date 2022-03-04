@@ -6,8 +6,10 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.NamedField;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
@@ -20,22 +22,17 @@ import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 public class ERJoinChooser {
     /**
-     * record all join relation in join node ex: t1 inner join t2 on t1.id=t2.id inner join t3 on
-     * t1.name=t3.name and t1.id=t3.id then sel[0]: t1.id,t2.id,t3.id sel[1]:
-     * t1.name,t3.name
+     * record all join relation in join node ex: t1 inner join t2 on t1.id=t2.id inner join t3 on t1.name=t3.name and t1.id=t3.id
+     * then:
+     * joinRelationGroups[0]: t1.id=t2.id, t1.id=t3.id
+     * joinRelationGroups[1]: t1.name=t3.name
      */
-    private List<ArrayList<JoinColumnInfo>> selLists = new ArrayList<>();
-
-    // the index  selLists for trying ER
-    private int trySelListIndex = 0;
+    private ArrayList<JoinRelationGroup> joinRelationGroups = new ArrayList<>();
 
     private final List<PlanNode> joinUnits = new ArrayList<>();
 
@@ -81,7 +78,6 @@ public class ERJoinChooser {
      * ex:t1,t2 ,if t1 left join t2 on
      * t1.id=t2.id can be pushed
      * < we can't change left join's structure>
-     *
      */
     private JoinNode leftJoinOptimizer() {
         PlanNode left = orgNode.getLeftNode();
@@ -135,8 +131,6 @@ public class ERJoinChooser {
 
     /**
      * inner join's ER, rebuild inner join's unit
-     *
-     * @return
      */
     private JoinNode innerJoinOptimizer(int charsetIndex) {
         initInnerJoinUnits(orgNode);
@@ -144,17 +138,14 @@ public class ERJoinChooser {
             return orgNode;
         }
         visitJoinOns(orgNode);
-        initJoinColumnInfo();
-        while (trySelListIndex < selLists.size()) {
-            List<JoinColumnInfo> selList = selLists.get(trySelListIndex);
-            JoinNode erJoinNode = tryMakeERJoin(selList, charsetIndex);
-            if (erJoinNode == null) {
-                trySelListIndex++;
-            } else {
-                // re scanning
+        for (JoinRelationGroup group : joinRelationGroups) {
+            JoinNode erJoinNode = tryMakeERJoin(group.getSelList(), charsetIndex);
+            if (erJoinNode != null) {
                 this.makedERJnList.add(erJoinNode);
             }
         }
+        adjustJoinRelationGroups();
+
         if (makedERJnList.isEmpty())
             // no er join
             return orgNode;
@@ -183,7 +174,7 @@ public class ERJoinChooser {
         ret.setLimitFrom(orgNode.getLimitFrom());
         ret.setLimitTo(orgNode.getLimitTo());
         ret.setOtherJoinOnFilter(FilterUtils.and(orgNode.getOtherJoinOnFilter(), FilterUtils.and(otherJoinOns)));
-        Item unFoundSelFilter = makeRestFilter(charsetIndex);
+        Item unFoundSelFilter = makeRestFilter();
         if (unFoundSelFilter != null)
             ret.setOtherJoinOnFilter(FilterUtils.and(ret.getOtherJoinOnFilter(), unFoundSelFilter));
         // and the origin where and the remain condition in selLists
@@ -199,11 +190,12 @@ public class ERJoinChooser {
     }
 
     /**
-     * tryMakeERJoin by  selList and join Unitss info
-     *
-     * @return
+     * in an JoinRelationGroup, take the er related JoinColumnInfos, to start makeERJoin
      */
     private JoinNode tryMakeERJoin(List<JoinColumnInfo> selList, int charsetIndex) {
+        if (joinUnits.size() <= 1) {
+            return null;
+        }
         List<JoinColumnInfo> erKeys = new ArrayList<>();
         for (int i = 0; i < selList.size(); i++) {
             JoinColumnInfo jki = selList.get(i);
@@ -211,7 +203,7 @@ public class ERJoinChooser {
                 continue;
             for (int j = i + 1; j < selList.size(); j++) {
                 JoinColumnInfo jkj = selList.get(j);
-                if (this.makedERJnList.isEmpty() && isErRelation(jki.erTable, jkj.erTable)) {
+                if (isErRelation(jki.erTable, jkj.erTable)) {
                     erKeys.add(jkj);
                 }
             }
@@ -224,29 +216,33 @@ public class ERJoinChooser {
         return null;
     }
 
-    // generate er join node ,remove jk of rKeyIndexs in selListIndex,replace the other selList's tn
     private JoinNode makeERJoin(List<JoinColumnInfo> erKeys, int charsetIndex) {
         PlanNode t0 = erKeys.get(0).planNode;
-        PlanNode t1 = erKeys.get(1).planNode;
-        JoinNode joinNode = new JoinNode(t0, t1, charsetIndex);
-        List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, t0, t1, true, charsetIndex);
-        joinNode.setJoinFilter(joinFilter);
-        for (int index = 2; index < erKeys.size(); index++) {
-            t0 = joinNode;
+        PlanNode t1;
+        for (int index = 1; index < erKeys.size(); index++) {
             t1 = erKeys.get(index).planNode;
-            joinNode = new JoinNode(t0, t1, charsetIndex);
-            joinFilter = makeJoinFilter(joinNode, t0, t1, true, charsetIndex);
-            joinNode.setJoinFilter(joinFilter);
-        }
-        for (JoinColumnInfo jki : erKeys) {
-            // remove join units
-            for (int index = joinUnits.size() - 1; index > -1; index--) {
-                PlanNode tn = joinUnits.get(index);
-                if (tn == jki.planNode)
-                    joinUnits.remove(index);
+            if (t1 instanceof JoinNode) {
+                if (t1 == t0) {
+                    /**
+                     * ex: a left b inner c on a.id=c.id and b.id=c.id, and er relations in the a.id and b.id, c.id
+                     * where a.id'PlanNode == b.id'PlanNode, so ignore
+                     */
+                    joinUnits.remove(t1);
+                }
+                // else, it's not what expected
+                continue;
+            } else {
+                t0 = toMakeERJoin(t0, t1, charsetIndex, true);
             }
         }
-        return joinNode;
+        return (JoinNode) t0;
+    }
+
+    private JoinNode toMakeERJoin(PlanNode t0, PlanNode t1, int charsetIndex, boolean isReplace) {
+        JoinNode newJoinNode = new JoinNode(t0, t1, charsetIndex);
+        List<ItemFuncEqual> joinFilter = toMakeJoinFilters(newJoinNode, t0, t1, charsetIndex, true);
+        newJoinNode.setJoinFilter(joinFilter);
+        return newJoinNode;
     }
 
     /**
@@ -258,54 +254,69 @@ public class ERJoinChooser {
     private PlanNode makeJoinNode(List<PlanNode> units, int charsetIndex) {
         PlanNode ret = units.get(0);
         for (int i = 1; i < units.size(); i++) {
-            PlanNode tni = units.get(i);
-            JoinNode joinNode = new JoinNode(ret, tni, charsetIndex);
-            List<ItemFuncEqual> joinFilter = makeJoinFilter(joinNode, ret, tni, true, charsetIndex);
-            joinNode.setJoinFilter(joinFilter);
-            ret = joinNode;
+            ret = toMakeERJoin(ret, units.get(i), charsetIndex, true);
         }
         return ret;
     }
 
     /**
-     * join t0 and t1, find relation in selLists and make joinfilter
-     * [if a.id=b.id and a.id = b.name would not appear]
-     *
-     * @param join
-     * @param t0
-     * @param t1
-     * @param replaceSelList
-     * @return
+     * join t0 and t1, find er relation in joinRelationGroups and make joinFilter.
+     * <p>
+     * 1.directly find relation, directly just push
+     * such as: 'a join b join c on a.id=c.id', a.id and c.id is er relations
+     * <p>
+     * 2.indirect find relation, make new joinFilter then push
+     * such as: 'a join b join c on a.id=c.id and b.id=c.id ', Only a.id and b.id are related, so we will make 'a.id = b.id' and push it.
      */
-    private List<ItemFuncEqual> makeJoinFilter(JoinNode join, PlanNode t0, PlanNode t1, boolean replaceSelList, int charsetIndex) {
+    private List<ItemFuncEqual> toMakeJoinFilters(JoinNode newJoinNode, PlanNode t0, PlanNode t1, int charsetIndex, boolean isReplace) {
         List<ItemFuncEqual> filters = new ArrayList<>();
-        for (List<JoinColumnInfo> selList : selLists) {
-            JoinColumnInfo jkit0 = null;
-            JoinColumnInfo jkit1 = null;
-            for (JoinColumnInfo jki : selList) {
-                if (jki.planNode == t0) {
-                    jkit0 = jki;
-                } else if (jki.planNode == t1) {
-                    jkit1 = jki;
+        for (JoinRelationGroup group : joinRelationGroups) {
+            ArrayList<JoinRelation> tempOnList = new ArrayList<>(group.getRelationList());
+            // 1.directly find relation
+            for (JoinRelation on : tempOnList) {
+                boolean isHave = false;
+                if (on.getLeft().getPlanNode() == t0 && on.getRight().getPlanNode() == t1) {
+                    isHave = true;
+                } else if (on.getLeft().getPlanNode() == t1 && on.getRight().getPlanNode() == t0) {
+                    isHave = true;
+                }
+
+                if (isHave) {
+                    if (isErRelation(on.getLeft().getErTable(), on.getRight().getErTable())) {
+                        filters.add(on.getFilter());
+                        group.getRelationList().remove(on);
+                        newJoinNode.getERkeys().add(on.getLeft().getErTable());
+                    }
                 }
             }
-            // t0and t1 in sel list can make jkit0 jkit1 join
-            if (jkit0 != null && jkit1 != null) {
-                JoinColumnInfo newJki = new JoinColumnInfo(jkit0.key);
-                newJki.planNode = join;
-                if (jkit0.erTable != null && jkit1.erTable != null && isErRelation(jkit0.erTable, jkit1.erTable)) {
-                    newJki.erTable = jkit0.erTable;
-                    join.getERkeys().add(newJki.erTable);
+
+            // 2.indirect find relation
+            if (filters.isEmpty() && !tempOnList.isEmpty()) {
+                ArrayList<JoinColumnInfo> cols = new ArrayList<>(group.getSelList());
+                JoinColumnInfo col0 = null;
+                JoinColumnInfo col1 = null;
+                for (JoinColumnInfo col : cols) {
+                    if (col.planNode == t0) {
+                        col0 = col;
+                    } else if (col.planNode == t1) {
+                        col1 = col;
+                    }
                 }
-                ItemFuncEqual bf = FilterUtils.equal(jkit0.key, jkit1.key, charsetIndex);
-                filters.add(bf);
-                selList.remove(jkit0);
-                selList.remove(jkit1);
-                selList.add(newJki);
+                if (col0 != null && col1 != null && isErRelation(col0.getErTable(), col1.getErTable())) {
+                    ItemFuncEqual bf = FilterUtils.equal(col0.key, col1.key, charsetIndex);
+                    filters.add(bf);
+                    newJoinNode.getERkeys().add(col0.getErTable());
+                }
             }
         }
-        if (replaceSelList)
-            replaceSelListReferedTn(t0, t1, join);
+
+        // t0 and t1 involved, so joinUnits will remove them
+        joinUnits.remove(t0);
+        joinUnits.remove(t1);
+
+        if (isReplace)
+            replaceReferedInJoinRelation(newJoinNode, t0, t1);
+
         return filters;
     }
 
@@ -317,10 +328,10 @@ public class ERJoinChooser {
                 PlanNode global = globalList.get(i);
                 // try join
                 JoinNode joinNode = new JoinNode(newT, global, charsetIndex);
-                List<ItemFuncEqual> jnFilter = makeJoinFilter(joinNode, newT, global, false, charsetIndex);
+                List<ItemFuncEqual> jnFilter = toMakeJoinFilters(joinNode, newT, global, charsetIndex, false);
                 // @if no join column, then the other is cross join
-                if (jnFilter.size() > 0 || selLists.size() == 0) { // join
-                    replaceSelListReferedTn(newT, global, joinNode);
+                if (jnFilter.size() > 0 || joinRelationGroups.size() == 0) {
+                    replaceReferedInJoinRelation(joinNode, newT, global);
                     foundJoin = true;
                     joinNode.setJoinFilter(jnFilter);
                     globalList.remove(i);
@@ -334,41 +345,34 @@ public class ERJoinChooser {
         return newT;
     }
 
-    /**
-     * try join t0 and global , the different to erjoin is ,we konw t0 can not be ER node
-     *
-     * @param t0
-     * @param t1
-     * @param join
-     * @return
-     */
-
-    // change t0 and t1 in selList to join node
-    private void replaceSelListReferedTn(PlanNode t0, PlanNode t1, PlanNode join) {
-        for (List<JoinColumnInfo> list : selLists)
-            for (JoinColumnInfo jki : list) {
-                if (jki.planNode == t0 || jki.planNode == t1)
-                    jki.planNode = join;
-            }
-    }
-
-    /**
-     * init sellis's JoinColumnInfo,JoinColumnInfo only has key selList when just build ,
-     * set values for them
-     */
-    private void initJoinColumnInfo() {
-        for (List<JoinColumnInfo> selList : selLists) {
-            for (JoinColumnInfo jki : selList) {
-                for (PlanNode tn : joinUnits) {
-                    Item tmpSel = nodeHasSelectTable(tn, jki.key);
-                    if (tmpSel != null) {
-                        jki.planNode = tn;
-                        jki.erTable = getERKey(tn, tmpSel);
-                        break;
-                    }
+    // replace referenced planNode in joinRelation
+    private void replaceReferedInJoinRelation(JoinNode newJoinNode, PlanNode t0, PlanNode t1) {
+        for (JoinRelationGroup group : joinRelationGroups) {
+            for (JoinRelation ri : group.getRelationList()) {
+                if (ri.getLeft().planNode == t0 || ri.getLeft().planNode == t1) {
+                    ri.getLeft().planNode = newJoinNode;
+                }
+                if (ri.getRight().planNode == t0 || ri.getRight().planNode == t1) {
+                    ri.getRight().planNode = newJoinNode;
                 }
             }
         }
+    }
+
+    /**
+     * JoinColumnInfo: add joinUnit、erTable
+     */
+    public JoinColumnInfo initJoinColumnInfo(Item key) {
+        JoinColumnInfo columnInfo = new JoinColumnInfo(key);
+        for (PlanNode planNode : joinUnits) {
+            Item tmpSel = nodeHasSelectTable(planNode, columnInfo.key);
+            if (tmpSel != null) {
+                columnInfo.planNode = planNode;
+                columnInfo.erTable = getERKey(planNode, tmpSel);
+                return columnInfo;
+            }
+        }
+        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not find table of:" + key);
     }
 
     /**
@@ -379,6 +383,7 @@ public class ERJoinChooser {
     private void initInnerJoinUnits(JoinNode node) {
         initJoinUnits(node, true);
     }
+
     private void initJoinUnits(JoinNode node, boolean isInner) {
         if (isGlobalTree(node)) {
             this.globals.add(node);
@@ -417,7 +422,7 @@ public class ERJoinChooser {
         }
 
         for (ItemFuncEqual filter : joinNode.getJoinFilter()) {
-            addJoinFilter(filter);
+            addJoinRelation(filter);
         }
 
         for (PlanNode child : joinNode.getChildren()) {
@@ -427,82 +432,83 @@ public class ERJoinChooser {
                 JoinNode jnChild = (JoinNode) child;
                 if (jnChild.getOtherJoinOnFilter() != null)
                     otherJoinOns.add(jnChild.getOtherJoinOnFilter());
+
                 visitJoinOns((JoinNode) child);
             }
         }
     }
 
     /**
-     * parser joinfilter ,add key to selLists
+     * parser joinFilter into joinRelationGroups
      *
      * @param filter
      */
-    private void addJoinFilter(ItemFuncEqual filter) {
-        Item left = filter.arguments().get(0);
-        Item right = filter.arguments().get(1);
-        JoinColumnInfo jiLeft = new JoinColumnInfo(left);
-        JoinColumnInfo jiRight = new JoinColumnInfo(right);
-        for (int i = 0; i < selLists.size(); i++) {
-            List<JoinColumnInfo> equalSelects = selLists.get(i);
-            if (equalSelects.contains(jiLeft)) {
-                addANewKey(jiRight, i);
+    private void addJoinRelation(ItemFuncEqual filter) {
+        JoinColumnInfo jiLeft = initJoinColumnInfo(filter.arguments().get(0));
+        JoinColumnInfo jiRight = initJoinColumnInfo(filter.arguments().get(1));
+
+        JoinRelation relation = new JoinRelation(jiLeft, jiRight, filter);
+        for (JoinRelationGroup group : joinRelationGroups) {
+            List<JoinColumnInfo> onColumns = group.getSelList();
+
+            if (onColumns.contains(jiLeft)) {
+                toMoveRelation(group, jiRight, relation);
                 return;
-            } else if (equalSelects.contains(jiRight)) {
-                addANewKey(jiLeft, i);
+            } else if (onColumns.contains(jiRight)) {
+                toMoveRelation(group, jiLeft, relation);
                 return;
             }
         }
-        ArrayList<JoinColumnInfo> equalSelects = new ArrayList<>();
-        equalSelects.add(jiLeft);
-        equalSelects.add(jiRight);
-        selLists.add(equalSelects);
-        for (int i = selLists.size() - 1; i > -1; i--) {
-            List<JoinColumnInfo> list = selLists.get(i);
-            if (list.size() == 0)
-                selLists.remove(i);
+
+        JoinRelationGroup group = new JoinRelationGroup();
+        group.addNew(relation);
+        joinRelationGroups.add(group);
+
+        adjustJoinRelationGroups();
+    }
+
+    public void adjustJoinRelationGroups() {
+        List<JoinRelationGroup> groups = new ArrayList<>(joinRelationGroups);
+        for (JoinRelationGroup g : groups) {
+            if (g.getRelationList().size() == 0) {
+                joinRelationGroups.remove(g);
+            }
         }
     }
 
     /**
-     * put an new ISelectable into selLists ,
-     * eg: insert sellist[0] test3.id,test2.id
-     * sellist[1] test4.id,test5.id,test6.id firstly
-     * now there is a joinfilter is test3.id=test4.id,
-     * we must put test4.id into sellist[0] ,add put all sellist[1]'s item into sel[0]
-     *
-     * @param s
-     * @param listIndex
+     * eg:
+     * JoinRelationGroup[0] a.id=b.id, b.id=c.id2
+     * JoinRelationGroup[1] d.id=e.id, f.id=j.id2
+     * <p>
+     * now there is a joinFilter is d.id=c.id2
+     * we must put c.id2 into JoinRelationGroup[0], add pull JoinRelationGroup[1]'s item into JoinRelationGroup[0]
+     * <p>
+     * final, JoinRelationGroup[0] a.id=b.id, b.id=c.id2, d.id=e.id, f.id=j.id2, d.id=c.id2
      */
-    private void addANewKey(JoinColumnInfo s, int listIndex) {
-        List<JoinColumnInfo> equalSelectables = selLists.get(listIndex);
-        for (int i = 0; i < selLists.size(); i++) {
-            if (i != listIndex) {
-                List<JoinColumnInfo> list = selLists.get(i);
-                if (list.contains(s)) {
-                    equalSelectables.addAll(list);
-                    list.clear();
-                }
+    private void toMoveRelation(JoinRelationGroup currGroup, JoinColumnInfo currColumn, JoinRelation relation) {
+        List<JoinRelationGroup> groups = new ArrayList<>(joinRelationGroups);
+        for (JoinRelationGroup group : groups) {
+            if (currGroup == group)
+                continue;
+
+            if (group.getSelList().contains(currColumn)) {
+                currGroup.addAll(group);
             }
         }
-        if (!equalSelectables.contains(s))
-            equalSelectables.add(s);
+        currGroup.addNew(relation);
     }
 
     /**
-     * the origin filter is  join on filter
-     * ,now join is changed ,and the filter is not join filter any more ,add it to other join on
-     *
-     * @return
+     * the origin filter is join on filter,
+     * now join is changed, and the filter is not joinFilter any more ,add it to otherJoinFilter
      */
-    private Item makeRestFilter(int charsetIndex) {
+    private Item makeRestFilter() {
         Item filter = null;
-        for (List<JoinColumnInfo> selList : selLists) {
-            if (selList.size() > 2) {
-                Item sel0 = selList.get(0).key;
-                for (int index = 1; index < selList.size(); index++) {
-                    ItemFuncEqual bf = FilterUtils.equal(sel0, selList.get(index).key, charsetIndex);
-                    filter = FilterUtils.and(filter, bf);
-                }
+        for (JoinRelationGroup group : joinRelationGroups) {
+            for (JoinRelation r : group.getRelationList()) {
+                ItemFuncEqual bf = r.getFilter();
+                filter = FilterUtils.and(filter, bf);
             }
         }
         return filter;
@@ -685,6 +691,71 @@ public class ERJoinChooser {
 
         public void setErTable(ERTable erTable) {
             this.erTable = erTable;
+        }
+    }
+
+    private static class JoinRelation {
+        private final JoinColumnInfo left;
+        private final JoinColumnInfo right;
+        private final ItemFuncEqual filter;
+
+        JoinRelation(JoinColumnInfo left, JoinColumnInfo right, ItemFuncEqual filter) {
+            this.left = left;
+            this.right = right;
+            this.filter = filter;
+        }
+
+        public JoinColumnInfo getLeft() {
+            return left;
+        }
+
+        public JoinColumnInfo getRight() {
+            return right;
+        }
+
+        public ItemFuncEqual getFilter() {
+            return filter;
+        }
+    }
+
+    private static class JoinRelationGroup {
+        private List<JoinRelation> relationList;
+
+        JoinRelationGroup() {
+            this.relationList = new ArrayList<>();
+        }
+
+        public void addNew(JoinRelation relation) {
+            relationList.add(relation);
+        }
+
+        public void addAll(JoinRelationGroup oldGroup) {
+            relationList.addAll(oldGroup.getRelationList());
+            oldGroup.clear();
+        }
+
+        public List<JoinRelation> getRelationList() {
+            return relationList;
+        }
+
+        public List<JoinColumnInfo> getSelList() {
+            List<JoinColumnInfo> selList0 = new ArrayList<>();
+            if (relationList.size() == 0)
+                return selList0;
+
+            relationList.forEach(relation -> {
+                if (!selList0.contains(relation.getLeft())) {
+                    selList0.add(relation.getLeft());
+                }
+                if (!selList0.contains(relation.getRight())) {
+                    selList0.add(relation.getRight());
+                }
+            });
+            return selList0;
+        }
+
+        public void clear() {
+            relationList.clear();
         }
     }
 }

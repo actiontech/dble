@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinaryCast
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncConvCharset;
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypeCast;
 import com.actiontech.dble.plan.common.item.function.convertfunc.ItemCharTypeConvert;
+import com.actiontech.dble.plan.common.item.function.mathsfunc.ItemFuncConv;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.operator.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncCase;
@@ -31,6 +32,7 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncXor;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncChar;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncOrd;
+import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncSubstr;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncTrim;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncTrim.TrimTypeEnum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.*;
@@ -696,6 +698,15 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 item = ItemCreate.getInstance().createNativeFunc(funcName, args);
                 break;
+            case "BIN":
+                //Returns a string representation of the binary value of N, where N is a longlong (BIGINT) number. This is equivalent to CONV(N,10,2). Returns NULL if N is NULL.
+                args.add(new ItemInt(10));
+                args.add(new ItemInt(2));
+                item = new ItemFuncConv(args);
+                break;
+            case "SUBSTRING":
+                item = initSubstringItem(args, x);
+                break;
             default:
                 if (ItemCreate.getInstance().isNativeFunc(funcName)) {
                     item = ItemCreate.getInstance().createNativeFunc(funcName, args);
@@ -798,6 +809,18 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
         item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables);
+    }
+
+    private Item initSubstringItem(List<Item> args, SQLMethodInvokeExpr x) {
+        //from/for:('Sakila' FROM -4 FOR 2)、('foobarbar' FROM 4)
+        if (null != x.getFrom()) {
+            args.add(getItem(x.getFrom()));
+        }
+        if (null != x.getFor()) {
+            args.add(getItem(x.getFor()));
+        }
+        //args:('Quadratically',5)、('Quadratically',5,6)
+        return new ItemFuncSubstr(args);
     }
 
 

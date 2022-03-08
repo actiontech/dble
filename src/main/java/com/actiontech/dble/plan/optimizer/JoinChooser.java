@@ -948,7 +948,7 @@ public class JoinChooser {
             final StringBuilder sb = new StringBuilder();
             sb.append("[");
             for (PlanNode leftNode : leftNodes) {
-                sb.append(getUnitName(leftNode));
+                sb.append(getUnitName(leftNode)).append(", ");
             }
             return sb.append("] -> ").append(getUnitName(rightNode)).toString();
         }

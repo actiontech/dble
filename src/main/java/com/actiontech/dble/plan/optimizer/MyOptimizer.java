@@ -62,7 +62,7 @@ public final class MyOptimizer {
                 node = FilterJoinColumnPusher.optimize(node);
 
 
-                if (SystemConfig.getInstance().isUseNewJoinOptimizer() || (!hintPlanInfo.isZeroNode() && JoinProcessor.needOptimize(node, hintPlanInfo))) {
+                if (SystemConfig.getInstance().isUseNewJoinOptimizer() || !hintPlanInfo.isZeroNode()) {
                     node = JoinProcessor.optimize(node, hintPlanInfo);
                 } else {
                     node = JoinERProcessor.optimize(node);

@@ -69,7 +69,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
                     }
                 }
             } else {
-                ((RWSplitService) frontService).getSession().getRwGroup().getWriteDbInstance().getConnection(null, this, null, false);
+                ((RWSplitService) frontService).getSession2().getRwGroup().getWriteDbInstance().getConnection(null, this, null, false);
                 sendTest = true;
             }
 

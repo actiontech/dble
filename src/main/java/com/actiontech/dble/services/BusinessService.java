@@ -8,6 +8,7 @@ package com.actiontech.dble.services;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
@@ -180,5 +181,7 @@ public abstract class BusinessService<T extends UserConfig> extends FrontendServ
     public abstract void resetConnection();
 
     public abstract void handleVariable(MysqlVariable variable);
+
+    public abstract Session getSession();
 
 }

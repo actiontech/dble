@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.executor.BackendRunnable;
 import com.actiontech.dble.net.executor.ThreadContext;
@@ -25,9 +26,7 @@ import com.actiontech.dble.net.service.NormalServiceTask;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -255,26 +254,27 @@ public abstract class BackendService extends AbstractService {
     }
 
     private void consumeReadingData(ServiceTask task) {
-        ShardingService shardingService;
-        if ((shardingService = needCalcReadingData(task)) != null) {
+        BusinessService businessService;
+        if ((businessService = needCalcReadingData(task)) != null) {
             int currentReadSize = readSize.addAndGet(-((NormalServiceTask) task).getOrgData().length);
             if (currentReadSize <= connection.getFlowLowLevel() &&
-                    !shardingService.isFlowControlled()) {
+                    !businessService.isFlowControlled()) {
                 LOGGER.debug("This backend connection stop flow control, currentReadingSize= {},conn info:{}", currentReadSize, connection);
                 connection.enableRead();
             }
         }
     }
 
-    private ShardingService needCalcReadingData(ServiceTask task) {
-        NonBlockingSession session;
-        ShardingService shardingService;
+    private BusinessService needCalcReadingData(ServiceTask task) {
+        Session session;
+        FrontendService frontendService;
         if (FlowController.isEnableFlowControl() &&
                 isSupportFlowControl() &&
                 task.getType() == ServiceTaskType.NORMAL &&
-                (session = ((MySQLResponseService) this).getSession()) != null &&
-                (shardingService = session.getShardingService()) != null) {
-            return shardingService;
+                (session = ((MySQLResponseService) this).getOriginSession()) != null &&
+                (frontendService = session.getSource().getFrontEndService()) != null &&
+                frontendService instanceof BusinessService) {
+            return (BusinessService) frontendService;
         } else return null;
     }
 

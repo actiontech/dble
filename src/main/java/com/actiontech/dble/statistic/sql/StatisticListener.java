@@ -42,7 +42,7 @@ public class StatisticListener {
                             register(session);
                         }
                     } else if (front.getService() instanceof RWSplitService) {
-                        RWSplitNonBlockingSession session = ((RWSplitService) front.getService()).getSession();
+                        RWSplitNonBlockingSession session = ((RWSplitService) front.getService()).getSession2();
                         if (!session.closed()) {
                             register(session);
                         }
@@ -87,7 +87,7 @@ public class StatisticListener {
         if (service instanceof ShardingService) {
             record(((ShardingService) service).getSession2(), consumer);
         } else if (service instanceof RWSplitService) {
-            record(((RWSplitService) service).getSession(), consumer);
+            record(((RWSplitService) service).getSession2(), consumer);
         }
     }
 
@@ -101,7 +101,7 @@ public class StatisticListener {
         if (service instanceof ShardingService) {
             remove(((ShardingService) service).getSession2());
         } else if (service instanceof RWSplitService) {
-            remove(((RWSplitService) service).getSession());
+            remove(((RWSplitService) service).getSession2());
         }
     }
 

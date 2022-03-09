@@ -69,8 +69,12 @@ public class JoinNestLoopChooser {
             if (!v.isEmpty()) {
                 String dependName = v.get(0);
                 PlanNode currentNode = nodeMap.get(alias);
+                PlanNode dependNode = nodeMap.get(dependName);
+                List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
+                nodeList.add(currentNode);
+                dependNode.setNestLoopDependOnNodeList(nodeList);
                 currentNode.setNestLoopFilters(new ArrayList<>());
-                currentNode.setNestLoopDependNode(nodeMap.get(dependName));
+                currentNode.setNestLoopDependNode(dependNode);
             }
         });
     }
@@ -113,20 +117,16 @@ public class JoinNestLoopChooser {
     private void hintAndCheck() {
         hintDependMap.forEach((k, v) -> {
             PlanNode currentNode = nodeMap.get(k);
-            if (v.getType() == HintPlanNodeGroup.Type.ER) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", " not support hint explain .The ER relation is only allowed in the first place");
-            } else {
-                List<HintPlanNode> nodes = v.getNodes();
-                for (HintPlanNode node : nodes) {
-                    PlanNode dependNode = nodeMap.get(node.getName());
-                    boolean result = dependencyHelper(dependNode, currentNode, currentNode);
-                    if (result) {
-                        nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
-                        return;
-                    }
+            List<HintPlanNode> nodes = v.getNodes();
+            for (HintPlanNode node : nodes) {
+                PlanNode dependNode = nodeMap.get(node.getName());
+                boolean result = dependencyHelper(dependNode, currentNode, currentNode);
+                if (result) {
+                    nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
+                    return;
                 }
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + currentNode.getAlias() + " & condition");
             }
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + currentNode.getAlias() + " & condition");
         });
     }
 

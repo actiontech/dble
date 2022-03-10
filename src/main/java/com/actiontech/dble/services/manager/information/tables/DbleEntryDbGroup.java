@@ -7,13 +7,16 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.SingleDbGroupUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerBaseTable;
 import com.google.common.collect.Maps;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 public class DbleEntryDbGroup extends ManagerBaseTable {
 
@@ -44,8 +47,8 @@ public class DbleEntryDbGroup extends ManagerBaseTable {
                 sorted((a, b) -> Integer.compare(a.getValue().getId(), b.getValue().getId())).
                 forEach(v -> {
                     UserConfig userConfig = v.getValue();
-                    if (userConfig instanceof RwSplitUserConfig) {
-                        String dbGroupName = ((RwSplitUserConfig) userConfig).getDbGroup();
+                    if (userConfig instanceof SingleDbGroupUserConfig) {
+                        String dbGroupName = ((SingleDbGroupUserConfig) userConfig).getDbGroup();
                         if (dbGroups.contains(dbGroupName)) {
                             LinkedHashMap<String, String> map = Maps.newLinkedHashMap();
                             map.put(COLUMN_ID, userConfig.getId() + "");

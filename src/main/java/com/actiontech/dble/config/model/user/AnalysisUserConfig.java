@@ -20,9 +20,9 @@ public class AnalysisUserConfig extends SingleDbGroupUserConfig {
         super(user, tenant, blacklist, dbGroup);
     }
 
-    public boolean equalsBaseInfo(AnalysisUserConfig rwSplitUserConfig) {
-        return super.equalsBaseInfo(rwSplitUserConfig) &&
-                StringUtil.equalsWithEmpty(this.dbGroup, rwSplitUserConfig.getDbGroup());
+    public boolean equalsBaseInfo(AnalysisUserConfig analysisUserConfig) {
+        return super.equalsBaseInfo(analysisUserConfig) &&
+                StringUtil.equalsWithEmpty(this.dbGroup, analysisUserConfig.getDbGroup());
     }
 
     @Override

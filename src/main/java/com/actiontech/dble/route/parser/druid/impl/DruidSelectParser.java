@@ -288,7 +288,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     private RouteResultset tryRoute(SchemaConfig schema, RouteResultset rrs) throws SQLException {
         if ((ctx.getTables() == null || ctx.getTables().size() == 0) && (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
-            rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
+            rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode(), null);
             rrs.setSchema(schema.getName());
             rrs.setFinishedRoute(true);
             return rrs;

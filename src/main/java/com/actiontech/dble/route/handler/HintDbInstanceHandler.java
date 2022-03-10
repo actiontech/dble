@@ -8,7 +8,7 @@ package com.actiontech.dble.route.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.SingleDbGroupUserConfig;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public final class HintDbInstanceHandler {
             LOGGER.debug("route dbInstance sql hint from " + realSQL);
         }
 
-        RwSplitUserConfig rwSplitUserConfig = service.getUserConfig();
+        SingleDbGroupUserConfig rwSplitUserConfig = service.getUserConfig();
         PhysicalDbInstance dbInstance = findDbInstance(rwSplitUserConfig, hintSQLValue);
         if (null == dbInstance) {
             String msg = "can't find hint dbInstance:" + hintSQLValue + " in db_group:" + rwSplitUserConfig.getDbGroup();
@@ -47,7 +47,7 @@ public final class HintDbInstanceHandler {
         return dbInstance;
     }
 
-    private static PhysicalDbInstance findDbInstance(RwSplitUserConfig userConfig, String dbInstanceUrl) {
+    private static PhysicalDbInstance findDbInstance(SingleDbGroupUserConfig userConfig, String dbInstanceUrl) {
         if (StringUtil.isEmpty(dbInstanceUrl)) {
             return null;
         }

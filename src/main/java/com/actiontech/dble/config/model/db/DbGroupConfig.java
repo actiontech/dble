@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.model.db;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.util.StringUtil;
 
@@ -130,5 +131,13 @@ public class DbGroupConfig {
 
     public void setDisableHA(boolean disableHA) {
         this.disableHA = disableHA;
+    }
+
+    public boolean existInstanceProvideVars() {
+        return writeInstanceConfig.provideVars();
+    }
+
+    public DataBaseType allInstanceDatabaseType() {
+        return writeInstanceConfig.getDataBaseType();
     }
 }

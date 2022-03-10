@@ -62,6 +62,7 @@ public class PhysicalDbGroup {
 
     private boolean shardingUseless = true;
     private boolean rwSplitUseless = true;
+    private boolean analysisUseless = true;
     private Set<Session> rwSplitSessionSet = Sets.newConcurrentHashSet();
     private volatile Integer state = Integer.valueOf(INITIAL);
 
@@ -145,7 +146,7 @@ public class PhysicalDbGroup {
     }
 
     public boolean isUseless() {
-        return shardingUseless && rwSplitUseless;
+        return shardingUseless && rwSplitUseless && analysisUseless;
     }
 
     public boolean isShardingUseless() {
@@ -162,6 +163,14 @@ public class PhysicalDbGroup {
 
     public void setRwSplitUseless(boolean rwSplitUseless) {
         this.rwSplitUseless = rwSplitUseless;
+    }
+
+    public boolean isAnalysisUseless() {
+        return analysisUseless;
+    }
+
+    public void setAnalysisUseless(boolean analysisUseless) {
+        this.analysisUseless = analysisUseless;
     }
 
     private boolean checkSlaveSynStatus() {
@@ -605,6 +614,7 @@ public class PhysicalDbGroup {
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
                 pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
                 pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
-                pool.getGroupName().equals(this.groupName) && pool.isShardingUseless() == this.isShardingUseless() && pool.isRwSplitUseless() == this.isRwSplitUseless();
+                pool.getGroupName().equals(this.groupName) && pool.isShardingUseless() == this.isShardingUseless() && pool.isRwSplitUseless() == this.isRwSplitUseless() &&
+                pool.isAnalysisUseless() == this.isAnalysisUseless();
     }
 }

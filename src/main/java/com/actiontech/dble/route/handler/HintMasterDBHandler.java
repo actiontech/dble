@@ -9,7 +9,7 @@ package com.actiontech.dble.route.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.SingleDbGroupUserConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -66,7 +66,7 @@ public final class HintMasterDBHandler {
             isRouteToMaster = true;
         }
 
-        RwSplitUserConfig rwSplitUserConfig = service.getUserConfig();
+        SingleDbGroupUserConfig rwSplitUserConfig = service.getUserConfig();
         String dbGroup = rwSplitUserConfig.getDbGroup();
         PhysicalDbInstance dbInstance;
         try {

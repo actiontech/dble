@@ -5,6 +5,8 @@
  */
 package com.actiontech.dble.config.model.db;
 
+import com.actiontech.dble.config.model.db.type.DataBaseType;
+
 public class DbInstanceConfig {
 
     private final String instanceName;
@@ -21,9 +23,10 @@ public class DbInstanceConfig {
     private volatile int minCon = -1;
     private volatile PoolConfig poolConfig;
     private final boolean usingDecrypt;
+    private DataBaseType dataBaseType;
 
     public DbInstanceConfig(String instanceName, String ip, int port, String url,
-                            String user, String password, boolean disabled, boolean primary, boolean usingDecrypt) {
+                            String user, String password, boolean disabled, boolean primary, boolean usingDecrypt, DataBaseType dataBaseType) {
         this.instanceName = instanceName;
         this.ip = ip;
         this.port = port;
@@ -33,10 +36,11 @@ public class DbInstanceConfig {
         this.disabled = disabled;
         this.primary = primary;
         this.usingDecrypt = usingDecrypt;
+        this.dataBaseType = dataBaseType;
     }
 
     public DbInstanceConfig(String instanceName, String ip, int port, String url, String user, String password, int readWeight, String id, boolean disabled,
-                            boolean primary, int maxCon, int minCon, PoolConfig poolConfig, boolean usingDecrypt) {
+                            boolean primary, int maxCon, int minCon, PoolConfig poolConfig, boolean usingDecrypt, DataBaseType dataBaseType) {
         this.instanceName = instanceName;
         this.ip = ip;
         this.port = port;
@@ -51,6 +55,7 @@ public class DbInstanceConfig {
         this.minCon = minCon;
         this.poolConfig = poolConfig;
         this.usingDecrypt = usingDecrypt;
+        this.dataBaseType = dataBaseType;
     }
 
     public String getInstanceName() {
@@ -132,6 +137,18 @@ public class DbInstanceConfig {
     public boolean isUsingDecrypt() {
         return usingDecrypt;
     }
+
+    public DataBaseType getDataBaseType() {
+        return dataBaseType;
+    }
+
+    public boolean provideVars() {
+        if (dataBaseType == DataBaseType.MYSQL) {
+            return true;
+        }
+        return false;
+    }
+
 
     @Override
     public String toString() {

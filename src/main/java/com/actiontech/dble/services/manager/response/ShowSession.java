@@ -117,7 +117,7 @@ public final class ShowSession {
 
     private static RowDataPacket getRow(RWSplitService sc, String charset) {
         StringBuilder sb = new StringBuilder();
-        RWSplitNonBlockingSession session = sc.getSession();
+        RWSplitNonBlockingSession session = sc.getSession2();
         BackendConnection backendConnection = session.getConn();
         if (Objects.isNull(backendConnection)) {
             return null;

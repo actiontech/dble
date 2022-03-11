@@ -239,10 +239,10 @@ public class JoinChooser {
             if (root == null) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "no node match the root: " + nextHintNode);
             }
-            if (!root.isFamilyInner) {
+            final boolean flipSuccess = flipRightNodeToLeft(root, null);
+            if (!flipSuccess || root.degree != 0) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't use '" + root + "' node for root. Because exists some left join relations point to this node. ");
             }
-            flipRightNodeToLeft(root, null);
         }
         final JoinNodeBuilder joinNodeBuilder = new JoinNodeBuilder(root.node);
         Map<JoinRelationDag, DagLine> nextAccessDagNodes = new HashMap<>();
@@ -266,7 +266,7 @@ public class JoinChooser {
                 /*
                 two reason
                 1.flip may cause node degree increased.
-                2.put rightNode ignore the degree.
+                2.nextAccessDagNodes insert the rightNode without check the degree.
                  */
                 if (currentNode.degree != 0) {
                     //flip only if needed. Unnecessary flip may cause degree num of other nodes increased and become inaccessible.
@@ -394,11 +394,9 @@ public class JoinChooser {
             while (splitIt.hasNext()) {
                 final OneToOneJoinRelation splitRelation = splitIt.next();
                 if (splitRelation.rightNode == oldLeft.node) {
-                    oldLeft.relations = addRelations(oldLeft.relations, splitRelation);
+                    oldLeft.addInnerRelation(splitRelation);
+                    currentNode.subRelation(splitRelation);
 
-                    if (currentNode.relations != null) {
-                        subRelation(currentNode.relations, splitRelation);
-                    }
                     splitIt.remove();
                 }
             }
@@ -510,11 +508,8 @@ public class JoinChooser {
             oldLeft.leftNodes.add(newLeft);
             oldLeft.rightNodes.remove(newLeft);
             oldLeft.degree++;
-            oldLeft.relations = addRelations(oldLeft.relations, splitRelation);
-
-            if (newLeft.relations != null) {
-                subRelation(newLeft.relations, splitRelation);
-            }
+            oldLeft.addInnerRelation(splitRelation);
+            newLeft.subRelation(splitRelation);
             newLeft.leftNodes.remove(oldLeft); // root remove nothing
             newLeft.rightNodes.add(oldLeft);
             if (newLeft.degree > 0) { //root is 0
@@ -524,26 +519,6 @@ public class JoinChooser {
         return newLeft;
     }
 
-    private void subRelation(JoinRelations a, OneToOneJoinRelation b) {
-        if (a == null) {
-            return;
-        }
-        final Predicate<JoinRelation> predicate = joinRelation -> (joinRelation.right.planNode == b.rightNode && joinRelation.left.planNode == b.leftNode) || (joinRelation.right.planNode == b.leftNode && joinRelation.left.planNode == b.rightNode);
-        a.erRelationLst.removeIf(predicate);
-        a.normalRelationLst.removeIf(predicate);
-        a.init();
-    }
-
-
-    private JoinRelations addRelations(JoinRelations a, OneToOneJoinRelation b) {
-        if (a == null) {
-            return b.convertToJoinRelations();
-        }
-        a.erRelationLst.addAll(b.erRelationLst);
-        a.normalRelationLst.addAll(b.normalRelationLst);
-        a.init();
-        return a;
-    }
 
     private List<OneToOneJoinRelation> splitAndExchangeRelations(JoinRelations relations) {
         PlanNode newLeftNode = relations.rightNode;
@@ -877,6 +852,36 @@ public class JoinChooser {
             this.visited = true;
         }
 
+        private void subRelation(OneToOneJoinRelation b) {
+            if (relations == null) {
+                return;
+            }
+            final Predicate<JoinRelation> predicate = joinRelation -> (joinRelation.right.planNode == b.rightNode && joinRelation.left.planNode == b.leftNode) || (joinRelation.right.planNode == b.leftNode && joinRelation.left.planNode == b.rightNode);
+            relations.erRelationLst.removeIf(predicate);
+            relations.normalRelationLst.removeIf(predicate);
+            relations.init();
+        }
+
+
+        private void addInnerRelation(@Nonnull OneToOneJoinRelation b) {
+            if (relations == null) {
+                relations = b.convertToJoinRelations();
+                return;
+            }
+            if (!relations.isInner && (!b.erRelationLst.isEmpty() || !b.normalRelationLst.isEmpty())) {
+                /*
+                Case when the origin join is left join ,and the added join is inner join.
+                When both left join and inner join exists,the left join could discard .because use inner join only is enough to filter out the result.
+                 */
+                relations.erRelationLst.clear();
+                relations.normalRelationLst.clear();
+                relations.isInner = true;
+            }
+            relations.erRelationLst.addAll(b.erRelationLst);
+            relations.normalRelationLst.addAll(b.normalRelationLst);
+            relations.init();
+        }
+
         @Override
         public int hashCode() {
             return super.hashCode();
@@ -899,7 +904,7 @@ public class JoinChooser {
     private class JoinRelations {
         private final List<JoinRelation> erRelationLst;
         private final List<JoinRelation> normalRelationLst;
-        private final boolean isInner;
+        private boolean isInner;
         private final Item otherFilter;
         private final Set<PlanNode> leftNodes;
         private final PlanNode rightNode;
@@ -937,6 +942,16 @@ public class JoinChooser {
                 }
             }
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            for (PlanNode leftNode : leftNodes) {
+                sb.append(getUnitName(leftNode)).append(", ");
+            }
+            return sb.append("] -> ").append(getUnitName(rightNode)).toString();
+        }
     }
 
 
@@ -960,6 +975,11 @@ public class JoinChooser {
             ret.init();
             return ret;
         }
+
+        @Override
+        public String toString() {
+            return getUnitName(leftNode) + " -> " + getUnitName(rightNode);
+        }
     }
 
     private class JoinRelation {
@@ -975,6 +995,11 @@ public class JoinChooser {
 
         private JoinRelation exchange() {
             return new JoinRelation(this.right, this.left, FilterUtils.equal(right.key, left.key, charsetIndex));
+        }
+
+        @Override
+        public String toString() {
+            return left + " -> " + right;
         }
     }
 

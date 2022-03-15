@@ -118,10 +118,9 @@ public class JoinNestLoopChooser {
 
     private void hintAndCheck() {
         hintDependMap.forEach((k, v) -> {
-            PlanNode currentNode = null;
+            PlanNode currentNode = nodeMap.get(k);
             for (HintPlanNodeGroup hintPlanNodeGroup : v) {
                 List<HintPlanNode> nodes = hintPlanNodeGroup.getNodes();
-                currentNode = nodeMap.get(k);
                 for (HintPlanNode node : nodes) {
                     PlanNode dependNode = nodeMap.get(node.getName());
                     boolean result = dependencyHelper(dependNode, currentNode, currentNode);

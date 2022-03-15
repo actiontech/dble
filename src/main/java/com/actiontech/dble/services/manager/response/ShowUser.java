@@ -63,7 +63,7 @@ public final class ShowUser {
         // write rows
         byte packetId = EOF.getPacketId();
         Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (Map.Entry<UserName, UserConfig> entry: users.entrySet()) {
+        for (Map.Entry<UserName, UserConfig> entry : users.entrySet()) {
             RowDataPacket row = getRow(entry.getValue(), service.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, service, true);
@@ -97,7 +97,7 @@ public final class ShowUser {
             row.add(StringUtil.encode(mUser.isReadOnly() ? "Y" : "N", charset));
             int maxCon = mUser.getMaxCon();
             row.add(StringUtil.encode(maxCon == 0 ? "no limit" : maxCon + "", charset));
-        } else {
+        } else if (user instanceof RwSplitUserConfig) {
             RwSplitUserConfig rUser = (RwSplitUserConfig) user;
             if (rUser.getTenant() != null) {
                 row.add(StringUtil.encode(rUser.getName() + ":" + rUser.getTenant(), charset));
@@ -107,6 +107,17 @@ public final class ShowUser {
             row.add(StringUtil.encode("N", charset));
             row.add(StringUtil.encode("-", charset));
             int maxCon = rUser.getMaxCon();
+            row.add(StringUtil.encode(maxCon == 0 ? "no limit" : maxCon + "", charset));
+        } else {
+            AnalysisUserConfig aUser = (AnalysisUserConfig) user;
+            if (aUser.getTenant() != null) {
+                row.add(StringUtil.encode(aUser.getName() + ":" + aUser.getTenant(), charset));
+            } else {
+                row.add(StringUtil.encode(aUser.getName(), charset));
+            }
+            row.add(StringUtil.encode("N", charset));
+            row.add(StringUtil.encode("-", charset));
+            int maxCon = aUser.getMaxCon();
             row.add(StringUtil.encode(maxCon == 0 ? "no limit" : maxCon + "", charset));
         }
         return row;

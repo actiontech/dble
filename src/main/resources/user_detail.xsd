@@ -75,6 +75,7 @@
             <xs:attribute name="usingDecrypt" type="xs:boolean"/>
             <xs:attribute name="whiteIPs" type="xs:string"/>
             <xs:attribute name="maxCon" type="xs:nonNegativeInteger"/>
+            <xs:attribute name="blacklist" type="xs:string"/>
         </xs:complexType>
     </xs:element>
     <xs:element name="blacklist">

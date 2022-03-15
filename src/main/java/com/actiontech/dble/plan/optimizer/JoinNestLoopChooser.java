@@ -18,7 +18,7 @@ import java.util.*;
 public class JoinNestLoopChooser {
     private Map<String, PlanNode> nodeMap;
     private Map<String, List<String>> nodeDependMap;
-    private Map<String, HintPlanNodeGroup> hintDependMap;
+    private Map<String, List<HintPlanNodeGroup>> hintDependMap;
     private JoinNode jn;
     private HintPlanInfo hintPlanInfo;
     private HintNestLoopHelper hintNestLoopHelper;
@@ -71,7 +71,7 @@ public class JoinNestLoopChooser {
                 PlanNode currentNode = nodeMap.get(alias);
                 PlanNode dependNode = nodeMap.get(dependName);
                 List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
-                nodeList.add(currentNode);
+                nodeList.add(nodeList.size(), currentNode);
                 dependNode.setNestLoopDependOnNodeList(nodeList);
                 currentNode.setNestLoopFilters(new ArrayList<>());
                 currentNode.setNestLoopDependNode(dependNode);
@@ -96,6 +96,7 @@ public class JoinNestLoopChooser {
         List<HintPlanNodeGroup> groups = hintPlanInfo.getGroups();
         int nodeSize = 0;
         HintPlanNodeGroup lastGroup = null;
+        LinkedList<HintPlanNodeGroup> groupList = new LinkedList<>();
         for (HintPlanNodeGroup group : groups) {
             List<HintPlanNode> nodes = group.getNodes();
             nodeSize += nodes.size();
@@ -103,9 +104,10 @@ public class JoinNestLoopChooser {
             checkAndOrCondition(group);
             if (lastGroup != null) {
                 for (HintPlanNode node : nodes) {
-                    hintDependMap.put(node.getName(), lastGroup);
+                    hintDependMap.put(node.getName(), Lists.newArrayList(groupList));
                 }
             }
+            groupList.addFirst(group);
             lastGroup = group;
         }
         if (nodeSize != nodeMap.size()) {
@@ -116,14 +118,17 @@ public class JoinNestLoopChooser {
 
     private void hintAndCheck() {
         hintDependMap.forEach((k, v) -> {
-            PlanNode currentNode = nodeMap.get(k);
-            List<HintPlanNode> nodes = v.getNodes();
-            for (HintPlanNode node : nodes) {
-                PlanNode dependNode = nodeMap.get(node.getName());
-                boolean result = dependencyHelper(dependNode, currentNode, currentNode);
-                if (result) {
-                    nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
-                    return;
+            PlanNode currentNode = null;
+            for (HintPlanNodeGroup hintPlanNodeGroup : v) {
+                List<HintPlanNode> nodes = hintPlanNodeGroup.getNodes();
+                currentNode = nodeMap.get(k);
+                for (HintPlanNode node : nodes) {
+                    PlanNode dependNode = nodeMap.get(node.getName());
+                    boolean result = dependencyHelper(dependNode, currentNode, currentNode);
+                    if (result) {
+                        nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
+                        return;
+                    }
                 }
             }
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + currentNode.getAlias() + " & condition");
@@ -194,7 +199,7 @@ public class JoinNestLoopChooser {
                 Optional.ofNullable(nodeMap.get(alias)).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table alias = " + alias));
                 JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
                 if (canDoAsMerge(parent)) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check & or | condition");
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + alias + " & or | condition");
                 }
             }
         }

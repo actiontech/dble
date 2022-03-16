@@ -628,6 +628,9 @@ public class JoinChooser {
             joinRelations.add(nodeRelations);
         } else {
             if (joinNode.isInnerJoin()) {
+                if (!hintPlanInfo.isZeroNode()) {
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints yet. Because this sql contains 'cartesian with relation'.");
+                }
                 otherJoinOns.add(otherFilter);
             } else {
                 Set<PlanNode> leftNodes = new HashSet<>();

@@ -137,7 +137,7 @@ public class DbGroupConfig {
         return writeInstanceConfig.provideVars();
     }
 
-    public DataBaseType allInstanceDatabaseType() {
+    public DataBaseType instanceDatabaseType() {
         return writeInstanceConfig.getDataBaseType();
     }
 }

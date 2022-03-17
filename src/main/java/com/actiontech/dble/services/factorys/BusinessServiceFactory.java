@@ -35,6 +35,7 @@ public final class BusinessServiceFactory {
         } else if (userConfig instanceof RwSplitUserConfig) {
             return new RWSplitService(connection, info);
         } else if (userConfig instanceof AnalysisUserConfig) {
+            //it currently shares a set of logic with RwSplitUser
             return new RWSplitService(connection, info);
         }
         return null;

@@ -673,7 +673,7 @@ public class ShardingConverter {
             if (StringUtils.isBlank(shardingNodeName) || StringUtils.isBlank(shardingNodeDatabase) || StringUtils.isBlank(shardingNodeDbGroup)) {
                 throw new ConfigException("shardingNode " + shardingNodeName + " define error ,attribute can't be empty");
             }
-            if (Objects.nonNull(dbGroup) && dbGroup.getDbGroupConfig().allInstanceDatabaseType() != DataBaseType.MYSQL) {
+            if (Objects.nonNull(dbGroup) && dbGroup.getDbGroupConfig().instanceDatabaseType() != DataBaseType.MYSQL) {
                 throw new ConfigException("shardingNodeDbGroup [" + shardingNodeDbGroup + "] define error ,all dbInstance database type must be " + DataBaseType.MYSQL);
             }
             //dnNamePre(name),databaseStr(database),host(dbGroup) can use ',', '$', '-' to configure multi nodes

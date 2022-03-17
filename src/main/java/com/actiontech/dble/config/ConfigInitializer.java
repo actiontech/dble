@@ -141,11 +141,11 @@ public class ConfigInitializer implements ProblemReporter {
 
         this.sequenceConfig = sequenceJson;
         checkRwSplitDbGroup();
-        checkAnalysisUserDbGroup();
+        checkAnalysisDbGroup();
         checkWriteDbInstance();
     }
 
-    private void checkAnalysisUserDbGroup() {
+    private void checkAnalysisDbGroup() {
         // include Analysis dbGroup
         AnalysisUserConfig analysisUserConfig;
         PhysicalDbGroup group;
@@ -155,7 +155,7 @@ public class ConfigInitializer implements ProblemReporter {
                 group = this.dbGroups.get(analysisUserConfig.getDbGroup());
                 if (group == null) {
                     throw new ConfigException("The user's group[" + analysisUserConfig.getName() + "." + analysisUserConfig.getDbGroup() + "] for analysisUser isn't configured in db.xml.");
-                } else if (group.getDbGroupConfig().allInstanceDatabaseType() != DataBaseType.CLICKHOUSE) {
+                } else if (group.getDbGroupConfig().instanceDatabaseType() != DataBaseType.CLICKHOUSE) {
                     throw new ConfigException("The group[" + analysisUserConfig.getName() + "." + analysisUserConfig.getDbGroup() + "] all dbInstance database type must be " + DataBaseType.CLICKHOUSE);
                 } else {
                     group.setAnalysisUseless(false);
@@ -220,7 +220,7 @@ public class ConfigInitializer implements ProblemReporter {
                     throw new ConfigException("The user's group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] for rwSplit isn't configured in db.xml.");
                 } else if (!group.isShardingUseless()) {
                     throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] has been used by sharding node, can't be used by rwSplit.");
-                } else if (group.getDbGroupConfig().allInstanceDatabaseType() != DataBaseType.MYSQL) {
+                } else if (group.getDbGroupConfig().instanceDatabaseType() != DataBaseType.MYSQL) {
                     throw new ConfigException("The group[" + rwSplitUserConfig.getName() + "." + rwSplitUserConfig.getDbGroup() + "] all dbInstance database type must be " + DataBaseType.MYSQL);
                 } else {
                     group.setRwSplitUseless(false);

@@ -13,10 +13,12 @@ import com.actiontech.dble.sqlengine.OneTimeConnJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 public class VarsExtractorHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(VarsExtractorHandler.class);
@@ -47,6 +49,7 @@ public class VarsExtractorHandler {
                 sqlJob.run();
                 waitDone();
             } else {
+                tryInitVars();
                 LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
             }
             return systemVariables;
@@ -57,7 +60,8 @@ public class VarsExtractorHandler {
 
     private PhysicalDbInstance getPhysicalDbInstance() {
         PhysicalDbInstance ds = null;
-        for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+        List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().filter(dbGroup -> dbGroup.getDbGroupConfig().existInstanceProvideVars()).collect(Collectors.toList());
+        for (PhysicalDbGroup dbGroup : dbGroupList) {
             PhysicalDbInstance dsTest = dbGroup.getWriteDbInstance();
             if (dsTest.isTestConnSuccess()) {
                 ds = dsTest;
@@ -67,7 +71,7 @@ public class VarsExtractorHandler {
             }
         }
         if (ds == null) {
-            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+            for (PhysicalDbGroup dbGroup : dbGroupList) {
                 for (PhysicalDbInstance dsTest : dbGroup.getDbInstances(false)) {
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
@@ -121,4 +125,14 @@ public class VarsExtractorHandler {
         }
     }
 
+    private void tryInitVars() {
+        if (dbGroups.isEmpty()) {
+            return;
+        }
+        List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().filter(dbGroup -> dbGroup.getDbGroupConfig().existInstanceProvideVars()).collect(Collectors.toList());
+        if (dbGroupList.isEmpty()) {
+            systemVariables = new SystemVariables();
+            systemVariables.setDefaultValue("lower_case_table_names", "0");
+        }
+    }
 }

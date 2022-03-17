@@ -24,6 +24,7 @@ import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
@@ -113,6 +114,7 @@ public class DBConverter {
             DbInstanceConfig writeDbConf = null;
             DbInstanceConfig[] readDbConfList = new DbInstanceConfig[readHostSize];
             int readCnt = 0;
+            DataBaseType dataBaseType = null;
             for (DBInstance dbInstance : dbInstanceList) {
                 DbInstanceConfig dbInstanceConfig;
                 try {
@@ -120,6 +122,7 @@ public class DBConverter {
                 } catch (Exception e) {
                     throw new ConfigException("db json to map occurred  parse errors, The detailed results are as follows . " + e, e);
                 }
+                dataBaseType = Optional.ofNullable(dataBaseType).orElse(dbInstanceConfig.getDataBaseType());
                 String instanceName = dbInstanceConfig.getInstanceName();
                 String instanceUrl = dbInstanceConfig.getUrl();
                 Optional.of(instanceName).filter(currentName -> !instanceNames.contains(currentName)).orElseThrow(() ->
@@ -139,6 +142,9 @@ public class DBConverter {
                         throw new ConfigException("dbGroup[" + dbGroupName + "] has no primary instance!");
                     }
                     readDbConfList[readCnt++] = dbInstanceConfig;
+                }
+                if (!dataBaseType.equals(dbInstanceConfig.getDataBaseType())) {
+                    throw new ConfigException("dbGroup[" + dbGroupName + "]'s child database type must be consistent");
                 }
             }
             DbGroupConfig dbGroupConf = new DbGroupConfig(dbGroupName, writeDbConf, readDbConfList, delayThreshold, disableHA);
@@ -238,13 +244,14 @@ public class DBConverter {
             }
         }
 
+        DataBaseType dataBaseType = getDatabaseType(dbInstance.getDatabaseType());
         Integer maxCon = dbInstance.getMaxCon();
         Integer minCon = dbInstance.getMinCon();
         int colonIndex = nodeUrl.indexOf(':');
         String ip = nodeUrl.substring(0, colonIndex).trim();
         int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
         Boolean primary = Optional.ofNullable(dbInstance.getPrimary()).orElse(false);
-        DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary, usingDecrypt);
+        DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary, usingDecrypt, dataBaseType);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setReadWeight(readWeight);
@@ -257,6 +264,20 @@ public class DBConverter {
         }
         conf.setPoolConfig(poolConfig);
         return conf;
+    }
+
+    private DataBaseType getDatabaseType(String dbType) {
+        dbType = Optional.ofNullable(dbType).orElse("mysql");
+        DataBaseType dataBaseType;
+        if (!StringUtil.equals(dbType, dbType.toLowerCase())) {
+            throw new ConfigException("databaseType [" + dbType + "]  use lowercase");
+        }
+        try {
+            dataBaseType = DataBaseType.valueOf(dbType.toUpperCase());
+        } catch (Exception e) {
+            throw new ConfigException("databaseType [" + dbType + "] not support");
+        }
+        return dataBaseType;
     }
 
     private void checkProperty(List<String> errorMsgList, Property property) {

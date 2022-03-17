@@ -65,6 +65,19 @@
             <xs:attribute name="blacklist" type="xs:string"/>
         </xs:complexType>
     </xs:element>
+
+    <xs:element name="analysisUser">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="tenant" type="xs:string"/>
+            <xs:attribute name="dbGroup" type="xs:string" use="required"/>
+            <xs:attribute name="password" type="xs:string" use="required"/>
+            <xs:attribute name="usingDecrypt" type="xs:boolean"/>
+            <xs:attribute name="whiteIPs" type="xs:string"/>
+            <xs:attribute name="maxCon" type="xs:nonNegativeInteger"/>
+            <xs:attribute name="blacklist" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
     <xs:element name="blacklist">
         <xs:complexType>
             <xs:sequence minOccurs="0" maxOccurs="unbounded">

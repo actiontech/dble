@@ -7,6 +7,7 @@ package com.actiontech.dble.services.manager.information.tables;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.AnalysisUserConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
@@ -63,6 +64,8 @@ public class DbleBlacklist extends ManagerBaseTable {
                 blackList = ((ShardingUserConfig) userConfig).getBlacklist();
             } else if (userConfig instanceof RwSplitUserConfig) {
                 blackList = ((RwSplitUserConfig) userConfig).getBlacklist();
+            } else if (userConfig instanceof AnalysisUserConfig) {
+                blackList = ((AnalysisUserConfig) userConfig).getBlacklist();
             }
             if (blackList != null && !blackListNames.contains(blackList.getName())) {
                 blackListNames.add(blackList.getName());

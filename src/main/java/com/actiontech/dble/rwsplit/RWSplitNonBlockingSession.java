@@ -185,4 +185,8 @@ public class RWSplitNonBlockingSession {
     public RWSplitService getService() {
         return rwSplitService;
     }
+
+    public BackendConnection getConn() {
+        return conn;
+    }
 }

@@ -12,10 +12,12 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.services.manager.ManagerService;
 
-import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -81,8 +83,13 @@ public final class ShowConnectionSQLStatus {
             service.writeErrMessage(ErrorCode.ER_YES, "The front_id " + id + " doesn't exist");
             return;
         }
+        AbstractService frontService = target.getService();
         if (target.isManager()) {
             service.writeErrMessage(ErrorCode.ER_YES, "The front_id " + id + " is a manager connection");
+            return;
+        }
+        if (frontService instanceof RWSplitService) {
+            service.writeErrMessage(ErrorCode.ER_YES, "The front_id " + id + " is a RWSplit connection");
             return;
         }
         ByteBuffer buffer = service.allocate();
@@ -101,7 +108,7 @@ public final class ShowConnectionSQLStatus {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        List<String[]> results = ((ShardingService) target.getService()).getSession2().genRunningSQLStage();
+        List<String[]> results = ((ShardingService) frontService).getSession2().genRunningSQLStage();
         if (results != null) {
             for (String[] result : results) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);

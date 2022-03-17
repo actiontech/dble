@@ -63,7 +63,7 @@ public final class XASessionCheck {
         return commitSession;
     }
 
-    public ConcurrentMap<Long, NonBlockingSession> getRollbackingSession() {
+    public ConcurrentMap<Long, NonBlockingSession> getRollbackSession() {
         return rollbackSession;
     }
 
@@ -71,7 +71,7 @@ public final class XASessionCheck {
         return committingSession;
     }
 
-    public ConcurrentMap<Long, NonBlockingSession> getRollbackSession() {
+    public ConcurrentMap<Long, NonBlockingSession> getRollbackingSession() {
         return rollbackingSession;
     }
 

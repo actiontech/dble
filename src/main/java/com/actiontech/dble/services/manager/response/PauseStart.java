@@ -10,6 +10,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.service.AbstractService;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -165,8 +166,9 @@ public final class PauseStart {
             boolean nextTurn = false;
             for (IOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
-                    if (!entry.getValue().isManager()) {
-                        ShardingService shardingService = (ShardingService) entry.getValue().getService();
+                    AbstractService service = entry.getValue().getService();
+                    if ((service instanceof ShardingService)) {
+                        ShardingService shardingService = (ShardingService) service;
                         for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : shardingService.getSession2().getTargetMap().entrySet()) {
                             if (shardingNodes.contains(conEntry.getKey().getName())) {
                                 nextTurn = true;

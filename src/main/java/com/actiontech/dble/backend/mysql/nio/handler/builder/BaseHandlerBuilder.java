@@ -120,7 +120,7 @@ public abstract class BaseHandlerBuilder {
             if (needCommon) {
                 buildCommon();
             }
-            if (needCommon || node.isWithSubQuery()) {
+            if (needCommon || node.isWithSubQuery() || node.haveDependOnNode()) {
                 // view sub alias
                 String tbAlias = node.getAlias();
                 String schema = null;

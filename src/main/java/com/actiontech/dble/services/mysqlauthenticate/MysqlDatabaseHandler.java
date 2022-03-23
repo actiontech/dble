@@ -71,7 +71,7 @@ public class MysqlDatabaseHandler {
         try {
             PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
             if (dbGroup != null) {
-                ds = dbGroup.rwSelect(false, false);
+                ds = dbGroup.rwSelect(null, false);
             }
         } catch (IOException e) {
             LOGGER.warn("select dbInstance error", e);

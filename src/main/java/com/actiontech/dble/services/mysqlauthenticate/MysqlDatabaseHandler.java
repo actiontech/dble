@@ -7,7 +7,10 @@ package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.sqlengine.*;
+import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
+import com.actiontech.dble.sqlengine.SQLJob;
+import com.actiontech.dble.sqlengine.SQLQueryResult;
+import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +71,7 @@ public class MysqlDatabaseHandler {
         try {
             PhysicalDbGroup dbGroup = dbGroups.get(dbGroupName);
             if (dbGroup != null) {
-                ds = dbGroup.rwSelect(false, false);
+                ds = dbGroup.rwSelect(null, false);
             }
         } catch (IOException e) {
             LOGGER.warn("select dbInstance error", e);

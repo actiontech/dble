@@ -137,8 +137,8 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("rwStickyTime", sysConfig.getRwStickyTime() + "ms", "For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms"));
         readOnlyParams.add(new ParamInfo("joinStrategyType", sysConfig.getJoinStrategyType() + "", "Nest loop strategy type. The default value is -1"));
         readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
-        readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
-        readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
+        readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration.The default value is 0"));
+        readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration.The default value is ''"));
 
     }
 

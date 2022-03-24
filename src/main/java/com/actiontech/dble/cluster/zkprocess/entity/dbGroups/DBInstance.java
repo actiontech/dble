@@ -198,6 +198,10 @@ public class DBInstance implements Propertied {
         return databaseType;
     }
 
+    public void setDatabaseType(String databaseType) {
+        this.databaseType = databaseType;
+    }
+
     @Override
     public String toString() {
         return "dbInstance [name=" +

@@ -13,6 +13,7 @@
                 <xs:element ref="managerUser"/>
                 <xs:element ref="shardingUser"/>
                 <xs:element ref="rwSplitUser"/>
+                <xs:element ref="analysisUser"/>
                 <xs:element ref="blacklist"/>
             </xs:choice>
             <xs:attribute name="version" type="xs:string"/>

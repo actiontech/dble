@@ -6,10 +6,7 @@
 package com.actiontech.dble.services.factorys;
 
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
-import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.service.AbstractService;
@@ -36,6 +33,9 @@ public final class BusinessServiceFactory {
         } else if (userConfig instanceof ManagerUserConfig) {
             return new ManagerService(connection, info);
         } else if (userConfig instanceof RwSplitUserConfig) {
+            return new RWSplitService(connection, info);
+        } else if (userConfig instanceof AnalysisUserConfig) {
+            //it currently shares a set of logic with RwSplitUser
             return new RWSplitService(connection, info);
         }
         return null;

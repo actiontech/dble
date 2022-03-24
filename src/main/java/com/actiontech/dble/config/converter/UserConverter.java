@@ -47,6 +47,7 @@ public class UserConverter {
     public static final String TYPE_MANAGER_USER = "managerUser";
     public static final String TYPE_SHARDING_USER = "shardingUser";
     public static final String TYPE_RWSPLIT_USER = "rwSplitUser";
+    public static final String TYPE_ANALYSIS_USER = "analysisUser";
     private final Gson gson = JsonFactory.getJson();
     private final Map<UserName, UserConfig> userConfigMap = Maps.newLinkedHashMap();
     private final Map<String, Properties> blackListConfigMap = Maps.newLinkedHashMap();
@@ -158,8 +159,29 @@ public class UserConverter {
                 fillShardingUser(userConfig, (ShardingUser) user, blackListMap, problemReporter);
             } else if (user instanceof RwSplitUser) {
                 fillRwSplitUser(userConfig, (RwSplitUser) user, blackListMap, problemReporter);
+            } else if (user instanceof AnalysisUser) {
+                fillAnalysisUser(userConfig, (AnalysisUser) user, blackListMap, problemReporter);
             }
         }
+    }
+
+    private void fillAnalysisUser(UserConfig userConfig, AnalysisUser analysisUser, Map<String, WallProvider> blackListMap, ProblemReporter problemReporter) {
+        String tenant = analysisUser.getTenant();
+        String dbGroup = analysisUser.getDbGroup();
+        String blacklistStr = analysisUser.getBlacklist();
+
+        UserName userName = new UserName(userConfig.getName(), tenant);
+        if (this.userConfigMap.containsKey(userName)) {
+            throw new ConfigException("User [" + userName + "] has already existed");
+        }
+        if (StringUtil.isEmpty(dbGroup)) {
+            throw new ConfigException("User [" + userName + "]'s dbGroup is empty");
+        }
+
+        WallProvider wallProvider = getWallProvider(blackListMap, problemReporter, blacklistStr, userName);
+        AnalysisUserConfig analysisUserConfig = new AnalysisUserConfig(userConfig, userName.getTenant(), wallProvider, dbGroup);
+        analysisUserConfig.setId(this.userId.incrementAndGet());
+        this.userConfigMap.put(userName, analysisUserConfig);
     }
 
     private void fillRwSplitUser(UserConfig userConfig, RwSplitUser rwSplitUser, Map<String, WallProvider> blackListMap, ProblemReporter problemReporter) {

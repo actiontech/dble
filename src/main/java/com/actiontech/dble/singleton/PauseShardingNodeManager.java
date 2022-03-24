@@ -29,7 +29,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.services.manager.ManagerService;
+import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -289,7 +289,7 @@ public final class PauseShardingNodeManager {
         return (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName()));
     }
 
-    public boolean waitForCluster(ManagerService service, long beginTime, long timeOut) throws Exception {
+    public boolean waitForCluster(long beginTime, long timeOut, PacketResult packetResult) throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             clusterHelper.createSelfTempNode(ClusterPathUtil.getPauseResultNodePath(), FeedBackType.SUCCESS);
             Map<String, OnlineType> expectedMap = ClusterHelper.getOnlineMap();
@@ -300,7 +300,9 @@ public final class PauseShardingNodeManager {
                         return true;
                     } else {
                         LOGGER.info("wait for cluster error " + sb.toString());
-                        service.writeErrMessage(1003, sb.toString());
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg(sb.toString());
+                        packetResult.setErrorCode(1003);
                         return false;
                     }
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
@@ -309,7 +311,9 @@ public final class PauseShardingNodeManager {
                     //increase the count before write to client. so , the cluster detach won't work.
                     AbstractGeneralListener.getDoingCount().incrementAndGet();
                     try {
-                        service.writeErrMessage(1003, "There are some node in cluster doesn't complete the task. we will try to resume cluster in the backend, please check the dble status and dble log");
+                        packetResult.setSuccess(false);
+                        packetResult.setErrorMsg("There are some node in cluster doesn't complete the task. we will try to resume cluster in the backend, please check the dble status and dble log");
+                        packetResult.setErrorCode(1003);
                         //resume in the backends
                         PauseShardingNodeManager.getInstance().resumeCluster();
                     } catch (Exception e) {

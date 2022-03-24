@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.config.model.user.AnalysisUserConfig;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
@@ -175,7 +176,7 @@ public class MySQLResponseService extends BackendService {
             }
         }
 
-        if (synSQL != null) {
+        if (synSQL != null && ignoreSql(service)) {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }
 
@@ -514,6 +515,15 @@ public class MySQLResponseService extends BackendService {
             executor = DbleServer.getInstance().getBackendExecutor();
         }
         return executor;
+    }
+
+    /**
+     * Temporary way，it will be revised in the future
+     * @param service
+     * @return
+     */
+    private boolean ignoreSql(RWSplitService service) {
+        return !(service.getUserConfig() instanceof AnalysisUserConfig);
     }
 
     protected boolean isSupportFlowControl() {

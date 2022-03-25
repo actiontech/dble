@@ -114,7 +114,7 @@ public class DbleDbInstance extends ManagerWritableTable {
     private static final String COLUMN_FLOW_LOW_LEVEL = "flow_low_level";
 
     public DbleDbInstance() {
-        super(TABLE_NAME, 30);
+        super(TABLE_NAME, 34);
         setNotWritableColumnSet(COLUMN_ACTIVE_CONN_COUNT, COLUMN_IDLE_CONN_COUNT, COLUMN_READ_CONN_REQUEST, COLUMN_WRITE_CONN_REQUEST,
                 COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, COLUMN_LAST_HEARTBEAT_ACK, COLUMN_HEARTBEAT_STATUS, COLUMN_HEARTBEAT_FAILURE_IN_LAST_5MIN);
 

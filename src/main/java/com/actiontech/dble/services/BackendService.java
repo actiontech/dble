@@ -380,7 +380,7 @@ public abstract class BackendService extends AbstractService {
         // autocommit
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txAndReadOnlySyn + autoCommitSyn + setSqlFlag;
-        if (synCount == 0) {
+        if (synCount == 0 || ignoreSql(front)) {
             return null;
         }
 
@@ -416,10 +416,6 @@ public abstract class BackendService extends AbstractService {
         statusSync = new StatusSync(schema,
                 clientCharset, clientTxIsolation, expectAutocommit, isReadOnly,
                 synCount, usrVariables, sysVariables, toResetSys);
-        if (ignoreSql(front)) {
-            metaDataSynced = true;
-            return null;
-        }
         return sb;
     }
 

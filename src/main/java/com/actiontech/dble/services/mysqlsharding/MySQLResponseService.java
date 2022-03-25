@@ -177,8 +177,8 @@ public class MySQLResponseService extends BackendService {
         if (synSQL != null) {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }
+        execCmd(originPacket);
 
-        write(originPacket, WriteFlags.QUERY_END);
     }
 
     //-------------------------------------- for sharding ----------------------------------------------------
@@ -314,6 +314,13 @@ public class MySQLResponseService extends BackendService {
 
     public void execCmd(String cmd) {
         this.sendQueryCmd(cmd, charsetName);
+    }
+
+    public void execCmd(byte[] originPacket) {
+        isExecuting = true;
+        connection.setLastTime(TimeUtil.currentTimeMillis());
+        write(originPacket, WriteFlags.QUERY_END);
+
     }
 
     private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, boolean expectAutocommit, VariablesService front) {

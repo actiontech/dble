@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,9 +45,9 @@ public class JoinChooser {
     private final HintPlanInfo hintPlanInfo;
     private final Comparator<JoinRelationDag> defaultCmp = (o1, o2) -> {
         if (o1.relations.erRelationLst.size() > 0 && o2.relations.erRelationLst.size() > 0) {
-            if (o1.relations.isInner == o2.relations.isInner) { // both er，both inner or not inner
+            if (o1.relations.isInner() == o2.relations.isInner()) { // both er，both inner or not inner
                 return 0;
-            } else if (o1.relations.isInner) { // both er，o1 inner,o2  notinner
+            } else if (o1.relations.isInner()) { // both er，o1 inner,o2  notinner
                 return -1;
             } else { //if (o2.relations.isInner) { both er，o1 not inner,o2 inner
                 return 1;
@@ -60,9 +61,9 @@ public class JoinChooser {
             boolean o1Global = o1.node.getUnGlobalTableCount() == 0;
             boolean o2Global = o2.node.getUnGlobalTableCount() == 0;
             if (o1Global == o2Global) {
-                if (o1.relations.isInner == o2.relations.isInner) { // both er，both inner or not inner
+                if (o1.relations.isInner() == o2.relations.isInner()) { // both er，both inner or not inner
                     return 0;
-                } else if (o1.relations.isInner) { // both er，o1 inner,o2  notinner
+                } else if (o1.relations.isInner()) { // both er，o1 inner,o2  notinner
                     return -1;
                 } else { //if (o2.relations.isInner) { both er，o1 not inner,o2 inner
                     return 1;
@@ -190,7 +191,7 @@ public class JoinChooser {
         }
 
         JoinRelationDag root = createDag(firstRelation.leftNodes.iterator().next());
-        JoinRelationDag right = createDag(firstRelation, firstRelation.isInner);
+        JoinRelationDag right = createDag(firstRelation, firstRelation.isInner());
         root.rightNodes.add(right);
         right.degree++;
         right.leftNodes.add(root);
@@ -370,7 +371,7 @@ public class JoinChooser {
         if (relations == null) {
             return true;
         }
-        if (!relations.isInner) {
+        if (relations.containsLeftJoin()) {
             return false;
         }
         final List<OneToOneJoinRelation> splitRelations = splitAndExchangeRelations(relations);
@@ -441,7 +442,7 @@ public class JoinChooser {
 
     private JoinRelationDag addNodeToDag(JoinRelationDag root, JoinRelations relations) {
         Set<JoinRelationDag> prefixDagNodes = new HashSet<>(relations.prefixNodes.size());
-        boolean familyInner = relations.isInner;
+        boolean familyInner = relations.isInner();
         for (PlanNode prefixNode : relations.prefixNodes) {
             JoinRelationDag tmp = dagNodes.get(prefixNode);
             if (tmp == null) {
@@ -608,7 +609,7 @@ public class JoinChooser {
                     otherFilter = FilterUtils.and(otherFilter, filter);
                     continue;
                 }
-                JoinRelation nodeRelation = new JoinRelation(columnInfoLeft, columnInfoRight, filter);
+                JoinRelation nodeRelation = new JoinRelation(columnInfoLeft, columnInfoRight, filter, joinNode.isInnerJoin());
                 if (isERJoin) {
                     erRelationLst.add(nodeRelation);
                 } else {
@@ -805,11 +806,15 @@ public class JoinChooser {
         private void appendNodeToRight(JoinRelationDag rightNodeOfJoin) {
             boolean leftIsNull = result == null;
             JoinNode joinNode = new JoinNode(leftIsNull ? rootNode : result, rightNodeOfJoin.node, charsetIndex);
-            if (!rightNodeOfJoin.relations.isInner) {
+            final boolean isInnerJoin = rightNodeOfJoin.relations.isInner();
+            if (!isInnerJoin) {
                 joinNode.setLeftOuterJoin();
             }
             List<ItemFuncEqual> filters = new ArrayList<>();
             for (JoinRelation joinRelation : rightNodeOfJoin.relations.erRelationLst) {
+                if (joinRelation.inner != isInnerJoin) {
+                    continue;
+                }
                 filters.add(joinRelation.filter);
                 if (leftIsNull) {
                     joinNode.getERkeys().add(joinRelation.left.erTable);
@@ -818,6 +823,9 @@ public class JoinChooser {
                 }
             }
             for (JoinRelation joinRelation : rightNodeOfJoin.relations.normalRelationLst) {
+                if (joinRelation.inner != isInnerJoin) {
+                    continue;
+                }
                 filters.add(joinRelation.filter);
             }
             joinNode.setJoinFilter(filters);
@@ -871,15 +879,6 @@ public class JoinChooser {
                 relations = b.convertToJoinRelations();
                 return;
             }
-            if (!relations.isInner && (!b.erRelationLst.isEmpty() || !b.normalRelationLst.isEmpty())) {
-                /*
-                Case when the origin join is left join ,and the added join is inner join.
-                When both left join and inner join exists,the left join could discard .because use inner join only is enough to filter out the result.
-                 */
-                relations.erRelationLst.clear();
-                relations.normalRelationLst.clear();
-                relations.isInner = true;
-            }
             relations.erRelationLst.addAll(b.erRelationLst);
             relations.normalRelationLst.addAll(b.normalRelationLst);
             relations.init();
@@ -907,18 +906,33 @@ public class JoinChooser {
     private class JoinRelations {
         private final List<JoinRelation> erRelationLst;
         private final List<JoinRelation> normalRelationLst;
-        private boolean isInner;
         private final Item otherFilter;
         private final Set<PlanNode> leftNodes;
         private final PlanNode rightNode;
         private final Set<PlanNode> prefixNodes = new HashSet<>();
+
+        /**
+         * only return false when only contains left join.
+         * <p>
+         * because case when the origin join is left join ,and the added join is inner join.
+         * When both left join and inner join exists,the left join could discard .because use inner join only is enough to filter out the result.
+         *
+         * @return
+         */
+        public boolean isInner() {
+            return erRelationLst.size() + normalRelationLst.size() == 0 || (erRelationLst.stream().anyMatch(e -> e.isInner()) || normalRelationLst.stream().anyMatch(e -> e.isInner()));
+        }
+
+
+        public boolean containsLeftJoin() {
+            return (erRelationLst.stream().anyMatch(e -> !e.isInner()) || normalRelationLst.stream().anyMatch(e -> !e.isInner()));
+        }
 
         JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, Item otherFilter, PlanNode rightNode, Set<PlanNode> leftNodes) {
             this.erRelationLst = erRelationLst;
             this.normalRelationLst = normalRelationLst;
             this.rightNode = rightNode;
             this.leftNodes = leftNodes;
-            this.isInner = false;
             this.otherFilter = otherFilter;
         }
 
@@ -927,7 +941,6 @@ public class JoinChooser {
             this.normalRelationLst = normalRelationLst;
             this.rightNode = rightNode;
             this.leftNodes = leftNodes;
-            this.isInner = true;
             this.otherFilter = null;
         }
 
@@ -949,12 +962,10 @@ public class JoinChooser {
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder();
-            sb.append("[");
-            for (PlanNode leftNode : leftNodes) {
-                sb.append(getUnitName(leftNode)).append(", ");
-            }
-            return sb.append("] -> ").append(getUnitName(rightNode)).toString();
+            sb.append(Iterables.concat(normalRelationLst, erRelationLst));
+            return sb.toString();
         }
+
     }
 
 
@@ -989,20 +1000,31 @@ public class JoinChooser {
         private final JoinColumnInfo left;
         private final JoinColumnInfo right;
         private final ItemFuncEqual filter;
+        private final boolean inner;
 
-        JoinRelation(JoinColumnInfo left, JoinColumnInfo right, ItemFuncEqual filter) {
+        JoinRelation(JoinColumnInfo left, JoinColumnInfo right, ItemFuncEqual filter, boolean inner) {
             this.left = left;
             this.right = right;
             this.filter = filter;
+            this.inner = inner;
         }
 
         private JoinRelation exchange() {
-            return new JoinRelation(this.right, this.left, FilterUtils.equal(right.key, left.key, charsetIndex));
+            return new JoinRelation(this.right, this.left, FilterUtils.equal(right.key, left.key, charsetIndex), this.inner);
+        }
+
+        public boolean isInner() {
+            return inner;
         }
 
         @Override
         public String toString() {
-            return left + " -> " + right;
+            if (isInner()) {
+                return left + " <-(inner)-> " + right;
+            } else {
+                return left + " -(left)-> " + right;
+            }
+
         }
     }
 

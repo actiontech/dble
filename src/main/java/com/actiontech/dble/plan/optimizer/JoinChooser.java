@@ -112,7 +112,7 @@ public class JoinChooser {
             } catch (OptimizeException e) {
                 LOGGER.debug("Join order of  sql  doesn't support to be  optimized. Because {}. The sql is [{}]", e.getMessage(), orgNode);
                 if (!hintPlanInfo.isZeroNode()) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints, because " + e.getMessage());
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we don't support optimize this sql use hints, because " + e.getMessage());
                 } else {
                     return orgNode;
                 }
@@ -130,7 +130,7 @@ public class JoinChooser {
         // no relation join
         if (relationJoin == null) {
             if (!hintPlanInfo.isZeroNode()) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints yet. Maybe this sql contains 'multi right join' or 'cartesian with relation' or 'subquery'.");
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we don't support optimize this sql use hints yet. Maybe this sql contains 'multi right join' or 'cartesian with relation' or 'subquery'.");
             }
             return orgNode;
         }
@@ -630,7 +630,7 @@ public class JoinChooser {
         } else {
             if (joinNode.isInnerJoin()) {
                 if (!hintPlanInfo.isZeroNode()) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we doesn't support optimize this sql use hints yet. Because this sql contains 'cartesian with relation'.");
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "we don't support optimize this sql use hints yet. Because this sql contains 'cartesian with relation'.");
                 }
                 otherJoinOns.add(otherFilter);
             } else {
@@ -829,7 +829,7 @@ public class JoinChooser {
                 filters.add(joinRelation.filter);
             }
             joinNode.setJoinFilter(filters);
-            joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherFilter);
+            joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherLeftJoinFilter);
             this.result = joinNode;
         }
 
@@ -906,7 +906,7 @@ public class JoinChooser {
     private class JoinRelations {
         private final List<JoinRelation> erRelationLst;
         private final List<JoinRelation> normalRelationLst;
-        private final Item otherFilter;
+        private final Item otherLeftJoinFilter;
         private final Set<PlanNode> leftNodes;
         private final PlanNode rightNode;
         private final Set<PlanNode> prefixNodes = new HashSet<>();
@@ -920,20 +920,34 @@ public class JoinChooser {
          * @return
          */
         public boolean isInner() {
+            if (otherLeftJoinFilter != null && !otherLeftJoinFilter.getReferTables().isEmpty()) {
+                final HashSet<PlanNode> referTables = otherLeftJoinFilter.getReferTables();
+                if (referTables.size() > 1 || (referTables.size() == 1 && !referTables.contains(rightNode))) {
+                    //if left join referTable contains  other table.
+                    return false;
+                }
+            }
             return erRelationLst.size() + normalRelationLst.size() == 0 || (erRelationLst.stream().anyMatch(e -> e.isInner()) || normalRelationLst.stream().anyMatch(e -> e.isInner()));
         }
 
 
         public boolean containsLeftJoin() {
+            if (otherLeftJoinFilter != null && !otherLeftJoinFilter.getReferTables().isEmpty()) {
+                final HashSet<PlanNode> referTables = otherLeftJoinFilter.getReferTables();
+                if (!(referTables.size() == 1 && referTables.contains(rightNode))) {
+                    //if left join referTable contains  other table.
+                    return true;
+                }
+            }
             return (erRelationLst.stream().anyMatch(e -> !e.isInner()) || normalRelationLst.stream().anyMatch(e -> !e.isInner()));
         }
 
-        JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, Item otherFilter, PlanNode rightNode, Set<PlanNode> leftNodes) {
+        JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, Item otherLeftJoinFilter, PlanNode rightNode, Set<PlanNode> leftNodes) {
             this.erRelationLst = erRelationLst;
             this.normalRelationLst = normalRelationLst;
             this.rightNode = rightNode;
             this.leftNodes = leftNodes;
-            this.otherFilter = otherFilter;
+            this.otherLeftJoinFilter = otherLeftJoinFilter;
         }
 
         JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, PlanNode rightNode, Set<PlanNode> leftNodes) {
@@ -941,16 +955,16 @@ public class JoinChooser {
             this.normalRelationLst = normalRelationLst;
             this.rightNode = rightNode;
             this.leftNodes = leftNodes;
-            this.otherFilter = null;
+            this.otherLeftJoinFilter = null;
         }
 
         void init() {
             prefixNodes.clear();
             prefixNodes.addAll(leftNodes);
-            if (otherFilter != null && otherFilter.getReferTables() != null) {
+            if (otherLeftJoinFilter != null && otherLeftJoinFilter.getReferTables() != null) {
                 for (PlanNode planNode : joinUnits) {
                     if (planNode != rightNode) {
-                        Item tmpSel = nodeHasSelectTable(planNode, otherFilter);
+                        Item tmpSel = nodeHasSelectTable(planNode, otherLeftJoinFilter);
                         if (tmpSel != null) {
                             prefixNodes.add(planNode);
                         }

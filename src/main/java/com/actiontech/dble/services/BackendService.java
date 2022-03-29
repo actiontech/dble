@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.AnalysisUserConfig;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.executor.BackendRunnable;
@@ -27,6 +28,7 @@ import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.net.service.ServiceTaskType;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
+import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -378,7 +380,7 @@ public abstract class BackendService extends AbstractService {
         // autocommit
         int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txAndReadOnlySyn + autoCommitSyn + setSqlFlag;
-        if (synCount == 0) {
+        if (synCount == 0 || ignoreSql(front)) {
             return null;
         }
 
@@ -415,6 +417,19 @@ public abstract class BackendService extends AbstractService {
                 clientCharset, clientTxIsolation, expectAutocommit, isReadOnly,
                 synCount, usrVariables, sysVariables, toResetSys);
         return sb;
+    }
+
+    /**
+     * Temporary way，it will be revised in the future
+     *
+     * @param service
+     * @return
+     */
+    private boolean ignoreSql(VariablesService service) {
+        if (service instanceof RWSplitService) {
+            return (((RWSplitService) service).getUserConfig() instanceof AnalysisUserConfig);
+        }
+        return false;
     }
 
     private void getChangeSchemaCommand(StringBuilder sb, String schema) {

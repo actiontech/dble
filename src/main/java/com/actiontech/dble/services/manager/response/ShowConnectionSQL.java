@@ -8,6 +8,7 @@ package com.actiontech.dble.services.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.AnalysisUserConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -120,7 +121,12 @@ public final class ShowConnectionSQL {
         } else if (service instanceof RWSplitService) {
             row.add(StringUtil.encode(((RWSplitService) c.getService()).getSchema(), charset));
             generalTransformRow(c, executeSql, row, charset);
-            row.add(StringUtil.encode("RWSplit connection", charset));
+            //temporary process
+            if (((RWSplitService) service).getUserConfig() instanceof AnalysisUserConfig) {
+                row.add(StringUtil.encode("Analysis connection", charset));
+            } else {
+                row.add(StringUtil.encode("RWSplit connection", charset));
+            }
         } else {
             row.add(StringUtil.encode("", charset));
             generalTransformRow(c, executeSql, row, charset);

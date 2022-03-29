@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.model.user.AnalysisUserConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
@@ -88,6 +89,11 @@ public final class ShowConnectionSQLStatus {
             return;
         }
         if (frontService instanceof RWSplitService) {
+            //temporary process
+            if (((RWSplitService) frontService).getUserConfig() instanceof AnalysisUserConfig) {
+                service.writeErrMessage(ErrorCode.ER_YES, "The front_id " + id + " is a analysis connection");
+                return;
+            }
             service.writeErrMessage(ErrorCode.ER_YES, "The front_id " + id + " is a RWSplit connection");
             return;
         }

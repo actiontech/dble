@@ -305,6 +305,10 @@ public abstract class BackendService extends AbstractService {
     }
 
     public void signal() {
+        if (connection.isClosed()) {
+            return;
+        }
+
         if (recycler != null) {
             recycler.signal();
         }

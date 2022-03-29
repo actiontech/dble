@@ -232,7 +232,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 loadDataClean();
-                rwSplitService.getSession2().bind(null);
+                rwSplitService.getSession2().unbind();
                 reason = "Connection {dbInstance[" + rwSplitService.getConnection().getHost() + ":" + rwSplitService.getConnection().getPort() + "],DbGroup[" +
                         rwSplitService.getUserConfig().getDbGroup() + "],threadID[" +
                         ((MySQLResponseService) service).getConnection().getThreadId() + "]} was closed ,reason is [" + reason + "]";

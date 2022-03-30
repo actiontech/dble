@@ -41,8 +41,8 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public void terminate() {
         if (connection != null && !connection.isClosed()) {
             String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
-            LOGGER.info("terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
-            connection.businessClose("heartbeat quit");
+            LOGGER.info("[heartbeat]terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
+            connection.businessClose("[heartbeat] quit");
         }
     }
 
@@ -53,10 +53,12 @@ public class HeartbeatSQLJob implements ResponseHandler {
         conn.getBackendService().setComplexQuery(true);
         try {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("do heartbeat,conn is " + conn);
+                LOGGER.debug("[heartbeat]do heartbeat,conn is " + conn);
             }
             conn.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
+            LOGGER.warn("[heartbeat]send heartbeat error", e);
+            heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
             doFinished(true);
         }
     }
@@ -70,6 +72,8 @@ public class HeartbeatSQLJob implements ResponseHandler {
             }
             connection.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
+            LOGGER.warn("[heartbeat]send heartbeat error", e);
+            heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
             doFinished(true);
         }
     }
@@ -82,8 +86,8 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, Object attachment) {
-        LOGGER.warn("can't get connection for sql :" + sql, e);
-        heartbeat.setErrorResult("connection Error");
+        LOGGER.warn("[heartbeat]can't get connection for sql :" + sql, e);
+        heartbeat.setErrorResult("heartbeat connection Error");
         doFinished(true);
     }
 
@@ -91,13 +95,14 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public void errorResponse(byte[] err, @NotNull AbstractService service) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
-        heartbeat.setErrorResult(new String(errPg.getMessage()));
-        String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
-                " from of sql :" + sql + " at con:" + service;
+        MySQLResponseService responseService = (MySQLResponseService) service;
+        LOGGER.warn("error response errNo: {}, {} from of sql: {} at con: {} db user = {}",
+                errPg.getErrNo(), new String(errPg.getMessage()), sql, service,
+                responseService.getConnection().getInstance().getConfig().getUser());
 
-        LOGGER.info(errMsg);
+        heartbeat.setErrorResult(new String(errPg.getMessage()));
         if (!((MySQLResponseService) service).syncAndExecute()) {
-            service.getConnection().businessClose("unfinished sync");
+            service.getConnection().businessClose("[heartbeat]unfinished sync");
             doFinished(true);
             return;
         }
@@ -131,7 +136,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionClose(@NotNull AbstractService service, String reason) {
-        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try again immediately");
+        LOGGER.warn("[heartbeat]conn for sql[" + sql + "] is closed, due to " + reason + ", we will try again immediately");
         if (!heartbeat.doHeartbeatRetry()) {
             heartbeat.setErrorResult("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
             doFinished(true);
@@ -140,8 +145,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public String toString() {
-        return "HeartbeatSQLJob [sql=" + sql + ",  jobHandler=" +
-                jobHandler + "]";
+        return "HeartbeatSQLJob [sql=" + sql + ",  jobHandler=" + jobHandler + ", backend conn" + connection + "]";
     }
 
 }

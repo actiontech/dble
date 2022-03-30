@@ -114,7 +114,7 @@ public class HandlerBuilder {
             return false;
         DMLResponseHandler next = merges.get(0).getNextHandler();
         while (next != null) {
-            if (next instanceof TempTableHandler || next instanceof DelayTableHandler)
+            if (next instanceof TempTableHandler || (next instanceof SendMakeHandler && !((SendMakeHandler) next).getTableHandlers().isEmpty()))
                 return false;
             next = next.getNextHandler();
         }

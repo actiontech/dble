@@ -659,7 +659,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     private Column getColumnByExpr(SQLIdentifierExpr expr) {
-        String column = expr.getName();
+        String column = expr.getName().replaceAll("`", "");
         if (currentSchema == null) {
             return currentTable == null ? null : new Column(currentTable, column);
         } else {

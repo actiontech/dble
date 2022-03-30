@@ -7,8 +7,10 @@ package com.actiontech.dble.cluster.zkprocess.entity.dbGroups;
 
 import com.actiontech.dble.cluster.zkprocess.entity.Propertied;
 import com.actiontech.dble.cluster.zkprocess.entity.Property;
-
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +51,9 @@ public class DBInstance implements Propertied {
     @XmlAttribute
     protected Boolean primary;
 
+    @XmlAttribute
+    protected String databaseType;
+
     protected List<Property> property;
 
     protected transient String dbGroup;
@@ -57,7 +62,7 @@ public class DBInstance implements Propertied {
     }
 
     public DBInstance(String name, String url, String password, String user, Integer maxCon, Integer minCon, String disabled, String id, String readWeight,
-                      Boolean primary, List<Property> property, String usingDecrypt) {
+                      Boolean primary, List<Property> property, String usingDecrypt, String databaseType) {
         this.name = name;
         this.url = url;
         this.password = password;
@@ -70,6 +75,7 @@ public class DBInstance implements Propertied {
         this.primary = primary;
         this.property = property;
         this.usingDecrypt = usingDecrypt;
+        this.databaseType = databaseType;
     }
 
     @Override
@@ -188,6 +194,14 @@ public class DBInstance implements Propertied {
         return dbGroup;
     }
 
+    public String getDatabaseType() {
+        return databaseType;
+    }
+
+    public void setDatabaseType(String databaseType) {
+        this.databaseType = databaseType;
+    }
+
     @Override
     public String toString() {
         return "dbInstance [name=" +
@@ -209,7 +223,10 @@ public class DBInstance implements Propertied {
                 ", usingDecrypt=" +
                 usingDecrypt +
                 ", weight=" +
-                readWeight + ",property=" +
+                readWeight +
+                ", databaseType=" +
+                databaseType +
+                ",property=" +
                 property +
                 "]";
     }

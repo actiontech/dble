@@ -6,8 +6,9 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.WallErrorCode;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.SingleDbGroupUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AuthResultInfo;
@@ -44,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RWSplitService extends BusinessService<RwSplitUserConfig> {
+public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitService.class);
     private static final Pattern HINT_DEST = Pattern.compile(".*/\\*\\s*dble_dest_expect\\s*:\\s*([M|S])\\s*\\*/", Pattern.CASE_INSENSITIVE);
@@ -102,6 +103,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             writeOkPacket();
         }
     }
+
 
     @Override
     protected boolean beforeHandlingTask(@NotNull ServiceTask task) {
@@ -166,6 +168,9 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();
+                if (connection.isClosed()) {
+                    return;
+                }
                 session.execute(true, data, null);
                 // COM_STMT_CLOSE No response is sent back to the client.
                 long statementId = ByteUtil.readUB4(data, 5);
@@ -308,7 +313,12 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
         session.execute(true, data, null);
     }
 
-    public RWSplitNonBlockingSession getSession() {
+    public RWSplitNonBlockingSession getSession2() {
+        return session;
+    }
+
+    @Override
+    public Session getSession() {
         return session;
     }
 

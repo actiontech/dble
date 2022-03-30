@@ -23,6 +23,7 @@ import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
 import com.actiontech.dble.config.model.sharding.table.*;
@@ -484,6 +485,9 @@ public class ShardingConverter {
                 } else {
                     throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] associated with ShardingNode[" + entry.getKey() + "] does not exist");
                 }
+                if (shardingNodeGroup.getDbGroupConfig().getWriteInstanceConfig().getDataBaseType() != DataBaseType.MYSQL) {
+                    throw new ConfigException("The dbGroup[" + entry.getValue().getDbGroupName() + "] not support database type [" + entry.getKey() + "]");
+                }
             } else {
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));
                 iterator.remove();
@@ -665,9 +669,12 @@ public class ShardingConverter {
             String shardingNodeName = shardingNode.getName();
             String shardingNodeDatabase = shardingNode.getDatabase();
             String shardingNodeDbGroup = shardingNode.getDbGroup();
-
+            PhysicalDbGroup dbGroup = dbGroupMap.get(shardingNodeDbGroup);
             if (StringUtils.isBlank(shardingNodeName) || StringUtils.isBlank(shardingNodeDatabase) || StringUtils.isBlank(shardingNodeDbGroup)) {
                 throw new ConfigException("shardingNode " + shardingNodeName + " define error ,attribute can't be empty");
+            }
+            if (Objects.nonNull(dbGroup) && dbGroup.getDbGroupConfig().instanceDatabaseType() != DataBaseType.MYSQL) {
+                throw new ConfigException("shardingNodeDbGroup [" + shardingNodeDbGroup + "] define error ,all dbInstance database type must be " + DataBaseType.MYSQL);
             }
             //dnNamePre(name),databaseStr(database),host(dbGroup) can use ',', '$', '-' to configure multi nodes
             // but the database size *dbGroup size must equal the size of name

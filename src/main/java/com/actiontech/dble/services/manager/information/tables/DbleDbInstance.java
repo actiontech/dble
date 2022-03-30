@@ -71,6 +71,8 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     private static final String COLUMN_DISABLED = "disabled";
 
+    private static final String COLUMN_DATABASE_TYPE = "database_type";
+
     private static final String COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP = "last_heartbeat_ack_timestamp";
 
     private static final String COLUMN_LAST_HEARTBEAT_ACK = "last_heartbeat_ack";
@@ -112,7 +114,7 @@ public class DbleDbInstance extends ManagerWritableTable {
     private static final String COLUMN_FLOW_LOW_LEVEL = "flow_low_level";
 
     public DbleDbInstance() {
-        super(TABLE_NAME, 30);
+        super(TABLE_NAME, 34);
         setNotWritableColumnSet(COLUMN_ACTIVE_CONN_COUNT, COLUMN_IDLE_CONN_COUNT, COLUMN_READ_CONN_REQUEST, COLUMN_WRITE_CONN_REQUEST,
                 COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, COLUMN_LAST_HEARTBEAT_ACK, COLUMN_HEARTBEAT_STATUS, COLUMN_HEARTBEAT_FAILURE_IN_LAST_5MIN);
 
@@ -162,6 +164,9 @@ public class DbleDbInstance extends ManagerWritableTable {
 
         columns.put(COLUMN_DISABLED, new ColumnMeta(COLUMN_DISABLED, "varchar(5)", true, "false"));
         columnsType.put(COLUMN_DISABLED, Fields.FIELD_TYPE_VAR_STRING);
+
+        columns.put(COLUMN_DATABASE_TYPE, new ColumnMeta(COLUMN_DATABASE_TYPE, "varchar(11)", true, "mysql"));
+        columnsType.put(COLUMN_DATABASE_TYPE, Fields.FIELD_TYPE_VAR_STRING);
 
         columns.put(COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, new ColumnMeta(COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, "varchar(64)", true));
         columnsType.put(COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, Fields.FIELD_TYPE_VAR_STRING);
@@ -249,6 +254,7 @@ public class DbleDbInstance extends ManagerWritableTable {
                 map.put(COLUMN_READ_CONN_REQUEST, String.valueOf(dbInstance.getCount(true)));
                 map.put(COLUMN_WRITE_CONN_REQUEST, String.valueOf(dbInstance.getCount(false)));
                 map.put(COLUMN_DISABLED, String.valueOf(dbInstance.isDisabled()));
+                map.put(COLUMN_DATABASE_TYPE, String.valueOf(dbInstanceConfig.getDataBaseType()).toLowerCase());
                 map.put(COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, heartbeat.getLastActiveTime());
                 map.put(COLUMN_LAST_HEARTBEAT_ACK, heartbeat.getStatusStr());
                 map.put(COLUMN_HEARTBEAT_STATUS, heartbeat.isChecking() ? MySQLHeartbeat.CHECK_STATUS_CHECKING : MySQLHeartbeat.CHECK_STATUS_IDLE);
@@ -405,6 +411,9 @@ public class DbleDbInstance extends ManagerWritableTable {
                     break;
                 case COLUMN_DISABLED:
                     dbInstance.setDisabled(entry.getValue());
+                    break;
+                case COLUMN_DATABASE_TYPE:
+                    dbInstance.setDatabaseType(entry.getValue());
                     break;
                 case COLUMN_MIN_CONN_COUNT:
                     if (!StringUtil.isBlank(entry.getValue())) {

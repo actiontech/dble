@@ -43,14 +43,16 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     private List<Order> orderBys;
     private RowDataComparator rowComparator;
     private volatile boolean noNeedRows = false;
+    private boolean nestLoopDependOn;
 
     public MultiNodeMergeAndOrderHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
-                                         List<Order> orderBys) {
+                                         List<Order> orderBys, boolean nestLoopDependOn) {
         super(id, route, autocommit, session);
         this.orderBys = orderBys;
         this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         this.merges.add(this);
+        this.nestLoopDependOn = nestLoopDependOn;
 
     }
 
@@ -173,7 +175,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                 heap.add(firstItem);
             }
             while (!heap.isEmpty()) {
-                if (terminate.get())
+                if (terminate.get() && !nestLoopDependOn)
                     return;
                 HeapItem top = heap.peak();
                 if (top.isNullItem()) {

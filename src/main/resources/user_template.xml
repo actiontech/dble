@@ -28,6 +28,7 @@
     </shardingUser>
     <!--rwSplitUser not work for now-->
     <!--<rwSplitUser name="rwsu1" password="123456" dbGroup="dbGroup1" blacklist="blacklist1" maxCon="20"/>-->
+    <analysisUser name="analysisUser" password="123456" dbGroup="dbGroup3" blacklist="blacklist1" maxCon="20"/>
     <blacklist name="blacklist1">
         <property name="selelctAllow">true</property>
     </blacklist>

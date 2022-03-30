@@ -14,22 +14,15 @@ import com.alibaba.druid.wall.WallProvider;
 import java.util.Optional;
 import java.util.Set;
 
-public class RwSplitUserConfig extends SingleDbGroupUserConfig {
-    private final String dbGroup;
+public class AnalysisUserConfig extends SingleDbGroupUserConfig {
 
-    public RwSplitUserConfig(UserConfig user, String tenant, WallProvider blacklist, String dbGroup) {
+    public AnalysisUserConfig(UserConfig user, String tenant, WallProvider blacklist, String dbGroup) {
         super(user, tenant, blacklist, dbGroup);
-        this.dbGroup = dbGroup;
     }
 
-    public String getDbGroup() {
-        return dbGroup;
-    }
-
-
-    public boolean equalsBaseInfo(RwSplitUserConfig rwSplitUserConfig) {
-        return super.equalsBaseInfo(rwSplitUserConfig) &&
-                StringUtil.equalsWithEmpty(this.dbGroup, rwSplitUserConfig.getDbGroup());
+    public boolean equalsBaseInfo(AnalysisUserConfig analysisUserConfig) {
+        return super.equalsBaseInfo(analysisUserConfig) &&
+                StringUtil.equalsWithEmpty(this.dbGroup, analysisUserConfig.getDbGroup());
     }
 
     @Override

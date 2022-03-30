@@ -120,7 +120,7 @@ public abstract class BaseHandlerBuilder {
             if (needCommon) {
                 buildCommon();
             }
-            if (needCommon || node.isWithSubQuery()) {
+            if (needCommon || node.isWithSubQuery() || node.haveDependOnNode()) {
                 // view sub alias
                 String tbAlias = node.getAlias();
                 String schema = null;
@@ -371,18 +371,35 @@ public abstract class BaseHandlerBuilder {
 
     private void nestLoopAddHandler(SendMakeHandler sh) {
         if (node instanceof TableNode && Objects.nonNull(((TableNode) node).getHintNestLoopHelper())) {
-            HintNestLoopHelper hintNestLoopHelper = ((TableNode) node).getHintNestLoopHelper();
-            List<DelayTableHandler> delayTableHandlers = hintNestLoopHelper.getDelayTableHandlers(node);
-            Map<PlanNode, SendMakeHandler> sendMakeHandlerHashMap = hintNestLoopHelper.getSendMakeHandlerHashMap();
-            Set<BaseDMLHandler> tableHandlers = sh.getTableHandlers();
-            for (DelayTableHandler delayTableHandler : delayTableHandlers) {
-                if (!tableHandlers.contains(delayTableHandler)) {
-                    tableHandlers.add(delayTableHandler);
+            addDelayTableHandler(sh, (TableNode) node);
+        } else if (node instanceof JoinNode && canDoAsMerge()) {
+            nestLoopAddHandler(sh, node);
+        }
+    }
+
+    private void nestLoopAddHandler(SendMakeHandler sh, PlanNode currentNode) {
+        if (currentNode instanceof JoinNode) {
+            for (PlanNode child : currentNode.getChildren()) {
+                if (child instanceof TableNode && Objects.nonNull(((TableNode) child).getHintNestLoopHelper())) {
+                    addDelayTableHandler(sh, (TableNode) child);
+                } else {
+                    nestLoopAddHandler(sh, child);
                 }
             }
-            sendMakeHandlerHashMap.put(node, sh);
-
         }
+    }
+
+    private void addDelayTableHandler(SendMakeHandler sh, TableNode tableNode) {
+        HintNestLoopHelper hintNestLoopHelper = tableNode.getHintNestLoopHelper();
+        List<DelayTableHandler> delayTableHandlers = hintNestLoopHelper.getDelayTableHandlers(tableNode);
+        Map<PlanNode, SendMakeHandler> sendMakeHandlerHashMap = hintNestLoopHelper.getSendMakeHandlerHashMap();
+        Set<BaseDMLHandler> tableHandlers = sh.getTableHandlers();
+        for (DelayTableHandler delayTableHandler : delayTableHandlers) {
+            if (!tableHandlers.contains(delayTableHandler)) {
+                tableHandlers.add(delayTableHandler);
+            }
+        }
+        sendMakeHandlerHashMap.put(tableNode, sh);
     }
 
     /**
@@ -476,7 +493,7 @@ public abstract class BaseHandlerBuilder {
             }
             mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, globalBackNodes);
         } else {
-            mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, orderBys);
+            mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, session.getShardingService().isAutocommit() && !session.getShardingService().isTxStart(), session, orderBys, planNode.haveDependOnNode());
         }
         addHandler(mh);
     }

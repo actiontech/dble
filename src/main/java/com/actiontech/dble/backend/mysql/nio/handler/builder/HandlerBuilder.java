@@ -7,9 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -111,10 +109,22 @@ public class HandlerBuilder {
         return null;
     }
 
+    public boolean canAsWholeToSingle(List<DMLResponseHandler> merges) {
+        if (merges.size() != 1)
+            return false;
+        DMLResponseHandler next = merges.get(0).getNextHandler();
+        while (next != null) {
+            if (next instanceof TempTableHandler || (next instanceof SendMakeHandler && !((SendMakeHandler) next).getTableHandlers().isEmpty()))
+                return false;
+            next = next.getNextHandler();
+        }
+        return true;
+    }
+
     // check whether the SQL can be directly sent to a single node
     private RouteResultsetNode getTryRouteSingleNode(BaseHandlerBuilder builder, boolean isHaveHintPlan2Inner) {
         RouteResultsetNode routeNode = null;
-        if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+        if (canAsWholeToSingle(builder.getEndHandler().getMerges()) && builder.getSubQueryBuilderList().size() == 0) {
             RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
             if (routes.length == 1) {
                 routeNode = routes[0];

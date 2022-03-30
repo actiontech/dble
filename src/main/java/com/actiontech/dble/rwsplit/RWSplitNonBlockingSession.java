@@ -19,6 +19,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.route.handler.HintDbInstanceHandler;
 import com.actiontech.dble.route.handler.HintMasterDBHandler;
 import com.actiontech.dble.route.parser.DbleHintParser;
+import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.Callback;
 import com.actiontech.dble.services.rwsplit.RWSplitHandler;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
@@ -51,6 +52,51 @@ public class RWSplitNonBlockingSession extends Session {
     @Override
     public FrontendConnection getSource() {
         return (FrontendConnection) rwSplitService.getConnection();
+    }
+
+    @Override
+    public void stopFlowControl(int currentWritingSize) {
+
+        synchronized (this) {
+            if (rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session stop flow control " + this.getSource());
+                rwSplitService.getConnection().setFrontWriteFlowControlled(false);
+            }
+            final BackendConnection con = this.conn;
+            if (con == null) {
+                return;
+            }
+
+            if (con.getService() instanceof MySQLResponseService) {
+                int size = ((MySQLResponseService) (con.getService())).getReadSize();
+                if (size <= con.getFlowLowLevel()) {
+                    con.enableRead();
+                } else {
+                    LOGGER.debug("This front connection want to remove flow control, but mysql conn [{}]'s size [{}] is not lower the FlowLowLevel", con.getThreadId(), size);
+                }
+            } else {
+                con.enableRead();
+            }
+        }
+    }
+
+    @Override
+    public void startFlowControl(int currentWritingSize) {
+        synchronized (this) {
+            if (!rwSplitService.isFlowControlled()) {
+                LOGGER.info("Session start flow control " + this.getSource());
+            }
+            rwSplitService.getConnection().setFrontWriteFlowControlled(true);
+            this.conn.disableRead();
+        }
+    }
+
+    @Override
+    public void releaseConnectionFromFlowControlled(BackendConnection con) {
+        synchronized (this) {
+            con.getSocketWR().enableRead();
+            rwSplitService.getConnection().setFrontWriteFlowControlled(false);
+        }
     }
 
     public void execute(Boolean master, Callback callback) {
@@ -86,7 +132,7 @@ public class RWSplitNonBlockingSession extends Session {
             Boolean isMaster = canRunOnMaster(master); //  first
             boolean firstValue = isMaster == null ? false : isMaster;
             long rwStickyTime = SystemConfig.getInstance().getRwStickyTime();
-            if ((rwStickyTime > 0) && !firstValue) {
+            if (rwGroup.getRwSplitMode() != PhysicalDbGroup.RW_SPLIT_OFF && (rwStickyTime > 0) && !firstValue) {
                 if (this.getPreWriteResponseTime() > 0 && System.currentTimeMillis() - this.getPreWriteResponseTime() <= rwStickyTime) {
                     isMaster = true;
                     if (LOGGER.isDebugEnabled()) {
@@ -228,16 +274,24 @@ public class RWSplitNonBlockingSession extends Session {
     }
 
     public void bind(BackendConnection bindConn) {
-        if (conn != null && conn != bindConn) {
-            LOGGER.warn("last conn is remaining");
+        final BackendConnection tmp = conn;
+        if (tmp != null && tmp != bindConn) {
+            LOGGER.warn("last conn is remaining, the session is {}, the backend conn is {}", rwSplitService.getConnection(), tmp);
+            tmp.release();
         }
+        LOGGER.debug("bind conn is {}", bindConn);
         this.conn = bindConn;
     }
 
     public void unbindIfSafe() {
-        if (this.conn != null && rwSplitService.isKeepBackendConn()) {
-            this.conn.release();
+        final BackendConnection tmp = conn;
+        if (tmp != null && rwSplitService.isKeepBackendConn()) {
             this.conn = null;
+            if (rwSplitService.isFlowControlled()) {
+                releaseConnectionFromFlowControlled(tmp);
+            }
+            LOGGER.debug("safe unbind conn is {}", tmp);
+            tmp.release();
         }
     }
 
@@ -249,8 +303,10 @@ public class RWSplitNonBlockingSession extends Session {
         if (null != rwGroup) {
             rwGroup.unBindRwSplitSession(this);
         }
-        if (conn != null) {
-            conn.close(reason);
+        final BackendConnection tmp = this.conn;
+        this.conn = null;
+        if (tmp != null) {
+            tmp.close(reason);
         }
     }
 

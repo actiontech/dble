@@ -88,6 +88,15 @@ public final class RouterUtil {
         if (index1 < 0 && index2 < 0) {
             return stmt;
         }
+
+        //backtracking check
+        if (!checkPrefix(forCmpStmt, index1)) {
+            index1 = -1;
+        }
+        if (!checkPrefix(forCmpStmt, index2)) {
+            index2 = -1;
+        }
+
         int startPos = 0;
         boolean flag;
         int firstE = forCmpStmt.indexOf("'");
@@ -108,19 +117,47 @@ public final class RouterUtil {
                 if (index2 > firstE && index2 < endE && countChar(stmt, index2) % 2 != 0) {
                     result.append(stmt, index2, startPos);
                 }
-                index2 = forCmpStmt.indexOf(maySchema2, startPos);
+                index2 = recursionIndexOf(forCmpStmt, maySchema2, startPos);
             } else {
                 result.append(stmt, startPos, index1);
                 startPos = index1 + maySchema1.length();
                 if (index1 > firstE && index1 < endE && countChar(stmt, index1) % 2 != 0) {
                     result.append(stmt, index1, startPos);
                 }
-                index1 = forCmpStmt.indexOf(maySchema1, startPos);
+                index1 = recursionIndexOf(forCmpStmt, maySchema1, startPos);
             }
         }
         result.append(stmt.substring(startPos));
         return result.toString();
     }
+
+    private static int recursionIndexOf(String forCmpStmt, String schema, int startPos) {
+        int indexTmp = forCmpStmt.indexOf(schema, startPos);
+        if (indexTmp == -1) {
+            return -1;
+        }
+        if (checkPrefix(forCmpStmt, indexTmp)) {
+            return indexTmp;
+        } else {
+            return recursionIndexOf(forCmpStmt, schema, indexTmp + schema.length());
+        }
+    }
+
+    /**
+     * backtracking check
+     *
+     * @param content
+     * @param index
+     * @return
+     */
+    private static boolean checkPrefix(String content, int index) {
+        if (index > 0) {
+            char prefix = content.charAt(index - 1);
+            return prefix == ' ' || prefix == ',' || prefix == '(';
+        }
+        return false;
+    }
+
 
     private static int countChar(String sql, int end) {
         int count = 0;
@@ -802,7 +839,7 @@ public final class RouterUtil {
     /**
      * tryRouteFor multiTables
      */
-    private static RouteResultset tryRouteForTables(
+    public static RouteResultset tryRouteForTables(
             SchemaConfig schema, DruidShardingParseInfo ctx, RouteCalculateUnit routeUnit, RouteResultset rrs,
             boolean isSelect, String clientCharset) throws SQLException {
         List<Pair<String, String>> tables = ctx.getTables();
@@ -1218,5 +1255,16 @@ public final class RouterUtil {
         return Boolean.FALSE.equals(o);
     }
 
-
+    public static boolean isAllGlobalTable(DruidShardingParseInfo ctx, SchemaConfig schema) {
+        boolean isAllGlobal = false;
+        for (Pair<String, String> table : ctx.getTables()) {
+            BaseTableConfig tableConfig = schema.getTables().get(table.getValue());
+            if (tableConfig != null && tableConfig instanceof GlobalTableConfig) {
+                isAllGlobal = true;
+            } else {
+                return false;
+            }
+        }
+        return isAllGlobal;
+    }
 }

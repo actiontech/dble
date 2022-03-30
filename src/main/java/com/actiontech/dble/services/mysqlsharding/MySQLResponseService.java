@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
@@ -19,6 +20,7 @@ import com.actiontech.dble.net.response.*;
 import com.actiontech.dble.net.service.ServiceTask;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.LoadDataBatch;
@@ -56,6 +58,7 @@ public class MySQLResponseService extends BackendService {
     private volatile ResponseHandler responseHandler;
     private volatile Object attachment;
     private volatile NonBlockingSession session;
+    private volatile RWSplitNonBlockingSession session2;
     private volatile boolean complexQuery = false;
     private volatile boolean isDDL = false;
     private volatile boolean testing = false;
@@ -136,7 +139,6 @@ public class MySQLResponseService extends BackendService {
         write(originPacket, WriteFlags.QUERY_END);
     }
 
-
     public void execute(BusinessService service, String sql) {
         boolean changeUser = isChangeUser(service);
         if (changeUser) return;
@@ -152,7 +154,6 @@ public class MySQLResponseService extends BackendService {
         boolean changeUser = isChangeUser(service);
         if (changeUser) return;
 
-        StringBuilder synSQL = getSynSql(service.isAutocommit(), service);
         if (originPacket.length > 4) {
             byte type = originPacket[4];
             if (type == MySQLPacket.COM_STMT_PREPARE) {
@@ -163,6 +164,10 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = new FetchResponseHandler(this);
             } else if (type == MySQLPacket.COM_FIELD_LIST) {
                 protocolResponseHandler = new FieldListResponseHandler(this);
+            } else if (type == MySQLPacket.COM_STMT_CLOSE) {
+                // no response
+                write(originPacket, WriteFlags.QUERY_END);
+                return;
             } else if (service.isInLoadData()) {
                 if (service.isFirstInLoadData()) {
                     protocolResponseHandler = new LoadDataResponseHandler(this);
@@ -172,11 +177,12 @@ public class MySQLResponseService extends BackendService {
             }
         }
 
+        StringBuilder synSQL = getSynSql(service.isAutocommit(), service);
         if (synSQL != null) {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }
+        execCmd(originPacket);
 
-        write(originPacket, WriteFlags.QUERY_END);
     }
 
     //-------------------------------------- for sharding ----------------------------------------------------
@@ -312,6 +318,13 @@ public class MySQLResponseService extends BackendService {
 
     public void execCmd(String cmd) {
         this.sendQueryCmd(cmd, charsetName);
+    }
+
+    public void execCmd(byte[] originPacket) {
+        isExecuting = true;
+        connection.setLastTime(TimeUtil.currentTimeMillis());
+        write(originPacket, WriteFlags.QUERY_END);
+
     }
 
     private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn, boolean expectAutocommit, VariablesService front) {
@@ -577,8 +590,30 @@ public class MySQLResponseService extends BackendService {
         return session;
     }
 
-    public void setSession(NonBlockingSession session) {
-        this.session = session;
+    public RWSplitNonBlockingSession getSession2() {
+        return session2;
+    }
+
+
+    public Session getOriginSession() {
+        return session == null ? session2 : session;
+    }
+
+    public void setSession(Session session) {
+        if (session == null) {
+            this.session = null;
+            this.session2 = null;
+            return;
+        }
+        if (session instanceof NonBlockingSession) {
+            this.session = (NonBlockingSession) session;
+            this.session2 = null;
+        } else if (session instanceof RWSplitNonBlockingSession) {
+            this.session2 = (RWSplitNonBlockingSession) session;
+            this.session = null;
+        } else {
+            throw new UnsupportedOperationException("unsupport cast");
+        }
     }
 
     public AtomicBoolean getLogResponse() {

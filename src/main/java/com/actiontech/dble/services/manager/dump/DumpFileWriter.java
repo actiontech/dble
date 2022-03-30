@@ -11,6 +11,7 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.manager.dump.handler.ShardingValuesHandler;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.Disruptor;
@@ -186,7 +187,7 @@ public class DumpFileWriter {
             };
             SleepingWaitStrategy strategy = new SleepingWaitStrategy();
             try {
-                disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("Split_Writer_" + shardingNode).build(), ProducerType.MULTI, strategy);
+                disruptor = new Disruptor(factory, this.queueSize, new ThreadFactoryBuilder().setNameFormat("splitWriter" + upperCaseFirst(shardingNode)).build(), ProducerType.MULTI, strategy);
             } catch (IllegalArgumentException e) {
                 throw new DumpException("The value of -w needs to be a power of 2");
             }
@@ -298,6 +299,15 @@ public class DumpFileWriter {
                 }
                 this.bufferedWriter.write(')');
             }
+        }
+
+        private String upperCaseFirst(String val) {
+            if (Strings.isNullOrEmpty(val)) {
+                return val;
+            }
+            char[] arr = val.toCharArray();
+            arr[0] = Character.toUpperCase(arr[0]);
+            return new String(arr);
         }
     }
 

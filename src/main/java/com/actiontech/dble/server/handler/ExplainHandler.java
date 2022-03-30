@@ -10,7 +10,10 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
+import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.DelayTableHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.TempTableHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -174,7 +177,7 @@ public final class ExplainHandler {
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(service).append(stmt).toString() + " error:", e);
+                LOGGER.warn(s.append(service).append(stmt).append(" error:").toString(), e);
                 String msg = e.getMessage();
                 service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;
@@ -202,10 +205,22 @@ public final class ExplainHandler {
         return false;
     }
 
+    public static boolean canAsWholeToSingle(List<DMLResponseHandler> merges) {
+        if (merges.size() != 1)
+            return false;
+        DMLResponseHandler next = merges.get(0).getNextHandler();
+        while (next != null) {
+            if (next instanceof TempTableHandler || next instanceof DelayTableHandler)
+                return false;
+            next = next.getNextHandler();
+        }
+        return true;
+    }
+
     // check whether the SQL can be directly sent to a single node
     private static RouteResultsetNode getTryRouteSingleNode(BaseHandlerBuilder builder, RouteResultset rrs) {
         RouteResultsetNode routeNode = null;
-        if (builder.getEndHandler().getMerges().size() == 1 && builder.getSubQueryBuilderList().size() == 0) {
+        if (canAsWholeToSingle(builder.getEndHandler().getMerges()) && builder.getSubQueryBuilderList().size() == 0) {
             RouteResultsetNode[] routes = ((MultiNodeMergeHandler) (builder.getEndHandler().getMerges().get(0))).getRoute();
             if (routes.length == 1) {
                 routeNode = routes[0];

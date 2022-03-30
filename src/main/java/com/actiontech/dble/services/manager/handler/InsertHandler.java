@@ -59,62 +59,70 @@ public final class InsertHandler {
         if (null == columns) {
             return;
         }
-        //cluster-lock
-        DistributeLock distributeLock = null;
+        PacketResult packetResult = new PacketResult();
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
-            distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
-            if (!distributeLock.acquire()) {
-                service.writeErrMessage(ErrorCode.ER_YES, "Other instance are executing reload config or management commands(insert/update/delete), please try again later.");
-                return;
-            }
-            LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+            insertWithCluster(service, insert, managerTable, columns, packetResult);
+        } else {
+            generalInsert(service, insert, managerTable, columns, packetResult);
         }
+        writePacket(packetResult.isSuccess(), packetResult.getRowSize(), service, packetResult.getErrorMsg());
+    }
+
+    private void insertWithCluster(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns, PacketResult packetResult) {
+        //cluster-lock
+        DistributeLock distributeLock;
+        ClusterHelper clusterHelper = ClusterHelper.getInstance(ClusterOperation.CONFIG);
+        distributeLock = clusterHelper.createDistributeLock(ClusterMetaUtil.getConfChangeLockPath());
+        if (!distributeLock.acquire()) {
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other instance is reloading, please try again later.");
+            return;
+        }
+        LOGGER.info("insert dble_information[{}]: added distributeLock {}", managerTable.getTableName(), ClusterMetaUtil.getConfChangeLockPath());
+        try {
+            generalInsert(service, insert, managerTable, columns, packetResult);
+        } finally {
+            distributeLock.release();
+        }
+    }
+
+    private void generalInsert(ManagerService service, MySqlInsertStatement insert, ManagerWritableTable managerTable, List<String> columns, PacketResult packetResult) {
         //stand-alone lock
         List<LinkedHashMap<String, String>> rows;
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         boolean lockFlag = lock.writeLock().tryLock();
         if (!lockFlag) {
-            service.writeErrMessage(ErrorCode.ER_YES, "Other threads are executing reload config or management commands(insert/update/delete), please try again later.");
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Other threads are executing management commands(insert/update/delete), please try again later.");
             return;
         }
-        int rowSize = 0;
-        boolean isSuccess = true;
-        String errorMsg = null;
+        int rowSize;
         try {
             rows = managerTable.makeInsertRows(columns, insert.getValuesList());
             managerTable.checkPrimaryKeyDuplicate(rows);
             rowSize = managerTable.insertRows(rows);
             if (rowSize != 0) {
-                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()));
+                ReloadConfig.execute(service, 0, false, new ConfStatus(ConfStatus.Status.MANAGER_INSERT, managerTable.getTableName()), packetResult);
             }
             managerTable.afterExecute();
         } catch (SQLException e) {
-            isSuccess = false;
-            errorMsg = e.getMessage();
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg(e.getMessage());
         } catch (ConfigException e) {
-            isSuccess = false;
-            errorMsg = "Insert failure.The reason is " + e.getMessage();
+            packetResult.setSuccess(false);
+            packetResult.setErrorMsg("Insert failure.The reason is " + e.getMessage());
         } catch (Exception e) {
-            isSuccess = false;
+            packetResult.setSuccess(false);
             if (e.getCause() instanceof ConfigException) {
-                errorMsg = "Insert failure.The reason is " + e.getMessage();
+                packetResult.setErrorMsg("Insert failure.The reason is " + e.getMessage());
                 LOGGER.warn("Insert failure.The reason is ", e);
             } else {
-                errorMsg = "unknown error:" + e.getMessage();
+                packetResult.setErrorMsg("unknown error:" + e.getMessage());
                 LOGGER.warn("unknown error:", e);
             }
         } finally {
             managerTable.updateTempConfig();
             lock.writeLock().unlock();
-            if (distributeLock != null) {
-                distributeLock.release();
-            }
-        }
-        if (isSuccess) {
-            writeOkPacket(1, rowSize, managerTable.getMsg(), service);
-        } else {
-            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
         }
     }
 
@@ -161,16 +169,6 @@ public final class InsertHandler {
         return columns;
     }
 
-    private void writeOkPacket(int i, int rowSize, String msg, ManagerService service) {
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(i);
-        ok.setAffectedRows(rowSize);
-        if (!StringUtil.isEmpty(msg)) {
-            ok.setMessage(StringUtil.encode(msg, service.getCharset().getResults()));
-        }
-        ok.write(service.getConnection());
-    }
-
     private ManagerWritableTable getWritableTable(MySqlInsertStatement insert, ManagerService service) {
         if (insert.isLowPriority() || insert.isDelayed() || insert.isHighPriority() || insert.isIgnore() || (insert.getDuplicateKeyUpdate() != null && !insert.getDuplicateKeyUpdate().isEmpty())) {
             service.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "update syntax error, not support insert with syntax :[LOW_PRIORITY | DELAYED | HIGH_PRIORITY] [IGNORE][ON DUPLICATE KEY UPDATE assignment_list]");
@@ -203,5 +201,16 @@ public final class InsertHandler {
             return null;
         }
         return (ManagerWritableTable) managerBaseTable;
+    }
+
+    private void writePacket(boolean isSuccess, int rowSize, ManagerService service, String errorMsg) {
+        if (isSuccess) {
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(rowSize);
+            ok.write(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+        }
     }
 }

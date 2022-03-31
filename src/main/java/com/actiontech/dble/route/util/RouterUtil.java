@@ -153,7 +153,7 @@ public final class RouterUtil {
     private static boolean checkPrefix(String content, int index) {
         if (index > 0) {
             char prefix = content.charAt(index - 1);
-            return prefix == ' ' || prefix == ',' || prefix == '(';
+            return prefix == ' ' || prefix == ',' || prefix == '(' || prefix == '=';
         }
         return false;
     }

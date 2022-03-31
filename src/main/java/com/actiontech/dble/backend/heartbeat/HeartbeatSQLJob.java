@@ -64,21 +64,23 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     public void execute() {
-        if (connection == null) {
-            LOGGER.warn("[heartbeat]connect timeout,please pay attention to network latency or packet loss.");
-        }
-
         // reset
         finished.set(false);
-        try {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("[heartbeat]do heartbeat,conn is " + connection);
-            }
-            connection.getBackendService().query(sql);
-        } catch (Exception e) { // (UnsupportedEncodingException e) {
-            LOGGER.warn("[heartbeat]send heartbeat error", e);
-            heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
+        if (connection == null) {
+            LOGGER.warn("[heartbeat]connect timeout,please pay attention to network latency or packet loss.");
+            heartbeat.setErrorResult("connect timeout");
             doFinished(true);
+        } else {
+            try {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[heartbeat]do heartbeat,conn is " + connection);
+                }
+                connection.getBackendService().query(sql);
+            } catch (Exception e) { // (UnsupportedEncodingException e) {
+                LOGGER.warn("[heartbeat]send heartbeat error", e);
+                heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
+                doFinished(true);
+            }
         }
     }
 

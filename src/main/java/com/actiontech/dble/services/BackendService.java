@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.user.AnalysisUserConfig;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
@@ -428,6 +429,8 @@ public abstract class BackendService extends AbstractService {
     private boolean ignoreSql(VariablesService service) {
         if (service instanceof RWSplitService) {
             return (((RWSplitService) service).getUserConfig() instanceof AnalysisUserConfig);
+        } else if (service instanceof MySQLResponseService) {
+            return ((MySQLResponseService) service).getConnection().getInstance().getConfig().getDataBaseType() == DataBaseType.CLICKHOUSE;
         }
         return false;
     }

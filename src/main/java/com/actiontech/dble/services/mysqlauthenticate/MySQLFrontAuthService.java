@@ -175,11 +175,9 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     private void auth() {
         AuthResultInfo info = AuthUtil.auth((FrontendConnection) connection, seed, pluginName, authPacket);
         checkForResult(info);
-        if (LOGGER.isDebugEnabled()) {
-            boolean isFoundRows = Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & authPacket.getClientFlags());
-            if (!(userConfig instanceof ManagerUserConfig) && isFoundRows != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
-                LOGGER.debug("the client requested CLIENT_FOUND_ROWS capabilities is '{}', dble is configured as '{}',pls set the same.", isFoundRows ? "found rows" : "affect rows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() ? "found rows" : "affect rows");
-            }
+        boolean isFoundRows = Capabilities.CLIENT_FOUND_ROWS == (Capabilities.CLIENT_FOUND_ROWS & authPacket.getClientFlags());
+        if (!(userConfig instanceof ManagerUserConfig) && isFoundRows != CapClientFoundRows.getInstance().isEnableCapClientFoundRows()) {
+            LOGGER.warn("the client requested CLIENT_FOUND_ROWS capabilities is '{}', dble is configured as '{}',pls set the same.", isFoundRows ? "found rows" : "affect rows", CapClientFoundRows.getInstance().isEnableCapClientFoundRows() ? "found rows" : "affect rows");
         }
     }
 

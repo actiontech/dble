@@ -64,11 +64,15 @@ public class HeartbeatSQLJob implements ResponseHandler {
     }
 
     public void execute() {
+        if (connection == null) {
+            LOGGER.warn("[heartbeat]connect timeout,please pay attention to network latency or packet loss.");
+        }
+
         // reset
         finished.set(false);
         try {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("do heartbeat,conn is " + connection);
+                LOGGER.debug("[heartbeat]do heartbeat,conn is " + connection);
             }
             connection.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {

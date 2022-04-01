@@ -6,10 +6,8 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
@@ -372,7 +370,7 @@ public class ERJoinChooser {
                 return columnInfo;
             }
         }
-        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not find table of:" + key);
+        return columnInfo;
     }
 
     /**

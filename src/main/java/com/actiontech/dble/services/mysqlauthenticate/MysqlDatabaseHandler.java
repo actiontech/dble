@@ -7,10 +7,7 @@ package com.actiontech.dble.services.mysqlauthenticate;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
-import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.SQLJob;
-import com.actiontech.dble.sqlengine.SQLQueryResult;
-import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.actiontech.dble.sqlengine.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,12 +49,13 @@ public class MysqlDatabaseHandler {
         return new HashSet<>(databases);
     }
 
+    // for dryrun
     public Set<String> execute(PhysicalDbInstance ds) {
         reset();
         String mysqlShowDataBasesCols = "Database";
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
         if (ds != null) {
-            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {

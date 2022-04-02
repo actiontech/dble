@@ -58,7 +58,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
             conn.getBackendService().query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             LOGGER.warn("[heartbeat]send heartbeat error", e);
-            heartbeat.setErrorResult("send heartbeat error");
+            heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
             doFinished(true);
         }
     }
@@ -66,15 +66,21 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public void execute() {
         // reset
         finished.set(false);
-        try {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("do heartbeat,conn is " + connection);
-            }
-            connection.getBackendService().query(sql);
-        } catch (Exception e) { // (UnsupportedEncodingException e) {
-            LOGGER.warn("[heartbeat]send heartbeat error", e);
-            heartbeat.setErrorResult("send heartbeat error");
+        if (connection == null) {
+            LOGGER.warn("[heartbeat]connect timeout,please pay attention to network latency or packet loss.");
+            heartbeat.setErrorResult("connect timeout");
             doFinished(true);
+        } else {
+            try {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[heartbeat]do heartbeat,conn is " + connection);
+                }
+                connection.getBackendService().query(sql);
+            } catch (Exception e) { // (UnsupportedEncodingException e) {
+                LOGGER.warn("[heartbeat]send heartbeat error", e);
+                heartbeat.setErrorResult("send heartbeat error, because of [" + e.getMessage() + "]");
+                doFinished(true);
+            }
         }
     }
 
@@ -96,7 +102,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
         MySQLResponseService responseService = (MySQLResponseService) service;
-        LOGGER.warn("error response errNo: {}, {} from of sql: {} at con: {} db user = {}",
+        LOGGER.warn("[heartbeat]error response errNo: {}, {} from of sql: {} at con: {} db user = {}",
                 errPg.getErrNo(), new String(errPg.getMessage()), sql, service,
                 responseService.getConnection().getInstance().getConfig().getUser());
 
@@ -118,19 +124,19 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
-                                 boolean isLeft, AbstractService service) {
+                                 boolean isLeft, @NotNull AbstractService service) {
         jobHandler.onHeader(fields);
 
     }
 
     @Override
-    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, AbstractService service) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         jobHandler.onRowData(row);
         return false;
     }
 
     @Override
-    public void rowEofResponse(byte[] eof, boolean isLeft, AbstractService service) {
+    public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         doFinished(false);
     }
 

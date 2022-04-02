@@ -39,6 +39,7 @@ public class OneTimeConnJob extends SQLJob {
         try {
             ds.createConnectionSkipPool(schema, this);
         } catch (Exception e) {
+            LOGGER.warn("create one time connection for sql [{}] error", sql, e);
             this.connectionError(e, null);
         }
     }
@@ -53,7 +54,7 @@ public class OneTimeConnJob extends SQLJob {
         try {
             conn.getBackendService().query(sql);
         } catch (Exception e) {
-            LOGGER.debug("execute sql {} error", sql, e);
+            LOGGER.warn("execute sql {} error", sql, e);
             doFinished(true);
         }
     }
@@ -66,7 +67,6 @@ public class OneTimeConnJob extends SQLJob {
         }
         return false;
     }
-
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
@@ -82,7 +82,7 @@ public class OneTimeConnJob extends SQLJob {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + service;
 
-        LOGGER.info(errMsg);
+        LOGGER.warn(errMsg);
         doFinished(true);
         service.getConnection().businessClose("close conn for reason:" + errMsg);
     }

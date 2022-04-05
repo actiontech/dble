@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.TempTableHandler;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -125,6 +126,8 @@ public class HandlerBuilder {
     public static String canRouteToOneNode(List<DMLResponseHandler> merges) {
         String nodeName = null;
         for (DMLResponseHandler merge : merges) {
+            if (isWillAsTemp(merge))
+                return null;
             if (merge instanceof MultiNodeMergeHandler) {
                 RouteResultsetNode[] route = ((MultiNodeMergeHandler) merge).getRoute();
                 if (null == route || route.length != 1) {
@@ -139,6 +142,16 @@ public class HandlerBuilder {
             }
         }
         return nodeName;
+    }
+
+    private static boolean isWillAsTemp(DMLResponseHandler merge) {
+        DMLResponseHandler next = merge.getNextHandler();
+        while (next != null) {
+            if (next instanceof TempTableHandler)
+                return true;
+            next = next.getNextHandler();
+        }
+        return false;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

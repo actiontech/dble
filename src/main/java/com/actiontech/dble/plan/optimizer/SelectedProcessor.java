@@ -165,16 +165,10 @@ public final class SelectedProcessor {
         LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
         for (int i = 0; i < selList.size(); i++) {
             Item sel = selList.get(i);
-            if (child.type() != PlanNode.PlanNodeType.TABLE && sel instanceof ItemFunc) {
+            if ((child.type() != PlanNode.PlanNodeType.TABLE && sel instanceof ItemFunc) ||
+                    (child.type() == PlanNode.PlanNodeType.TABLE && (sel.isWithSumFunc() || sel instanceof ItemFuncIn))) {
                 selList.addAll(sel.arguments());
                 continue;
-            } else if (child.type() == PlanNode.PlanNodeType.TABLE) {
-                if (sel.isWithSumFunc()) {
-                    selList.addAll(sel.arguments());
-                    continue;
-                } else if (sel instanceof ItemFuncIn) {
-                    continue;
-                }
             }
             Item pdSel = oldNewMap.get(sel);
             if (pdSel == null) {

@@ -159,7 +159,7 @@ public final class ShowHelp {
         HELPS.put("reload @@metadata [where schema=? [and table=?] | where table in ('schema1.table1',...)]", "Reload metadata of tables or specified table");
         HELPS.put("reload @@sqlslow=", "Set Slow SQL Time(ms)");
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
-        HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.conditiont");
+        HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.condition");
         HELPS.put("release @@reload_metadata", "Release reload process , unlock the config meta lock");
 
         // offline/online

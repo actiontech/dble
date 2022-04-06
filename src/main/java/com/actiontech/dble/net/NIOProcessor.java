@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStag
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.statistic.CommandCount;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -150,9 +149,7 @@ public final class NIOProcessor {
                     String xaStage = s.getSession2().getTransactionManager().getXAStage();
                     if (xaStage != null) {
                         if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
-                            // Active/IDLE/PREPARED XA FrontendS will be rollbacked
                             s.close("Idle Timeout");
-                            XASessionCheck.getInstance().addRollbackSession(s.getSession2());
                         }
                         continue;
                     }

@@ -9,6 +9,7 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncIn;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.MergeNode;
@@ -164,9 +165,16 @@ public final class SelectedProcessor {
         LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
         for (int i = 0; i < selList.size(); i++) {
             Item sel = selList.get(i);
-            if ((child.type() != PlanNode.PlanNodeType.TABLE && sel instanceof ItemFunc) || (child.type() == PlanNode.PlanNodeType.TABLE && sel.isWithSumFunc())) {
+            if (child.type() != PlanNode.PlanNodeType.TABLE && sel instanceof ItemFunc) {
                 selList.addAll(sel.arguments());
                 continue;
+            } else if (child.type() == PlanNode.PlanNodeType.TABLE) {
+                if (sel.isWithSumFunc()) {
+                    selList.addAll(sel.arguments());
+                    continue;
+                } else if (sel instanceof ItemFuncIn) {
+                    continue;
+                }
             }
             Item pdSel = oldNewMap.get(sel);
             if (pdSel == null) {

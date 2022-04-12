@@ -275,8 +275,8 @@ public final class HandlerTool {
             charsetIndex = col.getCharsetIndex();
         }
         field.setCharsetIndex(charsetIndex);
-        ItemField ret = new ItemField(field.getDbName(), field.getTable(), field.getName(), charsetIndex);
-        ret.setField(fields, index);
+        ItemField ret = new ItemField(field);
+        ret.setCharsetIndex(charsetIndex);
         ret.setItemName(col.getPushDownName() == null ? col.getItemName() : col.getPushDownName());
         return ret;
     }

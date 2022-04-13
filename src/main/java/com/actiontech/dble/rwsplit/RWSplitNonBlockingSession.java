@@ -87,7 +87,11 @@ public class RWSplitNonBlockingSession extends Session {
                 LOGGER.info("Session start flow control " + this.getSource());
             }
             rwSplitService.getConnection().setFrontWriteFlowControlled(true);
-            this.conn.disableRead();
+            final BackendConnection con = this.conn;
+            if (con == null) {
+                return;
+            }
+            con.disableRead();
         }
     }
 

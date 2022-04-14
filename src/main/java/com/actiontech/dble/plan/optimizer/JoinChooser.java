@@ -829,7 +829,7 @@ public class JoinChooser {
                 filters.add(joinRelation.filter);
             }
             joinNode.setJoinFilter(filters);
-            joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherLeftJoinFilter);
+            joinNode.setOtherJoinOnFilter(rightNodeOfJoin.relations.otherFilter);
             this.result = joinNode;
         }
 
@@ -906,7 +906,7 @@ public class JoinChooser {
     private class JoinRelations {
         private final List<JoinRelation> erRelationLst;
         private final List<JoinRelation> normalRelationLst;
-        private final Item otherLeftJoinFilter;
+        private final Item otherFilter;
         private final Set<PlanNode> leftNodes;
         private final PlanNode rightNode;
         private final Set<PlanNode> prefixNodes = new HashSet<>();
@@ -920,34 +920,20 @@ public class JoinChooser {
          * @return
          */
         public boolean isInner() {
-            if (otherLeftJoinFilter != null && !otherLeftJoinFilter.getReferTables().isEmpty()) {
-                final HashSet<PlanNode> referTables = otherLeftJoinFilter.getReferTables();
-                if (referTables.size() > 1 || (referTables.size() == 1 && !referTables.contains(rightNode))) {
-                    //if left join referTable contains  other table.
-                    return false;
-                }
-            }
             return erRelationLst.size() + normalRelationLst.size() == 0 || (erRelationLst.stream().anyMatch(e -> e.isInner()) || normalRelationLst.stream().anyMatch(e -> e.isInner()));
         }
 
 
         public boolean containsLeftJoin() {
-            if (otherLeftJoinFilter != null && !otherLeftJoinFilter.getReferTables().isEmpty()) {
-                final HashSet<PlanNode> referTables = otherLeftJoinFilter.getReferTables();
-                if (!(referTables.size() == 1 && referTables.contains(rightNode))) {
-                    //if left join referTable contains  other table.
-                    return true;
-                }
-            }
             return (erRelationLst.stream().anyMatch(e -> !e.isInner()) || normalRelationLst.stream().anyMatch(e -> !e.isInner()));
         }
 
-        JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, Item otherLeftJoinFilter, PlanNode rightNode, Set<PlanNode> leftNodes) {
+        JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, Item otherFilter, PlanNode rightNode, Set<PlanNode> leftNodes) {
             this.erRelationLst = erRelationLst;
             this.normalRelationLst = normalRelationLst;
             this.rightNode = rightNode;
             this.leftNodes = leftNodes;
-            this.otherLeftJoinFilter = otherLeftJoinFilter;
+            this.otherFilter = otherFilter;
         }
 
         JoinRelations(List<JoinRelation> erRelationLst, List<JoinRelation> normalRelationLst, PlanNode rightNode, Set<PlanNode> leftNodes) {
@@ -955,16 +941,16 @@ public class JoinChooser {
             this.normalRelationLst = normalRelationLst;
             this.rightNode = rightNode;
             this.leftNodes = leftNodes;
-            this.otherLeftJoinFilter = null;
+            this.otherFilter = null;
         }
 
         void init() {
             prefixNodes.clear();
             prefixNodes.addAll(leftNodes);
-            if (otherLeftJoinFilter != null && otherLeftJoinFilter.getReferTables() != null) {
+            if (otherFilter != null && otherFilter.getReferTables() != null) {
                 for (PlanNode planNode : joinUnits) {
                     if (planNode != rightNode) {
-                        Item tmpSel = nodeHasSelectTable(planNode, otherLeftJoinFilter);
+                        Item tmpSel = nodeHasSelectTable(planNode, otherFilter);
                         if (tmpSel != null) {
                             prefixNodes.add(planNode);
                         }

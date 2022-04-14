@@ -244,6 +244,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             }
             executeSql = sql;
             executeSqlBytes = data;
+            if (blacklistCheck(sql, userConfig.getBlacklist())) return;
             queryHandler.query(sql);
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, e.getMessage());

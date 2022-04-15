@@ -18,6 +18,12 @@ public enum ProtoHandlerResultCode {
     BUFFER_PACKET_UNCOMPLETE,
     BUFFER_NOT_BIG_ENOUGH,
 
+    /**
+     * receive ssl packet
+     */
+    SSL_PROTO_PACKET,
+    SSL_APP_PACKET,
+    SSL_BUFFER_NOT_BIG_ENOUGH,
 
     @Deprecated
     REACH_END_BUFFER,

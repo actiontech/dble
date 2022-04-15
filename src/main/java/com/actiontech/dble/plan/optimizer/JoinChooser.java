@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -380,6 +381,9 @@ public class JoinChooser {
             final JoinRelationDag oldLeft = it.next();
             if (oldLeft.visited || oldLeft == prevNode) {
                 continue;
+            }
+            if (!oldLeft.relations.isInner) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "some errors near the node '" + getUnitName(oldLeft.node) + "'. Because left join and inner join can't point to same node.");
             }
             it.remove();
             //currentNode move to new left.
@@ -940,6 +944,12 @@ public class JoinChooser {
                 }
             }
         }
+
+        @Override
+        public String toString() {
+            return String.valueOf(Iterables.concat(normalRelationLst, erRelationLst));
+        }
+
     }
 
 
@@ -963,6 +973,11 @@ public class JoinChooser {
             ret.init();
             return ret;
         }
+
+        @Override
+        public String toString() {
+            return getUnitName(leftNode) + " --> " + getUnitName(rightNode);
+        }
     }
 
     private class JoinRelation {
@@ -978,6 +993,11 @@ public class JoinChooser {
 
         private JoinRelation exchange() {
             return new JoinRelation(this.right, this.left, FilterUtils.equal(right.key, left.key, charsetIndex));
+        }
+
+        @Override
+        public String toString() {
+            return left + " --> " + right;
         }
     }
 

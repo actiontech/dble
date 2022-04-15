@@ -75,8 +75,19 @@ public class JoinNestLoopChooser {
                 dependNode.setNestLoopDependOnNodeList(nodeList);
                 currentNode.setNestLoopFilters(new ArrayList<>());
                 currentNode.setNestLoopDependNode(dependNode);
+                buildERNestLoop(dependNode, currentNode);
             }
         });
+    }
+
+    private void buildERNestLoop(PlanNode dependNode, PlanNode currentNode) {
+        PlanNode parent = dependNode.getParent();
+        if (Objects.nonNull(parent) && parent instanceof JoinNode && canDoAsMerge((JoinNode) parent)) {
+            List<PlanNode> nodeList = Optional.ofNullable(parent.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
+            nodeList.add(nodeList.size(), currentNode);
+            parent.setNestLoopDependOnNodeList(nodeList);
+            buildERNestLoop(parent, currentNode);
+        }
     }
 
     private void checkErCondition(HintPlanNodeGroup group) {

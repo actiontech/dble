@@ -624,6 +624,9 @@ public class MySQLResponseService extends VariablesService {
             if (originPacket.length > 4) {
                 prepareOK = originPacket[4] == MySQLPacket.COM_STMT_PREPARE;
             }
+
+            isExecuting = true;
+            connection.setLastTime(TimeUtil.currentTimeMillis());
             writeDirectly(originPacket);
         }
     }

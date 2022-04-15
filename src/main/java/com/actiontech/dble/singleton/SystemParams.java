@@ -11,6 +11,7 @@ import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.factory.SSLEngineFactory;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -137,7 +138,9 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
         readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
-
+        readOnlyParams.add(new ParamInfo("isSupportSSL", SSLEngineFactory.getInstance().isSupport() + "", "Whether support for SSL to establish frontend connections"));
+        readOnlyParams.add(new ParamInfo("serverCertificateKeyStoreUrl", SSLEngineFactory.getInstance().getServerCertificateKeyStoreUrl() + "", "Service certificate required for SSL"));
+        readOnlyParams.add(new ParamInfo("trustCertificateKeyStoreUrl", SSLEngineFactory.getInstance().getTrustCertificateKeyStoreUrl() + "", "Trust certificate required for SSL"));
     }
 
     public List<ParamInfo> getVolatileParams() {

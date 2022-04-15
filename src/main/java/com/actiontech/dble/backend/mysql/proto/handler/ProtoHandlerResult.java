@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 public final class ProtoHandlerResult {
     final ProtoHandlerResultCode code;
-    final int offset;
+    int offset;
     final int packetLength;
     final byte[] packetData;
     final boolean hasMorePacket;
@@ -24,6 +24,10 @@ public final class ProtoHandlerResult {
 
     public int getOffset() {
         return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
     }
 
     @Nullable
@@ -83,6 +87,8 @@ public final class ProtoHandlerResult {
         public ProtoHandlerResult build() {
             return new ProtoHandlerResult(code, offset, packetLength, packetData, hasMorePacket);
         }
+
+
     }
 }
 

@@ -153,6 +153,8 @@ public class MySQLResponseService extends BackendService {
             sendQueryCmd(synSQL.toString(), service.getCharset());
         }
 
+        isExecuting = true;
+        connection.setLastTime(TimeUtil.currentTimeMillis());
         writeDirectly(originPacket);
     }
 

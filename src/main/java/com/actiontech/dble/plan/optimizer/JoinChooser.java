@@ -382,7 +382,7 @@ public class JoinChooser {
             if (oldLeft.visited || oldLeft == prevNode) {
                 continue;
             }
-            if (!oldLeft.relations.isInner) {
+            if (oldLeft.relations != null && !oldLeft.relations.isInner) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "some errors near the node '" + getUnitName(oldLeft.node) + "'. Because left join and inner join can't point to same node.");
             }
             it.remove();

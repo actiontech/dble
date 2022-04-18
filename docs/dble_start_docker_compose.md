@@ -4,7 +4,7 @@
  + install docker-compose (in server)
  + install MySQL client tool (server or local)
 ## 2. Install
- Download [docker-compose.yml](https://raw.githubusercontent.com/actiontech/dble/master/docker-images/docker-compose.yml) 
+ Download [docker-compose.yml](https://raw.githubusercontent.com/actiontech/dble/master/docker-images/quick-start/docker-compose.yml) 
 Run command as below: 
 ```
 docker-compose up

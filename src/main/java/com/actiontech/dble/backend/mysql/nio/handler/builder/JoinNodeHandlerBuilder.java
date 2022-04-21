@@ -352,6 +352,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
         } else {
             JoinHandler jh = new JoinHandler(getSequenceId(), session, node.isLeftOuterJoin(),
                     node.getLeftJoinOnOrders(), node.getRightJoinOnOrders(), node.getOtherJoinOnFilter());
+            if (node.haveDependOnNode() || node.getLeftNode().haveDependOnNode() || node.getRightNode().haveDependOnNode()) {
+                jh.setNestLoopDependOn(true);
+            }
             addHandler(jh);
         }
     }

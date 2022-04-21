@@ -121,13 +121,15 @@ public class SendMakeHandler extends BaseDMLHandler {
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
         lock.lock();
         try {
-            if (terminate.get() && tableHandlers.isEmpty())
+            if (terminate.get())
                 return;
             session.setHandlerEnd(this);
             for (BaseDMLHandler tableHandler : tableHandlers) {
                 tableHandler.rowEofResponse(eof, this.isLeft, service);
             }
-            tableHandlers.clear();
+            if (!tableHandlers.isEmpty()) {
+                HandlerTool.terminateHandlerTree(this);
+            }
             nextHandler.rowEofResponse(eof, this.isLeft, service);
 
         } finally {

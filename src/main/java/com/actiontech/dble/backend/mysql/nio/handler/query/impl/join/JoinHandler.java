@@ -67,6 +67,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     // prevent multi thread rowresponse
     protected ReentrantLock leftLock = new ReentrantLock();
     protected ReentrantLock rightLock = new ReentrantLock();
+    private boolean nestLoopDependOn;
 
     public JoinHandler(long id, Session session, boolean isLeftJoin, List<Order> leftOrder,
                        List<Order> rightOrder, Item otherJoinOn) {
@@ -224,8 +225,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     rightLocal = takeFirst(rightQueue);
                 }
             }
-
-            HandlerTool.terminateHandlerTree(this);
+            if (!nestLoopDependOn) {
+                HandlerTool.terminateHandlerTree(this);
+            }
             // for trace, when join end before all rows return ,the handler should mark as finished
             for (DMLResponseHandler mergeHandler : this.getMerges()) {
                 DMLResponseHandler handler = mergeHandler;
@@ -405,4 +407,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
         }
     }
 
+    public void setNestLoopDependOn(boolean nestLoopDependOn) {
+        this.nestLoopDependOn = nestLoopDependOn;
+    }
 }

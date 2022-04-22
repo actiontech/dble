@@ -2,6 +2,7 @@ package com.actiontech.dble.backend.mysql.proto.handler.Impl;
 
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
+import com.actiontech.dble.net.factory.SSLEngineFactory;
 
 import java.nio.ByteBuffer;
 
@@ -19,24 +20,11 @@ public class SSLProtoHandler implements ProtoHandler {
         return getProtoHandlerResultBuilder(dataBuffer, offset, position, length, builder).build();
     }
 
-    private int getPacketLength(ByteBuffer buffer, int offset) {
+    private static int getPacketLength(ByteBuffer buffer, int offset) {
         int packetLength = 0;
         if (buffer.position() >= offset + PACKET_HEADER_SIZE) {
             // SSLv3 or TLS - Check ContentType
-            boolean tls;
-            int packageType = buffer.get(offset) & 0xff;
-            switch (packageType) {
-                case 20:  // change_cipher_spec
-                case 21:  // alert
-                case 22:  // handshake
-                case 23:  // application_data
-                    tls = true;
-                    break;
-                default:
-                    // SSLv2 or bad data
-                    tls = false;
-            }
-
+            boolean tls = isSSLPackage(buffer, offset);
             if (tls) {
                 // SSLv3 or TLS - Check ProtocolVersion
                 int majorVersion = buffer.get(offset + 1);
@@ -95,8 +83,16 @@ public class SSLProtoHandler implements ProtoHandler {
             dataBuffer.position(offset);
             byte[] data = new byte[length];
             dataBuffer.get(data, 0, length);
-
-            builder.setCode(data[0] == 23 ? SSL_APP_PACKET : SSL_PROTO_PACKET);
+            switch (data[0]) {
+                case 23:
+                    builder.setCode(SSL_APP_PACKET);
+                    break;
+                case 21:
+                    builder.setCode(SSL_CLOSE_PACKET);
+                    break;
+                default:
+                    builder.setCode(SSL_PROTO_PACKET);
+            }
 
             offset += length;
             if (position != offset) {
@@ -114,5 +110,41 @@ public class SSLProtoHandler implements ProtoHandler {
                 return builder.setCode(BUFFER_PACKET_UNCOMPLETE).setHasMorePacket(false).setOffset(offset).setPacketLength(length);
             }
         }
+    }
+
+    public static boolean isSSLPackage(ByteBuffer buffer, int offset) {
+        if (SSLEngineFactory.getInstance().isSupport()) {
+            return checkSSLProto(buffer, offset);
+        }
+        return false;
+    }
+
+    private static boolean checkSSLProto(ByteBuffer buffer, int offset) {
+        if (buffer.position() >= offset + PACKET_HEADER_SIZE) {
+            int packageType = buffer.get(offset) & 0xff;
+            switch (packageType) {
+                case 20:  // change_cipher_spec
+                case 21:  // alert
+                case 22:  // handshake
+                case 23:  // application_data
+                    int majorVersion = buffer.get(offset + 1);
+                    if (majorVersion == 3) {
+                        int minorVersion = buffer.get(offset + 2);
+                        switch (minorVersion) {
+                            case 0: // SSLv3
+                            case 1: // TLS1.0
+                            case 2: // TLS1.2
+                            case 3: // TLS1.3
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        return false;
     }
 }

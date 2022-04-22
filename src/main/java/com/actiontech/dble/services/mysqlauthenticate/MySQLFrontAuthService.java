@@ -11,7 +11,7 @@ import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
-import com.actiontech.dble.services.factorys.SSLEngineFactory;
+import com.actiontech.dble.net.factory.SSLEngineFactory;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.FrontendService;
@@ -179,7 +179,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     private boolean handleSSLRequest(AuthPacket auth) {
         if (auth.getIsSSLRequest()) {
             try {
-                ((FrontendConnection) connection).initSSLHandShark();
+                ((FrontendConnection) connection).openSSL();
             } catch (IOException e) {
                 LOGGER.error("SSL initialization failed, exception: {},", e);
                 connection.close("SSL initialization failed");
@@ -273,7 +273,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         flag |= Capabilities.CLIENT_IGNORE_SPACE;
         flag |= Capabilities.CLIENT_PROTOCOL_41;
         flag |= Capabilities.CLIENT_INTERACTIVE;
-        if (SSLEngineFactory.getInstance().isInit()) {
+        if (SSLEngineFactory.getInstance().isSupport()) {
             flag |= Capabilities.CLIENT_SSL;
         }
         flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;

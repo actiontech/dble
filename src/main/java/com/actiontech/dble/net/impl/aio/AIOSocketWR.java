@@ -45,7 +45,7 @@ public class AIOSocketWR extends SocketWR {
             throw new IOException("read from closed channel cause error");
         }
         try {
-            ByteBuffer theBuffer = con.findReadBuffer();
+            ByteBuffer theBuffer = con.findNetReadBuffer();
             if (theBuffer.hasRemaining()) {
                 channel.read(theBuffer, this, AIO_READ_HANDLER);
             } else {

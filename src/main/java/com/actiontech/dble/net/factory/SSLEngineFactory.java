@@ -1,4 +1,4 @@
-package com.actiontech.dble.services.factorys;
+package com.actiontech.dble.net.factory;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.StringUtil;
@@ -21,13 +21,14 @@ public final class SSLEngineFactory {
     private static final SSLEngineFactory INSTANCE = new SSLEngineFactory();
     private static final String PROTO = "TLS";
 
-    private boolean init = false;
+    private boolean isSupport = false;
 
     private SSLContext context;
-    private String sslCertificate;
-    private String sslCertificatePwd;
-    private String sslTrust;
-    private String sslTrustPwd;
+
+    private String serverCertificateKeyStoreUrl;
+    private String serverCertificateKeyStorePwd;
+    private String trustCertificateKeyStoreUrl;
+    private String trustCertificateKeyStorePwd;
 
     public static SSLEngineFactory getInstance() {
         return INSTANCE;
@@ -36,8 +37,8 @@ public final class SSLEngineFactory {
     private SSLEngineFactory() {
     }
 
-    public boolean isInit() {
-        return init;
+    public boolean isSupport() {
+        return isSupport;
     }
 
     public static void init() {
@@ -45,40 +46,46 @@ public final class SSLEngineFactory {
     }
 
     private static void initSSLContext() {
-        INSTANCE.sslCertificate = SystemConfig.getInstance().getSslCertificate();
-        INSTANCE.sslCertificatePwd = SystemConfig.getInstance().getSslCertificatePwd();
-        INSTANCE.sslTrust = SystemConfig.getInstance().getSslTrust();
-        INSTANCE.sslTrustPwd = SystemConfig.getInstance().getSslTrustPwd();
+        INSTANCE.serverCertificateKeyStoreUrl = SystemConfig.getInstance().getServerCertificateKeyStoreUrl();
+        INSTANCE.serverCertificateKeyStorePwd = SystemConfig.getInstance().getServerCertificateKeyStorePwd();
+        INSTANCE.trustCertificateKeyStoreUrl = SystemConfig.getInstance().getTrustCertificateKeyStoreUrl();
+        INSTANCE.trustCertificateKeyStorePwd = SystemConfig.getInstance().getTrustCertificateKeyStorePwd();
         try {
-            if (INSTANCE.sslCertificate == null) {
+            if (INSTANCE.serverCertificateKeyStoreUrl == null) {
                 return;
             }
 
-            if (StringUtil.isBlank(INSTANCE.sslCertificatePwd)) {
-                LOGGER.warn("Please set the correct [sslCertificatePwd] value.");
+            if (StringUtil.isBlank(INSTANCE.serverCertificateKeyStorePwd)) {
+                LOGGER.warn("Please set the correct [serverCertificateKeyStoreUrl] value.");
                 return;
             }
 
-            if (!StringUtil.isBlank(INSTANCE.sslTrust) && StringUtil.isBlank(INSTANCE.sslTrustPwd)) {
-                LOGGER.warn("Please set the correct [sslTrustPwd] value.");
+            if (!StringUtil.isBlank(INSTANCE.trustCertificateKeyStoreUrl) && StringUtil.isBlank(INSTANCE.trustCertificateKeyStorePwd)) {
+                LOGGER.warn("Please set the correct [trustCertificateKeyStoreUrl] value.");
                 return;
             }
 
             INSTANCE.context = SSLContext.getInstance(PROTO);
 
-            KeyManager[] keyM = createKeyManagers(INSTANCE.sslCertificate, INSTANCE.sslCertificatePwd);
-            TrustManager[] trustM = StringUtil.isBlank(INSTANCE.sslTrust) ? null : createTrustManagers(INSTANCE.sslTrust, INSTANCE.sslTrustPwd);
+            KeyManager[] keyM = createKeyManagers(INSTANCE.serverCertificateKeyStoreUrl, INSTANCE.serverCertificateKeyStorePwd);
+            TrustManager[] trustM = StringUtil.isBlank(INSTANCE.trustCertificateKeyStoreUrl) ? null : createTrustManagers(INSTANCE.trustCertificateKeyStoreUrl, INSTANCE.trustCertificateKeyStorePwd);
 
             INSTANCE.context.init(keyM, trustM, null);
 
-            INSTANCE.init = true;
+            INSTANCE.isSupport = true;
         } catch (Exception e) {
             LOGGER.error("SSLEngineFactory initialization exception: {}", e);
         } finally {
-            if (INSTANCE.init) {
-                LOGGER.info("===========================================init SSLEngineFactory finish=================================");
-            }
+            LOGGER.info("==========================================={}Support SSL =================================", (INSTANCE.isSupport ? "" : "Not "));
         }
+    }
+
+    public String getServerCertificateKeyStoreUrl() {
+        return serverCertificateKeyStoreUrl;
+    }
+
+    public String getTrustCertificateKeyStoreUrl() {
+        return trustCertificateKeyStoreUrl;
     }
 
     public static SSLEngine appleSSLEngine(boolean isAuthClient) {

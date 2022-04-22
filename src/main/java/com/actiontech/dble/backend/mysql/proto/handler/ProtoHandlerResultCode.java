@@ -23,6 +23,7 @@ public enum ProtoHandlerResultCode {
      */
     SSL_PROTO_PACKET,
     SSL_APP_PACKET,
+    SSL_CLOSE_PACKET,
     SSL_BUFFER_NOT_BIG_ENOUGH,
 
     @Deprecated

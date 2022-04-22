@@ -109,8 +109,7 @@ public abstract class AbstractConnection implements Connection {
         } else {
             netInBytes += got;
         }
-
-        handle(readBuffer);
+        handle(findNetReadBuffer());
     }
 
 
@@ -232,6 +231,9 @@ public abstract class AbstractConnection implements Connection {
                     break;
                 case BUFFER_PACKET_UNCOMPLETE:
                     compactReadBuffer(dataBuffer, result.getOffset());
+                    break;
+                case SSL_PROTO_PACKET:
+                    compactReadBuffer(dataBuffer, offset);
                     break;
                 case BUFFER_NOT_BIG_ENOUGH:
                     ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
@@ -488,8 +490,8 @@ public abstract class AbstractConnection implements Connection {
         return isClosed.get();
     }
 
-    public ByteBuffer findReadBuffer() {
-        if (readBuffer == null) {
+    public ByteBuffer findNetReadBuffer() {
+        if (this.readBuffer == null) {
             readBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
         }
         return readBuffer;

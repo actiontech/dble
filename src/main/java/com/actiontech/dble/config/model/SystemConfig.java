@@ -202,48 +202,48 @@ public final class SystemConfig {
 
     private boolean closeHeartBeatRecord = false;
 
-    private String sslCertificate = null;
-    private String sslCertificatePwd = null;
-    private String sslTrust = null;
-    private String sslTrustPwd = null;
+    private String serverCertificateKeyStoreUrl = null;
+    private String serverCertificateKeyStorePwd = null;
+    private String trustCertificateKeyStoreUrl = null;
+    private String trustCertificateKeyStorePwd = null;
 
-    public String getSslCertificate() {
-        return sslCertificate;
+    public String getServerCertificateKeyStoreUrl() {
+        return serverCertificateKeyStoreUrl;
     }
 
-    public void setSslCertificate(String sslCertificate) {
-        if (sslCertificate != null) {
-            this.sslCertificate = sslCertificate;
+    public void setServerCertificateKeyStoreUrl(String serverCertificateKeyStoreUrl) {
+        if (serverCertificateKeyStoreUrl != null) {
+            this.serverCertificateKeyStoreUrl = serverCertificateKeyStoreUrl;
         }
     }
 
-    public String getSslCertificatePwd() {
-        return sslCertificatePwd;
+    public String getServerCertificateKeyStorePwd() {
+        return serverCertificateKeyStorePwd;
     }
 
-    public void setSslCertificatePwd(String sslCertificatePwd) {
-        if (sslCertificatePwd != null) {
-            this.sslCertificatePwd = sslCertificatePwd;
+    public void setServerCertificateKeyStorePwd(String serverCertificateKeyStorePwd) {
+        if (serverCertificateKeyStorePwd != null) {
+            this.serverCertificateKeyStorePwd = serverCertificateKeyStorePwd;
         }
     }
 
-    public String getSslTrust() {
-        return sslTrust;
+    public String getTrustCertificateKeyStoreUrl() {
+        return trustCertificateKeyStoreUrl;
     }
 
-    public void setSslTrust(String sslTrust) {
-        if (sslTrust != null) {
-            this.sslTrust = sslTrust;
+    public void setTrustCertificateKeyStoreUrl(String trustCertificateKeyStoreUrl) {
+        if (trustCertificateKeyStoreUrl != null) {
+            this.trustCertificateKeyStoreUrl = trustCertificateKeyStoreUrl;
         }
     }
 
-    public String getSslTrustPwd() {
-        return sslTrustPwd;
+    public String getTrustCertificateKeyStorePwd() {
+        return trustCertificateKeyStorePwd;
     }
 
-    public void setSslTrustPwd(String sslTrustPwd) {
-        if (sslTrustPwd != null) {
-            this.sslTrustPwd = sslTrustPwd;
+    public void setTrustCertificateKeyStorePwd(String trustCertificateKeyStorePwd) {
+        if (trustCertificateKeyStorePwd != null) {
+            this.trustCertificateKeyStorePwd = trustCertificateKeyStorePwd;
         }
     }
 

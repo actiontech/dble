@@ -1,7 +1,7 @@
 package com.actiontech.dble.net.connection;
 
-import com.actiontech.dble.net.service.WriteFlags;
-import com.actiontech.dble.services.factorys.SSLEngineFactory;
+import com.actiontech.dble.net.service.*;
+import com.actiontech.dble.net.factory.SSLEngineFactory;
 import com.actiontech.dble.util.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,6 @@ public class SSLHandler {
     private NetworkChannel channel;
 
     private volatile ByteBuffer decryptOut;
-    private volatile ByteBuffer encryptOut;
 
     private volatile SSLEngine engine;
     private volatile boolean isHandshakeSuccess = false;
@@ -37,19 +36,21 @@ public class SSLHandler {
             ((SocketChannel) this.channel).configureBlocking(false);
         }
         this.decryptOut = con.allocate();
-        this.encryptOut = con.allocate();
+    }
+
+    public void handShark(byte[] data) throws SSLException {
+        unwrapNonAppData(data);
     }
 
     /**
      * receive and process the SSL handshake protocol initiated by the client
      */
-    public void unwrapNonAppData(byte[] data) throws SSLException {
+    private void unwrapNonAppData(byte[] data) throws SSLException {
         ByteBuffer in = con.allocate(data.length);
         in.put(data);
         in.flip();
 
         try {
-            encryptOut.clear();
             for (; ; ) {
                 final SSLEngineResult result = unwrap(engine, in);
                 final Status status = result.getStatus();
@@ -91,13 +92,11 @@ public class SSLHandler {
     /**
      * unwrap ssl application data sent by client
      */
-    public ByteBuffer unwrapAppData(byte[] appData) throws SSLException {
+    public void unwrapAppData(byte[] appData) throws SSLException {
         ByteBuffer in = ByteBuffer.allocate(appData.length);
         in.put(appData);
         in.flip();
         try {
-            encryptOut.clear();
-            int len = 0;
             for (; ; ) {
                 SSLEngineResult result = unwrap(engine, in);
 
@@ -105,18 +104,14 @@ public class SSLHandler {
                 int produced = result.bytesProduced();
                 int consumed = result.bytesConsumed();
 
-                len += produced;
                 if (status == Status.CLOSED) {
                     if (!con.isClosed())
                         con.close("SSL closed");
-                    return ByteBufferUtil.EMPTY_BYTE_BUFFER;
+                    return;
                 }
 
                 if (consumed == 0 && produced == 0) {
-                    encryptOut.flip();
-                    ByteBuffer buffer = con.allocate(len);
-                    buffer.put(encryptOut);
-                    return buffer;
+                    return;
                 }
             }
         } catch (SSLException e) {
@@ -130,17 +125,18 @@ public class SSLHandler {
 
     private SSLEngineResult unwrap(SSLEngine engine0, ByteBuffer in) throws SSLException {
         int overflows = 0;
+        ByteBuffer outBuffer = con.findReadBuffer();
         for (; ; ) {
-            SSLEngineResult result = engine0.unwrap(in, encryptOut);
+            SSLEngineResult result = engine0.unwrap(in, outBuffer);
             switch (result.getStatus()) {
                 case BUFFER_OVERFLOW:
                     int max = engine0.getSession().getApplicationBufferSize();
                     switch (overflows++) {
                         case 0:
-                            encryptOut = ensure(encryptOut, Math.min(max, in.capacity()));
+                            outBuffer = con.ensureReadBufferFree(outBuffer, outBuffer.capacity() * 2);
                             break;
                         default:
-                            encryptOut = ensure(encryptOut, max);
+                            outBuffer = con.ensureReadBufferFree(outBuffer, max);
                     }
                     break;
                 default:
@@ -263,8 +259,7 @@ public class SSLHandler {
             }
             if (decryptOut != null)
                 con.recycle(decryptOut);
-            if (encryptOut != null)
-                con.recycle(encryptOut);
+
         } catch (SSLException e) {
             LOGGER.warn("SSL close failed, exception：{}", e);
         }
@@ -274,5 +269,19 @@ public class SSLHandler {
         ByteBuffer newBuffer = con.allocate(size);
         con.recycle(recycleBuffer);
         return newBuffer;
+    }
+
+    public static boolean isSSLPackage(byte i) {
+        int packageType = i & 0xff;
+        switch (packageType) {
+            case 20:  // change_cipher_spec
+            case 21:  // alert
+            case 22:  // handshake
+            case 23:  // application_data
+                return true;
+            default:
+                // SSLv2 or bad data
+                return false;
+        }
     }
 }

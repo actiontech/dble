@@ -18,6 +18,7 @@ import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLFrontAuthService;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -92,6 +93,7 @@ public abstract class AbstractConnection implements Connection {
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;
         this.proto = new MySQLProtoHandlerImpl();
+        FrontActiveRatioStat.getInstance().register(this, startupTime);
     }
 
     public void onReadData(int got) throws IOException {
@@ -100,6 +102,7 @@ public abstract class AbstractConnection implements Connection {
         }
 
         lastReadTime = TimeUtil.currentTimeMillis();
+        FrontActiveRatioStat.getInstance().record(this, r -> r.readTime(lastReadTime));
         if (got == -1) {
             if (doingGracefulClose.get()) {
                 pushServiceTask(ServiceTaskFactory.getInstance(service).createForGracefulClose(graceClosedReasons, CloseType.READ));
@@ -152,6 +155,7 @@ public abstract class AbstractConnection implements Connection {
                 ((BusinessService) service).transactionsCountInTx();
             StatisticListener.getInstance().record(service, r -> r.onExit(reason));
             StatisticListener.getInstance().remove(service);
+            FrontActiveRatioStat.getInstance().remove(this);
             closeSocket();
             if (isOnlyFrontTcpConnected() && (reason.contains("Connection reset by peer") || reason.contains("stream closed") || reason.contains("Broken pipe"))) {
                 LOGGER.debug("connection id close for reason [{}] with connection {}", reason, this);
@@ -534,6 +538,7 @@ public abstract class AbstractConnection implements Connection {
         this.netOutBytes += outBytes;
         processor.addNetOutBytes(outBytes);
         lastWriteTime = TimeUtil.currentTimeMillis();
+        FrontActiveRatioStat.getInstance().record(this, r -> r.writeTime(lastWriteTime));
     }
 
     public void updateLastReadTime() {

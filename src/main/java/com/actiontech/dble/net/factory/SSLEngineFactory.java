@@ -108,9 +108,7 @@ public final class SSLEngineFactory {
         try {
             keyStore.load(keyStoreIS, keystorePassword.toCharArray());
         } finally {
-            if (keyStoreIS != null) {
-                keyStoreIS.close();
-            }
+            keyStoreIS.close();
         }
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(keyStore, keystorePassword.toCharArray());
@@ -123,9 +121,7 @@ public final class SSLEngineFactory {
         try {
             trustStore.load(trustStoreIS, keystorePassword.toCharArray());
         } finally {
-            if (trustStoreIS != null) {
-                trustStoreIS.close();
-            }
+            trustStoreIS.close();
         }
         TrustManagerFactory trustFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustFactory.init(trustStore);

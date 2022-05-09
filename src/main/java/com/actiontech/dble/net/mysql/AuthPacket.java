@@ -56,6 +56,8 @@ public class AuthPacket extends MySQLPacket {
     private String tenant = "";
     private boolean multStatementAllow = false;
 
+    private boolean isSSLRequest = false;
+
     public void setAuthPlugin(String authPlugin) {
         this.authPlugin = authPlugin;
     }
@@ -76,6 +78,11 @@ public class AuthPacket extends MySQLPacket {
             this.extra = ab;
         }
         mm.position(current + FILLER.length);
+
+        if (checkSSLRequest(mm)) {
+            return;
+        }
+
         user = mm.readStringWithNull(); //user name end by a [00]
         password = mm.readBytesWithLength(); //CLIENT_SECURE_CONNECTION
         if ((clientFlags & Capabilities.CLIENT_MULTIPLE_STATEMENTS) != 0) {
@@ -348,6 +355,20 @@ public class AuthPacket extends MySQLPacket {
     public boolean isMultStatementAllow() {
         return multStatementAllow;
     }
+
+    public boolean getIsSSLRequest() {
+        return isSSLRequest;
+    }
+
+    public boolean checkSSLRequest(MySQLMessage mm) {
+        if (mm.position() == mm.length() && (clientFlags & Capabilities.CLIENT_SSL) != 0) {
+            isSSLRequest = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     @Override
     public boolean isEndOfQuery() {

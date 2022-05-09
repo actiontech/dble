@@ -17,8 +17,7 @@ import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.net.service.AuthResultInfo;
-import com.actiontech.dble.net.service.AuthService;
+import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.factorys.BusinessServiceFactory;
 import com.actiontech.dble.services.mysqlauthenticate.util.AuthUtil;
@@ -59,6 +58,22 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         this.connection.getSocketWR().asyncRead();
     }
 
+    public void consumeSingleTask(ServiceTask serviceTask) {
+        //The close packet can't be filtered
+        if (beforeHandlingTask(serviceTask) || (serviceTask.getType() == ServiceTaskType.CLOSE)) {
+            if (serviceTask.getType() == ServiceTaskType.NORMAL) {
+                final byte[] data = ((NormalServiceTask) serviceTask).getOrgData();
+                handleInnerData(data);
+            } else if (serviceTask.getType() == ServiceTaskType.SSL) {
+                final byte[] data = ((SSLProtoServerTask) serviceTask).getOrgData();
+                handleSSLProtoData(data);
+            } else {
+                handleSpecialInnerData((InnerServiceTask) serviceTask);
+            }
+        }
+        afterDispatchTask(serviceTask);
+    }
+
     @Override
     protected void handleInnerData(byte[] data) {
         receivedMessage = true;
@@ -87,6 +102,10 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         } finally {
             TraceManager.finishSpan(this, traceObject);
         }
+    }
+
+    private void handleSSLProtoData(byte[] data) {
+        ((FrontendConnection) connection).doSSLHandShake(data);
     }
 
     private void pingResponse() {
@@ -135,6 +154,10 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     private void handleAuthPacket(byte[] data) {
         AuthPacket auth = new AuthPacket();
         auth.read(data);
+
+        if (auth.getIsSSLRequest())
+            return;
+
         this.authPacket = auth;
         try {
             if (null != auth.getAuthPlugin()) {
@@ -241,7 +264,9 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
         flag |= Capabilities.CLIENT_IGNORE_SPACE;
         flag |= Capabilities.CLIENT_PROTOCOL_41;
         flag |= Capabilities.CLIENT_INTERACTIVE;
-        // flag |= Capabilities.CLIENT_SSL;
+        if (SystemConfig.getInstance().isSupportSSL()) {
+            flag |= Capabilities.CLIENT_SSL;
+        }
         flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
         flag |= Capabilities.CLIENT_TRANSACTIONS;
         // flag |= ServerDefs.CLIENT_RESERVED;
@@ -276,4 +301,5 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     public boolean haveNotReceivedMessage() {
         return !receivedMessage;
     }
+
 }

@@ -220,6 +220,99 @@ public final class SystemConfig {
 
     private boolean closeHeartBeatRecord = false;
 
+    private String serverCertificateKeyStoreUrl = null;
+    private String serverCertificateKeyStorePwd = null;
+    private String trustCertificateKeyStoreUrl = null;
+    private String trustCertificateKeyStorePwd = null;
+
+    //guomi
+    private String gmsslBothPfx = null;
+    private String gmsslBothPfxPwd = null;
+    private String gmsslRcaPem = null;
+    private String gmsslOcaPem = null;
+    private boolean supportSSL = false;
+
+    public String getServerCertificateKeyStoreUrl() {
+        return serverCertificateKeyStoreUrl;
+    }
+
+    @SuppressWarnings("unused")
+    public void setServerCertificateKeyStoreUrl(String serverCertificateKeyStoreUrl) {
+        if (serverCertificateKeyStoreUrl != null) {
+            this.serverCertificateKeyStoreUrl = serverCertificateKeyStoreUrl;
+        }
+    }
+
+    public String getServerCertificateKeyStorePwd() {
+        return serverCertificateKeyStorePwd;
+    }
+
+    @SuppressWarnings("unused")
+    public void setServerCertificateKeyStorePwd(String serverCertificateKeyStorePwd) {
+        if (serverCertificateKeyStorePwd != null) {
+            this.serverCertificateKeyStorePwd = serverCertificateKeyStorePwd;
+        }
+    }
+
+    public String getTrustCertificateKeyStoreUrl() {
+        return trustCertificateKeyStoreUrl;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTrustCertificateKeyStoreUrl(String trustCertificateKeyStoreUrl) {
+        if (trustCertificateKeyStoreUrl != null) {
+            this.trustCertificateKeyStoreUrl = trustCertificateKeyStoreUrl;
+        }
+    }
+
+    public String getTrustCertificateKeyStorePwd() {
+        return trustCertificateKeyStorePwd;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTrustCertificateKeyStorePwd(String trustCertificateKeyStorePwd) {
+        if (trustCertificateKeyStorePwd != null) {
+            this.trustCertificateKeyStorePwd = trustCertificateKeyStorePwd;
+        }
+    }
+
+    public String getGmsslBothPfx() {
+        return gmsslBothPfx;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslBothPfx(String gmsslBothPfx) {
+        this.gmsslBothPfx = gmsslBothPfx;
+    }
+
+    public String getGmsslBothPfxPwd() {
+        return gmsslBothPfxPwd;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslBothPfxPwd(String gmsslBothPfxPwd) {
+        this.gmsslBothPfxPwd = gmsslBothPfxPwd;
+    }
+
+    public String getGmsslRcaPem() {
+        return gmsslRcaPem;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslRcaPem(String gmsslRcaPem) {
+        this.gmsslRcaPem = gmsslRcaPem;
+    }
+
+    public String getGmsslOcaPem() {
+        return gmsslOcaPem;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslOcaPem(String gmsslOcaPem) {
+        this.gmsslOcaPem = gmsslOcaPem;
+    }
+
+
     public int getSamplingRate() {
         return samplingRate;
     }
@@ -1545,6 +1638,15 @@ public final class SystemConfig {
         this.dataCenter = dataCenter;
     }
 
+    public boolean isSupportSSL() {
+        return supportSSL;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSupportSSL(boolean supportSSL) {
+        this.supportSSL = supportSSL;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1643,6 +1745,15 @@ public final class SystemConfig {
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
                 ", joinStrategyType=" + joinStrategyType +
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
+                ", serverCertificateKeyStoreUrl=" + serverCertificateKeyStoreUrl +
+                ", serverCertificateKeyStorePwd=" + serverCertificateKeyStorePwd +
+                ", trustCertificateKeyStoreUrl=" + trustCertificateKeyStoreUrl +
+                ", trustCertificateKeyStorePwd=" + trustCertificateKeyStorePwd +
+                ", gmsslBothPfx=" + gmsslBothPfx +
+                ", gmsslBothPfxPwd=" + gmsslBothPfxPwd +
+                ", gmsslRcaPem=" + gmsslRcaPem +
+                ", gmsslOcaPem=" + gmsslOcaPem +
+                ", supportSSL=" + supportSSL +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", district='" + district +

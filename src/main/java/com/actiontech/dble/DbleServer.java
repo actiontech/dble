@@ -22,6 +22,7 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketAcceptor;
 import com.actiontech.dble.net.SocketConnector;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.net.factory.SSLEngineFactory;
 import com.actiontech.dble.net.executor.BackendCurrentRunnable;
 import com.actiontech.dble.net.executor.FrontendBlockRunnable;
 import com.actiontech.dble.net.executor.FrontendCurrentRunnable;
@@ -219,7 +220,7 @@ public final class DbleServer {
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
-
+        SSLEngineFactory.init();
         FlowController.init();
         LOGGER.info("===================================flow controller finish===================================");
 

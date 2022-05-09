@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -108,8 +109,7 @@ public abstract class AbstractConnection implements Connection {
         } else {
             netInBytes += got;
         }
-
-        handle(readBuffer);
+        handle(findNetReadBuffer());
     }
 
 
@@ -187,6 +187,8 @@ public abstract class AbstractConnection implements Connection {
     public void pushServiceTask(@Nonnull ServiceTask serviceTask) {
         if (serviceTask.getType().equals(ServiceTaskType.NORMAL)) {
             IODelayProvider.beforePushServiceTask(serviceTask, service);
+        } else if (serviceTask.getType().equals(ServiceTaskType.SSL)) {
+            IODelayProvider.beforePushServiceTask(serviceTask, service);
         } else {
             InnerServiceTask innerServiceTask = (InnerServiceTask) serviceTask;
             IODelayProvider.beforePushInnerServiceTask(innerServiceTask, service);
@@ -202,7 +204,7 @@ public abstract class AbstractConnection implements Connection {
         service.handle(serviceTask);
     }
 
-    private void handle(ByteBuffer dataBuffer) {
+    public void handle(ByteBuffer dataBuffer) throws IOException {
         boolean hasRemaining = true;
         int offset = 0;
         while (hasRemaining) {
@@ -230,6 +232,9 @@ public abstract class AbstractConnection implements Connection {
                 case BUFFER_PACKET_UNCOMPLETE:
                     compactReadBuffer(dataBuffer, result.getOffset());
                     break;
+                case SSL_PROTO_PACKET:
+                    compactReadBuffer(dataBuffer, offset);
+                    break;
                 case BUFFER_NOT_BIG_ENOUGH:
                     ensureFreeSpaceOfReadBuffer(dataBuffer, result.getOffset(), result.getPacketLength());
                     break;
@@ -244,7 +249,7 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-    private void processPacketData(ProtoHandlerResult result) {
+    public void processPacketData(ProtoHandlerResult result) {
         byte[] packetData = result.getPacketData();
         final AbstractService frontService = service;
         if (frontService == null) {
@@ -293,7 +298,7 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-    public void compactReadBuffer(ByteBuffer buffer, int offset) {
+    public void compactReadBuffer(ByteBuffer buffer, int offset) throws IOException {
         if (buffer == null) {
             return;
         }
@@ -303,7 +308,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public void ensureFreeSpaceOfReadBuffer(ByteBuffer buffer,
-                                            int offset, final int pkgLength) {
+                                            int offset, final int pkgLength) throws IOException {
         if (buffer.capacity() < pkgLength) {
             ByteBuffer newBuffer = processor.getBufferPool().allocate(pkgLength);
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
@@ -445,13 +450,20 @@ public abstract class AbstractConnection implements Connection {
         }
         int bufferSize;
         WriteOutTask writeTask;
-        if (isSupportCompress) {
-            ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
-            writeTask = new WriteOutTask(newBuffer, false);
-            bufferSize = newBuffer.position();
-        } else {
-            writeTask = new WriteOutTask(buffer, false);
-            bufferSize = buffer == null ? 0 : buffer.position();
+        try {
+            if (isSupportCompress) {
+                ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
+                newBuffer = wrap(newBuffer);
+                writeTask = new WriteOutTask(newBuffer, false);
+                bufferSize = newBuffer.position();
+            } else {
+                buffer = wrap(buffer);
+                writeTask = new WriteOutTask(buffer, false);
+                bufferSize = buffer == null ? 0 : buffer.position();
+            }
+        } catch (SSLException e) {
+            recycle(buffer);
+            return;
         }
 
         if (FlowController.isEnableFlowControl()) {
@@ -470,12 +482,16 @@ public abstract class AbstractConnection implements Connection {
 
     }
 
+    public ByteBuffer wrap(ByteBuffer orgBuffer) throws SSLException {
+        return orgBuffer;
+    }
+
     public boolean isClosed() {
         return isClosed.get();
     }
 
-    public ByteBuffer findReadBuffer() {
-        if (readBuffer == null) {
+    public ByteBuffer findNetReadBuffer() {
+        if (this.readBuffer == null) {
             readBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
         }
         return readBuffer;

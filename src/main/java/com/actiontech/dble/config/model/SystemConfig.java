@@ -202,9 +202,55 @@ public final class SystemConfig {
 
     private boolean closeHeartBeatRecord = false;
 
+    private String serverCertificateKeyStoreUrl = null;
+    private String serverCertificateKeyStorePwd = null;
+    private String trustCertificateKeyStoreUrl = null;
+    private String trustCertificateKeyStorePwd = null;
+
+    public String getServerCertificateKeyStoreUrl() {
+        return serverCertificateKeyStoreUrl;
+    }
+
+    public void setServerCertificateKeyStoreUrl(String serverCertificateKeyStoreUrl) {
+        if (serverCertificateKeyStoreUrl != null) {
+            this.serverCertificateKeyStoreUrl = serverCertificateKeyStoreUrl;
+        }
+    }
+
+    public String getServerCertificateKeyStorePwd() {
+        return serverCertificateKeyStorePwd;
+    }
+
+    public void setServerCertificateKeyStorePwd(String serverCertificateKeyStorePwd) {
+        if (serverCertificateKeyStorePwd != null) {
+            this.serverCertificateKeyStorePwd = serverCertificateKeyStorePwd;
+        }
+    }
+
+    public String getTrustCertificateKeyStoreUrl() {
+        return trustCertificateKeyStoreUrl;
+    }
+
+    public void setTrustCertificateKeyStoreUrl(String trustCertificateKeyStoreUrl) {
+        if (trustCertificateKeyStoreUrl != null) {
+            this.trustCertificateKeyStoreUrl = trustCertificateKeyStoreUrl;
+        }
+    }
+
+    public String getTrustCertificateKeyStorePwd() {
+        return trustCertificateKeyStorePwd;
+    }
+
+    public void setTrustCertificateKeyStorePwd(String trustCertificateKeyStorePwd) {
+        if (trustCertificateKeyStorePwd != null) {
+            this.trustCertificateKeyStorePwd = trustCertificateKeyStorePwd;
+        }
+    }
+
     public int getSamplingRate() {
         return samplingRate;
     }
+
     @SuppressWarnings("unused")
     public void setSamplingRate(int samplingRate) {
         if (samplingRate >= 0 && samplingRate <= 100) {
@@ -217,6 +263,7 @@ public final class SystemConfig {
     public int getSqlLogTableSize() {
         return sqlLogTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setSqlLogTableSize(int sqlLogTableSize) {
         if (sqlLogTableSize > 0) {
@@ -230,6 +277,7 @@ public final class SystemConfig {
     public int getEnableStatistic() {
         return enableStatistic;
     }
+
     @SuppressWarnings("unused")
     public void setEnableStatistic(int enableStatistic) {
         if (enableStatistic >= 0 && enableStatistic <= 1) {
@@ -242,6 +290,7 @@ public final class SystemConfig {
     public int getAssociateTablesByEntryByUserTableSize() {
         return associateTablesByEntryByUserTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setAssociateTablesByEntryByUserTableSize(int associateTablesByEntryByUserTableSize) {
         if (associateTablesByEntryByUserTableSize < 1) {
@@ -254,6 +303,7 @@ public final class SystemConfig {
     public int getFrontendByBackendByEntryByUserTableSize() {
         return frontendByBackendByEntryByUserTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setFrontendByBackendByEntryByUserTableSize(int frontendByBackendByEntryByUserTableSize) {
         if (frontendByBackendByEntryByUserTableSize < 1) {
@@ -266,6 +316,7 @@ public final class SystemConfig {
     public int getTableByUserByEntryTableSize() {
         return tableByUserByEntryTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setTableByUserByEntryTableSize(int tableByUserByEntryTableSize) {
         if (tableByUserByEntryTableSize < 1) {
@@ -278,6 +329,7 @@ public final class SystemConfig {
     public int getStatisticQueueSize() {
         return statisticQueueSize;
     }
+
     @SuppressWarnings("unused")
     public void setStatisticQueueSize(int statisticQueueSize) {
         if (statisticQueueSize < 1 || Integer.bitCount(statisticQueueSize) != 1) {
@@ -290,6 +342,7 @@ public final class SystemConfig {
     public int getEnableGeneralLog() {
         return enableGeneralLog;
     }
+
     @SuppressWarnings("unused")
     public void setEnableGeneralLog(int enableGeneralLog) {
         if (enableGeneralLog >= 0 && enableGeneralLog <= 1) {
@@ -302,6 +355,7 @@ public final class SystemConfig {
     public String getGeneralLogFile() {
         return generalLogFile;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogFile(String generalLogFile) {
         this.generalLogFile = generalLogFile;
@@ -310,6 +364,7 @@ public final class SystemConfig {
     public int getGeneralLogFileSize() {
         return generalLogFileSize;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogFileSize(int generalLogFileSize) {
         if (generalLogFileSize > 0) {
@@ -322,6 +377,7 @@ public final class SystemConfig {
     public int getGeneralLogQueueSize() {
         return generalLogQueueSize;
     }
+
     @SuppressWarnings("unused")
     public void setGeneralLogQueueSize(int generalLogQueueSize) {
         if (generalLogQueueSize < 1 || Integer.bitCount(generalLogQueueSize) != 1) {
@@ -473,6 +529,7 @@ public final class SystemConfig {
     public boolean isCapClientFoundRows() {
         return capClientFoundRows;
     }
+
     @SuppressWarnings("unused")
     public void setCapClientFoundRows(boolean capClientFoundRows) {
         this.capClientFoundRows = capClientFoundRows;
@@ -1371,6 +1428,7 @@ public final class SystemConfig {
     public int getMaxHeapTableSize() {
         return maxHeapTableSize;
     }
+
     @SuppressWarnings("unused")
     public void setMaxHeapTableSize(int maxHeapTableSize) {
         if (maxHeapTableSize >= 0) {
@@ -1383,6 +1441,7 @@ public final class SystemConfig {
     public boolean isEnableCursor() {
         return enableCursor;
     }
+
     @SuppressWarnings("unused")
     public void setEnableCursor(boolean enableCursor) {
         this.enableCursor = enableCursor;
@@ -1399,6 +1458,7 @@ public final class SystemConfig {
     public int getEnableBatchLoadData() {
         return enableBatchLoadData;
     }
+
     @SuppressWarnings("unused")
     public void setEnableBatchLoadData(int enableBatchLoadData) {
         if (enableBatchLoadData >= 0 && enableBatchLoadData <= 1) {
@@ -1411,6 +1471,7 @@ public final class SystemConfig {
     public boolean isInSubQueryTransformToJoin() {
         return inSubQueryTransformToJoin;
     }
+
     @SuppressWarnings("unused")
     public void setInSubQueryTransformToJoin(boolean inSubQueryTransformToJoin) {
         this.inSubQueryTransformToJoin = inSubQueryTransformToJoin;
@@ -1419,6 +1480,7 @@ public final class SystemConfig {
     public int getGroupConcatMaxLen() {
         return groupConcatMaxLen;
     }
+
     @SuppressWarnings("unused")
     public void setGroupConcatMaxLen(int maxLen) {
         if (maxLen >= 0) {

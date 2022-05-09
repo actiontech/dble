@@ -18,6 +18,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
@@ -125,15 +126,8 @@ public class SelectInformationSchemaColumnsHandler {
 
         List<String> sle = new ArrayList<>();
         List<String> sle2 = new ArrayList<>();
-        for (int i = 0; i < selectItems.size(); i++) {
-            SQLSelectItem selectItem = selectItems.get(i);
-            if (selectItem.toString().equals("*") || (selectItem.getExpr() instanceof SQLPropertyExpr && ((SQLPropertyExpr) selectItem.getExpr()).getName().equals("*"))) {
-                sle2.addAll(Arrays.asList(INFORMATION_SCHEMACOLUMNS_COLS));
-            } else {
-                sle2.add(selectItem.getAlias() == null ? selectItem.toString() : selectItem.getAlias());
-            }
-            sle.add(selectItem.toString());
-        }
+
+        analyze(selectItems, sle, sle2);
 
         FieldPacket[] fields = new FieldPacket[sle2.size()];
         for (int i = 0; i < sle2.size(); i++) {
@@ -177,6 +171,30 @@ public class SelectInformationSchemaColumnsHandler {
             }
         }
         MysqlSystemSchemaHandler.doWrite(fields.length, fields, rows, shardingService);
+    }
+
+    public void analyze(List<SQLSelectItem> selectItems, List<String> sle, List<String> sle2) {
+        for (int i = 0; i < selectItems.size(); i++) {
+            SQLSelectItem selectItem = selectItems.get(i);
+            if (selectItem.toString().equals("*") || (selectItem.getExpr() instanceof SQLPropertyExpr && ((SQLPropertyExpr) selectItem.getExpr()).getName().equals("*"))) {
+                sle2.addAll(Arrays.asList(INFORMATION_SCHEMACOLUMNS_COLS));
+            } else {
+                if (selectItem.getAlias() != null) {
+                    sle2.add(selectItem.getAlias());
+                } else {
+                    String colname = null;
+                    if (selectItem.getExpr() instanceof SQLPropertyExpr) {
+                        colname = ((SQLPropertyExpr) selectItem.getExpr()).getName();
+                        ((SQLPropertyExpr) selectItem.getExpr()).setName(colname.toUpperCase());
+                    } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
+                        colname = ((SQLIdentifierExpr) selectItem.getExpr()).getName();
+                        ((SQLIdentifierExpr) selectItem.getExpr()).setName(colname.toUpperCase());
+                    }
+                    sle2.add(colname != null ? colname.toUpperCase() : selectItem.toString());
+                }
+            }
+            sle.add(selectItem.toString());
+        }
     }
 
     public void replaceSchema(SQLExpr whereExpr, String realSchema) {

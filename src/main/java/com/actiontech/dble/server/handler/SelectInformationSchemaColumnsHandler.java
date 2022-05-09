@@ -21,15 +21,15 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -71,16 +71,16 @@ public class SelectInformationSchemaColumnsHandler {
         this.done = lock.newCondition();
     }
 
-    public void handle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void handle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock, String tableAlias) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                sqlhandle(c, fields0, mySqlSelectQueryBlock);
+                sqlhandle(c, fields0, mySqlSelectQueryBlock, tableAlias);
             }
         });
     }
 
-    public void sqlhandle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock) {
+    public void sqlhandle(ServerConnection c, FieldPacket[] fields0, MySqlSelectQueryBlock mySqlSelectQueryBlock, String tableAlias) {
         SQLExpr whereExpr = mySqlSelectQueryBlock.getWhere();
 
         Map<String, String> whereInfo = new HashMap<>();
@@ -127,52 +127,23 @@ public class SelectInformationSchemaColumnsHandler {
 
         List<SQLSelectItem> selectItems = mySqlSelectQueryBlock.getSelectList();
 
-        int fieldCount = selectItems.size();
-        String[] selectCols = null;
-        String[] selectColsAsAlias = null;
+        List<String> sle = new ArrayList<>();
+        List<String> sle2 = new ArrayList<>();
 
-        FieldPacket[] fields = null;
-        if (fieldCount == 1 && selectItems.get(0).toString().equals("*")) {
-            fieldCount = INFORMATION_SCHEMACOLUMNS_COLS.length;
-            fields = new FieldPacket[fieldCount];
-            selectCols = INFORMATION_SCHEMACOLUMNS_COLS;
-            selectColsAsAlias = INFORMATION_SCHEMACOLUMNS_COLS;
-            for (int i = 0; i < fieldCount; i++) {
-                fields[i] = PacketUtil.getField(INFORMATION_SCHEMACOLUMNS_COLS[i], Fields.FIELD_TYPE_VAR_STRING);
-            }
-        } else {
-            fields = new FieldPacket[fieldCount];
-            // columns
-            selectCols = new String[fieldCount];
-            // column as alia
-            selectColsAsAlias = new String[fieldCount];
+        analyze(selectItems, sle, sle2);
 
-            SQLSelectItem selectItem = null;
-            String columnName = null;
-            for (int i = 0; i < fieldCount; i++) {
-                selectItem = selectItems.get(i);
-                if (selectItem.getAlias() != null) {
-                    columnName = StringUtil.removeBackQuote(selectItems.get(i).getAlias());
-                    selectColsAsAlias[i] = StringUtil.removeBackQuote(selectItem.toString()) + " as " + columnName;
-                    selectCols[i] = StringUtil.removeBackQuote(selectItems.get(i).getAlias());
-                } else {
-                    columnName = StringUtil.removeBackQuote(selectItem.toString());
-                    selectColsAsAlias[i] = columnName;
-                    selectCols[i] = columnName;
-                }
-                fields[i] = PacketUtil.getField(columnName, Fields.FIELD_TYPE_VAR_STRING);
-            }
+        FieldPacket[] fields = new FieldPacket[sle2.size()];
+        for (int i = 0; i < sle2.size(); i++) {
+            fields[i] = PacketUtil.getField(sle2.get(i), Fields.FIELD_TYPE_VAR_STRING);
         }
-
         replaceSchema(whereExpr, shardingDataBase);
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT ").append(StringUtils.join(selectColsAsAlias, ", ")).append(" ").
-                append("FROM INFORMATION_SCHEMA.COLUMNS WHERE ").
+        sql.append("SELECT ").append(StringUtils.join(sle, ", ")).append(" ").append("FROM INFORMATION_SCHEMA.COLUMNS ").append(tableAlias == null ? "" : "AS " + tableAlias).append(" WHERE ").
                 append(whereExpr.toString());
 
         PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
-        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(selectCols, new SelectInformationSchemaColumnsListener(shardingNode));
+        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(sle2.toArray(new String[sle2.size()]), new SelectInformationSchemaColumnsListener(shardingNode));
         if (ds.isAlive()) {
             SQLJob sqlJob = new SQLJob(sql.toString(), null, resultHandler, ds);
             sqlJob.run();
@@ -193,14 +164,38 @@ public class SelectInformationSchemaColumnsHandler {
             rows = new RowDataPacket[result.size()];
             int index = 0;
             for (Map<String, String> data : result) {
-                RowDataPacket row = new RowDataPacket(fieldCount);
-                for (String col : selectCols) {
+                RowDataPacket row = new RowDataPacket(fields.length);
+                for (String col : sle2) {
                     row.add(null == data.get(col) ? null : StringUtil.encode(data.get(col), c.getCharset().getResults()));
                 }
                 rows[index++] = row;
             }
         }
-        MysqlSystemSchemaHandler.doWrite(fieldCount, fields, rows, c);
+        MysqlSystemSchemaHandler.doWrite(fields.length, fields, rows, c);
+    }
+
+    public void analyze(List<SQLSelectItem> selectItems, List<String> sle, List<String> sle2) {
+        for (int i = 0; i < selectItems.size(); i++) {
+            SQLSelectItem selectItem = selectItems.get(i);
+            if (selectItem.toString().equals("*") || (selectItem.getExpr() instanceof SQLPropertyExpr && ((SQLPropertyExpr) selectItem.getExpr()).getName().equals("*"))) {
+                sle2.addAll(Arrays.asList(INFORMATION_SCHEMACOLUMNS_COLS));
+            } else {
+                if (selectItem.getAlias() != null) {
+                    sle2.add(selectItem.getAlias());
+                } else {
+                    String colname = null;
+                    if (selectItem.getExpr() instanceof SQLPropertyExpr) {
+                        colname = ((SQLPropertyExpr) selectItem.getExpr()).getName();
+                        ((SQLPropertyExpr) selectItem.getExpr()).setName(colname.toUpperCase());
+                    } else if (selectItem.getExpr() instanceof SQLIdentifierExpr) {
+                        colname = ((SQLIdentifierExpr) selectItem.getExpr()).getName();
+                        ((SQLIdentifierExpr) selectItem.getExpr()).setName(colname.toUpperCase());
+                    }
+                    sle2.add(colname != null ? colname.toUpperCase() : selectItem.toString());
+                }
+            }
+            sle.add(selectItem.toString());
+        }
     }
 
     public void replaceSchema(SQLExpr whereExpr, String realSchema) {

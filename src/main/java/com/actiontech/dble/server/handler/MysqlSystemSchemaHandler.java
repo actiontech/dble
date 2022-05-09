@@ -48,7 +48,7 @@ public final class MysqlSystemSchemaHandler {
                     MysqlInformationSchemaHandler.handle(sc, fields);
                     return;
                 case COLUMNS_TABLE:
-                    new SelectInformationSchemaColumnsHandler().handle(sc, fields, mySqlSelectQueryBlock);
+                    new SelectInformationSchemaColumnsHandler().handle(sc, fields, mySqlSelectQueryBlock, schemaInfo.getTableAlias());
                     return;
                 default:
                     break;

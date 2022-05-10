@@ -745,7 +745,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
         if (selectSchemaTables.size() == 1) { //only has 1 table
-            return selectSchemaTables.keySet().iterator().next().getValue();
+            return selectSchemaTables.values().iterator().next();
         } else if (selectSchemaTables.size() == 0) { //no table
             return "";
         } else { // multi tables

@@ -585,8 +585,11 @@ abstract class DruidModifyParser extends DefaultDruidParser {
         } else {
             throw new SQLNonTransientException(getErrorMsg());
         }
-
-        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tc == null ? null : Sets.newHashSet(schema.getName() + "." + tc.getName()));
+        if (ctx.getTables().isEmpty()) {
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tc == null ? null : Sets.newHashSet(schema.getName() + "." + tc.getName()));
+        } else {
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, ctx.getTables());
+        }
         rrs.setFinishedRoute(true);
     }
 

@@ -77,7 +77,11 @@ public class DruidDeleteParser extends DruidModifyParser {
                 routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
 
-            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
+            if (ctx.getTables().isEmpty()) {
+                RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
+            } else {
+                RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, ctx.getTables());
+            }
             rrs.setFinishedRoute(true);
             return schema;
 
@@ -106,7 +110,11 @@ public class DruidDeleteParser extends DruidModifyParser {
             checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
 
             if (tc instanceof GlobalTableConfig) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
+                if (ctx.getTables().isEmpty()) {
+                    RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
+                } else {
+                    RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, ctx.getTables());
+                }
                 rrs.setFinishedRoute(true);
                 return schema;
             }

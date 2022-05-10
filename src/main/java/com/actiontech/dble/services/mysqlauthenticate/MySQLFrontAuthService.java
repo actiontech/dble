@@ -101,7 +101,7 @@ public class MySQLFrontAuthService extends FrontendService implements AuthServic
     }
 
     private void handleSSLProtoData(byte[] data) {
-        ((FrontendConnection) connection).doSSLHandShark(data);
+        ((FrontendConnection) connection).doSSLHandShake(data);
     }
 
     private void pingResponse() {

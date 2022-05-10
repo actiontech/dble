@@ -66,13 +66,13 @@ public class FrontendConnection extends AbstractConnection {
         sslHandler.init();
     }
 
-    public void doSSLHandShark(byte[] data) {
+    public void doSSLHandShake(byte[] data) {
         try {
             if (!isUseSSL()) {
                 close("SSL not initialized");
                 return;
             }
-            sslHandler.handShark(data);
+            sslHandler.handShake(data);
         } catch (SSLException e) {
             LOGGER.error("SSL handshake failed, exception: {},", e);
             close("SSL handshake failed");
@@ -175,10 +175,8 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     private void processSSLProto(byte[] packetData, ProtoHandlerResultCode code) {
-        final AbstractService frontService = getService();
-        if (frontService == null) {
-            LOGGER.warn("front connection{} has been closed,ignore packet.", this);
-        } else if (packetData != null) {
+        AbstractService frontService = getService();
+        if (packetData != null) {
             if (code == ProtoHandlerResultCode.SSL_PROTO_PACKET) {
                 pushServiceTask(new SSLProtoServerTask(packetData, frontService));
             } else {
@@ -188,6 +186,8 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     private void processSSLAppData(byte[] packetData) throws IOException {
+        if (packetData == null)
+            return;
         sslHandler.unwrapAppData(packetData);
         parentHandle(readBuffer);
     }

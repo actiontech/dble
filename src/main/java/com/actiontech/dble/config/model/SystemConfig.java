@@ -211,6 +211,7 @@ public final class SystemConfig {
         return serverCertificateKeyStoreUrl;
     }
 
+    @SuppressWarnings("unused")
     public void setServerCertificateKeyStoreUrl(String serverCertificateKeyStoreUrl) {
         if (serverCertificateKeyStoreUrl != null) {
             this.serverCertificateKeyStoreUrl = serverCertificateKeyStoreUrl;
@@ -221,6 +222,7 @@ public final class SystemConfig {
         return serverCertificateKeyStorePwd;
     }
 
+    @SuppressWarnings("unused")
     public void setServerCertificateKeyStorePwd(String serverCertificateKeyStorePwd) {
         if (serverCertificateKeyStorePwd != null) {
             this.serverCertificateKeyStorePwd = serverCertificateKeyStorePwd;
@@ -231,6 +233,7 @@ public final class SystemConfig {
         return trustCertificateKeyStoreUrl;
     }
 
+    @SuppressWarnings("unused")
     public void setTrustCertificateKeyStoreUrl(String trustCertificateKeyStoreUrl) {
         if (trustCertificateKeyStoreUrl != null) {
             this.trustCertificateKeyStoreUrl = trustCertificateKeyStoreUrl;
@@ -241,6 +244,7 @@ public final class SystemConfig {
         return trustCertificateKeyStorePwd;
     }
 
+    @SuppressWarnings("unused")
     public void setTrustCertificateKeyStorePwd(String trustCertificateKeyStorePwd) {
         if (trustCertificateKeyStorePwd != null) {
             this.trustCertificateKeyStorePwd = trustCertificateKeyStorePwd;

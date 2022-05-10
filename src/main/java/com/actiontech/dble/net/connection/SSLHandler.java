@@ -38,7 +38,7 @@ public class SSLHandler {
         this.decryptOut = con.allocate();
     }
 
-    public void handShark(byte[] data) throws SSLException {
+    public void handShake(byte[] data) throws SSLException {
         unwrapNonAppData(data);
     }
 
@@ -82,8 +82,8 @@ public class SSLHandler {
                 }
             }
         } catch (SSLException e) {
-            LOGGER.error("during the handshark, unwrap data exception: {}", e);
-            con.close("during the handshark, unwrap data fail");
+            LOGGER.error("during the handshake, unwrap data exception: {}", e);
+            con.close("during the handshake, unwrap data fail");
         } finally {
             con.recycle(in);
         }
@@ -176,8 +176,8 @@ public class SSLHandler {
                 }
             }
         } catch (SSLException e) {
-            LOGGER.error("during the handshark, wrap data exception: {}", e);
-            con.close("during the handshark, wrap data fail");
+            LOGGER.error("during the handshake, wrap data exception: {}", e);
+            con.close("during the handshake, wrap data fail");
             throw e;
         }
     }

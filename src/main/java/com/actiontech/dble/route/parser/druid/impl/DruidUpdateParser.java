@@ -74,7 +74,11 @@ public class DruidUpdateParser extends DruidModifyParser {
                 routeShardingNodes = checkForSingleNodeTable(rrs, service.getCharset().getClient());
             }
 
-            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
+            if (ctx.getTables().isEmpty()) {
+                RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, tableSet);
+            } else {
+                RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true, ctx.getTables());
+            }
             rrs.setFinishedRoute(true);
             return schema;
         } else {
@@ -102,7 +106,11 @@ public class DruidUpdateParser extends DruidModifyParser {
 
             checkTableExists(tc, schema.getName(), tableName, ShardingPrivileges.CheckType.UPDATE);
             if (tc instanceof GlobalTableConfig) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
+                if (ctx.getTables().isEmpty()) {
+                    RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaInfo.getSchema() + "." + schemaInfo.getTable()));
+                } else {
+                    RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, ctx.getTables());
+                }
                 rrs.setFinishedRoute(true);
                 return schema;
             }

@@ -62,13 +62,14 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
         String tableName = schemaInfo.getTable();
         SchemaConfig schema = schemaInfo.getSchemaConfig();
-        BaseTableConfig tc = schema.getTables().get(tableName);
 
         Collection<String> routeShardingNodes;
 
-
+        Set<String> tableSet = Sets.newHashSet();
+        tableSet.add(schemaInfo.getSchema() + "." + tableName);
         for (String selectTable : visitor.getSelectTableList()) {
             SchemaUtil.SchemaInfo schemaInfox = SchemaUtil.getSchemaInfo(service.getUser(), schema, selectTable);
+            tableSet.add(schemaInfox.getSchema() + "." + schemaInfox.getTable());
             if (!ShardingPrivileges.checkPrivilege(service.getUserConfig(), schemaInfox.getSchema(), schemaInfox.getTable(), ShardingPrivileges.CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
@@ -78,6 +79,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
 
 
+        BaseTableConfig tc = schema.getTables().get(tableName);
         boolean isGlobal = false;
         if (tc == null || tc instanceof SingleTableConfig) {
             //only require when all the table and the route condition route to same node
@@ -96,7 +98,11 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         }
 
         //finally route for the result
-        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal, Sets.newHashSet(schemaInfo.getSchema() + "." + tableName));
+        if (ctx.getTables().isEmpty()) {
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal, tableSet);
+        } else {
+            RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, isGlobal, ctx.getTables());
+        }
 
         String sql = rrs.getStatement();
         for (Pair<String, String> table : ctx.getTables()) {

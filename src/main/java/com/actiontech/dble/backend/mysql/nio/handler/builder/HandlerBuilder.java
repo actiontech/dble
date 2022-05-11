@@ -90,9 +90,11 @@ public class HandlerBuilder {
             boolean nodeRepeat = false;
             for (DMLResponseHandler startHandler : fh.getMerges()) {
                 MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-                for (RouteResultsetNode routeResultsetNode : mergeHandler.getRoute()) {
-                    if (!nodeSet.add(routeResultsetNode.getName())) {
-                        nodeRepeat = true;
+                if (Objects.nonNull(mergeHandler.getRoute())) {
+                    for (RouteResultsetNode routeResultsetNode : mergeHandler.getRoute()) {
+                        if (!nodeSet.add(routeResultsetNode.getName())) {
+                            nodeRepeat = true;
+                        }
                     }
                 }
                 for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
@@ -100,13 +102,11 @@ public class HandlerBuilder {
                 }
             }
 
-            for (DMLResponseHandler startHandler : fh.getMerges()) {
-                MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-                if (Objects.nonNull(mergeHandler.getRoute())) {
+            if (nodeRepeat) {
+                for (DMLResponseHandler startHandler : fh.getMerges()) {
+                    MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
                     for (RouteResultsetNode routeResultsetNode : mergeHandler.getRoute()) {
-                        if (nodeRepeat) {
-                            routeResultsetNode.setNodeRepeat(true);
-                        }
+                        routeResultsetNode.setNodeRepeat(true);
                     }
                 }
             }

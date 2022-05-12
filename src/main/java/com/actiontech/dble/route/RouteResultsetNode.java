@@ -35,6 +35,7 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
     private AtomicLong repeatTableIndex;
     private boolean isForUpdate = false;
     private volatile byte loadDataRrnStatus;
+    private boolean nodeRepeat = false;
 
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
@@ -120,6 +121,14 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         return name;
     }
 
+    public boolean isNodeRepeat() {
+        return nodeRepeat;
+    }
+
+    public void setNodeRepeat(boolean nodeRepeat) {
+        this.nodeRepeat = nodeRepeat;
+    }
+
     public int getSqlType() {
         return sqlType;
     }
@@ -176,8 +185,14 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         }
         if (obj instanceof RouteResultsetNode) {
             RouteResultsetNode rrn = (RouteResultsetNode) obj;
-            if (contains(rrn.getTableSet(), tableSet) && equals(name, rrn.getName()) && equals(rrn.getRepeatTableIndex().get(), repeatTableIndex.get())) {
-                return true;
+            if (!((RouteResultsetNode) obj).isNodeRepeat()) {
+                if ((this.multiplexNum.get() == rrn.getMultiplexNum().get()) && equals(name, rrn.getName())) {
+                    return true;
+                }
+            } else {
+                if (contains(rrn.getTableSet(), tableSet) && equals(name, rrn.getName()) && equals(rrn.getRepeatTableIndex().get(), repeatTableIndex.get())) {
+                    return true;
+                }
             }
         }
         return false;
@@ -190,9 +205,15 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
         return str1.equals(str2);
     }
 
-    private boolean contains(Set<String> source, Set<String> target) {
-        if (null == source || null == target || source.isEmpty() || target.isEmpty()) {
-            return true;
+    public boolean contains(Set<String> source, Set<String> target) {
+        if (source == null || target == null) {
+            return source == target;
+        }
+        if (source.isEmpty()) {
+            return target.isEmpty();
+        }
+        if (target.isEmpty()) {
+            return source.isEmpty();
         }
         return source.containsAll(target) || target.containsAll(source);
     }
@@ -200,8 +221,9 @@ public class RouteResultsetNode implements Serializable, Comparable<RouteResults
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(name);
+        sb.append('-').append(nodeRepeat).append('-');
         if (null != tableSet && !tableSet.isEmpty()) {
-            sb.append("-{" + tableSet.stream().collect(Collectors.joining(",")) + "}." + repeatTableIndex + "-");
+            sb.append("{" + tableSet.stream().collect(Collectors.joining(",")) + "}." + repeatTableIndex + "-");
         }
         sb.append('{');
         sb.append(statement.length() <= 1024 ? statement : statement.substring(0, 1024) + "...");

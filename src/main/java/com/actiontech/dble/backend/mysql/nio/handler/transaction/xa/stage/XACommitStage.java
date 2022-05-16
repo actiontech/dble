@@ -52,7 +52,7 @@ public class XACommitStage extends XAStage {
         } else {
             try {
                 RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
-                String xaTxId = service.getConnXID(session.getSessionXaID(), rrn);
+                String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
                 if (logger.isDebugEnabled()) {
                     logger.debug("XA COMMIT " + xaTxId + " to " + service);
                 }

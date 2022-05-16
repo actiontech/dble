@@ -100,7 +100,7 @@ public class XACommitFailStage extends XACommitStage {
         if (newService.equals(service)) {
             xaHandler.fakedResponse(service, "fail to fresh connection to commit failed xa transaction");
         } else {
-            String xaTxId = service.getConnXID(session.getSessionXaID(), rrn);
+            String xaTxId = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
             if (logger.isDebugEnabled()) {
                 logger.debug("XA COMMIT " + xaTxId + " to " + service);
@@ -119,7 +119,7 @@ public class XACommitFailStage extends XACommitStage {
     public void onConnectionError(MySQLResponseService service, int errNo) {
         if (errNo == ErrorCode.ER_XAER_NOTA) {
             RouteResultsetNode rrn = (RouteResultsetNode) service.getAttachment();
-            String xid = service.getConnXID(session.getSessionXaID(), rrn);
+            String xid = service.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XAAnalysisHandler xaAnalysisHandler = new XAAnalysisHandler(
                     ((PhysicalDbInstance) service.getConnection().getPoolRelated().getInstance()).getDbGroup().getWriteDbInstance());
             // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.

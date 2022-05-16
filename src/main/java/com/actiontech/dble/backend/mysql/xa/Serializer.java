@@ -52,12 +52,6 @@ public final class Serializer {
                     strBuilder.append(PROPERTY_SEPARATOR);
                     strBuilder.append(QUOTE).append(CoordinatorLogEntry.P_SCHEMA).append(QUOTE).append(":").append(QUOTE).append(participantLogEntry.getSchema()).append(QUOTE);
                 }
-                if (participantLogEntry.getTableName() != null) {
-                    strBuilder.append(PROPERTY_SEPARATOR);
-                    strBuilder.append(QUOTE).append(CoordinatorLogEntry.P_TABLE_NAME).append(QUOTE).append(":").append(QUOTE).append(participantLogEntry.getTableName()).append(QUOTE);
-                }
-                strBuilder.append(PROPERTY_SEPARATOR);
-                strBuilder.append(QUOTE).append(CoordinatorLogEntry.P_REPEAT_TABLE_INDEX).append(QUOTE).append(":").append(participantLogEntry.getRepeatTableIndex());
                 strBuilder.append(END_OBJECT);
             }
             strBuilder.append(END_ARRAY);

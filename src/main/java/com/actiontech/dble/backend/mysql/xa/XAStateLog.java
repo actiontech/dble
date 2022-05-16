@@ -14,7 +14,6 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 
 public final class XAStateLog {
     private XAStateLog() {
@@ -82,22 +80,17 @@ public final class XAStateLog {
 
     private static void updateXARecoveryLog(String xaTxId, MySQLResponseService service, TxState txState) {
         long expires = ((RouteResultsetNode) service.getAttachment()).getMultiplexNum().longValue();
-        Set<String> tableSet = ((RouteResultsetNode) service.getAttachment()).getTableSet();
-        String tableName = null == tableSet ? "" : tableSet.stream().collect(Collectors.joining(","));
-        long repeatTableIndex = ((RouteResultsetNode) service.getAttachment()).getRepeatTableIndex().longValue();
-        updateXARecoveryLog(xaTxId, service.getConnection().getHost(), service.getConnection().getPort(), service.getConnection().getSchema(), expires, tableName, repeatTableIndex, txState);
+        updateXARecoveryLog(xaTxId, service.getConnection().getHost(), service.getConnection().getPort(), service.getConnection().getSchema(), expires, txState);
     }
 
-    public static void updateXARecoveryLog(String xaTxId, String host, int port, String schema, long expires, String tableName, long repeatTableIndex, TxState txState) {
+    public static void updateXARecoveryLog(String xaTxId, String host, int port, String schema, long expires, TxState txState) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
             if (coordinatorLogEntry.getParticipants()[i] != null &&
                     coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema) &&
                     coordinatorLogEntry.getParticipants()[i].getHost().equals(host) &&
                     coordinatorLogEntry.getParticipants()[i].getPort() == port &&
-                    coordinatorLogEntry.getParticipants()[i].getExpires() == expires &&
-                    StringUtil.equalsWithEmpty(coordinatorLogEntry.getParticipants()[i].getTableName(), tableName) &&
-                    coordinatorLogEntry.getParticipants()[i].getRepeatTableIndex() == repeatTableIndex) {
+                    coordinatorLogEntry.getParticipants()[i].getExpires() == expires) {
                 coordinatorLogEntry.getParticipants()[i].setTxState(txState);
             }
         }
@@ -203,11 +196,8 @@ public final class XAStateLog {
     public static void initRecoveryLog(String xaTxId, int position, MySQLResponseService service) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         long expires = ((RouteResultsetNode) service.getAttachment()).getMultiplexNum().longValue();
-        Set<String> tableSet = ((RouteResultsetNode) service.getAttachment()).getTableSet();
-        String tableName = null == tableSet ? "" : tableSet.stream().collect(Collectors.joining(","));
-        long repeatTableIndex = ((RouteResultsetNode) service.getAttachment()).getRepeatTableIndex().longValue();
         coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTxId, service.getConnection().getHost(), service.getConnection().getPort(), expires,
-                service.getSchema(), service.getXaStatus(), tableName, repeatTableIndex);
+                service.getSchema(), service.getXaStatus());
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
     }
 

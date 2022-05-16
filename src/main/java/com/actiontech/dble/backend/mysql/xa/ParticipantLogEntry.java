@@ -41,20 +41,14 @@ public class ParticipantLogEntry implements Serializable {
      */
     private String schema;
 
-    private String tableName;
-
-    private long repeatTableIndex;
-
     public ParticipantLogEntry(String coordinatorId, String host, int port, long expires, String schema,
-                               TxState txState, String tableName, long repeatTableIndex) {
+                               TxState txState) {
         this.coordinatorId = coordinatorId;
         this.host = host;
         this.port = port;
         this.expires = expires;
         this.schema = schema;
         this.txState = txState;
-        this.tableName = tableName;
-        this.repeatTableIndex = repeatTableIndex;
     }
 
     public boolean compareAddress(String hostName, int portNum, String schemaName) {
@@ -64,7 +58,7 @@ public class ParticipantLogEntry implements Serializable {
     @Override
     public String toString() {
         return "ParticipantLogEntry [id=" + coordinatorId + ", host=" + host + ", port=" + port + ", expires=" + expires +
-                ", state=" + txState + ", schema=" + schema + ", table=" + tableName + ", repeatTableIndex=" + repeatTableIndex + "]";
+                ", state=" + txState + ", schema=" + schema + "]";
     }
 
     public String getCoordinatorId() {
@@ -113,21 +107,5 @@ public class ParticipantLogEntry implements Serializable {
 
     public void setSchema(String schema) {
         this.schema = schema;
-    }
-
-    public String getTableName() {
-        return tableName;
-    }
-
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
-    public long getRepeatTableIndex() {
-        return repeatTableIndex;
-    }
-
-    public void setRepeatTableIndex(long repeatTableIndex) {
-        this.repeatTableIndex = repeatTableIndex;
     }
 }

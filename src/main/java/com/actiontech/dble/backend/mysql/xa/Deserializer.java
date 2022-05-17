@@ -107,9 +107,7 @@ public final class Deserializer {
         }
 
         ParticipantLogEntry actual = new ParticipantLogEntry(coordinatorId,
-                content.get(CoordinatorLogEntry.P_HOST), Integer.parseInt(content.get(CoordinatorLogEntry.P_PORT)), Long.parseLong(content.get(CoordinatorLogEntry.P_EXPIRES)),
-                content.get(CoordinatorLogEntry.P_SCHEMA), TxState.valueOf(Integer.parseInt(content.get(CoordinatorLogEntry.P_STATE))), content.get(CoordinatorLogEntry.P_TABLE_NAME),
-                Long.parseLong(content.get(CoordinatorLogEntry.P_REPEAT_TABLE_INDEX)));
+                content.get(CoordinatorLogEntry.P_HOST), Integer.parseInt(content.get(CoordinatorLogEntry.P_PORT)), Long.parseLong(content.get(CoordinatorLogEntry.P_EXPIRES)), content.get(CoordinatorLogEntry.P_SCHEMA), TxState.valueOf(Integer.parseInt(content.get(CoordinatorLogEntry.P_STATE))));
         return actual;
     }
 

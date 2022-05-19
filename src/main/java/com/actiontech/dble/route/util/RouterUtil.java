@@ -378,7 +378,17 @@ public final class RouterUtil {
         return rrs;
     }
 
-    public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, boolean isGlobalTable, Set<String> tableSet) {
+    public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, boolean isGlobalTable,
+                                                  List<Pair<String, String>> tableList) {
+        HashSet<String> tableSet = Sets.newHashSet();
+        for (Pair<String, String> table : tableList) {
+            tableSet.add(table.getKey() + "." + table.getValue());
+        }
+        return routeToMultiNode(cache, rrs, shardingNodes, isGlobalTable, tableSet);
+    }
+
+    public static RouteResultset routeToMultiNode(boolean cache, RouteResultset rrs, Collection<String> shardingNodes, boolean isGlobalTable,
+                                                  Set<String> tableSet) {
         rrs = routeToMultiNode(cache, rrs, shardingNodes, tableSet);
         rrs.setGlobalTable(isGlobalTable);
         return rrs;

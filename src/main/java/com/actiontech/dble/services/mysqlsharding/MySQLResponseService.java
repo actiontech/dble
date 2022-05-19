@@ -24,7 +24,6 @@ import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
-import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
@@ -36,11 +35,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Collectors;
 
 /**
  * Created by szf on 2020/6/29.
@@ -75,29 +72,12 @@ public class MySQLResponseService extends BackendService {
         this.protocolResponseHandler = defaultResponseHandler;
     }
 
-    public String getConnXID(String sessionXaId, RouteResultsetNode rrn) {
+    public String getConnXID(String sessionXaId, long multiplexNum) {
         if (sessionXaId == null)
             return null;
         else {
-            long multiplexNum = rrn.getMultiplexNum().get();
-            long repeatTableIndex = rrn.getRepeatTableIndex().get();
-            Set<String> tableSet = rrn.getTableSet();
-            String tableName = "";
-            if (null != tableSet && !tableSet.isEmpty()) {
-                tableName = tableSet.stream().collect(Collectors.joining(","));
-            }
             String strMultiplexNum = multiplexNum == 0 ? "" : "." + multiplexNum;
-            String strRepeatTableIndex = repeatTableIndex == 0 ? "" : "." + repeatTableIndex;
-            StringBuffer xaIDStr = new StringBuffer(sessionXaId.substring(0, sessionXaId.length() - 1));
-            xaIDStr.append(".");
-            xaIDStr.append(connection.getSchema());
-            xaIDStr.append(strMultiplexNum);
-            if (!StringUtil.isBlank(tableName)) {
-                xaIDStr.append(".");
-                xaIDStr.append(tableName);
-                xaIDStr.append(strRepeatTableIndex);
-            }
-            return xaIDStr.append("'").toString();
+            return sessionXaId.substring(0, sessionXaId.length() - 1) + "." + connection.getSchema() + strMultiplexNum + "'";
         }
     }
 
@@ -195,7 +175,7 @@ public class MySQLResponseService extends BackendService {
             } else if (protocolResponseHandler != defaultResponseHandler) {
                 protocolResponseHandler = defaultResponseHandler;
             }
-            String xaTxId = getConnXID(session.getSessionXaID(), rrn);
+            String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             StringBuilder synSQL = getSynSql(xaTxId, rrn, isAutoCommit, service);
             synAndDoExecute(synSQL, rrn.getStatement(), service.getCharset());
         } finally {
@@ -229,7 +209,7 @@ public class MySQLResponseService extends BackendService {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
-            String xaTxId = getConnXID(session.getSessionXaID(), rrn);
+            String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
             }
@@ -404,7 +384,7 @@ public class MySQLResponseService extends BackendService {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "execute-route-multi-result");
         TraceManager.log(ImmutableMap.of("route-result-set", rrn.toString(), "service-detail", this.toString()), traceObject);
         try {
-            String xaTxId = getConnXID(session.getSessionXaID(), rrn);
+            String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             if (!service.isAutocommit() && !service.isTxStart() && rrn.isModifySQL()) {
                 service.setTxStart(true);
             }

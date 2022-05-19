@@ -9,7 +9,6 @@ import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,11 +118,6 @@ public final class XaCheckHandler {
         if (participantLogEntry.getExpires() != 0) {
             xaCmd.append(".");
             xaCmd.append(participantLogEntry.getExpires());
-        }
-        if (!StringUtil.isBlank(participantLogEntry.getTableName())) {
-            xaCmd.append(".");
-            xaCmd.append(participantLogEntry.getTableName());
-            xaCmd.append(participantLogEntry.getRepeatTableIndex() == 0 ? "" : "." + participantLogEntry.getRepeatTableIndex());
         }
         xaCmd.append("'");
     }

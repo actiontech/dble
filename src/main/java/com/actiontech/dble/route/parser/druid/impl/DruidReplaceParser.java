@@ -79,7 +79,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             String sql = rrs.getStatement();
             sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             rrs.setStatement(sql);
-            RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
+            if (ctx.getTables().isEmpty()) {
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, Sets.newHashSet(schemaName + "." + tableName));
+            } else {
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true, ctx.getTables());
+            }
             rrs.setFinishedRoute(true);
             return schema;
         } else if (tc instanceof ChildTableConfig) { // insert childTable will finished router while parser

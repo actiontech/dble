@@ -55,7 +55,7 @@ public class HandlerBuilder {
                 rrss.getMultiplexNum().incrementAndGet();
             }
             //repeatTable-index
-            while (rrsNodes.contains(rrss)) {
+            while (rrsNodes.stream().anyMatch(rrsNode -> rrsNode.contains(rrsNode.getTableSet(), rrss.getTableSet()) && Objects.equals(rrsNode.getName(), rrss.getName()) && Objects.equals(rrsNode.getRepeatTableIndex().get(), rrss.getRepeatTableIndex().get()))) {
                 rrss.getRepeatTableIndex().incrementAndGet();
             }
             rrsNodes.add(rrss);
@@ -86,10 +86,28 @@ public class HandlerBuilder {
             DMLResponseHandler fh = FinalHandlerFactory.createFinalHandler(session);
             endHandler.setNextHandler(fh);
             //set slave only into rrsNode
+            HashSet<String> nodeSet = Sets.newHashSet();
+            boolean nodeRepeat = false;
             for (DMLResponseHandler startHandler : fh.getMerges()) {
                 MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+                if (Objects.nonNull(mergeHandler.getRoute())) {
+                    for (RouteResultsetNode routeResultsetNode : mergeHandler.getRoute()) {
+                        if (!nodeSet.add(routeResultsetNode.getName())) {
+                            nodeRepeat = true;
+                        }
+                    }
+                }
                 for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
                     baseHandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
+                }
+            }
+
+            if (nodeRepeat) {
+                for (DMLResponseHandler startHandler : fh.getMerges()) {
+                    MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+                    for (RouteResultsetNode routeResultsetNode : mergeHandler.getRoute()) {
+                        routeResultsetNode.setNodeRepeat(true);
+                    }
                 }
             }
             session.endComplexRoute();

@@ -204,7 +204,7 @@ public final class IOProcessor {
             }
 
             if (c.isPrepareClosedTimeout()) {
-                c.close("close timeout");
+                c.close(c.getCloseReason());
                 continue;
             }
 

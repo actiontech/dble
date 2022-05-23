@@ -173,11 +173,12 @@ public abstract class AbstractConnection implements Connection {
         }
     }
 
-    public void markPrepareClose() {
+    public void markPrepareClose(String reason) {
         if (prepareClosedTime == null) {
             prepareClosedTime = System.currentTimeMillis();
         }
         isPrepareClosed = true;
+        closeReason = reason;
     }
 
     public boolean isPrepareClosedTimeout() {

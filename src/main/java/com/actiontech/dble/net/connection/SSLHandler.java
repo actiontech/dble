@@ -1,19 +1,19 @@
 package com.actiontech.dble.net.connection;
 
-import com.actiontech.dble.net.service.*;
-import com.actiontech.dble.net.factory.SSLEngineFactory;
+import com.actiontech.dble.net.service.WriteFlags;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
 import com.actiontech.dble.util.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
-import javax.net.ssl.SSLEngineResult.Status;
 
 public class SSLHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(SSLHandler.class);
@@ -22,6 +22,7 @@ public class SSLHandler {
 
     private volatile ByteBuffer decryptOut;
 
+    private OpenSSLWrapper sslWrapper;
     private volatile SSLEngine engine;
     private volatile boolean isHandshakeSuccess = false;
 
@@ -30,8 +31,11 @@ public class SSLHandler {
         this.channel = con.getChannel();
     }
 
-    public void init() throws IOException {
-        this.engine = SSLEngineFactory.appleSSLEngine(true);
+    public void createEngine() throws IOException {
+        if (sslWrapper == null) {
+            return;
+        }
+        this.engine = sslWrapper.appleSSLEngine(true);
         if (this.channel instanceof SocketChannel) {
             ((SocketChannel) this.channel).configureBlocking(false);
         }
@@ -271,17 +275,12 @@ public class SSLHandler {
         return newBuffer;
     }
 
-    public static boolean isSSLPackage(byte i) {
-        int packageType = i & 0xff;
-        switch (packageType) {
-            case 20:  // change_cipher_spec
-            case 21:  // alert
-            case 22:  // handshake
-            case 23:  // application_data
-                return true;
-            default:
-                // SSLv2 or bad data
-                return false;
-        }
+    public void setSslWrapper(OpenSSLWrapper sslWrapper) {
+        this.sslWrapper = sslWrapper;
     }
+
+    public boolean isCreateEngine() {
+        return engine != null;
+    }
+
 }

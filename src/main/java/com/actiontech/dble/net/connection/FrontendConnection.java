@@ -7,13 +7,15 @@ import com.actiontech.dble.btrace.provider.IODelayProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketWR;
-import com.actiontech.dble.net.factory.SSLEngineFactory;
 import com.actiontech.dble.net.service.*;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
+import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.services.BusinessService;
 import com.actiontech.dble.services.FrontendService;
 import com.actiontech.dble.services.mysqlauthenticate.MySQLChangeUserService;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.exception.NotSupportException;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
@@ -40,6 +42,7 @@ public class FrontendConnection extends AbstractConnection {
     private final boolean isSupportSSL;
     protected volatile ByteBuffer netReadBuffer;
     private volatile SSLHandler sslHandler;
+    private String sslName;
 
     public FrontendConnection(NetworkChannel channel, SocketWR socketWR, boolean isManager) throws IOException {
         super(channel, socketWR);
@@ -58,12 +61,20 @@ public class FrontendConnection extends AbstractConnection {
         this.localPort = remoteAddress.getPort();
         this.idleTimeout = SystemConfig.getInstance().getIdleTimeout();
         this.isCleanUp = new AtomicBoolean(false);
-        this.isSupportSSL = SSLEngineFactory.getInstance().isSupport();
+        this.isSupportSSL = SystemConfig.getInstance().isSupportSSL();
     }
 
-    public void openSSL() throws IOException {
+    public void initSSLContext(int protocol) {
+        if (sslHandler != null) {
+            return;
+        }
         sslHandler = new SSLHandler(this);
-        sslHandler.init();
+        OpenSSLWrapper sslWrapper = SSLWrapperRegistry.getInstance(protocol);
+        if (sslWrapper == null) {
+            throw new NotSupportException("not support " + SSLWrapperRegistry.SSLProtocol.nameOf(protocol));
+        }
+        sslName = SSLWrapperRegistry.SSLProtocol.nameOf(protocol);
+        sslHandler.setSslWrapper(sslWrapper);
     }
 
     public void doSSLHandShake(byte[] data) {
@@ -72,10 +83,16 @@ public class FrontendConnection extends AbstractConnection {
                 close("SSL not initialized");
                 return;
             }
+            if (!sslHandler.isCreateEngine()) {
+                sslHandler.createEngine();
+            }
             sslHandler.handShake(data);
         } catch (SSLException e) {
             LOGGER.error("SSL handshake failed, exception: {},", e);
             close("SSL handshake failed");
+        } catch (IOException e) {
+            LOGGER.error("SSL initialization failed, exception: {},", e);
+            close("SSL initialization failed");
         }
         return;
     }
@@ -111,7 +128,7 @@ public class FrontendConnection extends AbstractConnection {
             return;
         }
         int offset = 0;
-        SSLProtoHandler proto = new SSLProtoHandler();
+        SSLProtoHandler proto = new SSLProtoHandler(this);
         boolean hasRemaining = true;
         while (hasRemaining) {
             ProtoHandlerResult result = proto.handle(dataBuffer, offset, false);
@@ -366,6 +383,9 @@ public class FrontendConnection extends AbstractConnection {
     }
 
     public String toString() {
-        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " + localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " + isSkipCheck() + " isFlowControl = " + isFrontWriteFlowControlled() + " onlyTcpConnect = " + isOnlyFrontTcpConnected() + " useSSL = " + isUseSSL() + "]";
+        return "FrontendConnection[id = " + id + " port = " + port + " host = " + host + " local_port = " +
+                localPort + " isManager = " + isManager() + " startupTime = " + startupTime + " skipCheck = " +
+                isSkipCheck() + " isFlowControl = " + isFrontWriteFlowControlled() + " onlyTcpConnect = " +
+                isOnlyFrontTcpConnected() + " ssl = " + (isUseSSL() ? sslName : "no") + "]";
     }
 }

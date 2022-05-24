@@ -12,6 +12,12 @@
     <formats>
         <format>tar.gz</format>
     </formats>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>dble/lib</outputDirectory>
+            <scope>system</scope>
+        </dependencySet>
+    </dependencySets>
     <fileSets>
         <fileSet>
             <directory>target/generated-resources/appassembler/jsw/dble/bin</directory>

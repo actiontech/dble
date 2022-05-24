@@ -140,9 +140,10 @@ public class DefaultResponseHandler implements ProtocolResponseHandler {
             service.getSession().setBackendResponseEndTime(this.service);
         }
         service.getLogResponse().set(false);
-        service.backendSpecialCleanUp();
-        if (service.getResponseHandler() != null) {
-            service.getResponseHandler().rowEofResponse(data, false, service);
+        ResponseHandler respHand = service.getResponseHandler();
+        if (respHand != null) {
+            service.backendSpecialCleanUp();
+            respHand.rowEofResponse(data, false, service);
         } else {
             closeNoHandler();
         }

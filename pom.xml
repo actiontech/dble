@@ -170,7 +170,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.0</version>
+            <version>2.8.9</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -694,7 +694,9 @@
                             <fork>true</fork>
                             <compilerArgs>
                                 <arg>-XDcompilePolicy=simple</arg>
-                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:ReturnValueIgnored:OFF -Xep:MissingSummary:OFF</arg>
+                                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:ReturnValueIgnored:OFF
+                                    -Xep:MissingSummary:OFF
+                                </arg>
                                 <arg>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.base/sun.net.util=ALL-UNNAMED</arg>
                             </compilerArgs>

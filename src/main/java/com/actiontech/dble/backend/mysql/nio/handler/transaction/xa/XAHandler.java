@@ -226,8 +226,7 @@ public class XAHandler {
         public void onResult(SQLQueryResult<Map<String, String>> res) {
             if (res.isSuccess()) {
                 LOGGER.debug(String.format("[CALLBACK][XA %s %s] when server start", operator, logEntry.getCoordinatorId()));
-                XAStateLog.updateXARecoveryLog(logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), logEntry.getExpires(),
-                        logEntry.getTableName(), logEntry.getRepeatTableIndex(), txState);
+                XAStateLog.updateXARecoveryLog(logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), logEntry.getExpires(), txState);
                 XAStateLog.writeCheckpoint(logEntry.getCoordinatorId());
                 isSuccess = true;
             } else {

@@ -70,6 +70,7 @@ public final class ManagerSchemaInfo {
         registerTable(new SqlLog());
 
         registerTable(new DbleFlowControl());
+        registerTable(new DbleFrontConnectionsActiveRatio());
     }
 
     private void initViews() {

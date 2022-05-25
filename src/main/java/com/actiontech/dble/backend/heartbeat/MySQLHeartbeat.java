@@ -62,6 +62,7 @@ public class MySQLHeartbeat {
     private AtomicLong errorTimeInLast5Min = new AtomicLong();
     private int errorTimeInLast5MinCount = 0;
     private volatile long heartbeatRecoveryTime;
+    private AtomicBoolean initHeartbeat = new AtomicBoolean(false);
 
     public MySQLHeartbeat(PhysicalDbInstance dbInstance) {
         this.source = dbInstance;
@@ -90,14 +91,18 @@ public class MySQLHeartbeat {
 
     public void start(long heartbeatPeriodMillis) {
         this.isStop = false;
-        this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
-            if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-                    return;
+        if (initHeartbeat.compareAndSet(false, true)) {
+            this.scheduledFuture = Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(() -> {
+                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                        return;
+                    }
+                    heartbeat();
                 }
-                heartbeat();
-            }
-        }, 0L, heartbeatPeriodMillis, TimeUnit.MILLISECONDS);
+            }, 0L, heartbeatPeriodMillis, TimeUnit.MILLISECONDS);
+        } else {
+            LOGGER.warn("init dbInstance[{}] heartbeat, but it has been initialized, skip initialization.", source.getName());
+        }
     }
 
     public void stop(String reason) {
@@ -108,6 +113,7 @@ public class MySQLHeartbeat {
         LOGGER.info("stop heartbeat of instance[{}], due to {}", source.getConfig().getUrl(), reason);
         isStop = true;
         scheduledFuture.cancel(false);
+        initHeartbeat.set(false);
         this.status = INIT_STATUS;
         if (detector != null && !detector.isQuit()) {
             detector.quit();

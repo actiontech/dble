@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -35,6 +36,7 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
     private PhysicalDbInstance ds;
     private final String columnIsolation;
     private final boolean needSync;
+    private volatile boolean fail = false;
 
     public GetAndSyncDbInstanceKeyVariables(PhysicalDbInstance ds, boolean needSync) {
         this.ds = ds;
@@ -66,7 +68,12 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
         lock.lock();
         try {
             while (!isFinish) {
-                finishCond.await();
+                boolean await = finishCond.await(ds.getConfig().getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS);
+                if (!await) {
+                    fail = true;
+                    isFinish = true;
+                    LOGGER.warn("test conn timeout，TCP connection may be lost");
+                }
             }
         } catch (InterruptedException e) {
             LOGGER.warn("test conn Interrupted:", e);
@@ -154,6 +161,10 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
             try {
                 isFinish = true;
                 finishCond.signal();
+                if (fail) {
+                    keyVariables = null;
+                    LOGGER.info("test conn timeout, need to resynchronize");
+                }
             } finally {
                 lock.unlock();
             }

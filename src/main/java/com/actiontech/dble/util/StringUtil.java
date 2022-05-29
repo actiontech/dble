@@ -14,6 +14,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author mycat
@@ -33,6 +35,8 @@ public final class StringUtil {
             'b', 'n', 'm', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
             'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V',
             'B', 'N', 'M'};
+
+    public static final Pattern PATTERN_MESSY_CODE = Pattern.compile("\\s*|\t*|\r*|\n*");
 
     /**
      * String hash:s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1] <br>
@@ -372,6 +376,7 @@ public final class StringUtil {
 
     /**
      * option to ignore case depending on the condition
+     *
      * @param str1
      * @param str2
      * @param ignoreCase
@@ -609,4 +614,45 @@ public final class StringUtil {
         }
         return orgStr;
     }
+
+
+    public static boolean isChinese(char c) {
+        Character.UnicodeBlock ub = Character.UnicodeBlock.of(c);
+        if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS ||
+                ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS ||
+                ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A ||
+                ub == Character.UnicodeBlock.GENERAL_PUNCTUATION ||
+                ub == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION ||
+                ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS) {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isChinese(String val) {
+        return val.codePoints().allMatch(codepoint -> Character.UnicodeScript.of(codepoint) == Character.UnicodeScript.HAN);
+    }
+
+    public static boolean isMessyCode(String strName) {
+        Matcher m = PATTERN_MESSY_CODE.matcher(strName);
+        String after = m.replaceAll("");
+        String temp = after.replaceAll("\\p{P}", "");
+        char[] ch = temp.trim().toCharArray();
+        float chLength = 0;
+        float count = 0;
+        for (char c : ch) {
+            if (!Character.isLetterOrDigit(c)) {
+                if (!isChinese(c)) {
+                    count = count + 1;
+                }
+                chLength++;
+            }
+        }
+        if (chLength <= 0)
+            return false;
+        float result = count / chLength;
+        return result > 0.4;
+    }
+
+
 }

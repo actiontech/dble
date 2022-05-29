@@ -30,6 +30,7 @@ import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -255,6 +257,13 @@ public class DBConverter {
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setReadWeight(readWeight);
+
+        String dbDistrict = dbInstance.getDbDistrict();
+        checkChineseAndRules(dbDistrict, "dbDistrict");
+        String dbDataCenter = dbInstance.getDbDataCenter();
+        checkChineseAndRules(dbDataCenter, "dbDataCenter");
+        conf.setDbDistrict(dbDistrict);
+        conf.setDbDataCenter(dbDataCenter);
         // id
         String id = dbInstance.getId();
         if (StringUtil.isEmpty(id)) {
@@ -279,6 +288,22 @@ public class DBConverter {
         }
         return dataBaseType;
     }
+
+    private void checkChineseAndRules(String val, String name) {
+        if (Objects.nonNull(val)) {
+            if (StringUtil.isMessyCode(val)) {
+                throw new ConfigException("These properties of system are not recognized: " + val + "the " + Charset.defaultCharset().name() + " encoding is recommended");
+            }
+            String chinese = val.replaceAll(PATTERN_DB.toString(), "");
+            if (Strings.isNullOrEmpty(chinese)) {
+                return;
+            }
+            if (!StringUtil.isChinese(chinese)) {
+                throw new ConfigException("dbInstance name " + name + " show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            }
+        }
+    }
+
 
     private void checkProperty(List<String> errorMsgList, Property property) {
         String value = property.getValue();

@@ -373,6 +373,7 @@ public final class StringUtil {
 
     /**
      * option to ignore case depending on the condition
+     *
      * @param str1
      * @param str2
      * @param ignoreCase
@@ -615,4 +616,17 @@ public final class StringUtil {
         Pattern pattern = Pattern.compile("^[-\\+]?[.\\d]*$");
         return pattern.matcher(str).matches();
     }
+    /**
+     * <p>
+     * src: https://stackoverflow.com/questions/26357938/detect-chinese-character-in-java/26357985
+     * Now Character.isIdeographic(int codepoint) would tell wether the codepoint is a C (Chinese) ideograph.
+     * Nearer is using Character.UnicodeScript.HAN.
+     *
+     * @param val
+     * @return
+     */
+    public static boolean isChinese(String val) {
+        return val.codePoints().allMatch(codepoint -> Character.UnicodeScript.of(codepoint) == Character.UnicodeScript.HAN);
+    }
+
 }

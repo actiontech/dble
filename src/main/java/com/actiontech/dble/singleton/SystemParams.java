@@ -156,6 +156,9 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("gmsslBothPfx", SystemConfig.getInstance().getGmsslBothPfx() + "", "National secret dual certificate/private key file in PFX format"));
         readOnlyParams.add(new ParamInfo("gmsslRcaPem", SystemConfig.getInstance().getGmsslRcaPem() + "", "Root certificate of GMSSL"));
         readOnlyParams.add(new ParamInfo("gmsslOcaPem", SystemConfig.getInstance().getGmsslOcaPem() + "", "Secondary certificate of GMSSL"));
+        readOnlyParams.add(new ParamInfo("district", sysConfig.getDistrict() + "", "The location of the DBLE"));
+        readOnlyParams.add(new ParamInfo("dataCenter", sysConfig.getDataCenter() + "", "The data center where the DBLE resides"));
+
     }
 
     public List<ParamInfo> getVolatileParams() {

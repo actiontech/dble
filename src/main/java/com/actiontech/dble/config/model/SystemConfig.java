@@ -8,13 +8,19 @@ package com.actiontech.dble.config.model;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.util.NetUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.util.Objects;
 
 import static com.actiontech.dble.config.model.db.PoolConfig.DEFAULT_IDLE_TIMEOUT;
 
@@ -208,6 +214,9 @@ public final class SystemConfig {
 
     // For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
     private long rwStickyTime = 1000;
+
+    private String district = null;
+    private String dataCenter = null;
 
 
     private boolean closeHeartBeatRecord = false;
@@ -1517,6 +1526,25 @@ public final class SystemConfig {
         routePenetrationRules = sqlPenetrationRegexesTmp;
     }
 
+    public String getDistrict() {
+        return district;
+    }
+
+    @SuppressWarnings("unused")
+    public void setDistrict(String district) throws UnsupportedEncodingException {
+        checkChineseProperty(district, "district");
+        this.district = district;
+    }
+
+    public String getDataCenter() {
+        return dataCenter;
+    }
+
+    @SuppressWarnings("unused")
+    public void setDataCenter(String dataCenter) {
+        checkChineseProperty(dataCenter, "dataCenter");
+        this.dataCenter = dataCenter;
+    }
 
     @Override
     public String toString() {
@@ -1618,6 +1646,8 @@ public final class SystemConfig {
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", district='" + district +
+                ", dataCenter='" + dataCenter +
                 "]";
     }
 
@@ -1627,5 +1657,22 @@ public final class SystemConfig {
 
     public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
         this.closeHeartBeatRecord = closeHeartBeatRecord;
+    }
+
+    private void checkChineseProperty(String val, String name) {
+        if (Objects.nonNull(val)) {
+            int length = 11;
+            if (val.length() > length) {
+                problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the value contains a maximum of " + length + " characters");
+            }
+
+            String chinese = val.replaceAll(DBConverter.PATTERN_DB.toString(), "");
+            if (Strings.isNullOrEmpty(chinese)) {
+                return;
+            }
+            if (!StringUtil.isChinese(chinese)) {
+                problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            }
+        }
     }
 }

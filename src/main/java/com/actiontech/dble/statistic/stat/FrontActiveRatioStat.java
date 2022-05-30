@@ -8,7 +8,10 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -18,10 +21,25 @@ public class FrontActiveRatioStat {
     private static final FrontActiveRatioStat INSTANCE = new FrontActiveRatioStat();
     private Map<FrontendConnection, WorkStat> usageStats;
 
+    private static final long LAST_STAT_30 = 30 * 1000; // 30s
+    private static final long LAST_STAT_60 = 60 * 1000; // 1min
+    private static final long LAST_STAT_300 = 5 * 60 * 1000; // 5min
+    public static final long LAST_STAT_MAX = LAST_STAT_300;
+
+
+    private boolean enable = false;
+
     public FrontActiveRatioStat() {
         if (SystemConfig.getInstance().getUsePerformanceMode() == 1)
             return;
-        usageStats = new ConcurrentHashMap<>();
+        enable = SystemConfig.getInstance().getEnableSessionActiveRatioStat() == 1;
+        if (enable) {
+            usageStats = new ConcurrentHashMap<>();
+        }
+    }
+
+    public boolean isEnable() {
+        return enable;
     }
 
     public static FrontActiveRatioStat getInstance() {
@@ -63,6 +81,19 @@ public class FrontActiveRatioStat {
         return maps;
     }
 
+    // timed task
+    public void clearStaleData() {
+        try {
+            if (!enable) return;
+            long currentTime = System.currentTimeMillis();
+            for (WorkStat w : usageStats.values()) {
+                w.adjust(currentTime);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("clearStaleData() exception：{}", e);
+        }
+    }
+
     private WorkStat newWorkStat(long time) {
         WorkStat stat = new WorkStat();
         stat.init(time);
@@ -71,19 +102,18 @@ public class FrontActiveRatioStat {
 
     public class WorkStat {
         private LinkedList<Time2> list;
-        private static final long LAST_STAT_30 = 30 * 1000; // 30s
-        private static final long LAST_STAT_60 = 60 * 1000; // 1min
-        private static final long LAST_STAT_300 = 5 * 60 * 1000; // 5min
-
-        private static final long LAST_STAT_MAX = LAST_STAT_300;
+        private Object mutex;
 
         public WorkStat() {
-            this.list = new LinkedList<>();
+            this.list = new LinkedList<Time2>();
+            this.mutex = this;
         }
 
         private void init(long time) {
-            list.add(new ReadTime(time));
-            list.add(new WriteTime(time));
+            synchronized (mutex) {
+                list.add(new ReadTime(time));
+                list.add(new WriteTime(time));
+            }
         }
 
         private void clear() {
@@ -91,30 +121,44 @@ public class FrontActiveRatioStat {
         }
 
         public void readTime(long time) {
-            if (CollectionUtil.isEmpty(list) || list.getLast() instanceof WriteTime) {
-                list.add(new ReadTime(time));
-            } // else, (list.getLast() instanceof WriteTime) not record
-            adjust(time);
+            synchronized (mutex) {
+                if (CollectionUtil.isEmpty(list)) {
+                    list.add(new ReadTime(time));
+                } else {
+                    if (list.getLast() instanceof WriteTime) {
+                        list.add(new ReadTime(time));
+                    } // else, (list.getLast() instanceof WriteTime) not record
+                }
+            }
         }
 
         public void writeTime(long time) {
-            if (!CollectionUtil.isEmpty(list) && list.getLast() instanceof WriteTime) {
-                list.getLast().setTime0(time);
-            } else {
-                list.add(new WriteTime(time));
+            synchronized (mutex) {
+                if (!CollectionUtil.isEmpty(list) && list.getLast() instanceof WriteTime) {
+                    list.getLast().setTime0(time);
+                } else {
+                    list.add(new WriteTime(time));
+                }
             }
-            adjust(time);
         }
 
         private void adjust(long currentTime) {
             long recentTime = currentTime - LAST_STAT_MAX;
-            List<Time2> list0 = new LinkedList<>(this.list);
-            list0.stream().filter(l -> l.getValue() < recentTime).
-                    forEach(l -> list.remove(l));
+            synchronized (mutex) {
+                List<Time2> removeList = list.stream().
+                        filter(l -> l.getValue() < recentTime).collect(Collectors.toList());
+                if (!CollectionUtil.isEmpty(removeList)) {
+                    Time2 last = removeList.get(removeList.size() - 1);
+                    if (last instanceof ReadTime) { // last Time2 is ReadTime, should not be removed
+                        removeList.remove(last);
+                    }
+                    list.removeAll(removeList);
+                }
+            }
         }
 
         public String[] getActiveRatioStat(long currentTime) {
-            List<Time2> list0 = new LinkedList<>(this.list);
+            List<Time2> list0 = new LinkedList<>(list);
             String stat30 = getActiveRatio(list0, currentTime, LAST_STAT_30);
             String stat60 = getActiveRatio(list0, currentTime, LAST_STAT_60);
             String stat300 = getActiveRatio(list0, currentTime, LAST_STAT_300);

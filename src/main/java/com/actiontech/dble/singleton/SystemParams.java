@@ -15,6 +15,7 @@ import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.statistic.sql.StatisticManager;
+import com.actiontech.dble.statistic.stat.FrontActiveRatioStat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +140,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
         readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration.The default value is 0"));
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration.The default value is ''"));
-
+        readOnlyParams.add(new ParamInfo("enableFrontActiveRatioStat", FrontActiveRatioStat.getInstance().isEnable() + "", "Whether frontend connection activity ratio statistics are enabled. The default value is 1."));
     }
 
     public List<ParamInfo> getVolatileParams() {

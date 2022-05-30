@@ -14,10 +14,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.PooledConnection;
-import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
-import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
-import com.actiontech.dble.statistic.stat.UserStat;
-import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
+import com.actiontech.dble.statistic.stat.*;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -63,6 +60,9 @@ public final class Scheduler {
             scheduledExecutor.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
         }
         scheduledExecutor.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
+        if (FrontActiveRatioStat.getInstance().isEnable()) {
+            scheduledExecutor.scheduleAtFixedRate(clearStaleData(), 0L, 1, TimeUnit.SECONDS);
+        }
         scheduledExecutor.scheduleAtFixedRate(printLongTimeDDL(), 0L, DDL_EXECUTE_CHECK_PERIOD, TimeUnit.SECONDS);
         scheduledExecutor.scheduleWithFixedDelay(checkResidualXid(), 0L, DEFAULT_CHECK_XAID, TimeUnit.MINUTES);
     }
@@ -219,6 +219,15 @@ public final class Scheduler {
                 for (ThreadWorkUsage obj : DbleServer.getInstance().getThreadUsedMap().values()) {
                     obj.switchToNew();
                 }
+            }
+        };
+    }
+
+    public Runnable clearStaleData() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                FrontActiveRatioStat.getInstance().clearStaleData();
             }
         };
     }

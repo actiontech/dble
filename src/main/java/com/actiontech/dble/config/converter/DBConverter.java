@@ -291,19 +291,15 @@ public class DBConverter {
 
     private void checkChineseAndRules(String val, String name) {
         if (Objects.nonNull(val)) {
-            if (StringUtil.isMessyCode(val)) {
-                throw new ConfigException("These properties of system are not recognized: " + val + "the " + Charset.defaultCharset().name() + " encoding is recommended");
-            }
             String chinese = val.replaceAll(PATTERN_DB.toString(), "");
             if (Strings.isNullOrEmpty(chinese)) {
                 return;
             }
             if (!StringUtil.isChinese(chinese)) {
-                throw new ConfigException("dbInstance name " + name + " show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+                throw new ConfigException("properties of system may not recognized:" + val + "the " + Charset.defaultCharset().name() + " encoding is recommended, dbInstance name " + name + " show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
             }
         }
     }
-
 
     private void checkProperty(List<String> errorMsgList, Property property) {
         String value = property.getValue();

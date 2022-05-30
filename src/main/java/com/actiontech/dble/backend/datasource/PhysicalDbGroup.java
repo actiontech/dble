@@ -302,6 +302,15 @@ public class PhysicalDbGroup {
         return rwSelect(master, writeStatistical, false);
     }
 
+    /**
+     * rwsplit user
+     *
+     * @param master
+     * @param writeStatistical
+     * @param localRead        only the SELECT and show statements attempt to localRead
+     * @return
+     * @throws IOException
+     */
     public PhysicalDbInstance rwSelect(Boolean master, Boolean writeStatistical, boolean localRead) throws IOException {
         if (Objects.nonNull(writeStatistical)) {
             return select(master, false, writeStatistical, localRead);
@@ -328,6 +337,16 @@ public class PhysicalDbGroup {
         return select(master, isForUpdate, writeStatistical, false);
     }
 
+    /**
+     * Select an instance
+     *
+     * @param master
+     * @param isForUpdate
+     * @param writeStatistical
+     * @param localRead        only the SELECT and show statements attempt to localRead
+     * @return
+     * @throws IOException
+     */
     public PhysicalDbInstance select(Boolean master, boolean isForUpdate, boolean writeStatistical, boolean localRead) throws IOException {
 
         if (rwSplitMode == RW_SPLIT_OFF && (master != null && !master)) {

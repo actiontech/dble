@@ -111,6 +111,12 @@ public class RWSplitNonBlockingSession extends Session {
         execute(master, null, callback, writeStatistical, false);
     }
 
+    /**
+     * @param master
+     * @param callback
+     * @param writeStatistical
+     * @param localRead        only the SELECT and show statements attempt to localRead
+     */
     public void execute(Boolean master, Callback callback, boolean writeStatistical, boolean localRead) {
         execute(master, null, callback, writeStatistical, localRead && !rwGroup.isRwSplitUseless());
     }

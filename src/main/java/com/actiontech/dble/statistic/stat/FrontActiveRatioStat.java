@@ -101,7 +101,7 @@ public class FrontActiveRatioStat {
     }
 
     public class WorkStat {
-        private LinkedList<Time2> list;
+        private volatile LinkedList<Time2> list;
         private Object mutex;
 
         public WorkStat() {

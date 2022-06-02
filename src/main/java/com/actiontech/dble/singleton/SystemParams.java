@@ -141,6 +141,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration.The default value is 0"));
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration.The default value is ''"));
         readOnlyParams.add(new ParamInfo("enableSessionActiveRatioStat", FrontActiveRatioStat.getInstance().isEnable() + "", "Whether frontend connection activity ratio statistics are enabled. The default value is 1."));
+        readOnlyParams.add(new ParamInfo("enableConnectionAssociateThread", ConnectionAssociateThreadManager.getInstance().isEnable() + "", "Whether to open frontend connection and backend connection are associated with threads. The default value is 1."));
     }
 
     public List<ParamInfo> getVolatileParams() {

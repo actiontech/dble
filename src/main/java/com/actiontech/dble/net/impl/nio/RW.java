@@ -11,6 +11,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.connection.AbstractConnection;
+import com.actiontech.dble.singleton.ConnectionAssociateThreadManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.SelectorUtil;
 import org.slf4j.Logger;
@@ -169,31 +170,36 @@ public final class RW implements Runnable {
                 Object att = key.attachment();
                 if (att != null) {
                     con = (AbstractConnection) att;
-                    if (con.isClosed()) {
-                        key.cancel();
-                    }
-                    if (key.isValid() && key.isReadable()) {
-                        try {
-                            con.asyncRead();
-                        } catch (ClosedChannelException e) {
-                            //happens when close and read running in parallel.
-                            //sometimes ,no byte could be read,but an  read event triggered with  zero bytes although cause this.
-                            LOGGER.info("read bytes but the  connection is closed .connection is {}. May be the connection closed suddenly.", con);
+                    try {
+                        ConnectionAssociateThreadManager.getInstance().put(con);
+                        if (con.isClosed()) {
                             key.cancel();
-                            continue;
-                        } catch (Exception e) {
-                            if ((con.isOnlyFrontTcpConnected() && e instanceof IOException)) {
-                                LOGGER.debug("caught err:", e);
-                                con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
-                            } else {
-                                LOGGER.warn("caught err:", e);
-                                con.close("program err:" + e.toString());
-                            }
-                            continue;
                         }
-                    }
-                    if (key.isValid() && key.isWritable()) {
-                        con.doNextWriteCheck();
+                        if (key.isValid() && key.isReadable()) {
+                            try {
+                                con.asyncRead();
+                            } catch (ClosedChannelException e) {
+                                //happens when close and read running in parallel.
+                                //sometimes ,no byte could be read,but an  read event triggered with  zero bytes although cause this.
+                                LOGGER.info("read bytes but the  connection is closed .connection is {}. May be the connection closed suddenly.", con);
+                                key.cancel();
+                                continue;
+                            } catch (Exception e) {
+                                if ((con.isOnlyFrontTcpConnected() && e instanceof IOException)) {
+                                    LOGGER.debug("caught err:", e);
+                                    con.close("connection was closed before receiving any data. May be just a heartbeat from SLB/LVS. detail: [" + e.toString() + "]");
+                                } else {
+                                    LOGGER.warn("caught err:", e);
+                                    con.close("program err:" + e.toString());
+                                }
+                                continue;
+                            }
+                        }
+                        if (key.isValid() && key.isWritable()) {
+                            con.doNextWriteCheck();
+                        }
+                    } finally {
+                        ConnectionAssociateThreadManager.getInstance().remove(con);
                     }
                 } else {
                     key.cancel();
@@ -229,6 +235,7 @@ public final class RW implements Runnable {
             return;
         }
         try {
+            ConnectionAssociateThreadManager.getInstance().put(c);
             ((NIOSocketWR) c.getSocketWR()).register(finalSelector);
             c.register();
         } catch (Exception e) {
@@ -238,6 +245,8 @@ public final class RW implements Runnable {
             } else {
                 LOGGER.warn("{} register err", c, e);
             }
+        } finally {
+            ConnectionAssociateThreadManager.getInstance().remove(c);
         }
     }
 

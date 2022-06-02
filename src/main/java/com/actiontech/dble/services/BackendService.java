@@ -23,13 +23,11 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.response.ProtocolResponseHandler;
-import com.actiontech.dble.net.service.AbstractService;
-import com.actiontech.dble.net.service.NormalServiceTask;
-import com.actiontech.dble.net.service.ServiceTask;
-import com.actiontech.dble.net.service.ServiceTaskType;
+import com.actiontech.dble.net.service.*;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
+import com.actiontech.dble.singleton.ConnectionAssociateThreadManager;
 import com.actiontech.dble.singleton.FlowController;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
@@ -147,11 +145,10 @@ public abstract class BackendService extends AbstractService {
         TraceManager.TraceObject traceObject = TraceManager.serviceTrace(this, "loop-handle-back-data");
         try {
             ServiceTask task;
-            String threadName = null;
+            String threadName = Thread.currentThread().getName();
             ThreadWorkUsage workUsage = null;
             long workStart = 0;
             if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
-                threadName = Thread.currentThread().getName();
                 workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
                 if (threadName.contains(DbleServer.BACKEND_WORKER_NAME)) {
                     if (workUsage == null) {
@@ -166,10 +163,20 @@ public abstract class BackendService extends AbstractService {
             try {
                 // handleData
                 while ((task = taskQueue.poll()) != null) {
-                    DbleThreadPoolProvider.beginProcessBackendBusinessTask();
-                    consumeReadingData(task);
-                    this.consumeSingleTask(task);
-                    ThreadPoolStatistic.getBackendBusiness().getCompletedTaskCount().increment();
+                    final Service service = task.getService();
+                    try {
+                        if (threadName.contains(DbleServer.BACKEND_WORKER_NAME)) {
+                            ConnectionAssociateThreadManager.getInstance().put(service);
+                        }
+                        DbleThreadPoolProvider.beginProcessBackendBusinessTask();
+                        consumeReadingData(task);
+                        this.consumeSingleTask(task);
+                        ThreadPoolStatistic.getBackendBusiness().getCompletedTaskCount().increment();
+                    } finally {
+                        if (threadName.contains(DbleServer.BACKEND_WORKER_NAME)) {
+                            ConnectionAssociateThreadManager.getInstance().remove(service);
+                        }
+                    }
                 }
             } finally {
                 threadContext.setDoingTask(false);

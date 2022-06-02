@@ -197,6 +197,7 @@ public final class SystemConfig {
     private int statisticQueueSize = 4096;
 
     private int enableSessionActiveRatioStat = 1;
+    private int enableConnectionAssociateThread = 1;
 
     // sampling
     private int samplingRate = 0;
@@ -240,16 +241,29 @@ public final class SystemConfig {
         }
     }
 
-
     public int getEnableSessionActiveRatioStat() {
         return enableSessionActiveRatioStat;
     }
 
+    @SuppressWarnings("unused")
     public void setEnableSessionActiveRatioStat(int enableSessionActiveRatioStat) {
         if (enableSessionActiveRatioStat >= 0 && enableSessionActiveRatioStat <= 1) {
             this.enableSessionActiveRatioStat = enableSessionActiveRatioStat;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "enableFrontActiveRatioStat", enableSessionActiveRatioStat, this.enableSessionActiveRatioStat));
+        }
+    }
+
+    public int getEnableConnectionAssociateThread() {
+        return enableConnectionAssociateThread;
+    }
+
+    @SuppressWarnings("unused")
+    public void setEnableConnectionAssociateThread(int enableConnectionAssociateThread) {
+        if (enableConnectionAssociateThread >= 0 && enableConnectionAssociateThread <= 1) {
+            this.enableConnectionAssociateThread = enableConnectionAssociateThread;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableConnectionAssociateThread", enableConnectionAssociateThread, this.enableConnectionAssociateThread));
         }
     }
 
@@ -1633,6 +1647,7 @@ public final class SystemConfig {
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", enableSessionActiveRatioStat=" + enableSessionActiveRatioStat +
+                ", enableConnectionAssociateThread=" + enableConnectionAssociateThread +
                 "]";
     }
 

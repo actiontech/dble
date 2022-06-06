@@ -47,6 +47,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     private final AtomicBoolean isClosed = new AtomicBoolean(true);
     private final PoolConfig poolConfig;
     private final ReentrantReadWriteLock freshLock;
+    private volatile int waiterNum;
 
     public ConnectionPool(final DbInstanceConfig config, final ReadTimeStatusInstance instance, final PooledConnectionFactory factory) {
         super(config, instance, factory);
@@ -91,7 +92,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
             freshLock.readLock().lock();
         }
         try {
-            final int waiting = waiters.incrementAndGet();
+            final int waiting = waiterNum;
             ConnectionPoolProvider.getConnGetFrenshLocekAfter();
             for (PooledConnection conn : allConnections) {
                 if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
@@ -103,23 +104,27 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
                 }
             }
 
-            newPooledEntry(schema, waiting);
+            waiterNum = waiters.incrementAndGet();
+            try {
+                newPooledEntry(schema, waiterNum);
 
-            timeout = timeUnit.toNanos(timeout);
+                timeout = timeUnit.toNanos(timeout);
 
-            do {
-                final long start = System.nanoTime();
-                final PooledConnection bagEntry = handoffQueue.poll(timeout, NANOSECONDS);
-                if (bagEntry == null || bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                    return bagEntry;
-                }
+                do {
+                    final long start = System.nanoTime();
+                    final PooledConnection bagEntry = handoffQueue.poll(timeout, NANOSECONDS);
+                    if (bagEntry == null || bagEntry.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                        return bagEntry;
+                    }
 
-                timeout -= (System.nanoTime() - start);
-            } while (timeout > 10_000);
+                    timeout -= (System.nanoTime() - start);
+                } while (timeout > 10_000);
 
-            return null;
+                return null;
+            } finally {
+                waiterNum = waiters.decrementAndGet();
+            }
         } finally {
-            waiters.decrementAndGet();
             freshLock.readLock().unlock();
         }
     }

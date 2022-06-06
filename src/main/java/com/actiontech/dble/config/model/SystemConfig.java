@@ -196,6 +196,8 @@ public final class SystemConfig {
     private int tableByUserByEntryTableSize = 1024;
     private int statisticQueueSize = 4096;
 
+    private int enableSessionActiveRatioStat = 1;
+
     // sampling
     private int samplingRate = 0;
     private int sqlLogTableSize = 1024;
@@ -238,6 +240,18 @@ public final class SystemConfig {
         }
     }
 
+
+    public int getEnableSessionActiveRatioStat() {
+        return enableSessionActiveRatioStat;
+    }
+
+    public void setEnableSessionActiveRatioStat(int enableSessionActiveRatioStat) {
+        if (enableSessionActiveRatioStat >= 0 && enableSessionActiveRatioStat <= 1) {
+            this.enableSessionActiveRatioStat = enableSessionActiveRatioStat;
+        } else {
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableFrontActiveRatioStat", enableSessionActiveRatioStat, this.enableSessionActiveRatioStat));
+        }
+    }
 
     public int getEnableStatistic() {
         return enableStatistic;
@@ -1618,6 +1632,7 @@ public final class SystemConfig {
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", enableSessionActiveRatioStat=" + enableSessionActiveRatioStat +
                 "]";
     }
 

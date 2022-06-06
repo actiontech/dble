@@ -9,6 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.DbleThreadPoolProvider;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
+import com.actiontech.dble.net.service.Service;
+import com.actiontech.dble.singleton.ConnectionAssociateThreadManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +59,16 @@ public class WriteToBackendRunnable implements Runnable {
 
                     //execute the tasks
                     for (WriteToBackendTask task : tasks) {
-                        DbleThreadPoolProvider.beginProcessWriteToBackendTask();
-                        task.execute();
-                        ThreadPoolStatistic.getWriteToBackend().getCompletedTaskCount().increment();
+                        final Service service = task.getService();
+                        try {
+                            ConnectionAssociateThreadManager.getInstance().put(service);
+                            DbleThreadPoolProvider.beginProcessWriteToBackendTask();
+                            task.execute();
+                            ThreadPoolStatistic.getWriteToBackend().getCompletedTaskCount().increment();
+                        } finally {
+                            ConnectionAssociateThreadManager.getInstance().remove(service);
+                        }
                     }
-
                 } finally {
                     threadContext.setDoingTask(false);
                 }

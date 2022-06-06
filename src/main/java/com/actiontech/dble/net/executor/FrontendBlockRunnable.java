@@ -8,7 +8,9 @@ package com.actiontech.dble.net.executor;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.service.Service;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.singleton.ConnectionAssociateThreadManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,9 +63,14 @@ public class FrontendBlockRunnable implements FrontendRunnable {
                 if (workUsage != null) {
                     workStart = System.nanoTime();
                 }
-                //handler data
-                task.getService().execute(task, threadContext);
-
+                final Service service = task.getService();
+                try {
+                    ConnectionAssociateThreadManager.getInstance().put(service);
+                    //handler data
+                    task.getService().execute(task, threadContext);
+                } finally {
+                    ConnectionAssociateThreadManager.getInstance().remove(service);
+                }
                 //threadUsageStat end
                 if (workUsage != null) {
                     workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);

@@ -46,4 +46,8 @@ public class WriteToBackendTask {
             responseService.writeDirectly(buffer, WriteFlags.QUERY_END);
         }
     }
+
+    public MySQLResponseService getService() {
+        return service;
+    }
 }

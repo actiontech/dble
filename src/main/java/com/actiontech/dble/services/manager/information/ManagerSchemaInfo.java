@@ -71,6 +71,8 @@ public final class ManagerSchemaInfo {
 
         registerTable(new DbleFlowControl());
         registerTable(new DbleFrontConnectionsActiveRatio());
+        registerTable(new DbleFrontConnectionsAssociateThread());
+        registerTable(new DbleBackendConnectionsAssociateThread());
     }
 
     private void initViews() {

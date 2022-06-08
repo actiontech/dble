@@ -55,6 +55,7 @@ public final class ManagerParse {
     public static final int DISABLE = 37;
     public static final int CLUSTER = 38;
     public static final int SPLIT_LOAD_DATA = 39;
+    public static final int KILL_CLUSTER_RENEW_THREAD = 40;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -818,7 +819,7 @@ public final class ManagerParse {
             switch (stmt.charAt(offset)) {
                 case 'C':
                 case 'c':
-                    return killConnection(stmt, offset);
+                    return killC(stmt, offset);
                 case 'D':
                 case 'd':
                     return killDdl(stmt, offset);
@@ -902,10 +903,26 @@ public final class ManagerParse {
         return OTHER;
     }
 
+    private static int killC(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            char c0 = stmt.charAt(offset);
+            switch (c0) {
+                case 'O':
+                case 'o':
+                    return killConnection(stmt, offset);
+                case 'L':
+                case 'l':
+                    return killClusterRenewThread(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
     // KILL @@CONNECTION' ' XXXXXX
     private static int killConnection(String stmt, int offset) {
-        if (stmt.length() > offset + "ONNECTION ".length()) {
-            char c1 = stmt.charAt(++offset);
+        if (stmt.length() > offset + "NNECTION ".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
@@ -915,8 +932,7 @@ public final class ManagerParse {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') &&
-                    (c2 == 'N' || c2 == 'n') &&
+            if ((c2 == 'N' || c2 == 'n') &&
                     (c3 == 'N' || c3 == 'n') &&
                     (c4 == 'E' || c4 == 'e') &&
                     (c5 == 'C' || c5 == 'c') &&
@@ -927,6 +943,23 @@ public final class ManagerParse {
                     (c10 == ' ' || c10 == '\t' || c10 == '\r' || c10 == '\n')) {
                 if (ParseUtil.isErrorTail(offset, stmt)) {
                     return (offset << 8) | KILL_CONN;
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    // KILL @@CLUSTER_RENEW_THREAD XXX
+    private static int killClusterRenewThread(String stmt, int offset) {
+        if (stmt.length() > offset + 20) {
+            String tmp = stmt.substring(offset).toUpperCase();
+            if (tmp.startsWith("LUSTER_RENEW_THREAD")) {
+                offset = offset + 19;
+                char c0 = stmt.charAt(offset);
+                if (c0 == ' ' || c0 == '\t' || c0 == '\r' || c0 == '\n') {
+                    if (ParseUtil.isErrorTail(offset, stmt)) {
+                        return (offset << 8) | KILL_CLUSTER_RENEW_THREAD;
+                    }
                 }
             }
         }

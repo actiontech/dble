@@ -21,10 +21,13 @@ import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by szf on 2019/3/11.
@@ -32,7 +35,11 @@ import java.util.Map;
 public abstract class AbstractConsulSender implements ClusterSender {
     public static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsulSender.class);
 
+    protected ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
+
     protected static final String ERROR_MSG = "ALL the url to cluster connect failure,";
+
+    public abstract String getRenewThreadPrefix();
 
     /**
      * only init the connection preperties for the clusterSender
@@ -157,5 +164,26 @@ public abstract class AbstractConsulSender implements ClusterSender {
         }
     }
 
+    public List<String> fetchRenewThread() {
+        String onlineStr = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName());
+        List<String> renewThread = Lists.newArrayList();
+        lockMap.values().stream().
+                filter(c -> !c.getName().endsWith(onlineStr) && c.isAlive()).
+                forEach(c -> renewThread.add(c.getName()));
+        return renewThread;
+    }
 
+    public boolean killRenewThread(String path) {
+        Thread renewThread = lockMap.get(path);
+        if (renewThread != null) {
+            if (renewThread.isAlive() && !renewThread.isInterrupted()) {
+                renewThread.interrupt();
+                LOGGER.info("manual kill cluster renew thread: [{}]", renewThread.getName());
+            } else {
+                LOGGER.info("try manual kill cluster renew thread: [{}], but it already killed", renewThread.getName());
+            }
+            return true;
+        }
+        return false;
+    }
 }

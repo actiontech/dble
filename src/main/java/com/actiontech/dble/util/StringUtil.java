@@ -11,7 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -23,6 +28,7 @@ public final class StringUtil {
     }
 
     public static final String TABLE_COLUMN_SEPARATOR = ".";
+    public static final String ISO_8859_1 = "ISO-8859-1";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -372,6 +378,7 @@ public final class StringUtil {
 
     /**
      * option to ignore case depending on the condition
+     *
      * @param str1
      * @param str2
      * @param ignoreCase
@@ -608,5 +615,62 @@ public final class StringUtil {
             }
         }
         return orgStr;
+    }
+
+    /**
+     * Refer to String source code handling code，Whether the encoding can parse String properly
+     *
+     * @param charsetEncode
+     * @param values
+     * @return
+     */
+    public static boolean charsetParseString(String charsetEncode, String values) {
+        try {
+            Charset charset = Charset.forName(charsetEncode);
+            CharsetDecoder decoder = charset.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);
+            decoder.decode(ByteBuffer.wrap(values.getBytes(charsetEncode)));
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * iso Charset may need to be replaced with the correct Charset
+     *
+     * @param clientCharset
+     * @param value
+     * @return
+     */
+    public static String isoCharsetReplace(String clientCharset, String value) {
+        try {
+            String isoValues = new String(value.getBytes(ISO_8859_1), ISO_8859_1);
+            String clientValues = new String(value.getBytes(clientCharset), clientCharset);
+            if (!equals(isoValues, clientValues) && equals(value, clientValues)) {
+                return value;
+            }
+            if (charsetParseString(clientCharset, value)) {
+                value = new String(value.getBytes(ISO_8859_1), clientCharset);
+            }
+        } catch (Exception e) {
+            return value;
+        }
+        return value;
+    }
+
+    public static boolean byteEqual(byte[] a, byte[] b, int i) {
+        if (Objects.isNull(a) || Objects.isNull(b)) {
+            return false;
+        }
+        int length = a.length - i;
+        if (length != b.length || length <= 0) {
+            return false;
+        }
+        for (int len = 0; len < length; len++) {
+            if (a[len + i] != b[len]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

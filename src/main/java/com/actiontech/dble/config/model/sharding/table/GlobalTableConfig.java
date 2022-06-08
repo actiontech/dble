@@ -15,12 +15,13 @@ public class GlobalTableConfig extends BaseTableConfig {
     private final String cron;
     private final String checkClass;
 
-    public GlobalTableConfig(String name, int maxLimit, List<String> shardingNodes, String cron, String checkClass, boolean globalCheck) {
-        super(name, maxLimit, shardingNodes);
+    public GlobalTableConfig(String name, int maxLimit, List<String> shardingNodes, String cron, String checkClass, boolean globalCheck, boolean specifyCharset) {
+        super(name, maxLimit, shardingNodes, specifyCharset);
         this.cron = cron;
         this.checkClass = checkClass;
         this.globalCheck = globalCheck;
     }
+
 
     public boolean isGlobalCheck() {
         return globalCheck;
@@ -36,7 +37,7 @@ public class GlobalTableConfig extends BaseTableConfig {
 
     @Override
     public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
-        GlobalTableConfig config = new GlobalTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes, this.cron, this.checkClass, this.globalCheck);
+        GlobalTableConfig config = new GlobalTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes, this.cron, this.checkClass, this.globalCheck, this.specifyCharset);
         config.setId(this.getId());
         return config;
     }

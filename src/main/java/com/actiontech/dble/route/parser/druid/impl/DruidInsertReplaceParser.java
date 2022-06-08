@@ -134,6 +134,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
         }
+        shardingValue = StringUtil.isoCharsetReplace(clientCharset, shardingValue);
         return shardingValue;
     }
 

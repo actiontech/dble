@@ -15,11 +15,13 @@ public abstract class BaseTableConfig {
     protected final String name;
     protected final int maxLimit;
     protected final List<String> shardingNodes;
+    protected boolean specifyCharset;
 
-    BaseTableConfig(String name, int maxLimit, List<String> shardingNodes) {
+    BaseTableConfig(String name, int maxLimit, List<String> shardingNodes, boolean specifyCharset) {
         this.name = name;
         this.maxLimit = maxLimit;
         this.shardingNodes = shardingNodes;
+        this.specifyCharset = specifyCharset;
     }
 
     public int getId() {
@@ -41,6 +43,10 @@ public abstract class BaseTableConfig {
 
     public List<String> getShardingNodes() {
         return shardingNodes;
+    }
+
+    public boolean isSpecifyCharset() {
+        return specifyCharset;
     }
 
     public abstract BaseTableConfig lowerCaseCopy(BaseTableConfig parent);

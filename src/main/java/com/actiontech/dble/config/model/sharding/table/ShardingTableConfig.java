@@ -17,8 +17,8 @@ public class ShardingTableConfig extends BaseTableConfig {
     private final boolean sqlRequiredSharding;
 
     public ShardingTableConfig(String name, int maxLimit, List<String> shardingNodes, String incrementColumn,
-                               AbstractPartitionAlgorithm function, String shardingColumn, boolean sqlRequiredSharding) {
-        super(name, maxLimit, shardingNodes);
+                               AbstractPartitionAlgorithm function, String shardingColumn, boolean sqlRequiredSharding, boolean specifyCharset) {
+        super(name, maxLimit, shardingNodes, specifyCharset);
         this.incrementColumn = incrementColumn;
         this.function = function;
         this.shardingColumn = shardingColumn;
@@ -45,7 +45,7 @@ public class ShardingTableConfig extends BaseTableConfig {
     @Override
     public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
         ShardingTableConfig config = new ShardingTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes,
-                this.incrementColumn, this.function, this.shardingColumn, this.sqlRequiredSharding);
+                this.incrementColumn, this.function, this.shardingColumn, this.sqlRequiredSharding, this.specifyCharset);
         config.setId(this.getId());
         return config;
     }

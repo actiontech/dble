@@ -49,7 +49,7 @@ public class GMSslWrapper extends OpenSSLWrapper {
             // load the CA chain
             TrustManager[] tms = createTrustManagers(gmsslRcaPem, gmsslOcaPem);
 
-            context = SSLContext.getInstance(cn.gmssl.jsse.provider.GMJSSE.GMSSLv11, cn.gmssl.jsse.provider.GMJSSE.NAME);
+            context = SSLContext.getInstance("GMSSLv1.1", "GMJSSE");
             java.security.SecureRandom secureRandom = new java.security.SecureRandom();
 
             context.init(kms, tms, secureRandom);

@@ -291,6 +291,13 @@ public class DBConverter {
 
     private void checkChineseAndRules(String val, String name) {
         if (Objects.nonNull(val)) {
+            if (StringUtil.isBlank(val)) {
+                throw new ConfigException("property [ " + name + " ] " + val + " is illegal, the value not be empty");
+            }
+            int length = 11;
+            if (val.length() > length) {
+                throw new ConfigException("property [ " + name + " ] " + val + " is illegal, the value contains a maximum of  " + length + "  characters");
+            }
             String chinese = val.replaceAll(PATTERN_DB.toString(), "");
             if (Strings.isNullOrEmpty(chinese)) {
                 return;
@@ -299,6 +306,7 @@ public class DBConverter {
                 throw new ConfigException("properties of system may not recognized:" + val + "the " + Charset.defaultCharset().name() + " encoding is recommended, dbInstance name " + name + " show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
             }
         }
+
     }
 
     private void checkProperty(List<String> errorMsgList, Property property) {

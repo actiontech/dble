@@ -66,9 +66,9 @@ public class LocalReadLoadBalancer extends AbstractLoadBalancer {
         for (PhysicalDbInstance okSource : otherSources) {
             String dbDistrict = okSource.getConfig().getDbDistrict();
             String dbDataCenter = okSource.getConfig().getDbDataCenter();
-            if (StringUtils.equals(district, dbDistrict)) {
+            if (StringUtils.equalsIgnoreCase(district, dbDistrict)) {
                 secondSources.add(okSource);
-                if (StringUtils.equals(dataCenter, dbDataCenter)) {
+                if (StringUtils.equalsIgnoreCase(dataCenter, dbDataCenter)) {
                     firstSources.add(okSource);
                 }
             }

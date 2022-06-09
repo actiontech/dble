@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-import java.util.Objects;
 
 import static com.actiontech.dble.config.model.db.PoolConfig.DEFAULT_IDLE_TIMEOUT;
 
@@ -1660,19 +1659,22 @@ public final class SystemConfig {
     }
 
     private void checkChineseProperty(String val, String name) {
-        if (Objects.nonNull(val)) {
-            int length = 11;
-            if (val.length() > length) {
-                problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the value contains a maximum of " + length + " characters");
-            }
+        if (StringUtil.isBlank(val)) {
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal, Property [ " + name + " ]  not be null or empty");
+            return;
+        }
+        int length = 11;
+        if (val.length() > length) {
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the value contains a maximum of " + length + " characters");
+        }
 
-            String chinese = val.replaceAll(DBConverter.PATTERN_DB.toString(), "");
-            if (Strings.isNullOrEmpty(chinese)) {
-                return;
-            }
-            if (!StringUtil.isChinese(chinese)) {
-                problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
-            }
+        String chinese = val.replaceAll(DBConverter.PATTERN_DB.toString(), "");
+        if (Strings.isNullOrEmpty(chinese)) {
+            return;
+        }
+
+        if (!StringUtil.isChinese(chinese)) {
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
         }
     }
 }

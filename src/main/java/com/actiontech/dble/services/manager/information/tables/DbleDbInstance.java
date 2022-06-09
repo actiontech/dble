@@ -22,6 +22,7 @@ import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.meta.ColumnMeta;
 import com.actiontech.dble.services.manager.information.ManagerSchemaInfo;
@@ -31,11 +32,13 @@ import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.CaseFormat;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -297,6 +300,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     @Override
     public int insertRows(List<LinkedHashMap<String, String>> rows) throws SQLException {
+        checkInsertDbInstanceType(rows);
         List<DBInstance> dbInstanceList = rows.stream().map(this::transformRowToDBInstance).collect(Collectors.toList());
 
         DBConverter dbConverter = new DBConverter();
@@ -327,6 +331,7 @@ public class DbleDbInstance extends ManagerWritableTable {
 
     @Override
     public int updateRows(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) throws SQLException {
+        checkUpdateDbInstanceType(affectPks, values);
         affectPks.forEach(affectPk -> {
             if (Boolean.FALSE.toString().equalsIgnoreCase(affectPk.get(COLUMN_ENCRYPT_CONFIGURED))) {
                 String password = DecryptUtil.dbHostDecrypt(true, affectPk.get(COLUMN_NAME), affectPk.get(COLUMN_USER), affectPk.get(COLUMN_PASSWORD_ENCRYPT));
@@ -425,13 +430,18 @@ public class DbleDbInstance extends ManagerWritableTable {
                     dbInstance.setDisabled(entry.getValue());
                     break;
                 case COLUMN_DATABASE_TYPE:
-                    dbInstance.setDatabaseType(entry.getValue());
+                    DataBaseType.valueOf(entry.getValue().toUpperCase());
+                    dbInstance.setDatabaseType(entry.getValue().toLowerCase());
                     break;
                 case COLUMN_DB_DISTRICT:
-                    dbInstance.setDbDistrict(entry.getValue());
+                    String value = entry.getValue();
+                    checkChineseProperty(value, COLUMN_DB_DISTRICT);
+                    dbInstance.setDbDistrict(value);
                     break;
                 case COLUMN_DB_DATA_CENTER:
-                    dbInstance.setDbDataCenter(entry.getValue());
+                    String val = entry.getValue();
+                    checkChineseProperty(val, COLUMN_DB_DATA_CENTER);
+                    dbInstance.setDbDataCenter(val);
                     break;
                 case COLUMN_MIN_CONN_COUNT:
                     if (!StringUtil.isBlank(entry.getValue())) {
@@ -479,6 +489,39 @@ public class DbleDbInstance extends ManagerWritableTable {
         return dbInstance;
     }
 
+    public void checkUpdateDbInstanceType(Set<LinkedHashMap<String, String>> affectPks, LinkedHashMap<String, String> values) {
+        if (affectPks.size() > 1 && values.containsKey(COLUMN_DATABASE_TYPE)) {
+            LinkedHashMap<String, String> next = affectPks.iterator().next();
+            if (!StringUtil.equalsIgnoreCase(next.get(COLUMN_DATABASE_TYPE), values.get(COLUMN_DATABASE_TYPE))) {
+                throw new ConfigException("all dbInstance database type need to be consistent");
+            }
+        }
+    }
+
+    public void checkInsertDbInstanceType(List<LinkedHashMap<String, String>> insertRows) {
+        Map<String, String> dataBaseTypeMap = new HashMap<>();
+        for (LinkedHashMap<String, String> insertRow : insertRows) {
+            String databaseType = insertRow.get(COLUMN_DATABASE_TYPE);
+            String dbGroup = insertRow.get(COLUMN_DB_GROUP);
+            if (Strings.isNullOrEmpty(databaseType)) {
+                dataBaseTypeMap.put(insertRow.get(COLUMN_DB_GROUP), DataBaseType.MYSQL.name());
+            } else if (dataBaseTypeMap.containsKey(dbGroup) && !StringUtil.equalsIgnoreCase(insertRow.get(dbGroup), dataBaseTypeMap.get(COLUMN_DATABASE_TYPE))) {
+                throw new ConfigException("all dbInstance database type need to be consistent");
+            } else {
+                dataBaseTypeMap.put(insertRow.get(COLUMN_DB_GROUP), databaseType);
+            }
+        }
+
+        List<LinkedHashMap<String, String>> rows = getRows();
+        for (LinkedHashMap<String, String> row : rows) {
+            String dbGroup = row.get(COLUMN_DB_GROUP);
+            if (dataBaseTypeMap.containsKey(row.get(dbGroup)) &&
+                    !StringUtil.equalsIgnoreCase(row.get(COLUMN_DATABASE_TYPE), dataBaseTypeMap.get(row.get(dbGroup)))) {
+                throw new ConfigException("all dbInstance database type need to be consistent");
+            }
+        }
+    }
+
     private void checkBooleanVal(LinkedHashMap<String, String> row) {
         Set<String> keySet = Sets.newHashSet(COLUMN_ENCRYPT_CONFIGURED, COLUMN_PRIMARY, COLUMN_DISABLED, COLUMN_TEST_ON_CREATE, COLUMN_TEST_ON_BORROW, COLUMN_TEST_ON_RETURN,
                 COLUMN_TEST_WHILE_IDLE);
@@ -503,5 +546,24 @@ public class DbleDbInstance extends ManagerWritableTable {
     @Override
     public void updateTempConfig() {
         DbleTempConfig.getInstance().setDbConfig(DbleServer.getInstance().getConfig().getDbConfig());
+    }
+
+    private void checkChineseProperty(String val, String name) {
+        if (StringUtil.isBlank(val)) {
+            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal, the value not be null or empty");
+        }
+        int length = 11;
+        if (val.length() > length) {
+            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal, the value contains a maximum of  " + length + "  characters");
+        }
+
+        String chinese = val.replaceAll(DBConverter.PATTERN_DB.toString(), "");
+        if (Strings.isNullOrEmpty(chinese)) {
+            return;
+        }
+
+        if (!StringUtil.isChinese(chinese)) {
+            throw new ConfigException("Column [ " + name + " ] " + val + " is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Column [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+        }
     }
 }

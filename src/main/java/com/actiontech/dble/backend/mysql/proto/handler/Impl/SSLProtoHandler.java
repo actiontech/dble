@@ -2,7 +2,9 @@ package com.actiontech.dble.backend.mysql.proto.handler.Impl;
 
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandler;
 import com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult;
-import com.actiontech.dble.net.factory.SSLEngineFactory;
+import com.actiontech.dble.net.connection.FrontendConnection;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
+import com.actiontech.dble.net.ssl.GMSslWrapper;
 
 import java.nio.ByteBuffer;
 
@@ -11,24 +13,44 @@ import static com.actiontech.dble.backend.mysql.proto.handler.ProtoHandlerResult
 public class SSLProtoHandler implements ProtoHandler {
 
     public static final int PACKET_HEADER_SIZE = 5;
+    /**
+     * GMSSL Protocol Version
+     */
+    static final int GMSSL_PROTOCOL_VERSION = 0x101;
+
+    //1-ssl  2-gmssl
+    private int protocol = OpenSSLWrapper.PROTOCOL;
+    private boolean tls;
+
+    private FrontendConnection connection;
+
+    public SSLProtoHandler(FrontendConnection connection) {
+        this.connection = connection;
+    }
 
     @Override
     public ProtoHandlerResult handle(ByteBuffer dataBuffer, int offset, boolean isSupportCompress) {
         int position = dataBuffer.position();
         int length = getPacketLength(dataBuffer, offset);
         final ProtoHandlerResult.ProtoHandlerResultBuilder builder = ProtoHandlerResult.builder();
+        if (tls) {
+            connection.initSSLContext(protocol);
+        }
         return getProtoHandlerResultBuilder(dataBuffer, offset, position, length, builder).build();
     }
 
-    private static int getPacketLength(ByteBuffer buffer, int offset) {
+    private int getPacketLength(ByteBuffer buffer, int offset) {
         int packetLength = 0;
         if (buffer.position() >= offset + PACKET_HEADER_SIZE) {
             // SSLv3 or TLS - Check ContentType
-            boolean tls = isSSLPackage(buffer, offset);
+            tls = isSSLPackage(buffer, offset);
             if (tls) {
                 // SSLv3 or TLS - Check ProtocolVersion
                 int majorVersion = buffer.get(offset + 1);
-                if (majorVersion == 3) {
+                if (majorVersion == 3 || buffer.getShort(offset + 1) == GMSSL_PROTOCOL_VERSION) {
+                    if (buffer.getShort(offset + 1) == GMSSL_PROTOCOL_VERSION) {
+                        protocol = GMSslWrapper.PROTOCOL;
+                    }
                     // SSLv3 or TLS
                     packetLength = buffer.getShort(offset + 3) & 0xffff;
                     packetLength += PACKET_HEADER_SIZE;
@@ -113,10 +135,7 @@ public class SSLProtoHandler implements ProtoHandler {
     }
 
     public static boolean isSSLPackage(ByteBuffer buffer, int offset) {
-        if (SSLEngineFactory.getInstance().isSupport()) {
-            return checkSSLProto(buffer, offset);
-        }
-        return false;
+        return checkSSLProto(buffer, offset);
     }
 
     private static boolean checkSSLProto(ByteBuffer buffer, int offset) {
@@ -146,5 +165,9 @@ public class SSLProtoHandler implements ProtoHandler {
             }
         }
         return false;
+    }
+
+    public int getProtocol() {
+        return protocol;
     }
 }

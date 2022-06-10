@@ -207,6 +207,13 @@ public final class SystemConfig {
     private String trustCertificateKeyStoreUrl = null;
     private String trustCertificateKeyStorePwd = null;
 
+    //guomi
+    private String gmsslBothPfx = null;
+    private String gmsslBothPfxPwd = null;
+    private String gmsslRcaPem = null;
+    private String gmsslOcaPem = null;
+    private boolean supportSSL = false;
+
     public String getServerCertificateKeyStoreUrl() {
         return serverCertificateKeyStoreUrl;
     }
@@ -250,6 +257,43 @@ public final class SystemConfig {
             this.trustCertificateKeyStorePwd = trustCertificateKeyStorePwd;
         }
     }
+
+    public String getGmsslBothPfx() {
+        return gmsslBothPfx;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslBothPfx(String gmsslBothPfx) {
+        this.gmsslBothPfx = gmsslBothPfx;
+    }
+
+    public String getGmsslBothPfxPwd() {
+        return gmsslBothPfxPwd;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslBothPfxPwd(String gmsslBothPfxPwd) {
+        this.gmsslBothPfxPwd = gmsslBothPfxPwd;
+    }
+
+    public String getGmsslRcaPem() {
+        return gmsslRcaPem;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslRcaPem(String gmsslRcaPem) {
+        this.gmsslRcaPem = gmsslRcaPem;
+    }
+
+    public String getGmsslOcaPem() {
+        return gmsslOcaPem;
+    }
+
+    @SuppressWarnings("unused")
+    public void setGmsslOcaPem(String gmsslOcaPem) {
+        this.gmsslOcaPem = gmsslOcaPem;
+    }
+
 
     public int getSamplingRate() {
         return samplingRate;
@@ -1514,6 +1558,15 @@ public final class SystemConfig {
         routePenetrationRules = sqlPenetrationRegexesTmp;
     }
 
+    public boolean isSupportSSL() {
+        return supportSSL;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSupportSSL(boolean supportSSL) {
+        this.supportSSL = supportSSL;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1611,6 +1664,15 @@ public final class SystemConfig {
                 ", statisticQueueSize=" + statisticQueueSize +
                 ", inSubQueryTransformToJoin=" + inSubQueryTransformToJoin +
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
+                ", serverCertificateKeyStoreUrl=" + serverCertificateKeyStoreUrl +
+                ", serverCertificateKeyStorePwd=" + serverCertificateKeyStorePwd +
+                ", trustCertificateKeyStoreUrl=" + trustCertificateKeyStoreUrl +
+                ", trustCertificateKeyStorePwd=" + trustCertificateKeyStorePwd +
+                ", gmsslBothPfx=" + gmsslBothPfx +
+                ", gmsslBothPfxPwd=" + gmsslBothPfxPwd +
+                ", gmsslRcaPem=" + gmsslRcaPem +
+                ", gmsslOcaPem=" + gmsslOcaPem +
+                ", supportSSL=" + supportSSL +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 "]";

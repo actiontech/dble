@@ -22,7 +22,6 @@ import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.SocketAcceptor;
 import com.actiontech.dble.net.SocketConnector;
 import com.actiontech.dble.net.connection.AbstractConnection;
-import com.actiontech.dble.net.factory.SSLEngineFactory;
 import com.actiontech.dble.net.executor.BackendCurrentRunnable;
 import com.actiontech.dble.net.executor.FrontendBlockRunnable;
 import com.actiontech.dble.net.executor.FrontendCurrentRunnable;
@@ -34,6 +33,7 @@ import com.actiontech.dble.net.impl.nio.NIOConnector;
 import com.actiontech.dble.net.impl.nio.RW;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.net.service.ServiceTask;
+import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
@@ -220,7 +220,7 @@ public final class DbleServer {
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
-        SSLEngineFactory.init();
+        SSLWrapperRegistry.init();
         FlowController.init();
         LOGGER.info("===================================flow controller finish===================================");
 

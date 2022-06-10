@@ -11,7 +11,9 @@ import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.net.factory.SSLEngineFactory;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
+import com.actiontech.dble.net.ssl.GMSslWrapper;
+import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -138,9 +140,14 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("closeHeartBeatRecord", sysConfig.isCloseHeartBeatRecord() + "", "close heartbeat record. if closed, `show @@dbinstance.synstatus`,`show @@dbinstance.syndetail`,`show @@heartbeat.detail` will be empty and `show @@heartbeat`'s EXECUTE_TIME will be '-' .The default value is false"));
         readOnlyParams.add(new ParamInfo("enableRoutePenetration", sysConfig.isEnableRoutePenetration() + "", "Whether enable route penetration"));
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration"));
-        readOnlyParams.add(new ParamInfo("isSupportSSL", SSLEngineFactory.getInstance().isSupport() + "", "Whether support for SSL to establish frontend connections"));
-        readOnlyParams.add(new ParamInfo("serverCertificateKeyStoreUrl", SSLEngineFactory.getInstance().getServerCertificateKeyStoreUrl() + "", "Service certificate required for SSL"));
-        readOnlyParams.add(new ParamInfo("trustCertificateKeyStoreUrl", SSLEngineFactory.getInstance().getTrustCertificateKeyStoreUrl() + "", "Trust certificate required for SSL"));
+        readOnlyParams.add(new ParamInfo("isSupportSSL", SystemConfig.getInstance().isSupportSSL() + "", "isSupportSSL in configuration"));
+        readOnlyParams.add(new ParamInfo("isSupportOpenSSL", (SSLWrapperRegistry.getInstance(OpenSSLWrapper.PROTOCOL) != null) + "", "Whether OpenSSL is actually supported"));
+        readOnlyParams.add(new ParamInfo("serverCertificateKeyStoreUrl", SystemConfig.getInstance().getServerCertificateKeyStoreUrl() + "", "Service certificate required of OpenSSL"));
+        readOnlyParams.add(new ParamInfo("trustCertificateKeyStoreUrl", SystemConfig.getInstance().getTrustCertificateKeyStoreUrl() + "", "Trust certificate required of OpenSSL"));
+        readOnlyParams.add(new ParamInfo("isSupportGMSSL", (SSLWrapperRegistry.getInstance(GMSslWrapper.PROTOCOL) != null) + "", "Whether GMSSL is actually supported"));
+        readOnlyParams.add(new ParamInfo("gmsslBothPfx", SystemConfig.getInstance().getGmsslBothPfx() + "", "National secret dual certificate/private key file in PFX format"));
+        readOnlyParams.add(new ParamInfo("gmsslRcaPem", SystemConfig.getInstance().getGmsslRcaPem() + "", "Root certificate of GMSSL"));
+        readOnlyParams.add(new ParamInfo("gmsslOcaPem", SystemConfig.getInstance().getGmsslOcaPem() + "", "Secondary certificate of GMSSL"));
     }
 
     public List<ParamInfo> getVolatileParams() {

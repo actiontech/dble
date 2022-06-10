@@ -2,6 +2,7 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
@@ -12,17 +13,23 @@ public final class KillClusterRenewThread {
     }
 
     public static void response(ManagerService service, String name) {
-        String str = getResult(name);
+        Object[] result = getResult(name);
 
-        OkPacket packet = new OkPacket();
-        packet.setPacketId(1);
-        packet.setAffectedRows(0);
-        packet.setMessage(str.getBytes());
-        packet.setServerStatus(2);
-        packet.write(service.getConnection());
+        boolean isSuccess = (boolean) result[0];
+        String message = (String) result[1];
+        if (isSuccess) {
+            OkPacket packet = new OkPacket();
+            packet.setPacketId(1);
+            packet.setAffectedRows(0);
+            packet.setMessage(message.getBytes());
+            packet.setServerStatus(2);
+            packet.write(service.getConnection());
+        } else {
+            service.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, message);
+        }
     }
 
-    public static String getResult(String name) {
+    public static Object[] getResult(String name) {
         if (ClusterConfig.getInstance().isClusterEnable() &&
                 ClusterGeneralConfig.getInstance().getClusterSender() instanceof AbstractConsulSender) {
             AbstractConsulSender clusterSender = (AbstractConsulSender) ClusterGeneralConfig.getInstance().getClusterSender();
@@ -31,10 +38,10 @@ public final class KillClusterRenewThread {
                 String path = name.substring(clusterSender.getRenewThreadPrefix().length());
                 boolean isKill = clusterSender.killRenewThread(path);
                 if (isKill) {
-                    return "kill cluster renew thread successfully!";
+                    return new Object[]{true, "kill cluster renew thread successfully!"};
                 }
             }
         }
-        return "There is no cluster renew thread!";
+        return new Object[]{false, "wrong cluster renew thread!"};
     }
 }

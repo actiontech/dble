@@ -21,13 +21,13 @@ import com.actiontech.dble.cluster.values.OnlineType;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Created by szf on 2019/3/11.
@@ -166,10 +166,9 @@ public abstract class AbstractConsulSender implements ClusterSender {
 
     public List<String> fetchRenewThread() {
         String onlineStr = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName());
-        List<String> renewThread = Lists.newArrayList();
-        lockMap.values().stream().
+        List<String> renewThread = lockMap.values().stream().
                 filter(c -> !c.getName().endsWith(onlineStr) && c.isAlive()).
-                forEach(c -> renewThread.add(c.getName()));
+                map(Thread::getName).collect(Collectors.toList());
         return renewThread;
     }
 
@@ -180,7 +179,11 @@ public abstract class AbstractConsulSender implements ClusterSender {
                 renewThread.interrupt();
                 LOGGER.info("manual kill cluster renew thread: [{}]", renewThread.getName());
             } else {
-                LOGGER.info("try manual kill cluster renew thread: [{}], but it already killed", renewThread.getName());
+                if (!renewThread.isAlive()) {
+                    LOGGER.info("try manual kill cluster renew thread: [{}], but it already terminated", renewThread.getName());
+                } else {
+                    LOGGER.info("try manual kill cluster renew thread: [{}], but it already killed", renewThread.getName());
+                }
             }
             return true;
         }

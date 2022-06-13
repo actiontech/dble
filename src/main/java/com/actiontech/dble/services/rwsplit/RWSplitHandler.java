@@ -322,6 +322,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                 eof[3] = (byte) rwSplitService.nextPacketId();
                 buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+                rwSplitService.getSession2().unbindIfSafe();
                 write2Client = true;
                 buffer = null;
             }

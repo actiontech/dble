@@ -77,6 +77,9 @@ public class ManagerQueryHandler {
                 case ManagerParse.KILL_LOAD_DATA:
                     KillLoadData.response(service);
                     break;
+                case ManagerParse.KILL_CLUSTER_RENEW_THREAD:
+                    KillClusterRenewThread.response(service, sql.substring(rs >>> SHIFT).trim());
+                    break;
                 case ManagerParse.OFFLINE:
                     Offline.execute(service);
                     break;

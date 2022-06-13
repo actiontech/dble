@@ -29,7 +29,6 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -43,12 +42,15 @@ public final class UcoreSender extends AbstractConsulSender {
 
 
     private volatile UcoreGrpc.UcoreBlockingStub stub = null;
-    private ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
     private List<String> ipList = new ArrayList<>();
     private static final String SOURCE_COMPONENT_TYPE = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
     private volatile boolean connectionDetached = false;
+
+    public String getRenewThreadPrefix() {
+        return "UCORE_RENEW_";
+    }
 
     @Override
     public void initConInfo() {
@@ -121,7 +123,7 @@ public final class UcoreSender extends AbstractConsulSender {
                     }
                 });
                 lockMap.put(path, renewThread);
-                renewThread.setName("UCORE_RENEW_" + path);
+                renewThread.setName(getRenewThreadPrefix() + path);
                 renewThread.start();
             }
             return output.getSessionId();

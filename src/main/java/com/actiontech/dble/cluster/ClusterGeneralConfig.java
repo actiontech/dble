@@ -53,7 +53,7 @@ public final class ClusterGeneralConfig {
                 try {
                     INSTANCE.clusterType = CONFIG_MODE_CUSTOMIZATION;
                     Class<?> clz = Class.forName(clazz);
-                    //all function must be extend from AbstractPartitionAlgorithm
+                    // must be extend from ClusterSender
                     if (!ClusterSender.class.isAssignableFrom(clz)) {
                         throw new IllegalArgumentException("No ClusterSender AS " + clazz);
                     }

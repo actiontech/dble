@@ -81,5 +81,6 @@ public final class SystemProperty {
         innerProperties.add("java.version.date");
         innerProperties.add("user.language.format");
         innerProperties.add("user.country.format");
+        innerProperties.add("javax.net.debug");
     }
 }

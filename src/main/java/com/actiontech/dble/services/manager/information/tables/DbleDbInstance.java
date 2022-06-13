@@ -268,8 +268,8 @@ public class DbleDbInstance extends ManagerWritableTable {
                 map.put(COLUMN_WRITE_CONN_REQUEST, String.valueOf(dbInstance.getCount(false)));
                 map.put(COLUMN_DISABLED, String.valueOf(dbInstance.isDisabled()));
                 map.put(COLUMN_DATABASE_TYPE, String.valueOf(dbInstanceConfig.getDataBaseType()).toLowerCase());
-                map.put(COLUMN_DB_DISTRICT, Optional.ofNullable(dbInstanceConfig.getDbDistrict()).orElse("").toLowerCase());
-                map.put(COLUMN_DB_DATA_CENTER, Optional.ofNullable(dbInstanceConfig.getDbDataCenter()).orElse("").toLowerCase());
+                map.put(COLUMN_DB_DISTRICT, dbInstanceConfig.getDbDistrict());
+                map.put(COLUMN_DB_DATA_CENTER, dbInstanceConfig.getDbDataCenter());
                 map.put(COLUMN_LAST_HEARTBEAT_ACK_TIMESTAMP, heartbeat.getLastActiveTime());
                 map.put(COLUMN_LAST_HEARTBEAT_ACK, heartbeat.getStatusStr());
                 map.put(COLUMN_HEARTBEAT_STATUS, heartbeat.isChecking() ? MySQLHeartbeat.CHECK_STATUS_CHECKING : MySQLHeartbeat.CHECK_STATUS_IDLE);

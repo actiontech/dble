@@ -24,7 +24,6 @@ import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -37,11 +36,14 @@ import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
 public class UshardSender extends AbstractConsulSender {
 
     private volatile DbleClusterGrpc.DbleClusterBlockingStub stub = null;
-    private ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
     private final String sourceComponentType = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
     private volatile boolean connectionDetached = false;
+
+    public String getRenewThreadPrefix() {
+        return "USHARD_RENEW_";
+    }
 
     @Override
     public void initConInfo() {
@@ -106,7 +108,7 @@ public class UshardSender extends AbstractConsulSender {
                     }
                 });
                 lockMap.put(path, renewThread);
-                renewThread.setName("UCORE_RENEW_" + path);
+                renewThread.setName(getRenewThreadPrefix() + path);
                 renewThread.start();
             }
             return output.getSessionId();

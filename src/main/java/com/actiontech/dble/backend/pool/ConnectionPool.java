@@ -111,7 +111,7 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
 
             waiterNum = waiters.incrementAndGet();
             try {
-                newPooledEntry(schema, waiting);
+                newPooledEntry(schema, waiterNum);
 
                 timeout = timeUnit.toNanos(timeout);
 

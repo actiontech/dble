@@ -349,7 +349,7 @@ public class NIOSocketWR extends SocketWR {
             throw new IOException("read from closed channel cause error");
         }
         try {
-            ByteBuffer theBuffer = con.findReadBuffer();
+            ByteBuffer theBuffer = con.findNetReadBuffer();
             int got = channel.read(theBuffer);
             con.onReadData(got);
         } finally {

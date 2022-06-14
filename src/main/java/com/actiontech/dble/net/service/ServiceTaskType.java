@@ -14,5 +14,6 @@ public enum ServiceTaskType {
     NORMAL,
     NOTIFICATION,
     CLOSE,
-    DELAYED;
+    DELAYED,
+    SSL;
 }

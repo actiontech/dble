@@ -170,7 +170,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
             selectRows++;
-            if(rwSplitService.isInitDb()){
+            if (rwSplitService.isInitDb()) {
                 rwSplitService.getTableRows().set(selectRows);
             }
             if (buffer == null) {

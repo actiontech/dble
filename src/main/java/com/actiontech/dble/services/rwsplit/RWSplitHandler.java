@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler, ShowFieldsHandler {
 
@@ -80,6 +81,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlSetRowsAndEnd(0));
         loadDataClean();
+        initDbClean();
         writeErrorMsg(rwSplitService.nextPacketId(), "can't connect to dbGroup[" + rwSplitService.getUserConfig().getDbGroup());
     }
 
@@ -87,8 +89,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public void errorResponse(byte[] data, @NotNull AbstractService service) {
         StatisticListener.getInstance().record(rwSplitService, r -> r.onBackendSqlError(data));
         MySQLResponseService mysqlService = (MySQLResponseService) service;
-        boolean syncFinished = mysqlService.syncAndExecute();
         loadDataClean();
+        initDbClean();
+        boolean syncFinished = mysqlService.syncAndExecute();
         if (callback != null) {
             callback.callback(false, null, rwSplitService);
         }
@@ -163,6 +166,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, @NotNull AbstractService service) {
         synchronized (this) {
             selectRows++;
+            if (rwSplitService.isInitDb()) {
+                rwSplitService.getTableRows().set(selectRows);
+            }
             if (buffer == null) {
                 buffer = frontedConnection.allocate();
             }
@@ -232,6 +238,7 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         synchronized (this) {
             if (!write2Client) {
                 loadDataClean();
+                initDbClean();
                 rwSplitService.getSession2().unbind();
                 reason = "Connection {dbInstance[" + rwSplitService.getConnection().getHost() + ":" + rwSplitService.getConnection().getPort() + "],DbGroup[" +
                         rwSplitService.getUserConfig().getDbGroup() + "],threadID[" +
@@ -314,6 +321,13 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
     }
 
+    private void initDbClean() {
+        if (rwSplitService.isInitDb()) {
+            rwSplitService.setInitDb(false);
+            rwSplitService.setTableRows(new AtomicLong());
+        }
+    }
+
     @Override
     public void fieldsEof(byte[] header, List<byte[]> fields, byte[] eof, @Nonnull AbstractService service) {
         synchronized (this) {
@@ -326,9 +340,14 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                     buffer = frontedConnection.getService().writeToBuffer(field, buffer);
                 }
                 eof[3] = (byte) rwSplitService.nextPacketId();
+                if (rwSplitService.isInitDb()) {
+                    if (rwSplitService.getTableRows().decrementAndGet() == 0) {
+                        initDbClean();
+                        rwSplitService.getSession2().unbindIfSafe();
+                    }
+                }
                 buffer = frontedConnection.getService().writeToBuffer(eof, buffer);
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
-                rwSplitService.getSession2().unbindIfSafe();
                 write2Client = true;
                 buffer = null;
             }

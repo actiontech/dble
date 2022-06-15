@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,6 +57,10 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     private final RWSplitQueryHandler queryHandler;
     private final RWSplitNonBlockingSession session;
+
+    private volatile boolean initDb;
+    //init DB to calculate the tables size
+    private AtomicLong tableRows = new AtomicLong();
 
     private ConcurrentHashMap<Long, PreparedStatementHolder> psHolder = new ConcurrentHashMap<>();
 
@@ -221,6 +226,7 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
             session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });
+            initDb = true;
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
         }
@@ -377,6 +383,22 @@ public class RWSplitService extends BusinessService<RwSplitUserConfig> {
 
     public boolean isKeepBackendConn() {
         return isAutocommit() && !isTxStart() && !isInLoadData() && psHolder.isEmpty() && !isLockTable() && !isUsingTmpTable() && nameSet.isEmpty();
+    }
+
+    public boolean isInitDb() {
+        return initDb;
+    }
+
+    public void setInitDb(boolean initDb) {
+        this.initDb = initDb;
+    }
+
+    public AtomicLong getTableRows() {
+        return tableRows;
+    }
+
+    public void setTableRows(AtomicLong tableRows) {
+        this.tableRows = tableRows;
     }
 
     @Override

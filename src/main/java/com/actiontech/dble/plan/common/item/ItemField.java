@@ -32,9 +32,6 @@ public class ItemField extends ItemIdent {
 
     private Field field;
 
-    /* if index!=-1, means the index of Item_field,need setField before val */
-    private int index = -1;
-
     public ItemField(String dbName, String tableName, String fieldName, int charsetIndex) {
         super(dbName, tableName, fieldName);
         this.charsetIndex = charsetIndex;
@@ -52,16 +49,6 @@ public class ItemField extends ItemIdent {
     public ItemField(Field field, int charsetIndex) {
         this(field);
         this.charsetIndex = charsetIndex;
-    }
-
-    /**
-     * save index
-     *
-     * @param index
-     */
-    public ItemField(int index) {
-        super(null, "", "");
-        this.index = index;
     }
 
     protected void setField(Field field) {

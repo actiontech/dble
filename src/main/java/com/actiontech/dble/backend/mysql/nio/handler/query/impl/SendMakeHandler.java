@@ -145,4 +145,10 @@ public class SendMakeHandler extends BaseDMLHandler {
         return tableHandlers;
     }
 
+    public void cleanBuffer() {
+        if (nextHandler instanceof OutputHandler) {
+            ((OutputHandler) nextHandler).cleanBuffer();
+        }
+    }
+
 }

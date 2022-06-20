@@ -54,4 +54,10 @@ public final class VersionUtil {
         return versionNumber == null ? 5 : versionNumber;
     }
 
+
+    public static boolean isMysql8(String version) {
+        final Integer versionNumber = VersionUtil.getMajorVersionWithoutDefaultValue(version);
+        return versionNumber == 8;
+    }
+
 }

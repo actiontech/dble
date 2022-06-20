@@ -5,7 +5,12 @@
 
 package com.actiontech.dble.backend.mysql;
 
+import javax.annotation.Nullable;
+
 public final class VersionUtil {
+    private static final String VERSION_8 = "8.";
+    private static final String VERSION_5 = "5.";
+
     private VersionUtil() {
     }
 
@@ -22,5 +27,21 @@ public final class VersionUtil {
         } else {
             return TX_ISOLATION;
         }
+    }
+
+    @Nullable
+    public static Integer getMajorVersionWithoutDefaultValue(String version) {
+        if (version.startsWith(VERSION_8)) {
+            return 8;
+        } else if (version.startsWith(VERSION_5) || version.contains("MariaDB")) {
+            return 5;
+        } else {
+            return null;
+        }
+    }
+
+    public static boolean isMysql8(String version) {
+        final Integer versionNumber = VersionUtil.getMajorVersionWithoutDefaultValue(version);
+        return versionNumber == 8;
     }
 }

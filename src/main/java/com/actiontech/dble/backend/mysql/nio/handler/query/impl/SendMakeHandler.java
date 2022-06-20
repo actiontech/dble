@@ -125,5 +125,9 @@ public class SendMakeHandler extends BaseDMLHandler {
     public void onTerminate() {
     }
 
-
+    public void cleanBuffer() {
+        if (nextHandler instanceof OutputHandler) {
+            ((OutputHandler) nextHandler).cleanBuffer();
+        }
+    }
 }

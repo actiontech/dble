@@ -60,9 +60,10 @@ public class FetchResponseHandler implements ProtocolResponseHandler {
     }
 
     private void handleRowEofPacket(byte[] data) {
-        service.backendSpecialCleanUp();
-        if (service.getResponseHandler() != null) {
-            service.getResponseHandler().rowEofResponse(data, false, service);
+        ResponseHandler respHand = service.getResponseHandler();
+        if (respHand != null) {
+            service.backendSpecialCleanUp();
+            respHand.rowEofResponse(data, false, service);
         } else {
             closeNoHandler();
         }

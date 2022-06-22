@@ -185,7 +185,11 @@ public final class SystemConfig {
     private int flowControlHighLevel = FLOW_CONTROL_HIGH_LEVEL;
     private int flowControlLowLevel = FLOW_CONTROL_LOW_LEVEL;
     private boolean useOuterHa = true;
+
     private String traceEndPoint = null;
+    private String traceSamplerType = null;
+    private String traceSamplerParam = null;
+
     private String fakeMySQLVersion = "5.7.21";
     private int enableRoutePenetration = 0;
     private String routePenetrationRules = "";
@@ -1540,6 +1544,25 @@ public final class SystemConfig {
         this.traceEndPoint = traceEndPoint;
     }
 
+
+    public String getTraceSamplerType() {
+        return traceSamplerType;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTraceSamplerType(String traceSamplerType) {
+        this.traceSamplerType = traceSamplerType;
+    }
+
+    public String getTraceSamplerParam() {
+        return traceSamplerParam;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTraceSamplerParam(String traceSamplerParam) {
+        this.traceSamplerParam = traceSamplerParam;
+    }
+
     public int getMaxHeapTableSize() {
         return maxHeapTableSize;
     }
@@ -1609,6 +1632,7 @@ public final class SystemConfig {
         return rwStickyTime;
     }
 
+    @SuppressWarnings("unused")
     public void setRwStickyTime(long rwStickyTime) {
         if (rwStickyTime >= 0) {
             this.rwStickyTime = rwStickyTime;
@@ -1622,6 +1646,7 @@ public final class SystemConfig {
         return enableRoutePenetration;
     }
 
+    @SuppressWarnings("unused")
     public void setEnableRoutePenetration(int enableRoutePenetrationTmp) {
         if (enableRoutePenetrationTmp >= 0 && enableRoutePenetrationTmp <= 1) {
             this.enableRoutePenetration = enableRoutePenetrationTmp;
@@ -1634,6 +1659,7 @@ public final class SystemConfig {
         return routePenetrationRules;
     }
 
+    @SuppressWarnings("unused")
     public void setRoutePenetrationRules(String sqlPenetrationRegexesTmp) {
         routePenetrationRules = sqlPenetrationRegexesTmp;
     }
@@ -1732,6 +1758,8 @@ public final class SystemConfig {
                 ", useOuterHa=" + useOuterHa +
                 ", fakeMySQLVersion=" + fakeMySQLVersion +
                 ", traceEndPoint=" + traceEndPoint +
+                ", traceSamplerType=" + traceSamplerType +
+                ", traceSamplerParam=" + traceSamplerParam +
                 ", maxHeapTableSize=" + maxHeapTableSize +
                 ", heapTableBufferChunkSize=" + heapTableBufferChunkSize +
                 ", enableGeneralLog=" + enableGeneralLog +

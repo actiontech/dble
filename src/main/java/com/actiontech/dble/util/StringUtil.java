@@ -14,6 +14,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * @author mycat
@@ -608,5 +609,10 @@ public final class StringUtil {
             }
         }
         return orgStr;
+    }
+
+    public static boolean isDoubleOrFloat(String str) {
+        Pattern pattern = Pattern.compile("^[-\\+]?[.\\d]*$");
+        return pattern.matcher(str).matches();
     }
 }

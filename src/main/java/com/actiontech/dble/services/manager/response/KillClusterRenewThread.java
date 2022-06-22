@@ -2,8 +2,10 @@ package com.actiontech.dble.services.manager.response;
 
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.general.AbstractConsulSender;
+import com.actiontech.dble.cluster.path.ClusterPathUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.services.manager.ManagerService;
 import com.actiontech.dble.util.StringUtil;
@@ -36,6 +38,10 @@ public final class KillClusterRenewThread {
             name = StringUtil.removeAllApostrophe(name);
             if (name.startsWith(clusterSender.getRenewThreadPrefix())) {
                 String path = name.substring(clusterSender.getRenewThreadPrefix().length());
+
+                if (path.endsWith(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName())))
+                    return new Object[]{false, "the cluster 'online' renew thread is not allowed to be killed!"};
+
                 boolean isKill = clusterSender.killRenewThread(path);
                 if (isKill) {
                     return new Object[]{true, "kill cluster renew thread successfully!"};

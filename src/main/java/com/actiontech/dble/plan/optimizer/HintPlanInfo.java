@@ -5,34 +5,32 @@
  */
 package com.actiontech.dble.plan.optimizer;
 
-import org.jetbrains.annotations.NotNull;
+import com.actiontech.dble.server.parser.HintPlanParse;
+import com.google.common.collect.Maps;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Set;
 
 /**
  * @author collapsar
  */
-public final class HintPlanInfo implements Iterable<HintPlanNode> {
+public final class HintPlanInfo {
 
-    private List<HintPlanNodeGroup> groups;
     private boolean left2inner = false;
     private boolean right2inner = false;
     private boolean in2join = false;
 
-    public HintPlanInfo(@Nonnull List<HintPlanNodeGroup> groups) {
-        this.groups = groups;
+    private HashMap<String, Set<HintPlanNode>> dependMap = Maps.newHashMap();
+    private HashMap<String, Set<HintPlanNode>> erMap = Maps.newHashMap();
+    private HashMap<String, HintPlanParse.Type> hintPlanNodeMap = Maps.newHashMap();
+
+    public HintPlanInfo(HashMap<String, Set<HintPlanNode>> dependMap, HashMap<String, Set<HintPlanNode>> erMap, HashMap<String, HintPlanParse.Type> hintPlanNodeMap) {
+        this.dependMap = dependMap;
+        this.erMap = erMap;
+        this.hintPlanNodeMap = hintPlanNodeMap;
     }
 
     public HintPlanInfo() {
-        groups = new ArrayList<>();
-    }
-
-    @Nonnull
-    public List<HintPlanNodeGroup> getGroups() {
-        return groups;
     }
 
     public boolean isLeft2inner() {
@@ -61,56 +59,43 @@ public final class HintPlanInfo implements Iterable<HintPlanNode> {
 
     /**
      * return true if no node exists or hint is not set.
+     *
      * @return
      */
     public boolean isZeroNode() {
-        return groups.size() == 0 ? true : nodeSize() == 0;
+        return hintPlanNodeMap.isEmpty();
     }
 
+    public HashMap<String, Set<HintPlanNode>> getDependMap() {
+        return dependMap;
+    }
 
-    public long nodeSize() {
-        return groups.stream().map(HintPlanNodeGroup::getNodes).mapToLong(List::size).sum();
+    public HashMap<String, Set<HintPlanNode>> getErMap() {
+        return erMap;
+    }
+
+    public HashMap<String, HintPlanParse.Type> getHintPlanNodeMap() {
+        return hintPlanNodeMap;
+    }
+
+    public int nodeSize() {
+        return hintPlanNodeMap.size();
+    }
+
+    public boolean erRelyOn() {
+        long count = erMap.keySet().stream().filter(table -> dependMap.containsKey(table)).count();
+        return count > 0;
     }
 
     @Override
     public String toString() {
         return "HintPlanInfo{" +
-                "groups=" + groups +
+                "hintPlanNodeMap=" + hintPlanNodeMap.toString() +
+                "erMap=" + erMap.toString() +
+                "dependMap=" + dependMap.toString() +
                 ", left2inner=" + left2inner +
                 ", in2join=" + in2join +
                 '}';
     }
 
-    @NotNull
-    @Override
-    public Iterator<HintPlanNode> iterator() {
-        return new GroupIterator();
-    }
-
-    private class GroupIterator implements Iterator<HintPlanNode> {
-        int groupIndex = 0;
-        int innerIndex = 0;
-
-        @Override
-        public boolean hasNext() {
-            while (groups.size() - 1 >= groupIndex) {
-                final HintPlanNodeGroup group = groups.get(groupIndex);
-                final List<HintPlanNode> nodes = group.getNodes();
-                if (nodes.size() - 1 >= innerIndex) {
-                    return true;
-                } else {
-                    groupIndex++;
-                    innerIndex = 0;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        public HintPlanNode next() {
-            final HintPlanNode node = groups.get(groupIndex).getNodes().get(innerIndex);
-            innerIndex++;
-            return node;
-        }
-    }
 }

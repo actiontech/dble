@@ -7,15 +7,12 @@ package com.actiontech.dble.route.handler;
 
 
 import com.actiontech.dble.plan.optimizer.HintPlanInfo;
-import com.actiontech.dble.plan.optimizer.HintPlanNodeGroup;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.DruidUtil;
-import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.server.parser.HintPlanParse;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.google.common.collect.Lists;
 
 import java.sql.SQLSyntaxErrorException;
-import java.util.List;
 
 /**
  * sql hint: dble:plan= (a,b,c)&b&(c,d)<br/>
@@ -28,27 +25,10 @@ public final class HintPlanHandler {
     }
 
     public static RouteResultset route(String hintSQL, int sqlType, String realSql) throws SQLSyntaxErrorException {
+        HintPlanParse hintPlanParse = new HintPlanParse();
+        hintPlanParse.parse(hintSQL);
         String[] attr = hintSQL.split("\\$");
-        List<HintPlanNodeGroup> nodes = Lists.newLinkedList();
-        String hintTable = attr[0];
-        String[] tables = hintTable.split("&");
-        for (String table : tables) {
-            if (table.contains(",")) {
-                // ER
-                table = table.replaceAll("[()\\s]", "");
-                String[] ers = table.split(",");
-                nodes.add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.ER, ers));
-            } else if (table.contains("|")) {
-                table = table.replaceAll("[()\\s]", "");
-                String[] ers = table.split("\\|");
-                nodes.add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.OR, ers));
-            } else if (!StringUtil.isBlank(table.trim())) {
-                table = table.trim();
-                nodes.add(HintPlanNodeGroup.of(HintPlanNodeGroup.Type.AND, table));
-            }
-        }
-
-        HintPlanInfo planInfo = new HintPlanInfo(nodes);
+        HintPlanInfo planInfo = new HintPlanInfo(hintPlanParse.getDependMap(), hintPlanParse.getErMap(), hintPlanParse.getHintPlanNodeMap());
         if (attr.length > 1) {
             for (int i = 1; i < attr.length; i++) {
                 switch (attr[i].toLowerCase()) {

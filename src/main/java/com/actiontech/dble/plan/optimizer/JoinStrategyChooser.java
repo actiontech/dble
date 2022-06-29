@@ -153,11 +153,14 @@ public class JoinStrategyChooser {
         for (ItemFuncEqual itemFuncEqual : joinFilter) {
             List<Item> arguments = itemFuncEqual.arguments();
             Item item = arguments.stream().filter(argument -> !StringUtil.equals(getTableName((TableNode) node), argument.getTableName())).findFirst().get();
-            PlanNode planNode = nodeMap.get(item.getTableName());
-            if (isSmallTable((TableNode) planNode) && innerJoin) {
+            PlanNode dependNode = nodeMap.get(item.getTableName());
+            if (isSmallTable((TableNode) dependNode) && innerJoin) {
                 joinNode.setStrategy(Strategy.ALWAYS_NEST_LOOP);
                 node.setNestLoopFilters(new ArrayList<>());
-                node.setNestLoopDependNode(planNode);
+                node.setNestLoopDependNode(dependNode);
+                List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
+                nodeList.add(nodeList.size(), node);
+                dependNode.setNestLoopDependOnNodeList(nodeList);
                 return;
             }
         }
@@ -175,11 +178,6 @@ public class JoinStrategyChooser {
         return node.getTableName();
     }
 
-    private void innerNestLoop(JoinNode joinNode, PlanNode node, boolean innerJoin) {
-
-
-    }
-
     private PlanNode findDependNode(PlanNode node) {
         JoinNode joinNode = (JoinNode) node.getParent();
         String firstTableName = null;
@@ -188,11 +186,11 @@ public class JoinStrategyChooser {
             List<Item> arguments = itemFuncEqual.arguments();
             String tableName = arguments.get(0).getTableName();
             firstTableName = Optional.ofNullable(firstTableName).orElse(tableName);
-            JoinNode dependNodeParent = (JoinNode) nodeMap.get(tableName).getParent();
-            if (canDoAsMerge(dependNodeParent)) {
-                return dependNodeParent;
-            }
         }
+        PlanNode dependNode = nodeMap.get(firstTableName);
+        List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
+        nodeList.add(nodeList.size(), node);
+        dependNode.setNestLoopDependOnNodeList(nodeList);
         return nodeMap.get(firstTableName);
     }
 

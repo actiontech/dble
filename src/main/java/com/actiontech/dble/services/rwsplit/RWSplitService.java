@@ -415,9 +415,9 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         setLockTable(false);
         inLoadData = false;
         txStarted = false;
-        Optional.ofNullable(tmpTableSet).ifPresent((tmpTableSet) -> tmpTableSet.clear());
-        Optional.ofNullable(sysVariables).ifPresent((sysVariables) -> sysVariables.clear());
-        Optional.ofNullable(usrVariables).ifPresent((usrVariables) -> usrVariables.clear());
+        Optional.ofNullable(tmpTableSet).ifPresent((tmpTables) -> tmpTables.clear());
+        Optional.ofNullable(sysVariables).ifPresent((sysVariableMap) -> sysVariableMap.clear());
+        Optional.ofNullable(usrVariables).ifPresent((usrVariableMap) -> usrVariableMap.clear());
         autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         txIsolation = SystemConfig.getInstance().getTxIsolation();
         setCharacterSet(SystemConfig.getInstance().getCharset());

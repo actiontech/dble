@@ -18,7 +18,7 @@ public class HintPlanParse {
     private String rightParenthesis = ")";
     private HashMap<String, Set<HintPlanNode>> dependMap = Maps.newHashMap();
     private HashMap<String, Set<HintPlanNode>> erMap = Maps.newHashMap();
-    private HashMap<String, Type> hintPlanNodeMap = Maps.newHashMap();
+    private LinkedHashMap<String, Type> hintPlanNodeMap = Maps.newLinkedHashMap();
     private HashMap<String, HintPlanNode> nodeMap = Maps.newHashMap();
 
     public void parse(String sql) {
@@ -146,14 +146,19 @@ public class HintPlanParse {
                     addNode(nodeName.toString(), nodeList, erRelation);
                     nodeList.add(new Node(String.valueOf(c), Type.OR));
                     nodeName = new StringBuilder();
+                    er = new StringBuilder();
                     break;
                 case '&':
                     addNode(nodeName.toString(), nodeList, erRelation);
                     nodeList.add(new Node(String.valueOf(c), Type.AND));
                     nodeName = new StringBuilder();
+                    er = new StringBuilder();
                     break;
                 case ',':
                     erRelation = true;
+                    if (nodeList.isEmpty()) {
+                        throw new ConfigException("hint parse failure");
+                    }
                     if (!er.toString().startsWith(leftParenthesis)) {
                         throw new ConfigException("er Relation need like (a,b,c)");
                     }
@@ -169,7 +174,7 @@ public class HintPlanParse {
         if (!StringUtil.isBlank(lastTable)) {
             nodeList.add(new Node(lastTable));
             nodeMap.putIfAbsent(lastTable, HintPlanNode.of(lastTable));
-            hintPlanNodeMap.put(lastTable, Type.ER);
+            hintPlanNodeMap.put(lastTable, Type.Other);
         }
         return nodeList;
     }
@@ -263,7 +268,7 @@ public class HintPlanParse {
         return erMap;
     }
 
-    public HashMap<String, Type> getHintPlanNodeMap() {
+    public LinkedHashMap<String, Type> getHintPlanNodeMap() {
         return hintPlanNodeMap;
     }
 

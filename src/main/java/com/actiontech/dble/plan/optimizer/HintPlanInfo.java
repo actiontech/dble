@@ -9,6 +9,7 @@ import com.actiontech.dble.server.parser.HintPlanParse;
 import com.google.common.collect.Maps;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 /**
@@ -22,9 +23,9 @@ public final class HintPlanInfo {
 
     private HashMap<String, Set<HintPlanNode>> dependMap = Maps.newHashMap();
     private HashMap<String, Set<HintPlanNode>> erMap = Maps.newHashMap();
-    private HashMap<String, HintPlanParse.Type> hintPlanNodeMap = Maps.newHashMap();
+    private LinkedHashMap<String, HintPlanParse.Type> hintPlanNodeMap = Maps.newLinkedHashMap();
 
-    public HintPlanInfo(HashMap<String, Set<HintPlanNode>> dependMap, HashMap<String, Set<HintPlanNode>> erMap, HashMap<String, HintPlanParse.Type> hintPlanNodeMap) {
+    public HintPlanInfo(HashMap<String, Set<HintPlanNode>> dependMap, HashMap<String, Set<HintPlanNode>> erMap, LinkedHashMap<String, HintPlanParse.Type> hintPlanNodeMap) {
         this.dependMap = dependMap;
         this.erMap = erMap;
         this.hintPlanNodeMap = hintPlanNodeMap;
@@ -74,7 +75,7 @@ public final class HintPlanInfo {
         return erMap;
     }
 
-    public HashMap<String, HintPlanParse.Type> getHintPlanNodeMap() {
+    public LinkedHashMap<String, HintPlanParse.Type> getHintPlanNodeMap() {
         return hintPlanNodeMap;
     }
 

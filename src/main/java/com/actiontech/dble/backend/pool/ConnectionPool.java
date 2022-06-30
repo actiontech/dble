@@ -44,6 +44,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
     private final AtomicBoolean isClosed = new AtomicBoolean(true);
     private final PoolConfig poolConfig;
+    private volatile int waiterNum;
 
     public ConnectionPool(final DbInstanceConfig config, final PhysicalDbInstance instance) {
         super(config, instance);
@@ -73,19 +74,20 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     }
 
     public BackendConnection borrow(final String schema, long timeout, final TimeUnit timeUnit) throws InterruptedException {
-        final int waiting = waiters.incrementAndGet();
-        try {
-            for (BackendConnection conn : allConnections) {
-                if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
-                    // If we may have stolen another waiter's connection, request another bag add.
-                    if (waiting > 1) {
-                        newPooledEntry(schema, waiting - 1);
-                    }
-                    return conn;
+        final int waiting = waiterNum;
+        for (BackendConnection conn : allConnections) {
+            if (conn.compareAndSet(STATE_NOT_IN_USE, STATE_IN_USE)) {
+                // If we may have stolen another waiter's connection, request another bag add.
+                if (waiting > 1) {
+                    newPooledEntry(schema, waiting - 1);
                 }
+                return conn;
             }
+        }
 
-            newPooledEntry(schema, waiting);
+        waiterNum = waiters.incrementAndGet();
+        try {
+            newPooledEntry(schema, waiterNum);
 
             timeout = timeUnit.toNanos(timeout);
             do {
@@ -100,7 +102,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
             return null;
         } finally {
-            waiters.decrementAndGet();
+            waiterNum = waiters.decrementAndGet();
         }
     }
 

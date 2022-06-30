@@ -17,9 +17,12 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandle
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
+import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class ComplexQueryPlanUtil {
     private ComplexQueryPlanUtil() {
@@ -78,6 +81,8 @@ public final class ComplexQueryPlanUtil {
             Set<String> dependenciesSet = mergeHandler.getDependencies();
             if (!dependenciesSet.isEmpty()) {
                 dependencies = dependenciesSet;
+            } else if (!CollectionUtil.isEmpty(dependencies)) {
+                dependencies.stream().filter(dependency -> dependency.startsWith(JoinNode.Strategy.HINT_NEST_LOOP.name())).collect(Collectors.toSet()).clear();
             }
             String mergeName = getMergeType(mergeHandler);
             List<BaseSelectHandler> mergeList = new ArrayList<>();
@@ -166,6 +171,8 @@ public final class ComplexQueryPlanUtil {
                 TempTableHandler tmp = (TempTableHandler) handler;
                 DMLResponseHandler endHandler = tmp.getCreatedHandler();
                 endHandler.setNextHandlerOnly(nextHandler);
+                MultiNodeMergeHandler dmlResponseHandler = (MultiNodeMergeHandler) ((TempTableHandler) handler).getCreatedHandler().getMerges().get(0);
+                dmlResponseHandler.getDependencies().add(childName + "'s RESULTS");
                 rootName = buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
             }
             if (handler instanceof SendMakeHandler) {

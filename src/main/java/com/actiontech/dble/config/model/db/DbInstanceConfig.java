@@ -24,6 +24,8 @@ public class DbInstanceConfig {
     private volatile PoolConfig poolConfig;
     private final boolean usingDecrypt;
     private DataBaseType dataBaseType;
+    private String dbDistrict;
+    private String dbDataCenter;
 
     public DbInstanceConfig(String instanceName, String ip, int port, String url,
                             String user, String password, boolean disabled, boolean primary, boolean usingDecrypt, DataBaseType dataBaseType) {
@@ -149,6 +151,21 @@ public class DbInstanceConfig {
         return false;
     }
 
+    public String getDbDistrict() {
+        return dbDistrict;
+    }
+
+    public void setDbDistrict(String dbDistrict) {
+        this.dbDistrict = dbDistrict;
+    }
+
+    public String getDbDataCenter() {
+        return dbDataCenter;
+    }
+
+    public void setDbDataCenter(String dbDataCenter) {
+        this.dbDataCenter = dbDataCenter;
+    }
 
     @Override
     public String toString() {

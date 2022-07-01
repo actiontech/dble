@@ -50,7 +50,7 @@ import java.util.concurrent.locks.LockSupport;
 public class MySQLResponseService extends VariablesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLResponseService.class);
 
-    private ResponseHandler responseHandler;
+    private volatile ResponseHandler responseHandler;
 
     protected final AtomicBoolean isHandling = new AtomicBoolean(false);
 
@@ -458,7 +458,7 @@ public class MySQLResponseService extends VariablesService {
         for (Map.Entry<String, String> entry : tmpSysVars.entrySet()) {
             String value = DbleServer.getInstance().getSystemVariables().getDefaultValue(entry.getKey());
             try {
-                BigDecimal vl = new BigDecimal(value);
+                new BigDecimal(value);
             } catch (NumberFormatException e) {
                 value = "`" + value + "`";
             }

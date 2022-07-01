@@ -71,6 +71,7 @@ public class HintPlanParse {
 
     private LinkedList<Node> buildChildNode(LinkedList<Node> nodeStack, String operator, boolean isStack) {
         Node parentNode = null;
+        Node preNode = null;
         LinkedList<Node> stack = new LinkedList<>();
         boolean right = false;
         while (!nodeStack.isEmpty()) {
@@ -82,19 +83,26 @@ public class HintPlanParse {
             }
 
             if (StringUtil.equals(operator, node.getData())) {
-                if (stack.isEmpty()) {
+                if (Objects.nonNull(preNode) && preNode.isTable() && !completeNode(preNode)) {
+                    throw new ConfigException("cannot contain continuous | or & symbols");
+                }
+                if (stack.isEmpty() || completeNode(node)) {
                     stack.offer(node);
+                    preNode = node;
                     continue;
                 }
+
                 Node pre = stack.pollLast();
                 if (Objects.isNull(node.getLeftNode())) {
                     setLeftNode(node, pre);
                     parentNode = node;
                     stack.offer(node);
+                    preNode = node;
                     right = true;
                 } else if (pre.isTable()) {
                     setRightNode(pre, node);
                     stack.offer(pre);
+                    preNode = pre;
                     right = false;
                 }
             } else if (right) {
@@ -102,9 +110,14 @@ public class HintPlanParse {
                 right = false;
             } else {
                 stack.offer(node);
+                preNode = node;
             }
         }
         return stack;
+    }
+
+    private boolean completeNode(Node node) {
+        return Objects.nonNull(node.getLeftNode()) && Objects.nonNull(node.getRightNode());
     }
 
     public List<Node> getNodeList(String sql) throws ConfigException {

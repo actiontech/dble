@@ -25,6 +25,16 @@ public final class HintPlanHandler {
     }
 
     public static RouteResultset route(String hintSQL, int sqlType, String realSql) throws SQLSyntaxErrorException {
+        HintPlanInfo planInfo = parseHint(hintSQL);
+        RouteResultset rrs = new RouteResultset(realSql, sqlType);
+        rrs.setHintPlanInfo(planInfo);
+        SQLStatement statement = DruidUtil.parseSQL(realSql);
+        rrs.setNeedOptimizer(true);
+        rrs.setSqlStatement(statement);
+        return rrs;
+    }
+
+    public static HintPlanInfo parseHint(String hintSQL) {
         HintPlanParse hintPlanParse = new HintPlanParse();
         hintPlanParse.parse(hintSQL);
         String[] attr = hintSQL.split("\\$");
@@ -46,12 +56,7 @@ public final class HintPlanHandler {
                 }
             }
         }
-        RouteResultset rrs = new RouteResultset(realSql, sqlType);
-        rrs.setHintPlanInfo(planInfo);
-        SQLStatement statement = DruidUtil.parseSQL(realSql);
-        rrs.setNeedOptimizer(true);
-        rrs.setSqlStatement(statement);
-        return rrs;
+        return planInfo;
     }
 
 }

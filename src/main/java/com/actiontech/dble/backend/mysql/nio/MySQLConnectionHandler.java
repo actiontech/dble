@@ -228,12 +228,11 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (session != null && !source.isTesting() && this.source.getLogResponse().compareAndSet(false, true)) {
             session.setBackendResponseEndTime(this.source);
         }
-        this.source.setExecuting(false);
-        this.source.setRowDataFlowing(false);
         this.source.getLogResponse().set(false);
-        this.source.signal();
-        if (responseHandler != null) {
-            responseHandler.rowEofResponse(data, false, source);
+        ResponseHandler respHand = responseHandler;
+        if (respHand != null) {
+            this.source.backendSpecialCleanUp();
+            respHand.rowEofResponse(data, false, source);
         } else {
             closeNoHandler();
         }

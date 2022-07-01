@@ -156,12 +156,11 @@ public class MysqlBackendLogicHandler {
         if (service.getSession() != null && !service.isTesting() && service.getLogResponse().compareAndSet(false, true)) {
             service.getSession().setBackendResponseEndTime(this.service);
         }
-        service.setExecuting(false);
-        service.setRowDataFlowing(false);
         service.getLogResponse().set(false);
-        service.signal();
-        if (service.getResponseHandler() != null) {
-            service.getResponseHandler().rowEofResponse(data, false, service);
+        ResponseHandler respHand = service.getResponseHandler();
+        if (respHand != null) {
+            service.backendSpecialCleanUp();
+            respHand.rowEofResponse(data, false, service);
         } else {
             closeNoHandler();
         }

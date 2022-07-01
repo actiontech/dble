@@ -507,6 +507,12 @@ public class MySQLConnection extends AbstractConnection implements
         this.recycler = recycler;
     }
 
+    public void backendSpecialCleanUp() {
+        isExecuting = false;
+        isRowDataFlowing = false;
+        this.signal();
+    }
+
     public void signal() {
         if (recycler != null) {
             recycler.signal();

@@ -83,13 +83,18 @@ public class HintPlanParse {
             }
 
             if (StringUtil.equals(operator, node.getData())) {
-                if (Objects.nonNull(preNode) && preNode.isTable() && !completeNode(preNode)) {
-                    throw new ConfigException("cannot contain continuous | or & symbols");
+                if (right && node.isTable() && completeNode(node)) {
+                    setRightNode(preNode, node);
+                    right = false;
+                    continue;
                 }
                 if (stack.isEmpty() || completeNode(node)) {
                     stack.offer(node);
                     preNode = node;
                     continue;
+                }
+                if (Objects.nonNull(preNode) && preNode.isTable() && !completeNode(preNode)) {
+                    throw new ConfigException("cannot contain continuous | or & symbols");
                 }
 
                 Node pre = stack.pollLast();

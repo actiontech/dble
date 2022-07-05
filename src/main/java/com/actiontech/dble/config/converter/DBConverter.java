@@ -30,6 +30,7 @@ import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -255,6 +257,13 @@ public class DBConverter {
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setReadWeight(readWeight);
+
+        String dbDistrict = dbInstance.getDbDistrict();
+        checkChineseAndRules(dbDistrict, "dbDistrict");
+        String dbDataCenter = dbInstance.getDbDataCenter();
+        checkChineseAndRules(dbDataCenter, "dbDataCenter");
+        conf.setDbDistrict(dbDistrict);
+        conf.setDbDataCenter(dbDataCenter);
         // id
         String id = dbInstance.getId();
         if (StringUtil.isEmpty(id)) {
@@ -278,6 +287,26 @@ public class DBConverter {
             throw new ConfigException("databaseType [" + dbType + "] not support");
         }
         return dataBaseType;
+    }
+
+    private void checkChineseAndRules(String val, String name) {
+        if (Objects.nonNull(val)) {
+            if (StringUtil.isBlank(val)) {
+                throw new ConfigException("property [ " + name + " ] " + val + " is illegal, the value not be empty");
+            }
+            int length = 11;
+            if (val.length() > length) {
+                throw new ConfigException("property [ " + name + " ] " + val + " is illegal, the value contains a maximum of  " + length + "  characters");
+            }
+            String chinese = val.replaceAll(PATTERN_DB.toString(), "");
+            if (Strings.isNullOrEmpty(chinese)) {
+                return;
+            }
+            if (!StringUtil.isChinese(chinese)) {
+                throw new ConfigException("properties of system may not recognized:" + val + "the " + Charset.defaultCharset().name() + " encoding is recommended, dbInstance name " + name + " show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+            }
+        }
+
     }
 
     private void checkProperty(List<String> errorMsgList, Property property) {

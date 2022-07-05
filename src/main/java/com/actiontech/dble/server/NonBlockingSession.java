@@ -691,7 +691,7 @@ public class NonBlockingSession extends Session {
             // not happen
             throw e;
         } catch (Exception e) {
-            throw new SQLNonTransientException(e.getMessage() + ", sql: " + rrs.getStatement() + ".");
+            throw new SQLNonTransientException(e.getMessage());
         }
     }
 

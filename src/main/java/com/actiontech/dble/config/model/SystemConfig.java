@@ -8,13 +8,18 @@ package com.actiontech.dble.config.model;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.util.NetUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.base.Strings;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 import static com.actiontech.dble.config.model.db.PoolConfig.DEFAULT_IDLE_TIMEOUT;
 
@@ -185,7 +190,11 @@ public final class SystemConfig {
     private int flowControlHighLevel = FLOW_CONTROL_HIGH_LEVEL;
     private int flowControlLowLevel = FLOW_CONTROL_LOW_LEVEL;
     private boolean useOuterHa = true;
+
     private String traceEndPoint = null;
+    private String traceSamplerType = null;
+    private String traceSamplerParam = null;
+
     private String fakeMySQLVersion = "5.7.21";
     private int enableRoutePenetration = 0;
     private String routePenetrationRules = "";
@@ -211,6 +220,9 @@ public final class SystemConfig {
 
     // For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
     private long rwStickyTime = 1000;
+
+    private String district = null;
+    private String dataCenter = null;
 
 
     private boolean closeHeartBeatRecord = false;
@@ -1540,6 +1552,25 @@ public final class SystemConfig {
         this.traceEndPoint = traceEndPoint;
     }
 
+
+    public String getTraceSamplerType() {
+        return traceSamplerType;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTraceSamplerType(String traceSamplerType) {
+        this.traceSamplerType = traceSamplerType;
+    }
+
+    public String getTraceSamplerParam() {
+        return traceSamplerParam;
+    }
+
+    @SuppressWarnings("unused")
+    public void setTraceSamplerParam(String traceSamplerParam) {
+        this.traceSamplerParam = traceSamplerParam;
+    }
+
     public int getMaxHeapTableSize() {
         return maxHeapTableSize;
     }
@@ -1609,6 +1640,7 @@ public final class SystemConfig {
         return rwStickyTime;
     }
 
+    @SuppressWarnings("unused")
     public void setRwStickyTime(long rwStickyTime) {
         if (rwStickyTime >= 0) {
             this.rwStickyTime = rwStickyTime;
@@ -1622,6 +1654,7 @@ public final class SystemConfig {
         return enableRoutePenetration;
     }
 
+    @SuppressWarnings("unused")
     public void setEnableRoutePenetration(int enableRoutePenetrationTmp) {
         if (enableRoutePenetrationTmp >= 0 && enableRoutePenetrationTmp <= 1) {
             this.enableRoutePenetration = enableRoutePenetrationTmp;
@@ -1634,10 +1667,30 @@ public final class SystemConfig {
         return routePenetrationRules;
     }
 
+    @SuppressWarnings("unused")
     public void setRoutePenetrationRules(String sqlPenetrationRegexesTmp) {
         routePenetrationRules = sqlPenetrationRegexesTmp;
     }
 
+    public String getDistrict() {
+        return district;
+    }
+
+    @SuppressWarnings("unused")
+    public void setDistrict(String district) throws UnsupportedEncodingException {
+        checkChineseProperty(district, "district");
+        this.district = district;
+    }
+
+    public String getDataCenter() {
+        return dataCenter;
+    }
+
+    @SuppressWarnings("unused")
+    public void setDataCenter(String dataCenter) {
+        checkChineseProperty(dataCenter, "dataCenter");
+        this.dataCenter = dataCenter;
+    }
 
     public boolean isSupportSSL() {
         return supportSSL;
@@ -1732,6 +1785,8 @@ public final class SystemConfig {
                 ", useOuterHa=" + useOuterHa +
                 ", fakeMySQLVersion=" + fakeMySQLVersion +
                 ", traceEndPoint=" + traceEndPoint +
+                ", traceSamplerType=" + traceSamplerType +
+                ", traceSamplerParam=" + traceSamplerParam +
                 ", maxHeapTableSize=" + maxHeapTableSize +
                 ", heapTableBufferChunkSize=" + heapTableBufferChunkSize +
                 ", enableGeneralLog=" + enableGeneralLog +
@@ -1759,6 +1814,8 @@ public final class SystemConfig {
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", enableSessionActiveRatioStat=" + enableSessionActiveRatioStat +
                 ", enableConnectionAssociateThread=" + enableConnectionAssociateThread +
+                ", district='" + district +
+                ", dataCenter='" + dataCenter +
                 "]";
     }
 
@@ -1768,5 +1825,25 @@ public final class SystemConfig {
 
     public void setCloseHeartBeatRecord(boolean closeHeartBeatRecord) {
         this.closeHeartBeatRecord = closeHeartBeatRecord;
+    }
+
+    private void checkChineseProperty(String val, String name) {
+        if (StringUtil.isBlank(val)) {
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal, Property [ " + name + " ]  not be null or empty");
+            return;
+        }
+        int length = 11;
+        if (val.length() > length) {
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the value contains a maximum of " + length + " characters");
+        }
+
+        String chinese = val.replaceAll(DBConverter.PATTERN_DB.toString(), "");
+        if (Strings.isNullOrEmpty(chinese)) {
+            return;
+        }
+
+        if (!StringUtil.isChinese(chinese)) {
+            problemReporter.warn("Property [ " + name + " ] " + val + " in bootstrap.cnf is illegal，the " + Charset.defaultCharset().name() + " encoding is recommended, Property [ " + name + " ]  show be use  u4E00-u9FA5a-zA-Z_0-9\\-\\.");
+        }
     }
 }

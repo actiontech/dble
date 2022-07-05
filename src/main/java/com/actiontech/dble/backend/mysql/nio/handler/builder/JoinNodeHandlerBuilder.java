@@ -207,7 +207,9 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             delayTableHandlerMap.put(dependNode, delayTableHandlerList);
             DMLResponseHandler endHandler = buildJoinChild(tnSmall, isLeftSmall);
             SendMakeHandler sendMakeHandler = hintNestLoopHelper.getSendMakeHandlerHashMap().get(dependNode);
-            sendMakeHandler.getTableHandlers().add(delayTableHandler);
+            if (Objects.nonNull(sendMakeHandler)) {
+                sendMakeHandler.getTableHandlers().add(delayTableHandler);
+            }
             pres.add(endHandler);
             pres.add(delayTableHandler);
             buildExplain(isLeftSmall, tnBig, keyToPass, delayTableHandler, pres);

@@ -560,7 +560,8 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 this.config.getUser().equals(dbInstance.getConfig().getUser()) &&
                 this.config.getPassword().equals(dbInstance.getConfig().getPassword()) &&
                 this.config.isUsingDecrypt() == dbInstance.getConfig().isUsingDecrypt() &&
-                this.config.getPoolConfig().getTimeBetweenEvictionRunsMillis() == dbInstance.getConfig().getPoolConfig().getTimeBetweenEvictionRunsMillis();
+                this.config.getPoolConfig().getTimeBetweenEvictionRunsMillis() == dbInstance.getConfig().getPoolConfig().getTimeBetweenEvictionRunsMillis() &&
+                this.disabled.get() == dbInstance.isDisabled();
     }
 
     public boolean equalsForPoolCapacity(PhysicalDbInstance dbInstance) {
@@ -574,7 +575,8 @@ public abstract class PhysicalDbInstance implements ReadTimeStatusInstance {
                 this.config.getUser().equals(dbInstance.getConfig().getUser()) &&
                 this.config.getPassword().equals(dbInstance.getConfig().getPassword()) &&
                 this.config.isUsingDecrypt() == dbInstance.getConfig().isUsingDecrypt() &&
-                this.config.getPoolConfig().getHeartbeatPeriodMillis() == dbInstance.getConfig().getPoolConfig().getHeartbeatPeriodMillis();
+                this.config.getPoolConfig().getHeartbeatPeriodMillis() == dbInstance.getConfig().getPoolConfig().getHeartbeatPeriodMillis() &&
+                this.disabled.get() == dbInstance.isDisabled();
     }
 
     public boolean equalsForTestConn(PhysicalDbInstance dbInstance) {

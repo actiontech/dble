@@ -7,7 +7,7 @@ package com.actiontech.dble.config.model.user;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
+import com.actiontech.dble.config.helper.ShowDatabaseHandler;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallProvider;
 
@@ -31,7 +31,7 @@ public class AnalysisUserConfig extends SingleDbGroupUserConfig {
             return 0;
         }
         boolean exist;
-        Set<String> schemas = new MysqlDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups()).execute(dbGroup);
+        Set<String> schemas = new ShowDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups(),"name").execute(dbGroup);
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             Optional<String> result = schemas.stream().filter(item -> StringUtil.equals(item.toLowerCase(), schema.toLowerCase())).findFirst();
             exist = result.isPresent();

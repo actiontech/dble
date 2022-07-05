@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.services.manager.response;
 
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
@@ -16,8 +17,10 @@ import com.actiontech.dble.config.converter.DBConverter;
 import com.actiontech.dble.config.converter.SequenceConverter;
 import com.actiontech.dble.config.converter.ShardingConverter;
 import com.actiontech.dble.config.converter.UserConverter;
+import com.actiontech.dble.config.helper.ShowDatabaseHandler;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
@@ -30,9 +33,9 @@ import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.services.manager.ManagerService;
-import com.actiontech.dble.services.mysqlauthenticate.MysqlDatabaseHandler;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,8 +163,32 @@ public final class DryRun {
     }
 
     private static Map<String, Set<String>> getExistSchemas(ServerConfig serverConfig) {
+        Map<String, Set<String>> schemaMap = Maps.newHashMap();
+        Map<String, PhysicalDbGroup> dbGroups = serverConfig.getDbGroups();
+        Map<String, PhysicalDbGroup> mysqlDbGroups = Maps.newHashMap();
+        Map<String, PhysicalDbGroup> clickHouseDbGroups = Maps.newHashMap();
+        dbGroups.forEach((k, v) -> {
+            DataBaseType dataBaseType = v.getDbGroupConfig().instanceDatabaseType();
+            if (dataBaseType == DataBaseType.MYSQL) {
+                mysqlDbGroups.put(k, v);
+            } else {
+                clickHouseDbGroups.put(k, v);
+            }
+        });
+
+        if (!mysqlDbGroups.isEmpty()) {
+            ShowDatabaseHandler mysqlShowDatabaseHandler = new ShowDatabaseHandler(mysqlDbGroups,"Database");
+            schemaMap.putAll(getSchemaMap(mysqlShowDatabaseHandler));
+        }
+        if (!clickHouseDbGroups.isEmpty()) {
+            ShowDatabaseHandler clickHouseDatabaseHandler = new ShowDatabaseHandler(clickHouseDbGroups,"name");
+            schemaMap.putAll(getSchemaMap(clickHouseDatabaseHandler));
+        }
+        return schemaMap;
+    }
+
+    private static Map<String, Set<String>> getSchemaMap(ShowDatabaseHandler databaseHandler) {
         Map<String, Set<String>> schemaMap = new HashMap<>();
-        MysqlDatabaseHandler databaseHandler = new MysqlDatabaseHandler(serverConfig.getDbGroups());
         List<PhysicalDbInstance> physicalDbInstances = databaseHandler.getPhysicalDbInstances();
         physicalDbInstances.forEach(ds -> {
             Set<String> schemaSet = databaseHandler.execute(ds);

@@ -31,7 +31,7 @@ public class AnalysisUserConfig extends SingleDbGroupUserConfig {
             return 0;
         }
         boolean exist;
-        Set<String> schemas = new ShowDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups(),"name").execute(dbGroup);
+        Set<String> schemas = new ShowDatabaseHandler(DbleServer.getInstance().getConfig().getDbGroups(), "name").execute(dbGroup);
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             Optional<String> result = schemas.stream().filter(item -> StringUtil.equals(item.toLowerCase(), schema.toLowerCase())).findFirst();
             exist = result.isPresent();

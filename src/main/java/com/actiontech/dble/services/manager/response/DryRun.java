@@ -177,11 +177,11 @@ public final class DryRun {
         });
 
         if (!mysqlDbGroups.isEmpty()) {
-            ShowDatabaseHandler mysqlShowDatabaseHandler = new ShowDatabaseHandler(mysqlDbGroups,"Database");
+            ShowDatabaseHandler mysqlShowDatabaseHandler = new ShowDatabaseHandler(mysqlDbGroups, "Database");
             schemaMap.putAll(getSchemaMap(mysqlShowDatabaseHandler));
         }
         if (!clickHouseDbGroups.isEmpty()) {
-            ShowDatabaseHandler clickHouseDatabaseHandler = new ShowDatabaseHandler(clickHouseDbGroups,"name");
+            ShowDatabaseHandler clickHouseDatabaseHandler = new ShowDatabaseHandler(clickHouseDbGroups, "name");
             schemaMap.putAll(getSchemaMap(clickHouseDatabaseHandler));
         }
         return schemaMap;

@@ -22,7 +22,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public final class ComplexQueryPlanUtil {
     private ComplexQueryPlanUtil() {
@@ -82,7 +81,7 @@ public final class ComplexQueryPlanUtil {
             if (!dependenciesSet.isEmpty()) {
                 dependencies = dependenciesSet;
             } else if (!CollectionUtil.isEmpty(dependencies)) {
-                dependencies.stream().filter(dependency -> dependency.startsWith(JoinNode.Strategy.HINT_NEST_LOOP.name())).collect(Collectors.toSet()).clear();
+                dependencies.removeIf(dependency -> dependency.startsWith(JoinNode.Strategy.HINT_NEST_LOOP.name()));
             }
             String mergeName = getMergeType(mergeHandler);
             List<BaseSelectHandler> mergeList = new ArrayList<>();

@@ -15,6 +15,7 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -149,25 +150,14 @@ public class JoinStrategyChooser {
         if (isSmallTable((TableNode) node) || canDoAsMerge(joinNode) || !innerJoin) {
             return;
         }
-        List<ItemFuncEqual> joinFilter = joinNode.getJoinFilter();
-        for (ItemFuncEqual itemFuncEqual : joinFilter) {
-            List<Item> arguments = itemFuncEqual.arguments();
-            Item item = arguments.stream().filter(argument -> !StringUtil.equals(getTableName((TableNode) node), argument.getTableName())).findFirst().get();
-            PlanNode dependNode = nodeMap.get(item.getTableName());
-            if (isSmallTable((TableNode) dependNode) && innerJoin) {
-                joinNode.setStrategy(Strategy.ALWAYS_NEST_LOOP);
-                node.setNestLoopFilters(new ArrayList<>());
-                node.setNestLoopDependNode(dependNode);
-                List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
-                nodeList.add(nodeList.size(), node);
-                dependNode.setNestLoopDependOnNodeList(nodeList);
-                return;
-            }
-        }
         joinNode.setStrategy(JoinNode.Strategy.ALWAYS_NEST_LOOP);
+        PlanNode dependNode = findDependNode(node, innerJoin);
+        if (Objects.isNull(dependNode)) {
+            return;
+        }
+        handlerDependNode(dependNode, node);
         node.setNestLoopFilters(new ArrayList<>());
-        node.setNestLoopDependNode(findDependNode(node));
-
+        node.setNestLoopDependNode(dependNode);
     }
 
     private String getTableName(TableNode node) {
@@ -178,20 +168,47 @@ public class JoinStrategyChooser {
         return node.getTableName();
     }
 
-    private PlanNode findDependNode(PlanNode node) {
+    private PlanNode findDependNode(PlanNode node, boolean innerJoin) {
         JoinNode joinNode = (JoinNode) node.getParent();
-        String firstTableName = null;
+        PlanNode firstNode = null;
         List<ItemFuncEqual> joinFilter = joinNode.getJoinFilter();
         for (ItemFuncEqual itemFuncEqual : joinFilter) {
             List<Item> arguments = itemFuncEqual.arguments();
-            String tableName = arguments.get(0).getTableName();
-            firstTableName = Optional.ofNullable(firstTableName).orElse(tableName);
+            Item item = arguments.stream().filter(argument -> !StringUtil.equals(getTableName((TableNode) node), argument.getTableName())).findFirst().get();
+            PlanNode dependNode = nodeMap.get(item.getTableName());
+            if (Objects.isNull(firstNode)) {
+                firstNode = dependNode;
+            }
+            if (isSmallTable((TableNode) dependNode) && innerJoin) {
+                return dependNode;
+            }
         }
-        PlanNode dependNode = nodeMap.get(firstTableName);
+        return firstNode;
+    }
+
+    @Nullable
+    private void handlerDependNode(PlanNode dependNode, PlanNode node) {
+        setNestLoopDependOnNodeList(dependNode, node);
+        PlanNode parent = dependNode.getParent();
+        setNestLoopDependOnNodeList(dependNode, node);
+        boolean isCurrentNode = true;
+        while (Objects.nonNull(parent)) {
+            if (!(parent instanceof JoinNode) || !canDoAsMerge((JoinNode) parent)) {
+                break;
+            }
+            dependNode = parent;
+            isCurrentNode = false;
+            parent = parent.getParent();
+        }
+        if (!isCurrentNode) {
+            setNestLoopDependOnNodeList(dependNode, node);
+        }
+    }
+
+    private void setNestLoopDependOnNodeList(PlanNode dependNode, PlanNode node) {
         List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
         nodeList.add(nodeList.size(), node);
         dependNode.setNestLoopDependOnNodeList(nodeList);
-        return nodeMap.get(firstTableName);
     }
 
     private boolean buildNodeMap(JoinNode joinNode) {

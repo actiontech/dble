@@ -253,6 +253,24 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         });
     }
 
+    protected String getShardingDataType(SchemaInfo schemaInfo, String partitionColumn) throws SQLNonTransientException {
+        TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+                schemaInfo.getTable());
+        int shardingColIndex = -1;
+        if (tbMeta != null) {
+            for (int i = 0; i < tbMeta.getColumns().size(); i++) {
+                if (partitionColumn.equalsIgnoreCase(tbMeta.getColumns().get(i).getName())) {
+                    shardingColIndex = i;
+                    break;
+                }
+            }
+            if (shardingColIndex != -1) {
+                return tbMeta.getColumns().get(shardingColIndex).getDataType();
+            }
+        }
+        throw new SQLNonTransientException("bad insert sql, shardingColumn/joinColumn:" + partitionColumn + " not provided.");
+    }
+
     @Override
     String getErrorMsg() {
         return MODIFY_SQL_NOT_SUPPORT_MESSAGE;

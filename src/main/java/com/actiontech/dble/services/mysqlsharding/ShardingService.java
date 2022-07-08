@@ -527,7 +527,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
 
 
     @Override
-    public void beforeWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags) {
+    public void beforeWriteFinish(@NotNull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
         for (BackendConnection backendConnection : session.getTargetMap().values()) {
             TraceManager.sessionFinish(backendConnection.getBackendService());
         }
@@ -542,7 +542,7 @@ public class ShardingService extends BusinessService<ShardingUserConfig> {
         } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {
             TraceManager.sessionFinish(this);
         }
-        session.setStageFinished();
+        session.setResponseTime((resultFlag == ResultFlag.OK || resultFlag == ResultFlag.EOF_ROW));
         if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);

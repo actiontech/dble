@@ -52,7 +52,7 @@ public abstract class AbstractService extends VariablesService implements Servic
     }
 
     @Override
-    public void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags) {
+    public void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
         if (writeFlags.contains(WriteFlag.END_OF_QUERY)) {
             TraceManager.sessionFinish(this);
         } else if (writeFlags.contains(WriteFlag.END_OF_SESSION)) {

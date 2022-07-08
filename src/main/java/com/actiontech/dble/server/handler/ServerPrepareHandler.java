@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.general.GeneralLogHelper;
 import com.actiontech.dble.net.handler.FrontendPrepareHandler;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.server.RequestScope;
 import com.actiontech.dble.server.parser.PrepareChangeVisitor;
@@ -258,7 +259,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
                 ok.setStatus(statusFlag);
                 ok.setWarningCount(0);
                 ok.write(buffer, service, true);
-                service.writeDirectly(buffer, WriteFlags.QUERY_END);
+                service.writeDirectly(buffer, WriteFlags.QUERY_END, ResultFlag.OTHER);
 
 
             } finally {

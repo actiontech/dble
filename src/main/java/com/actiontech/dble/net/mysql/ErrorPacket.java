@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.singleton.BufferPoolManager;
 
 import java.nio.ByteBuffer;
@@ -112,7 +113,7 @@ public class ErrorPacket extends MySQLPacket {
     public void bufferWrite(AbstractConnection c) {
         ByteBuffer buffer = c.allocate();
         buffer = this.write(buffer, c.getService(), true);
-        c.getService().writeDirectly(buffer, getLastWriteFlag());
+        c.getService().writeDirectly(buffer, getLastWriteFlag(), getResultFlag());
     }
 
     @Override
@@ -177,5 +178,10 @@ public class ErrorPacket extends MySQLPacket {
     @Override
     public boolean isEndOfSession() {
         return true;
+    }
+
+    @Override
+    public ResultFlag getResultFlag() {
+        return ResultFlag.ERROR;
     }
 }

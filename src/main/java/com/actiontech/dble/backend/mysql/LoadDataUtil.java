@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.BinaryPacket;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -58,7 +59,7 @@ public final class LoadDataUtil {
             //send empty packet
             byte[] empty = new byte[]{0, 0, 0, 3};
             empty[3] = ++packId;
-            service.write(empty, WriteFlags.QUERY_END);
+            service.write(empty, WriteFlags.QUERY_END, ResultFlag.OTHER);
         }
     }
 

@@ -16,6 +16,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -428,7 +429,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (requestScope.isUsingCursor()) {
                     recycle();
                     requestScope.getCurrentPreparedStatement().getCursorCache().done();
-                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END);
+                    session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
                     return;
                 }
                 this.resultSize += eof.length;
@@ -438,7 +439,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     }
 
                     if (this.isFail()) {
-                        session.setResponseTime(false);
                         session.resetMultiStatementStatus();
                         if (session.closed()) {
                             cleanBuffer();
@@ -468,7 +468,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 session.releaseConnections(false);
             }
         }
-        session.setResponseTime(!this.isFail());
     }
 
     @Override
@@ -566,7 +565,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 cleanBuffer();
             } else {
                 ErrorPacket errorPacket = createErrPkg(this.error, err.getErrNo());
-                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END);
+                session.getShardingService().writeDirectly(byteBuffer, WriteFlags.QUERY_END, ResultFlag.ERROR);
                 handleEndPacket(errorPacket, AutoTxOperation.ROLLBACK, false);
             }
         }
@@ -585,7 +584,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + (byte) session.getShardingService().getPacketId().get());
         }
-        session.setResponseTime(true);
         QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
         eofRowPacket.write(byteBuffer, source);
     }
@@ -707,7 +705,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
                 service.setTxInterrupt("ROLLBACK");
             }
-            session.setResponseTime(isSuccess);
 
             packet.write(session.getSource());
         }

@@ -704,7 +704,6 @@ public class MultiNodeLoadDataHandler extends MultiNodeHandler implements LoadDa
             if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
                 service.setTxInterrupt("ROLLBACK");
             }
-            session.setResponseTime(isSuccess);
 
             curPacket.write(session.getSource());
         }

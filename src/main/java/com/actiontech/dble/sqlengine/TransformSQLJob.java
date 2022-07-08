@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -98,7 +99,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void okResponse(byte[] ok, @NotNull AbstractService service) {
-        this.managerService.write(ok, WriteFlags.QUERY_END);
+        this.managerService.write(ok, WriteFlags.QUERY_END, ResultFlag.OK);
         connection.release();
     }
 
@@ -119,7 +120,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, @NotNull AbstractService service) {
-        managerService.write(eof, WriteFlags.QUERY_END);
+        managerService.write(eof, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
         connection.release();
     }
 
@@ -133,7 +134,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     private void writeError(byte[] err) {
-        managerService.write(err, WriteFlags.SESSION_END);
+        managerService.write(err, WriteFlags.SESSION_END, ResultFlag.ERROR);
         if (connection != null) {
             connection.release();
         }

@@ -680,7 +680,6 @@ public final class StringUtil {
         Pattern pattern = Pattern.compile("^[-\\+]?[.\\d]*$");
         return pattern.matcher(str).matches();
     }
-    
     /**
      * <p>
      * src: https://stackoverflow.com/questions/26357938/detect-chinese-character-in-java/26357985

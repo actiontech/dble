@@ -8,13 +8,9 @@ import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class FrontActiveRatioStat {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontActiveRatioStat.class);
@@ -143,22 +139,30 @@ public class FrontActiveRatioStat {
         }
 
         private void adjust(long currentTime) {
-            long recentTime = currentTime - LAST_STAT_MAX;
             synchronized (mutex) {
-                List<Time2> removeList = list.stream().
-                        filter(l -> l.getValue() < recentTime).collect(Collectors.toList());
-                if (!CollectionUtil.isEmpty(removeList)) {
-                    Time2 last = removeList.get(removeList.size() - 1);
-                    if (last instanceof ReadTime) { // last Time2 is ReadTime, should not be removed
-                        removeList.remove(last);
-                    }
-                    list.removeAll(removeList);
-                }
+                long recentTime = currentTime - LAST_STAT_MAX;
+                int index = lastObsoleteIndex(list, recentTime);
+
+                if (index == -1) return;
+                Time2 t1 = list.get(index);
+                if (t1 instanceof ReadTime)
+                    index--;
+
+                if (index == -1) return;
+                List subList = list.subList(0, index + 1);
+                list.removeAll(new HashSet<>(subList)); // list.removeAll(set) is moving much faster than list.removeAll(list)
             }
         }
 
         public String[] getActiveRatioStat(long currentTime) {
-            List<Time2> list0 = new LinkedList<>(list);
+            LinkedList<Time2> list0;
+            synchronized (mutex) {
+                list0 = new LinkedList<>(list);
+            }
+
+            if (CollectionUtil.isEmpty(list0))
+                return new String[]{"0%", "0%", "0%"};
+
             String stat30 = getActiveRatio(list0, currentTime, LAST_STAT_30);
             String stat60 = getActiveRatio(list0, currentTime, LAST_STAT_60);
             String stat300 = getActiveRatio(list0, currentTime, LAST_STAT_300);
@@ -166,16 +170,17 @@ public class FrontActiveRatioStat {
             return new String[]{stat30, stat60, stat300};
         }
 
-        private String getActiveRatio(List<Time2> list0, long currentTime, long lastStatTime) {
+        private String getActiveRatio(LinkedList<Time2> list0, long currentTime, long lastStatTime) {
             long recentTime = currentTime - lastStatTime;
-            List<Time2> lists = list0.stream().
-                    filter(l -> l.getValue() >= recentTime && l.getValue() <= currentTime).
-                    collect(Collectors.toList());
+            int index = lastObsoleteIndex(list0, recentTime);
+            List<Time2> lists = list0.subList(index + 1, list0.size());
 
             if (CollectionUtil.isEmpty(lists))
-                return 0 + "%";
+                return "0%";
 
             long usage = getUsageWay(lists, recentTime, currentTime);
+            if (usage >= lastStatTime)
+                return "100%";
             int percent = (int) (usage / ((float) lastStatTime) * 100);
             return percent + "%";
         }
@@ -197,6 +202,30 @@ public class FrontActiveRatioStat {
             }
             return usageTime;
         }
+
+        /**
+         * binary search
+         */
+        private int lastObsoleteIndex(LinkedList<Time2> list0, long target) {
+            int len = list0.size();
+            int low = 0;
+            int high = len - 1;
+
+            int mid;
+            while (low <= high) {
+                mid = low + ((high - low) >> 1);
+                if (list0.get(mid).getValue() < target) {
+                    if (mid == len - 1 || list0.get(mid + 1).getValue() >= target) {
+                        return mid;
+                    } else {
+                        low = mid + 1;
+                    }
+                } else {
+                    high = mid - 1;
+                }
+            }
+            return -1;
+        }
     }
 
     private class ReadTime extends Time2 {
@@ -212,7 +241,7 @@ public class FrontActiveRatioStat {
     }
 
     private abstract class Time2 {
-        long time0;
+        volatile long time0;
 
         Time2(long time0) {
             this.time0 = time0;

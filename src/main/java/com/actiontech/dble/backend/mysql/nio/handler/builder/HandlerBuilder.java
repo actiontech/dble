@@ -128,15 +128,19 @@ public class HandlerBuilder {
     }
 
     public boolean canAsWholeToSingle(List<DMLResponseHandler> merges) {
-        if (merges.size() != 1)
+        if (merges.size() != 1 || nestLoopCheck(merges))
             return false;
+        return true;
+    }
+
+    public static boolean nestLoopCheck(List<DMLResponseHandler> merges) {
         DMLResponseHandler next = merges.get(0).getNextHandler();
         while (next != null) {
             if (next instanceof TempTableHandler || (next instanceof SendMakeHandler && !((SendMakeHandler) next).getTableHandlers().isEmpty()))
-                return false;
+                return true;
             next = next.getNextHandler();
         }
-        return true;
+        return false;
     }
 
     // check whether the SQL can be directly sent to a single node

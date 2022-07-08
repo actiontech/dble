@@ -595,7 +595,11 @@ public abstract class BaseHandlerBuilder {
     boolean tryRouteToOneNode(List<DMLResponseHandler> pres) {
         List<DMLResponseHandler> merges = Lists.newArrayList();
         for (DMLResponseHandler preHandler : pres) {
-            merges.addAll(preHandler.getMerges());
+            List<DMLResponseHandler> baseMerges = preHandler.getMerges();
+            if (HandlerBuilder.nestLoopCheck(baseMerges)) {
+                return false;
+            }
+            merges.addAll(baseMerges);
         }
         Set<String> routeNodes = HandlerBuilder.canRouteToNodes(merges);
         if (routeNodes != null && routeNodes.size() > 0) {

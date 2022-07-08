@@ -11,6 +11,9 @@ import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ParamInfo;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.net.ssl.OpenSSLWrapper;
+import com.actiontech.dble.net.ssl.GMSslWrapper;
+import com.actiontech.dble.net.ssl.SSLWrapperRegistry;
 import com.actiontech.dble.server.status.GeneralLog;
 import com.actiontech.dble.server.status.LoadDataBatch;
 import com.actiontech.dble.server.status.SlowQueryLog;
@@ -127,7 +130,10 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("slowLogBaseDir", sysConfig.getSlowLogBaseDir() + "", "The directory of slow query log, the default value is ./slowlogs/"));
         readOnlyParams.add(new ParamInfo("slowLogBaseName", sysConfig.getSlowLogBaseName() + "", "The name of the slow query log. The default value is slow-query"));
         readOnlyParams.add(new ParamInfo("maxCharsPerColumn", sysConfig.getMaxCharsPerColumn() + "", "The maximum number of characters allowed for per column when load data. The default value is 65535"));
-        readOnlyParams.add(new ParamInfo("traceEndPoint", sysConfig.getTraceEndPoint() + "", "The trace Jaeger server endPoint"));
+        readOnlyParams.add(new ParamInfo("enableTrace", TraceManager.isEnable() + "", "Whether the trace Jaeger is enabled"));
+        readOnlyParams.add(new ParamInfo("traceEndPoint", sysConfig.getTraceEndPoint(), "The trace Jaeger server endPoint"));
+        readOnlyParams.add(new ParamInfo("traceSamplerType", TraceManager.getSamplerType(), "The trace Jaeger sampler type. The default type is 'const'"));
+        readOnlyParams.add(new ParamInfo("traceSamplerParam", TraceManager.getSamplerParam(), "The trace Jaeger sampler param"));
         readOnlyParams.add(new ParamInfo("generalLogFileSize", GeneralLog.getInstance().getGeneralLogFileSize() + "M", "The max size of the general log file. The default value is 16M"));
         readOnlyParams.add(new ParamInfo("generalLogQueueSize", GeneralLog.getInstance().getGeneralLogQueueSize() + "", "Sets the queue size for consuming general log, value must not be less than 1 and must be a power of 2, the default value is 4096"));
         readOnlyParams.add(new ParamInfo("enableCursor", Boolean.valueOf(sysConfig.isEnableCursor()).toString(), "Whether the server-side cursor  is enable or not. The default value is false"));
@@ -142,6 +148,17 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("routePenetrationRules", sysConfig.getRoutePenetrationRules() + "", "The config of route penetration.The default value is ''"));
         readOnlyParams.add(new ParamInfo("enableSessionActiveRatioStat", FrontActiveRatioStat.getInstance().isEnable() + "", "Whether frontend connection activity ratio statistics are enabled. The default value is 1."));
         readOnlyParams.add(new ParamInfo("enableConnectionAssociateThread", ConnectionAssociateThreadManager.getInstance().isEnable() + "", "Whether to open frontend connection and backend connection are associated with threads. The default value is 1."));
+        readOnlyParams.add(new ParamInfo("isSupportSSL", SystemConfig.getInstance().isSupportSSL() + "", "isSupportSSL in configuration"));
+        readOnlyParams.add(new ParamInfo("isSupportOpenSSL", (SSLWrapperRegistry.getInstance(OpenSSLWrapper.PROTOCOL) != null) + "", "Whether OpenSSL is actually supported"));
+        readOnlyParams.add(new ParamInfo("serverCertificateKeyStoreUrl", SystemConfig.getInstance().getServerCertificateKeyStoreUrl() + "", "Service certificate required of OpenSSL"));
+        readOnlyParams.add(new ParamInfo("trustCertificateKeyStoreUrl", SystemConfig.getInstance().getTrustCertificateKeyStoreUrl() + "", "Trust certificate required of OpenSSL"));
+        readOnlyParams.add(new ParamInfo("isSupportGMSSL", (SSLWrapperRegistry.getInstance(GMSslWrapper.PROTOCOL) != null) + "", "Whether GMSSL is actually supported"));
+        readOnlyParams.add(new ParamInfo("gmsslBothPfx", SystemConfig.getInstance().getGmsslBothPfx() + "", "National secret dual certificate/private key file in PFX format"));
+        readOnlyParams.add(new ParamInfo("gmsslRcaPem", SystemConfig.getInstance().getGmsslRcaPem() + "", "Root certificate of GMSSL"));
+        readOnlyParams.add(new ParamInfo("gmsslOcaPem", SystemConfig.getInstance().getGmsslOcaPem() + "", "Secondary certificate of GMSSL"));
+        readOnlyParams.add(new ParamInfo("district", sysConfig.getDistrict() + "", "The location of the DBLE"));
+        readOnlyParams.add(new ParamInfo("dataCenter", sysConfig.getDataCenter() + "", "The data center where the DBLE resides"));
+
     }
 
     public List<ParamInfo> getVolatileParams() {

@@ -149,6 +149,7 @@ public final class ShowHelp {
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");
         HELPS.put("kill @@xa_session id1,id2,...", "Kill the specified sessions that commit/rollback xa transaction in the background");
         HELPS.put("kill @@ddl_lock where schema='?' and table='?'", "Kill ddl lock held by the specified ddl");
+        HELPS.put("kill @@cluster_renew_thread '?'", "Kill cluster renew thread");
 
         // stop
         HELPS.put("stop @@heartbeat name:time", "Pause shardingNode heartbeat");

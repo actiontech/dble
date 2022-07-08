@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * @author mycat
@@ -617,6 +618,7 @@ public final class StringUtil {
         return orgStr;
     }
 
+
     /**
      * Refer to String source code handling code，Whether the encoding can parse String properly
      *
@@ -673,4 +675,23 @@ public final class StringUtil {
         }
         return true;
     }
+
+    public static boolean isDoubleOrFloat(String str) {
+        Pattern pattern = Pattern.compile("^[-\\+]?[.\\d]*$");
+        return pattern.matcher(str).matches();
+    }
+    
+    /**
+     * <p>
+     * src: https://stackoverflow.com/questions/26357938/detect-chinese-character-in-java/26357985
+     * Now Character.isIdeographic(int codepoint) would tell wether the codepoint is a C (Chinese) ideograph.
+     * Nearer is using Character.UnicodeScript.HAN.
+     *
+     * @param val
+     * @return
+     */
+    public static boolean isChinese(String val) {
+        return val.codePoints().allMatch(codepoint -> Character.UnicodeScript.of(codepoint) == Character.UnicodeScript.HAN);
+    }
+
 }

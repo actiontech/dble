@@ -96,10 +96,11 @@ public class LoadDataResponseHandler extends DefaultResponseHandler {
         if (service.getSession() != null && !service.isTesting() && service.getLogResponse().compareAndSet(false, true)) {
             service.getSession().setBackendResponseEndTime(this.service);
         }
+        ResponseHandler respHand = service.getResponseHandler();
         service.getLogResponse().set(false);
-        service.backendSpecialCleanUp();
-        if (service.getResponseHandler() != null) {
-            service.getResponseHandler().rowEofResponse(data, false, service);
+        if (respHand != null) {
+            service.backendSpecialCleanUp();
+            respHand.rowEofResponse(data, false, service);
         } else {
             closeNoHandler();
         }

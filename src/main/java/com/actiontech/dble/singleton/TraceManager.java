@@ -5,8 +5,11 @@
 
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.metrics.Metrics;
@@ -14,10 +17,15 @@ import io.jaegertracing.internal.metrics.NoopMetricsFactory;
 import io.jaegertracing.internal.reporters.CompositeReporter;
 import io.jaegertracing.internal.reporters.LoggingReporter;
 import io.jaegertracing.internal.reporters.RemoteReporter;
+import io.jaegertracing.internal.samplers.ConstSampler;
 import io.jaegertracing.internal.samplers.ProbabilisticSampler;
+import io.jaegertracing.internal.samplers.RateLimitingSampler;
+import io.jaegertracing.spi.Sampler;
 import io.jaegertracing.thrift.internal.senders.HttpSender;
 import io.opentracing.Scope;
 import io.opentracing.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,39 +36,115 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by szf on 2020/5/9.
  */
 public final class TraceManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TraceManager.class);
     private static final TraceManager INSTANCE = new TraceManager();
-    private final JaegerTracer tracer;
-    private final Map<AbstractService, List<TraceObject>> connectionTracerMap = new ConcurrentHashMap<>();
-    ThreadLocal<AbstractService> seriveces = new InheritableThreadLocal<>();
 
+    private final ProblemReporter problemReporter = StartProblemReporter.getInstance();
+    private JaegerTracer tracer = null;
+    private String samplerType = "";
+    private String samplerParam = "";
+
+    private final Map<AbstractService, List<TraceObject>> connectionTracerMap = new ConcurrentHashMap<>();
+    private final ThreadLocal<AbstractService> services = new InheritableThreadLocal<>();
 
     private TraceManager() {
+        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) return;
+
         final String endPoint = SystemConfig.getInstance().getTraceEndPoint();
-        if (endPoint != null) {
-            final CompositeReporter compositeReporter = new CompositeReporter(
-                    new RemoteReporter.Builder().
-                            withSender(new HttpSender.Builder(endPoint).build()).
-                            build(),
-                    new LoggingReporter()
-            );
+        if (endPoint == null) return;
 
-            final Metrics metrics = new Metrics(new NoopMetricsFactory());
+        Object[] result = buildSampler(SystemConfig.getInstance().getTraceSamplerType(), SystemConfig.getInstance().getTraceSamplerParam());
+        if (result == null) return;
 
-            JaegerTracer.Builder builder = new JaegerTracer.Builder("DBLE").withReporter(compositeReporter).
-                    withMetrics(metrics).
-                    withExpandExceptionLogs().
-                    withSampler(new ProbabilisticSampler(0.5));
+        Sampler sampler = (Sampler) result[2];
+        LOGGER.info("Trace Jaeger use {}", sampler);
 
-            tracer = builder.build();
-        } else {
-            tracer = null;
+        final CompositeReporter compositeReporter = new CompositeReporter(
+                new RemoteReporter.Builder().
+                        withSender(new HttpSender.Builder(endPoint).build()).
+                        build(),
+                new LoggingReporter()
+        );
+
+        final Metrics metrics = new Metrics(new NoopMetricsFactory());
+
+        JaegerTracer.Builder builder = new JaegerTracer.Builder("DBLE").withReporter(compositeReporter).
+                withMetrics(metrics).
+                withExpandExceptionLogs().
+                withSampler(sampler);
+
+        tracer = builder.build();
+        samplerType = String.valueOf(result[0]);
+        samplerParam = String.valueOf(result[1]);
+    }
+
+    private Object[] buildSampler(String samplerType0, String samplerParam0) {
+        if (StringUtil.isBlank(samplerType0)) {
+            return new Object[]{"const", "1.0", new ConstSampler(true)};
         }
+
+        switch (samplerType0.toLowerCase()) {
+            case "const":
+                if (StringUtil.isBlank(samplerParam0)) {
+                    samplerParam0 = "1.0";
+                }
+                if (StringUtil.isDoubleOrFloat(samplerParam0)) {
+                    double num = Double.parseDouble(samplerParam0);
+                    if (num == 0.0D) {
+                        return new Object[]{"const", "0.0", new ConstSampler(false)};
+                    } else if (num == 1.0D) {
+                        return new Object[]{"const", "1.0", new ConstSampler(true)};
+                    }
+                }
+                problemReporter.error("The [const] sampling param must be equal 0.0 or 1.0");
+                break;
+            case "probabilistic":
+                if (StringUtil.isBlank(samplerParam0)) {
+                    samplerParam0 = "0.1";
+                }
+                if (StringUtil.isDoubleOrFloat(samplerParam0)) {
+                    double num = Double.parseDouble(samplerParam0);
+                    if (!(num < 0.0D) && !(num > 1.0D)) {
+                        return new Object[]{"probabilistic", num, new ProbabilisticSampler(num)};
+                    }
+                }
+                problemReporter.error("The [probabilistic] sampling param must be greater than 0.0 and less than 1.0");
+                break;
+            case "ratelimiting":
+                if (StringUtil.isBlank(samplerParam0)) {
+                    samplerParam0 = "1.0";
+                }
+                if (StringUtil.isDoubleOrFloat(samplerParam0)) {
+                    double num = Double.parseDouble(samplerParam0);
+                    return new Object[]{"ratelimiting", num, new RateLimitingSampler(num)};
+                }
+                problemReporter.error("The [ratelimiting] sampling param must be a number");
+                break;
+            case "remote":
+                problemReporter.error("The [ratelimiting] sampling is not supported");
+                return null;
+            default:
+                problemReporter.error("There is no a sampling, select the supported sampling from [const, probabilistic, ratelimiting]");
+                return null;
+        }
+        return null;
     }
 
     public static JaegerTracer getTracer() {
         return INSTANCE.tracer;
     }
 
+    public static boolean isEnable() {
+        return INSTANCE.tracer != null;
+    }
+
+    public static String getSamplerType() {
+        return INSTANCE.samplerType;
+    }
+
+    public static String getSamplerParam() {
+        return INSTANCE.samplerParam;
+    }
 
     public static void sessionStart(AbstractService service, String traceMessage) {
         if (INSTANCE.tracer != null) {
@@ -101,7 +185,7 @@ public final class TraceManager {
     public static TraceObject serviceTrace(AbstractService service, String traceMessage) {
         if (INSTANCE.tracer != null) {
             List<TraceObject> spanList = INSTANCE.connectionTracerMap.get(service);
-            INSTANCE.seriveces.set(service);
+            INSTANCE.services.set(service);
             if (spanList != null) {
                 TraceObject fSpan = popServiceSpan(service, false);
                 TraceObject span = spanCreateActive(traceMessage, true, fSpan, service);
@@ -114,7 +198,7 @@ public final class TraceManager {
 
     public static AbstractService getThreadService() {
         if (INSTANCE.tracer != null) {
-            return INSTANCE.seriveces.get();
+            return INSTANCE.services.get();
         } else {
             return null;
         }

@@ -40,8 +40,10 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,6 +63,10 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
 
     private final RWSplitQueryHandler queryHandler;
     private final RWSplitNonBlockingSession session;
+
+    private volatile boolean initDb;
+    //init DB to calculate the tables size
+    private AtomicLong tableRows = new AtomicLong();
 
     // prepare statement
     private ConcurrentHashMap<Long, PreparedStatementHolder> psHolder = new ConcurrentHashMap<>();
@@ -223,6 +229,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
             session.execute(true, data, (isSuccess, resp, rwSplitService) -> {
                 if (isSuccess) rwSplitService.setSchema(switchSchema);
             });
+            initDb = true;
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + getCharset().getClient() + "'");
         }
@@ -400,6 +407,22 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         this.txStarted = txStart;
     }
 
+    public boolean isInitDb() {
+        return initDb;
+    }
+
+    public void setInitDb(boolean initDb) {
+        this.initDb = initDb;
+    }
+
+    public AtomicLong getTableRows() {
+        return tableRows;
+    }
+
+    public void setTableRows(AtomicLong tableRows) {
+        this.tableRows = tableRows;
+    }
+
     @Override
     public void killAndClose(String reason) {
         session.close(reason);
@@ -414,9 +437,9 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
         setLockTable(false);
         inLoadData = false;
         txStarted = false;
-        this.tmpTableSet.clear();
-        this.sysVariables.clear();
-        this.usrVariables.clear();
+        Optional.ofNullable(tmpTableSet).ifPresent((tmpTables) -> tmpTables.clear());
+        Optional.ofNullable(sysVariables).ifPresent((sysVariableMap) -> sysVariableMap.clear());
+        Optional.ofNullable(usrVariables).ifPresent((usrVariableMap) -> usrVariableMap.clear());
         autocommit = SystemConfig.getInstance().getAutocommit() == 1;
         txIsolation = SystemConfig.getInstance().getTxIsolation();
         setCharacterSet(SystemConfig.getInstance().getCharset());

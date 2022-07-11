@@ -294,6 +294,7 @@ public class ShardingConverter {
         String singleTableName = singleTable.getName();
         String singleTableSqlMaxLimitStr = null == singleTable.getSqlMaxLimit() ? null : String.valueOf(singleTable.getSqlMaxLimit());
         String singleTableShardingNode = singleTable.getShardingNode();
+        boolean specifyCharset = singleTable.getSpecifyCharset();
 
         if (StringUtil.isBlank(singleTableName)) {
             throw new ConfigException("one of tables' name is empty");
@@ -316,7 +317,7 @@ public class ShardingConverter {
             if (StringUtil.isBlank(tableName)) {
                 throw new ConfigException("one of table name of " + singleTableName + " is empty");
             }
-            SingleTableConfig table = new SingleTableConfig(tableName, tableSqlMaxLimit, Arrays.asList(theShardingNodes));
+            SingleTableConfig table = new SingleTableConfig(tableName, tableSqlMaxLimit, Arrays.asList(theShardingNodes), specifyCharset);
             checkShardingNodeExists(table.getShardingNodes(), shardingNodeConfigMap);
             if (tableConfigMap.containsKey(table.getName())) {
                 throw new ConfigException("table " + tableName + " duplicated!");
@@ -333,6 +334,7 @@ public class ShardingConverter {
         String globalTableCheckClass = Optional.ofNullable(globalTable.getCheckClass()).orElse(GLOBAL_TABLE_CHECK_DEFAULT);
         String globalTableCron = Optional.ofNullable(globalTable.getCron()).orElse(GLOBAL_TABLE_CHECK_DEFAULT_CRON).toUpperCase();
         boolean globalCheck = !StringUtil.isBlank(globalTable.getCheckClass());
+        boolean specifyCharset = globalTable.getSpecifyCharset();
 
         if (StringUtil.isBlank(globalTableName)) {
             throw new ConfigException("one of tables' name is empty");
@@ -361,7 +363,7 @@ public class ShardingConverter {
                 throw new ConfigException("one of table name of " + globalTableName + " is empty");
             }
             GlobalTableConfig table = new GlobalTableConfig(tableName, tableSqlMaxLimit, Arrays.asList(theShardingNodes),
-                    globalTableCron, globalTableCheckClass, globalCheck);
+                    globalTableCron, globalTableCheckClass, globalCheck, specifyCharset);
             checkShardingNodeExists(table.getShardingNodes(), shardingNodeConfigMap);
             if (tableConfigMap.containsKey(table.getName())) {
                 throw new ConfigException("table " + tableName + " duplicated!");
@@ -376,6 +378,7 @@ public class ShardingConverter {
         String shardingTableSqlMaxLimitStr = null == shardingTable.getSqlMaxLimit() ? null : String.valueOf(shardingTable.getSqlMaxLimit());
         String shardingTableShardingColumn = shardingTable.getShardingColumn();
         boolean shardingTableSqlRequiredSharding = Optional.ofNullable(shardingTable.getSqlRequiredSharding()).orElse(false);
+        boolean specifyCharset = shardingTable.getSpecifyCharset();
 
         if (StringUtil.isBlank(shardingTableName)) {
             throw new ConfigException("one of tables' name is empty");
@@ -420,7 +423,7 @@ public class ShardingConverter {
                 throw new ConfigException("one of table name of " + shardingTableName + " is empty");
             }
             ShardingTableConfig table = new ShardingTableConfig(tableName, tableSqlMaxLimit,
-                    lstShardingNode, shardingTableIncrementColumn, algorithm, shardingTableShardingColumn, shardingTableSqlRequiredSharding);
+                    lstShardingNode, shardingTableIncrementColumn, algorithm, shardingTableShardingColumn, shardingTableSqlRequiredSharding, specifyCharset);
             checkShardingNodeExists(table.getShardingNodes(), shardingNodeConfigMap);
             checkRuleSuitTable(table, shardingTableFunction, problemReporter);
             if (tableConfigMap.containsKey(table.getName())) {
@@ -534,7 +537,7 @@ public class ShardingConverter {
             int tableSqlMaxLimit = getSqlMaxLimit(childTableSqlMaxLimitStr, schemaSqlMaxLimit);
 
             ChildTableConfig table = new ChildTableConfig(childTableName, tableSqlMaxLimit, lstShardingNode,
-                    parentTable, childTableJoinColumn, childTableParentColumn, childTableIncrementColumn);
+                    parentTable, childTableJoinColumn, childTableParentColumn, childTableIncrementColumn, childTable.isSpecifyCharset());
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");

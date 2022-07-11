@@ -570,7 +570,7 @@ public final class RouterUtil {
                 value = HexFormatUtil.fromHex(((SQLHexExpr) originValue).getHex(), CharsetUtil.getJavaCharset(clientCharset));
             }
         } else {
-            value = originValue.toString();
+            value = StringUtil.isoCharsetReplace(clientCharset, originValue.toString());
         }
         Integer nodeIndex = tc.getFunction().calculate(value);
         if (nodeIndex == null) {

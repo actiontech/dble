@@ -59,6 +59,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
 
         schema = schemaInfo.getSchemaConfig();
+        visitor.setCurrentTable(schemaInfo.getTable());
         if (insert.getQuery() != null) {
             tryRouteInsertQuery(service, rrs, stmt, visitor, schemaInfo);
             return schema;

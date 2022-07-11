@@ -21,6 +21,8 @@ public abstract class Table implements Named {
     protected String shardingNode;
     @XmlAttribute
     protected Integer sqlMaxLimit;
+    @XmlAttribute
+    protected boolean specifyCharset;
 
     public String getName() {
         return name;
@@ -48,6 +50,15 @@ public abstract class Table implements Named {
         this.sqlMaxLimit = sqlMaxLimit;
     }
 
+    public boolean getSpecifyCharset() {
+        return specifyCharset;
+    }
+
+    public void setSpecifyCharset(boolean specifyCharset) {
+        this.specifyCharset = specifyCharset;
+    }
+
+
     @Override
     public String toString() {
         return "name=" +
@@ -55,6 +66,8 @@ public abstract class Table implements Named {
                 ", shardingNode=" +
                 shardingNode +
                 ", sqlMaxLimit=" +
-                sqlMaxLimit;
+                sqlMaxLimit +
+                "， specifyCharset=" +
+                specifyCharset;
     }
 }

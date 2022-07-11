@@ -17,8 +17,8 @@ public class ChildTableConfig extends BaseTableConfig {
     private final String locateRTableKeySql;
     private final ShardingTableConfig directRouteTC;
 
-    public ChildTableConfig(String name, int maxLimit, List<String> shardingNodes, BaseTableConfig parentTC, String joinColumn, String parentColumn, String incrementColumn) {
-        super(name, maxLimit, shardingNodes);
+    public ChildTableConfig(String name, int maxLimit, List<String> shardingNodes, BaseTableConfig parentTC, String joinColumn, String parentColumn, String incrementColumn, boolean specifyCharset) {
+        super(name, maxLimit, shardingNodes, specifyCharset);
         this.parentTC = parentTC;
         this.joinColumn = joinColumn;
         this.parentColumn = parentColumn;
@@ -34,7 +34,7 @@ public class ChildTableConfig extends BaseTableConfig {
     @Override
     public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
         ChildTableConfig config = new ChildTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes,
-                parent, this.joinColumn, this.parentColumn, this.incrementColumn);
+                parent, this.joinColumn, this.parentColumn, this.incrementColumn, this.specifyCharset);
         config.setId(this.getId());
         return config;
     }

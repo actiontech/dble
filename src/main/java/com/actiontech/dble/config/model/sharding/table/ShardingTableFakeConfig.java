@@ -14,7 +14,7 @@ public class ShardingTableFakeConfig extends ShardingTableConfig {
 
     public ShardingTableFakeConfig(String name, int maxLimit, List<String> shardingNodes, AbstractPartitionAlgorithm function, String createSql) {
         super(name, maxLimit, shardingNodes, null, function,
-                MetaHelper.electionShardingColumn(createSql).toUpperCase(), false);
+                MetaHelper.electionShardingColumn(createSql).toUpperCase(), false, false);
     }
 }
 

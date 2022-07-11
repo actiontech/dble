@@ -699,6 +699,10 @@ public class MySQLResponseService extends VariablesService {
     }
 
     public void signal() {
+        if (connection.isClosed()) {
+            return;
+        }
+
         if (recycler != null) {
             recycler.signal();
         }

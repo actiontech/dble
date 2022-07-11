@@ -30,7 +30,6 @@ import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
-import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
@@ -264,9 +263,6 @@ public final class ReloadConfig {
             // compare changes
             List<ChangeItem> changeItemList = compareChange(loader);
 
-            // user in use cannot be deleted
-            checkUser(changeItemList);
-
             boolean forceAllReload = false;
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
                 //-r
@@ -391,7 +387,6 @@ public final class ReloadConfig {
      */
     private static List<ChangeItem> compareChange(ConfigInitializer loader) {
         ReloadLogHelper.info("reload config: compare changes start", LOGGER);
-        //todo 测试效率
         List<ChangeItem> changeItemList = differentiateChanges(loader);
         ReloadLogHelper.debug("change items :{}", LOGGER, changeItemList);
         ReloadLogHelper.info("reload config: compare changes end", LOGGER);
@@ -436,29 +431,6 @@ public final class ReloadConfig {
 
     }
 
-    /**
-     * user in use cannot be deleted
-     */
-    private static void checkUser(List<ChangeItem> changeItemList) {
-        for (ChangeItem changeItem : changeItemList) {
-            int type = changeItem.getType();
-            Object item = changeItem.getItem();
-            if (type == 3 && item instanceof UserName) {
-                //check is it in use
-                Integer count = FrontendUserManager.getInstance().getUserConnectionMap().get(item);
-                if (null != count && count > 0) {
-                    throw new ConfigException("user['" + item.toString() + "'] is being used.");
-                }
-            } else if (type == 2 && changeItem.isAffectEntryDbGroup() && item instanceof UserName) {
-                //check is it in use
-                Integer count = FrontendUserManager.getInstance().getUserConnectionMap().get(item);
-                if (null != count && count > 0) {
-                    throw new ConfigException("user['" + item.toString() + "'] is being used.");
-                }
-            }
-        }
-    }
-
     private static List<ChangeItem> differentiateChanges(ConfigInitializer newLoader) {
         List<ChangeItem> changeItemList = Lists.newArrayList();
         //user
@@ -469,14 +441,14 @@ public final class ReloadConfig {
         Map<UserName, UserConfig> newUserMap = newLoader.getUsers();
         MapDifference<UserName, UserConfig> userMapDifference = Maps.difference(newUserMap, oldUserMap);
         //delete
-        userMapDifference.entriesOnlyOnRight().keySet().stream().map(userConfig -> new ChangeItem(3, userConfig)).forEach(changeItemList::add);
+        userMapDifference.entriesOnlyOnRight().keySet().stream().map(username -> new ChangeItem(ChangeType.DELETE, username, ChangeItemType.USERNAME)).forEach(changeItemList::add);
         //add
-        userMapDifference.entriesOnlyOnLeft().keySet().stream().map(userConfig -> new ChangeItem(1, userConfig)).forEach(changeItemList::add);
+        userMapDifference.entriesOnlyOnLeft().keySet().stream().map(username -> new ChangeItem(ChangeType.ADD, username, ChangeItemType.USERNAME)).forEach(changeItemList::add);
         //update
         userMapDifference.entriesDiffering().entrySet().stream().map(differenceEntry -> {
             UserConfig newUserConfig = differenceEntry.getValue().leftValue();
             UserConfig oldUserConfig = differenceEntry.getValue().rightValue();
-            ChangeItem changeItem = new ChangeItem(2, differenceEntry.getKey());
+            ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, differenceEntry.getKey(), ChangeItemType.USERNAME);
             if (newUserConfig instanceof RwSplitUserConfig && oldUserConfig instanceof RwSplitUserConfig) {
                 if (!((RwSplitUserConfig) newUserConfig).getDbGroup().equals(((RwSplitUserConfig) oldUserConfig).getDbGroup())) {
                     changeItem.setAffectEntryDbGroup(true);
@@ -490,13 +462,13 @@ public final class ReloadConfig {
         Map<String, ShardingNode> newShardingNodeMap = newLoader.getShardingNodes();
         MapDifference<String, ShardingNode> shardingNodeMapDiff = Maps.difference(newShardingNodeMap, oldShardingNodeMap);
         //delete
-        shardingNodeMapDiff.entriesOnlyOnRight().values().stream().map(sharingNode -> new ChangeItem(3, sharingNode)).forEach(changeItemList::add);
+        shardingNodeMapDiff.entriesOnlyOnRight().values().stream().map(sharingNode -> new ChangeItem(ChangeType.DELETE, sharingNode, ChangeItemType.SHARDING_NODE)).forEach(changeItemList::add);
         //add
-        shardingNodeMapDiff.entriesOnlyOnLeft().values().stream().map(sharingNode -> new ChangeItem(1, sharingNode)).forEach(changeItemList::add);
+        shardingNodeMapDiff.entriesOnlyOnLeft().values().stream().map(sharingNode -> new ChangeItem(ChangeType.ADD, sharingNode, ChangeItemType.SHARDING_NODE)).forEach(changeItemList::add);
         //update
         shardingNodeMapDiff.entriesDiffering().entrySet().stream().map(differenceEntry -> {
             ShardingNode newShardingNode = differenceEntry.getValue().leftValue();
-            ChangeItem changeItem = new ChangeItem(2, newShardingNode);
+            ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newShardingNode, ChangeItemType.SHARDING_NODE);
             return changeItem;
         }).forEach(changeItemList::add);
 
@@ -510,12 +482,12 @@ public final class ReloadConfig {
 
             if (null == oldDbGroup) {
                 //add dbGroup
-                changeItemList.add(new ChangeItem(1, newDbGroup));
+                changeItemList.add(new ChangeItem(ChangeType.ADD, newDbGroup, ChangeItemType.PHYSICAL_DB_GROUP));
             } else {
                 removeDbGroup.remove(newDbGroupEntry.getKey());
                 //change dbGroup
                 if (!newDbGroup.equalsBaseInfo(oldDbGroup)) {
-                    ChangeItem changeItem = new ChangeItem(2, newDbGroup);
+                    ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newDbGroup, ChangeItemType.PHYSICAL_DB_GROUP);
                     if (!newDbGroup.equalsForConnectionPool(oldDbGroup)) {
                         changeItem.setAffectConnectionPool(true);
                     }
@@ -531,14 +503,14 @@ public final class ReloadConfig {
 
                 MapDifference<String, PhysicalDbInstance> dbInstanceMapDifference = Maps.difference(newDbInstanceMap, oldDbInstanceMap);
                 //delete
-                dbInstanceMapDifference.entriesOnlyOnRight().values().stream().map(dbInstance -> new ChangeItem(3, dbInstance)).forEach(changeItemList::add);
+                dbInstanceMapDifference.entriesOnlyOnRight().values().stream().map(dbInstance -> new ChangeItem(ChangeType.DELETE, dbInstance, ChangeItemType.PHYSICAL_DB_INSTANCE)).forEach(changeItemList::add);
                 //add
-                dbInstanceMapDifference.entriesOnlyOnLeft().values().stream().map(dbInstance -> new ChangeItem(1, dbInstance)).forEach(changeItemList::add);
+                dbInstanceMapDifference.entriesOnlyOnLeft().values().stream().map(dbInstance -> new ChangeItem(ChangeType.ADD, dbInstance, ChangeItemType.PHYSICAL_DB_INSTANCE)).forEach(changeItemList::add);
                 //update
                 dbInstanceMapDifference.entriesDiffering().values().stream().map(physicalDbInstanceValueDifference -> {
                     PhysicalDbInstance newDbInstance = physicalDbInstanceValueDifference.leftValue();
                     PhysicalDbInstance oldDbInstance = physicalDbInstanceValueDifference.rightValue();
-                    ChangeItem changeItem = new ChangeItem(2, newDbInstance);
+                    ChangeItem changeItem = new ChangeItem(ChangeType.UPDATE, newDbInstance, ChangeItemType.PHYSICAL_DB_INSTANCE);
                     if (!newDbInstance.equalsForConnectionPool(oldDbInstance)) {
                         changeItem.setAffectConnectionPool(true);
                     }
@@ -564,7 +536,7 @@ public final class ReloadConfig {
         }
         for (Map.Entry<String, PhysicalDbGroup> entry : removeDbGroup.entrySet()) {
             PhysicalDbGroup value = entry.getValue();
-            changeItemList.add(new ChangeItem(3, value));
+            changeItemList.add(new ChangeItem(ChangeType.DELETE, value, ChangeItemType.PHYSICAL_DB_GROUP));
         }
 
         return changeItemList;
@@ -685,89 +657,4 @@ public final class ReloadConfig {
         }
     }
 
-    public static class ChangeItem {
-        //1:add  2:update  3:delete
-        private int type;
-        private Object item;
-        private boolean affectHeartbeat;
-        private boolean affectConnectionPool;
-        private boolean affectTestConn;
-        private boolean affectEntryDbGroup;
-        //connection pool capacity
-        private boolean affectPoolCapacity;
-
-        public ChangeItem(int type, Object item) {
-            this.type = type;
-            this.item = item;
-        }
-
-        public boolean isAffectHeartbeat() {
-            return affectHeartbeat;
-        }
-
-        public void setAffectHeartbeat(boolean affectHeartbeat) {
-            this.affectHeartbeat = affectHeartbeat;
-        }
-
-        public boolean isAffectConnectionPool() {
-            return affectConnectionPool;
-        }
-
-        public void setAffectConnectionPool(boolean affectConnectionPool) {
-            this.affectConnectionPool = affectConnectionPool;
-        }
-
-        public boolean isAffectPoolCapacity() {
-            return affectPoolCapacity;
-        }
-
-        public void setAffectPoolCapacity(boolean affectPoolCapacity) {
-            this.affectPoolCapacity = affectPoolCapacity;
-        }
-
-        public boolean isAffectTestConn() {
-            return affectTestConn;
-        }
-
-        public void setAffectTestConn(boolean affectTestConn) {
-            this.affectTestConn = affectTestConn;
-        }
-
-        public boolean isAffectEntryDbGroup() {
-            return affectEntryDbGroup;
-        }
-
-        public void setAffectEntryDbGroup(boolean affectEntryDbGroup) {
-            this.affectEntryDbGroup = affectEntryDbGroup;
-        }
-
-        public int getType() {
-            return type;
-        }
-
-        public void setType(int type) {
-            this.type = type;
-        }
-
-        public Object getItem() {
-            return item;
-        }
-
-        public void setItem(Object item) {
-            this.item = item;
-        }
-
-        @Override
-        public String toString() {
-            return "ChangeItem{" +
-                    "type=" + type +
-                    ", item=" + item +
-                    ", affectHeartbeat=" + affectHeartbeat +
-                    ", affectConnectionPool=" + affectConnectionPool +
-                    ", affectTestConn=" + affectTestConn +
-                    ", affectEntryDbGroup=" + affectEntryDbGroup +
-                    ", affectPoolCapacity=" + affectPoolCapacity +
-                    '}';
-        }
-    }
 }

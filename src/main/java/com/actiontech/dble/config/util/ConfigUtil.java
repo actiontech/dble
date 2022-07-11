@@ -15,7 +15,9 @@ import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
-import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.ChangeItem;
+import com.actiontech.dble.services.manager.response.ChangeItemType;
+import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.collect.Maps;
@@ -84,14 +86,15 @@ public final class ConfigUtil {
         return schemaList;
     }
 
-    public static String getAndSyncKeyVariables(List<ReloadConfig.ChangeItem> changeItemList, boolean needSync) throws Exception {
+    public static String getAndSyncKeyVariables(List<ChangeItem> changeItemList, boolean needSync) throws Exception {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
         try {
             String msg = null;
-            List<ReloadConfig.ChangeItem> needCheckItemList = changeItemList.stream()
+            List<ChangeItem> needCheckItemList = changeItemList.stream()
                     //add dbInstance or add dbGroup or (update dbInstance and need testConn)
-                    .filter(changeItem -> ((changeItem.getItem() instanceof PhysicalDbInstance || changeItem.getItem() instanceof PhysicalDbGroup) && changeItem.getType() == 1) ||
-                            (changeItem.getItem() instanceof PhysicalDbInstance && changeItem.getType() == 2 && changeItem.isAffectTestConn()))
+                    .filter(changeItem -> ((changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE || changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) &&
+                            changeItem.getType() == ChangeType.ADD) ||
+                            (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()))
                     .collect(Collectors.toList());
             if (changeItemList.size() == 0 || needCheckItemList == null || needCheckItemList.isEmpty()) {
                 //with no dbGroups, do not check the variables
@@ -329,18 +332,19 @@ public final class ConfigUtil {
     }
 
 
-    private static void getAndSyncKeyVariablesForDataSources(List<ReloadConfig.ChangeItem> changeItemList, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
+    private static void getAndSyncKeyVariablesForDataSources(List<ChangeItem> changeItemList, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
                                                              boolean needSync) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(changeItemList.size());
-        for (ReloadConfig.ChangeItem changeItem : changeItemList) {
-            if (changeItem.getItem() instanceof PhysicalDbInstance) {
-                PhysicalDbInstance ds = (PhysicalDbInstance) changeItem.getItem();
+        for (ChangeItem changeItem : changeItemList) {
+            Object item = changeItem.getItem();
+            if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE) {
+                PhysicalDbInstance ds = (PhysicalDbInstance) item;
                 if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                     continue;
                 }
                 getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
-            } else if (changeItem.getItem() instanceof PhysicalDbGroup) {
-                PhysicalDbGroup dbGroup = (PhysicalDbGroup) changeItem.getItem();
+            } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
+                PhysicalDbGroup dbGroup = (PhysicalDbGroup) item;
                 for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
                     if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                         continue;
@@ -354,7 +358,7 @@ public final class ConfigUtil {
         while (!service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
             if (LOGGER.isDebugEnabled()) {
                 if (i == 0) {
-                    LOGGER.debug("wait to get all dbInstances's get key variable");
+                    LOGGER.info("wait to get all dbInstances's get key variable");
                 }
                 i++;
                 if (i == 100) { //log every 10 seconds
@@ -382,7 +386,7 @@ public final class ConfigUtil {
         while (!service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
             if (LOGGER.isDebugEnabled()) {
                 if (i == 0) {
-                    LOGGER.debug("wait to get all dbInstances's get key variable");
+                    LOGGER.info("wait to get all dbInstances's get key variable");
                 }
                 i++;
                 if (i == 100) { //log every 10 seconds

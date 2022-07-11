@@ -209,12 +209,7 @@ public class PhysicalDbGroup {
     }
 
     private boolean checkState() {
-        if (getBindingCount() != 0) {
-            state = STATE_DELETING;
-            IOProcessor.BACKENDS_OLD_GROUP.add(this);
-            return false;
-        }
-        if (state.intValue() != INITIAL) {
+        if (isStop()) {
             return false;
         }
         if (getBindingCount() != 0) {

@@ -7,7 +7,9 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
-import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.ChangeItem;
+import com.actiontech.dble.services.manager.response.ChangeItemType;
+import com.actiontech.dble.services.manager.response.ChangeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,25 +71,25 @@ public final class FrontendUserManager {
         }
     }
 
-    public void changeUser(List<ReloadConfig.ChangeItem> changeItemList, int serverLimit) {
+    public void changeUser(List<ChangeItem> changeItemList, int serverLimit) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("init-for-user-manager");
         try {
             serverMaxConnection = serverLimit;
 
-            for (ReloadConfig.ChangeItem changeItem : changeItemList) {
-                int type = changeItem.getType();
+            for (ChangeItem changeItem : changeItemList) {
+                ChangeType type = changeItem.getType();
                 Object item = changeItem.getItem();
-                boolean isUser = item instanceof UserName;
+                boolean isUser = changeItem.getItemType() == ChangeItemType.USERNAME;
                 if (!isUser) {
                     continue;
                 }
                 UserName userName = (UserName) item;
-                if (type == 1) {
+                if (type == ChangeType.ADD) {
                     //add
                     if (!userConnectionMap.containsKey(userName)) {
                         userConnectionMap.put(userName, 0);
                     }
-                } else if (type == 3) {
+                } else if (type == ChangeType.DELETE) {
                     //delete
                     if (userConnectionMap.containsKey(userName)) {
                         userConnectionMap.remove(userName);
@@ -104,7 +106,10 @@ public final class FrontendUserManager {
 
         maxConLock.lock();
         try {
-            int userConnection = userConnectionMap.get(user);
+            Integer userConnection = userConnectionMap.get(user);
+            if (null == userConnection) {
+                userConnection = 0;
+            }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("user:" + user + ",userLimit=" + userLimit + ",userConnection=" + userConnection);
             }

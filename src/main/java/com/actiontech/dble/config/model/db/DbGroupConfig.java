@@ -41,18 +41,6 @@ public class DbGroupConfig {
         this.disableHA = disableHA;
     }
 
-    public DbGroupConfig(String name, int rwSplitMode, DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, String heartbeatSQL, int delayThreshold, int heartbeatTimeout, int errorRetryCount, boolean disableHA) {
-        this.name = name;
-        this.rwSplitMode = rwSplitMode;
-        this.writeInstanceConfig = writeInstanceConfig;
-        this.readInstanceConfigs = readInstanceConfigs;
-        this.heartbeatSQL = heartbeatSQL;
-        this.delayThreshold = delayThreshold;
-        this.heartbeatTimeout = heartbeatTimeout;
-        this.errorRetryCount = errorRetryCount;
-        this.disableHA = disableHA;
-    }
-
     public int getDelayThreshold() {
         return delayThreshold;
     }

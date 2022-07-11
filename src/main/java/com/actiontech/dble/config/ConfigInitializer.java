@@ -29,7 +29,9 @@ import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.services.manager.response.ReloadConfig;
+import com.actiontech.dble.services.manager.response.ChangeItem;
+import com.actiontech.dble.services.manager.response.ChangeItemType;
+import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -234,7 +236,7 @@ public class ConfigInitializer implements ProblemReporter {
         }
     }
 
-    public void testConnection(List<ReloadConfig.ChangeItem> changeItemList) {
+    public void testConnection(List<ChangeItem> changeItemList) {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("test-connection");
         try {
             Map<String, List<Pair<String, String>>> hostSchemaMap = genDbInstanceSchemaMap();
@@ -244,12 +246,13 @@ public class ConfigInitializer implements ProblemReporter {
             String dbGroupName;
             PhysicalDbGroup dbGroup;
 
-            for (ReloadConfig.ChangeItem changeItem : changeItemList) {
-                int type = changeItem.getType();
+            for (ChangeItem changeItem : changeItemList) {
+                ChangeType type = changeItem.getType();
                 Object item = changeItem.getItem();
+                ChangeItemType itemType = changeItem.getItemType();
                 switch (type) {
-                    case 1:
-                        if (item instanceof PhysicalDbGroup) {
+                    case ADD:
+                        if (itemType == ChangeItemType.PHYSICAL_DB_GROUP) {
                             //test dbGroup
                             dbGroup = (PhysicalDbGroup) item;
                             dbGroupName = dbGroup.getGroupName();
@@ -265,7 +268,7 @@ public class ConfigInitializer implements ProblemReporter {
                                     errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
                                 }
                             }
-                        } else if (item instanceof PhysicalDbInstance) {
+                        } else if (itemType == ChangeItemType.PHYSICAL_DB_INSTANCE) {
                             PhysicalDbInstance ds = (PhysicalDbInstance) item;
                             dbGroupName = ds.getDbGroupConfig().getName();
                             // sharding group
@@ -276,7 +279,7 @@ public class ConfigInitializer implements ProblemReporter {
                                 isAllDbInstanceConnected = false;
                                 errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
                             }
-                        } else if (item instanceof ShardingNode) {
+                        } else if (itemType == ChangeItemType.SHARDING_NODE) {
                             ShardingNode shardingNode = (ShardingNode) item;
                             dbGroup = shardingNode.getDbGroup();
                             dbGroupName = dbGroup.getGroupName();
@@ -293,8 +296,8 @@ public class ConfigInitializer implements ProblemReporter {
                             }
                         }
                         break;
-                    case 2:
-                        if (item instanceof PhysicalDbInstance && changeItem.isAffectTestConn()) {
+                    case UPDATE:
+                        if (itemType == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.isAffectTestConn()) {
                             PhysicalDbInstance ds = (PhysicalDbInstance) item;
                             dbGroupName = ds.getDbGroupConfig().getName();
                             // sharding group
@@ -306,7 +309,7 @@ public class ConfigInitializer implements ProblemReporter {
                                 isAllDbInstanceConnected = false;
                                 errDbInstanceNames.add("dbInstance[" + dbGroupName + "." + ds.getName() + "]");
                             }
-                        } else if (item instanceof ShardingNode) {
+                        } else if (itemType == ChangeItemType.SHARDING_NODE) {
                             ShardingNode shardingNode = (ShardingNode) item;
                             dbGroup = shardingNode.getDbGroup();
                             dbGroupName = dbGroup.getGroupName();

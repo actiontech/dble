@@ -574,6 +574,10 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     }
 
     public void signal() {
+        if (isClosed()) {
+            return;
+        }
+
         if (recycler != null) {
             recycler.signal();
         }

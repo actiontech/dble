@@ -28,6 +28,10 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
     @Override
     public void run() {
+        if (backendConnection.isClosed()) {
+            return;
+        }
+
         try {
             lock.lock();
             try {
@@ -54,11 +58,12 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
 
     public void signal() {
-        lock.lock();
-        try {
-            condRelease.signal();
-        } finally {
-            lock.unlock();
+        if (lock.tryLock()) {
+            try {
+                condRelease.signal();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 

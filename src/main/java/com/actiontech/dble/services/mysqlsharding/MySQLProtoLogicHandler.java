@@ -62,7 +62,7 @@ public class MySQLProtoLogicHandler {
             return;
         }
         if (!service.getUserConfig().getSchemas().contains(db)) {
-            String s = "Access denied for user '" + service.getUser() + "' to database '" + db + "'";
+            String s = "Access denied for user '" + service.getUser().getFullName() + "' to database '" + db + "'";
             service.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
             return;
         }

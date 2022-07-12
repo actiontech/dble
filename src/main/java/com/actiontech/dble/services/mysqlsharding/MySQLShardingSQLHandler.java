@@ -72,7 +72,7 @@ public class MySQLShardingSQLHandler {
     public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
         ShardingUserConfig user = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(service.getUser()));
         if (user == null || !user.getSchemas().contains(schemaInfo.getSchema())) {
-            service.writeErrMessage("42000", "Access denied for user '" + service.getUser() + "' to database '" + schemaInfo.getSchema() + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            service.writeErrMessage("42000", "Access denied for user '" + service.getUser().getFullName() + "' to database '" + schemaInfo.getSchema() + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
         RouteResultset rrs = new RouteResultset(stmt, sqlType);

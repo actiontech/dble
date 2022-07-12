@@ -28,6 +28,13 @@ public class UserName {
 
     @Override
     public String toString() {
+        return "UserName{" +
+                "name='" + name + '\'' +
+                ", tenant='" + tenant + '\'' +
+                '}';
+    }
+
+    public String getFullName() {
         if (tenant == null) {
             return name;
         }

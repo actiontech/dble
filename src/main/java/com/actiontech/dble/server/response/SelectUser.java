@@ -54,7 +54,7 @@ public final class SelectUser implements InnerFuncResponse {
     }
 
     private static byte[] getUser(ShardingService service) {
-        return StringUtil.encode(service.getUser().toString() + '@' + service.getConnection().getHost(), service.getCharset().getResults());
+        return StringUtil.encode(service.getUser().getFullName() + '@' + service.getConnection().getHost(), service.getCharset().getResults());
     }
 
 

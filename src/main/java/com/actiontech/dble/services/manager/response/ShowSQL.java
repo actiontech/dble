@@ -108,7 +108,7 @@ public final class ShowSQL {
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(idx));
-        row.add(StringUtil.encode(user.toString(), charset));
+        row.add(StringUtil.encode(user.getFullName(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset));
         row.add(LongUtil.toBytes(sql.getExecuteTime()));
         row.add(StringUtil.encode(sql.getSql(), charset));

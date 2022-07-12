@@ -10,6 +10,8 @@ import com.actiontech.dble.config.model.db.type.DataBaseType;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.util.StringUtil;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,18 +38,6 @@ public class DbGroupConfig {
         this.writeInstanceConfig = writeInstanceConfig;
         this.readInstanceConfigs = readInstanceConfigs;
         this.delayThreshold = delayThreshold;
-        this.disableHA = disableHA;
-    }
-
-    public DbGroupConfig(String name, int rwSplitMode, DbInstanceConfig writeInstanceConfig, DbInstanceConfig[] readInstanceConfigs, String heartbeatSQL, int delayThreshold, int heartbeatTimeout, int errorRetryCount, boolean disableHA) {
-        this.name = name;
-        this.rwSplitMode = rwSplitMode;
-        this.writeInstanceConfig = writeInstanceConfig;
-        this.readInstanceConfigs = readInstanceConfigs;
-        this.heartbeatSQL = heartbeatSQL;
-        this.delayThreshold = delayThreshold;
-        this.heartbeatTimeout = heartbeatTimeout;
-        this.errorRetryCount = errorRetryCount;
         this.disableHA = disableHA;
     }
 
@@ -139,5 +129,38 @@ public class DbGroupConfig {
 
     public DataBaseType instanceDatabaseType() {
         return writeInstanceConfig.getDataBaseType();
+    }
+
+    public boolean equalsBaseInfo(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DbGroupConfig that = (DbGroupConfig) o;
+
+        return rwSplitMode == that.rwSplitMode &&
+                isShowSlaveSql == that.isShowSlaveSql &&
+                isSelectReadOnlySql == that.isSelectReadOnlySql &&
+                delayThreshold == that.delayThreshold &&
+                heartbeatTimeout == that.heartbeatTimeout &&
+                errorRetryCount == that.errorRetryCount &&
+                disableHA == that.disableHA &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(heartbeatSQL, that.heartbeatSQL);
+    }
+
+    @Override
+    public String toString() {
+        return "DbGroupConfig{" +
+                "name='" + name + '\'' +
+                ", rwSplitMode=" + rwSplitMode +
+                ", writeInstanceConfig=" + writeInstanceConfig +
+                ", readInstanceConfigs=" + Arrays.toString(readInstanceConfigs) +
+                ", heartbeatSQL='" + heartbeatSQL + '\'' +
+                ", isShowSlaveSql=" + isShowSlaveSql +
+                ", isSelectReadOnlySql=" + isSelectReadOnlySql +
+                ", delayThreshold=" + delayThreshold +
+                ", heartbeatTimeout=" + heartbeatTimeout +
+                ", errorRetryCount=" + errorRetryCount +
+                ", disableHA=" + disableHA +
+                '}';
     }
 }

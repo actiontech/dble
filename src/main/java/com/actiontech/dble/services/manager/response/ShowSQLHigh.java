@@ -116,7 +116,7 @@ public final class ShowSQLHigh {
                                         long minTime, long executeTime, long lastTime, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(i));
-        row.add(StringUtil.encode(user.toString(), charset));
+        row.add(StringUtil.encode(user.getFullName(), charset));
         row.add(LongUtil.toBytes(count));
         row.add(LongUtil.toBytes(avgTime));
         row.add(LongUtil.toBytes(maxTime));

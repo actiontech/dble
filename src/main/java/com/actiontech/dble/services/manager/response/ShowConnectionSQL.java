@@ -106,7 +106,7 @@ public final class ShowConnectionSQL {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(c.getId()));
         row.add(StringUtil.encode(c.getHost(), charset));
-        row.add(StringUtil.encode(c.getFrontEndService().getUser().toString(), charset));
+        row.add(StringUtil.encode(c.getFrontEndService().getUser().getFullName(), charset));
         AbstractService service = c.getService();
         String executeSql = c.getFrontEndService().getExecuteSql();
         if (executeSql != null) {

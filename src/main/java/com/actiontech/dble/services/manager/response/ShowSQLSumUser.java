@@ -138,7 +138,7 @@ public final class ShowSQLSumUser {
         String rStr = decimalFormat.format(1.0D * r / (r + w));
         int max = rwStat.getConcurrentMax();
 
-        row.add(StringUtil.encode(user.toString(), charset));
+        row.add(StringUtil.encode(user.getFullName(), charset));
         row.add(LongUtil.toBytes(r));
         row.add(LongUtil.toBytes(w));
         row.add(StringUtil.encode(String.valueOf(rStr), charset));

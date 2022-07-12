@@ -5,10 +5,7 @@
 
 package com.actiontech.dble.config.model.user;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -52,8 +49,9 @@ public class UserPrivilegesConfig {
         schemaPrivileges = newSchemaPrivileges;
     }
 
-
     public boolean equalsBaseInfo(UserPrivilegesConfig userPrivilegesConfig) {
+        if (this == userPrivilegesConfig) return true;
+        if (userPrivilegesConfig == null || getClass() != userPrivilegesConfig.getClass()) return false;
         boolean equalTableInfo1 = this.schemaPrivileges.entrySet().stream().allMatch(schemaPrivilegeEntry -> null != userPrivilegesConfig.getSchemaPrivilege(schemaPrivilegeEntry.getKey()) && userPrivilegesConfig.getSchemaPrivilege(schemaPrivilegeEntry.getKey()).equalsBaseInfo(schemaPrivilegeEntry.getValue()));
         boolean equalTableInfo2 = userPrivilegesConfig.getSchemaPrivileges().entrySet().stream().allMatch(schemaPrivilegeEntry -> null != this.schemaPrivileges.get(schemaPrivilegeEntry.getKey()) && this.schemaPrivileges.get(schemaPrivilegeEntry.getKey()).equalsBaseInfo(schemaPrivilegeEntry.getValue()));
         return this.check == userPrivilegesConfig.isCheck() &&

@@ -1007,6 +1007,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return currentTable;
     }
 
+    public void setCurrentTable(String currentTable) {
+        this.currentTable = currentTable;
+    }
+
     private static void mergeOuterRelations(WhereUnit whereUnit) {
         if (whereUnit.getSubWhereUnit().size() > 0) {
             for (WhereUnit sub : whereUnit.getSubWhereUnit()) {

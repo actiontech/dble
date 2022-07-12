@@ -44,6 +44,8 @@
                         <xs:attribute name="usingDecrypt" type="xs:boolean"/>
                         <xs:attribute name="disabled" type="xs:boolean"/>
                         <xs:attribute name="databaseType" type="xs:string"/>
+                        <xs:attribute name="dbDistrict" type="xs:string"/>
+                        <xs:attribute name="dbDataCenter" type="xs:string"/>
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>

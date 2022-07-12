@@ -31,24 +31,24 @@ public final class AuthUtil {
         UserName user = new UserName(authPacket.getUser(), authPacket.getTenant());
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
         if (userConfig == null) {
-            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "' with host '" + fconn.getHost() + "'");
         }
         //normal user login into manager port
         if (fconn.isManager() && !(userConfig instanceof ManagerUserConfig)) {
-            return new AuthResultInfo("Access denied for user '" + user + "'");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "'");
         } else if (!fconn.isManager() && userConfig instanceof ManagerUserConfig) {
             //manager user login into server port
-            return new AuthResultInfo("Access denied for manager user '" + user + "'");
+            return new AuthResultInfo("Access denied for manager user '" + user.getFullName() + "'");
         }
         if (!checkWhiteIPs(fconn.getHost(), userConfig.getWhiteIPs())) {
-            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "' with host '" + fconn.getHost() + "'");
         }
         // check password
         if (!checkPassword(seed, authPacket.getPassword(), userConfig.getPassword(), plugin)) {
-            return new AuthResultInfo("Access denied for user '" + user + "', because password is incorrect");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "', because password is incorrect");
         }
         if (!DbleServer.getInstance().getConfig().isFullyConfigured() && !fconn.isManager()) {
-            return new AuthResultInfo("Access denied for user '" + user + "', because there are some empty dbGroup/fake dbInstance");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "', because there are some empty dbGroup/fake dbInstance");
         }
         // check schema
         final String schema = authPacket.getDatabase();
@@ -56,16 +56,16 @@ public final class AuthUtil {
             case ErrorCode.ER_BAD_DB_ERROR:
                 return new AuthResultInfo("Unknown database '" + schema + "'");
             case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                return new AuthResultInfo("Access denied for user '" + user + "' to database '" + schema + "'");
+                return new AuthResultInfo("Access denied for user '" + user.getFullName() + "' to database '" + schema + "'");
             default:
                 break;
         }
         //check max connection
         switch (FrontendUserManager.getInstance().maxConnectionCheck(user, userConfig.getMaxCon(), fconn.isManager())) {
             case SERVER_MAX:
-                return new AuthResultInfo("Access denied for user '" + user + "',too many connections for dble server");
+                return new AuthResultInfo("Access denied for user '" + user.getFullName() + "',too many connections for dble server");
             case USER_MAX:
-                return new AuthResultInfo("Access denied for user '" + user + "',too many connections for this user");
+                return new AuthResultInfo("Access denied for user '" + user.getFullName() + "',too many connections for this user");
             default:
                 break;
         }
@@ -76,21 +76,21 @@ public final class AuthUtil {
         UserName user = new UserName(changeUserPacket.getUser(), changeUserPacket.getTenant());
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
         if (userConfig == null) {
-            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "' with host '" + fconn.getHost() + "'");
         }
         //normal user login into manager port
         if (fconn.isManager() && !(userConfig instanceof ManagerUserConfig)) {
-            return new AuthResultInfo("Access denied for user '" + user + "'");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "'");
         } else if (!fconn.isManager() && userConfig instanceof ManagerUserConfig) {
             //manager user login into server port
-            return new AuthResultInfo("Access denied for manager user '" + user + "'");
+            return new AuthResultInfo("Access denied for manager user '" + user.getFullName() + "'");
         }
         if (!checkWhiteIPs(fconn.getHost(), userConfig.getWhiteIPs())) {
-            return new AuthResultInfo("Access denied for user '" + user + "' with host '" + fconn.getHost() + "'");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "' with host '" + fconn.getHost() + "'");
         }
         // check password
         if (!checkPassword(seed, changeUserPacket.getPassword(), userConfig.getPassword(), plugin)) {
-            return new AuthResultInfo("Access denied for user '" + user + "', because password is incorrect");
+            return new AuthResultInfo("Access denied for user '" + user.getFullName() + "', because password is incorrect");
         }
         // check schema
         final String schema = changeUserPacket.getDatabase();
@@ -98,7 +98,7 @@ public final class AuthUtil {
             case ErrorCode.ER_BAD_DB_ERROR:
                 return new AuthResultInfo("Unknown database '" + schema + "'");
             case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                return new AuthResultInfo("Access denied for user '" + user + "' to database '" + schema + "'");
+                return new AuthResultInfo("Access denied for user '" + user.getFullName() + "' to database '" + schema + "'");
             default:
                 break;
         }

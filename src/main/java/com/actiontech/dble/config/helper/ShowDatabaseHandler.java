@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.services.mysqlauthenticate;
+package com.actiontech.dble.config.helper;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
@@ -16,17 +16,20 @@ import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class MysqlDatabaseHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlDatabaseHandler.class);
-    private static final String MYSQL_SHOW_DATABASES = "show databases";
+public class ShowDatabaseHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ShowDatabaseHandler.class);
     private final ReentrantLock lock = new ReentrantLock();
     private Map<String, PhysicalDbGroup> dbGroups;
     private Set<String> databases = new HashSet<>();
     private final Condition finishCond = lock.newCondition();
     private boolean isFinish = false;
+    private String showDatabases = "show databases";
+    private String showDataBasesCols;
 
-    public MysqlDatabaseHandler(Map<String, PhysicalDbGroup> dbGroups) {
+
+    public ShowDatabaseHandler(Map<String, PhysicalDbGroup> dbGroups, String showDataBasesCols) {
         this.dbGroups = dbGroups;
+        this.showDataBasesCols = showDataBasesCols;
     }
 
     private void reset() {
@@ -36,11 +39,10 @@ public class MysqlDatabaseHandler {
 
     public Set<String> execute(String dbGroupName) {
         reset();
-        String mysqlShowDataBasesCols = "Database";
-        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
+        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{showDataBasesCols}, new ShowDatabasesListener(showDataBasesCols));
         PhysicalDbInstance ds = getPhysicalDbInstance(dbGroupName);
         if (ds != null) {
-            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            SQLJob sqlJob = new SQLJob(showDatabases, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -49,13 +51,13 @@ public class MysqlDatabaseHandler {
         return new HashSet<>(databases);
     }
 
+
     // for dryrun
     public Set<String> execute(PhysicalDbInstance ds) {
         reset();
-        String mysqlShowDataBasesCols = "Database";
-        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{mysqlShowDataBasesCols}, new MySQLShowDatabasesListener(mysqlShowDataBasesCols));
+        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(new String[]{showDataBasesCols}, new ShowDatabasesListener(showDataBasesCols));
         if (ds != null) {
-            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_DATABASES, null, resultHandler, ds);
+            OneTimeConnJob sqlJob = new OneTimeConnJob(showDatabases, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {
@@ -96,17 +98,17 @@ public class MysqlDatabaseHandler {
                 finishCond.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.info("[MysqlDatabaseHandler] conn Interrupted: " + e);
+            LOGGER.info("[ClickHouseDatabaseHandler] conn Interrupted: " + e);
         } finally {
             lock.unlock();
         }
     }
 
-    private class MySQLShowDatabasesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
-        private String mysqlShowDataBasesCol;
+    private class ShowDatabasesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
+        private String showDataBasesCol;
 
-        MySQLShowDatabasesListener(String mysqlShowDataBasesCol) {
-            this.mysqlShowDataBasesCol = mysqlShowDataBasesCol;
+        ShowDatabasesListener(String clickhouseShowDataBasesCol) {
+            this.showDataBasesCol = clickhouseShowDataBasesCol;
         }
 
         @Override
@@ -114,7 +116,7 @@ public class MysqlDatabaseHandler {
             if (result.isSuccess()) {
                 List<Map<String, String>> rows = result.getResult();
                 for (Map<String, String> row : rows) {
-                    String databaseName = row.get(mysqlShowDataBasesCol);
+                    String databaseName = row.get(showDataBasesCol);
                     databases.add(databaseName);
                 }
             }

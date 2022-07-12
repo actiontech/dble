@@ -133,7 +133,7 @@ public final class FlowControlList {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode("ServerConnection", service.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getId()));
-                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) fcService).getSchema() + " user = " + ((FrontendService) fcService).getUser(), service.getCharset().getResults()));
+                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((FrontendService) fcService).getSchema() + " user = " + ((FrontendService) fcService).getUser().getFullName(), service.getCharset().getResults()));
                     row.add(LongUtil.toBytes(size));
                     row.add(null); // not support
                     row.add(fc.isFrontWriteFlowControlled() ? "true".getBytes() : "false".getBytes());

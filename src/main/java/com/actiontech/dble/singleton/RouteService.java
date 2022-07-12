@@ -43,7 +43,7 @@ public final class RouteService {
             String cacheKey = null;
 
             if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
-                cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + service.getUser() + "_" + stmt;
+                cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + service.getUser().getFullName() + "_" + stmt;
                 rrs = (RouteResultset) CacheService.getSqlRouteCache().get(cacheKey);
                 if (rrs != null) {
                     service.getSession2().endParse();

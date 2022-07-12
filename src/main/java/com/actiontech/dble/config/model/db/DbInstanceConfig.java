@@ -6,6 +6,9 @@
 package com.actiontech.dble.config.model.db;
 
 import com.actiontech.dble.config.model.db.type.DataBaseType;
+import com.actiontech.dble.util.StringUtil;
+
+import java.util.Objects;
 
 public class DbInstanceConfig {
 
@@ -24,6 +27,8 @@ public class DbInstanceConfig {
     private volatile PoolConfig poolConfig;
     private final boolean usingDecrypt;
     private DataBaseType dataBaseType;
+    private String dbDistrict;
+    private String dbDataCenter;
 
     public DbInstanceConfig(String instanceName, String ip, int port, String url,
                             String user, String password, boolean disabled, boolean primary, boolean usingDecrypt, DataBaseType dataBaseType) {
@@ -149,10 +154,55 @@ public class DbInstanceConfig {
         return false;
     }
 
+    public String getDbDistrict() {
+        return dbDistrict;
+    }
+
+    public void setDbDistrict(String dbDistrict) {
+        this.dbDistrict = dbDistrict;
+    }
+
+    public String getDbDataCenter() {
+        return dbDataCenter;
+    }
+
+    public void setDbDataCenter(String dbDataCenter) {
+        this.dbDataCenter = dbDataCenter;
+    }
 
     @Override
     public String toString() {
         return "DbInstanceConfig [hostName=" + instanceName + ", url=" + url + "]";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DbInstanceConfig that = (DbInstanceConfig) o;
+        return port == that.port &&
+                readWeight == that.readWeight &&
+                disabled == that.disabled &&
+                primary == that.primary &&
+                maxCon == that.maxCon &&
+                minCon == that.minCon &&
+                usingDecrypt == that.usingDecrypt &&
+                dataBaseType.equals(((DbInstanceConfig) o).dataBaseType) &&
+                Objects.equals(instanceName, that.instanceName) &&
+                Objects.equals(ip, that.ip) &&
+                Objects.equals(url, that.url) &&
+                Objects.equals(user, that.user) &&
+                Objects.equals(password, that.password) &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(poolConfig, that.poolConfig) &&
+                StringUtil.equalsIgnoreCase(dbDistrict, that.getDbDistrict()) &&
+                StringUtil.equalsIgnoreCase(dbDataCenter, that.getDbDataCenter());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(instanceName, ip, port, url, user, password, readWeight,
+                id, disabled, primary, maxCon, minCon, poolConfig, usingDecrypt,
+                dataBaseType, dbDistrict, dbDataCenter);
+    }
 }

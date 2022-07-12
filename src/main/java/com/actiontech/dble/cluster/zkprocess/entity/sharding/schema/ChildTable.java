@@ -30,6 +30,9 @@ public class ChildTable implements Named {
     @XmlAttribute
     protected Integer sqlMaxLimit;
 
+    @XmlAttribute
+    protected boolean specifyCharset;
+
     protected List<ChildTable> childTable;
 
     public String getName() {
@@ -83,6 +86,13 @@ public class ChildTable implements Named {
         this.sqlMaxLimit = sqlMaxLimit;
     }
 
+    public boolean isSpecifyCharset() {
+        return specifyCharset;
+    }
+
+    public void setSpecifyCharset(boolean specifyCharset) {
+        this.specifyCharset = specifyCharset;
+    }
 
     @Override
     public String toString() {
@@ -96,6 +106,8 @@ public class ChildTable implements Named {
                 incrementColumn +
                 ", sqlMaxLimit=" +
                 sqlMaxLimit +
+                ", specifyCharset=" +
+                specifyCharset +
                 ", childTable=" +
                 childTable +
                 "]";

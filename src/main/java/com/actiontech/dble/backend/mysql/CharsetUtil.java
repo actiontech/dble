@@ -347,6 +347,7 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("cp932", "MS932");
         CHARSET_TO_JAVA.put("eucjpms", "EUC_JP_Solaris");
         CHARSET_TO_JAVA.put("gb18030", "GB18030");
+        CHARSET_TO_JAVA.put("iso-8859-1", "ISO-8859-1");
     }
 
     public static String getCharset(int index) {

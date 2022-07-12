@@ -31,6 +31,7 @@ import com.actiontech.dble.services.mysqlauthenticate.MySQLBackAuthService;
 import com.actiontech.dble.services.rwsplit.RWSplitService;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.statistic.sql.StatisticListener;
+import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.collect.ImmutableMap;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +43,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -333,7 +335,7 @@ public class MySQLResponseService extends BackendService {
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
         try {
-            packet.setArg(query.getBytes(CharsetUtil.getJavaCharset(clientCharset.getClient())));
+            packet.setArg(query.getBytes(getCharset(query, clientCharset)));
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -344,6 +346,19 @@ public class MySQLResponseService extends BackendService {
             packet.writeBigPackage(this, size);
         } else {
             packet.write(this);
+        }
+    }
+
+    private String getCharset(String sql, CharsetNames clientCharset) throws UnsupportedEncodingException {
+        String javaCharset = CharsetUtil.getJavaCharset(clientCharset.getClient());
+        if (Objects.isNull(session)) {
+            return javaCharset;
+        }
+        String clientSql = new String(sql.getBytes(javaCharset), javaCharset);
+        if (StringUtil.equals(sql, clientSql)) {
+            return javaCharset;
+        } else {
+            return StringUtil.ISO_8859_1;
         }
     }
 

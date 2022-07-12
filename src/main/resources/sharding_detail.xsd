@@ -23,6 +23,7 @@
                                                     <xs:attribute name="parentColumn" type="xs:string" use="required"/>
                                                     <xs:attribute name="incrementColumn" type="xs:string"/>
                                                     <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
+                                                    <xs:attribute name="specifyCharset" type="xs:boolean"/>
                                                 </xs:complexType>
                                             </xs:element>
                                         </xs:sequence>
@@ -41,6 +42,7 @@
                             <xs:attribute name="sqlRequiredSharding" type="xs:boolean"/>
                             <xs:attribute name="incrementColumn" type="xs:string"/>
                             <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
+                            <xs:attribute name="specifyCharset" type="xs:boolean"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element maxOccurs="unbounded" name="globalTable">
@@ -50,6 +52,7 @@
                             <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
                             <xs:attribute name="cron" type="xs:string"/>
                             <xs:attribute name="checkClass" type="xs:string"/>
+                            <xs:attribute name="specifyCharset" type="xs:boolean"/>
                         </xs:complexType>
                     </xs:element>
                     <xs:element maxOccurs="unbounded" name="singleTable">
@@ -57,6 +60,7 @@
                             <xs:attribute name="name" type="xs:string" use="required"/>
                             <xs:attribute name="shardingNode" type="xs:string" use="required"/>
                             <xs:attribute name="sqlMaxLimit" type="xs:integer"/>
+                            <xs:attribute name="specifyCharset" type="xs:boolean"/>
                         </xs:complexType>
                     </xs:element>
                 </xs:choice>

@@ -259,10 +259,10 @@ public class NonBlockingSession extends Session {
         sessionStage = SessionStage.Fetching_Result;
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            ResponseHandler responseHandler = service.getResponseHandler();
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
-            if (traceResult.addToConnFlagMap(key) == null) {
-                ResponseHandler responseHandler = service.getResponseHandler();
+            if (responseHandler != null && traceResult.addToConnFlagMap(key) == null) {
                 responseTime = System.nanoTime();
                 TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());
                 Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
@@ -345,11 +345,13 @@ public class NonBlockingSession extends Session {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) service.getAttachment();
             ResponseHandler responseHandler = service.getResponseHandler();
-            TraceRecord record = new TraceRecord(System.nanoTime(), node.getName(), node.getStatement());
-            Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
-            String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
-            connMap.put(key, record);
-            traceResult.addToConnFinishedMap(responseHandler, connMap);
+            if (responseHandler != null) {
+                TraceRecord record = new TraceRecord(System.nanoTime(), node.getName(), node.getStatement());
+                Map<String, TraceRecord> connMap = new ConcurrentHashMap<>();
+                String key = service.getConnection().getId() + ":" + node.getName() + ":" + +node.getStatementHash();
+                connMap.put(key, record);
+                traceResult.addToConnFinishedMap(responseHandler, connMap);
+            }
         }
 
         if (!timeCost) {

@@ -219,9 +219,8 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, insertStmt, partitionColumn);
         SQLExpr valueExpr = insertStmt.getValues().getValues().get(shardingColIndex);
-        TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
-                schemaInfo.getTable());
-        String shardingValue = shardingValueToSting(valueExpr, clientCharset, orgTbMeta.getColumns().get(shardingColIndex).getDataType());
+        String dataType = getShardingDataType(schemaInfo, partitionColumn);
+        String shardingValue = shardingValueToSting(valueExpr, clientCharset, dataType);
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()));
         checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
         Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
@@ -271,6 +270,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         // the size of columns
         int columnNum = getTableColumns(schemaInfo, insertStmt.getColumns());
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, insertStmt, partitionColumn);
+        String dataType = getShardingDataType(schemaInfo, partitionColumn);
         List<ValuesClause> valueClauseList = insertStmt.getValuesList();
         Map<Integer, List<ValuesClause>> nodeValuesMap = new HashMap<>();
         ShardingTableConfig tableConfig = (ShardingTableConfig) (schema.getTables().get(tableName));
@@ -281,9 +281,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
-            TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
-                    schemaInfo.getTable());
-            String shardingValue = shardingValueToSting(expr, clientCharset, orgTbMeta.getColumns().get(shardingColIndex).getDataType());
+            String shardingValue = shardingValueToSting(expr, clientCharset, dataType);
             checkDefaultValues(shardingValue, tableConfig.getName(), schemaInfo.getSchema(), partitionColumn);
             Integer nodeIndex = tableConfig.getFunction().calculate(shardingValue);
             // null means can't find any valid index

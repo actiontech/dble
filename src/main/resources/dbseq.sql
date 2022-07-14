@@ -32,4 +32,4 @@ END
 DELIMITER ;
 
 
-INSERT INTO DBLE_SEQUENCE VALUES ('`testdb`.`testTable', 0, 1);
+INSERT INTO DBLE_SEQUENCE VALUES ('`testdb`.`testTable`', 0, 1);

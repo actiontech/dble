@@ -57,7 +57,7 @@ public abstract class AbstractConnection implements Connection {
 
     protected volatile IOProcessor processor;
     protected volatile String closeReason;
-    protected volatile ByteBuffer readBuffer;
+    private volatile ByteBuffer readBuffer;
     private volatile boolean flowControlled;
     protected int readBufferChunk;
     protected final long startupTime;
@@ -106,7 +106,14 @@ public abstract class AbstractConnection implements Connection {
             netInBytes += got;
         }
 
-        handle(readBuffer);
+        final ByteBuffer tmpReadBuffer = getReadBuffer();
+        if (tmpReadBuffer != null) {
+            handle(tmpReadBuffer);
+        } else if (!isClosed()) {
+            //generally,it's won't happen
+            throw new IllegalStateException("try to read without have any buffer");
+        }
+
     }
 
 
@@ -299,7 +306,7 @@ public abstract class AbstractConnection implements Connection {
         }
         buffer.limit(buffer.position());
         buffer.position(offset);
-        this.readBuffer = buffer.compact();
+        this.setReadBuffer(buffer.compact());
     }
 
     public void ensureFreeSpaceOfReadBuffer(ByteBuffer buffer,
@@ -309,7 +316,7 @@ public abstract class AbstractConnection implements Connection {
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
             buffer.position(offset);
             newBuffer.put(buffer);
-            readBuffer = newBuffer;
+            setReadBuffer(newBuffer);
             recycle(buffer);
         } else {
             if (offset != 0) {
@@ -325,14 +332,14 @@ public abstract class AbstractConnection implements Connection {
         // if cur buffer is temper none direct byte buffer and not
         // received large message in recent 30 seconds
         // then change to direct buffer for performance
-        ByteBuffer localReadBuffer = this.readBuffer;
+        ByteBuffer localReadBuffer = this.getReadBuffer();
         if (localReadBuffer != null && !localReadBuffer.isDirect() &&
                 lastLargeMessageTime < lastReadTime - 30 * 1000L) {  // used temp heap
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("change to direct con read buffer ,cur temp buf size :" + localReadBuffer.capacity());
             }
             recycle(localReadBuffer);
-            this.readBuffer = processor.getBufferPool().allocate(readBufferChunk);
+            this.setReadBuffer(processor.getBufferPool().allocate(readBufferChunk));
         } else {
             if (localReadBuffer != null) {
                 IODelayProvider.inReadReachEnd();
@@ -456,17 +463,20 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public ByteBuffer findReadBuffer() {
-        if (readBuffer == null) {
-            readBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+        ByteBuffer tmpReadBuffer = getReadBuffer();
+        if (tmpReadBuffer == null) {
+            tmpReadBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+            setReadBuffer(tmpReadBuffer);
         }
-        return readBuffer;
+        return tmpReadBuffer;
     }
 
 
     public synchronized void recycleReadBuffer() {
-        if (readBuffer != null) {
-            this.recycle(readBuffer);
-            this.readBuffer = null;
+        final ByteBuffer tmpReadBuffer = getReadBuffer();
+        if (tmpReadBuffer != null) {
+            this.recycle(tmpReadBuffer);
+            this.setReadBuffer(null);
         }
     }
 
@@ -478,9 +488,9 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public synchronized void baseCleanup(String reason) {
-        if (readBuffer != null) {
-            this.recycle(readBuffer);
-            this.readBuffer = null;
+        if (getReadBuffer() != null) {
+            this.recycle(getReadBuffer());
+            this.setReadBuffer(null);
         }
 
         if (service != null && !service.isFakeClosed()) {
@@ -620,7 +630,7 @@ public abstract class AbstractConnection implements Connection {
     }
 
     public ByteBuffer getReadBuffer() {
-        return readBuffer;
+        return this.readBuffer;
     }
 
     public String getCloseReason() {
@@ -663,4 +673,7 @@ public abstract class AbstractConnection implements Connection {
         this.proto = proto;
     }
 
+    public void setReadBuffer(ByteBuffer readBuffer) {
+        this.readBuffer = readBuffer;
+    }
 }

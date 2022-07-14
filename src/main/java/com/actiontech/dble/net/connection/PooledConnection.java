@@ -49,6 +49,7 @@ public abstract class PooledConnection extends AbstractConnection {
         super.cleanup(reason);
     }
 
+    @Override
     public void onConnectFailed(Throwable e) {
         if (getService() instanceof AuthService) {
             ((AuthService) getService()).onConnectFailed(e);

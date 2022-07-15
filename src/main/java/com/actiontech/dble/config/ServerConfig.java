@@ -161,6 +161,7 @@ public class ServerConfig {
 
     public void getAndSyncKeyVariables() throws Exception {
         ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
+        DbleServer.getInstance().getConfig().setLowerCase(DbleTempConfig.getInstance().isLowerCase());
     }
 
     public boolean isFullyConfigured() {
@@ -425,7 +426,6 @@ public class ServerConfig {
         }
         return true;
     }
-
 
 
     /**
@@ -857,6 +857,10 @@ public class ServerConfig {
 
     public boolean isLowerCase() {
         return lowerCase;
+    }
+
+    public void setLowerCase(boolean lowerCase) {
+        this.lowerCase = lowerCase;
     }
 }
 

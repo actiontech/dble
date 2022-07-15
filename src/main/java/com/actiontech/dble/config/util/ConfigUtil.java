@@ -103,26 +103,17 @@ public final class ConfigUtil {
             Map<String, Future<KeyVariables>> keyVariablesTaskMap = Maps.newHashMap();
             getAndSyncKeyVariablesForDataSources(needCheckItemList, keyVariablesTaskMap, needSync);
 
-            boolean lowerCase = false;
-            boolean isFirst = true;
-            Set<String> firstGroup = new HashSet<>();
-            Set<String> secondGroup = new HashSet<>();
+            Set<String> diffGroup = new HashSet<>();
             int minNodePacketSize = Integer.MAX_VALUE;
             int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
+            boolean lowerCase = DbleServer.getInstance().getConfig().isLowerCase();
             for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
                 String dataSourceName = entry.getKey();
                 Future<KeyVariables> future = entry.getValue();
                 KeyVariables keyVariables = future.get();
                 if (keyVariables != null) {
-                    if (isFirst) {
-                        lowerCase = keyVariables.isLowerCase();
-                        if (lowerCase != DbleServer.getInstance().getConfig().isLowerCase()) {
-                            secondGroup.add(dataSourceName);
-                        }
-                        isFirst = false;
-                        firstGroup.add(dataSourceName);
-                    } else if (keyVariables.isLowerCase() != lowerCase) {
-                        secondGroup.add(dataSourceName);
+                    if (keyVariables.isLowerCase() != lowerCase) {
+                        diffGroup.add(dataSourceName);
                     }
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                     int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
@@ -137,28 +128,19 @@ public final class ConfigUtil {
             if (minVersion < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
                 throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
             }
-            DbleTempConfig.getInstance().setLowerCase(lowerCase);
-            if (secondGroup.size() != 0) {
+            if (diffGroup.size() != 0) {
                 // if all datasoure's lower case are not equal, throw exception
                 StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
-                String firstGroupValue;
-                String secondGroupValue;
-                if (lowerCase) {
-                    firstGroupValue = " not 0 :";
-                    secondGroupValue = " 0 :";
-                } else {
-                    firstGroupValue = " 0 :";
-                    secondGroupValue = " not 0 :";
-                }
-                sb.append("These MySQL's value is");
-                sb.append(firstGroupValue);
-                sb.append(Strings.join(firstGroup, ','));
-                sb.append(".And these MySQL's value is");
-                sb.append(secondGroupValue);
-                sb.append(Strings.join(secondGroup, ','));
+                sb.append("These previous MySQL's value is");
+                sb.append(DbleServer.getInstance().getConfig().isLowerCase() ? " not 0" : " 0");
+                sb.append(".but these MySQL's [");
+                sb.append(Strings.join(diffGroup, ','));
+                sb.append("] value is");
+                sb.append(DbleServer.getInstance().getConfig().isLowerCase() ? " 0" : " not 0");
                 sb.append(".");
                 throw new IOException(sb.toString());
             }
+            DbleTempConfig.getInstance().setLowerCase(lowerCase);
             return msg;
         } finally {
             TraceManager.finishSpan(traceObject);
@@ -237,7 +219,6 @@ public final class ConfigUtil {
         if (minVersion < VersionUtil.getMajorVersion(SystemConfig.getInstance().getFakeMySQLVersion())) {
             throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
         }
-        DbleTempConfig.getInstance().setLowerCase(lowerCase);
         if (secondGroup.size() != 0) {
             // if all datasoure's lower case are not equal, throw exception
             StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
@@ -259,6 +240,7 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msg;
     }
 
@@ -328,6 +310,7 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msg;
     }
 

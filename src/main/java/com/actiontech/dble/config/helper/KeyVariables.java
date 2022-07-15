@@ -89,4 +89,19 @@ public class KeyVariables {
     public void setVersion(String version) {
         this.version = version;
     }
+
+    @Override
+    public String toString() {
+        return "KeyVariables{" +
+                "autocommit=" + autocommit +
+                ", isolation=" + isolation +
+                ", maxPacketSize=" + maxPacketSize +
+                ", targetAutocommit=" + targetAutocommit +
+                ", targetIsolation=" + targetIsolation +
+                ", targetMaxPacketSize=" + targetMaxPacketSize +
+                ", version='" + version + '\'' +
+                ", readOnly=" + readOnly +
+                ", lowerCase=" + lowerCase +
+                '}';
+    }
 }

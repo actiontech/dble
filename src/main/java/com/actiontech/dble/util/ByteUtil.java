@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.util;
 
 import java.nio.charset.Charset;
@@ -146,11 +146,7 @@ public final class ByteUtil {
     }
 
     public static short getShort(byte[] bytes) {
-        if (bytes.length == 1) {
-            return (short) (0xff & bytes[0]);
-        } else {
-            return (short) ((0xff & bytes[0]) | (0xff00 & (bytes[1] << 8)));
-        }
+        return Short.parseShort(new String(bytes));
     }
 
     public static char getChar(byte[] bytes) {

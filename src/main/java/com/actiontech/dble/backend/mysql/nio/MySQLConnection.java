@@ -556,6 +556,10 @@ public class MySQLConnection extends AbstractConnection implements
     }
 
     public void signal() {
+        if (isClosed()) {
+            return;
+        }
+
         if (recycler != null) {
             recycler.signal();
         }

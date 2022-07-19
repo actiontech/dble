@@ -28,13 +28,19 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
     @Override
     public void run() {
+        if (backendConnection.isClosed()) {
+            return;
+        }
+
         try {
             lock.lock();
             try {
                 if (backendConnection.isRowDataFlowing()) {
 
                     if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                        backendConnection.close("recycle time out");
+                        if (!backendConnection.isClosed()) {
+                            backendConnection.close("recycle time out");
+                        }
                     } else {
                         backendConnection.release();
                     }
@@ -53,11 +59,12 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
 
     public void signal() {
-        lock.lock();
-        try {
-            condRelease.signal();
-        } finally {
-            lock.unlock();
+        if (lock.tryLock()) {
+            try {
+                condRelease.signal();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 

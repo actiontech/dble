@@ -200,3 +200,4 @@
 #  processing queue size must not be less than 1 and must be a power of 2
 #-DstatisticQueueSize=4096
 #-DinSubQueryTransformToJoin=false
+#-DgroupConcatMaxLen = 1024

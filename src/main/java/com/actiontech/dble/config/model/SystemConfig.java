@@ -1537,6 +1537,7 @@ public final class SystemConfig {
                 ", closeHeartBeatRecord=" + closeHeartBeatRecord +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", groupConcatMaxLen='" + groupConcatMaxLen +
                 "]";
     }
 

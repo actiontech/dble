@@ -152,6 +152,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("gmsslBothPfx", SystemConfig.getInstance().getGmsslBothPfx() + "", "National secret dual certificate/private key file in PFX format"));
         readOnlyParams.add(new ParamInfo("gmsslRcaPem", SystemConfig.getInstance().getGmsslRcaPem() + "", "Root certificate of GMSSL"));
         readOnlyParams.add(new ParamInfo("gmsslOcaPem", SystemConfig.getInstance().getGmsslOcaPem() + "", "Secondary certificate of GMSSL"));
+        readOnlyParams.add(new ParamInfo("groupConcatMaxLen", sysConfig.getGroupConcatMaxLen() + "", "The maximum permitted result length in bytes for the GROUP_CONCAT() function. The default is 1024."));
 
     }
 

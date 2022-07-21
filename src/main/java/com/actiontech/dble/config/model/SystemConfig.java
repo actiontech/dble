@@ -1758,6 +1758,7 @@ public final class SystemConfig {
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
                 ", district='" + district +
                 ", dataCenter='" + dataCenter +
+                ", groupConcatMaxLen='" + groupConcatMaxLen +
                 "]";
     }
 

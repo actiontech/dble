@@ -1675,6 +1675,7 @@ public final class SystemConfig {
                 ", supportSSL=" + supportSSL +
                 ", enableRoutePenetration=" + enableRoutePenetration +
                 ", routePenetrationRules='" + routePenetrationRules + '\'' +
+                ", groupConcatMaxLen='" + groupConcatMaxLen +
                 "]";
     }
 

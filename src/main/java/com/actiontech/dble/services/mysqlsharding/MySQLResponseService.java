@@ -139,6 +139,8 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = new FetchResponseHandler(this);
             } else if (type == MySQLPacket.COM_FIELD_LIST) {
                 protocolResponseHandler = new FieldListResponseHandler(this);
+            } else if (type == MySQLPacket.COM_STATISTICS) {
+                protocolResponseHandler = new StatisticsResponseHandler(this);
             } else if (type == MySQLPacket.COM_STMT_CLOSE) {
                 // no response
                 write(originPacket, WriteFlags.QUERY_END);

@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler, ShowFieldsHandler {
+public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler, PreparedResponseHandler, ShowFieldsHandler, StatisticsHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RWSplitHandler.class);
     private final RWSplitService rwSplitService;
@@ -274,7 +274,9 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
                         buffer = frontedConnection.getService().writeToBuffer(field, buffer);
                     }
                 }
-                callback.callback(true, ok, rwSplitService);
+                if (callback != null) {
+                    callback.callback(true, ok, rwSplitService);
+                }
                 frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
                 write2Client = true;
                 buffer = null;
@@ -354,5 +356,18 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
         }
     }
 
-
+    @Override
+    public void stringEof(byte[] data, @NotNull AbstractService service) {
+        synchronized (this) {
+            if (!write2Client) {
+                if (buffer == null) {
+                    buffer = frontedConnection.allocate();
+                }
+                buffer = frontedConnection.getService().writeToBuffer(data, buffer);
+                frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+                write2Client = true;
+                buffer = null;
+            }
+        }
+    }
 }

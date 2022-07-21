@@ -1816,6 +1816,7 @@ public final class SystemConfig {
                 ", enableConnectionAssociateThread=" + enableConnectionAssociateThread +
                 ", district='" + district +
                 ", dataCenter='" + dataCenter +
+                ", groupConcatMaxLen='" + groupConcatMaxLen +
                 "]";
     }
 

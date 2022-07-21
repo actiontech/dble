@@ -158,6 +158,7 @@ public final class SystemParams {
         readOnlyParams.add(new ParamInfo("gmsslOcaPem", SystemConfig.getInstance().getGmsslOcaPem() + "", "Secondary certificate of GMSSL"));
         readOnlyParams.add(new ParamInfo("district", sysConfig.getDistrict() + "", "The location of the DBLE"));
         readOnlyParams.add(new ParamInfo("dataCenter", sysConfig.getDataCenter() + "", "The data center where the DBLE resides"));
+        readOnlyParams.add(new ParamInfo("groupConcatMaxLen", sysConfig.getGroupConcatMaxLen() + "", "The maximum permitted result length in bytes for the GROUP_CONCAT() function. The default is 1024."));
 
     }
 

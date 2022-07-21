@@ -6,6 +6,7 @@
 package com.actiontech.dble.services.mysqlsharding;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
@@ -16,6 +17,7 @@ import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidParserFactory;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.util.DruidUtil;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.response.FieldList;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -62,7 +64,7 @@ public class MySQLProtoLogicHandler {
             return;
         }
         if (!service.getUserConfig().getSchemas().contains(db)) {
-            String s = "Access denied for user '" + service.getUser() + "' to database '" + db + "'";
+            String s = "Access denied for user '" + service.getUser().getFullName() + "' to database '" + db + "'";
             service.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
             return;
         }
@@ -82,10 +84,15 @@ public class MySQLProtoLogicHandler {
             mm.position(position);
             String clientCharset = service.getCharset().getClient();
             sql = mm.readString(clientCharset);
-            if (!StringUtil.byteEqual(data, sql.getBytes(clientCharset), position)) {
+            String javaCharset = CharsetUtil.getJavaCharset(clientCharset);
+            if (!StringUtil.byteEqual(data, sql.getBytes(javaCharset), position) && charsetReplace(sql)) {
                 mm = new MySQLMessage(data);
                 mm.position(position);
-                sql = getSql(sql, mm);
+                sql = mm.readString(StringUtil.ISO_8859_1);
+                ((NonBlockingSession) service.getSession()).setIsoCharset(true);
+                LOGGER.warn("Enforces {} to String, clientCharset sql is {}", StringUtil.ISO_8859_1, sql);
+            } else {
+                ((NonBlockingSession) service.getSession()).setIsoCharset(false);
             }
         } catch (UnsupportedEncodingException e) {
             service.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + service.getCharset().getClient() + "'");
@@ -93,6 +100,7 @@ public class MySQLProtoLogicHandler {
         }
         service.query(sql);
     }
+
 
     public String stmtPrepare(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -123,7 +131,7 @@ public class MySQLProtoLogicHandler {
     }
 
 
-    private String getSql(String sql, MySQLMessage mm) {
+    private boolean charsetReplace(String sql) {
         try {
             SQLStatement statement = DruidUtil.parseSQL(sql);
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(service.getSchema());
@@ -138,16 +146,14 @@ public class MySQLProtoLogicHandler {
             for (String tableName : tableSet) {
                 specifyCharset = tables.get(tableName).isSpecifyCharset();
                 if (specifyCharset) {
-                    sql = mm.readString(StringUtil.ISO_8859_1);
-                    LOGGER.warn("Enforces {} to String, clientCharset sql is {}", StringUtil.ISO_8859_1, sql);
-                    return sql;
+                    return true;
                 }
             }
         } catch (Exception e) {
             // ignore exception
-            return sql;
+            return false;
         }
-        return sql;
+        return false;
     }
 
 }

@@ -626,11 +626,11 @@ public final class StringUtil {
      * @param values
      * @return
      */
-    public static boolean charsetParseString(String charsetEncode, String values) {
+    public static boolean charsetParseString(String charsetEncode, byte[] values) {
         try {
             Charset charset = Charset.forName(charsetEncode);
             CharsetDecoder decoder = charset.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);
-            decoder.decode(ByteBuffer.wrap(values.getBytes(charsetEncode)));
+            decoder.decode(ByteBuffer.wrap(values));
         } catch (Exception e) {
             return false;
         }
@@ -651,7 +651,7 @@ public final class StringUtil {
             if (!equals(isoValues, clientValues) && equals(value, clientValues)) {
                 return value;
             }
-            if (charsetParseString(clientCharset, value)) {
+            if (charsetParseString(clientCharset, value.getBytes(clientCharset))) {
                 value = new String(value.getBytes(ISO_8859_1), clientCharset);
             }
         } catch (Exception e) {

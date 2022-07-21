@@ -14,6 +14,7 @@ import com.alibaba.druid.wall.WallProvider;
 
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class ShardingUserConfig extends ServerUserConfig {
@@ -59,7 +60,7 @@ public class ShardingUserConfig extends ServerUserConfig {
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
             if (!schemas.contains(schemaInfo.getSchema())) {
-                String msg = "Access denied for user '" + user + "' to database '" + schemaInfo.getSchema() + "'";
+                String msg = "Access denied for user '" + user.getFullName() + "' to database '" + schemaInfo.getSchema() + "'";
                 throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             }
             schemaInfo.setSchemaConfig(schemaConfig);
@@ -98,4 +99,19 @@ public class ShardingUserConfig extends ServerUserConfig {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        ShardingUserConfig that = (ShardingUserConfig) o;
+        return readOnly == that.readOnly &&
+                Objects.equals(schemas, that.schemas) &&
+                isEquals(privilegesConfig, that.privilegesConfig);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), readOnly, schemas, privilegesConfig);
+    }
 }

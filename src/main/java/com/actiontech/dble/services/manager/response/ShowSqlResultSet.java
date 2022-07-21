@@ -97,7 +97,7 @@ public final class ShowSqlResultSet {
     private static RowDataPacket getRow(int i, UserName user, String sql, int count, long resultSetSize, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(i));
-        row.add(StringUtil.encode(user.toString(), charset));
+        row.add(StringUtil.encode(user.getFullName(), charset));
         row.add(LongUtil.toBytes(count));
         row.add(StringUtil.encode(sql, charset));
         row.add(LongUtil.toBytes(resultSetSize));

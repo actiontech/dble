@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 
 public final class DbleBackendConnections extends ManagerBaseTable {
     public DbleBackendConnections() {
@@ -142,9 +143,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         if (null == service) {
             return null;
         }
-        if (service.getSession() != null) {
-            row.put("session_conn_id", service.getSession().getSource().getId() + "");
-        }
+        Optional.ofNullable(service.getSession()).ifPresent(session -> row.put("session_conn_id", service.getSession().getSource().getId() + ""));
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
         ByteBuffer bb = c.getReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");

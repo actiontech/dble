@@ -199,16 +199,16 @@ public class JoinChooser {
     }
 
 
-    private boolean isSameNode(HintPlanNode hintNode, JoinRelationDag dagNode) {
+    private boolean isSameNode(String hintNodeName, JoinRelationDag dagNode) {
         final PlanNode node = dagNode.node;
-        if (hintNode.getName() == null) {
+        if (hintNodeName == null) {
             return false;
         }
         final String unitName = getUnitName(node);
         if (unitName == null) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't optimize this sql, try to set alias for every tables in sql. Related nodes: " + node);
         }
-        return Objects.equals(hintNode.getName(), unitName);
+        return Objects.equals(hintNodeName, unitName);
 
 
     }
@@ -232,8 +232,8 @@ public class JoinChooser {
         if (root.degree != 0) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "exists any relations route to the root node: " + root);
         }
-        final Iterator<HintPlanNode> hintIt = hintPlanInfo.iterator();
-        HintPlanNode nextHintNode = hintIt.next();
+        final Iterator<String> hintIt = hintPlanInfo.getHintPlanNodeMap().keySet().stream().iterator();
+        String nextHintNode = hintIt.next();
 
         {
             root = findNode(root, nextHintNode);
@@ -320,44 +320,41 @@ public class JoinChooser {
                 continue traversal;
             }
             //when no nextAccessDagNodes match the nextHintNode
-            HintPlanNode finalNextHintNode = nextHintNode;
+            String finalNextHintNode = nextHintNode;
             final boolean nodeExist = isHintNodeExist(finalNextHintNode);
             if (!nodeExist) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint.The node '" + nextHintNode.getName() + "' doesn't exist.");
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint.The node '" + nextHintNode + "' doesn't exist.");
             } else {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint. please check the node '" + nextHintNode.getName() + "',there are no previous nodes connect to it.");
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "You are using wrong hint. please check the node '" + nextHintNode + "',there are no previous nodes connect to it.");
             }
 
 
         }
         if (hintIt.hasNext()) {
-            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode.getName() + "',may be contain orphaned node.");
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can't traversal all node use this hint. please check near the node '" + nextHintNode + "',may be contain orphaned node.");
         }
         return joinNodeBuilder.build();
     }
 
 
-    private boolean isHintNodeExist(HintPlanNode finalNextHintNode) {
+    private boolean isHintNodeExist(String finalNextHintNodeName) {
         return dagNodes.values().stream().anyMatch(node ->
-                isSameNode(finalNextHintNode, node)
+                isSameNode(finalNextHintNodeName, node)
         );
     }
 
     private void validateHint() {
-        for (int i = 0; i < hintPlanInfo.getGroups().size(); i++) {
-            final HintPlanNodeGroup group = hintPlanInfo.getGroups().get(i);
-            if (Objects.equals(group.getType(), HintPlanNodeGroup.Type.ER) && i != 0) {
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "The ER relation in the hint currently only supports when it exists in the headmost of hint.");
-            }
+        if (hintPlanInfo.erRelyOn()) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "The ER relation in the hint currently only supports when it exists in the headmost of hint.");
         }
     }
 
-    private JoinRelationDag findNode(JoinRelationDag root, HintPlanNode hintNode) {
-        if (isSameNode(hintNode, root)) {
+    private JoinRelationDag findNode(JoinRelationDag root, String hintNodeName) {
+        if (isSameNode(hintNodeName, root)) {
             return root;
         } else {
             for (JoinRelationDag rightNode : root.rightNodes) {
-                final JoinRelationDag node = findNode(rightNode, hintNode);
+                final JoinRelationDag node = findNode(rightNode, hintNodeName);
                 if (node != null) {
                     return node;
                 }

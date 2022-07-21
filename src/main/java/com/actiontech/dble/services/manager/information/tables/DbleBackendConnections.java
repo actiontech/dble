@@ -136,9 +136,7 @@ public final class DbleBackendConnections extends ManagerBaseTable {
         row.put("schema", c.getSchema() == null ? "NULL" : c.getSchema());
 
         MySQLResponseService service = c.getBackendService();
-        if (service.getSession() != null) {
-            row.put("session_conn_id", service.getSession().getSource().getId() + "");
-        }
+        Optional.ofNullable(service.getSession()).ifPresent(session -> row.put("session_conn_id", session.getSource().getId() + ""));
         row.put("conn_estab_time", ((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000) + "");
         ByteBuffer bb = c.getReadBuffer();
         row.put("conn_recv_buffer", (bb == null ? 0 : bb.capacity()) + "");

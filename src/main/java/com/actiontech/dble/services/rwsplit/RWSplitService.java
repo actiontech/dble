@@ -269,7 +269,7 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                 LOGGER.warn("{}", "druid not support sql syntax, the reason is " + result.getViolations().get(0).getMessage());
             } else {
                 String violation = "[" + WallErrorCode.get(result.getViolations().get(0)) + "]";
-                String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user + "', so it is considered unsafe SQL";
+                String msg = "Intercepted by suspected configuration " + violation + " in the blacklist of user '" + user.getFullName() + "', so it is considered unsafe SQL";
                 LOGGER.warn("Firewall message:{}, {}",
                         result.getViolations().get(0).getMessage(), msg);
                 writeErrMessage(ErrorCode.ERR_WRONG_USED, msg);

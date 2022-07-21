@@ -7,9 +7,13 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.services.manager.response.ChangeItem;
+import com.actiontech.dble.services.manager.response.ChangeItemType;
+import com.actiontech.dble.services.manager.response.ChangeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -67,12 +71,45 @@ public final class FrontendUserManager {
         }
     }
 
+    public void changeUser(List<ChangeItem> changeItemList, int serverLimit) {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("init-for-user-manager");
+        try {
+            serverMaxConnection = serverLimit;
+
+            for (ChangeItem changeItem : changeItemList) {
+                ChangeType type = changeItem.getType();
+                Object item = changeItem.getItem();
+                boolean isUser = changeItem.getItemType() == ChangeItemType.USERNAME;
+                if (!isUser) {
+                    continue;
+                }
+                UserName userName = (UserName) item;
+                if (type == ChangeType.ADD) {
+                    //add
+                    if (!userConnectionMap.containsKey(userName)) {
+                        userConnectionMap.put(userName, 0);
+                    }
+                } else if (type == ChangeType.DELETE) {
+                    //delete
+                    if (userConnectionMap.containsKey(userName)) {
+                        userConnectionMap.remove(userName);
+                    }
+                }
+            }
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
+    }
+
 
     public CheckStatus maxConnectionCheck(UserName user, int userLimit, boolean isManager) {
 
         maxConLock.lock();
         try {
-            int userConnection = userConnectionMap.get(user);
+            Integer userConnection = userConnectionMap.get(user);
+            if (null == userConnection) {
+                userConnection = 0;
+            }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("user:" + user + ",userLimit=" + userLimit + ",userConnection=" + userConnection);
             }
@@ -97,6 +134,10 @@ public final class FrontendUserManager {
         }
 
         return OK;
+    }
+
+    public Map<UserName, Integer> getUserConnectionMap() {
+        return userConnectionMap;
     }
 
     public enum CheckStatus {

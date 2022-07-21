@@ -54,7 +54,7 @@ public final class SelectCurrentUser implements InnerFuncResponse {
     }
 
     private static byte[] getUser(ShardingService service) {
-        return StringUtil.encode(service.getUser() + "@%", service.getCharset().getResults());
+        return StringUtil.encode(service.getUser().getFullName() + "@%", service.getCharset().getResults());
     }
 
     public static byte setCurrentPacket(ShardingService service) {

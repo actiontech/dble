@@ -41,7 +41,7 @@ public final class FieldListHandler {
 
         ShardingUserConfig user = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(service.getUser()));
         if (user == null || !user.getSchemas().contains(cSchema)) {
-            service.writeErrMessage("42000", "Access denied for user '" + service.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            service.writeErrMessage("42000", "Access denied for user '" + service.getUser().getFullName() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
 

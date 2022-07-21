@@ -153,7 +153,7 @@ public class ProcessList extends ManagerBaseTable {
         // BconnID
         row.put(COLUMN_MYSQL_ID, conn.getThreadId() + "");
         // User
-        row.put(COLUMN_USER, frontConn.getFrontEndService().getUser().toString());
+        row.put(COLUMN_USER, frontConn.getFrontEndService().getUser().getFullName());
         // Front_Host
         row.put(COLUMN_FRONT_HOST, frontConn.getHost() + ":" + frontConn.getLocalPort());
         // time
@@ -168,7 +168,7 @@ public class ProcessList extends ManagerBaseTable {
         // Front_Id
         row.put(COLUMN_FRONT_ID, frontConn.getId() + "");
         // User
-        row.put(COLUMN_USER, frontConn.getFrontEndService().getUser().toString());
+        row.put(COLUMN_USER, frontConn.getFrontEndService().getUser().getFullName());
         // Front_Host
         row.put(COLUMN_FRONT_HOST, frontConn.getHost() + ":" + frontConn.getLocalPort());
         // time

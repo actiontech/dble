@@ -78,7 +78,7 @@ public final class ShowTables {
 
         ShardingUserConfig user = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(shardingService.getUser()));
         if (user == null || !user.getSchemas().contains(cSchema)) {
-            shardingService.writeErrMessage("42000", "Access denied for user '" + shardingService.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+            shardingService.writeErrMessage("42000", "Access denied for user '" + shardingService.getUser().getFullName() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
         //if sharding has default single node ,show tables will send to backend

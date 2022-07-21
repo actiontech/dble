@@ -359,12 +359,15 @@ public class RWSplitHandler implements ResponseHandler, LoadDataResponseHandler,
     @Override
     public void stringEof(byte[] data, @NotNull AbstractService service) {
         synchronized (this) {
-            if (buffer == null) {
-                buffer = frontedConnection.allocate();
+            if (!write2Client) {
+                if (buffer == null) {
+                    buffer = frontedConnection.allocate();
+                }
+                buffer = frontedConnection.getService().writeToBuffer(data, buffer);
+                frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+                write2Client = true;
+                buffer = null;
             }
-            buffer = frontedConnection.getService().writeToBuffer(data, buffer);
-            frontedConnection.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
-            buffer = null;
         }
     }
 }

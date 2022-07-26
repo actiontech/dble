@@ -7,6 +7,7 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
@@ -30,6 +31,7 @@ public class VarsExtractorHandler {
     private Lock lock;
     private Condition done;
     private Map<String, PhysicalDbGroup> dbGroups;
+    private PhysicalDbInstance physicalDbInstance;
     private volatile SystemVariables systemVariables = null;
 
     public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
@@ -39,13 +41,23 @@ public class VarsExtractorHandler {
         this.done = lock.newCondition();
     }
 
+    public VarsExtractorHandler(PhysicalDbInstance physicalDbInstance) {
+        this.physicalDbInstance = physicalDbInstance;
+        this.extracting = false;
+        this.lock = new ReentrantLock();
+        this.done = lock.newCondition();
+    }
+
+
     public SystemVariables execute() {
         TraceManager.TraceObject traceObject = TraceManager.threadTrace("get-system-variables-from-backend");
         try {
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-            PhysicalDbInstance ds = getPhysicalDbInstance();
-            if (ds != null) {
-                OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
+            if (null == this.physicalDbInstance) {
+                this.physicalDbInstance = getPhysicalDbInstance();
+            }
+            if (physicalDbInstance != null) {
+                OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, physicalDbInstance);
                 sqlJob.run();
                 waitDone();
             } else {
@@ -54,11 +66,16 @@ public class VarsExtractorHandler {
             }
             return systemVariables;
         } finally {
+            ReloadLogHelper.debug("get system variables :{},dbInstance:{},result:{}", LOGGER, MYSQL_SHOW_VARIABLES, physicalDbInstance, systemVariables);
+            this.physicalDbInstance = null;
             TraceManager.finishSpan(traceObject);
         }
     }
 
     private PhysicalDbInstance getPhysicalDbInstance() {
+        if (dbGroups == null || dbGroups.isEmpty()) {
+            return null;
+        }
         PhysicalDbInstance ds = null;
         List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().filter(dbGroup -> dbGroup.getDbGroupConfig().existInstanceProvideVars()).collect(Collectors.toList());
         for (PhysicalDbGroup dbGroup : dbGroupList) {
@@ -126,7 +143,7 @@ public class VarsExtractorHandler {
     }
 
     private void tryInitVars() {
-        if (dbGroups.isEmpty()) {
+        if (dbGroups == null || dbGroups.isEmpty()) {
             return;
         }
         List<PhysicalDbGroup> dbGroupList = dbGroups.values().stream().filter(dbGroup -> dbGroup.getDbGroupConfig().existInstanceProvideVars()).collect(Collectors.toList());

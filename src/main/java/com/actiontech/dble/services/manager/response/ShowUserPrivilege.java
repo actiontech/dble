@@ -93,7 +93,7 @@ public final class ShowUserPrivilege {
                 if (noNeedCheck || userPrivilegesConfig.getSchemaPrivilege(schema) == null) {
                     tableName = "*";
                     pri = ALL_PRIVILEGES;
-                    RowDataPacket row = getRow(userName.toString(), schema, tableName, pri, service.getCharset().getResults());
+                    RowDataPacket row = getRow(userName.getFullName(), schema, tableName, pri, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
                 } else {
@@ -102,13 +102,13 @@ public final class ShowUserPrivilege {
                     for (String tn : tables) {
                         tableName = tn;
                         pri = schemaPrivilege.getTablePrivilege(tn).getDml();
-                        RowDataPacket row = getRow(userName.toString(), schema, tableName, pri, service.getCharset().getResults());
+                        RowDataPacket row = getRow(userName.getFullName(), schema, tableName, pri, service.getCharset().getResults());
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, service, true);
                     }
                     tableName = "*";
                     pri = schemaPrivilege.getDml();
-                    RowDataPacket row = getRow(userName.toString(), schema, tableName, pri, service.getCharset().getResults());
+                    RowDataPacket row = getRow(userName.getFullName(), schema, tableName, pri, service.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, service, true);
                 }

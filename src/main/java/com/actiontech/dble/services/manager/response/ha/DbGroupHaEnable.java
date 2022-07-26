@@ -17,6 +17,8 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.services.manager.handler.PacketResult;
 import com.actiontech.dble.singleton.HaConfigManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -26,6 +28,8 @@ import java.util.regex.Matcher;
  * Created by szf on 2019/10/22.
  */
 public final class DbGroupHaEnable {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaEnable.class);
 
     private DbGroupHaEnable() {
     }
@@ -83,6 +87,7 @@ public final class DbGroupHaEnable {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
                     packetResult.setSuccess(false);
                     packetResult.setErrorMsg("enable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
+                    LOGGER.warn("enable dbGroup with error, use show @@dbInstance to check latest status. Error:", e);
                     return;
                 }
             }

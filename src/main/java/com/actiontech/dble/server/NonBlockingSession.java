@@ -117,6 +117,7 @@ public class NonBlockingSession extends Session {
 
     private volatile long rowCountCurrentSQL = -1;
     private volatile long rowCountLastSQL = 0;
+    private volatile boolean isoCharset;
 
     private final HashSet<BackendConnection> flowControlledTarget = new HashSet<>();
 
@@ -1039,6 +1040,14 @@ public class NonBlockingSession extends Session {
 
     public void setDiscard(boolean discard) {
         this.discard = discard;
+    }
+
+    public boolean isIsoCharset() {
+        return isoCharset;
+    }
+
+    public void setIsoCharset(boolean isoCharset) {
+        this.isoCharset = isoCharset;
     }
 
     @Override

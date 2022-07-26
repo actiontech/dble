@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.cluster.JsonFactory;
 import com.actiontech.dble.cluster.values.DbInstanceStatus;
@@ -19,12 +20,14 @@ import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
 import com.actiontech.dble.rwsplit.RWSplitNonBlockingSession;
 import com.actiontech.dble.singleton.HaConfigManager;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -43,20 +46,17 @@ public class PhysicalDbGroup {
     public static final String JSON_LIST = "dbInstance";
     // rw split
     public static final int RW_SPLIT_OFF = 0;
-    public static final int RW_SPLIT_ALL_SLAVES = 1;
     public static final int RW_SPLIT_ALL = 2;
     public static final int RW_SPLIT_ALL_SLAVES_MAY_MASTER = 3;
-    // weight
-    public static final int WEIGHT = 0;
-    private final List<PhysicalDbInstance> writeInstanceList;
+    private List<PhysicalDbInstance> writeInstanceList;
 
-    private final String groupName;
-    private final DbGroupConfig dbGroupConfig;
+    private String groupName;
+    private DbGroupConfig dbGroupConfig;
     private volatile PhysicalDbInstance writeDbInstance;
     private Map<String, PhysicalDbInstance> allSourceMap = new HashMap<>();
 
-    private final int rwSplitMode;
-    protected String[] schemas;
+    private int rwSplitMode;
+    protected List<String> schemas = Lists.newArrayList();
     private final LoadBalancer loadBalancer = new RandomLoadBalancer();
     private final LocalReadLoadBalancer localReadLoadBalancer = new LocalReadLoadBalancer();
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
@@ -107,12 +107,20 @@ public class PhysicalDbGroup {
         return groupName;
     }
 
-    public String[] getSchemas() {
+    public List<String> getSchemas() {
         return schemas;
     }
 
-    public void setSchemas(String[] mySchemas) {
+    public void setSchemas(List<String> mySchemas) {
         this.schemas = mySchemas;
+    }
+
+    public void addSchema(String schema) {
+        this.schemas.add(schema);
+    }
+
+    public void removeSchema(String schema) {
+        this.schemas.remove(schema);
     }
 
     public DbGroupConfig getDbGroupConfig() {
@@ -154,12 +162,12 @@ public class PhysicalDbGroup {
         return shardingUseless;
     }
 
-    public boolean isRwSplitUseless() {
-        return rwSplitUseless;
-    }
-
     public void setShardingUseless(boolean shardingUseless) {
         this.shardingUseless = shardingUseless;
+    }
+
+    public boolean isRwSplitUseless() {
+        return rwSplitUseless;
     }
 
     public void setRwSplitUseless(boolean rwSplitUseless) {
@@ -184,8 +192,11 @@ public class PhysicalDbGroup {
     }
 
     public void init(String reason) {
+        if (LOGGER.isDebugEnabled()) {
+            ReloadLogHelper.debug("init new group :{},reason:{}", LOGGER, this.toString(), reason);
+        }
         for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
-            entry.getValue().init(reason);
+            entry.getValue().init(reason, true);
         }
     }
 
@@ -198,12 +209,7 @@ public class PhysicalDbGroup {
     }
 
     private boolean checkState() {
-        if (getBindingCount() != 0) {
-            state = STATE_DELETING;
-            IOProcessor.BACKENDS_OLD_GROUP.add(this);
-            return false;
-        }
-        if (state.intValue() != INITIAL) {
+        if (isStop()) {
             return false;
         }
         if (getBindingCount() != 0) {
@@ -220,19 +226,23 @@ public class PhysicalDbGroup {
     }
 
     public void stop(String reason, boolean closeFront) {
+        if (LOGGER.isDebugEnabled()) {
+            ReloadLogHelper.debug("recycle old group :{},reason:{},is close front:{}", LOGGER, this.toString(), reason, closeFront);
+        }
         boolean flag = checkState();
         if (!flag) {
             return;
         }
         for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stop(reason, closeFront);
+            dbInstance.stopDirectly(reason, closeFront);
         }
     }
 
     public void stopOfFresh(List<String> sourceNames, String reason, boolean closeFront) {
         for (String sourceName : sourceNames) {
             if (allSourceMap.containsKey(sourceName)) {
-                allSourceMap.get(sourceName).stop(reason, closeFront, false);
+                PhysicalDbInstance dbInstance = allSourceMap.get(sourceName);
+                dbInstance.stop(reason, closeFront, false, dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF || writeDbInstance == dbInstance);
             }
         }
 
@@ -255,7 +265,7 @@ public class PhysicalDbGroup {
     public boolean stopOfBackground(String reason) {
         if (state.intValue() == STATE_DELETING && getBindingCount() == 0) {
             for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-                dbInstance.stop(reason, false);
+                dbInstance.stopDirectly(reason, false);
             }
             return true;
         }
@@ -266,6 +276,40 @@ public class PhysicalDbGroup {
     public boolean isStop() {
         return state.intValue() != INITIAL;
     }
+
+    public void stopPool(String reason, boolean closeFront, boolean closeWrite) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            if (!closeWrite && writeDbInstance == dbInstance) {
+                continue;
+            }
+            dbInstance.stopPool(reason, closeFront);
+        }
+    }
+
+    public void startPool(String reason, boolean startWrite) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            if (!startWrite && writeDbInstance == dbInstance) {
+                continue;
+            }
+            dbInstance.startPool(reason);
+        }
+    }
+
+    public void stopHeartbeat(String reason) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.stopHeartbeat(reason);
+        }
+    }
+
+    public void startHeartbeat() {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            if (dbInstance.heartbeat.isStop()) {
+                dbInstance.heartbeat = new MySQLHeartbeat(dbInstance);
+            }
+            dbInstance.startHeartbeat();
+        }
+    }
+
 
     public Collection<PhysicalDbInstance> getDbInstances(boolean isAll) {
         if (!isAll && rwSplitMode == RW_SPLIT_OFF) {
@@ -637,6 +681,14 @@ public class PhysicalDbGroup {
         }
     }
 
+    public void setState(Integer state) {
+        this.state = state;
+    }
+
+    public Integer getState() {
+        return state;
+    }
+
     public int getBindingCount() {
         return rwSplitSessionSet.size();
     }
@@ -649,15 +701,58 @@ public class PhysicalDbGroup {
         return this.rwSplitSessionSet.remove(session);
     }
 
+    public void setDbInstance(PhysicalDbInstance dbInstance) {
+        dbInstance.setDbGroup(this);
+        if (dbInstance.getConfig().isPrimary()) {
+            this.writeDbInstance = dbInstance;
+            this.writeInstanceList = Collections.singletonList(dbInstance);
+        }
+        this.allSourceMap.put(dbInstance.getName(), dbInstance);
+    }
+
     public boolean equalsBaseInfo(PhysicalDbGroup pool) {
-        return pool.getDbGroupConfig().getName().equals(this.dbGroupConfig.getName()) &&
-                pool.getDbGroupConfig().getHeartbeatSQL().equals(this.dbGroupConfig.getHeartbeatSQL()) &&
+        return pool.dbGroupConfig.equalsBaseInfo(this.dbGroupConfig) &&
+                pool.rwSplitMode == this.rwSplitMode &&
+                pool.getGroupName().equals(this.groupName) &&
+                pool.isUseless() == this.isUseless();
+    }
+
+    public boolean equalsForConnectionPool(PhysicalDbGroup pool) {
+        boolean rwSplitModeFlag1 = pool.getDbGroupConfig().getRwSplitMode() != 0 && this.dbGroupConfig.getRwSplitMode() != 0;
+        boolean rwSplitModeFlag2 = pool.getDbGroupConfig().getRwSplitMode() == 0 && this.dbGroupConfig.getRwSplitMode() == 0;
+        return (rwSplitModeFlag1 || rwSplitModeFlag2) && pool.isUseless() == this.isUseless();
+    }
+
+    public boolean equalsForHeartbeat(PhysicalDbGroup pool) {
+        return pool.getDbGroupConfig().getHeartbeatSQL().equals(this.dbGroupConfig.getHeartbeatSQL()) &&
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&
-                pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
-                pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&
-                pool.getDbGroupConfig().getDelayThreshold() == this.dbGroupConfig.getDelayThreshold() &&
-                pool.getDbGroupConfig().isDisableHA() == this.dbGroupConfig.isDisableHA() &&
-                pool.getGroupName().equals(this.groupName) && pool.isShardingUseless() == this.isShardingUseless() && pool.isRwSplitUseless() == this.isRwSplitUseless() &&
-                pool.isAnalysisUseless() == this.isAnalysisUseless();
+                pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount();
+    }
+
+
+    public void copyBaseInfo(PhysicalDbGroup physicalDbGroup) {
+        this.dbGroupConfig = physicalDbGroup.dbGroupConfig;
+        this.groupName = physicalDbGroup.groupName;
+        this.rwSplitMode = physicalDbGroup.rwSplitMode;
+        this.schemas = physicalDbGroup.schemas;
+        this.rwSplitUseless = physicalDbGroup.rwSplitUseless;
+        this.shardingUseless = physicalDbGroup.shardingUseless;
+        for (PhysicalDbInstance dbInstance : this.allSourceMap.values()) {
+            dbInstance.setDbGroupConfig(physicalDbGroup.dbGroupConfig);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "PhysicalDbGroup{" +
+                "groupName='" + groupName + '\'' +
+                ", dbGroupConfig=" + dbGroupConfig +
+                ", writeDbInstance=" + writeDbInstance +
+                ", allSourceMap=" + allSourceMap +
+                ", rwSplitMode=" + rwSplitMode +
+                ", schemas=" + schemas +
+                ", shardingUseless=" + shardingUseless +
+                ", rwSplitUseless=" + rwSplitUseless +
+                '}';
     }
 }

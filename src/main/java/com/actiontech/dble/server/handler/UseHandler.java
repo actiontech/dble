@@ -29,7 +29,7 @@ public final class UseHandler {
         }
         ShardingUserConfig userConfig = service.getUserConfig();
         if (!userConfig.getSchemas().contains(schema)) {
-            String msg = "Access denied for user '" + service.getUser() + "' to database '" + schema + "'";
+            String msg = "Access denied for user '" + service.getUser().getFullName() + "' to database '" + schema + "'";
             service.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
             return;
         }

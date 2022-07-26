@@ -11,14 +11,13 @@ import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
-import com.google.common.collect.Lists;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class JoinNestLoopChooser {
     private Map<String, PlanNode> nodeMap;
     private Map<String, List<String>> nodeDependMap;
-    private Map<String, List<HintPlanNodeGroup>> hintDependMap;
     private JoinNode jn;
     private HintPlanInfo hintPlanInfo;
     private HintNestLoopHelper hintNestLoopHelper;
@@ -26,15 +25,22 @@ public class JoinNestLoopChooser {
     public JoinNestLoopChooser(JoinNode joinNode, HintPlanInfo hintPlanInfo) {
         this.jn = joinNode;
         this.hintPlanInfo = hintPlanInfo;
-        hintDependMap = new HashMap<>();
         nodeMap = new HashMap<>();
         nodeDependMap = new HashMap<>();
+        conversionNodeDependMap(hintPlanInfo.getDependMap());
         hintNestLoopHelper = new HintNestLoopHelper();
+    }
+
+    private void conversionNodeDependMap(HashMap<String, Set<HintPlanNode>> dependMap) {
+        dependMap.forEach((k, v) -> {
+            List<String> dependList = v.stream().map(HintPlanNode::getName).collect(Collectors.toList());
+            nodeDependMap.put(k, dependList);
+        });
     }
 
     public void tryNestLoop() throws MySQLOutPutException {
         buildNode(jn);
-        buildHintDependency();
+        checkHintDependency();
         buildNestLoop();
     }
 
@@ -46,7 +52,6 @@ public class JoinNestLoopChooser {
             String alias = planNode.getAlias();
             Optional.ofNullable(alias).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "table " + ((TableNode) planNode).getTableName() + " alias can not be null!"));
             ((TableNode) planNode).setHintNestLoopHelper(hintNestLoopHelper);
-            nodeDependMap.put(alias, Lists.newArrayList());
             nodeMap.put(alias, planNode);
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hintPlan not support");
@@ -90,9 +95,9 @@ public class JoinNestLoopChooser {
         }
     }
 
-    private void checkErCondition(HintPlanNodeGroup group) {
-        if (group.getType() == HintPlanNodeGroup.Type.ER) {
-            List<HintPlanNode> nodes = group.getNodes();
+    private void checkErCondition(HashMap<String, Set<HintPlanNode>> erMap) {
+        erMap.forEach((k, v) -> {
+            Set<HintPlanNode> nodes = v;
             for (HintPlanNode node : nodes) {
                 String alias = node.getName();
                 JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
@@ -100,45 +105,31 @@ public class JoinNestLoopChooser {
                     throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check ER condition");
                 }
             }
-        }
+        });
     }
 
-    private void buildHintDependency() {
-        List<HintPlanNodeGroup> groups = hintPlanInfo.getGroups();
-        int nodeSize = 0;
-        HintPlanNodeGroup lastGroup = null;
-        LinkedList<HintPlanNodeGroup> groupList = new LinkedList<>();
-        for (HintPlanNodeGroup group : groups) {
-            List<HintPlanNode> nodes = group.getNodes();
-            nodeSize += nodes.size();
-            checkErCondition(group);
-            checkAndOrCondition(group);
-            if (lastGroup != null) {
-                for (HintPlanNode node : nodes) {
-                    hintDependMap.put(node.getName(), Lists.newArrayList(groupList));
-                }
-            }
-            groupList.addFirst(group);
-            lastGroup = group;
-        }
-        if (nodeSize != nodeMap.size()) {
+    private void checkHintDependency() {
+        HashMap<String, Set<HintPlanNode>> dependMap = hintPlanInfo.getDependMap();
+        HashMap<String, Set<HintPlanNode>> erMap = hintPlanInfo.getErMap();
+        checkErCondition(erMap);
+        if (hintPlanInfo.nodeSize() != nodeMap.size()) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "the number of tables in the hint plan and the actual SQL varies");
         }
+        dependMap.forEach((k, v) -> checkAndOrCondition(k));
         hintAndCheck();
     }
 
     private void hintAndCheck() {
-        hintDependMap.forEach((k, v) -> {
+        HashMap<String, Set<HintPlanNode>> dependMap = hintPlanInfo.getDependMap();
+        dependMap.forEach((k, v) -> {
             PlanNode currentNode = nodeMap.get(k);
-            for (HintPlanNodeGroup hintPlanNodeGroup : v) {
-                List<HintPlanNode> nodes = hintPlanNodeGroup.getNodes();
-                for (HintPlanNode node : nodes) {
-                    PlanNode dependNode = nodeMap.get(node.getName());
-                    boolean result = dependencyHelper(dependNode, currentNode, currentNode);
-                    if (result) {
-                        nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
-                        return;
-                    }
+            Set<HintPlanNode> nodes = v;
+            for (HintPlanNode node : nodes) {
+                PlanNode dependNode = nodeMap.get(node.getName());
+                boolean result = dependencyHelper(dependNode, currentNode, currentNode);
+                if (result) {
+                    nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
+                    return;
                 }
             }
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + currentNode.getAlias() + " & condition");
@@ -201,17 +192,11 @@ public class JoinNestLoopChooser {
         }
     }
 
-    private void checkAndOrCondition(HintPlanNodeGroup group) {
-        if (group.getType() != HintPlanNodeGroup.Type.ER) {
-            List<HintPlanNode> nodes = group.getNodes();
-            for (HintPlanNode node : nodes) {
-                String alias = node.getName();
-                Optional.ofNullable(nodeMap.get(alias)).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table alias = " + alias));
-                JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
-                if (canDoAsMerge(parent)) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + alias + " & or | condition");
-                }
-            }
+    private void checkAndOrCondition(String alias) {
+        Optional.ofNullable(nodeMap.get(alias)).orElseThrow(() -> new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table alias = " + alias));
+        JoinNode parent = (JoinNode) nodeMap.get(alias).getParent();
+        if (canDoAsMerge(parent)) {
+            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "hint explain build failures! check table " + alias + " & or | condition");
         }
     }
 

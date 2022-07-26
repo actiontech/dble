@@ -203,6 +203,7 @@
 #For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
 #-DrwStickyTime=1000
 #-DjoinStrategyType=-1
+#-DgroupConcatMaxLen = 1024
 
 #-DserverCertificateKeyStoreUrl=
 #-DserverCertificateKeyStorePwd=

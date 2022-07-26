@@ -99,7 +99,7 @@ public final class ShowSQLSlow {
 
     private static RowDataPacket getRow(UserName user, SQLRecord sql, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(user.toString(), charset));
+        row.add(StringUtil.encode(user.getFullName(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(sql.getStartTime()), charset));
         row.add(LongUtil.toBytes(sql.getExecuteTime()));
         row.add(StringUtil.encode(sql.getStatement(), charset));

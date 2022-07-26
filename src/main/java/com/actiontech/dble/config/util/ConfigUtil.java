@@ -5,15 +5,22 @@
  */
 package com.actiontech.dble.config.util;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.VersionUtil;
+import com.actiontech.dble.config.DbleTempConfig;
 import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.type.DataBaseType;
+import com.actiontech.dble.services.manager.response.ChangeItem;
+import com.actiontech.dble.services.manager.response.ChangeItemType;
+import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
+import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -22,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public final class ConfigUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtil.class);
@@ -68,14 +76,77 @@ public final class ConfigUtil {
         }
     }
 
-    private static String[] getShardingNodeSchemasOfDbGroup(String dbGroup, Map<String, ShardingNode> shardingNodeMap) {
+    private static ArrayList<String> getShardingNodeSchemasOfDbGroup(String dbGroup, Map<String, ShardingNode> shardingNodeMap) {
         ArrayList<String> schemaList = new ArrayList<>(30);
         for (ShardingNode dn : shardingNodeMap.values()) {
             if (dn.getDbGroup() != null && dn.getDbGroup().getGroupName().equals(dbGroup)) {
                 schemaList.add(dn.getDatabase());
             }
         }
-        return schemaList.toArray(new String[schemaList.size()]);
+        return schemaList;
+    }
+
+    public static String getAndSyncKeyVariables(List<ChangeItem> changeItemList, boolean needSync) throws Exception {
+        TraceManager.TraceObject traceObject = TraceManager.threadTrace("sync-key-variables");
+        try {
+            String msg = null;
+            List<ChangeItem> needCheckItemList = changeItemList.stream()
+                    //add dbInstance or add dbGroup or (update dbInstance and need testConn)
+                    .filter(changeItem -> ((changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE || changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) &&
+                            changeItem.getType() == ChangeType.ADD) ||
+                            (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE && changeItem.getType() == ChangeType.UPDATE && changeItem.isAffectTestConn()))
+                    .collect(Collectors.toList());
+            if (changeItemList.size() == 0 || needCheckItemList == null || needCheckItemList.isEmpty()) {
+                //with no dbGroups, do not check the variables
+                return null;
+            }
+            Map<String, Future<KeyVariables>> keyVariablesTaskMap = Maps.newHashMap();
+            getAndSyncKeyVariablesForDataSources(needCheckItemList, keyVariablesTaskMap, needSync);
+
+            Set<String> diffGroup = new HashSet<>();
+            int minNodePacketSize = Integer.MAX_VALUE;
+            int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
+            Boolean lowerCase = DbleServer.getInstance().getConfig().isLowerCase();
+            for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+                String dataSourceName = entry.getKey();
+                Future<KeyVariables> future = entry.getValue();
+                KeyVariables keyVariables = future.get();
+                if (keyVariables != null) {
+                    if (lowerCase != null && keyVariables.isLowerCase() != lowerCase) {
+                        diffGroup.add(dataSourceName);
+                    } else if (lowerCase == null) {
+                        lowerCase = keyVariables.isLowerCase();
+                    }
+                    minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
+                    int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));
+                    minVersion = Math.min(minVersion, version);
+                }
+            }
+            if (minNodePacketSize < SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
+                SystemConfig.getInstance().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+                msg = "dble's maxPacketSize will be set to (the min of all dbGroup's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+                LOGGER.warn(msg);
+            }
+            if (minVersion < Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1))) {
+                throw new ConfigException("the dble version[=" + SystemConfig.getInstance().getFakeMySQLVersion() + "] cannot be higher than the minimum version of the backend mysql node,pls check the backend mysql node.");
+            }
+            if (diffGroup.size() != 0) {
+                // if all datasoure's lower case are not equal, throw exception
+                StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
+                sb.append("These previous MySQL's value is");
+                sb.append(DbleServer.getInstance().getConfig().isLowerCase() ? " not 0" : " 0");
+                sb.append(".but these MySQL's [");
+                sb.append(Strings.join(diffGroup, ','));
+                sb.append("] value is");
+                sb.append(DbleServer.getInstance().getConfig().isLowerCase() ? " 0" : " not 0");
+                sb.append(".");
+                throw new IOException(sb.toString());
+            }
+            DbleTempConfig.getInstance().setLowerCase(lowerCase);
+            return msg;
+        } finally {
+            TraceManager.finishSpan(traceObject);
+        }
     }
 
     public static String getAndSyncKeyVariables(Map<String, PhysicalDbGroup> dbGroups, boolean needSync) throws Exception {
@@ -91,10 +162,15 @@ public final class ConfigUtil {
                     clickHouseDbGroups.put(k, v);
                 }
             });
-
-            sb.append(getMysqlSyncKeyVariables(mysqlDbGroups, needSync));
-            sb.append(getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync));
-            return sb.toString();
+            String mysqlSyncKeyVariables = getMysqlSyncKeyVariables(mysqlDbGroups, needSync);
+            if (!StringUtil.isEmpty(mysqlSyncKeyVariables)) {
+                sb.append(mysqlSyncKeyVariables);
+            }
+            String clickHouseSyncKeyVariables = getClickHouseSyncKeyVariables(clickHouseDbGroups, needSync);
+            if (!StringUtil.isEmpty(clickHouseSyncKeyVariables)) {
+                sb.append(clickHouseSyncKeyVariables);
+            }
+            return sb.length() == 0 ? null : sb.toString();
         } finally {
             TraceManager.finishSpan(traceObject);
         }
@@ -166,6 +242,7 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msg;
     }
 
@@ -235,9 +312,46 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msg;
     }
 
+
+    private static void getAndSyncKeyVariablesForDataSources(List<ChangeItem> changeItemList, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
+                                                             boolean needSync) throws InterruptedException {
+        ExecutorService service = Executors.newFixedThreadPool(changeItemList.size());
+        for (ChangeItem changeItem : changeItemList) {
+            Object item = changeItem.getItem();
+            if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_INSTANCE) {
+                PhysicalDbInstance ds = (PhysicalDbInstance) item;
+                if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                    continue;
+                }
+                getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
+            } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
+                PhysicalDbGroup dbGroup = (PhysicalDbGroup) item;
+                for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
+                    if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
+                        continue;
+                    }
+                    getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
+                }
+            }
+        }
+        service.shutdown();
+        int i = 0;
+        while (!service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+            if (LOGGER.isDebugEnabled()) {
+                if (i == 0) {
+                    LOGGER.info("wait to get all dbInstances's get key variable");
+                }
+                i++;
+                if (i == 100) { //log every 10 seconds
+                    i = 0;
+                }
+            }
+        }
+    }
 
     private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(dbGroups.size());
@@ -257,7 +371,7 @@ public final class ConfigUtil {
         while (!service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
             if (LOGGER.isDebugEnabled()) {
                 if (i == 0) {
-                    LOGGER.debug("wait to get all dbInstances's get key variable");
+                    LOGGER.info("wait to get all dbInstances's get key variable");
                 }
                 i++;
                 if (i == 100) { //log every 10 seconds

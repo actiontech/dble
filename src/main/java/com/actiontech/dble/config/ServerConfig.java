@@ -76,7 +76,7 @@ public class ServerConfig {
     private RawJson shardingConfig;
     private RawJson userConfig;
     private RawJson sequenceConfig;
-    private boolean lowerCase;
+    private Boolean lowerCase;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -855,11 +855,11 @@ public class ServerConfig {
         return sequenceConfig;
     }
 
-    public boolean isLowerCase() {
+    public Boolean isLowerCase() {
         return lowerCase;
     }
 
-    public void setLowerCase(boolean lowerCase) {
+    public void setLowerCase(Boolean lowerCase) {
         this.lowerCase = lowerCase;
     }
 }

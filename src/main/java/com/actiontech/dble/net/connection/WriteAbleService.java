@@ -8,6 +8,7 @@ package com.actiontech.dble.net.connection;
 
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlag;
 
 import javax.annotation.Nonnull;
@@ -21,16 +22,20 @@ import java.util.EnumSet;
 public interface WriteAbleService {
     AbstractConnection getConnection();
 
+    default void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
+        writeDirectly(buffer, writeFlags, ResultFlag.OTHER);
+    }
+
     /**
      * the common method to write to connection.
      *
      * @param buffer
      * @param writeFlags
      */
-    default void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags) {
+    default void writeDirectly(ByteBuffer buffer, @Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
         final boolean end = writeFlags.contains(WriteFlag.END_OF_QUERY) || writeFlags.contains(WriteFlag.END_OF_SESSION);
         if (end) {
-            beforeWriteFinish(writeFlags);
+            beforeWriteFinish(writeFlags, resultFlag);
         }
 
         getConnection().innerWrite(buffer, writeFlags);
@@ -39,10 +44,13 @@ public interface WriteAbleService {
         }
     }
 
-    void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags);
+    void beforeWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag);
 
     void afterWriteFinish(@Nonnull EnumSet<WriteFlag> writeFlags);
 
+    default void write(byte[] data, @Nonnull EnumSet<WriteFlag> writeFlags) {
+        write(data, writeFlags, ResultFlag.OTHER);
+    }
 
     /**
      * NOTICE: this method is not a good practice,may deprecated in the future
@@ -54,10 +62,10 @@ public interface WriteAbleService {
      * @param data
      * @param writeFlags
      */
-    default void write(byte[] data, @Nonnull EnumSet<WriteFlag> writeFlags) {
+    default void write(byte[] data, @Nonnull EnumSet<WriteFlag> writeFlags, ResultFlag resultFlag) {
         ByteBuffer buffer = getConnection().allocate();
         ByteBuffer writeBuffer = writeToBuffer(data, buffer);
-        this.writeDirectly(writeBuffer, writeFlags);
+        this.writeDirectly(writeBuffer, writeFlags, resultFlag);
     }
 
     /**
@@ -71,7 +79,7 @@ public interface WriteAbleService {
     }
 
     default void writeWithBuffer(MySQLPacket packet, ByteBuffer buffer) {
-        this.writeDirectly(writeToBuffer(packet, buffer), packet.getLastWriteFlag());
+        this.writeDirectly(writeToBuffer(packet, buffer), packet.getLastWriteFlag(), packet.getResultFlag());
     }
 
     default ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {

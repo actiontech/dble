@@ -70,7 +70,6 @@ public abstract class XAStage implements TransactionStage {
                 return;
             }
         }
-        session.setResponseTime(isSuccess);
         MySQLPacket sendData = xaHandler.getPacketIfSuccess();
         if (sendData != null) {
             sendData.write(session.getSource());

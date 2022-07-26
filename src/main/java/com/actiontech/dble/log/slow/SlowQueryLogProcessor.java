@@ -118,16 +118,14 @@ public class SlowQueryLogProcessor extends Thread {
     }
 
     public void putSlowQueryLog(ShardingService service, TraceResult log) {
-        if (log.isCompleted() && log.getOverAllMilliSecond() > SlowQueryLog.getInstance().getSlowTime()) {
-            SlowQueryLogEntry logEntry = new SlowQueryLogEntry(service.getExecuteSql(), log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
-            try {
-                final boolean enQueue = queue.offer(logEntry, 3, TimeUnit.SECONDS);
-                if (!enQueue) {
-                    LOGGER.warn("slow log queue has so many item. Discard log entry: {}  ", logEntry.toString());
-                }
-            } catch (InterruptedException e) {
-                LOGGER.info(" ", e);
+        SlowQueryLogEntry logEntry = new SlowQueryLogEntry(service.getExecuteSql(), log, service.getUser(), service.getConnection().getHost(), service.getConnection().getId());
+        try {
+            final boolean enQueue = queue.offer(logEntry, 3, TimeUnit.SECONDS);
+            if (!enQueue) {
+                LOGGER.warn("slow log queue has so many item. Discard log entry: {}  ", logEntry.toString());
             }
+        } catch (InterruptedException e) {
+            LOGGER.info(" ", e);
         }
     }
 }

@@ -482,7 +482,7 @@ public abstract class FrontendService<T extends UserConfig> extends AbstractServ
 
         public void afterConsumed(ServiceTask executeTask) {
             if (needDelayed) {
-                beforeWriteFinish(WriteFlags.QUERY_END);
+                beforeWriteFinish(WriteFlags.QUERY_END, ResultFlag.OTHER);
                 afterWriteFinish(WriteFlags.QUERY_END);
                 lastConsumedTask = new DelayedServiceTask(executeTask);
                 needDelayed = false;

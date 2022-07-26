@@ -14,6 +14,7 @@ import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -216,7 +217,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
-                    session.setResponseTime(false);
                     errPkg.write(buffer, shardingService);
                 } else {
                     errPkg.write(shardingService.getConnection());
@@ -259,7 +259,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             shardingService.setLastInsertId(ok.getInsertId());
             session.setBackendResponseEndTime((MySQLResponseService) service);
             session.releaseConnectionIfSafe((MySQLResponseService) service, false);
-            session.setResponseTime(true);
             session.multiStatementPacket(ok);
             QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
             if (OutputStateEnum.PREPARE.equals(requestScope.getOutputState())) {
@@ -298,11 +297,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         eofRowPacket.read(eof);
 
         ShardingService shardingService = session.getShardingService();
-        session.setResponseTime(true);
         QueryResultDispatcher.doSqlStat(rrs, session, selectRows, netOutBytes, resultSize);
         if (requestScope.isUsingCursor()) {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
-            session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END);
+            session.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
         }
         lock.lock();
         try {

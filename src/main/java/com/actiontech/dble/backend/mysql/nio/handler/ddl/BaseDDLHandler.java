@@ -357,7 +357,6 @@ public abstract class BaseDDLHandler implements ResponseHandler, ExecutableHandl
     protected void handleEndPacket(MySQLPacket packet) {
         session.clearResources(false);
         this.clearResources();
-        session.setResponseTime(packet instanceof OkPacket);
         DDLTraceHelper.finish(session.getShardingService());
         packet.write(session.getSource());
     }

@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 
 import java.nio.ByteBuffer;
 
@@ -22,5 +23,10 @@ public class EOFRowPacket extends EOFPacket {
     @Override
     public boolean isEndOfQuery() {
         return true;
+    }
+
+    @Override
+    public ResultFlag getResultFlag() {
+        return ResultFlag.EOF_ROW;
     }
 }

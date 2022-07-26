@@ -106,14 +106,16 @@ public final class ConfigUtil {
             Set<String> diffGroup = new HashSet<>();
             int minNodePacketSize = Integer.MAX_VALUE;
             int minVersion = Integer.parseInt(SystemConfig.getInstance().getFakeMySQLVersion().substring(0, 1));
-            boolean lowerCase = DbleServer.getInstance().getConfig().isLowerCase();
+            Boolean lowerCase = DbleServer.getInstance().getConfig().isLowerCase();
             for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
                 String dataSourceName = entry.getKey();
                 Future<KeyVariables> future = entry.getValue();
                 KeyVariables keyVariables = future.get();
                 if (keyVariables != null) {
-                    if (keyVariables.isLowerCase() != lowerCase) {
+                    if (lowerCase != null && keyVariables.isLowerCase() != lowerCase) {
                         diffGroup.add(dataSourceName);
+                    } else if (lowerCase == null) {
+                        lowerCase = keyVariables.isLowerCase();
                     }
                     minNodePacketSize = Math.min(minNodePacketSize, keyVariables.getMaxPacketSize());
                     int version = Integer.parseInt(keyVariables.getVersion().substring(0, 1));

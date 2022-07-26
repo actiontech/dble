@@ -170,7 +170,7 @@ public abstract class MysqlVisitor {
         } else if (item instanceof ItemBoolFunc2) {
             Item a = item.arguments().get(0);
             Item b = item.arguments().get(1);
-            return getItemName(a) + " " + ((ItemBoolFunc2) item).funcName() + " " + getItemName(b);
+            return "(" + getItemName(a) + " " + ((ItemBoolFunc2) item).funcName() + " " + getItemName(b) + ")";
         } else if (item.type().equals(ItemType.FIELD_ITEM)) {
             String tableName = "`" + item.getTableName() + "`.`" + item.getItemName() + "`";
             if (item.getDbName() == null) {
@@ -212,4 +212,15 @@ public abstract class MysqlVisitor {
         return whereFilter;
     }
 
+    public boolean isTopQuery() {
+        return isTopQuery;
+    }
+
+    public boolean isExistUnPushDownGroup() {
+        return existUnPushDownGroup;
+    }
+
+    public StringBuilder getSqlBuilder() {
+        return sqlBuilder;
+    }
 }

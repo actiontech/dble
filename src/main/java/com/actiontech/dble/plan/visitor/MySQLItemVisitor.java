@@ -154,11 +154,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLBooleanExpr x) {
-        if (x.getValue()) {
-            item = new ItemInt(1);
-        } else {
-            item = new ItemInt(0);
-        }
+        item = new ItemBoolean(x.getValue());
         initName(x);
     }
 

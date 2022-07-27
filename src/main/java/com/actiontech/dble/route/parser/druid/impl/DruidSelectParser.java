@@ -487,7 +487,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         String shardingColumn = ((ShardingTableConfig) tc).getShardingColumn();
         boolean isShardingColumn = tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(shardingColumn);
         if (!isShardingColumn) {
-            Optional<Map.Entry<String, String>> alias = aliaColumns.entrySet().stream().filter(c -> c.getKey().toUpperCase().equals(shardingColumn)).findFirst(); // TODO 这里是否要优化下
+            Optional<Map.Entry<String, String>> alias = aliaColumns.entrySet().stream().filter(c -> c.getKey().toUpperCase().equals(shardingColumn)).findFirst();
             if (alias.isPresent()) {
                 isShardingColumn = tc instanceof ShardingTableConfig && alias.get().getValue().equalsIgnoreCase(columnName);
             }

@@ -22,4 +22,5 @@ public final class ToResolveContainer {
     public static final Set<String> REACH_MAX_CON = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> XA_WRITE_CHECK_POINT_FAIL = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> DB_INSTANCE_LOWER_CASE_ERROR = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    public static final Set<String> DB_SLAVE_INSTANCE_DELAY = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 }

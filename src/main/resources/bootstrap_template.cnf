@@ -60,8 +60,8 @@
 
 # connection
 #-Dcharset=utf8mb4
--DmaxPacketSize=167772160
--DtxIsolation=2
+-DmaxPacketSize=4194304
+-DtxIsolation=3
 #-Dautocommit=1
 #-DidleTimeout=60000
 
@@ -70,7 +70,7 @@
 #-DcapClientFoundRows=false
 -DusingAIO=0
 
--DuseThreadUsageStat=1
+-DuseThreadUsageStat=0
 #  query time cost statistics
 #-DuseCostTimeStat=0
 #-DmaxCostStatSize=100
@@ -81,11 +81,11 @@
 #  check the consistency of table structure between nodes,default not
 -DcheckTableConsistency=0
 #  check period, he default period is 60000 milliseconds
--DcheckTableConsistencyPeriod=60000
+-DcheckTableConsistencyPeriod=1800000
 
 #  processor check conn
 -DprocessorCheckPeriod=1000
--DsqlExecuteTimeout=3000
+-DsqlExecuteTimeout=300
 
 
 #-DbackSocket unit:bytes
@@ -161,7 +161,7 @@
 
 
 #  if enable the slow query log
--DenableSlowLog=1
+-DenableSlowLog=0
 #  the slow query log location
 #-DslowLogBaseDir=./slowlogs
 #-DslowLogBaseName=slow-query

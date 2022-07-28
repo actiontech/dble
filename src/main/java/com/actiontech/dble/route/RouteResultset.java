@@ -6,6 +6,7 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.cluster.values.DDLInfo;
+import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.util.FormatUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
@@ -61,7 +62,11 @@ public final class RouteResultset implements Serializable {
     // if force master,set canRunInReadDB=false
     // if force slave set runOnSlave,default null means not effect
     private Boolean runOnSlave = null;
+
     private String[] groupByCols;
+    private transient List<Item> selectCols;
+
+    private boolean groupByColsHasShardingCols;
 
     private boolean routePenetration = false;
 
@@ -71,6 +76,22 @@ public final class RouteResultset implements Serializable {
 
     public void setGroupByCols(String[] groupByCols) {
         this.groupByCols = groupByCols;
+    }
+
+    public List<Item> getSelectCols() {
+        return selectCols;
+    }
+
+    public void setSelectCols(List<Item> selectCols) {
+        this.selectCols = selectCols;
+    }
+
+    public boolean isGroupByColsHasShardingCols() {
+        return groupByColsHasShardingCols;
+    }
+
+    public void setGroupByColsHasShardingCols(boolean groupByColsHasShardingCols) {
+        this.groupByColsHasShardingCols = groupByColsHasShardingCols;
     }
 
     public boolean isNeedOptimizer() {

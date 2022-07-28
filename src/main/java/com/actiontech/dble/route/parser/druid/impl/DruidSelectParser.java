@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
@@ -16,6 +17,7 @@ import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
@@ -32,6 +34,7 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -179,7 +182,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                 }
                 //if the sql involved node more than 1 ,Aggregate function/Group by/Order by should use complexQuery
-                parseOrderAggGroupMysql(schema, selectStmt, rrs, mysqlSelectQuery, tc);
+                parseOrderAggGroupMysql(sc, schema, selectStmt, rrs, mysqlSelectQuery, tc);
                 if (rrs.isNeedOptimizer()) {
                     rrs.setNodes(null);
                     return;
@@ -331,7 +334,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
 
-    private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
+    private void parseOrderAggGroupMysql(ServerConnection sc, SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                          MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) throws SQLException {
         //simple merge of ORDER BY has bugs,so optimizer here
         if (mysqlSelectQuery.getOrderBy() != null) {
@@ -340,10 +343,10 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setNeedOptimizer(true);
             return;
         }
-        parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
+        parseAggGroupCommon(sc, schema, stmt, rrs, mysqlSelectQuery, tc);
     }
 
-    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, BaseTableConfig tc, boolean isDistinct) throws SQLException {
+    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, List<Pair<String, String>> selectColumns, Map<String, String> aliaColumns, BaseTableConfig tc, boolean isDistinct) throws SQLException {
         List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
         boolean hasPartitionColumn = false;
         for (SQLSelectItem selectItem : selectList) {
@@ -368,7 +371,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     rrs.setNeedOptimizer(true);
                     return;
                 } else {
-                    addToAliaColumn(aliaColumns, selectItem);
+                    addToAliaColumn(selectColumns, aliaColumns, selectItem);
                 }
             } else if (itemExpr instanceof SQLAllColumnExpr) {
                 TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
@@ -379,23 +382,26 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
                 for (TableMeta.ColumnMeta column : tbMeta.getColumns()) {
                     aliaColumns.put(column.getName(), column.getName());
+
+                    Pair<String, String> selectCol = new Pair<>(column.getName(), column.getName());
+                    selectColumns.add(selectCol);
                 }
             } else {
                 if (isDistinct && !isNeedOptimizer(itemExpr)) {
                     if (itemExpr instanceof SQLIdentifierExpr) {
                         SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
                         if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
-                        addToAliaColumn(aliaColumns, selectItem);
+                        addToAliaColumn(selectColumns, aliaColumns, selectItem);
                     } else if (itemExpr instanceof SQLPropertyExpr) {
                         SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
                         if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
-                        addToAliaColumn(aliaColumns, selectItem);
+                        addToAliaColumn(selectColumns, aliaColumns, selectItem);
                     }
                 } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
                     rrs.setNeedOptimizer(true);
                     return;
                 } else {
-                    addToAliaColumn(aliaColumns, selectItem);
+                    addToAliaColumn(selectColumns, aliaColumns, selectItem);
                 }
             }
         }
@@ -403,48 +409,91 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setNeedOptimizer(true);
             return;
         }
-        parseGroupCommon(rrs, mysqlSelectQuery, tc);
+        parseGroupCommon(rrs, mysqlSelectQuery, aliaColumns, tc);
     }
 
-    private void parseGroupCommon(RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) {
+    private void parseGroupCommon(RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, BaseTableConfig tc) {
         if (mysqlSelectQuery.getGroupBy() != null) {
             SQLSelectGroupByClause groupBy = mysqlSelectQuery.getGroupBy();
-            boolean hasPartitionColumn = false;
+            SQLExpr partitionColumn = null;
             for (SQLExpr groupByItem : groupBy.getItems()) {
                 if (isNeedOptimizer(groupByItem)) {
                     rrs.setNeedOptimizer(true);
                     return;
                 } else if (groupByItem instanceof SQLIdentifierExpr) {
                     SQLIdentifierExpr item = (SQLIdentifierExpr) groupByItem;
-                    if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
+                    if (hasShardingColumnWithAlia(tc, StringUtil.removeBackQuote(item.getSimpleName()), aliaColumns)) {
+                        partitionColumn = item;
+                        break;
+                    }
                 } else if (groupByItem instanceof SQLPropertyExpr) {
                     SQLPropertyExpr item = (SQLPropertyExpr) groupByItem;
-                    if (hasShardingColumn(tc, item.getSimpleName())) hasPartitionColumn = true;
+                    if (hasShardingColumnWithAlia(tc, StringUtil.removeBackQuote(item.getSimpleName()), aliaColumns)) {
+                        partitionColumn = item;
+                        break;
+                    }
                 }
             }
-            if (groupBy.getItems().size() > 0 && !hasPartitionColumn) {
+            if (groupBy.getItems().size() > 0 && partitionColumn == null) {
                 rrs.setNeedOptimizer(true);
                 return;
             }
             if (groupBy.getItems().size() == 0 && groupBy.getHaving() != null) {
                 // only having filter need optimizer
                 rrs.setNeedOptimizer(true);
+                return;
+            }
+            rrs.setGroupByColsHasShardingCols(partitionColumn != null);
+        }
+    }
+
+    private Set<SQLSelectItem> groupColumnPushSelectList(List<SQLExpr> groupByItemList, List<Pair<String, String>> selectColumns) {
+        Set<SQLSelectItem> pushItem = new HashSet<>();
+
+        for (SQLExpr groupByItem : groupByItemList) {
+            String groupColumnName = null;
+            if (groupByItem instanceof SQLIdentifierExpr) {
+                groupColumnName = ((SQLIdentifierExpr) groupByItem).getSimpleName();
+            } else if (groupByItem instanceof SQLPropertyExpr) {
+                groupColumnName = ((SQLPropertyExpr) groupByItem).getSimpleName();
+            }
+            if (!StringUtil.isEmpty(groupColumnName)) {
+                if (!hasColumnOrAlia(StringUtil.removeBackQuote(groupColumnName), selectColumns)) {
+                    pushItem.add(new SQLSelectItem(groupByItem));
+                }
             }
         }
+        return pushItem;
+    }
+
+    private boolean hasColumnOrAlia(String columnName, List<Pair<String, String>> selectColumns) {
+        return selectColumns.stream().anyMatch(s -> s.getKey().equalsIgnoreCase(columnName) || s.getValue().equalsIgnoreCase(columnName));
     }
 
     private boolean hasShardingColumn(BaseTableConfig tc, String columnName) {
         return tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(((ShardingTableConfig) tc).getShardingColumn());
     }
 
+    private boolean hasShardingColumnWithAlia(BaseTableConfig tc, String columnName, Map<String, String> aliaColumns) {
+        String shardingColumn = ((ShardingTableConfig) tc).getShardingColumn();
+        boolean isShardingColumn = tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(shardingColumn);
+        if (!isShardingColumn) {
+            Optional<Map.Entry<String, String>> alias = aliaColumns.entrySet().stream().filter(c -> c.getKey().toUpperCase().equals(shardingColumn)).findFirst();
+            if (alias.isPresent()) {
+                isShardingColumn = tc instanceof ShardingTableConfig && alias.get().getValue().equalsIgnoreCase(columnName);
+            }
+        }
+        return isShardingColumn;
+    }
+
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
         MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8mb4"), ProxyMeta.getInstance().getTmManager(), null);
         itemExpr.accept(ev);
         Item selItem = ev.getItem();
-        return contaisSumFuncOrSubquery(selItem);
+        return containSumFuncOrSubQuery(selItem);
     }
 
-    private boolean contaisSumFuncOrSubquery(Item selItem) {
+    private boolean containSumFuncOrSubQuery(Item selItem) {
         if (selItem.isWithSumFunc()) {
             return true;
         }
@@ -453,7 +502,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         if (selItem.getArgCount() > 0) {
             for (Item child : selItem.arguments()) {
-                if (contaisSumFuncOrSubquery(child)) {
+                if (containSumFuncOrSubQuery(child)) {
                     return true;
                 }
             }
@@ -468,13 +517,16 @@ public class DruidSelectParser extends DefaultDruidParser {
         return !(expr instanceof SQLPropertyExpr) && !(expr instanceof SQLIdentifierExpr);
     }
 
-    private void addToAliaColumn(Map<String, String> aliaColumns, SQLSelectItem item) {
+    private void addToAliaColumn(List<Pair<String, String>> selectColumns, Map<String, String> aliaColumns, SQLSelectItem item) {
         String alia = item.getAlias();
         String field = getFieldName(item);
         if (alia == null) {
             alia = field;
         }
         aliaColumns.put(field, alia);
+
+        Pair<String, String> selectCol = new Pair<String, String>(alia, field);
+        selectColumns.add(selectCol);
     }
 
     private String getFieldName(SQLSelectItem item) {
@@ -486,11 +538,12 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
     }
 
-    private void parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
+    private void parseAggGroupCommon(ServerConnection sc, SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                      MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
+        List<Pair<String, String>> selectColumns = new LinkedList<>();
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
-        parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
+        parseAggExprCommon(schema, rrs, mysqlSelectQuery, selectColumns, aliaColumns, tc, isDistinct);
         if (rrs.isNeedOptimizer()) {
             tryAddLimit(tc, mysqlSelectQuery);
             rrs.setSqlStatement(stmt);
@@ -507,16 +560,55 @@ public class DruidSelectParser extends DefaultDruidParser {
             mysqlSelectQuery.setGroupBy(groupBy);
         }
 
-        // setGroupByCols
-        if (mysqlSelectQuery.getGroupBy() != null) {
-            List<SQLExpr> groupByItems = mysqlSelectQuery.getGroupBy().getItems();
-            String[] groupByCols = buildGroupByCols(groupByItems, aliaColumns);
-            rrs.setGroupByCols(groupByCols);
-        }
+        boolean isGroupByColPushSelectList = tryGroupColumnPushSelectList(aliaColumns, selectColumns,
+                mysqlSelectQuery, rrs, sc.getCharset().getResultsIndex());
 
         if (isDistinct) {
             rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), 0, -1);
+        } else if (isGroupByColPushSelectList) {
+            rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), rrs.getLimitStart(), rrs.getLimitSize());
         }
+    }
+
+    /**
+     * when fakeMysqlVersion is 8.0, in 'group by' no longer has the semantics of 'order by'
+     */
+    private boolean tryGroupColumnPushSelectList(Map<String, String> aliaColumns, List<Pair<String, String>> selectColumns,
+                                                 MySqlSelectQueryBlock mysqlSelectQuery, RouteResultset rrs, int charsetIndex) {
+        boolean isGroupByColPushSelectList = false;
+        if (!VersionUtil.isMysql8() &&
+                rrs.isGroupByColsHasShardingCols()) { // && mysqlSelectQuery.getGroupBy() != null
+
+            Set<SQLSelectItem> pushSelectList = groupColumnPushSelectList(mysqlSelectQuery.getGroupBy().getItems(), selectColumns);
+            if (!CollectionUtil.isEmpty(pushSelectList)) {
+                for (SQLSelectItem e : pushSelectList) {
+                    mysqlSelectQuery.getSelectList().add(e);
+                }
+                isGroupByColPushSelectList = true;
+            }
+
+            // setGroupByCols
+            List<SQLExpr> groupByItems = mysqlSelectQuery.getGroupBy().getItems();
+            String[] groupByCols = buildGroupByCols(groupByItems, aliaColumns);
+            rrs.setGroupByCols(groupByCols);
+
+            if (isGroupByColPushSelectList) {
+                rrs.setSelectCols(
+                        handleSelectItems(selectColumns, rrs, charsetIndex));
+            }
+        }
+        return isGroupByColPushSelectList;
+    }
+
+    private LinkedList<Item> handleSelectItems(List<Pair<String, String>> selectList, RouteResultset rrs, int charsetIndex) {
+        LinkedList<Item> selectItems = new LinkedList<>();
+        for (Pair<String, String> sel : selectList) {
+            ItemField selItem = new ItemField(rrs.getSchema(), rrs.getTable(), StringUtil.removeBackQuote(sel.getValue()), charsetIndex);
+            selItem.setAlias(StringUtil.removeBackQuote(sel.getKey()));
+            selItem.setCharsetIndex(charsetIndex);
+            selectItems.add(selItem);
+        }
+        return selectItems;
     }
 
     private String getAliaColumn(Map<String, String> aliaColumns, String column) {
@@ -577,7 +669,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // get column from table.column
                 column = column.substring(dotIndex + 1);
             }
-            groupByCols[i] = getAliaColumn(aliaColumns, column); // column;
+            groupByCols[i] = getAliaColumn(aliaColumns, StringUtil.removeBackQuote(column)); // column;
         }
         return groupByCols;
     }

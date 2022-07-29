@@ -44,7 +44,9 @@ public abstract class FieldStr extends Field {
             try {
                 return new BigDecimal(ptrStr);
             } catch (Exception e) {
-                LOGGER.info("String:" + ptrStr + " to BigDecimal exception!", e);
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("String:" + ptrStr + " to BigDecimal exception: {}", e.toString());
+                }
                 return BigDecimal.ZERO;
             }
         }

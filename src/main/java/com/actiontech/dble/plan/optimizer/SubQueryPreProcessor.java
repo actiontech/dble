@@ -10,8 +10,8 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
+import com.actiontech.dble.plan.common.item.ItemBoolean;
 import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
@@ -272,7 +272,7 @@ public final class SubQueryPreProcessor {
             SubQueryFilter result = buildSubQuery(node, qtn, filter.arguments().get(index), noTransform, childTransform);
             if (result != qtn) {
                 if (result.filter == null) {
-                    result.filter = new ItemInt(1);
+                    result.filter = new ItemBoolean(true);
                 }
                 filter.arguments().set(index, result.filter);
                 qtn = result;

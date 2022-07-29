@@ -187,8 +187,20 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
                 int delayThreshold = source.getDbGroupConfig().getDelayThreshold();
-                if (delayThreshold > 0 && behindMaster > delayThreshold) {
-                    MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
+                if (delayThreshold > 0) {
+                    String alertKey = source.getDbGroupConfig().getName() + "-" + source.getConfig().getInstanceName();
+                    if (behindMaster > delayThreshold) {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", alertKey);
+                        String errMsg = "found MySQL master/slave Replication delay !!! " + source.getConfig() + ", binlog sync time delay: " + behindMaster + "s";
+                        MySQLHeartbeat.LOGGER.warn(errMsg);
+                        AlertUtil.alert(AlarmCode.DB_SLAVE_INSTANCE_DELAY, Alert.AlertLevel.WARN, errMsg, "mysql", source.getConfig().getId(), labels);
+                        ToResolveContainer.DB_SLAVE_INSTANCE_DELAY.add(alertKey);
+                    } else {
+                        if (ToResolveContainer.DB_SLAVE_INSTANCE_DELAY.contains(alertKey)) {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", alertKey);
+                            AlertUtil.alertResolve(AlarmCode.DB_SLAVE_INSTANCE_DELAY, Alert.AlertLevel.WARN, "mysql", source.getConfig().getId(), labels, ToResolveContainer.DB_SLAVE_INSTANCE_DELAY, alertKey);
+                        }
+                    }
                 }
                 heartbeat.setSlaveBehindMaster(behindMaster);
             } else {

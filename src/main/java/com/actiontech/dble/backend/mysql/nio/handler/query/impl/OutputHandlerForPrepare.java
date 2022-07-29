@@ -41,7 +41,6 @@ public class OutputHandlerForPrepare extends OutputHandler {
         requestScope.getCurrentPreparedStatement().onPrepareOk(fieldPackets.size());
         HandlerTool.terminateHandlerTree(this);
         serverSession.setHandlerEnd(this);
-        serverSession.setResponseTime(true);
         return;
 
     }

@@ -175,7 +175,6 @@ public class LockTablesHandler extends MultiNodeHandler implements ExecutableHan
     }
 
     private void handleEndPacket(MySQLPacket packet, boolean isSuccess) {
-        session.setResponseTime(isSuccess);
         session.clearResources(false);
         packet.write(session.getSource());
     }

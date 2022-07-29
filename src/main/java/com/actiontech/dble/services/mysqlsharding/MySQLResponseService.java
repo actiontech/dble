@@ -146,6 +146,8 @@ public class MySQLResponseService extends BackendService {
                 protocolResponseHandler = new FetchResponseHandler(this);
             } else if (type == MySQLPacket.COM_FIELD_LIST) {
                 protocolResponseHandler = new FieldListResponseHandler(this);
+            } else if (type == MySQLPacket.COM_STATISTICS) {
+                protocolResponseHandler = new StatisticsResponseHandler(this);
             } else if (type == MySQLPacket.COM_STMT_CLOSE) {
                 // no response
                 write(originPacket, WriteFlags.QUERY_END);
@@ -335,7 +337,7 @@ public class MySQLResponseService extends BackendService {
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
         try {
-            packet.setArg(query.getBytes(getCharset(query, clientCharset)));
+            packet.setArg(query.getBytes(getCharset(clientCharset)));
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -349,16 +351,16 @@ public class MySQLResponseService extends BackendService {
         }
     }
 
-    private String getCharset(String sql, CharsetNames clientCharset) throws UnsupportedEncodingException {
+    private String getCharset(CharsetNames clientCharset) {
         String javaCharset = CharsetUtil.getJavaCharset(clientCharset.getClient());
         if (Objects.isNull(session)) {
             return javaCharset;
         }
-        String clientSql = new String(sql.getBytes(javaCharset), javaCharset);
-        if (StringUtil.equals(sql, clientSql)) {
-            return javaCharset;
-        } else {
+        if (session.isIsoCharset()) {
+            session.setIsoCharset(false);
             return StringUtil.ISO_8859_1;
+        } else {
+            return javaCharset;
         }
     }
 
@@ -461,7 +463,7 @@ public class MySQLResponseService extends BackendService {
         packet.setPacketId(0);
         packet.setCommand(MySQLPacket.COM_QUERY);
         try {
-            packet.setArg(query.getBytes(CharsetUtil.getJavaCharset(clientCharset.getClient())));
+            packet.setArg(query.getBytes(getCharset(clientCharset)));
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }

@@ -59,33 +59,33 @@
 -DuseOuterHa=true
 
 # connection
-#-Dcharset=utf8mb4
--DmaxPacketSize=167772160
--DtxIsolation=2
-#-Dautocommit=1
-#-DidleTimeout=60000
+-Dcharset=utf8mb4
+-DmaxPacketSize=4194304
+-DtxIsolation=3
+-Dautocommit=1
+-DidleTimeout=60000
 
 # option
-#-DuseCompression=1
-#-DcapClientFoundRows=false
+-DuseCompression=0
+-DcapClientFoundRows=false
 -DusingAIO=0
 
--DuseThreadUsageStat=1
+-DuseThreadUsageStat=0
 #  query time cost statistics
-#-DuseCostTimeStat=0
-#-DmaxCostStatSize=100
-#-DcostSamplePercent=1
+-DuseCostTimeStat=0
+-DmaxCostStatSize=100
+-DcostSamplePercent=1
 
 
 # consistency
 #  check the consistency of table structure between nodes,default not
 -DcheckTableConsistency=0
 #  check period, he default period is 60000 milliseconds
--DcheckTableConsistencyPeriod=60000
+-DcheckTableConsistencyPeriod=1800000
 
 #  processor check conn
 -DprocessorCheckPeriod=1000
--DsqlExecuteTimeout=3000
+-DsqlExecuteTimeout=300
 
 
 #-DbackSocket unit:bytes
@@ -109,62 +109,62 @@
 -DbufferPoolChunkSize=32767
 #-DbufferPoolPageNumber=256
 -DbufferPoolPageSize=2097152
-#-DmappedFileSize=2097152
+-DmappedFileSize=67108864
 
 # Whether the server-side cursor  is enable or not.
-#-DenableCursor=false
+-DenableCursor=false
 # used for temp table persistence of cursor , Temp table which size larger than that will save to disk.
-#-DmaxHeapTableSize=32768
+-DmaxHeapTableSize=4096
 # used for temp table persistence of cursor, setting for read-buffer size.
 #-DheapTableBufferChunkSize=32768
 
 #  sql statistics
 #  1 means use SQL statistics, 0 means not
 -DuseSqlStat=1
-#-DbufferUsagePercent=80
+-DbufferUsagePercent=80
 -DclearBigSQLResultSetMapMs=600000
-#-DsqlRecordCount=10
-#-DmaxResultSet=524288
+-DsqlRecordCount=10
+-DmaxResultSet=524288
 
 
 #  transaction log
 #  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
 -DrecordTxn=0
-#-DtransactionLogBaseDir=/txlogs
-#-DtransactionLogBaseName=server-tx
-#-DtransactionRotateSize=16
+-DtransactionLogBaseDir=txlogs
+-DtransactionLogBaseName=server-tx
+-DtransactionRotateSize=16
 #  XA transaction
 #  use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times , it is the check period for ,default is 1000 milliseconds
 -DxaSessionCheckPeriod=1000
 #  use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds
 -DxaLogCleanPeriod=1000
 #  XA Recovery Log path
-# -DxaRecoveryLogBaseDir=/xalogs/
+-DxaRecoveryLogBaseDir=xalogs
 #  XA Recovery Log name
-#-DxaRecoveryLogBaseName=xalog
+-DxaRecoveryLogBaseName=xalog
 #  XA Retry count, retry times in backend, 0 means always retry until success
-#-DxaRetryCount=0
+-DxaRetryCount=0
 
-#-DviewPersistenceConfBaseDir=/viewPath
-#-DviewPersistenceConfBaseName=viewJson
+-DviewPersistenceConfBaseDir=viewPath
+-DviewPersistenceConfBaseName=viewJson
 
 #  for join tmp results
-#-DmergeQueueSize=1024
-#-DorderByQueueSize=1024
-#-DjoinQueueSize=1024
+-DmergeQueueSize=1024
+-DorderByQueueSize=1024
+-DjoinQueueSize=1024
 
 
 #  true is use JoinStrategy, default false
-#-DuseJoinStrategy=true
+-DuseJoinStrategy=false
 -DnestLoopConnSize=4
 -DnestLoopRowsSize=2000
 
 
 #  if enable the slow query log
--DenableSlowLog=1
+-DenableSlowLog=0
 #  the slow query log location
-#-DslowLogBaseDir=./slowlogs
-#-DslowLogBaseName=slow-query
+-DslowLogBaseDir=slowlogs
+-DslowLogBaseName=slow-query
 #  the max period for flushing the slow query log from memory to disk  after last time , unit is second
 -DflushSlowLogPeriod=1
 #  the max records for flushing the slow query log from memory to disk after last time
@@ -173,36 +173,38 @@
 -DsqlSlowTime=100
 
 #  used for load data,maxCharsPerColumn means max chars length for per column when load data
-#-DmaxCharsPerColumn=65535
+-DmaxCharsPerColumn=65535
 #  used for load data, because dble need save to disk if loading file contains large size
-#-DmaxRowSizeToFile=100000
+-DmaxRowSizeToFile=100000
 #  if enable the batch load data
-#-DenableBatchLoadData=1
+-DenableBatchLoadData=0
 
-#-DenableFlowControl=false
-#-DflowControlHighLevel=4194304
-#-DflowControlLowLevel=262144
+-DenableFlowControl=false
+-DflowControlHighLevel=4194304
+-DflowControlLowLevel=262144
 
 #  if enable the general log
-#-DenableGeneralLog=1
+-DenableGeneralLog=0
 #  general log file path
-#-DgeneralLogFile=general/general.log
+-DgeneralLogFile=general/general.log
 #  maximum value of file, unit is mb
-#-DgeneralLogFileSize=16
+-DgeneralLogFileSize=16
 #  the queue size must not be less than 1 and must be a power of 2
-#-DgeneralLogQueueSize=4096
+-DgeneralLogQueueSize=4096
 
 #  if enable statistic sql
-#-DenableStatistic=1
-#-DassociateTablesByEntryByUserTableSize=1024
-#-DfrontendByBackendByEntryByUserTableSize=1024
-#-DtableByUserByEntryTableSize=1024
+-DenableStatistic=0
+-DassociateTablesByEntryByUserTableSize=1024
+-DfrontendByBackendByEntryByUserTableSize=1024
+-DtableByUserByEntryTableSize=1024
 #  processing queue size must not be less than 1 and must be a power of 2
-#-DstatisticQueueSize=4096
-#-DinSubQueryTransformToJoin=false
+-DstatisticQueueSize=4096
+
+-DinSubQueryTransformToJoin=false
 #For rwSplitUser, Implement stickiness for read and write instances, the default value is 1000ms
-#-DrwStickyTime=1000
-#-DjoinStrategyType=-1
+-DrwStickyTime=1000
+-DjoinStrategyType=-1
+-DgroupConcatMaxLen = 1024
 
 #-DserverCertificateKeyStoreUrl=
 #-DserverCertificateKeyStorePwd=

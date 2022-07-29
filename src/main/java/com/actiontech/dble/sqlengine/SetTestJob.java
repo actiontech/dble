@@ -16,6 +16,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.server.variables.MysqlVariable;
@@ -149,7 +150,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
             ResetConnHandler handler = new ResetConnHandler();
             responseService.setResponseHandler(handler);
             responseService.setComplexQuery(true);
-            responseService.write(ResetConnectionPacket.RESET, WriteFlags.QUERY_END);
+            responseService.write(ResetConnectionPacket.RESET, WriteFlags.QUERY_END, ResultFlag.OK);
         }
     }
 
@@ -194,7 +195,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
             ResetConnHandler handler = new ResetConnHandler();
             responseService.setResponseHandler(handler);
             responseService.setComplexQuery(true);
-            responseService.write(ResetConnectionPacket.RESET, WriteFlags.QUERY_END);
+            responseService.write(ResetConnectionPacket.RESET, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
         }
     }
 

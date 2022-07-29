@@ -471,22 +471,38 @@ public final class RouterUtil {
                     String shardingNode = ruleCalculateSingleValue(schemaName, tc, value, clientCharset);
                     routeNodeSet.add(shardingNode);
                 }
+            } else if (originValue instanceof Boolean) {
+                if ((Boolean) originValue) { // true
+                    String shardingNode = ruleCalculateSingleValue(schemaName, tc, "1", clientCharset);
+                    routeNodeSet.add(shardingNode);
+                } else { // false
+                    return routeNodeSet;
+                }
             } else if (!ignoreNull || originValue instanceof Number) {
                 String shardingNode = ruleCalculateSingleValue(schemaName, tc, originValue, clientCharset);
                 routeNodeSet.add(shardingNode);
             }
         } else if (columnRoute.getInValues() != null) {
             for (Object originValue : columnRoute.getInValues()) {
-                if (originValue instanceof String) {
-                    String value = (String) originValue;
-                    //for explain
-                    if (NEED_REPLACE.equals(value) || ALL_SUB_QUERY_RESULTS.equals(value) ||
-                            MIN_SUB_QUERY_RESULTS.equals(value) || MAX_SUB_QUERY_RESULTS.equals(value)) {
+                if (originValue instanceof Boolean) {
+                    if ((Boolean) originValue) { // true
+                        ruleCalculateSingleValue(schemaName, tc, "1", clientCharset);
+                    } else { // false
+                        routeNodeSet.clear();
                         return routeNodeSet;
                     }
+                } else {
+                    if (originValue instanceof String) {
+                        String value = (String) originValue;
+                        //for explain
+                        if (NEED_REPLACE.equals(value) || ALL_SUB_QUERY_RESULTS.equals(value) ||
+                                MIN_SUB_QUERY_RESULTS.equals(value) || MAX_SUB_QUERY_RESULTS.equals(value)) {
+                            return routeNodeSet;
+                        }
+                    }
+                    String shardingNode = ruleCalculateSingleValue(schemaName, tc, originValue, clientCharset);
+                    routeNodeSet.add(shardingNode);
                 }
-                String shardingNode = ruleCalculateSingleValue(schemaName, tc, originValue, clientCharset);
-                routeNodeSet.add(shardingNode);
             }
         }
         ruleCalculateRangeValue(rrs, tc, columnRoute, routeNodeSet);

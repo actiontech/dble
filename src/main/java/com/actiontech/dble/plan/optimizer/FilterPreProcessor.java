@@ -6,7 +6,7 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.plan.common.item.ItemInt;
+import com.actiontech.dble.plan.common.item.ItemBoolean;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
@@ -79,10 +79,7 @@ public final class FilterPreProcessor {
             return null;
         if (root.canValued()) {
             boolean value = root.valBool();
-            if (value)
-                return new ItemInt(1);
-            else
-                return new ItemInt(0);
+            return new ItemBoolean(value);
         } else if (root.type().equals(Item.ItemType.COND_ITEM)) {
             ItemCond cond = (ItemCond) root;
             for (int index = 0; index < cond.getArgCount(); index++) {
@@ -97,9 +94,9 @@ public final class FilterPreProcessor {
                 if (sub.canValued()) {
                     boolean value = sub.valBool();
                     if (value && !isAnd)
-                        return new ItemInt(1);
+                        return new ItemBoolean(true);
                     if (!value && isAnd)
-                        return new ItemInt(0);
+                        return new ItemBoolean(false);
                 } else {
                     newSubFilters.add(sub);
                 }

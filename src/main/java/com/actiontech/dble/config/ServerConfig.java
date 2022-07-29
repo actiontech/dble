@@ -76,7 +76,7 @@ public class ServerConfig {
     private RawJson shardingConfig;
     private RawJson userConfig;
     private RawJson sequenceConfig;
-    private boolean lowerCase;
+    private Boolean lowerCase;
 
     public ServerConfig() {
         //read sharding.xml,db.xml and user.xml
@@ -161,6 +161,7 @@ public class ServerConfig {
 
     public void getAndSyncKeyVariables() throws Exception {
         ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
+        DbleServer.getInstance().getConfig().setLowerCase(DbleTempConfig.getInstance().isLowerCase());
     }
 
     public boolean isFullyConfigured() {
@@ -425,7 +426,6 @@ public class ServerConfig {
         }
         return true;
     }
-
 
 
     /**
@@ -855,8 +855,12 @@ public class ServerConfig {
         return sequenceConfig;
     }
 
-    public boolean isLowerCase() {
+    public Boolean isLowerCase() {
         return lowerCase;
+    }
+
+    public void setLowerCase(Boolean lowerCase) {
+        this.lowerCase = lowerCase;
     }
 }
 

@@ -6,9 +6,9 @@
 package com.actiontech.dble.plan.util;
 
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.plan.common.item.ItemInt;
+import com.actiontech.dble.plan.common.item.ItemBoolean;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
-import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
+import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCond;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
@@ -212,7 +212,7 @@ public final class FilterUtils {
                 subFilters.add(filter);
         }
         if (subFilters.isEmpty())
-            return new ItemInt(0);
+            return new ItemBoolean(false);
         else if (subFilters.size() == 1)
             return subFilters.get(0);
         else {

@@ -7,6 +7,7 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.net.connection.AbstractConnection;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.MySQLResponseService;
@@ -209,7 +210,7 @@ public abstract class MySQLPacket {
     public void bufferWrite(AbstractConnection connection) {
         ByteBuffer buffer = connection.allocate();
         buffer = this.write(buffer, connection.getService(), true);
-        connection.getService().writeDirectly(buffer, getLastWriteFlag());
+        connection.getService().writeDirectly(buffer, getLastWriteFlag(), getResultFlag());
     }
 
 
@@ -221,6 +222,10 @@ public abstract class MySQLPacket {
         } else {
             return WriteFlags.PART;
         }
+    }
+
+    public ResultFlag getResultFlag() {
+        return ResultFlag.OTHER;
     }
 
     /**

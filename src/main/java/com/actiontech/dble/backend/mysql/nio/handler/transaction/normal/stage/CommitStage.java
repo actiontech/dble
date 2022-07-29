@@ -71,7 +71,6 @@ public class CommitStage extends Stage implements TransactionStage {
     private void asyncNext(boolean isFail, String errMsg, MySQLPacket sendData) {
         if (isFail) {
             session.setFinishedCommitTime();
-            session.setResponseTime(false);
             if (sendData != null) {
                 sendData.write(session.getSource());
             } else {
@@ -82,7 +81,6 @@ public class CommitStage extends Stage implements TransactionStage {
             handler.next();
         } else {
             session.setFinishedCommitTime();
-            session.setResponseTime(true);
             if (sendData != null) {
                 session.getShardingService().write(sendData);
             } else {

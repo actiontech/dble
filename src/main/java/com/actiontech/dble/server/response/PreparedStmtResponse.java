@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.PreparedStatement;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.PreparedOkPacket;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.mysqlsharding.ShardingService;
 
@@ -59,7 +60,7 @@ public final class PreparedStmtResponse {
         }
 
         // send buffer
-        service.writeDirectly(buffer, WriteFlags.QUERY_END);
+        service.writeDirectly(buffer, WriteFlags.QUERY_END, ResultFlag.OTHER);
     }
 
 }

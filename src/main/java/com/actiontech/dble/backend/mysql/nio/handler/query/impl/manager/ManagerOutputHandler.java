@@ -11,6 +11,7 @@ import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.connection.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.services.manager.ManagerSession;
 import org.jetbrains.annotations.NotNull;
@@ -56,7 +57,7 @@ public class ManagerOutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             buffer = managerSession.getSource().getService().writeToBuffer(err, buffer);
-            managerSession.getSource().getService().writeDirectly(buffer, WriteFlags.SESSION_END);
+            managerSession.getSource().getService().writeDirectly(buffer, WriteFlags.SESSION_END, ResultFlag.ERROR);
         } finally {
             lock.unlock();
         }
@@ -137,7 +138,7 @@ public class ManagerOutputHandler extends BaseDMLHandler {
             byte[] eof = eofPacket.toBytes();
             buffer = source.getService().writeToBuffer(eof, buffer);
             managerSession.setHandlerEnd(this);
-            source.getService().writeDirectly(buffer, WriteFlags.QUERY_END);
+            source.getService().writeDirectly(buffer, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
         } finally {
             lock.unlock();
         }

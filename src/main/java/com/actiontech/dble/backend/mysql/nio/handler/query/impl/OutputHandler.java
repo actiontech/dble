@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.Session;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.net.service.AbstractService;
+import com.actiontech.dble.net.service.ResultFlag;
 import com.actiontech.dble.net.service.WriteFlags;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.RequestScope;
@@ -185,8 +186,7 @@ public class OutputHandler extends BaseDMLHandler {
             requestScope.getCurrentPreparedStatement().getCursorCache().done();
             HandlerTool.terminateHandlerTree(this);
             serverSession.setHandlerEnd(this);
-            serverSession.setResponseTime(true);
-            serverSession.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END);
+            serverSession.getShardingService().writeDirectly(buffer, WriteFlags.QUERY_END, ResultFlag.EOF_ROW);
             return;
         }
         lock.lock();
@@ -203,7 +203,6 @@ public class OutputHandler extends BaseDMLHandler {
             doSqlStat();
             HandlerTool.terminateHandlerTree(this);
             serverSession.setHandlerEnd(this);
-            serverSession.setResponseTime(true);
             eofPacket.write(buffer, shardingService);
         } finally {
             lock.unlock();

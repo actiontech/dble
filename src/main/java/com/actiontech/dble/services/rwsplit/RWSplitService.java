@@ -212,6 +212,10 @@ public class RWSplitService extends BusinessService<SingleDbGroupUserConfig> {
                 connection.setService(fService);
                 fService.consumeSingleTask(new NormalServiceTask(data, this, 0));
                 break;
+            case MySQLPacket.COM_STATISTICS:
+                commands.doOther();
+                session.execute(null, data, null);
+                break;
             default:
                 commands.doOther();
                 // other statement push down to master

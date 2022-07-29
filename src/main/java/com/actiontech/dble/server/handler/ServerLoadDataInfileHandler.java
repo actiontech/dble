@@ -391,7 +391,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private void parseOneLine(String[] line) throws Exception {
         if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > 0x0020) {
             for (int i = 0; i < line.length; i++) {
-                line[i] = line[i].trim();
+                if (line[i] != null) {
+                    line[i] = line[i].trim();
+                }
             }
         }
 
@@ -768,7 +770,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             parseOneLine(row);
                         } catch (Exception e) {
                             clear();
-                            service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                            service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "one row can't be parsed,error:" + e.toString() + ",\tdata:" + Arrays.toString(row));
                             return;
                         }
                     } else {
@@ -839,7 +841,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         parseOneLine(row);
                     } catch (Exception e) {
                         clear();
-                        service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        service.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "one row can't be parsed,error:" + e.toString() + ",data:" + Arrays.toString(row));
                         return false;
                     }
                     empty = false;

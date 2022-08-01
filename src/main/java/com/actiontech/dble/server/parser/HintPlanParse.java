@@ -58,7 +58,8 @@ public class HintPlanParse {
             nodeStack = buildChildNode(nodeStack, and);
             nodeStack = buildChildNode(nodeStack, or);
         }
-        if (nodeStack.size() > 1 || !nodeStack.peek().isTable()) {
+        Node peek = nodeStack.peek();
+        if (nodeStack.size() > 1 || !(peek.isTable() || peek.getType() == Type.ER)) {
             throw new ConfigException("hint parse failure");
         }
         return nodeStack.pop();
@@ -161,13 +162,13 @@ public class HintPlanParse {
                     er.append(c);
                     break;
                 case '|':
-                    addNode(nodeName.toString(), nodeList, erRelation);
+                    addNode(nodeName.toString(), nodeList, erRelation, Type.OR);
                     nodeList.add(new Node(String.valueOf(c), Type.OR));
                     nodeName = new StringBuilder();
                     er = new StringBuilder();
                     break;
                 case '&':
-                    addNode(nodeName.toString(), nodeList, erRelation);
+                    addNode(nodeName.toString(), nodeList, erRelation, Type.AND);
                     nodeList.add(new Node(String.valueOf(c), Type.AND));
                     nodeName = new StringBuilder();
                     er = new StringBuilder();
@@ -198,7 +199,7 @@ public class HintPlanParse {
     }
 
     @NotNull
-    private void addNode(String nodeName, List<Node> nodeList, boolean erRelation) throws ConfigException {
+    private void addNode(String nodeName, List<Node> nodeList, boolean erRelation, Type type) throws ConfigException {
         if (erRelation) {
             throw new ConfigException("er Relation need like (a,b,c)");
         }
@@ -208,7 +209,7 @@ public class HintPlanParse {
         }
         nodeMap.putIfAbsent(nodeName, HintPlanNode.of(nodeName));
         //table has dependencies will be added to the end
-        hintPlanNodeMap.put(nodeName, Type.OR);
+        hintPlanNodeMap.put(nodeName, type);
         nodeList.add(new Node(nodeName));
     }
 

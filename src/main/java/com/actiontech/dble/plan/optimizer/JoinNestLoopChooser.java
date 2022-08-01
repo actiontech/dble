@@ -10,10 +10,11 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.server.parser.HintPlanParse;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class JoinNestLoopChooser {
     private Map<String, PlanNode> nodeMap;
@@ -27,15 +28,7 @@ public class JoinNestLoopChooser {
         this.hintPlanInfo = hintPlanInfo;
         nodeMap = new HashMap<>();
         nodeDependMap = new HashMap<>();
-        conversionNodeDependMap(hintPlanInfo.getDependMap());
         hintNestLoopHelper = new HintNestLoopHelper();
-    }
-
-    private void conversionNodeDependMap(HashMap<String, Set<HintPlanNode>> dependMap) {
-        dependMap.forEach((k, v) -> {
-            List<String> dependList = v.stream().map(HintPlanNode::getName).collect(Collectors.toList());
-            nodeDependMap.put(k, dependList);
-        });
     }
 
     public void tryNestLoop() throws MySQLOutPutException {
@@ -72,7 +65,21 @@ public class JoinNestLoopChooser {
     private void buildNestLoop() {
         nodeDependMap.forEach((alias, v) -> {
             if (!v.isEmpty()) {
-                String dependName = v.get(0);
+                HashMap<String, Set<HintPlanNode>> dependMap = hintPlanInfo.getDependMap();
+                Set<HintPlanNode> hintPlanNodes = dependMap.get(alias);
+                LinkedHashMap<String, HintPlanParse.Type> hintPlanNodeMap = hintPlanInfo.getHintPlanNodeMap();
+                String dependName = hintPlanNodes.iterator().next().getName();
+                if (hintPlanNodes.size() > 1 && !StringUtil.equals(dependName, v.get(0)) && hintPlanNodeMap.get(dependName) == HintPlanParse.Type.AND) {
+                    PlanNode currentNode = nodeMap.get(alias);
+                    PlanNode dependNode = nodeMap.get(dependName).getParent();
+                    TableNode fakeDependNode = (TableNode) nodeMap.get(v.get(0));
+                    List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
+                    nodeList.add(nodeList.size(), currentNode);
+                    dependNode.setNestLoopDependOnNodeList(nodeList);
+                    fakeDependNode.getHintNestLoopHelper().getFakeDependSet().add(currentNode);
+                }
+
+                dependName = v.get(0);
                 PlanNode currentNode = nodeMap.get(alias);
                 PlanNode dependNode = nodeMap.get(dependName);
                 List<PlanNode> nodeList = Optional.ofNullable(dependNode.getNestLoopDependOnNodeList()).orElse(new ArrayList<>());
@@ -109,13 +116,17 @@ public class JoinNestLoopChooser {
     }
 
     private void checkHintDependency() {
-        HashMap<String, Set<HintPlanNode>> dependMap = hintPlanInfo.getDependMap();
+        LinkedHashMap<String, HintPlanParse.Type> hintPlanNodeMap = hintPlanInfo.getHintPlanNodeMap();
         HashMap<String, Set<HintPlanNode>> erMap = hintPlanInfo.getErMap();
         checkErCondition(erMap);
         if (hintPlanInfo.nodeSize() != nodeMap.size()) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "the number of tables in the hint plan and the actual SQL varies");
         }
-        dependMap.forEach((k, v) -> checkAndOrCondition(k));
+        hintPlanNodeMap.forEach((k, v) -> {
+            if (v != HintPlanParse.Type.ER) {
+                checkAndOrCondition(k);
+            }
+        });
         hintAndCheck();
     }
 
@@ -128,7 +139,11 @@ public class JoinNestLoopChooser {
                 PlanNode dependNode = nodeMap.get(node.getName());
                 boolean result = dependencyHelper(dependNode, currentNode, currentNode);
                 if (result) {
-                    nodeDependMap.get(currentNode.getAlias()).add(dependNode.getAlias());
+                    //the verified dependency need to be put into the nodeDependMap
+                    String alias = currentNode.getAlias();
+                    List<String> dependList = Optional.ofNullable(nodeDependMap.get(alias)).orElse(Lists.newArrayList());
+                    dependList.add(dependNode.getAlias());
+                    nodeDependMap.put(k, dependList);
                     return;
                 }
             }

@@ -40,6 +40,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.google.common.collect.Lists;
 import org.jetbrains.annotations.NotNull;
@@ -374,6 +375,21 @@ public abstract class BaseHandlerBuilder {
             addDelayTableHandler(sh, (TableNode) node);
         } else if (node instanceof JoinNode && canDoAsMerge()) {
             nestLoopAddHandler(sh, node);
+        } else if (node.haveDependOnNode()) {
+            List<PlanNode> nestLoopDependOnNodeList = node.getNestLoopDependOnNodeList();
+            for (PlanNode planNode : nestLoopDependOnNodeList) {
+                TableNode tableNode = (TableNode) planNode.getNestLoopDependNode();
+                HintNestLoopHelper hintNestLoopHelper = tableNode.getHintNestLoopHelper();
+                List<DelayTableHandler> delayTableHandlers = hintNestLoopHelper.getDelayTableHandlers(tableNode);
+                Map<PlanNode, SendMakeHandler> sendMakeHandlerHashMap = hintNestLoopHelper.getSendMakeHandlerHashMap();
+                Set<BaseDMLHandler> tableHandlers = sh.getTableHandlers();
+                for (DelayTableHandler delayTableHandler : delayTableHandlers) {
+                    if (StringUtil.equals(planNode.getAlias(), delayTableHandler.getTableAlias())) {
+                        tableHandlers.add(delayTableHandler);
+                    }
+                }
+                sendMakeHandlerHashMap.put(tableNode, sh);
+            }
         }
     }
 

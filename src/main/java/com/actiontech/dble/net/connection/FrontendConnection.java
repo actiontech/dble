@@ -108,7 +108,7 @@ public class FrontendConnection extends AbstractConnection {
             handleSSLData(dataBuffer);
         } else {
             transferToReadBuffer(dataBuffer);
-            parentHandle(readBuffer);
+            parentHandle(getReadBuffer());
         }
     }
 
@@ -142,8 +142,9 @@ public class FrontendConnection extends AbstractConnection {
                 case SSL_CLOSE_PACKET:
                     if (!result.isHasMorePacket()) {
                         netReadReachEnd();
-                        if (readBuffer != null) {
-                            readBuffer.clear();
+                        final ByteBuffer tmpReadBuffer = getReadBuffer();
+                        if (tmpReadBuffer != null) {
+                            tmpReadBuffer.clear();
                         }
                     }
                     processSSLProto(result.getPacketData(), result.getCode());
@@ -211,7 +212,7 @@ public class FrontendConnection extends AbstractConnection {
         if (packetData == null)
             return;
         sslHandler.unwrapAppData(packetData);
-        parentHandle(readBuffer);
+        parentHandle(getReadBuffer());
     }
 
     public void processSSLPacketNotBigEnough(ByteBuffer buffer, int offset, final int pkgLength) {
@@ -314,22 +315,25 @@ public class FrontendConnection extends AbstractConnection {
         } else {
             dataBuffer.limit(dataBuffer.position());
             dataBuffer.position(offset);
-            this.readBuffer = dataBuffer.compact();
+            setReadBuffer(dataBuffer.compact());
         }
     }
 
     public ByteBuffer findReadBuffer() {
-        if (readBuffer == null) {
-            readBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+        ByteBuffer tmpReadBuffer = getReadBuffer();
+        if (tmpReadBuffer == null) {
+            tmpReadBuffer = processor.getBufferPool().allocate(processor.getBufferPool().getChunkSize());
+            setReadBuffer(tmpReadBuffer);
         }
-        return readBuffer;
+        return tmpReadBuffer;
     }
+
 
     public ByteBuffer ensureReadBufferFree(ByteBuffer oldBuffer, int expectSize) {
         ByteBuffer newBuffer = processor.getBufferPool().allocate(expectSize < 0 ? processor.getBufferPool().getChunkSize() : expectSize);
         oldBuffer.flip();
         newBuffer.put(oldBuffer);
-        readBuffer = newBuffer;
+        setReadBuffer(newBuffer);
 
         oldBuffer.clear();
         recycle(oldBuffer);

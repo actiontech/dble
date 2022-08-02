@@ -7,10 +7,15 @@ package com.actiontech.dble.route.parser.util;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
+import com.alibaba.druid.stat.TableStat;
+import org.apache.commons.lang.StringUtils;
 
 import java.sql.SQLSyntaxErrorException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author collapsar
@@ -54,4 +59,20 @@ public final class DruidUtil {
             }
         }
     }
+
+    public static List<String> getTableNamesBySql(SQLStatement sqlStatement) {
+        MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
+        sqlStatement.accept(visitor);
+        Set<TableStat.Name> tableNameSet = visitor.getTables().keySet();
+
+        List<String> tableNameList = new ArrayList<>(5);
+        for (TableStat.Name name : tableNameSet) {
+            String tableName = name.getName();
+            if (StringUtils.isNotBlank(tableName)) {
+                tableNameList.add(tableName);
+            }
+        }
+        return tableNameList;
+    }
+
 }

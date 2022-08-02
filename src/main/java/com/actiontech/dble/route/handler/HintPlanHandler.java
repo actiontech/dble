@@ -13,6 +13,7 @@ import com.actiontech.dble.server.parser.HintPlanParse;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.sql.SQLSyntaxErrorException;
+import java.util.List;
 
 /**
  * sql hint: dble:plan= (a,b,c)&b&(c,d)<br/>
@@ -25,23 +26,24 @@ public final class HintPlanHandler {
     }
 
     public static RouteResultset route(String hintSQL, int sqlType, String realSql) throws SQLSyntaxErrorException {
-        HintPlanInfo planInfo = parseHint(hintSQL);
         RouteResultset rrs = new RouteResultset(realSql, sqlType);
-        rrs.setHintPlanInfo(planInfo);
         SQLStatement statement = DruidUtil.parseSQL(realSql);
+        HintPlanInfo planInfo = parseHint(hintSQL, statement);
+        rrs.setHintPlanInfo(planInfo);
         rrs.setNeedOptimizer(true);
         rrs.setSqlStatement(statement);
         return rrs;
     }
 
-    public static HintPlanInfo parseHint(String hintSQL) {
-        HintPlanParse hintPlanParse = new HintPlanParse();
-        hintPlanParse.parse(hintSQL);
+    public static HintPlanInfo parseHint(String hintSQL, SQLStatement statement) {
         String[] attr = hintSQL.split("\\$");
-        HintPlanInfo planInfo = new HintPlanInfo(hintPlanParse.getDependMap(), hintPlanParse.getErMap(), hintPlanParse.getHintPlanNodeMap());
+        HintPlanInfo planInfo = new HintPlanInfo();
+
+        String realHint = "";
+        boolean useTableIndex = false;
         if (attr.length > 1) {
-            for (int i = 1; i < attr.length; i++) {
-                switch (attr[i].toLowerCase()) {
+            for (String s : attr) {
+                switch (s.toLowerCase()) {
                     case "left2inner":
                         planInfo.setLeft2inner(true);
                         break;
@@ -51,12 +53,33 @@ public final class HintPlanHandler {
                     case "in2join":
                         planInfo.setIn2join(true);
                         break;
+                    case "use_table_index":
+                        useTableIndex = true;
+                        break;
                     default:
+                        realHint = s;
                         break;
                 }
             }
         }
+
+        if (useTableIndex && statement != null) {
+            realHint = replaceTableIndex(statement, realHint);
+        }
+
+        HintPlanParse hintPlanParse = new HintPlanParse();
+        hintPlanParse.parse(realHint);
+        planInfo.setRelationMap(hintPlanParse);
         return planInfo;
+    }
+
+    private static String replaceTableIndex(SQLStatement sqlStatement, String hintSQL) {
+        List<String> tableNames = DruidUtil.getTableNamesBySql(sqlStatement);
+        String newSql = hintSQL;
+        for (int i = 0; i < tableNames.size(); i++) {
+            newSql = newSql.replaceAll(i + 1 + "", tableNames.get(i));
+        }
+        return newSql;
     }
 
 }

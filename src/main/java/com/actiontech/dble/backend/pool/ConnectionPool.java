@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.btrace.provider.ConnectionPoolProvider;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.model.db.PoolConfig;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.net.IOProcessor;
 import com.actiontech.dble.net.connection.BackendConnection;
 import com.actiontech.dble.net.connection.PooledConnection;
@@ -345,6 +346,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
         try {
             ConnectionPoolProvider.stopConnGetFrenshLocekAfter();
             if (isClosed.compareAndSet(false, true)) {
+                if (LOGGER.isDebugEnabled() && totalConnections.get() > 0) {
+                    ReloadLogHelper.debug("stop connection pool :{},reason:{},is close front:{}", LOGGER, instance.toString(), closureReason, closeFront);
+                }
                 stopEvictor();
                 if (closeFront) {
                     forceCloseAllConnection(closureReason);
@@ -431,6 +435,9 @@ public class ConnectionPool extends PoolBase implements PooledConnectionListener
     public void startEvictor(String instanceName, String reason) {
         if (isClosed.compareAndSet(true, false)) {
             LOGGER.info("start connection pool of physical db instance[{}], due to {}", instanceName, reason);
+            if (LOGGER.isDebugEnabled()) {
+                ReloadLogHelper.debug("start connection pool :{},reason:{}", LOGGER, instance.toString(), reason);
+            }
             if (evictor != null) {
                 EvictionTimer.cancel(evictor, poolConfig.getEvictorShutdownTimeoutMillis(), TimeUnit.MILLISECONDS);
             }

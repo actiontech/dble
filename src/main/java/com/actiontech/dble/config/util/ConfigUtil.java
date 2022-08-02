@@ -20,6 +20,7 @@ import com.actiontech.dble.services.manager.response.ChangeItemType;
 import com.actiontech.dble.services.manager.response.ChangeType;
 import com.actiontech.dble.singleton.TraceManager;
 import com.actiontech.dble.util.StringUtil;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.logging.log4j.util.Strings;
 import org.jetbrains.annotations.Nullable;
@@ -101,7 +102,8 @@ public final class ConfigUtil {
                 return null;
             }
             Map<String, Future<KeyVariables>> keyVariablesTaskMap = Maps.newHashMap();
-            getAndSyncKeyVariablesForDataSources(needCheckItemList, keyVariablesTaskMap, needSync);
+            List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
+            getAndSyncKeyVariablesForDataSources(needCheckItemList, keyVariablesTaskMap, needSync, dbInstanceList);
 
             Set<String> diffGroup = new HashSet<>();
             int minNodePacketSize = Integer.MAX_VALUE;
@@ -142,6 +144,7 @@ public final class ConfigUtil {
                 sb.append(".");
                 throw new IOException(sb.toString());
             }
+            dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
             DbleTempConfig.getInstance().setLowerCase(lowerCase);
             return msg;
         } finally {
@@ -184,7 +187,8 @@ public final class ConfigUtil {
             return null;
         }
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
+        List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
+        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
 
         boolean lowerCase = false;
         boolean isFirst = true;
@@ -242,6 +246,7 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
         DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msg;
     }
@@ -254,7 +259,8 @@ public final class ConfigUtil {
             return null;
         }
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dbGroups.size());
-        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync);
+        List<PhysicalDbInstance> dbInstanceList = Lists.newArrayList();
+        getAndSyncKeyVariablesForDataSources(dbGroups, keyVariablesTaskMap, needSync, dbInstanceList);
 
         boolean lowerCase = false;
         boolean isFirst = true;
@@ -312,13 +318,14 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        dbInstanceList.forEach(dbInstance -> dbInstance.setNeedSkipHeartTest(true));
         DbleTempConfig.getInstance().setLowerCase(lowerCase);
         return msg;
     }
 
 
     private static void getAndSyncKeyVariablesForDataSources(List<ChangeItem> changeItemList, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
-                                                             boolean needSync) throws InterruptedException {
+                                                             boolean needSync, List<PhysicalDbInstance> dbInstanceList) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(changeItemList.size());
         for (ChangeItem changeItem : changeItemList) {
             Object item = changeItem.getItem();
@@ -328,6 +335,7 @@ public final class ConfigUtil {
                     continue;
                 }
                 getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
+                dbInstanceList.add(ds);
             } else if (changeItem.getItemType() == ChangeItemType.PHYSICAL_DB_GROUP) {
                 PhysicalDbGroup dbGroup = (PhysicalDbGroup) item;
                 for (PhysicalDbInstance ds : dbGroup.getAllDbInstanceMap().values()) {
@@ -335,6 +343,7 @@ public final class ConfigUtil {
                         continue;
                     }
                     getKeyVariablesForDataSource(service, ds, ds.getDbGroupConfig().getName(), keyVariablesTaskMap, needSync);
+                    dbInstanceList.add(ds);
                 }
             }
         }
@@ -353,7 +362,8 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
+    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDbGroup> dbGroups, Map<String, Future<KeyVariables>> keyVariablesTaskMap,
+                                                             boolean needSync, List<PhysicalDbInstance> dbInstanceList) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(dbGroups.size());
         for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
             String hostName = entry.getKey();
@@ -364,6 +374,7 @@ public final class ConfigUtil {
                     continue;
                 }
                 getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap, needSync);
+                dbInstanceList.add(ds);
             }
         }
         service.shutdown();

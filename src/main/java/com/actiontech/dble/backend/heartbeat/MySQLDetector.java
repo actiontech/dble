@@ -131,6 +131,10 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 }
             }
         } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
+            if (source.isNeedSkipHeartTest() && heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS) {
+                source.setNeedSkipHeartTest(false);
+                return false;
+            }
             try {
                 source.testConnection();
             } catch (Exception e) {
